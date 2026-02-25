@@ -1,0 +1,511 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────
+
+enum Category {
+  PROCESSOR
+  GPU
+  MOTHERBOARD
+  RAM
+  STORAGE
+  PSU
+  CABINET
+  COOLER
+  MONITOR
+  PERIPHERAL
+  NETWORKING
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum CompatibilityLevel {
+  COMPATIBLE
+  WARNING
+  INCOMPATIBLE
+}
+
+enum StockMovementType {
+  PURCHASE
+  INWARD
+  OUTWARD
+  SALE
+  RETURN
+  ADJUSTMENT
+  RESERVE
+}
+
+enum InvoiceStatus {
+  draft
+  pending
+  paid
+  overdue
+  cancelled
+  refunded
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Currency {
+  INR
+  USD
+  EUR
+  GBP
+}
+
+enum FilterType {
+  checkbox
+  range
+  boolean
+}
+
+// ─────────────────────────────────────────────────
+// AUTH (Admin only — no customer auth)
+// ─────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────
+// CATALOG — Brand
+// ─────────────────────────────────────────────────
+
+model Brand {
+  id         String     @id @default(uuid())
+  name       String     @unique
+  categories Category[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  products   Product[]
+}
+
+// ─────────────────────────────────────────────────
+// CATALOG — Category Hierarchy
+// ─────────────────────────────────────────────────
+
+model CategoryHierarchy {
+  id        String              @id @default(uuid())
+  label     String
+  category  Category?
+  query     String?
+  brand     String?
+  parentId  String?
+  sortOrder Int                 @default(0)
+  parent    CategoryHierarchy?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  CategoryHierarchy[] @relation("CategoryTree")
+
+  @@index([parentId])
+}
+
+// ─────────────────────────────────────────────────
+// CATALOG — Category Schema (attribute definitions)
+// ─────────────────────────────────────────────────
+
+model CategorySchema {
+  id         String                @id @default(uuid())
+  category   Category              @unique
+  attributes AttributeDefinition[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+}
+
+model AttributeDefinition {
+  id               String         @id @default(uuid())
+  key              String
+  label            String
+  type             String // "text" | "number" | "select"
+  required         Boolean        @default(false)
+  options          String[]
+  unit             String?
+  categorySchemaId String
+  sortOrder        Int            @default(0)
+  categorySchema   CategorySchema @relation(fields: [categorySchemaId], references: [id], onDelete: Cascade)
+
+  @@unique([categorySchemaId, key])
+}
+
+// ─────────────────────────────────────────────────
+// CATALOG — Category Filter Config
+// ─────────────────────────────────────────────────
+
+model CategoryFilterConfig {
+  id        String             @id @default(uuid())
+  category  Category           @unique
+  filters   FilterDefinition[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model FilterDefinition {
+  id                     String               @id @default(uuid())
+  key                    String
+  label                  String
+  type                   FilterType
+  options                String[]
+  min                    Float?
+  max                    Float?
+  dependencyKey          String?
+  dependencyValue        String?
+  sortOrder              Int                  @default(0)
+  categoryFilterConfigId String
+  categoryFilterConfig   CategoryFilterConfig @relation(fields: [categoryFilterConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryFilterConfigId, key])
+}
+
+// ─────────────────────────────────────────────────
+// CATALOG — Product
+// ─────────────────────────────────────────────────
+
+model Product {
+  id          String   @id @default(uuid())
+  sku         String   @unique
+  name        String
+  category    Category
+  price       Float
+  stock       Int      @default(0)
+  image       String
+  description String?
+
+  brandId String?
+  brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  specs           ProductSpec[]
+  inventoryItem   InventoryItem?
+  reviews         Review[]
+  orderItems      OrderItem[]
+  savedBuildItems SavedBuildItem[]
+
+  @@index([category])
+  @@index([brandId])
+  @@index([price])
+}
+
+model ProductSpec {
+  id        String  @id @default(uuid())
+  productId String
+  key       String
+  value     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, key])
+  @@index([key, value])
+}
+
+// ─────────────────────────────────────────────────
+// INVENTORY
+// ─────────────────────────────────────────────────
+
+model InventoryItem {
+  id           String    @id @default(uuid())
+  productId    String    @unique
+  sku          String    @unique
+  productName  String
+  quantity     Int       @default(0)
+  reserved     Int       @default(0)
+  reorderLevel Int       @default(5)
+  costPrice    Float     @default(0)
+  location     String    @default("")
+  lastUpdated  DateTime?
+
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+
+  @@index([quantity])
+}
+
+model StockMovement {
+  id              String            @id @default(uuid())
+  inventoryItemId String
+  type            StockMovementType
+  quantity        Int
+  reason          String?
+  performedBy     String            @default("System")
+  createdAt       DateTime          @default(now())
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([inventoryItemId, createdAt])
+  @@index([type])
+}
+
+// ─────────────────────────────────────────────────
+// CUSTOMER (Guest — no auth, used for invoicing/POS)
+// ─────────────────────────────────────────────────
+
+model Customer {
+  id           String  @id @default(uuid())
+  name         String
+  email        String
+  phone        String?
+  company      String?
+  addressLine1 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────────────
+
+model Order {
+  id           String      @id
+  customerName String
+  email        String
+  phone        String?
+  date         DateTime    @default(now())
+  total        Float
+  status       OrderStatus @default(PENDING)
+
+  shippingStreet  String?
+  shippingCity    String?
+  shippingState   String?
+  shippingZip     String?
+  shippingCountry String?
+
+  paymentMethod        String?
+  paymentTransactionId String?
+  paymentStatus        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items OrderItem[]
+  logs  OrderLog[]
+
+  @@index([email])
+  @@index([status])
+  @@index([date])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  name      String
+  category  Category
+  price     Float
+  quantity  Int
+  image     String?
+  sku       String?
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderLog {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  timestamp DateTime    @default(now())
+  note      String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, timestamp])
+}
+
+// ─────────────────────────────────────────────────
+// SAVED BUILDS
+// ─────────────────────────────────────────────────
+
+model SavedBuild {
+  id        String   @id @default(uuid())
+  name      String
+  total     Float    @default(0)
+  createdAt DateTime @default(now())
+
+  items SavedBuildItem[]
+}
+
+model SavedBuildItem {
+  id           String @id @default(uuid())
+  savedBuildId String
+  productId    String
+  quantity     Int    @default(1)
+
+  savedBuild SavedBuild @relation(fields: [savedBuildId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([savedBuildId, productId])
+  @@index([savedBuildId])
+}
+
+// ─────────────────────────────────────────────────
+// REVIEWS
+// ─────────────────────────────────────────────────
+
+model Review {
+  id           String       @id @default(uuid())
+  productId    String
+  customerName String
+  rating       Int
+  comment      String
+  status       ReviewStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([rating])
+}
+
+// ─────────────────────────────────────────────────
+// BILLING & INVOICES
+// ─────────────────────────────────────────────────
+
+model BillingProfile {
+  id           String   @id @default(uuid())
+  companyName  String
+  legalName    String?
+  email        String
+  phone        String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  postalCode   String
+  country      String
+  gstin        String?
+  currency     Currency @default(INR)
+  logoUrl      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  status        InvoiceStatus @default(draft)
+  customerId    String
+  currency      Currency      @default(INR)
+
+  subtotal    Float @default(0)
+  taxTotal    Float @default(0)
+  discountPct Float @default(0)
+  shipping    Float @default(0)
+  total       Float @default(0)
+  amountPaid  Float @default(0)
+  amountDue   Float @default(0)
+
+  notes       String?
+  sentAt      DateTime?
+  refundedAt  DateTime?
+  cancelledAt DateTime?
+  paidAt      DateTime?
+
+  createdAt     DateTime @default(now())
+  dueDate       DateTime
+  lastUpdatedAt DateTime @updatedAt
+
+  customer  Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lineItems InvoiceLineItem[]
+  audit     InvoiceAuditEvent[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  name        String
+  description String?
+  quantity    Int
+  unitPrice   Float
+  taxRatePct  Float   @default(18)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model InvoiceAuditEvent {
+  id        String   @id @default(uuid())
+  invoiceId String
+  type      String
+  actor     String
+  message   String?
+  createdAt DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, createdAt])
+}
+
+// ─────────────────────────────────────────────────
+// CMS — Landing Page
+// ─────────────────────────────────────────────────
+
+model CMSLandingPage {
+  id          String    @id @default(uuid())
+  content     Json
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  versions CMSLandingPageVersion[]
+}
+
+model CMSLandingPageVersion {
+  id        String   @id @default(uuid())
+  pageId    String
+  content   Json
+  label     String?
+  createdAt DateTime @default(now())
+  actor     String?
+
+  page CMSLandingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
+}
