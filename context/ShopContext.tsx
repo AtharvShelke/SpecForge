@@ -1,66 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
-  CartItem, Product, CompatibilityReport, CompatibilityLevel, Review, SavedBuild,
+  CartItem, Product, CompatibilityReport, CompatibilityLevel, Review, ReviewStatus, SavedBuild,
   CategoryNode, Brand, CategorySchema, Category, AttributeDefinition,
   InventoryItem, StockMovement, StockMovementType, Order, OrderStatus, OrderLog,
   CategoryFilterConfig, FilterDefinition
 } from '../types';
 import { validateBuild } from '../services/compatibility';
-import { MOCK_REVIEWS, MOCK_SAVED_BUILDS, PRODUCTS as MOCK_PRODUCTS, MOCK_ORDERS } from '../data/mockData';
-import { CATEGORY_HIERARCHY as INITIAL_CATEGORY_TREE } from '../data/categoryTree';
-import { FILTER_CONFIG as INITIAL_FILTER_CONFIG } from '../data/filterConfig';
 import { useToast } from '@/hooks/use-toast';
-
-// Initial Mock Data for Dynamic Features
-const INITIAL_BRANDS: Brand[] = [
-  { id: 'b1', name: 'Intel', linkedCategories: [Category.PROCESSOR, Category.GPU, Category.NETWORKING] },
-  { id: 'b2', name: 'AMD', linkedCategories: [Category.PROCESSOR, Category.GPU, Category.MOTHERBOARD] },
-  { id: 'b3', name: 'NVIDIA', linkedCategories: [Category.GPU] },
-  { id: 'b4', name: 'ASUS', linkedCategories: [Category.MOTHERBOARD, Category.GPU, Category.MONITOR, Category.PSU, Category.PERIPHERAL] },
-  { id: 'b5', name: 'MSI', linkedCategories: [Category.MOTHERBOARD, Category.GPU, Category.MONITOR, Category.PSU] },
-  { id: 'b6', name: 'Corsair', linkedCategories: [Category.RAM, Category.PSU, Category.CABINET, Category.COOLER, Category.PERIPHERAL] },
-];
-
-const INITIAL_SCHEMAS: CategorySchema[] = [
-  {
-    category: Category.PROCESSOR,
-    attributes: [
-      { key: 'socket', label: 'Socket', type: 'text', required: true },
-      { key: 'cores', label: 'Cores', type: 'number', required: true },
-      { key: 'series', label: 'Series', type: 'text', required: false },
-      { key: 'generation', label: 'Generation', type: 'text', required: false },
-      { key: 'wattage', label: 'TDP (Watts)', type: 'number', required: true, unit: 'W' },
-      { key: 'ramType', label: 'RAM Support', type: 'select', options: ['DDR4', 'DDR5'], required: true },
-    ]
-  },
-  {
-    category: Category.MOTHERBOARD,
-    attributes: [
-      { key: 'socket', label: 'Socket', type: 'text', required: true },
-      { key: 'chipset', label: 'Chipset', type: 'text', required: true },
-      { key: 'formFactor', label: 'Form Factor', type: 'select', options: ['ATX', 'Micro-ATX', 'E-ATX', 'ITX'], required: true },
-      { key: 'ramType', label: 'RAM Slots', type: 'select', options: ['DDR4', 'DDR5'], required: true },
-    ]
-  },
-  {
-    category: Category.GPU,
-    attributes: [
-      { key: 'memory', label: 'VRAM', type: 'text', required: true },
-      { key: 'wattage', label: 'TGP (Watts)', type: 'number', required: true, unit: 'W' },
-      { key: 'series', label: 'Series', type: 'text', required: true },
-    ]
-  },
-  {
-    category: Category.RAM,
-    attributes: [
-      { key: 'ramType', label: 'Type', type: 'select', options: ['DDR4', 'DDR5'], required: true },
-      { key: 'frequency', label: 'Speed', type: 'text', required: true },
-      { key: 'capacity', label: 'Capacity', type: 'text', required: true },
-    ]
-  }
-];
 
 interface ShopContextType {
   // Cart
@@ -75,8 +23,8 @@ interface ShopContextType {
 
   // Orders
   orders: Order[];
-  placeOrder: (customerName: string, email: string) => void;
-  updateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
+  placeOrder: (customerName: string, email: string, shipping?: any, payment?: any) => Promise<void>;
+  updateOrderStatus: (orderId: string, newStatus: OrderStatus, note?: string) => Promise<void>;
 
   // Compatibility
   compatibilityReport: CompatibilityReport;
@@ -93,81 +41,67 @@ interface ShopContextType {
 
   // Saved Builds
   savedBuilds: SavedBuild[];
-  saveCurrentBuild: (name: string) => void;
-  loadBuild: (buildId: string) => void;
-  deleteBuild: (buildId: string) => void;
+  saveCurrentBuild: (name: string) => Promise<void>;
+  loadBuild: (buildId: string) => Promise<void>;
+  deleteBuild: (buildId: string) => Promise<void>;
 
   // Reviews
   reviews: Review[];
-  addReview: (review: Omit<Review, 'id' | 'status' | 'date'>) => void;
-  approveReview: (id: string) => void;
-  rejectReview: (id: string) => void;
+  addReview: (review: Omit<Review, 'id' | 'status' | 'createdAt'>) => Promise<void>;
+  approveReview: (id: string) => Promise<void>;
+  rejectReview: (id: string) => Promise<void>;
   getProductReviews: (productId: string) => Review[];
   getProductRating: (productId: string) => { average: number; count: number };
 
   // --- DYNAMIC CATALOG MANAGEMENT ---
   products: Product[];
-  addProduct: (product: Product, initialStock: number, costPrice: number) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (productId: string) => void;
+  refreshProducts: () => Promise<void>;
+  addProduct: (product: Partial<Product>, initialStock: number, costPrice: number) => Promise<void>;
+  updateProduct: (product: Product) => Promise<void>;
+  deleteProduct: (productId: string) => Promise<void>;
 
   categories: CategoryNode[];
-  updateCategories: (nodes: CategoryNode[]) => void;
+  refreshCategories: () => Promise<void>;
+  updateCategories: (nodes: CategoryNode[]) => Promise<void>;
 
   brands: Brand[];
-  addBrand: (brand: Brand) => void;
-  updateBrand: (brand: Brand) => void;
-  deleteBrand: (brandId: string) => void;
+  refreshBrands: () => Promise<void>;
+  addBrand: (brand: Partial<Brand>) => Promise<void>;
+  updateBrand: (brand: Brand) => Promise<void>;
+  deleteBrand: (brandId: string) => Promise<void>;
 
   schemas: CategorySchema[];
-  updateSchema: (category: Category, attributes: AttributeDefinition[]) => void;
+  refreshSchemas: () => Promise<void>;
+  updateSchema: (category: Category, attributes: AttributeDefinition[]) => Promise<void>;
 
   // --- DYNAMIC FILTER MANAGEMENT ---
   filterConfigs: CategoryFilterConfig[];
-  updateFilterConfig: (category: Category, filters: FilterDefinition[]) => void;
+  refreshFilterConfigs: () => Promise<void>;
+  updateFilterConfig: (category: Category, filters: FilterDefinition[]) => Promise<void>;
 
   // --- INVENTORY MANAGEMENT ---
   inventory: InventoryItem[];
+  refreshInventory: () => Promise<void>;
   stockMovements: StockMovement[];
-  adjustStock: (sku: string, quantity: number, type: StockMovementType, reason: string) => void;
+  adjustStock: (inventoryItemId: string, quantity: number, type: StockMovementType, reason: string) => Promise<void>;
   getInventoryItem: (sku: string) => InventoryItem | undefined;
+
+  // Loading states
+  isLoading: boolean;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
   // --- STATE INITIALIZATION ---
-
-
-  // 1. Initialize Products (Ensure they have SKUs)
-  const [products, setProducts] = useState<Product[]>(() => {
-    return MOCK_PRODUCTS.map(p => ({
-      ...p,
-      sku: p.sku || `SKU-${p.id.toUpperCase()}`
-    }));
-  });
-
-  // 2. Initialize Inventory based on Products
-  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
-    return products.map(p => ({
-      sku: p.sku || `SKU-${p.id.toUpperCase()}`,
-      productId: p.id,
-      quantity: p.stock,
-      reserved: 0,
-      reorderLevel: 5,
-      costPrice: Math.round(p.price * 0.8), // Mock cost price
-      location: 'Warehouse A',
-      lastUpdated: new Date().toISOString()
-    }));
-  });
-
+  const [products, setProducts] = useState<Product[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
-
-  // Other States
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport>({
     status: CompatibilityLevel.COMPATIBLE,
     issues: []
@@ -175,24 +109,138 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isCartOpen, setCartOpen] = useState(false);
   const [isBuildMode, setIsBuildMode] = useState(false);
   const [wishlist, setWishlist] = useState<string[]>([]);
-  const [savedBuilds, setSavedBuilds] = useState<SavedBuild[]>(MOCK_SAVED_BUILDS);
-  const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS);
-  const [categories, setCategories] = useState<CategoryNode[]>(INITIAL_CATEGORY_TREE);
-  const [brands, setBrands] = useState<Brand[]>(INITIAL_BRANDS);
-  const [schemas, setSchemas] = useState<CategorySchema[]>(INITIAL_SCHEMAS);
+  const [savedBuilds, setSavedBuilds] = useState<SavedBuild[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [categories, setCategories] = useState<CategoryNode[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [schemas, setSchemas] = useState<CategorySchema[]>([]);
+  const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
 
-  // Initialize Dynamic Filters from static config
-  const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>(INITIAL_FILTER_CONFIG);
+
+
+  // --- DATA FETCHING ---
+
+  const refreshProducts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      if (data.products) setProducts(data.products);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+    }
+  }, []);
+
+  const refreshBrands = useCallback(async () => {
+    try {
+      const res = await fetch('/api/brands');
+      const data = await res.json();
+      setBrands(data);
+    } catch (err) {
+      console.error('Failed to fetch brands:', err);
+    }
+  }, []);
+
+  const refreshCategories = useCallback(async () => {
+    try {
+      const res = await fetch('/api/categories/hierarchy');
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  }, []);
+
+  const refreshInventory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/inventory');
+      const data = await res.json();
+      setInventory(data);
+    } catch (err) {
+      console.error('Failed to fetch inventory:', err);
+    }
+  }, []);
+
+  const refreshSavedBuilds = useCallback(async () => {
+    try {
+      const res = await fetch('/api/builds');
+      const data = await res.json();
+      setSavedBuilds(data);
+    } catch (err) {
+      console.error('Failed to fetch builds:', err);
+    }
+  }, []);
+
+  const refreshOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/orders');
+      const data = await res.json();
+      if (data.orders) setOrders(data.orders);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+    }
+  }, []);
+
+  const refreshReviews = useCallback(async () => {
+    try {
+      const res = await fetch('/api/reviews');
+      const data = await res.json();
+      setReviews(data);
+    } catch (err) {
+      console.error('Failed to fetch reviews:', err);
+    }
+  }, []);
+
+  const refreshSchemas = useCallback(async () => {
+    try {
+      const res = await fetch('/api/categories/schemas');
+      const data = await res.json();
+      setSchemas(data);
+    } catch (err) {
+      console.error('Failed to fetch schemas:', err);
+    }
+  }, []);
+
+  const refreshFilterConfigs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/categories/filters');
+      const data = await res.json();
+      setFilterConfigs(data);
+    } catch (err) {
+      console.error('Failed to fetch filters:', err);
+    }
+  }, []);
+
+  // Initial Fetch
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        refreshProducts(),
+        refreshBrands(),
+        refreshCategories(),
+        refreshInventory(),
+        refreshSavedBuilds(),
+        refreshOrders(),
+        refreshReviews(),
+        refreshSchemas(),
+        refreshFilterConfigs()
+      ]);
+      setIsLoading(false);
+    };
+    init();
+  }, [refreshProducts, refreshBrands, refreshCategories, refreshInventory, refreshSavedBuilds, refreshOrders, refreshReviews, refreshSchemas, refreshFilterConfigs]);
 
   // --- SYNC PRODUCTS STOCK WITH INVENTORY ---
   useEffect(() => {
-    setProducts(prev => prev.map(p => {
-      const inv = inventory.find(i => i.productId === p.id);
-      if (inv && inv.quantity !== p.stock) {
-        return { ...p, stock: inv.quantity };
-      }
-      return p;
-    }));
+    if (inventory.length > 0) {
+      setProducts(prev => prev.map(p => {
+        const inv = inventory.find(i => i.productId === p.id);
+        if (inv && inv.quantity !== p.stock) {
+          return { ...p, stock: inv.quantity };
+        }
+        return p;
+      }));
+    }
   }, [inventory]);
 
   // --- CART EFFECTS ---
@@ -201,210 +249,224 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCompatibilityReport(report);
   }, [cart]);
 
+
+
   // --- INVENTORY ACTIONS ---
 
-  const adjustStock = (sku: string, quantity: number, type: StockMovementType, reason: string) => {
-    setInventory(prev => prev.map(item => {
-      if (item.sku === sku) {
-        let newQty = item.quantity;
-        let newReserved = item.reserved;
-
-        switch (type) {
-          case 'INWARD':
-          case 'RETURN':
-            newQty += quantity;
-            break;
-          case 'OUTWARD':
-          case 'ADJUSTMENT':
-            newQty -= quantity;
-            break;
-          case 'RESERVE':
-            newQty -= quantity;
-            newReserved += quantity;
-            break;
-          case 'SALE': // Logic: Sale actually happens when item leaves, so we reduce Reserved
-            newReserved -= quantity;
-            break;
-        }
-
-        // Prevent negative stock for physical movements
-        if (newQty < 0) newQty = 0;
-        if (newReserved < 0) newReserved = 0;
-
-        return { ...item, quantity: newQty, reserved: newReserved, lastUpdated: new Date().toISOString() };
+  const adjustStock = async (inventoryItemId: string, quantity: number, type: StockMovementType, reason: string) => {
+    try {
+      const res = await fetch(`/api/inventory/${inventoryItemId}/movements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, quantity, reason }),
+      });
+      if (res.ok) {
+        await refreshInventory();
+        await refreshProducts();
+      } else {
+        const err = await res.json();
+        toast({ title: "Stock update failed", description: err.error, variant: "destructive" });
       }
-      return item;
-    }));
-
-    // Audit Log
-    setStockMovements(prev => [{
-      id: `mov-${Date.now()}`,
-      sku,
-      type,
-      quantity,
-      reason,
-      date: new Date().toISOString(),
-      performedBy: 'System'
-    }, ...prev]);
+    } catch (err) {
+      console.error('Failed to adjust stock:', err);
+    }
   };
 
   const getInventoryItem = (sku: string) => inventory.find(i => i.sku === sku);
 
+
+
   // --- ORDER MANAGEMENT ACTIONS ---
 
-  const placeOrder = (customerName: string, email: string) => {
-    // 1. Validate Stock again
-    for (const item of cart) {
-      const inv = inventory.find(i => i.productId === item.id);
-      if (!inv || inv.quantity < item.quantity) {
-        alert(`Stock changed for ${item.name}. Please update cart.`);
-        return;
+  const placeOrder = async (customerName: string, email: string, shipping?: any, payment?: any) => {
+    try {
+      const orderId = `ORD-${Date.now()}`;
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderId,
+          customerName,
+          email,
+          total: cartTotal,
+          items: cart.map(i => ({
+            productId: i.id,
+            name: i.name,
+            category: i.category,
+            price: i.price,
+            quantity: i.quantity,
+            image: i.image,
+            sku: i.sku
+          })),
+          shippingStreet: shipping?.street || '123 Tech Street',
+          shippingCity: shipping?.city || 'Bangalore',
+          shippingState: shipping?.state || 'Karnataka',
+          shippingZip: shipping?.zip || '560001',
+          shippingCountry: shipping?.country || 'India',
+          paymentMethod: payment?.method || 'Credit Card',
+          paymentStatus: 'Success'
+        }),
+      });
+
+      if (res.ok) {
+        toast({ title: "Order placed", description: `Order ${orderId} placed successfully!` });
+        await refreshOrders();
+        await refreshInventory();
+        await refreshProducts();
+        clearCart();
+        setCartOpen(false);
+      } else {
+        const err = await res.json();
+        toast({ title: "Order failed", description: err.error, variant: "destructive" });
       }
+    } catch (err) {
+      console.error('Failed to place order:', err);
     }
-
-    // 2. Create Order Object
-    const newOrder: Order = {
-      id: `ORD-${Date.now()}`,
-      customerName,
-      email,
-      date: new Date().toISOString(),
-      total: cart.reduce((acc, i) => acc + (i.price * i.quantity), 0),
-      status: OrderStatus.PENDING,
-      items: [...cart],
-      shippingAddress: { // Mock address for guest checkout
-        street: '123 Tech Street',
-        city: 'Bangalore',
-        state: 'Karnataka',
-        zip: '560001',
-        country: 'India'
-      },
-      payment: {
-        method: 'Credit Card',
-        status: 'Success'
-      },
-      logs: [{
-        status: OrderStatus.PENDING,
-        timestamp: new Date().toISOString(),
-        note: 'Order placed successfully.'
-      }]
-    };
-
-    // 3. Reserve Stock
-    cart.forEach(item => {
-      const inv = inventory.find(i => i.productId === item.id);
-      if (inv) {
-        adjustStock(inv.sku, item.quantity, 'RESERVE', `Order ${newOrder.id} Placed`);
-      }
-    });
-
-    // 4. Update State
-    setOrders(prev => [newOrder, ...prev]);
-    clearCart();
-    setCartOpen(false);
-    alert(`Order ${newOrder.id} placed successfully!`);
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
-    setOrders(prev => prev.map(order => {
-      if (order.id !== orderId) return order;
-
-      const oldStatus = order.status;
-
-      // Handle Inventory Logic based on Status Transition
-      if (newStatus === OrderStatus.SHIPPED && oldStatus !== OrderStatus.SHIPPED) {
-        // Deduct from Reserved -> Gone
-        order.items.forEach(item => {
-          const inv = inventory.find(i => i.productId === item.id);
-          if (inv) adjustStock(inv.sku, item.quantity, 'SALE', `Order ${orderId} Shipped`);
-        });
-      } else if (newStatus === OrderStatus.CANCELLED && oldStatus !== OrderStatus.CANCELLED) {
-        // Return Reserved -> Available
-        order.items.forEach(item => {
-          const inv = inventory.find(i => i.productId === item.id);
-          // Custom logic for context to handle this transition cleanly manually
-          setInventory(invPrev => invPrev.map(invItem => {
-            if (invItem.productId === item.id) {
-              // If not yet shipped, the stock is in 'reserved'
-              if (oldStatus === OrderStatus.PENDING || oldStatus === OrderStatus.PROCESSING || oldStatus === OrderStatus.PAID) {
-                return { ...invItem, quantity: invItem.quantity + item.quantity, reserved: invItem.reserved - item.quantity };
-              }
-              // If shipped, stock is gone, bring it back
-              if (oldStatus === OrderStatus.SHIPPED || oldStatus === OrderStatus.DELIVERED) {
-                return { ...invItem, quantity: invItem.quantity + item.quantity };
-              }
-            }
-            return invItem;
-          }));
-        });
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, note?: string) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, note }),
+      });
+      if (res.ok) {
+        await refreshOrders();
+        await refreshInventory();
+        await refreshProducts();
       }
-
-      return {
-        ...order,
-        status: newStatus,
-        logs: [
-          ...order.logs,
-          { status: newStatus, timestamp: new Date().toISOString(), note: `Status updated from ${oldStatus} to ${newStatus}` }
-        ]
-      };
-    }));
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+    }
   };
+
+
 
   // --- CATALOG MANAGEMENT ACTIONS ---
 
-  const addProduct = (product: Product, initialStock: number, costPrice: number) => {
-    // Generate SKU if missing
-    const sku = product.sku || `SKU-${Date.now()}`;
-    const newProduct = { ...product, sku, stock: initialStock };
-
-    setProducts(prev => [newProduct, ...prev]);
-
-    // Create Inventory Record
-    setInventory(prev => [...prev, {
-      sku,
-      productId: newProduct.id,
-      quantity: initialStock,
-      reserved: 0,
-      reorderLevel: 5,
-      costPrice,
-      location: 'Warehouse A',
-      lastUpdated: new Date().toISOString()
-    }]);
-
-    // Log Initial Stock
-    if (initialStock > 0) {
-      setStockMovements(prev => [{
-        id: `mov-init-${Date.now()}`,
-        sku,
-        type: 'INWARD',
-        quantity: initialStock,
-        reason: 'Initial Stock Entry',
-        date: new Date().toISOString(),
-        performedBy: 'System'
-      }, ...prev]);
+  const addProduct = async (product: Partial<Product>, initialStock: number, costPrice: number) => {
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...product, stock: initialStock, costPrice }),
+      });
+      if (res.ok) {
+        await refreshProducts();
+        await refreshInventory();
+      }
+    } catch (err) {
+      console.error('Failed to add product:', err);
     }
   };
 
-  const updateProduct = (product: Product) => {
-    setProducts(prev => prev.map(p => p.id === product.id ? product : p));
-  };
-
-  const deleteProduct = (productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-  };
-
-  // --- DYNAMIC FILTER MANAGEMENT ACTIONS ---
-  const updateFilterConfig = (category: Category, filters: FilterDefinition[]) => {
-    setFilterConfigs(prev => {
-      // Check if config exists
-      const existingIndex = prev.findIndex(c => c.category === category);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = { category, filters };
-        return updated;
+  const updateProduct = async (product: Product) => {
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product),
+      });
+      if (res.ok) {
+        await refreshProducts();
       }
-      return [...prev, { category, filters }];
-    });
+    } catch (err) {
+      console.error('Failed to update product:', err);
+    }
   };
+
+  const deleteProduct = async (productId: string) => {
+    try {
+      const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await refreshProducts();
+      } else {
+        const err = await res.json();
+        toast({ title: "Delete failed", description: err.error, variant: "destructive" });
+      }
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+    }
+  };
+
+
+
+  const updateCategories = async (nodes: CategoryNode[]) => {
+    try {
+      const res = await fetch('/api/categories/hierarchy', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nodes),
+      });
+      if (res.ok) await refreshCategories();
+    } catch (err) {
+      console.error('Failed to update categories:', err);
+    }
+  };
+
+  const addBrand = async (brand: Partial<Brand>) => {
+    try {
+      const res = await fetch('/api/brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brand),
+      });
+      if (res.ok) await refreshBrands();
+    } catch (err) {
+      console.error('Failed to add brand:', err);
+    }
+  };
+
+  const updateBrand = async (brand: Brand) => {
+    try {
+      const res = await fetch(`/api/brands/${brand.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brand),
+      });
+      if (res.ok) await refreshBrands();
+    } catch (err) {
+      console.error('Failed to update brand:', err);
+    }
+  };
+
+  const deleteBrand = async (brandId: string) => {
+    try {
+      const res = await fetch(`/api/brands/${brandId}`, { method: 'DELETE' });
+      if (res.ok) await refreshBrands();
+    } catch (err) {
+      console.error('Failed to delete brand:', err);
+    }
+  };
+
+  const updateSchema = async (category: Category, attributes: AttributeDefinition[]) => {
+    try {
+      const res = await fetch('/api/categories/schemas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, attributes }),
+      });
+      if (res.ok) await refreshSchemas();
+    } catch (err) {
+      console.error('Failed to update schema:', err);
+    }
+  };
+
+  const updateFilterConfig = async (category: Category, filters: FilterDefinition[]) => {
+    try {
+      const res = await fetch('/api/categories/filters', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, filters }),
+      });
+      if (res.ok) await refreshFilterConfigs();
+    } catch (err) {
+      console.error('Failed to update filters:', err);
+    }
+  };
+
+
 
   // --- CART ACTIONS ---
 
@@ -437,13 +499,11 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return [...prev, { ...product, quantity: 1 }];
     });
 
-    // ✅ side effects AFTER state update
     if (shouldToastOutOfStock) {
       toast({
         title: "Out of stock",
-        description: `Only ${available} units available in stock.`,
+        description: `Only ${available} units available.`,
         variant: "destructive",
-        className: "bg-white text-red-600 border border-red-200",
       });
     }
 
@@ -451,10 +511,10 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       toast({
         title: "Added to cart",
         description: `${product.name} added successfully.`,
-        className: "bg-white text-gray-900 border border-gray-200",
       });
     }
   };
+
 
 
 
@@ -499,51 +559,92 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const isInWishlist = (productId: string) => wishlist.includes(productId);
 
-  const saveCurrentBuild = (name: string) => {
+
+  const saveCurrentBuild = async (name: string) => {
     if (cart.length === 0) return;
-    const newBuild: SavedBuild = {
-      id: `build-${Date.now()}`,
-      name,
-      date: new Date().toISOString().split('T')[0],
-      items: [...cart],
-      total: cartTotal
-    };
-    setSavedBuilds(prev => [newBuild, ...prev]);
+    try {
+      const res = await fetch('/api/builds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          total: cartTotal,
+          items: cart.map(i => ({ productId: i.id, quantity: i.quantity }))
+        }),
+      });
+      if (res.ok) await refreshSavedBuilds();
+    } catch (err) {
+      console.error('Failed to save build:', err);
+    }
   };
 
-  const loadBuild = (buildId: string) => {
+  const loadBuild = async (buildId: string) => {
     const build = savedBuilds.find(b => b.id === buildId);
     if (build) {
-      setCart(build.items);
+      const newCart: CartItem[] = [];
+      for (const item of build.items) {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          newCart.push({ ...product, quantity: item.quantity });
+        }
+      }
+      setCart(newCart);
       setCartOpen(true);
     }
   };
 
-  const deleteBuild = (buildId: string) => {
-    setSavedBuilds(prev => prev.filter(b => b.id !== buildId));
+  const deleteBuild = async (buildId: string) => {
+    try {
+      const res = await fetch(`/api/builds/${buildId}`, { method: 'DELETE' });
+      if (res.ok) await refreshSavedBuilds();
+    } catch (err) {
+      console.error('Failed to delete build:', err);
+    }
   };
 
-  const addReview = (reviewData: Omit<Review, 'id' | 'status' | 'date'>) => {
-    const newReview: Review = {
-      ...reviewData,
-      id: `rev-${Date.now()}`,
-      status: 'pending',
-      date: new Date().toISOString().split('T')[0]
-    };
-    setReviews(prev => [newReview, ...prev]);
+  const addReview = async (reviewData: Omit<Review, 'id' | 'status' | 'createdAt'>) => {
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData),
+      });
+      if (res.ok) await refreshReviews();
+    } catch (err) {
+      console.error('Failed to add review:', err);
+    }
   };
 
-  const approveReview = (id: string) => {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r));
+  const approveReview = async (id: string) => {
+    try {
+      const res = await fetch(`/api/reviews/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: ReviewStatus.APPROVED }),
+      });
+      if (res.ok) await refreshReviews();
+    } catch (err) {
+      console.error('Failed to approve review:', err);
+    }
   };
 
-  const rejectReview = (id: string) => {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
+  const rejectReview = async (id: string) => {
+    try {
+      const res = await fetch(`/api/reviews/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: ReviewStatus.REJECTED }),
+      });
+      if (res.ok) await refreshReviews();
+    } catch (err) {
+      console.error('Failed to reject review:', err);
+    }
   };
 
   const getProductReviews = (productId: string) => {
-    return reviews.filter(r => r.productId === productId && r.status === 'approved');
+    return reviews.filter(r => r.productId === productId && r.status === ReviewStatus.APPROVED);
   };
+
 
   const getProductRating = (productId: string) => {
     const productReviews = getProductReviews(productId);
@@ -552,20 +653,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { average: parseFloat((sum / productReviews.length).toFixed(1)), count: productReviews.length };
   };
 
-  const updateCategories = (nodes: CategoryNode[]) => setCategories(nodes);
-  const addBrand = (brand: Brand) => setBrands(prev => [...prev, brand]);
-  const updateBrand = (brand: Brand) => setBrands(prev => prev.map(b => b.id === brand.id ? brand : b));
-  const deleteBrand = (brandId: string) => setBrands(prev => prev.filter(b => b.id !== brandId));
 
-  const updateSchema = (category: Category, attributes: AttributeDefinition[]) => {
-    setSchemas(prev => {
-      const existing = prev.find(s => s.category === category);
-      if (existing) {
-        return prev.map(s => s.category === category ? { ...s, attributes } : s);
-      }
-      return [...prev, { category, attributes }];
-    });
-  };
+
 
   return (
     <ShopContext.Provider value={{
@@ -598,24 +687,32 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       getProductReviews,
       getProductRating,
       products,
+      refreshProducts,
       addProduct,
       updateProduct,
       deleteProduct,
       categories,
+      refreshCategories,
       updateCategories,
       brands,
+      refreshBrands,
       addBrand,
       updateBrand,
       deleteBrand,
       schemas,
+      refreshSchemas,
       updateSchema,
       filterConfigs,
+      refreshFilterConfigs,
       updateFilterConfig,
       inventory,
+      refreshInventory,
       stockMovements,
       adjustStock,
-      getInventoryItem
+      getInventoryItem,
+      isLoading
     }}>
+
       {children}
     </ShopContext.Provider>
   );
