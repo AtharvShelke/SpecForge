@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ShopProvider } from "@/context/ShopContext";
+import { BuildProvider } from "@/context/BuildContext";
 import Navbar from "@/components/Navbar";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -34,13 +35,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ShopProvider>
-          <Navbar />
-          <main className="min-h-screen pb-16 md:pb-0">
-            {children}
-          </main>
-          <CartDrawer />
-          <Footer />
-          <Toaster />
+          <BuildProvider>
+            <Navbar />
+            <main className="min-h-screen pb-16 md:pb-0">
+              {children}
+            </main>
+            <CartDrawer />
+            <Footer />
+            <Toaster />
+          </BuildProvider>
         </ShopProvider>
       </body>
     </html>

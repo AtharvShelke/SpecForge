@@ -11,14 +11,18 @@ import {
     MapPin,
     CreditCard,
 } from 'lucide-react';
-import { OrderStatus } from '@/types';
+import { Order, OrderStatus } from '@/types';
 import Link from 'next/link';
 
 const Orders: React.FC = () => {
-    const { orders } = useShop();
+    const { orders, refreshOrders } = useShop();
+
+    React.useEffect(() => {
+        refreshOrders();
+    }, [refreshOrders]);
 
     const myOrders = orders.filter(
-        (o: any) => o.customerName === 'Rahul Sharma'
+        (o) => o.customerName === 'Rahul Sharma'
     );
 
     const statusMeta: Record<OrderStatus, { icon: any; color: string }> = {
@@ -31,9 +35,9 @@ const Orders: React.FC = () => {
         [OrderStatus.RETURNED]: { icon: XCircle, color: 'text-orange-600' },
     };
 
-    const getExpectedDelivery = (order: typeof orders[number]) => {
-        const delivered = order.logs.find((l: any) => l.status === OrderStatus.DELIVERED);
-        const shipped = order.logs.find((l: any) => l.status === OrderStatus.SHIPPED);
+    const getExpectedDelivery = (order: Order) => {
+        const delivered = order.logs.find((l) => l.status === OrderStatus.DELIVERED);
+        const shipped = order.logs.find((l) => l.status === OrderStatus.SHIPPED);
 
         if (delivered) {
             return `Delivered on ${new Date(delivered.timestamp).toLocaleDateString()}`;
@@ -109,7 +113,7 @@ const Orders: React.FC = () => {
 
                                     {/* Items */}
                                     <div className="px-6 space-y-4">
-                                        {order.items.map(item => (
+                                        {order.items.map((item: any) => (
                                             <div key={item.id} className="flex gap-4">
                                                 <img
                                                     src={item.image}
@@ -133,11 +137,11 @@ const Orders: React.FC = () => {
                                     <div className="bg-gray-50 px-6 py-4 border-t flex flex-wrap justify-between gap-4">
                                         <div className="text-sm text-gray-600 flex items-center gap-2">
                                             <MapPin size={16} />
-                                            {order.shippingAddress.city}, {order.shippingAddress.state}
+                                            {order.shippingCity}, {order.shippingState}
                                         </div>
                                         <div className="text-sm text-gray-600 flex items-center gap-2">
                                             <CreditCard size={16} />
-                                            {order.payment.method}
+                                            {order.paymentMethod}
                                         </div>
                                     </div>
                                 </div>

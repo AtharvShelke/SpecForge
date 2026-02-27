@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShop } from '@/context/ShopContext';
+import { useAdmin } from '@/context/AdminContext';
 import type {
   Invoice,
   InvoiceStatus,
@@ -103,6 +104,7 @@ import { cn } from '@/lib/utils';
 // ─────────────────────────────────────────────────────────────
 
 const BILLING_PROFILE: BillingProfile = {
+  id: 'prof_default',
   companyName: 'Nexus Hardware Store',
   legalName: 'Nexus Hardware Private Limited',
   email: 'billing@nexushardware.com',
@@ -238,11 +240,16 @@ const buildInvoiceHtml = (invoice: Invoice, profile: BillingProfile): string => 
   <div class="grid2">
     <div>
       <div class="sec-label">Bill To</div>
-      <div class="sec-val"><strong style="color:#1e293b">${invoice.customer.name}</strong><br/>
-      ${invoice.customer.company ? invoice.customer.company + '<br/>' : ''}
-      ${invoice.customer.email}<br/>
-      ${invoice.customer.addressLine1 ? invoice.customer.addressLine1 + '<br/>' : ''}
-      ${invoice.customer.city ? invoice.customer.city + ', ' : ''}${invoice.customer.state || ''} ${invoice.customer.postalCode || ''}</div>
+      <div class="sec-val">
+        ${invoice.customer
+      ? `<strong style="color:#1e293b">${invoice.customer.name}</strong><br/>
+             ${invoice.customer.company ? invoice.customer.company + '<br/>' : ''}
+             ${invoice.customer.email}<br/>
+             ${invoice.customer.addressLine1 ? invoice.customer.addressLine1 + '<br/>' : ''}
+             ${invoice.customer.city ? invoice.customer.city + ', ' : ''}${invoice.customer.state || ''} ${invoice.customer.postalCode || ''}`
+      : '<strong style="color:#ef4444">Customer Information Missing</strong>'
+    }
+      </div>
     </div>
     <div>
       <div class="sec-label">Payment Info</div>
@@ -424,6 +431,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
       id: uid('inv'),
       invoiceNumber: `INV-${Date.now().toString().slice(-7)}`,
       status: 'paid',
+      customerId: pos.customer.id,
       customer: pos.customer,
       createdAt: now,
       dueDate: now,
@@ -880,8 +888,8 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
 
           <Separator className="my-4" />
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <MetaItem icon={<User size={14} />} label="Customer" value={invoice.customer.name} />
-            <MetaItem icon={<Mail size={14} />} label="Email" value={invoice.customer.email} />
+            <MetaItem icon={<User size={14} />} label="Customer" value={invoice.customer?.name || 'N/A'} />
+            <MetaItem icon={<Mail size={14} />} label="Email" value={invoice.customer?.email || 'N/A'} />
             <MetaItem icon={<Hash size={14} />} label="Items" value={`${invoice.lineItems.length} item${invoice.lineItems.length !== 1 ? 's' : ''}`} />
             <MetaItem icon={<Wallet size={14} />} label="Amount Due"
               value={
@@ -1064,10 +1072,14 @@ const StatsBar = ({ invoices }: { invoices: Invoice[] }) => {
 type PageView = 'list' | 'pos';
 
 const BillingInvoices: React.FC = () => {
-  const { products, inventory } = useShop();
+  const { products } = useShop();
+  const {
+    invoices, refreshInvoices, createInvoice, updateInvoice, deleteInvoice,
+    inventory, customers, refreshCustomers, createCustomer,
+    billingProfile, refreshBillingProfile, saveBillingProfile,
+    isLoading
+  } = useAdmin();
 
-  const [invoices, setInvoices] = useState<Invoice[]>(() => buildSampleInvoices());
-  const [customers] = useState<Customer[]>(INITIAL_CUSTOMERS);
   const [view, setView] = useState<PageView>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -1099,7 +1111,10 @@ const BillingInvoices: React.FC = () => {
     return sortedInvoices.filter(inv => {
       const matchStatus = filterStatus === 'all' || inv.status === filterStatus;
       const q = searchQuery.trim().toLowerCase();
-      const matchSearch = !q || inv.invoiceNumber.toLowerCase().includes(q) || inv.customer.name.toLowerCase().includes(q) || inv.customer.email.toLowerCase().includes(q);
+      const matchSearch = !q ||
+        inv.invoiceNumber.toLowerCase().includes(q) ||
+        (inv.customer?.name?.toLowerCase().includes(q)) ||
+        (inv.customer?.email?.toLowerCase().includes(q));
       return matchStatus && matchSearch;
     });
   }, [sortedInvoices, filterStatus, searchQuery]);
@@ -1111,8 +1126,8 @@ const BillingInvoices: React.FC = () => {
 
   // ── Handlers ──
 
-  const handlePosComplete = (invoice: Invoice) => {
-    setInvoices(prev => [invoice, ...prev]);
+  const handlePosComplete = async (invoice: Invoice) => {
+    await createInvoice(invoice);
     setSelectedId(invoice.id);
     setView('list');
     setShowMobileDetail(true);
@@ -1120,20 +1135,12 @@ const BillingInvoices: React.FC = () => {
     setTimeout(() => handlePrint(invoice), 300);
   };
 
-  const handleUpdateStatus = (id: string, status: InvoiceStatus) => {
-    const now = new Date().toISOString();
-    setInvoices(prev => prev.map(inv => {
-      if (inv.id !== id) return inv;
-      const updates: Partial<Invoice> = { status, lastUpdatedAt: now };
-      if (status === 'paid') { updates.paidAt = now; updates.amountPaid = inv.total; updates.amountDue = 0; }
-      if (status === 'cancelled') { updates.cancelledAt = now; }
-      const auditMsg = `Status changed to ${status}`;
-      return { ...inv, ...updates, audit: [...inv.audit, { id: uid('ev'), type: status as any, createdAt: now, actor: 'Admin', message: auditMsg }] };
-    }));
+  const handleUpdateStatus = async (id: string, status: InvoiceStatus) => {
+    await updateInvoice(id, { status });
   };
 
-  const handleDelete = (id: string) => {
-    setInvoices(prev => prev.filter(inv => inv.id !== id));
+  const handleDelete = async (id: string) => {
+    await deleteInvoice(id);
     if (selectedId === id) setSelectedId(null);
   };
 
@@ -1152,19 +1159,18 @@ const BillingInvoices: React.FC = () => {
   };
 
   const handleSend = (invoice: Invoice) => {
-    setSendEmail(invoice.customer.email);
+    setSendEmail(invoice.customer?.email || '');
     setSendDialog({ open: true, invoice });
   };
 
-  const confirmSend = () => {
+  const confirmSend = async () => {
     const inv = sendDialog.invoice;
     if (!inv) return;
     const now = new Date().toISOString();
-    setInvoices(prev => prev.map(i => i.id !== inv.id ? i : {
-      ...i, sentAt: now, lastUpdatedAt: now,
-      status: i.status === 'draft' ? 'pending' : i.status,
-      audit: [...i.audit, { id: uid('ev'), type: 'sent', createdAt: now, actor: 'Admin', message: `Invoice sent to ${sendEmail}` }],
-    }));
+    await updateInvoice(inv.id, {
+      sentAt: now,
+      status: inv.status === 'draft' ? 'pending' : inv.status,
+    });
     setSendDialog({ open: false, invoice: null });
   };
 
@@ -1278,7 +1284,7 @@ const BillingInvoices: React.FC = () => {
                           <ChevronRight size={14} className={cn('flex-shrink-0 transition-opacity mt-0.5',
                             isSelected ? 'text-indigo-600 opacity-100' : 'text-slate-400 opacity-0 group-hover:opacity-100')} />
                         </div>
-                        <p className="text-sm font-semibold text-slate-800 truncate mb-0.5">{inv.customer.name}</p>
+                        <p className="text-sm font-semibold text-slate-800 truncate mb-0.5">{inv.customer?.name || 'Unknown'}</p>
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs text-slate-400 flex items-center gap-1">
                             <Calendar size={11} /> {fmtDate(inv.createdAt)}
@@ -1388,6 +1394,7 @@ function buildSampleInvoices(): Invoice[] {
       id: uid('inv'),
       invoiceNumber: overrides.invoiceNumber,
       status: overrides.status,
+      customerId: overrides.customer?.id || '',
       customer: overrides.customer,
       createdAt: overrides.createdAt ?? d(10),
       dueDate: overrides.dueDate ?? d(-20),

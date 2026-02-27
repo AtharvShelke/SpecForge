@@ -4,7 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, X, Wrench, Check, Filter, SlidersHorizontal } from 'lucide-react';
 import { CategoryNode } from '../data/categoryTree';
 import { useShop } from '../context/ShopContext';
-import { Category, Product, FilterDefinition } from '../types';
+import { useBuild } from '../context/BuildContext';
+import { Category, Product, FilterDefinition, CategoryFilterConfig } from '../types';
 
 interface SidebarProps {
   nodes: CategoryNode[];
@@ -119,8 +120,8 @@ const FilterGroup: React.FC<{
     if (key === 'stock_status') return p.stock > 0 ? 'In Stock' : 'Out of Stock';
     if (key.startsWith('specs.')) {
       const specKey = key.split('.')[1];
-      const val = p.specs[specKey];
-      return val !== undefined ? String(val) : undefined;
+      const spec = p.specs.find(s => s.key === specKey);
+      return spec?.value;
     }
     return undefined;
   };
@@ -236,15 +237,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   onFilterChange,
   onClearFilters,
 }) => {
-  const { isBuildMode, toggleBuildMode, cart, filterConfigs } = useShop();
+  const { cart, filterConfigs } = useShop();
+  const { isBuildMode, toggleBuildMode } = useBuild();
 
   const categoryFilters = useMemo(() => {
     if (!activeCategory) return [];
-    return filterConfigs.find(c => c.category === activeCategory)?.filters || [];
+    return filterConfigs.find((c: CategoryFilterConfig) => c.category === activeCategory)?.filters || [];
   }, [activeCategory, filterConfigs]);
 
   const visibleFilters = useMemo(() => {
-    return categoryFilters.filter(filter => {
+    return categoryFilters.filter((filter: FilterDefinition) => {
       if (!filter.dependency) return true;
       const parentSelection = selectedFilters[filter.dependency.key] || [];
       return parentSelection.includes(filter.dependency.value);
@@ -499,7 +501,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Dynamic category filters */}
-              {visibleFilters.map(filter => (
+              {visibleFilters.map((filter: FilterDefinition) => (
                 <FilterGroup
                   key={filter.key}
                   filter={filter}

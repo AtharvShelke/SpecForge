@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useShop } from '@/context/ShopContext';
+import { useAdmin } from '@/context/AdminContext';
 import { StockMovementType } from '@/types';
 import {
     AlertTriangle,
@@ -17,12 +18,12 @@ import {
 } from 'lucide-react';
 
 const InventoryManager = () => {
+    const { products } = useShop();
     const {
-        products,
         inventory,
         stockMovements,
         adjustStock,
-    } = useShop();
+    } = useAdmin();
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
         isOpen: boolean;
@@ -363,8 +364,8 @@ const InventoryManager = () => {
                                         </td>
                                         <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs">
                                             <span className={`flex items-center gap-1.5 ${mov.type === 'INWARD'
-                                                    ? 'text-green-600'
-                                                    : 'text-red-600'
+                                                ? 'text-green-600'
+                                                : 'text-red-600'
                                                 }`}>
                                                 {mov.type === 'INWARD' ? (
                                                     <ArrowDownRight size={14} />

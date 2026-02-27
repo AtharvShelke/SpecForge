@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { PRODUCTS } from '@/data/mockData';
 import { useShop } from '@/context/ShopContext';
 import {
     Star,
@@ -14,7 +13,7 @@ import {
     XCircle,
     ArrowLeft,
 } from 'lucide-react';
-import { CompatibilityLevel } from '@/types';
+import { CompatibilityLevel, specsToFlat, Review } from '@/types';
 import { validateBuild } from '@/services/compatibility';
 
 const CATEGORY_HIGHLIGHTS: Record<string, string[]> = {
@@ -85,9 +84,9 @@ const formatKey = (key: string) =>
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const product = PRODUCTS.find((p: any) => p.id === id);
 
     const {
+        products,
         cart,
         addToCart,
         isInWishlist,
@@ -96,7 +95,15 @@ const ProductDetail: React.FC = () => {
         getProductReviews,
         getProductRating,
         addReview,
+        refreshReviews,
     } = useShop();
+
+    React.useEffect(() => {
+        refreshReviews();
+    }, [refreshReviews]);
+
+    const product = products.find((p) => p.id === id);
+    const flatSpecs = useMemo(() => product ? specsToFlat(product.specs) : {}, [product]);
 
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [reviewForm, setReviewForm] = useState({
@@ -173,7 +180,7 @@ const ProductDetail: React.FC = () => {
 
                                 <div className="text-sm text-zinc-500 mt-2 space-y-1">
                                     <div>
-                                        <strong>Brand:</strong> {product.specs.brand}
+                                        <strong>Brand:</strong> {flatSpecs.brand ?? 'N/A'}
                                     </div>
                                     <div>
                                         <strong>SKU:</strong> {product.sku}
@@ -256,9 +263,9 @@ const ProductDetail: React.FC = () => {
                         <h2 className="text-xl font-bold mb-4">Key Features</h2>
                         <ul className="list-disc pl-6 space-y-2 text-zinc-700">
                             {highlights.map(key =>
-                                product.specs[key] ? (
+                                flatSpecs[key] ? (
                                     <li key={key}>
-                                        <strong>{formatKey(key)}:</strong> {product.specs[key]}
+                                        <strong>{formatKey(key)}:</strong> {flatSpecs[key]}
                                     </li>
                                 ) : null
                             )}
@@ -270,7 +277,7 @@ const ProductDetail: React.FC = () => {
                 <section className="mb-12">
                     <h2 className="text-xl font-bold mb-4">Technical Details</h2>
                     <div className="border border-zinc-200 rounded-xl overflow-hidden">
-                        {Object.entries(product.specs).map(([key, value], i) => (
+                        {Object.entries(flatSpecs).map(([key, value], i) => (
                             <div
                                 key={key}
                                 className={`grid grid-cols-3 px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-zinc-50' : 'bg-white'
@@ -279,7 +286,7 @@ const ProductDetail: React.FC = () => {
                                 <div className="font-medium text-zinc-600">
                                     {formatKey(key)}
                                 </div>
-                                <div className="col-span-2 text-zinc-900">{value}</div>
+                                <div className="col-span-2 text-zinc-900">{String(value)}</div>
                             </div>
                         ))}
                     </div>
@@ -357,7 +364,7 @@ const ProductDetail: React.FC = () => {
                             No reviews yet. Be the first.
                         </p>
                     ) : (
-                        reviews.map(r => (
+                        reviews.map((r: Review) => (
                             <div key={r.id} className="border-t py-4">
                                 <div className="font-semibold">{r.customerName}</div>
                                 <div className="flex text-amber-400">

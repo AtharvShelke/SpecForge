@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useShop } from '@/context/ShopContext';
+import { useAdmin } from '@/context/AdminContext';
 import { Category, CategoryNode, FilterDefinition } from '@/types';
 import {
     ChevronDown,
@@ -19,10 +20,12 @@ import {
 const CategoryManager = () => {
     const {
         categories,
+    } = useShop();
+    const {
         updateCategories,
         filterConfigs,
         updateFilterConfig,
-    } = useShop();
+    } = useAdmin();
 
     // --- HIERARCHY STATE ---
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -336,8 +339,8 @@ const CategoryManager = () => {
                     <button
                         onClick={() => setConfigMode('hierarchy')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${configMode === 'hierarchy'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         <Layers size={16} /> Hierarchy
@@ -345,8 +348,8 @@ const CategoryManager = () => {
                     <button
                         onClick={() => setConfigMode('filters')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${configMode === 'filters'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         <ListFilter size={16} /> Filters

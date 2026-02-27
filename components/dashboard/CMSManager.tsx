@@ -9,8 +9,9 @@ import {
   RefreshCw, RotateCcw, Save, Sparkles, Star, Tag, Trash2, Type,
   Undo, Upload, X, Zap, Shield, Layers, AlignLeft, ExternalLink,
 } from 'lucide-react';
-import { LandingPageCMS, HeroContent, TrustFeature, CategoryItem, CMSVersion } from '@/types';
-import { cmsService } from '@/data/cmsData';
+import { LandingPageCMS, HeroContent, TrustFeature, CategoryItem, CMSVersion, CMSContent } from '@/types';
+import { useShop } from '@/context/ShopContext';
+import { useAdmin } from '@/context/AdminContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -141,7 +142,7 @@ const IconSelect = ({ value, onChange }: { value: string; onChange: (v: string) 
 // LIVE MINI PREVIEW
 // ─────────────────────────────────────────────────────────────
 
-const MiniPreview = ({ content, activeSection }: { content: LandingPageCMS; activeSection: SectionKey }) => {
+const MiniPreview = ({ content, activeSection }: { content: CMSContent; activeSection: SectionKey }) => {
   const { hero, categories, trustIndicators, finalCTA, featuredProducts } = content.sections;
 
   return (
@@ -219,7 +220,7 @@ const MiniPreview = ({ content, activeSection }: { content: LandingPageCMS; acti
 // ─────────────────────────────────────────────────────────────
 
 const HeroEditor = ({ content, updateHero }: {
-  content: LandingPageCMS;
+  content: CMSContent;
   updateHero: (u: Partial<HeroContent>) => void;
 }) => {
   const hero = content.sections.hero;
@@ -365,7 +366,7 @@ const HeroEditor = ({ content, updateHero }: {
   );
 };
 
-const CategoriesEditor = ({ content, setContent }: { content: LandingPageCMS; setContent: React.Dispatch<React.SetStateAction<LandingPageCMS>> }) => {
+const CategoriesEditor = ({ content, setContent }: { content: CMSContent; setContent: React.Dispatch<React.SetStateAction<CMSContent | null>> }) => {
   const cats = content.sections.categories;
 
   const addCategory = () => {
@@ -376,14 +377,23 @@ const CategoriesEditor = ({ content, setContent }: { content: LandingPageCMS; se
       categoryKey: 'Processor',
       order: cats.categories.length + 1,
     };
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, categories: [...prev.sections.categories.categories, newCat] } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, categories: [...prev.sections.categories.categories, newCat] } } };
+    });
   };
 
   const update = (id: string, updates: Partial<CategoryItem>) =>
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, categories: prev.sections.categories.categories.map(c => c.id === id ? { ...c, ...updates } : c) } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, categories: prev.sections.categories.categories.map(c => c.id === id ? { ...c, ...updates } : c) } } };
+    });
 
   const remove = (id: string) =>
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, categories: prev.sections.categories.categories.filter(c => c.id !== id) } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, categories: prev.sections.categories.categories.filter(c => c.id !== id) } } };
+    });
 
   return (
     <div className="space-y-4">
@@ -391,7 +401,10 @@ const CategoriesEditor = ({ content, setContent }: { content: LandingPageCMS; se
         <div>
           <FieldLabel>Title</FieldLabel>
           <Input value={cats.sectionTitle}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(prev => ({ ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, sectionTitle: e.target.value } } }))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(prev => {
+              if (!prev) return prev;
+              return { ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, sectionTitle: e.target.value } } };
+            })}
             className="h-8 text-sm border-slate-200" />
         </div>
       </FieldGroup>
@@ -462,10 +475,13 @@ const CategoriesEditor = ({ content, setContent }: { content: LandingPageCMS; se
   );
 };
 
-const FeaturedEditor = ({ content, setContent }: { content: LandingPageCMS; setContent: React.Dispatch<React.SetStateAction<LandingPageCMS>> }) => {
+const FeaturedEditor = ({ content, setContent }: { content: CMSContent; setContent: React.Dispatch<React.SetStateAction<CMSContent | null>> }) => {
   const fp = content.sections.featuredProducts;
   const update = (patch: Partial<typeof fp>) =>
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, featuredProducts: { ...prev.sections.featuredProducts, ...patch } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, featuredProducts: { ...prev.sections.featuredProducts, ...patch } } };
+    });
 
   return (
     <div className="space-y-4">
@@ -502,14 +518,20 @@ const FeaturedEditor = ({ content, setContent }: { content: LandingPageCMS; setC
   );
 };
 
-const TrustEditor = ({ content, setContent }: { content: LandingPageCMS; setContent: React.Dispatch<React.SetStateAction<LandingPageCMS>> }) => {
+const TrustEditor = ({ content, setContent }: { content: CMSContent; setContent: React.Dispatch<React.SetStateAction<CMSContent | null>> }) => {
   const features = content.sections.trustIndicators.features;
 
   const update = (id: string, updates: Partial<TrustFeature>) =>
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, trustIndicators: { features: prev.sections.trustIndicators.features.map(f => f.id === id ? { ...f, ...updates } : f) } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, trustIndicators: { features: prev.sections.trustIndicators.features.map(f => f.id === id ? { ...f, ...updates } : f) } } };
+    });
 
   const remove = (id: string) =>
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, trustIndicators: { features: prev.sections.trustIndicators.features.filter(f => f.id !== id) } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, trustIndicators: { features: prev.sections.trustIndicators.features.filter(f => f.id !== id) } } };
+    });
 
   const add = () => {
     const newFeature: TrustFeature = {
@@ -519,7 +541,10 @@ const TrustEditor = ({ content, setContent }: { content: LandingPageCMS; setCont
       description: 'Feature description',
       order: features.length + 1,
     };
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, trustIndicators: { features: [...prev.sections.trustIndicators.features, newFeature] } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, trustIndicators: { features: [...prev.sections.trustIndicators.features, newFeature] } } };
+    });
   };
 
   return (
@@ -586,10 +611,13 @@ const TrustEditor = ({ content, setContent }: { content: LandingPageCMS; setCont
   );
 };
 
-const CtaEditor = ({ content, setContent }: { content: LandingPageCMS; setContent: React.Dispatch<React.SetStateAction<LandingPageCMS>> }) => {
+const CtaEditor = ({ content, setContent }: { content: CMSContent; setContent: React.Dispatch<React.SetStateAction<CMSContent | null>> }) => {
   const cta = content.sections.finalCTA;
   const update = (patch: Partial<typeof cta>) =>
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, finalCTA: { ...prev.sections.finalCTA, ...patch } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, finalCTA: { ...prev.sections.finalCTA, ...patch } } };
+    });
 
   return (
     <div className="space-y-4">
@@ -646,13 +674,13 @@ const CtaEditor = ({ content, setContent }: { content: LandingPageCMS; setConten
 // HISTORY DRAWER
 // ─────────────────────────────────────────────────────────────
 
-const HistoryDrawer = ({ open, onClose, onRestore }: {
+const HistoryDrawer = ({ open, onClose, onRestore, versions }: {
   open: boolean;
   onClose: () => void;
   onRestore: (version: CMSVersion) => void;
+  versions: CMSVersion[];
 }) => {
-  const history = cmsService.getHistory();
-  const published = [...history.versions].filter(v => v.content.status === 'published').reverse();
+  const published = [...versions].reverse();
 
   return (
     <Dialog open={open} onOpenChange={(open: boolean) => !open && onClose()}>
@@ -682,7 +710,7 @@ const HistoryDrawer = ({ open, onClose, onRestore }: {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-slate-800 text-sm">Version {ver.version}</span>
+                        <span className="font-bold text-slate-800 text-sm">Version {ver.id}</span>
                         {idx === 0 && (
                           <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-300 bg-blue-50 px-1.5 py-0.5">Current</Badge>
                         )}
@@ -690,8 +718,8 @@ const HistoryDrawer = ({ open, onClose, onRestore }: {
                       <p className="text-xs text-slate-500">
                         {new Date(ver.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
-                      {ver.note && (
-                        <p className="text-xs text-slate-600 mt-1 italic">{ver.note}</p>
+                      {ver.label && (
+                        <p className="text-xs text-slate-600 mt-1 italic">{ver.label}</p>
                       )}
                     </div>
                     {idx !== 0 && (
@@ -755,7 +783,10 @@ const PublishDialog = ({ open, onClose, onConfirm, isSaving }: {
 // ─────────────────────────────────────────────────────────────
 
 const CMSManager: React.FC = () => {
-  const [content, setContent] = useState<LandingPageCMS>(() => cmsService.getPublishedContent());
+  const { cmsContent, refreshCMS } = useShop();
+  const { cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion } = useAdmin();
+  const [content, setContent] = useState<CMSContent | null>(null);
+  const [activePage, setActivePage] = useState<LandingPageCMS | null>(null);
   const [isDraft, setIsDraft] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>('hero');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -764,48 +795,66 @@ const CMSManager: React.FC = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [showMobileNav, setShowMobileNav] = useState(false);
 
+  // Sync local editor state from ShopContext CMS content
   useEffect(() => {
-    const draft = cmsService.getDraftContent();
-    if (draft) { setContent(draft); setIsDraft(true); }
-  }, []);
+    if (cmsContent && !content) {
+      setContent(cmsContent.content);
+      setActivePage(cmsContent);
+    }
+  }, [cmsContent, content]);
 
   // ── Update helpers ──
 
   const updateHero = useCallback((updates: Partial<HeroContent>) => {
-    setContent(prev => ({ ...prev, sections: { ...prev.sections, hero: { ...prev.sections.hero, ...updates } } }));
+    setContent(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: { ...prev.sections, hero: { ...prev.sections.hero, ...updates } } };
+    });
     setIsDraft(true);
   }, []);
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
+    if (!content) return;
     setSaveStatus('saving');
-    setTimeout(() => {
-      cmsService.saveDraft(content);
+    try {
+      await saveCMS({ content, isPublished: false });
       setIsDraft(true);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2500);
-    }, 400);
+    } catch {
+      setSaveStatus('error');
+    }
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
+    if (!content) return;
     setSaveStatus('saving');
-    setTimeout(() => {
-      cmsService.publishContent(content);
+    try {
+      await saveCMS({ content, isPublished: true });
       setIsDraft(false);
       setSaveStatus('saved');
       setShowPublishDialog(false);
       setTimeout(() => setSaveStatus('idle'), 2500);
-    }, 600);
+    } catch {
+      setSaveStatus('error');
+    }
   };
 
   const handleDiscard = () => {
-    const published = cmsService.getPublishedContent();
-    setContent(published);
-    setIsDraft(false);
+    if (cmsContent) {
+      setContent(cmsContent.content);
+      setActivePage(cmsContent);
+      setIsDraft(false);
+    }
   };
 
-  const handleRestoreVersion = (version: CMSVersion) => {
-    cmsService.restoreVersion(version.id);
-    setContent(cmsService.getPublishedContent());
+  const handleRestoreVersion = async (version: CMSVersion) => {
+    await restoreCMSVersion(version.id);
+    await refreshCMS();
+    if (cmsContent) {
+      setContent(cmsContent.content);
+      setActivePage(cmsContent);
+    }
     setIsDraft(false);
     setShowHistory(false);
   };
@@ -829,10 +878,19 @@ const CMSManager: React.FC = () => {
     );
     return (
       <span className="flex items-center gap-1.5 text-xs text-emerald-600">
-        <CheckCircle2 size={12} /> Published · v{content.version}
+        <CheckCircle2 size={12} /> Published
       </span>
     );
-  }, [saveStatus, isDraft, content.version]);
+  }, [saveStatus, isDraft]);
+
+  // Guard: if CMS content not loaded yet
+  if (!content) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 size={24} className="animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   const activeNavItem = SECTION_NAV.find(n => n.key === activeSection)!;
 
@@ -957,8 +1015,8 @@ const CMSManager: React.FC = () => {
             {/* Footer: last saved */}
             <div className="px-4 py-3 border-t border-slate-100">
               <p className="text-[10px] text-slate-400 leading-relaxed">
-                <strong className="text-slate-500">v{content.version}</strong> · Last updated{' '}
-                {new Date(content.lastUpdated).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                Last updated{' '}
+                {activePage?.updatedAt ? new Date(activePage.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'N/A'}
               </p>
             </div>
           </div>
@@ -1053,6 +1111,7 @@ const CMSManager: React.FC = () => {
         open={showHistory}
         onClose={() => setShowHistory(false)}
         onRestore={handleRestoreVersion}
+        versions={cmsVersions}
       />
       <PublishDialog
         open={showPublishDialog}

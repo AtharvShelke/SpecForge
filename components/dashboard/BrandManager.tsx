@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import { useShop } from '@/context/ShopContext';
+import { useAdmin } from '@/context/AdminContext';
 import { Category } from '@/types';
 import { Trash, Plus, Tag, AlertCircle } from 'lucide-react';
 
 const BrandManager = () => {
-    const { brands, addBrand, deleteBrand } = useShop();
+    const { brands } = useShop();
+    const { addBrand, deleteBrand } = useAdmin();
 
     const [newBrandName, setNewBrandName] = useState('');
     const [selectedCats, setSelectedCats] = useState<Category[]>([]);
@@ -23,7 +25,7 @@ const BrandManager = () => {
         addBrand({
             id: `brand-${Date.now()}`,
             name: newBrandName.trim(),
-            linkedCategories: selectedCats
+            categories: selectedCats
         });
 
         setNewBrandName('');
@@ -156,7 +158,7 @@ const BrandManager = () => {
                                                 {brand.name}
                                             </h4>
                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                {brand.linkedCategories.length} {brand.linkedCategories.length === 1 ? 'category' : 'categories'}
+                                                {brand.categories.length} {brand.categories.length === 1 ? 'category' : 'categories'}
                                             </p>
                                         </div>
                                         <button
@@ -168,9 +170,9 @@ const BrandManager = () => {
                                         </button>
                                     </div>
 
-                                    {brand.linkedCategories.length > 0 ? (
+                                    {brand.categories.length > 0 ? (
                                         <div className="flex flex-wrap gap-1.5">
-                                            {brand.linkedCategories.map(cat => (
+                                            {brand.categories.map(cat => (
                                                 <span
                                                     key={cat}
                                                     className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"

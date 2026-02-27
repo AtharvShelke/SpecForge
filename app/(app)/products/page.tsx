@@ -1,7 +1,8 @@
 'use client'
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Category, Product, CompatibilityLevel } from '@/types';
+import { Category, Product, CompatibilityLevel, specsToFlat } from '@/types';
 import { useShop } from '@/context/ShopContext';
+import { useBuild } from '@/context/BuildContext';
 import { Search, Plus, CheckCircle, AlertTriangle, XCircle, Heart, Star, Filter, Grid3x3, Grid2x2, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { validateBuild } from '@/services/compatibility';
 // import { Link, useSearchParams } from 'react-router-dom';
@@ -20,12 +21,11 @@ const Products: React.FC = () => {
         removeFromWishlist,
         isInWishlist,
         getProductRating,
-        isBuildMode,
-        toggleBuildMode,
         categories,
         products
     } = useShop();
-
+    const { isBuildMode, toggleBuildMode } = useBuild();
+    console.log(products)
     const searchParams = useSearchParams();
     const initialCategoryParam = searchParams.get('category');
     const initialModeParam = searchParams.get('mode');
@@ -163,26 +163,39 @@ const Products: React.FC = () => {
             const mobo = cart.find(i => i.category === Category.MOTHERBOARD);
             const activeCategory = activeTab.category;
 
-            if (activeCategory === Category.MOTHERBOARD && cpu) {
-                result = result.filter(p => p.specs.socket === cpu.specs.socket);
+            const cpuSpecs = cpu ? specsToFlat(cpu.specs) : null;
+            const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
+
+            if (activeCategory === Category.MOTHERBOARD && cpuSpecs) {
+                result = result.filter(p => {
+                    const pSpecs = specsToFlat(p.specs);
+                    return pSpecs.socket === cpuSpecs.socket;
+                });
             }
-            if (activeCategory === Category.PROCESSOR && mobo) {
-                result = result.filter(p => p.specs.socket === mobo.specs.socket);
+            if (activeCategory === Category.PROCESSOR && moboSpecs) {
+                result = result.filter(p => {
+                    const pSpecs = specsToFlat(p.specs);
+                    return pSpecs.socket === moboSpecs.socket;
+                });
             }
-            if (activeCategory === Category.RAM && (cpu || mobo)) {
-                const type = mobo?.specs.ramType || cpu?.specs.ramType;
-                if (type) result = result.filter(p => p.specs.ramType === type);
+            if (activeCategory === Category.RAM && (cpuSpecs || moboSpecs)) {
+                const type = moboSpecs?.ramType || cpuSpecs?.ramType;
+                if (type) result = result.filter(p => {
+                    const pSpecs = specsToFlat(p.specs);
+                    return pSpecs.ramType === type;
+                });
             }
         }
 
         if (selectedNode) {
             result = result.filter(product => {
                 let matches = true;
-                if (selectedNode.brand && product.specs.brand!.toLowerCase() !== selectedNode.brand.toLowerCase()) matches = false;
+                const flattenedSpecs = specsToFlat(product.specs);
+                if (selectedNode.brand && product.brand?.name.toLowerCase() !== selectedNode.brand.toLowerCase()) matches = false;
                 if (matches && selectedNode.query) {
                     const query = selectedNode.query.toLowerCase();
                     const inName = product.name.toLowerCase().includes(query);
-                    const inSpecs = Object.values(product.specs).some(val =>
+                    const inSpecs = Object.values(flattenedSpecs).some(val =>
                         val && String(val).toLowerCase().includes(query)
                     );
                     if (!inName && !inSpecs) matches = false;
@@ -202,7 +215,8 @@ const Products: React.FC = () => {
             } else if (key.startsWith('specs.')) {
                 const specKey = key.split('.')[1];
                 result = result.filter(p => {
-                    const val = p.specs[specKey];
+                    const flattened = specsToFlat(p.specs);
+                    const val = flattened[specKey];
                     return val && selectedValues.includes(String(val));
                 });
             }

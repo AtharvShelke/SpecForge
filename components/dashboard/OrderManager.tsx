@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useShop } from '@/context/ShopContext';
+import { useAdmin } from '@/context/AdminContext';
 import { Order, OrderStatus, CartItem } from '@/types';
 import {
   ArrowLeft,
@@ -241,9 +242,9 @@ const generateInvoiceHTML = (order: Order): string => {
         <div class="section-value">
           <strong>${order.customerName}</strong><br/>
           ${order.email}<br/>
-          ${order.shippingAddress?.street}<br/>
-          ${order.shippingAddress?.city}, ${order.shippingAddress?.state} – ${order.shippingAddress?.zip}<br/>
-          ${order.shippingAddress?.country}
+          ${order.shippingStreet}<br/>
+          ${order.shippingCity}, ${order.shippingState} – ${order.shippingZip}<br/>
+          ${order.shippingCountry}
         </div>
       </div>
       <div>
@@ -251,9 +252,9 @@ const generateInvoiceHTML = (order: Order): string => {
         <div class="section-value">
           <strong>Order ID:</strong> ${order.id}<br/>
           <strong>Order Date:</strong> ${new Date(order.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}<br/>
-          <strong>Payment:</strong> ${order.payment.method}<br/>
-          ${order.payment.transactionId ? `<strong>TXN ID:</strong> ${order.payment.transactionId}<br/>` : ''}
-          <strong>Payment Status:</strong> ${order.payment.status}
+          <strong>Payment:</strong> ${order.paymentMethod}<br/>
+          ${order.paymentTransactionId ? `<strong>TXN ID:</strong> ${order.paymentTransactionId}<br/>` : ''}
+          <strong>Payment Status:</strong> ${order.paymentStatus}
         </div>
       </div>
     </div>
@@ -354,7 +355,7 @@ const StatsBar = ({ orders }: { orders: Order[] }) => {
 // MAIN ORDER MANAGER
 // ─────────────────────────────────────────────────────────────
 const OrderManager = () => {
-  const { orders, updateOrderStatus, inventory, adjustStock } = useShop();
+  const { orders, updateOrderStatus, inventory, adjustStock } = useAdmin();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
@@ -716,13 +717,13 @@ const OrderManager = () => {
                         label="Payment"
                         value={
                           <span className="flex items-center gap-1.5">
-                            {selectedOrder.payment.method}
+                            {selectedOrder.paymentMethod}
                             <span className={cn('text-xs px-1.5 py-0.5 rounded font-semibold', {
-                              'bg-emerald-50 text-emerald-700': selectedOrder.payment.status === 'Success',
-                              'bg-amber-50 text-amber-700': selectedOrder.payment.status === 'Pending',
-                              'bg-red-50 text-red-600': selectedOrder.payment.status === 'Failed',
+                              'bg-emerald-50 text-emerald-700': selectedOrder.paymentStatus === 'Success',
+                              'bg-amber-50 text-amber-700': selectedOrder.paymentStatus === 'Pending',
+                              'bg-red-50 text-red-600': selectedOrder.paymentStatus === 'Failed',
                             })}>
-                              {selectedOrder.payment.status}
+                              {selectedOrder.paymentStatus}
                             </span>
                           </span>
                         }
@@ -731,10 +732,10 @@ const OrderManager = () => {
                     </div>
 
                     {/* Transaction ID */}
-                    {selectedOrder.payment.transactionId && (
+                    {selectedOrder.paymentTransactionId && (
                       <div className="mt-3 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
                         <span className="text-xs text-slate-400 font-medium">TXN ID</span>
-                        <span className="font-mono text-xs text-slate-600">{selectedOrder.payment.transactionId}</span>
+                        <span className="font-mono text-xs text-slate-600">{selectedOrder.paymentTransactionId}</span>
                       </div>
                     )}
                   </CardContent>
@@ -881,12 +882,12 @@ const OrderManager = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="px-4 py-3">
-                        {selectedOrder.shippingAddress ? (
+                        {selectedOrder.shippingStreet ? (
                           <div className="text-sm text-slate-600 leading-relaxed space-y-0.5">
                             <p className="font-semibold text-slate-800">{selectedOrder.customerName}</p>
-                            <p>{selectedOrder.shippingAddress.street}</p>
-                            <p>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state}</p>
-                            <p className="font-mono text-xs text-slate-400">{selectedOrder.shippingAddress.zip} · {selectedOrder.shippingAddress.country}</p>
+                            <p>{selectedOrder.shippingStreet}</p>
+                            <p>{selectedOrder.shippingCity}, {selectedOrder.shippingState}</p>
+                            <p className="font-mono text-xs text-slate-400">{selectedOrder.shippingZip} · {selectedOrder.shippingCountry}</p>
                           </div>
                         ) : (
                           <p className="text-sm text-slate-400 italic">No address provided</p>
@@ -1151,8 +1152,8 @@ const OrderManager = () => {
                     <p className="font-bold text-slate-800">{selectedOrder.customerName}</p>
                     <p className="text-xs text-slate-500 mt-1">{selectedOrder.email}</p>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      {selectedOrder.shippingAddress?.street}<br />
-                      {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} {selectedOrder.shippingAddress?.zip}
+                      {selectedOrder.shippingStreet}<br />
+                      {selectedOrder.shippingCity}, {selectedOrder.shippingState} {selectedOrder.shippingZip}
                     </p>
                   </div>
                   <div>
@@ -1161,8 +1162,8 @@ const OrderManager = () => {
                       {[
                         { label: 'Order ID', value: selectedOrder.id },
                         { label: 'Date', value: new Date(selectedOrder.date).toLocaleDateString('en-IN') },
-                        { label: 'Payment', value: selectedOrder.payment.method },
-                        { label: 'Status', value: selectedOrder.payment.status },
+                        { label: 'Payment', value: selectedOrder.paymentMethod },
+                        { label: 'Status', value: selectedOrder.paymentStatus },
                       ].map(row => (
                         <div key={row.label} className="flex items-center gap-2 text-xs">
                           <span className="text-slate-400 w-16 flex-shrink-0">{row.label}</span>

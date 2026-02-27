@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, ReactNode } from 'react';
-import { useShop } from '@/context/ShopContext';
+import { useBuild } from '@/context/BuildContext';
 import { validateBuild } from '@/services/compatibility';
 import {
   Save,
@@ -22,7 +22,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Category, CompatibilityLevel, SavedBuild } from '@/types';
+import { Category, CompatibilityLevel, SavedBuild, SavedBuildItem, Product, CartItem } from '@/types';
 
 // -------------------------------------------------------------------
 // Category Icon Map
@@ -45,18 +45,19 @@ const CATEGORY_ICON: Record<Category, ReactNode> = {
 // Smart Cover Image (GPU > CPU > first item)
 // -------------------------------------------------------------------
 function getCoverImage(build: SavedBuild): string | null {
-  const gpu = build.items.find((i) => i.category === Category.GPU);
-  if (gpu) return gpu.image;
-  const cpu = build.items.find((i) => i.category === Category.PROCESSOR);
-  if (cpu) return cpu.image;
-  return build.items[0]?.image ?? null;
+  const gpu = build.items.find((i) => i.product?.category === Category.GPU);
+  if (gpu?.product) return gpu.product.image;
+  const cpu = build.items.find((i) => i.product?.category === Category.PROCESSOR);
+  if (cpu?.product) return cpu.product.image;
+  return build.items[0]?.product?.image ?? null;
 }
 
 // -------------------------------------------------------------------
 // Compatibility Badge (small, for card)
 // -------------------------------------------------------------------
 const CompatChip: React.FC<{ build: SavedBuild }> = ({ build }) => {
-  const report = useMemo(() => validateBuild(build.items), [build]);
+  const cartItems = useMemo(() => build.items.map(i => i.product ? ({ ...i.product, quantity: i.quantity }) : null).filter(Boolean) as CartItem[], [build]);
+  const report = useMemo(() => validateBuild(cartItems), [cartItems]);
 
   if (report.status === CompatibilityLevel.INCOMPATIBLE)
     return (
@@ -93,7 +94,8 @@ const BuildModal: React.FC<{
   onClose: () => void;
   onLoad: () => void;
 }> = ({ build, onClose, onLoad }) => {
-  const report = useMemo(() => validateBuild(build.items), [build]);
+  const cartItems = useMemo(() => build.items.map(i => i.product ? ({ ...i.product, quantity: i.quantity }) : null).filter(Boolean) as CartItem[], [build]);
+  const report = useMemo(() => validateBuild(cartItems), [cartItems]);
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
@@ -123,7 +125,7 @@ const BuildModal: React.FC<{
           <div>
             <h2 className="text-xl font-bold text-zinc-900">{build.name}</h2>
             <p className="text-sm text-zinc-400 mt-0.5">
-              {build.date} · {build.items.length} components · ₹{build.total.toLocaleString('en-IN')}
+              {new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components · ₹{build.total.toLocaleString('en-IN')}
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg hover:bg-zinc-100 transition-all">
@@ -145,24 +147,24 @@ const BuildModal: React.FC<{
           {build.items.map((item) => (
             <div key={item.id} className="flex items-center gap-4 border border-zinc-100 rounded-xl p-3.5 hover:bg-zinc-50 transition-colors">
               <div className="w-14 h-14 bg-zinc-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                <img src={item.image} alt={item.name} className="w-full h-full object-contain p-1.5" />
+                <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-contain p-1.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-zinc-900 text-sm truncate">{item.name}</p>
+                <p className="font-semibold text-zinc-900 text-sm truncate">{item.product?.name}</p>
                 <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-0.5">
-                  <span className="text-zinc-300">{CATEGORY_ICON[item.category]}</span>
-                  {item.category} · Qty {item.quantity}
+                  <span className="text-zinc-300">{item.product ? CATEGORY_ICON[item.product.category] : null}</span>
+                  {item.product?.category} · Qty {item.quantity}
                 </div>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {Object.entries(item.specs).slice(0, 3).map(([k, v]) => v ? (
+                  {item.product && Object.entries(item.product.specs).slice(0, 3).map(([k, v]) => (
                     <span key={k} className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded-full">
-                      {k}: {v}
+                      {k}: {typeof v === 'object' ? (v as any).value : v}
                     </span>
-                  ) : null)}
+                  ))}
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-bold text-zinc-900 text-sm">₹{item.price.toLocaleString('en-IN')}</p>
+                <p className="font-bold text-zinc-900 text-sm">₹{item.product?.price.toLocaleString('en-IN')}</p>
                 {item.quantity > 1 && (
                   <p className="text-[10px] text-zinc-400">×{item.quantity}</p>
                 )}
@@ -200,7 +202,11 @@ const BuildModal: React.FC<{
 // Main Page
 // -------------------------------------------------------------------
 export default function Builds() {
-  const { savedBuilds, loadBuild, deleteBuild } = useShop();
+  const { savedBuilds, loadBuild, deleteBuild, refreshSavedBuilds } = useBuild();
+
+  React.useEffect(() => {
+    refreshSavedBuilds();
+  }, [refreshSavedBuilds]);
   const [activeBuild, setActiveBuild] = useState<SavedBuild | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -269,7 +275,7 @@ export default function Builds() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {savedBuilds.map((build) => {
+            {savedBuilds.map((build: SavedBuild) => {
               const coverImg = getCoverImage(build);
               const isCopied = copiedId === build.id;
 
@@ -299,15 +305,15 @@ export default function Builds() {
                   {/* Card Header */}
                   <div className="px-5 pt-4 pb-3">
                     <h3 className="text-base font-bold text-zinc-900 truncate">{build.name}</h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">{build.date} · {build.items.length} components</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components</p>
                   </div>
 
                   {/* Items Preview */}
                   <div className="px-5 pb-4 space-y-1.5">
-                    {build.items.slice(0, 4).map((item) => (
+                    {build.items.slice(0, 4).map((item: SavedBuildItem) => (
                       <div key={item.id} className="flex items-center gap-2 text-xs text-zinc-600">
-                        <span className="text-zinc-300 flex-shrink-0">{CATEGORY_ICON[item.category]}</span>
-                        <span className="truncate flex-1">{item.name}</span>
+                        <span className="text-zinc-300 flex-shrink-0">{item.product ? CATEGORY_ICON[item.product.category as Category] : null}</span>
+                        <span className="truncate flex-1">{item.product?.name}</span>
                         {item.quantity > 1 && <span className="text-zinc-400 flex-shrink-0">×{item.quantity}</span>}
                       </div>
                     ))}

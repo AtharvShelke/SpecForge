@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useShop } from '@/context/ShopContext';
+import { useAdmin } from '@/context/AdminContext';
 import { OrderStatus } from '@/types';
 import {
   AlertTriangle,
@@ -35,12 +36,13 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 const Overview = () => {
-  const { reviews, products, orders } = useShop();
+  const { products } = useShop();
+  const { reviews, orders } = useAdmin();
 
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const pendingOrders = orders.filter(o => o.status === OrderStatus.PENDING).length;
   const lowStockProducts = products.filter(p => p.stock < 5);
-  const pendingReviews = reviews.filter(r => r.status === 'pending');
+  const pendingReviews = reviews.filter(r => r.status === 'PENDING');
 
   const salesData = [
     { name: 'Mon', sales: 40000 },
@@ -117,8 +119,8 @@ const Overview = () => {
             <Badge
               variant="secondary"
               className={`mt-2 ${lowStockProducts.length > 0
-                  ? 'text-red-600'
-                  : 'text-green-600'
+                ? 'text-red-600'
+                : 'text-green-600'
                 }`}
             >
               {lowStockProducts.length > 0

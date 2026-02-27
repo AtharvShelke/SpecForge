@@ -83,7 +83,11 @@ const CompatBadge: React.FC<{ items: CartItem[] }> = ({ items }) => {
 // ---------- Main Page ----------
 
 export default function TrackOrderPage() {
-    const { orders, addToCart, clearCart, setCartOpen } = useShop();
+    const { orders, refreshOrders, addToCart, clearCart, setCartOpen } = useShop();
+
+    React.useEffect(() => {
+        refreshOrders();
+    }, [refreshOrders]);
 
     const [orderId, setOrderId] = useState('');
     const [contact, setContact] = useState('');
@@ -109,7 +113,7 @@ export default function TrackOrderPage() {
     const handleReorder = () => {
         if (!foundOrder) return;
         clearCart();
-        foundOrder.items.forEach((item) => addToCart(item));
+        foundOrder.items.forEach((item) => addToCart(item as any));
         setCartOpen(true);
     };
 
@@ -216,7 +220,7 @@ export default function TrackOrderPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide mb-0.5">Payment</p>
-                                    <p className="text-sm font-semibold text-zinc-800">{foundOrder.payment.method}</p>
+                                    <p className="text-sm font-semibold text-zinc-800">{foundOrder.paymentMethod}</p>
                                 </div>
                             </div>
 
@@ -316,7 +320,7 @@ export default function TrackOrderPage() {
                             {/* Shipping address */}
                             <div className="px-6 py-4 border-t border-zinc-100 flex items-center gap-2 text-sm text-zinc-500">
                                 <MapPin size={15} className="text-zinc-400 flex-shrink-0" />
-                                {foundOrder.shippingAddress.street}, {foundOrder.shippingAddress.city}, {foundOrder.shippingAddress.state} – {foundOrder.shippingAddress.zip}
+                                {foundOrder.shippingStreet}, {foundOrder.shippingCity}, {foundOrder.shippingState} – {foundOrder.shippingZip}
                             </div>
                         </div>
 
@@ -334,13 +338,6 @@ export default function TrackOrderPage() {
                                         <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-zinc-900 text-sm truncate">{item.name}</p>
                                             <p className="text-xs text-zinc-400 mt-0.5">{item.category} · Qty {item.quantity}</p>
-                                            {Object.entries(item.specs).slice(0, 2).map(([k, v]) =>
-                                                v ? (
-                                                    <span key={k} className="inline-block text-[10px] bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded-full mr-1 mt-1">
-                                                        {k}: {v}
-                                                    </span>
-                                                ) : null
-                                            )}
                                         </div>
                                         <div className="text-right flex-shrink-0">
                                             <p className="font-bold text-zinc-900 text-sm">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
@@ -358,7 +355,7 @@ export default function TrackOrderPage() {
                         {/* Compatibility Snapshot */}
                         <div>
                             <h2 className="font-bold text-zinc-800 text-sm uppercase tracking-wider mb-3">Build Compatibility Snapshot</h2>
-                            <CompatBadge items={foundOrder.items} />
+                            <CompatBadge items={foundOrder.items as any} />
                         </div>
 
                         {/* Desktop Actions */}

@@ -1,8 +1,8 @@
-import { LandingPageCMS, CMSHistory, CMSVersion } from '@/types';
+import { LandingPageCMS, CMSHistory, CMSVersion, CMSContent } from '@/types';
 
 // Default/Initial Landing Page Content
-export const DEFAULT_LANDING_PAGE_CMS: LandingPageCMS = {
-  id: 'landing-v1',
+const INITIAL_CONTENT: CMSContent = {
+  id: 'content-v1',
   version: 1,
   lastUpdated: new Date().toISOString(),
   publishedAt: new Date().toISOString(),
@@ -101,13 +101,23 @@ export const DEFAULT_LANDING_PAGE_CMS: LandingPageCMS = {
   }
 };
 
+export const DEFAULT_LANDING_PAGE_CMS: LandingPageCMS = {
+  id: 'landing-v1',
+  isPublished: true,
+  publishedAt: new Date().toISOString(),
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  content: INITIAL_CONTENT
+};
+
 // CMS History for versioning
 export const CMS_HISTORY: CMSHistory = {
   versions: [
     {
       id: 'v1',
       version: 1,
-      content: DEFAULT_LANDING_PAGE_CMS,
+      pageId: 'landing-v1',
+      content: INITIAL_CONTENT,
       createdAt: new Date().toISOString(),
       createdBy: 'Admin',
       note: 'Initial landing page setup'
@@ -128,14 +138,14 @@ export const cmsService = {
   },
 
   // Get draft content
-  getDraftContent: (): LandingPageCMS | null => {
+  getDraftContent: (): CMSContent | null => {
     const draft = cmsHistory.versions.find(v => v.content.status === 'draft');
     return draft ? { ...draft.content } : null;
   },
 
   // Save draft
-  saveDraft: (content: LandingPageCMS): void => {
-    const draftContent: LandingPageCMS = {
+  saveDraft: (content: CMSContent): void => {
+    const draftContent: CMSContent = {
       ...content,
       lastUpdated: new Date().toISOString(),
       status: 'draft'
@@ -148,6 +158,7 @@ export const cmsService = {
     const newVersion: CMSVersion = {
       id: `draft-${Date.now()}`,
       version: content.version,
+      pageId: currentCMS.id,
       content: draftContent,
       createdAt: new Date().toISOString(),
       createdBy: 'Admin',
@@ -158,22 +169,29 @@ export const cmsService = {
   },
 
   // Publish content
-  publishContent: (content: LandingPageCMS): void => {
-    const publishedContent: LandingPageCMS = {
+  publishContent: (content: CMSContent): void => {
+    const publishedContent: CMSContent = {
       ...content,
-      version: currentCMS.version + 1,
+      version: currentCMS.content.version + 1,
       lastUpdated: new Date().toISOString(),
       publishedAt: new Date().toISOString(),
       status: 'published'
     };
 
     // Update current published content
-    currentCMS = publishedContent;
+    currentCMS = {
+      ...currentCMS,
+      updatedAt: new Date().toISOString(),
+      publishedAt: new Date().toISOString(),
+      isPublished: true,
+      content: publishedContent
+    };
 
     // Add to history
     const newVersion: CMSVersion = {
       id: `v${publishedContent.version}`,
       version: publishedContent.version,
+      pageId: currentCMS.id,
       content: publishedContent,
       createdAt: new Date().toISOString(),
       createdBy: 'Admin',
@@ -195,18 +213,26 @@ export const cmsService = {
   restoreVersion: (versionId: string): void => {
     const version = cmsHistory.versions.find(v => v.id === versionId);
     if (version) {
-      currentCMS = {
+      const restoredContent: CMSContent = {
         ...version.content,
-        version: currentCMS.version + 1,
+        version: currentCMS.content.version + 1,
         lastUpdated: new Date().toISOString(),
         publishedAt: new Date().toISOString(),
         status: 'published'
       };
 
+      currentCMS = {
+        ...currentCMS,
+        updatedAt: new Date().toISOString(),
+        publishedAt: new Date().toISOString(),
+        content: restoredContent
+      };
+
       const newVersion: CMSVersion = {
-        id: `v${currentCMS.version}`,
-        version: currentCMS.version,
-        content: currentCMS,
+        id: `v${restoredContent.version}`,
+        version: restoredContent.version,
+        pageId: currentCMS.id,
+        content: restoredContent,
         createdAt: new Date().toISOString(),
         createdBy: 'Admin',
         note: `Restored from version ${version.version}`

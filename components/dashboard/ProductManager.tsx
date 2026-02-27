@@ -2,11 +2,16 @@
 
 import React, { useState, useMemo } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { Category, Product } from '@/types';
+import { useAdmin } from '@/context/AdminContext';
+import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec } from '@/types';
 import { Edit, Plus, Trash, AlertCircle, Package, DollarSign, Layers } from 'lucide-react';
 
 const MAX_IMAGE_SIZE_MB = 2;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
+    specs: ProductSpecsFlat;
+}
 
 const ProductManager = () => {
     const {
@@ -17,7 +22,7 @@ const ProductManager = () => {
         categories,
         brands,
         schemas,
-    } = useShop();
+    } = useAdmin();
 
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -25,7 +30,7 @@ const ProductManager = () => {
     const [error, setError] = useState<string | null>(null);
 
     const [isEditing, setIsEditing] = useState(false);
-    const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({
+    const [currentProduct, setCurrentProduct] = useState<ProductFormState>({
         id: '',
         sku: '',
         name: '',
@@ -48,7 +53,7 @@ const ProductManager = () => {
     // Get available brands for current category
     const availableBrands = useMemo(() => {
         return brands.filter(b =>
-            b.linkedCategories.includes(currentProduct.category as Category)
+            b.categories.includes(currentProduct.category as Category)
         );
     }, [currentProduct.category, brands]);
 
@@ -91,11 +96,11 @@ const ProductManager = () => {
     };
 
     // Auto-generate SKU if not provided
-    const generateSKU = (product: Partial<Product>): string => {
+    const generateSKU = (product: ProductFormState): string => {
         if (product.sku && product.sku.trim()) return product.sku.trim();
 
         const catPrefix = product.category?.substring(0, 3).toUpperCase() || 'PRD';
-        const brandPrefix = product.specs?.brand?.substring(0, 3).toUpperCase() || 'XXX';
+        const brandPrefix = String(product.specs?.brand || '').substring(0, 3).toUpperCase() || 'XXX';
         const timestamp = Date.now().toString().slice(-6);
 
         return `${catPrefix}-${brandPrefix}-${timestamp}`;
@@ -115,9 +120,15 @@ const ProductManager = () => {
             return;
         }
 
+        // Convert flat specs to array for API
+        const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
+
         // Check if editing existing product
         if (currentProduct.id && products.find(p => p.id === currentProduct.id)) {
-            updateProduct(currentProduct as Product);
+            updateProduct({
+                ...currentProduct,
+                specs: apiSpecs
+            } as Product);
         } else {
             // Creating new product
             const newId = `prod-${Date.now()}`;
@@ -133,7 +144,7 @@ const ProductManager = () => {
                 category: currentProduct.category || Category.PROCESSOR,
                 image: currentProduct.image || 'https://picsum.photos/300/300',
                 description: currentProduct.description || '',
-                specs: currentProduct.specs || { brand: '' }
+                specs: apiSpecs
             } as Product;
 
             addProduct(newProduct, currentProduct.stock || 0, newProductCost);
@@ -144,7 +155,10 @@ const ProductManager = () => {
     };
 
     const handleEdit = (product: Product) => {
-        setCurrentProduct({ ...product });
+        setCurrentProduct({
+            ...product,
+            specs: specsToFlat(product.specs)
+        });
         setIsEditing(true);
     };
 
@@ -597,7 +611,7 @@ const ProductManager = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {product.specs.brand || '-'}
+                                            {product.brand?.name || product.specs.find(s => s.key === 'brand')?.value || '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             ₹{product.price.toLocaleString('en-IN')}

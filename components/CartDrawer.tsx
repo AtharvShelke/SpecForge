@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { useEffect } from "react";
 import { useShop } from '@/context/ShopContext';
+import { useBuild } from '@/context/BuildContext';
 import { X, Trash2, AlertOctagon, CheckCircle2, AlertTriangle, CreditCard, Banknote, Save, ShoppingBag } from 'lucide-react';
-import { CompatibilityLevel } from '@/types';
+import { CompatibilityLevel, CompatibilityIssue } from '@/types';
 
 const CartDrawer: React.FC = () => {
   const {
@@ -13,10 +14,12 @@ const CartDrawer: React.FC = () => {
     removeFromCart,
     updateQuantity,
     cartTotal,
-    compatibilityReport,
-    saveCurrentBuild,
     placeOrder
   } = useShop();
+  const {
+    compatibilityReport,
+    saveCurrentBuild,
+  } = useBuild();
 
   const [isNaming, setIsNaming] = useState(false);
   const [buildName, setBuildName] = useState('');
@@ -90,7 +93,7 @@ const CartDrawer: React.FC = () => {
                     </h3>
                     {compatibilityReport.issues.length > 0 && (
                       <ul className="mt-1 space-y-1">
-                        {compatibilityReport.issues.map((issue, idx) => (
+                        {compatibilityReport.issues.map((issue: CompatibilityIssue, idx: number) => (
                           <li key={idx} className={`text-xs ${issue.level === CompatibilityLevel.INCOMPATIBLE ? 'text-red-700 font-medium' : 'text-yellow-700'
                             }`}>
                             • {issue.message}

@@ -9,6 +9,7 @@ import Overview from '@/components/dashboard/Overview';
 import BillingInvoices from '@/components/dashboard/BillingInvoices';
 import CMSManager from '@/components/dashboard/CMSManager';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { useAdmin } from '@/context/AdminContext';
 
 const ADMIN_TABS = [
     { key: 'overview', label: 'Overview' },
@@ -22,9 +23,31 @@ const ADMIN_TABS = [
 ] as const;
 
 const AdminDashboard: React.FC = () => {
+    const {
+        refreshInvoices,
+        refreshCustomers,
+        refreshBillingProfile,
+        refreshCMSVersions,
+        refreshOrders,
+        refreshReviews
+    } = useAdmin();
     const [activeTab, setActiveTab] = useState<
         'overview' | 'products' | 'categories' | 'brands' | 'inventory' | 'orders' | 'billing' | 'cms'
     >('overview');
+
+    React.useEffect(() => {
+        const fetchAdminData = async () => {
+            await Promise.all([
+                refreshInvoices(),
+                refreshCustomers(),
+                refreshBillingProfile(),
+                refreshCMSVersions(),
+                refreshOrders(),
+                refreshReviews()
+            ]);
+        };
+        fetchAdminData();
+    }, [refreshInvoices, refreshCustomers, refreshBillingProfile, refreshCMSVersions, refreshOrders, refreshReviews]);
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-50">

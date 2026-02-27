@@ -110,6 +110,16 @@ export function specsToFlat(specs: ProductSpec[]): ProductSpecsFlat {
   return flat;
 }
 
+/** Convert flat object to ProductSpec array for API/DB */
+export function flatToSpecs(flat: ProductSpecsFlat): Partial<ProductSpec>[] {
+  return Object.entries(flat)
+    .filter(([_, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => ({
+      key,
+      value: String(value),
+    }));
+}
+
 export interface CartItem extends Product {
   quantity: number;
 }
@@ -224,6 +234,9 @@ export interface StockMovement {
   reason?: string; // nullable in DB
   performedBy: string;
   createdAt: string;
+  // Added for frontend compatibility/lookup
+  sku: string;
+  date: string;
 }
 
 // ──────────────────────────────────────────────────────
@@ -514,12 +527,12 @@ export interface FinalCTAContent {
 }
 
 // ================== COMPLETE LANDING PAGE CMS ==================
-export interface LandingPageCMS {
+export interface CMSContent {
   id: string;
-  isPublished: boolean;
+  version: number;
+  lastUpdated: string;
   publishedAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  status: 'published' | 'draft' | 'archived';
   sections: {
     hero: HeroContent;
     categories: CategorySectionContent;
@@ -529,14 +542,25 @@ export interface LandingPageCMS {
   };
 }
 
+export interface LandingPageCMS {
+  id: string;
+  isPublished: boolean;
+  publishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  content: CMSContent;
+}
+
 // ================== CMS HISTORY & VERSIONING ==================
 export interface CMSVersion {
   id: string;
+  version: number; // Added for convenience/usage in cmsData
   pageId: string;
-  content: LandingPageCMS;
+  content: CMSContent; // Storing the content snapshot
   label?: string;
   createdAt: string;
-  actor?: string;
+  createdBy?: string;
+  note?: string;
 }
 
 export interface CMSHistory {

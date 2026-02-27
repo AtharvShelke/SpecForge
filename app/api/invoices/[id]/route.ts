@@ -128,3 +128,30 @@ export async function PUT(
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+
+// ── DELETE /api/invoices/[id] ───────────────────────────
+export async function DELETE(
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+
+        // Use a transaction to ensure all related data is deleted
+        await prisma.$transaction(async (tx) => {
+            // Delete related line items
+            await tx.invoiceLineItem.deleteMany({ where: { invoiceId: id } });
+
+            // Delete related audit events
+            await tx.invoiceAuditEvent.deleteMany({ where: { invoiceId: id } });
+
+            // Delete the invoice itself
+            await tx.invoice.delete({ where: { id } });
+        });
+
+        return NextResponse.json({ success: true, message: "Invoice deleted successfully" });
+    } catch (error) {
+        console.error("DELETE /api/invoices/[id] error:", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}

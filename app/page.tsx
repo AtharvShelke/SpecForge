@@ -1,27 +1,41 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShoppingBag, Award } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { motion } from 'framer-motion';
-import { PRODUCTS } from '../data/mockData';
-import { Category, LandingPageCMS } from '../types';
-import { cmsService } from '@/data/cmsData'
+import { useShop } from '@/context/ShopContext';
+import { Category } from '../types';
 
 const Home: React.FC = () => {
-  const [cmsContent, setCmsContent] = useState<LandingPageCMS>(cmsService.getPublishedContent());
+  const { products, cmsContent } = useShop();
 
-  // Reload CMS content when component mounts (in case it was updated)
-  useEffect(() => {
-    setCmsContent(cmsService.getPublishedContent());
-  }, []);
+  if (!cmsContent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-pulse text-slate-400 text-lg">Loading…</div>
+      </div>
+    );
+  }
 
-  const { hero, categories, featuredProducts, trustIndicators, finalCTA } = cmsContent.sections;
+ const sections = cmsContent?.content?.sections;
+
+if (!sections) {
+  return (
+    <>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-pulse text-slate-400 text-lg">Loading content…</div>
+      </div>
+    </>
+  );
+}
+
+const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sections;
 
   // Get featured products dynamically
-  const featuredGPUs = PRODUCTS.filter(p => p.category === Category.GPU).slice(0, 2);
-  const featuredCPUs = PRODUCTS.filter(p => p.category === Category.PROCESSOR).slice(0, 2);
+  const featuredGPUs = products.filter(p => p.category === Category.GPU).slice(0, 2);
+  const featuredCPUs = products.filter(p => p.category === Category.PROCESSOR).slice(0, 2);
   const selectedProducts = [...featuredGPUs, ...featuredCPUs];
 
   // Helper to get icon component from string name

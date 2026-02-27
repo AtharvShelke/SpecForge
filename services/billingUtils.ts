@@ -168,17 +168,20 @@ export function generateInvoicePdfBlob({
     invoice.paidAt ? `Paid: ${formatDate(invoice.paidAt)}` : null,
   ].filter(Boolean) as string[];
 
-  const customerBlock = [
-    "Bill To:",
-    invoice.customer.company ? invoice.customer.company : invoice.customer.name,
-    invoice.customer.email,
-    invoice.customer.phone ? invoice.customer.phone : null,
-    invoice.customer.addressLine1 ? invoice.customer.addressLine1 : null,
-    invoice.customer.city
-      ? `${invoice.customer.city}${invoice.customer.state ? ", " + invoice.customer.state : ""} ${invoice.customer.postalCode ?? ""}`
-      : null,
-    invoice.customer.country ? invoice.customer.country : null,
-  ].filter(Boolean) as string[];
+  const customer = invoice.customer;
+  const customerBlock = customer
+    ? [
+      "Bill To:",
+      customer.company ? customer.company : customer.name,
+      customer.email,
+      customer.phone ? customer.phone : null,
+      customer.addressLine1 ? customer.addressLine1 : null,
+      customer.city
+        ? `${customer.city}${customer.state ? ", " + customer.state : ""} ${customer.postalCode ?? ""}`
+        : null,
+      customer.country ? customer.country : null,
+    ].filter(Boolean) as string[]
+    : ["Bill To:", "Unknown Customer"];
 
   const itemsHeader = "Items:";
   const itemsLines = invoice.lineItems.map((li) => {
