@@ -18,6 +18,8 @@ import {
     Sparkles,
     BookOpen,
 } from 'lucide-react';
+import { useShop } from '@/context/ShopContext';
+import { useRouter } from 'next/navigation';
 
 // -------------------------------------------------------------------
 // Guide Data
@@ -199,7 +201,7 @@ const BUDGET_MIN: Record<BudgetLabel, number> = {
 // -------------------------------------------------------------------
 // Guide Card
 // -------------------------------------------------------------------
-const GuideCard: React.FC<{ guide: Guide }> = ({ guide }) => {
+const GuideCard: React.FC<{ guide: Guide; onStartBuild: () => void }> = ({ guide, onStartBuild }) => {
     const [expanded, setExpanded] = useState(false);
     const Icon = guide.icon;
     const total = guide.components.reduce((s, c) => s + c.approxPrice, 0);
@@ -276,13 +278,13 @@ const GuideCard: React.FC<{ guide: Guide }> = ({ guide }) => {
                 )}
 
                 {/* CTA */}
-                <Link
-                    href="/products?mode=build"
+                <button
+                    onClick={onStartBuild}
                     className="w-full flex items-center justify-center gap-2 h-11 bg-zinc-900 hover:bg-zinc-800
             text-white font-semibold rounded-xl text-sm transition-all"
                 >
                     Start This Build <ArrowRight size={15} />
-                </Link>
+                </button>
             </div>
         </div>
     );
@@ -293,12 +295,33 @@ const GuideCard: React.FC<{ guide: Guide }> = ({ guide }) => {
 // -------------------------------------------------------------------
 export default function BuildGuidesPage() {
     const [activeFilter, setActiveFilter] = useState<BudgetLabel>('All Builds');
+    const { products, loadCart, setCartOpen } = useShop();
+    const router = useRouter();
 
     const filtered = GUIDES.filter((g) => {
         const min = BUDGET_MIN[activeFilter];
         const max_f = BUDGET_FILTERS.find((f) => f.label === activeFilter)?.max ?? Infinity;
         return g.budgetMax > min && g.budgetMax <= max_f;
     });
+
+    const handleStartBuild = (guide: Guide) => {
+        const newCart: any[] = [];
+        guide.components.forEach(comp => {
+            // Find a product whose name loosely matches the component name
+            const searchTerms = comp.name.toLowerCase().split(' ').filter(word => word.length > 2);
+            let matched = products.find(p => searchTerms.some(term => p.name.toLowerCase().includes(term)) && p.category.toLowerCase() === comp.category.toLowerCase());
+
+            // Fallback: just match by name if category mismatched slightly
+            if (!matched) {
+                matched = products.find(p => p.name.toLowerCase().includes(comp.name.toLowerCase()) || comp.name.toLowerCase().includes(p.name.toLowerCase()));
+            }
+
+            if (matched) newCart.push({ ...matched, quantity: 1 });
+        });
+        loadCart(newCart);
+        router.push('/products?mode=build');
+        setTimeout(() => setCartOpen(true), 500);
+    };
 
     return (
         <div className="min-h-screen bg-zinc-50">
@@ -358,7 +381,7 @@ export default function BuildGuidesPage() {
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {filtered.map((guide) => (
-                                <GuideCard key={guide.id} guide={guide} />
+                                <GuideCard key={guide.id} guide={guide} onStartBuild={() => handleStartBuild(guide)} />
                             ))}
                         </div>
                     </>

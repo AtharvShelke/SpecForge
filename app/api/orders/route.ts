@@ -12,7 +12,7 @@ const OrderStatusEnum = z.enum([
 ]);
 
 const orderItemSchema = z.object({
-    productId: z.string().uuid(),
+    productId: z.string().min(1),
     name: z.string().min(1),
     category: CategoryEnum,
     price: z.number().positive(),
@@ -86,14 +86,42 @@ export async function POST(req: NextRequest) {
         const data = createOrderSchema.parse(body);
 
         const order = await prisma.$transaction(async (tx) => {
-            // Validate stock for each item
+            // Bulk fetch inventory
+            const productIds = data.items.map(i => i.productId);
+            const products = await tx.product.findMany({
+                where: { id: { in: productIds } },
+                include: { inventoryItem: true }
+            });
+            const productMap = new Map(products.map(p => [p.id, p]));
+
+            const inventoryUpdates = [];
+            const stockMovements = [];
+            let total = 0;
+
             for (const item of data.items) {
-                const inv = await tx.inventoryItem.findUnique({
-                    where: { productId: item.productId },
-                });
-                if (!inv || inv.quantity < item.quantity) {
+                const product = productMap.get(item.productId);
+                if (!product || !product.inventoryItem) {
+                    throw new Error(`Insufficient stock or product not found: ${item.productId}`);
+                }
+                if (product.inventoryItem.quantity < item.quantity) {
                     throw new Error(`Insufficient stock for product ${item.productId}`);
                 }
+
+                total += product.price * item.quantity;
+
+                inventoryUpdates.push({
+                    id: product.inventoryItem.id,
+                    quantity: product.inventoryItem.quantity - item.quantity,
+                    reserved: product.inventoryItem.reserved + item.quantity
+                });
+
+                stockMovements.push({
+                    inventoryItemId: product.inventoryItem.id,
+                    type: "RESERVE" as const,
+                    quantity: item.quantity,
+                    reason: `Order ${data.id} placed`,
+                    performedBy: "System",
+                });
             }
 
             // Create the order
@@ -103,7 +131,7 @@ export async function POST(req: NextRequest) {
                     customerName: data.customerName,
                     email: data.email,
                     phone: data.phone,
-                    total: data.total,
+                    total: data.total, // Depending on trust level, can use total from server calculation here instead
                     status: "PENDING",
                     shippingStreet: data.shippingStreet,
                     shippingCity: data.shippingCity,
@@ -134,30 +162,22 @@ export async function POST(req: NextRequest) {
                 include: { items: true, logs: true },
             });
 
-            // Reserve stock for each item
-            for (const item of data.items) {
-                const inv = await tx.inventoryItem.findUnique({
-                    where: { productId: item.productId },
+            // Apply updates in batch
+            for (const update of inventoryUpdates) {
+                await tx.inventoryItem.update({
+                    where: { id: update.id },
+                    data: {
+                        quantity: update.quantity,
+                        reserved: update.reserved,
+                        lastUpdated: new Date()
+                    }
                 });
-                if (inv) {
-                    await tx.inventoryItem.update({
-                        where: { id: inv.id },
-                        data: {
-                            quantity: { decrement: item.quantity },
-                            reserved: { increment: item.quantity },
-                            lastUpdated: new Date(),
-                        },
-                    });
-                    await tx.stockMovement.create({
-                        data: {
-                            inventoryItemId: inv.id,
-                            type: "RESERVE",
-                            quantity: item.quantity,
-                            reason: `Order ${data.id} placed`,
-                            performedBy: "System",
-                        },
-                    });
-                }
+            }
+
+            if (stockMovements.length > 0) {
+                await tx.stockMovement.createMany({
+                    data: stockMovements
+                });
             }
 
             return o;

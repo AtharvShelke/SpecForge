@@ -1,10 +1,10 @@
 'use client';
-import React, { useState } from 'react';
-import { useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
 import { X, Trash2, AlertOctagon, CheckCircle2, AlertTriangle, CreditCard, Banknote, Save, ShoppingBag } from 'lucide-react';
 import { CompatibilityLevel, CompatibilityIssue } from '@/types';
+import Link from 'next/link';
 
 const CartDrawer: React.FC = () => {
   const {
@@ -13,8 +13,7 @@ const CartDrawer: React.FC = () => {
     cart,
     removeFromCart,
     updateQuantity,
-    cartTotal,
-    placeOrder
+    cartTotal
   } = useShop();
   const {
     compatibilityReport,
@@ -48,13 +47,7 @@ const CartDrawer: React.FC = () => {
     }
   };
 
-  const handleCheckout = () => {
-    const confirm = window.confirm("Confirm purchase? Stock will be reserved immediately.");
-    if (confirm) {
-      // Mock Guest Checkout for this demo
-      placeOrder('Guest Customer', 'guest@example.com');
-    }
-  };
+
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -196,13 +189,13 @@ const CartDrawer: React.FC = () => {
                 )}
 
                 <div className="space-y-3">
-                  <button
-                    onClick={handleCheckout}
-                    className="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isFatal}
+                  <Link
+                    href="/checkout"
+                    onClick={() => setCartOpen(false)}
+                    className="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 pointer-events-auto"
                   >
-                    <ShoppingBag size={18} className="mr-2" /> Checkout & Pay
-                  </button>
+                    <ShoppingBag size={18} className="mr-2" /> Proceed to Checkout
+                  </Link>
 
                   <div className="grid grid-cols-2 gap-3">
                     <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">

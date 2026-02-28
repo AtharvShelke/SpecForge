@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { Category, Product, CompatibilityLevel, specsToFlat } from '@/types';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
@@ -7,13 +7,13 @@ import { Search, Plus, CheckCircle, AlertTriangle, XCircle, Heart, Star, Filter,
 import { validateBuild } from '@/services/compatibility';
 // import { Link, useSearchParams } from 'react-router-dom';
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar';
 import { CategoryNode, BUILD_SEQUENCE } from '@/data/categoryTree';
 
 const DEFAULT_MAX_PRICE = 500000;
 
-const Products: React.FC = () => {
+const ProductsContent: React.FC = () => {
     const {
         addToCart,
         cart,
@@ -27,6 +27,8 @@ const Products: React.FC = () => {
     const { isBuildMode, toggleBuildMode } = useBuild();
     console.log(products)
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
     const initialCategoryParam = searchParams.get('category');
     const initialModeParam = searchParams.get('mode');
 
@@ -38,14 +40,27 @@ const Products: React.FC = () => {
         return categories.length > 0 ? categories[0] : null;
     }, [initialCategoryParam, categories]);
 
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(searchParams?.get('q') || '');
     const [activeTab, setActiveTab] = useState<CategoryNode | null>(initialTab);
     const [selectedNode, setSelectedNode] = useState<CategoryNode | null>(null);
-    const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-    const [priceRange, setPriceRange] = useState({ min: 0, max: DEFAULT_MAX_PRICE });
+    const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(() => {
+        const filters: Record<string, string[]> = {};
+        searchParams.forEach((value, key) => {
+            if (key.startsWith('f_')) {
+                const actualKey = key.slice(2);
+                if (!filters[actualKey]) filters[actualKey] = [];
+                filters[actualKey].push(value);
+            }
+        });
+        return filters;
+    });
+    const [priceRange, setPriceRange] = useState({
+        min: Number(searchParams.get('minPrice')) || 0,
+        max: Number(searchParams.get('maxPrice')) || DEFAULT_MAX_PRICE
+    });
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [gridDensity, setGridDensity] = useState<"comfortable" | "compact">("comfortable");
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
     const ITEMS_PER_PAGE = 12;
 
     const isCompact = gridDensity === "compact";
@@ -79,12 +94,16 @@ const Products: React.FC = () => {
 
     useEffect(() => {
         if (!activeTab && categories.length > 0) {
+            if (initialCategoryParam) {
+                const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
+                if (found) {
+                    setActiveTab(found);
+                    return;
+                }
+            }
             setActiveTab(categories[0]);
-        } else if (initialCategoryParam && categories.length > 0) {
-            const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
-            if (found) setActiveTab(found);
         }
-    }, [categories, initialCategoryParam]);
+    }, [activeTab, categories, initialCategoryParam]);
 
     useEffect(() => {
         if (initialModeParam === 'build' && !isBuildMode) {
@@ -92,12 +111,82 @@ const Products: React.FC = () => {
         }
     }, [initialModeParam]);
 
+    const prevActiveTab = useRef<Category | undefined>(undefined);
     useEffect(() => {
-        setSelectedNode(null);
-        setSelectedFilters({});
-        setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
-        setCurrentPage(1);
+        if (!activeTab) return;
+        if (prevActiveTab.current === undefined) {
+            prevActiveTab.current = activeTab.category;
+            return;
+        }
+        if (prevActiveTab.current !== activeTab.category) {
+            prevActiveTab.current = activeTab.category;
+            setSelectedNode(null);
+            setSelectedFilters({});
+            setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
+            setCurrentPage(1);
+        }
     }, [activeTab]);
+
+    const hasHydratedNode = useRef(false);
+    useEffect(() => {
+        const subLabel = searchParams?.get('sub');
+        if (subLabel && activeTab?.children && !hasHydratedNode.current) {
+            const findNode = (nodes: CategoryNode[]): CategoryNode | null => {
+                for (const n of nodes) {
+                    if (n.label === subLabel) return n;
+                    if (n.children) {
+                        const found = findNode(n.children);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+            const foundNode = findNode(activeTab.children);
+            if (foundNode) {
+                setSelectedNode(foundNode);
+            }
+            hasHydratedNode.current = true;
+        }
+    }, [activeTab, searchParams]);
+
+    const prevUrlState = useRef<string>('');
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const params = new URLSearchParams();
+
+        if (activeTab) params.set('category', activeTab.label);
+        if (selectedNode) params.set('sub', selectedNode.label);
+        if (isBuildMode) params.set('mode', 'build');
+        if (searchTerm) params.set('q', searchTerm);
+        if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
+        if (priceRange.max < DEFAULT_MAX_PRICE) params.set('maxPrice', priceRange.max.toString());
+
+        const filterKeys = Object.keys(selectedFilters).sort();
+        filterKeys.forEach(key => {
+            const values = [...selectedFilters[key]].sort();
+            values.forEach(v => params.append(`f_${key}`, v));
+        });
+
+        if (currentPage > 1) params.set('page', currentPage.toString());
+
+        params.sort();
+        const newUrlStr = params.toString();
+
+        if (prevUrlState.current !== newUrlStr) {
+            prevUrlState.current = newUrlStr;
+            const currentParams = new URLSearchParams(window.location.search);
+            // remove internal Next.js params
+            currentParams.delete('_rsc');
+            currentParams.sort();
+
+            if (currentParams.toString() !== newUrlStr) {
+                const href = `${pathname}?${newUrlStr}`;
+                window.history.replaceState(null, '', href);
+            }
+        }
+    }, [activeTab, selectedNode, isBuildMode, searchTerm, priceRange, selectedFilters, currentPage, pathname]);
 
     const prevCartLength = useRef(cart.length);
     const prevBuildMode = useRef(isBuildMode);
@@ -702,6 +791,14 @@ const Products: React.FC = () => {
                 </div>
             </div>
         </div>
+    );
+};
+
+const Products: React.FC = () => {
+    return (
+        <Suspense fallback={<div className="h-full flex items-center justify-center p-8 text-zinc-500">Loading products...</div>}>
+            <ProductsContent />
+        </Suspense>
     );
 };
 

@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
             });
 
             // Create inventory item
-            await tx.inventoryItem.create({
+            const inv = await tx.inventoryItem.create({
                 data: {
                     productId: p.id,
                     sku: data.sku,
@@ -120,18 +120,15 @@ export async function POST(req: NextRequest) {
 
             // Log initial stock movement if stock > 0
             if (data.stock > 0) {
-                const inv = await tx.inventoryItem.findUnique({ where: { productId: p.id } });
-                if (inv) {
-                    await tx.stockMovement.create({
-                        data: {
-                            inventoryItemId: inv.id,
-                            type: "INWARD",
-                            quantity: data.stock,
-                            reason: "Initial stock entry",
-                            performedBy: "System",
-                        },
-                    });
-                }
+                await tx.stockMovement.create({
+                    data: {
+                        inventoryItemId: inv.id,
+                        type: "INWARD" as const,
+                        quantity: data.stock,
+                        reason: "Initial stock entry",
+                        performedBy: "System",
+                    },
+                });
             }
 
             return p;

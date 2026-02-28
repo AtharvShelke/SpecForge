@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Category, CompatibilityLevel, SavedBuild, SavedBuildItem, Product, CartItem } from '@/types';
+import { useShop } from '@/context/ShopContext';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense } from 'react';
 
 // -------------------------------------------------------------------
 // Category Icon Map
@@ -199,10 +202,15 @@ const BuildModal: React.FC<{
 };
 
 // -------------------------------------------------------------------
-// Main Page
+// Builds Content
 // -------------------------------------------------------------------
-export default function Builds() {
+function BuildsContent() {
   const { savedBuilds, loadBuild, deleteBuild, refreshSavedBuilds } = useBuild();
+  const { products } = useShop();
+
+  const searchParams = useSearchParams();
+  const sharedIds = searchParams.get('shared');
+  const sharedName = searchParams.get('name');
 
   React.useEffect(() => {
     refreshSavedBuilds();
@@ -214,6 +222,25 @@ export default function Builds() {
     loadBuild(buildId);
     setActiveBuild(null);
   };
+
+  React.useEffect(() => {
+    if (sharedIds && products.length > 0) {
+      const ids = sharedIds.split(',');
+      const items = ids.map(id => {
+        const p = products.find(prod => prod.id === id);
+        return p ? { id, productId: id, quantity: 1, product: p } as SavedBuildItem : null;
+      }).filter(Boolean) as SavedBuildItem[];
+
+      const syntheticBuild: SavedBuild = {
+        id: 'shared',
+        name: sharedName || 'Shared Build',
+        total: items.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0),
+        createdAt: new Date().toISOString(),
+        items
+      };
+      setActiveBuild(syntheticBuild);
+    }
+  }, [sharedIds, sharedName, products]);
 
   const handleCopyDirect = (e: React.MouseEvent, build: SavedBuild) => {
     e.stopPropagation();
@@ -369,5 +396,16 @@ export default function Builds() {
         />
       )}
     </div>
+  );
+}
+
+// -------------------------------------------------------------------
+// Main Page Export with Suspense
+// -------------------------------------------------------------------
+export default function Builds() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center">Loading builds...</div>}>
+      <BuildsContent />
+    </Suspense>
   );
 }

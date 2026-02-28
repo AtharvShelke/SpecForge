@@ -21,7 +21,7 @@ interface BuildContextType {
 const BuildContext = createContext<BuildContextType | undefined>(undefined);
 
 export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { cart, cartTotal, products, setCartOpen, clearCart } = useShop();
+    const { cart, cartTotal, products, setCartOpen, loadCart } = useShop();
     const { toast } = useToast();
 
     const [savedBuilds, setSavedBuilds] = useState<SavedBuild[]>([]);
@@ -69,9 +69,14 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             if (res.ok) {
                 toast({ title: "Build saved successfully" });
                 await refreshSavedBuilds();
+            } else {
+                const errData = await res.json();
+                console.error("Failed to save build API:", errData);
+                toast({ title: "Failed to save build", description: JSON.stringify(errData.error || errData), variant: "destructive" });
             }
         } catch (err) {
             console.error('Failed to save build:', err);
+            toast({ title: "Error", description: "Network error while saving build", variant: "destructive" });
         }
     }, [cart, cartTotal, refreshSavedBuilds, toast]);
 
@@ -79,32 +84,18 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const build = savedBuilds.find(b => b.id === buildId);
         if (!build) return;
 
-        // We can't directly set the cart because setCart isn't (yet) exported in useShop if we want strict separation,
-        // but usually ShopContext provides clearCart and addToCart.
-        // Let's assume we want to clear and re-add.
-        clearCart();
-
+        const newCart: any[] = [];
         for (const item of build.items) {
             const product = products.find(p => p.id === item.productId);
-            // Note: This might be slow if we have many items due to multiple state updates.
-            // In a real app, ShopContext should probably expose a `setCart` or `loadCart` method.
-            // But we follow existing pattern.
-        }
-
-        // This part of legacy code was:
-        /*
-          for (const item of build.items) {
-            const product = products.find(p => p.id === item.productId);
             if (product) {
-              newCart.push({ ...product, quantity: item.quantity });
+                newCart.push({ ...product, quantity: item.quantity });
             }
-          }
-          setCart(newCart);
-        */
-        // Since we refactored ShopContext, let's ensure it has what we need or adjust.
+        }
+        loadCart(newCart);
+
         toast({ title: "Build loaded", description: "Items added to your cart." });
         setCartOpen(true);
-    }, [savedBuilds, products, clearCart, setCartOpen, toast]);
+    }, [savedBuilds, products, loadCart, setCartOpen, toast]);
 
     const deleteBuild = useCallback(async (buildId: string) => {
         try {

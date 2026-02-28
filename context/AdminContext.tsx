@@ -180,7 +180,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const res = await fetch('/api/products');
             const data = await res.json();
-            setProducts(data);
+            setProducts(data.products ?? data);
         } catch (err) { console.error(err); }
     }, []);
 

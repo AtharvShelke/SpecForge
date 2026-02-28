@@ -14,6 +14,7 @@ interface ShopContextType {
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  loadCart: (items: CartItem[]) => void;
   cartTotal: number;
   isCartOpen: boolean;
   setCartOpen: (isOpen: boolean) => void;
@@ -179,25 +180,25 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (existing) {
         if (existing.quantity + 1 > product.stock) {
-          toast({
+          setTimeout(() => toast({
             title: "Out of stock",
             description: `Only ${product.stock} units available.`,
             variant: "destructive",
-          });
+          }), 0);
           return prev;
         }
-        toast({ title: "Added to cart", description: `${product.name} quantity updated.` });
+        setTimeout(() => toast({ title: "Added to cart", description: `${product.name} quantity updated.` }), 0);
         return prev.map(item =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
 
       if (product.stock < 1) {
-        toast({ title: "Out of stock", variant: "destructive" });
+        setTimeout(() => toast({ title: "Out of stock", variant: "destructive" }), 0);
         return prev;
       }
 
-      toast({ title: "Added to cart", description: `${product.name} added successfully.` });
+      setTimeout(() => toast({ title: "Added to cart", description: `${product.name} added successfully.` }), 0);
       return [...prev, { ...product, quantity: 1 }];
     });
   }, [toast]);
@@ -210,7 +211,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCart(prev => prev.map(item => {
       if (item.id === productId) {
         if (quantity > item.stock) {
-          toast({ title: "Insufficient stock", variant: "destructive" });
+          setTimeout(() => toast({ title: "Insufficient stock", variant: "destructive" }), 0);
           return item;
         }
         return { ...item, quantity: Math.max(1, quantity) };
@@ -220,6 +221,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [toast]);
 
   const clearCart = useCallback(() => setCart([]), []);
+
+  const loadCart = useCallback((items: CartItem[]) => setCart(items), []);
 
   const cartTotal = useMemo(() =>
     cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
@@ -266,6 +269,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        id: `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
         customerName,
         email,
         items: cart.map(item => ({
@@ -296,6 +300,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     removeFromCart,
     updateQuantity,
     clearCart,
+    loadCart,
     cartTotal,
     isCartOpen,
     setCartOpen,
@@ -323,7 +328,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     refreshCMS,
     isLoading
   }), [
-    cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal,
+    cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
     isCartOpen, setCartOpen, wishlist, addToWishlist, removeFromWishlist, isInWishlist,
     products, refreshProducts, categories, refreshCategories,
     brands, refreshBrands, orders, refreshOrders,

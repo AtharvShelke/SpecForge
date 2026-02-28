@@ -102,6 +102,7 @@ export interface ProductSpecsFlat {
 /** Convert ProductSpec[] to flat object for legacy/compat logic */
 export function specsToFlat(specs: ProductSpec[]): ProductSpecsFlat {
   const flat: ProductSpecsFlat = {};
+  if (!specs || !Array.isArray(specs)) return flat;
   for (const s of specs) {
     const num = Number(s.value);
     const parsedValue = isNaN(num) ? s.value : num;
