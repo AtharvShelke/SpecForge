@@ -96,28 +96,46 @@ export interface Product {
 
 /** Convenience type for flat specs (frontend display/compatibility logic) */
 export interface ProductSpecsFlat {
-  [key: string]: string | number | undefined;
+  [key: string]: string | string[] | number | undefined;
 }
 
 /** Convert ProductSpec[] to flat object for legacy/compat logic */
 export function specsToFlat(specs: ProductSpec[]): ProductSpecsFlat {
   const flat: ProductSpecsFlat = {};
   for (const s of specs) {
-    // Try to parse as number if possible
     const num = Number(s.value);
-    flat[s.key] = isNaN(num) ? s.value : num;
+    const parsedValue = isNaN(num) ? s.value : num;
+
+    if (flat[s.key] !== undefined) {
+      if (Array.isArray(flat[s.key])) {
+        (flat[s.key] as Array<string | number>).push(parsedValue);
+      } else {
+        flat[s.key] = [flat[s.key] as string | number, parsedValue] as any;
+      }
+    } else {
+      flat[s.key] = parsedValue;
+    }
   }
   return flat;
 }
 
 /** Convert flat object to ProductSpec array for API/DB */
 export function flatToSpecs(flat: ProductSpecsFlat): Partial<ProductSpec>[] {
-  return Object.entries(flat)
-    .filter(([_, value]) => value !== undefined && value !== '')
-    .map(([key, value]) => ({
-      key,
-      value: String(value),
-    }));
+  const specs: Partial<ProductSpec>[] = [];
+
+  for (const [key, value] of Object.entries(flat)) {
+    if (value === undefined || value === '') continue;
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        specs.push({ key, value: String(item) });
+      }
+    } else {
+      specs.push({ key, value: String(value) });
+    }
+  }
+
+  return specs;
 }
 
 export interface CartItem extends Product {
@@ -160,12 +178,14 @@ export interface AttributeDefinition {
   id?: string;
   key: string;
   label: string;
-  type: 'text' | 'number' | 'select' | 'boolean';
+  type: 'text' | 'number' | 'select' | 'multi-select' | 'boolean';
   options?: string[];
   required: boolean;
   unit?: string;
   sortOrder?: number;
   categorySchemaId?: string;
+  dependencyKey?: string;
+  dependencyValue?: string;
 }
 
 export interface CategorySchema {

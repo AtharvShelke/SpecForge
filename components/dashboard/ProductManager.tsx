@@ -44,11 +44,24 @@ const ProductManager = () => {
     });
     const [newProductCost, setNewProductCost] = useState(0);
 
-    // Get schema for current category
+    // Get schema for current category and filter based on dependencies
     const currentSchema = useMemo(() => {
         const schema = schemas.find(s => s.category === currentProduct.category);
-        return schema?.attributes || [];
-    }, [currentProduct.category, schemas]);
+        if (!schema) return [];
+
+        return schema.attributes.filter(attr => {
+            if (!attr.dependencyKey) return true;
+
+            // Check if the required dependency condition is met
+            const dependencyVal = currentProduct.specs?.[attr.key === 'socket' ? 'brand' : attr.dependencyKey];
+
+            // Allow checking against arrays (e.g if brand was somehow multi-select) or strings
+            if (Array.isArray(dependencyVal)) {
+                return dependencyVal.includes(attr.dependencyValue || '');
+            }
+            return dependencyVal === attr.dependencyValue;
+        });
+    }, [currentProduct.category, currentProduct.specs, schemas]);
 
     // Get available brands for current category
     const availableBrands = useMemo(() => {
@@ -201,14 +214,47 @@ const ProductManager = () => {
         });
     };
 
-    const handleSpecChange = (key: string, value: string | number) => {
+    const handleSpecChange = (key: string, value: string | number | string[]) => {
+        let newSpecs = {
+            ...currentProduct.specs,
+            [key]: value
+        };
+
+        // If the changed spec is a parent dependency (e.g. brand), we need to cascade and clear 
+        // any child attributes that no longer match the new parent value.
+        const schema = schemas.find(s => s.category === currentProduct.category);
+        if (schema) {
+            schema.attributes.forEach(attr => {
+                // For socket, the seed data uses dependencyKey = 'brand'
+                const depKey = attr.key === 'socket' ? 'brand' : attr.dependencyKey;
+
+                if (depKey === key) {
+                    // The parent was just changed! Check if the new value satisfies this attribute
+                    const isSatisfied = Array.isArray(value)
+                        ? value.includes(attr.dependencyValue || '')
+                        : value === attr.dependencyValue;
+
+                    // If it's no longer satisfied, clear the value from the specs
+                    if (!isSatisfied && newSpecs[attr.key] !== undefined) {
+                        delete newSpecs[attr.key];
+                    }
+                }
+            });
+        }
+
         setCurrentProduct({
             ...currentProduct,
-            specs: {
-                ...currentProduct.specs,
-                [key]: value
-            }
+            specs: newSpecs
         });
+    };
+
+    const handleMultiSelectToggle = (key: string, option: string) => {
+        const currentVals = (currentProduct.specs?.[key] as string[]) || [];
+        const newVals = currentVals.includes(option)
+            ? currentVals.filter(v => v !== option)
+            : [...currentVals, option];
+
+        handleSpecChange(key, newVals);
     };
 
     const getStockBadgeClass = (stock: number): string => {
@@ -486,11 +532,29 @@ const ProductManager = () => {
                                         {attr.unit && <span className="text-gray-500 ml-1">({attr.unit})</span>}
                                     </label>
 
-                                    {attr.type === 'select' ? (
+                                    {attr.type === 'multi-select' ? (
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            {attr.options?.map(option => {
+                                                const currentVals = (currentProduct.specs?.[attr.key] as string[]) || [];
+                                                const isSelected = currentVals.includes(option);
+                                                return (
+                                                    <label key={option} className="flex items-center gap-1.5 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                            checked={isSelected}
+                                                            onChange={() => handleMultiSelectToggle(attr.key, option)}
+                                                        />
+                                                        <span className="text-sm text-gray-700">{option}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : attr.type === 'select' ? (
                                         <select
                                             required={attr.required}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={currentProduct.specs?.[attr.key] || ''}
+                                            value={(currentProduct.specs?.[attr.key] as string) || ''}
                                             onChange={e => handleSpecChange(attr.key, e.target.value)}
                                         >
                                             <option value="">Select...</option>

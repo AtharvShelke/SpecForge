@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -150,6 +144,8 @@ model AttributeDefinition {
   options          String[]
   unit             String?
   categorySchemaId String
+  dependencyKey    String?
+  dependencyValue  String?
   sortOrder        Int            @default(0)
   categorySchema   CategorySchema @relation(fields: [categorySchemaId], references: [id], onDelete: Cascade)
 
@@ -223,7 +219,6 @@ model ProductSpec {
   value     String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([productId, key])
   @@index([key, value])
 }
 
@@ -476,15 +471,10 @@ model InvoiceAuditEvent {
   actor     String
   message   String?
   createdAt DateTime @default(now())
-
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId, createdAt])
 }
-
-// ─────────────────────────────────────────────────
-// CMS — Landing Page
-// ─────────────────────────────────────────────────
 
 model CMSLandingPage {
   id          String    @id @default(uuid())
@@ -498,14 +488,13 @@ model CMSLandingPage {
 }
 
 model CMSLandingPageVersion {
-  id        String   @id @default(uuid())
+  id        String         @id @default(uuid())
   pageId    String
   content   Json
   label     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime       @default(now())
   actor     String?
-
-  page CMSLandingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  page      CMSLandingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId, createdAt])
 }

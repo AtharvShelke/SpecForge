@@ -65,7 +65,7 @@ export default function LoginPage() {
                 throw new Error(data.error || "Login failed");
             }
 
-            router.push("/dashboard");
+            router.push("/admin");
             router.refresh();
         } catch (err: unknown) {
             if (err instanceof Error) {
@@ -82,9 +82,9 @@ export default function LoginPage() {
         <div className="flex items-center justify-center min-h-screen bg-neutral-50 p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
                     <CardDescription className="text-center">
-                        Enter your email and password to access your account
+                        Enter your credentials to access the admin dashboard
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -128,11 +128,7 @@ export default function LoginPage() {
                         </form>
                     </Form>
                 </CardContent>
-                <CardFooter className="flex flex-col space-y-2">
-                    <div className="text-sm text-center text-neutral-500">
-                        Don&apos;t have an account? <a href="/register" className="text-primary hover:underline">Sign up</a>
-                    </div>
-                </CardFooter>
+                <CardFooter />
             </Card>
         </div>
     );

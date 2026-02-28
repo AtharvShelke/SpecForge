@@ -777,25 +777,28 @@ interface SeedAttributeDef {
   sortOrder: number;
   options?: string[];
   unit?: string;
+  dependencyKey?: string;
+  dependencyValue?: string;
 }
 
 const CATEGORY_SCHEMAS_DATA: { category: Category; attributes: SeedAttributeDef[] }[] = [
   {
     category: Category.PROCESSOR,
     attributes: [
-      { key: 'socket', label: 'Socket', type: 'text', required: true, sortOrder: 0 },
-      { key: 'cores', label: 'Cores', type: 'number', required: true, sortOrder: 1 },
-      { key: 'series', label: 'Series', type: 'text', required: false, sortOrder: 2 },
-      { key: 'generation', label: 'Generation', type: 'text', required: false, sortOrder: 3 },
-      { key: 'wattage', label: 'TDP (Watts)', type: 'number', required: true, unit: 'W', sortOrder: 4 },
-      { key: 'ramType', label: 'RAM Support', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 5 },
+      { key: 'socket', label: 'Intel Socket', type: 'select', required: true, options: ['LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 0, dependencyKey: 'brand', dependencyValue: 'Intel' },
+      { key: 'socket', label: 'AMD Socket', type: 'select', required: true, options: ['AM4', 'AM5', 'sTR5'], sortOrder: 1, dependencyKey: 'brand', dependencyValue: 'AMD' },
+      { key: 'cores', label: 'Cores', type: 'number', required: true, sortOrder: 2 },
+      { key: 'generation', label: 'Generation', type: 'select', required: false, options: ['9th Gen', '10th Gen', '11th Gen', '12th Gen', '13th Gen', '14th Gen'], sortOrder: 3, dependencyKey: 'brand', dependencyValue: 'Intel' },
+      { key: 'series', label: 'Series', type: 'select', required: false, options: ['3000 Series', '5000 Series', '7000 Series', '8000 Series', '9000 Series', 'Threadripper'], sortOrder: 4, dependencyKey: 'brand', dependencyValue: 'AMD' },
+      { key: 'wattage', label: 'TDP (Watts)', type: 'number', required: true, unit: 'W', sortOrder: 5 },
+      { key: 'ramType', label: 'RAM Support', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 6 },
     ]
   },
   {
     category: Category.MOTHERBOARD,
     attributes: [
-      { key: 'socket', label: 'Socket', type: 'text', required: true, sortOrder: 0 },
-      { key: 'chipset', label: 'Chipset', type: 'text', required: true, sortOrder: 1 },
+      { key: 'socket', label: 'Socket', type: 'select', required: true, options: ['AM4', 'AM5', 'sTR5', 'LGA1151', 'LGA1200', 'LGA1700'], sortOrder: 0 },
+      { key: 'chipset', label: 'Chipset', type: 'select', required: true, options: ['A520', 'B450', 'B550', 'B650', 'B760', 'X570', 'X670', 'Z690', 'Z790'], sortOrder: 1 },
       { key: 'formFactor', label: 'Form Factor', type: 'select', required: true, options: ['ATX', 'Micro-ATX', 'E-ATX', 'Mini-ITX'], sortOrder: 2 },
       { key: 'ramType', label: 'Memory Type', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 3 },
     ]
@@ -1484,18 +1487,6 @@ const INVOICES_DATA = [
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // ── 1. Admin user ──────────────────────────────────────────────────────────
-  console.log('  → Seeding admin user...');
-  await prisma.user.upsert({
-    where: { email: 'admin@bitkart.in' },
-    update: {},
-    create: {
-      email: 'admin@bitkart.in',
-      name: 'BitKart Admin',
-      // bcrypt hash of "Admin@1234" — replace with a proper hash in production
-      password: '$2b$12$placeholder_bcrypt_hash_change_before_go_live_____________',
-    },
-  });
 
   // ── 2. Brands ──────────────────────────────────────────────────────────────
   console.log('  → Seeding brands...');
@@ -1540,14 +1531,19 @@ async function main() {
       },
     });
 
-    // Upsert each spec key-value row
+    // Clear existing specs so we can cleanly recreate them (supports multi-value attributes where unique keys were removed)
+    await prisma.productSpec.deleteMany({
+      where: { productId: p.id },
+    });
+
     for (const [key, rawValue] of Object.entries(p.specs)) {
-      const value = normaliseSpec(key, String(rawValue));
-      await prisma.productSpec.upsert({
-        where: { productId_key: { productId: p.id, key } },
-        update: { value },
-        create: { productId: p.id, key, value },
-      });
+      const values = Array.isArray(rawValue) ? rawValue : [rawValue];
+      for (const val of values) {
+        const value = normaliseSpec(key, String(val));
+        await prisma.productSpec.create({
+          data: { productId: p.id, key, value },
+        });
+      }
     }
   }
 
@@ -1601,6 +1597,8 @@ async function main() {
           options: attr.options ?? [],
           unit: attr.unit ?? null,
           sortOrder: attr.sortOrder,
+          dependencyKey: attr.dependencyKey ?? null,
+          dependencyValue: attr.dependencyValue ?? null,
         },
         create: {
           categorySchemaId: schema.id,
@@ -1611,6 +1609,8 @@ async function main() {
           options: attr.options ?? [],
           unit: attr.unit ?? null,
           sortOrder: attr.sortOrder,
+          dependencyKey: attr.dependencyKey ?? null,
+          dependencyValue: attr.dependencyValue ?? null,
         },
       });
     }
