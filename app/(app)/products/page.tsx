@@ -478,7 +478,7 @@ const ProductsContent: React.FC = () => {
                             </button>
                         ) : null
                     }
-                    className="mb-8"
+                    className="mb-3"
                 />
 
                 <div className="flex flex-col gap-6">

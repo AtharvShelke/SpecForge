@@ -50,7 +50,7 @@ const Home: React.FC = () => {
   return (
     <PageLayout bgClass="bg-white">
       {/* HERO SECTION */}
-      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-white py-16 lg:py-12">
+      <section className="relative flex items-center overflow-hidden bg-white py-8 lg:py-10">
         {/* Subtle noise texture overlay */}
         <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIwLjA1Ii8+PC9zdmc+')]" />
 
@@ -72,7 +72,7 @@ const Home: React.FC = () => {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
-                className="inline-flex items-center gap-2.5 mb-8 px-4 py-2 rounded-full bg-slate-900/5 border border-slate-200/60"
+                className="inline-flex items-center gap-2.5 mb-4 px-3 py-1.5 rounded-full bg-slate-900/5 border border-slate-200/60"
               >
                 {hero.badge.icon && <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
                 <span className="text-sm font-medium text-slate-700">{hero.badge.text}</span>
@@ -82,7 +82,7 @@ const Home: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.7 }}
-                className="text-[clamp(2.75rem,7vw,4.5rem)] font-bold leading-[1.05] tracking-[-0.02em] mb-6"
+                className="text-[clamp(2rem,5vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] mb-4"
               >
                 <span className="text-slate-900">{hero.headline.line1}</span>
                 <br />
@@ -99,7 +99,7 @@ const Home: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5, duration: 0.7 }}
-                className="text-lg lg:text-xl text-slate-600 mb-10 max-w-lg leading-relaxed"
+                className="text-base lg:text-lg text-slate-600 mb-6 max-w-lg leading-relaxed"
               >
                 {hero.subheadline}
               </motion.p>
@@ -131,7 +131,7 @@ const Home: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8, duration: 0.7 }}
-                className="mt-14 grid grid-cols-3 gap-8 pt-8 border-t border-slate-200"
+                className="mt-8 grid grid-cols-3 gap-6 pt-6 border-t border-slate-200"
               >
                 {hero.stats.map((stat, i) => (
                   <div key={i}>
@@ -191,9 +191,9 @@ const Home: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          className="text-center mb-6"
         >
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">{categories.sectionTitle}</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">{categories.sectionTitle}</h2>
         </motion.div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -233,10 +233,10 @@ const Home: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
-          className="mb-16"
+          className="mb-6"
         >
-          <h2 className="text-5xl font-bold text-slate-900 mb-4">{featuredProducts.sectionTitle}</h2>
-          <p className="text-xl text-slate-600">{featuredProducts.sectionSubtitle}</p>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">{featuredProducts.sectionTitle}</h2>
+          <p className="text-base text-slate-600">{featuredProducts.sectionSubtitle}</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -265,7 +265,7 @@ const Home: React.FC = () => {
                   </div>
 
                   {/* Content */}
-                  <div className="p-6">
+                  <div className="p-4">
                     <div className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">
                       {product.category}
                     </div>
@@ -295,7 +295,7 @@ const Home: React.FC = () => {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center mt-12"
+          className="text-center mt-8"
         >
           <Link href={featuredProducts.ctaLink}>
             <button className="px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all inline-flex items-center gap-2">
@@ -308,7 +308,7 @@ const Home: React.FC = () => {
 
       {/* TRUST INDICATORS */}
       <Section className="bg-white border-y border-slate-100">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {trustIndicators.features
             .sort((a, b) => a.order - b.order)
             .map((feature, i) => {
@@ -322,8 +322,8 @@ const Home: React.FC = () => {
                   transition={{ delay: i * 0.1, duration: 0.6 }}
                   className="text-center"
                 >
-                  <div className="w-14 h-14 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <Icon className="w-7 h-7 text-slate-700" />
+                  <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-slate-700" />
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 mb-2">{feature.title}</h3>
                   <p className="text-slate-600 leading-relaxed">{feature.description}</p>
@@ -344,14 +344,14 @@ const Home: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="relative z-10 text-center"
         >
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             {finalCTA.headline}
           </h2>
-          <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+          <p className="text-base text-slate-300 mb-6 max-w-2xl mx-auto">
             {finalCTA.subheadline}
           </p>
           <Link href={finalCTA.ctaLink}>
-            <button className="px-10 py-5 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-100 transition-all inline-flex items-center gap-3 shadow-2xl">
+            <button className="px-8 py-3.5 bg-white text-slate-900 rounded-xl font-bold text-base hover:bg-slate-100 transition-all inline-flex items-center gap-2 shadow-2xl">
               {finalCTA.ctaText}
               <ArrowRight className="w-6 h-6" />
             </button>

@@ -34,7 +34,7 @@ const PageLayoutHeader: React.FC<{
 }> = ({ children, className = '', border = true }) => {
     return (
         <header className={`bg-white ${border ? 'border-b border-zinc-200' : ''} ${className}`}>
-            <Container className="py-8 sm:py-12 lg:py-16">
+            <Container className="py-4 sm:py-5 lg:py-6">
                 {children}
             </Container>
         </header>
@@ -49,9 +49,9 @@ const PageLayoutContent: React.FC<{
 }> = ({ children, className = '', padding = 'md', container = true }) => {
     const padClass = {
         none: '',
-        sm: 'py-6',
-        md: 'py-10 lg:py-12',
-        lg: 'py-16 lg:py-20'
+        sm: 'py-4',
+        md: 'py-6 lg:py-8',
+        lg: 'py-10 lg:py-14'
     }[padding];
 
     const content = container ? (

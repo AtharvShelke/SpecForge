@@ -108,7 +108,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const res = await fetch('/api/inventory');
             const data = await res.json();
-            setInventory(data);
+            setInventory(Array.isArray(data) ? data : []);
         } catch (err) { console.error(err); }
     }, []);
 
@@ -479,7 +479,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshReviews, toast]);
 
-    const getInventoryItem = useCallback((sku: string) => inventory.find(i => i.sku === sku), [inventory]);
+    const getInventoryItem = useCallback((sku: string) => {
+        const arr = Array.isArray(inventory) ? inventory : [];
+        return arr.find(i => i.sku === sku);
+    }, [inventory]);
 
     const value = useMemo(() => ({
         inventory, refreshInventory, stockMovements, refreshStockMovements, adjustStock, getInventoryItem,

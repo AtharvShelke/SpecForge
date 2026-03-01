@@ -56,11 +56,13 @@ const AdminDashboard: React.FC = () => {
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:gap-6 mb-4 sm:mb-6">
-                    <PageTitle
-                        title="Admin Dashboard"
-                        subtitle="Manage catalog, orders, and system settings."
-                    />
+                <div className="flex flex-col gap-3 mb-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-lg font-bold text-zinc-900 tracking-tight heading-font">Admin Dashboard</h1>
+                            <p className="text-xs text-zinc-500">Manage catalog, orders, and system settings.</p>
+                        </div>
+                    </div>
 
                     {/* Navigation Tabs */}
 

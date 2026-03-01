@@ -356,6 +356,7 @@ const StatsBar = ({ orders }: { orders: Order[] }) => {
 // ─────────────────────────────────────────────────────────────
 const OrderManager = () => {
   const { orders, updateOrderStatus, inventory, adjustStock } = useAdmin();
+  const inventoryArray = Array.isArray(inventory) ? inventory : [];
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
@@ -773,7 +774,7 @@ const OrderManager = () => {
                               </thead>
                               <tbody className="divide-y divide-slate-50">
                                 {selectedOrder.items.map(item => {
-                                  const inv = inventory.find(i => i.productId === item.id);
+                                  const inv = inventoryArray.find(i => i.productId === item.id);
                                   return (
                                     <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
                                       <td className="px-4 sm:px-6 py-3.5">
@@ -905,7 +906,7 @@ const OrderManager = () => {
                       <CardContent className="px-4 py-3">
                         <div className="space-y-2">
                           {selectedOrder.items.map(item => {
-                            const inv = inventory.find(i => i.productId === item.id);
+                            const inv = inventoryArray.find(i => i.productId === item.id);
                             const available = inv?.quantity ?? 0;
                             const reserved = inv?.reserved ?? 0;
                             const isLow = available <= (inv?.reorderLevel ?? 5);
@@ -1053,7 +1054,7 @@ const OrderManager = () => {
                   </div>
                   <div className="divide-y divide-slate-100">
                     {selectedOrder.items.map(item => {
-                      const inv = inventory.find(i => i.productId === item.id);
+                      const inv = inventoryArray.find(i => i.productId === item.id);
                       const current = inv?.quantity ?? 0;
                       let after = current;
                       let changeLabel = '';

@@ -1090,8 +1090,9 @@ const BillingInvoices: React.FC = () => {
 
   // Enrich products with inventory stock
   const enrichedProducts = useMemo<Product[]>(() => {
+    const inventoryArr = Array.isArray(inventory) ? inventory : [];
     return products.map(p => {
-      const inv = inventory.find(i => i.productId === p.id);
+      const inv = inventoryArr.find(i => i.productId === p.id);
       return { ...p, stock: inv?.quantity ?? p.stock };
     });
   }, [products, inventory]);
