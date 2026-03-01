@@ -14,6 +14,7 @@ export enum Category {
   MONITOR = 'MONITOR',
   PERIPHERAL = 'PERIPHERAL',
   NETWORKING = 'NETWORKING',
+  LAPTOP = 'LAPTOP',
 }
 
 /** Display labels for categories (frontend-only) */
@@ -29,6 +30,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   [Category.MONITOR]: 'Monitor',
   [Category.PERIPHERAL]: 'Peripheral',
   [Category.NETWORKING]: 'Networking',
+  [Category.LAPTOP]: 'Laptop',
 };
 
 export enum OrderStatus {
@@ -59,7 +61,7 @@ export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelle
 
 export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP';
 
-export type FilterType = 'checkbox' | 'range' | 'boolean';
+export type FilterType = 'checkbox' | 'range' | 'boolean' | 'search' | 'dropdown';
 
 // ──────────────────────────────────────────────────────
 // CATALOG — Product

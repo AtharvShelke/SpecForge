@@ -1,26 +1,4 @@
-/**
- * Prisma Seed File
- * Seeds all mock data into the database.
- *
- * Run with:  npx prisma db seed
- * (requires "prisma": { "seed": "ts-node prisma/seed.ts" } in package.json)
- *
- * ── Alignment notes (mockData ↔ schema) ──────────────────────────────────────
- * 1. Category enum: TS values ('Processor', 'Graphics Card', …) → schema keys
- *    (PROCESSOR, GPU, …). Mapped via categoryToEnum().
- * 2. Review.customerName (was author); status ReviewStatus (was approved).
- * 3. Product.specs (flat object) → ProductSpec[] (key/value rows).
- * 4. formFactor 'mATX' in some products normalised to 'Micro-ATX' to match
- *    filter config options.
- * 5. FilterDefinition.dependency { key, value } → dependencyKey / dependencyValue.
- * 6. InventoryItem.lastUpdated (was lastRestocked).
- * 7. Order.shippingAddress flattened into Order columns.
- * 8. StockMovementType: seed uses INWARD for initial stock receipt.
- * 9. SavedBuild items reference product IDs directly (no duplicate upsert needed
- *    because products are created first).
- * 10. CMS landing page stored as a single JSON blob in CMSLandingPage.
- * ─────────────────────────────────────────────────────────────────────────────
- */
+
 
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -792,81 +770,120 @@ const CATEGORY_SCHEMAS_DATA: { category: Category; attributes: SeedAttributeDef[
       { key: 'series', label: 'Series', type: 'select', required: false, options: ['3000 Series', '5000 Series', '7000 Series', '8000 Series', '9000 Series', 'Threadripper'], sortOrder: 4, dependencyKey: 'brand', dependencyValue: 'AMD' },
       { key: 'wattage', label: 'TDP (Watts)', type: 'number', required: true, unit: 'W', sortOrder: 5 },
       { key: 'ramType', label: 'RAM Support', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 6 },
+      { key: 'family', label: 'CPU Family', type: 'select', required: false, options: ['Athlon', 'Ryzen 3', 'Ryzen 5', 'Ryzen 7', 'Ryzen 9'], sortOrder: 7, dependencyKey: 'brand', dependencyValue: 'AMD' },
+      { key: 'family', label: 'CPU Line', type: 'select', required: false, options: ['Core i3', 'Core i5', 'Core i7', 'Core i9', 'Core Ultra 5', 'Core Ultra 7', 'Core Ultra 9'], sortOrder: 8, dependencyKey: 'brand', dependencyValue: 'Intel' },
+      { key: 'maxMemory', label: 'Max Memory', type: 'select', required: false, options: ['64 GB', '128 GB', '192 GB', '256 GB'], sortOrder: 9 },
+      { key: 'integratedGraphics', label: 'Integrated Graphics', type: 'select', required: false, options: ['No', 'Intel UHD Graphics 630', 'Intel UHD Graphics 730', 'Intel UHD Graphics 770', 'Radeon Graphics'], sortOrder: 10 },
     ]
   },
   {
     category: Category.MOTHERBOARD,
     attributes: [
-      { key: 'socket', label: 'Socket', type: 'select', required: true, options: ['AM4', 'AM5', 'sTR5', 'LGA1151', 'LGA1200', 'LGA1700'], sortOrder: 0 },
-      { key: 'chipset', label: 'Chipset', type: 'select', required: true, options: ['A520', 'B450', 'B550', 'B650', 'B760', 'X570', 'X670', 'Z690', 'Z790'], sortOrder: 1 },
-      { key: 'formFactor', label: 'Form Factor', type: 'select', required: true, options: ['ATX', 'Micro-ATX', 'E-ATX', 'Mini-ITX'], sortOrder: 2 },
-      { key: 'ramType', label: 'Memory Type', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 3 },
+      { key: 'platform', label: 'Platform', type: 'select', required: true, options: ['AMD', 'Intel'], sortOrder: 0 },
+      { key: 'socket', label: 'Socket', type: 'select', required: true, options: ['AM4', 'AM5', 'sTR5', 'LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 1 },
+      { key: 'chipset', label: 'Chipset', type: 'select', required: true, options: ['A520', 'B450', 'B550', 'B650', 'B760', 'X570', 'X670', 'X870', 'H510', 'H610', 'Z690', 'Z790', 'Z890'], sortOrder: 2 },
+      { key: 'formFactor', label: 'Form Factor', type: 'select', required: true, options: ['ATX', 'Micro-ATX', 'E-ATX', 'Mini-ITX'], sortOrder: 3 },
+      { key: 'ramType', label: 'Memory Type', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 4 },
     ]
   },
   {
     category: Category.GPU,
     attributes: [
-      { key: 'memory', label: 'VRAM', type: 'text', required: true, sortOrder: 0 },
-      { key: 'wattage', label: 'TDP (W)', type: 'number', required: true, unit: 'W', sortOrder: 1 },
-      { key: 'series', label: 'Series', type: 'text', required: false, sortOrder: 2 },
+      { key: 'chipset', label: 'Chipset', type: 'select', required: true, options: ['AMD RADEON', 'NVIDIA GEFORCE', 'NVIDIA QUADRO', 'Intel Arc'], sortOrder: 0 },
+      { key: 'model', label: 'GPU Model', type: 'text', required: true, sortOrder: 1 },
+      { key: 'memory', label: 'VRAM', type: 'text', required: true, sortOrder: 2 },
+      { key: 'memoryType', label: 'Memory Type', type: 'select', required: true, options: ['DDR3', 'GDDR5', 'GDDR6', 'GDDR6X', 'GDDR7'], sortOrder: 3 },
+      { key: 'pcie', label: 'PCI Express', type: 'select', required: false, options: ['2.0', '3.0', '4.0', '5.0'], sortOrder: 4 },
+      { key: 'wattage', label: 'TDP (W)', type: 'number', required: true, unit: 'W', sortOrder: 5 },
     ]
   },
   {
     category: Category.RAM,
     attributes: [
-      { key: 'ramType', label: 'Memory Type', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 0 },
+      { key: 'ramType', label: 'Memory Type', type: 'select', required: true, options: ['DDR3', 'DDR4', 'DDR5'], sortOrder: 0 },
       { key: 'capacity', label: 'Capacity', type: 'text', required: true, sortOrder: 1 },
       { key: 'frequency', label: 'Speed', type: 'text', required: true, sortOrder: 2 },
+      { key: 'kit', label: 'Kit Type', type: 'select', required: false, options: ['4x1', '8x1', '16x1', '16x2', '24x2', '32x2'], sortOrder: 3 },
+      { key: 'series', label: 'Product Series', type: 'text', required: false, sortOrder: 4 },
     ]
   },
   {
     category: Category.STORAGE,
     attributes: [
-      { key: 'type', label: 'Category', type: 'select', required: true, options: ['SSD', 'HDD'], sortOrder: 0 },
+      { key: 'type', label: 'Category', type: 'select', required: true, options: ['Internal SSD', 'Internal HDD', 'External SSD', 'External HDD', 'Enterprise SSD', 'Pen Drive'], sortOrder: 0 },
       { key: 'capacity', label: 'Capacity', type: 'text', required: true, sortOrder: 1 },
-      { key: 'interface', label: 'Interface', type: 'text', required: true, sortOrder: 2 },
+      { key: 'interface', label: 'Interface', type: 'text', required: false, sortOrder: 2 },
+      { key: 'series', label: 'Series', type: 'text', required: false, sortOrder: 3 },
     ]
   },
   {
     category: Category.PSU,
     attributes: [
       { key: 'wattage', label: 'Wattage', type: 'number', required: true, unit: 'W', sortOrder: 0 },
-      { key: 'efficiency', label: 'Efficiency', type: 'select', required: true, options: ['80 Plus Bronze', '80 Plus Gold', '80 Plus Platinum', '80 Plus Titanium'], sortOrder: 1 },
+      { key: 'efficiency', label: 'Certification', type: 'select', required: true, options: ['Bronze', 'Gold', 'Platinum', 'Silver', 'Titanium'], sortOrder: 1 },
+      { key: 'modular', label: 'Modular', type: 'select', required: true, options: ['Fully', 'Non', 'Semi'], sortOrder: 2 },
+      { key: 'series', label: 'Series', type: 'text', required: false, sortOrder: 3 },
+      { key: 'pcie62', label: 'PCIe 6+2 Connectors', type: 'number', required: false, sortOrder: 4 },
+      { key: 'sata', label: 'SATA Connectors', type: 'number', required: false, sortOrder: 5 },
+      { key: 'peripheral4pin', label: 'Peripheral 4-Pin', type: 'number', required: false, sortOrder: 6 },
     ]
   },
   {
     category: Category.CABINET,
     attributes: [
-      { key: 'formFactor', label: 'Cabinet Size', type: 'select', required: true, options: ['Full Tower', 'Mid Tower', 'Mini Tower'], sortOrder: 0 },
-      { key: 'color', label: 'Color', type: 'text', required: false, sortOrder: 1 },
+      { key: 'formFactor', label: 'Cabinet Size', type: 'select', required: true, options: ['Full', 'Mid', 'Mini', 'Super', 'SFF'], sortOrder: 0 },
+      { key: 'motherboardSupport', label: 'Motherboard Size', type: 'select', required: true, options: ['ATX', 'E-ATX', 'ITX', 'M-ATX', 'M-ITX'], sortOrder: 1 },
+      { key: 'radiatorSupport', label: 'Radiator Support', type: 'text', required: false, sortOrder: 2 },
+      { key: 'color', label: 'Color', type: 'text', required: false, sortOrder: 3 },
     ]
   },
   {
     category: Category.COOLER,
     attributes: [
-      { key: 'type', label: 'Cooling Type', type: 'select', required: true, options: ['Air Cooler', 'AIO Liquid Cooler', 'Water Block', 'Pump & Reservoir'], sortOrder: 0 },
-      { key: 'size', label: 'Radiator Size', type: 'text', required: false, sortOrder: 1 },
+      { key: 'type', label: 'Cooling Type', type: 'select', required: true, options: ['AIR COOLER', 'LIQUID AIO COOLER', 'Water Block', 'Pump & Reservoir'], sortOrder: 0 },
+      { key: 'socket', label: 'Socket Support', type: 'multi-select', required: false, options: ['AM2', 'AM2+', 'AM3', 'AM3+', 'AM4', 'AM5', 'LGA1151', 'LGA1200', 'LGA1700'], sortOrder: 1 },
+      { key: 'radiatorSize', label: 'Radiator Size', type: 'select', required: false, options: ['240mm', '280mm', '360mm', '420mm'], sortOrder: 2 },
+      { key: 'fanSize', label: 'Fan Size', type: 'select', required: false, options: ['40mm', '60mm', '90mm', '92mm', '120mm', '140mm'], sortOrder: 3 },
+      { key: 'pwm', label: 'PWM Controller', type: 'select', required: false, options: ['NA', 'YES'], sortOrder: 4 },
     ]
   },
   {
     category: Category.MONITOR,
     attributes: [
-      { key: 'size', label: 'Screen Size', type: 'select', required: true, options: ['24 Inch', '27 Inch', '32 Inch', '34 Inch'], sortOrder: 0 },
-      { key: 'resolution', label: 'Resolution', type: 'select', required: true, options: ['1080p', '1440p', '2K', '4K'], sortOrder: 1 },
-      { key: 'type', label: 'Type', type: 'select', required: false, options: ['Gaming', 'Professional'], sortOrder: 2 },
+      { key: 'size', label: 'Screen Size', type: 'select', required: true, options: ['22 Inch', '24 Inch', '27 Inch', '32 Inch', '34 Inch', '49 Inch'], sortOrder: 0 },
+      { key: 'displayType', label: 'Display Type', type: 'select', required: false, options: ['FHD', 'QHD', 'UHD', 'DQHD', '5K HDR'], sortOrder: 1 },
+      { key: 'panel', label: 'Panel Type', type: 'select', required: false, options: ['IPS', 'OLED', 'QD-OLED', 'TN', 'VA'], sortOrder: 2 },
+      { key: 'resolution', label: 'Resolution', type: 'select', required: true, options: ['1080p', '1440p', '2K', '4K', '5K'], sortOrder: 3 },
+      { key: 'responseTime', label: 'Response Time', type: 'text', required: false, sortOrder: 4 },
+      { key: 'refreshRate', label: 'Refresh Rate', type: 'select', required: false, options: ['60Hz', '75Hz', '144Hz', '165Hz', '240Hz', '360Hz'], sortOrder: 5 },
+      { key: 'surface', label: 'Screen Surface', type: 'select', required: false, options: ['CURVED', 'FLAT'], sortOrder: 6 },
+      { key: 'connectivity', label: 'Connectivity', type: 'multi-select', required: false, options: ['D-SUB', 'DISPLAY PORT', 'DVI', 'HDMI', 'USB-C'], sortOrder: 7 },
+      { key: 'type', label: 'Type', type: 'select', required: false, options: ['Gaming', 'Professional', 'Curved'], sortOrder: 8 },
     ]
   },
   {
     category: Category.PERIPHERAL,
     attributes: [
-      { key: 'type', label: 'Type', type: 'select', required: true, options: ['Keyboard', 'Mouse', 'Headset', 'Mechanical Keyboard', 'Gaming Mouse'], sortOrder: 0 },
-      { key: 'connectivity', label: 'Connectivity', type: 'select', required: true, options: ['Wired', 'Wireless', 'Bluetooth'], sortOrder: 1 },
+      { key: 'type', label: 'Type', type: 'select', required: true, options: ['Headset', 'Keyboard', 'Mouse', 'Mouse Pad', 'Speaker', 'Headphone', 'Webcam', 'Software'], sortOrder: 0 },
+      { key: 'connectivity', label: 'Connectivity', type: 'select', required: false, options: ['Wired', 'Wireless', 'Bluetooth'], sortOrder: 1 },
     ]
   },
   {
     category: Category.NETWORKING,
     attributes: [
-      { key: 'type', label: 'Device Type', type: 'select', required: true, options: ['Router', 'Switch', 'Adapter'], sortOrder: 0 },
+      { key: 'type', label: 'Device Type', type: 'select', required: true, options: ['Router', 'Switch', 'Adapter', 'Cable'], sortOrder: 0 },
+    ]
+  },
+  {
+    category: Category.LAPTOP,
+    attributes: [
+      { key: 'processor', label: 'Processor', type: 'select', required: true, options: ['AMD Ryzen 3', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Intel Core 5', 'Intel Core i3', 'Intel Core i5', 'Intel Core i7'], sortOrder: 0 },
+      { key: 'processorSeries', label: 'Processor Series', type: 'select', required: false, options: ['Intel 12th Gen', 'Intel 13th Gen', 'Intel 14th Gen', 'Ryzen 5000 Series', 'Ryzen 7000 Series'], sortOrder: 1 },
+      { key: 'memorySize', label: 'Memory Size', type: 'select', required: true, options: ['8GB', '16GB', '32GB'], sortOrder: 2 },
+      { key: 'memoryType', label: 'Memory Type', type: 'select', required: true, options: ['DDR4', 'DDR5', 'LPDDR5'], sortOrder: 3 },
+      { key: 'ssd', label: 'SSD', type: 'select', required: false, options: ['256GB NVMe', '512GB NVMe', '1TB NVMe'], sortOrder: 4 },
+      { key: 'graphics', label: 'Graphics', type: 'select', required: false, options: ['AMD Radeon', 'Integrated', 'Intel Graphics', 'Iris Xe', 'UHD', 'NVIDIA RTX 3050', 'NVIDIA RTX 4050', 'NVIDIA RTX 4060'], sortOrder: 5 },
+      { key: 'screenResolution', label: 'Screen Resolution', type: 'select', required: false, options: ['1080p', '1440p', '2K', '4K'], sortOrder: 6 },
     ]
   },
 ];
@@ -888,117 +905,178 @@ interface SeedFilterDef {
 }
 
 const FILTER_CONFIG_DATA: { category: Category; filters: SeedFilterDef[] }[] = [
+  // ── PROCESSOR ──────────────────────────────────────────────────────────────
   {
     category: Category.PROCESSOR,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AMD', 'Intel'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.family', label: 'CPU Family', type: FilterType.checkbox, options: ['Athlon', 'Ryzen 3', 'Ryzen 5', 'Ryzen 7', 'Ryzen 9'], sortOrder: 2, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      { key: 'specs.cores', label: 'Cores', type: FilterType.checkbox, options: ['2', '4', '6', '8', '12', '16', '24'], sortOrder: 3, dependencyKey: 'specs.brand', dependencyValue: 'Intel' }, // Simplified
-      { key: 'specs.series', label: 'Series', type: FilterType.checkbox, options: ['3000 Series', '5000 Series', '7000 Series', '8000 Series', '9000 Series'], sortOrder: 4, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['AM4', 'AM5', 'LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 5 },
-      { key: 'specs.generation', label: 'Generation', type: FilterType.checkbox, options: ['9th Gen', '10th Gen', '11th Gen', '12th Gen', '13th Gen', '14th Gen'], sortOrder: 6, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
+      { key: 'search_description', label: 'Search in Descriptions', type: FilterType.search, sortOrder: 0 },
+      { key: 'search_subcategory', label: 'Search in Subcategories', type: FilterType.search, sortOrder: 1 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AMD', 'Intel'], sortOrder: 2 },
+      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 3 },
+      // AMD
+      { key: 'specs.family', label: 'CPU', type: FilterType.checkbox, options: ['Athlon', 'Ryzen 3', 'Ryzen 5', 'Ryzen 7', 'Ryzen 9'], sortOrder: 4, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
+      { key: 'specs.cores', label: 'Cores', type: FilterType.checkbox, options: ['2', '4', '6', '8', '12', '16', '24'], sortOrder: 5, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
+      { key: 'specs.series', label: 'Series', type: FilterType.checkbox, options: ['3000 Series', '5000 Series', '7000 Series', '8000 Series', '9000 Series'], sortOrder: 6, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
+      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['AM4', 'AM5'], sortOrder: 7, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
+      { key: 'specs.maxMemory', label: 'Max Memory Support', type: FilterType.checkbox, options: ['64 GB', '128 GB', '192 GB', '256 GB'], sortOrder: 8, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
+      { key: 'specs.integratedGraphics', label: 'Integrated Graphics', type: FilterType.checkbox, options: ['No', 'Radeon Graphics', 'Radeon Vega 3', 'Radeon Vega 8', 'Radeon Vega 11'], sortOrder: 9, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
+      // Intel
+      { key: 'specs.family', label: 'CPU', type: FilterType.checkbox, options: ['Core Ultra 5', 'Core Ultra 7', 'Core Ultra 9', 'Core i3', 'Core i5', 'Core i7', 'Core i9'], sortOrder: 10, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
+      { key: 'specs.cores', label: 'Cores', type: FilterType.checkbox, options: ['2', '4', '6', '8', '10', '12', '14', '20', '24'], sortOrder: 11, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
+      { key: 'specs.generation', label: 'Series', type: FilterType.checkbox, options: ['9th Gen', '10th Gen', '11th Gen', '12th Gen', '13th Gen', '14th Gen'], sortOrder: 12, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
+      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 13, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
+      { key: 'specs.maxMemory', label: 'Max Memory Support', type: FilterType.checkbox, options: ['64 GB', '128 GB', '192 GB', '256 GB'], sortOrder: 14, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
+      { key: 'specs.integratedGraphics', label: 'Integrated Graphics', type: FilterType.checkbox, options: ['No', 'Intel UHD Graphics 630', 'Intel UHD Graphics 730', 'Intel UHD Graphics 770'], sortOrder: 15, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
     ]
   },
+  // ── CPU COOLER ─────────────────────────────────────────────────────────────
   {
     category: Category.COOLER,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['Aerocool', 'Alseye', 'Ant Esports', 'Antec', 'Arctic', 'Cooler Master', 'Corsair', 'DeepCool', 'Lian Li', 'Noctua', 'NZXT'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AEROCOOL', 'ALSEYE', 'Ant Esports', 'ANTEC', 'ARCTIC', 'Cooler Master', 'Corsair', 'DeepCool', 'Lian Li', 'Noctua', 'NZXT'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Cooling Type', type: FilterType.checkbox, options: ['Air Cooler', 'AIO Liquid Cooler', 'Liquid Cooler'], sortOrder: 2 },
-      { key: 'specs.socket', label: 'Socket Support', type: FilterType.checkbox, options: ['AM4', 'AM5', 'LGA1200', 'LGA1700'], sortOrder: 3 },
-      { key: 'specs.size', label: 'Radiator Size', type: FilterType.checkbox, options: ['240mm', '280mm', '360mm', '420mm'], sortOrder: 4 },
+      { key: 'specs.type', label: 'Cooling Type', type: FilterType.checkbox, options: ['AIR COOLER', 'LIQUID AIO COOLER'], sortOrder: 2 },
+      { key: 'specs.socket', label: 'Socket Support', type: FilterType.checkbox, options: ['AM2', 'AM2+', 'AM3', 'AM3+', 'AM4', 'AM5', 'LGA1151', 'LGA1200', 'LGA1700'], sortOrder: 3 },
+      { key: 'specs.radiatorSize', label: 'Radiator Size', type: FilterType.checkbox, options: ['240mm', '280mm', '360mm', '420mm'], sortOrder: 4 },
+      { key: 'specs.fanSize', label: 'Fan Size', type: FilterType.checkbox, options: ['40mm', '60mm', '90mm', '92mm', '120mm', '140mm'], sortOrder: 5 },
+      { key: 'specs.pwm', label: 'PWM Controller', type: FilterType.checkbox, options: ['NA', 'YES'], sortOrder: 6 },
     ]
   },
+  // ── MOTHERBOARD ────────────────────────────────────────────────────────────
   {
     category: Category.MOTHERBOARD,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ASRock', 'ASUS', 'Gigabyte', 'MSI'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ASROCK', 'ASUS', 'GIGABYTE', 'MSI'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['AM4', 'AM5', 'LGA1700', 'LGA1200'], sortOrder: 2 },
-      { key: 'specs.chipset', label: 'Chipset', type: FilterType.checkbox, options: ['A520', 'B450', 'B550', 'B650', 'B760', 'X570', 'X670', 'Z690', 'Z790'], sortOrder: 3 },
-      { key: 'specs.ramType', label: 'Memory Support', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 4 },
-      { key: 'specs.formFactor', label: 'Form Factor', type: FilterType.checkbox, options: ['ATX', 'E-ATX', 'Micro-ATX', 'Mini-ITX'], sortOrder: 5 },
+      { key: 'specs.platform', label: 'Platform', type: FilterType.checkbox, options: ['AMD', 'Intel'], sortOrder: 2 },
+      // AMD Platform
+      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['AM4', 'AM5'], sortOrder: 3, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
+      { key: 'specs.chipset', label: 'Chipset', type: FilterType.checkbox, options: ['A520', 'B450', 'B550', 'B650', 'X570', 'X670', 'X870'], sortOrder: 4, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
+      { key: 'specs.ramType', label: 'Supported Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 5, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
+      { key: 'specs.formFactor', label: 'Form Factor', type: FilterType.checkbox, options: ['ATX', 'Micro-ATX', 'Mini-ITX', 'E-ATX'], sortOrder: 6, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
+      // Intel Platform
+      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 7, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
+      { key: 'specs.chipset', label: 'Chipset', type: FilterType.checkbox, options: ['B760', 'H510', 'H610', 'Z690', 'Z790', 'Z890'], sortOrder: 8, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
+      { key: 'specs.ramType', label: 'Supported Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 9, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
+      { key: 'specs.formFactor', label: 'Form Factor', type: FilterType.checkbox, options: ['ATX', 'Micro-ATX', 'Mini-ITX', 'E-ATX'], sortOrder: 10, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
     ]
   },
+  // ── GRAPHICS CARD ──────────────────────────────────────────────────────────
   {
     category: Category.GPU,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ASRock', 'ASUS', 'Galax', 'Gigabyte', 'Inno3D', 'MSI', 'Zotac'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ASROCK', 'ASUS', 'GALAX', 'GIGABYTE', 'INNO3D', 'MSI', 'Sapphire', 'Zotac'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.memory', label: 'Memory Size', type: FilterType.checkbox, options: ['4GB', '6GB', '8GB', '10GB', '12GB', '16GB', '20GB', '24GB'], sortOrder: 2 },
-      { key: 'specs.memoryType', label: 'Memory Type', type: FilterType.checkbox, options: ['GDDR5', 'GDDR6', 'GDDR6X'], sortOrder: 3 },
+      { key: 'specs.chipset', label: 'Chipset', type: FilterType.checkbox, options: ['AMD RADEON', 'NVIDIA GEFORCE', 'NVIDIA QUADRO', 'Intel Arc'], sortOrder: 2 },
+      { key: 'specs.model', label: 'GPU', type: FilterType.checkbox, options: ['A400', 'A1000', 'GT 710', 'GT 730', 'GT 1030', 'GTX 1650', 'GTX 1660', 'RTX 3060', 'RTX 4060', 'RTX 4070', 'RTX 4080', 'RTX 4090', 'RX 7600', 'RX 7800 XT'], sortOrder: 3 },
+      { key: 'specs.pcie', label: 'PCI EXPRESS', type: FilterType.checkbox, options: ['2.0', '3.0', '4.0', '5.0'], sortOrder: 4 },
+      { key: 'specs.memory', label: 'Memory Size', type: FilterType.checkbox, options: ['2GB', '4GB', '6GB', '8GB', '12GB', '16GB', '20GB', '24GB'], sortOrder: 5 },
+      { key: 'specs.memoryType', label: 'Memory Type', type: FilterType.checkbox, options: ['DDR3', 'GDDR5', 'GDDR6', 'GDDR6X', 'GDDR7'], sortOrder: 6 },
     ]
   },
+  // ── RAM ────────────────────────────────────────────────────────────────────
   {
     category: Category.RAM,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ADATA', 'Corsair', 'Crucial', 'G.Skill', 'Kingston', 'TeamGroup'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ACER', 'ADATA', 'CORSAIR', 'CRUCIAL', 'EVM', 'G.Skill', 'Kingston', 'TeamGroup'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.ramType', label: 'Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 2 },
-      { key: 'specs.capacity', label: 'Capacity', type: FilterType.checkbox, options: ['8GB', '16GB', '32GB', '48GB', '64GB'], sortOrder: 3 },
-      { key: 'specs.frequency', label: 'Speed', type: FilterType.checkbox, options: ['3200MHz', '3600MHz', '4800MHz', '5200MHz', '5600MHz', '6000MHz', '6400MHz'], sortOrder: 4 },
+      { key: 'specs.series', label: 'Product Series', type: FilterType.checkbox, options: ['AEGIS', 'DOMINATOR PLATINUM RGB', 'DOMINATOR RGB DDR5', 'DOMINATOR TITANIUM RGB DDR5', 'FURY BEAST', 'TRIDENT Z5', 'VENGEANCE'], sortOrder: 2 },
+      { key: 'specs.ramType', label: 'Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 3 },
+      { key: 'specs.capacity', label: 'Capacity', type: FilterType.checkbox, options: ['4GB', '8GB', '16GB', '32GB', '48GB', '64GB'], sortOrder: 4 },
+      { key: 'specs.kit', label: 'Kit Type', type: FilterType.checkbox, options: ['4x1', '8x1', '16x1', '16x2', '24x2', '32x2'], sortOrder: 5 },
+      { key: 'specs.frequency', label: 'Speed', type: FilterType.checkbox, options: ['2666 MHz', '3200 MHz', '4800 MHz', '5200 MHz', '5600 MHz', '6000 MHz'], sortOrder: 6 },
     ]
   },
+  // ── STORAGE ────────────────────────────────────────────────────────────────
   {
     category: Category.STORAGE,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ADATA', 'Crucial', 'Kingston', 'Samsung', 'Seagate', 'Western Digital'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ACER', 'ADATA', 'ADDLINK', 'Ant Esports', 'ASUS', 'Crucial', 'Kingston', 'Samsung', 'Seagate', 'Western Digital'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Category', type: FilterType.checkbox, options: ['Internal SSD', 'Internal HDD', 'External SSD', 'External HDD', 'Memory Card'], sortOrder: 2 },
-      { key: 'specs.interface', label: 'Interface', type: FilterType.checkbox, options: ['SATA', 'NVMe Gen3', 'NVMe Gen4', 'NVMe Gen5'], sortOrder: 3 },
-      { key: 'specs.capacity', label: 'Capacity', type: FilterType.checkbox, options: ['500GB', '1TB', '2TB', '4TB', '8TB'], sortOrder: 4 },
+      { key: 'specs.type', label: 'Category', type: FilterType.checkbox, options: ['Enterprise SSD', 'External HDD', 'External SSD', 'Internal HDD', 'Internal SSD', 'Pen Drive'], sortOrder: 2 },
+      { key: 'specs.series', label: 'Series', type: FilterType.checkbox, options: ['690 NEO', '870 EVO', '990 EVO', '990 PRO', '9100 PRO'], sortOrder: 3 },
+      { key: 'specs.capacity', label: 'Capacity', type: FilterType.checkbox, options: ['500GB', '1TB', '1.92TB', '2TB', '3.84TB', '4TB', '8TB'], sortOrder: 4 },
     ]
   },
+  // ── SMPS (PSU) ─────────────────────────────────────────────────────────────
   {
     category: Category.PSU,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['Antec', 'ASUS', 'Cooler Master', 'Corsair', 'DeepCool', 'MSI'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['Ant Esports', 'ANTEC', 'ASUS', 'COOLER MASTER', 'CORSAIR', 'DeepCool', 'MSI', 'Seasonic'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.wattage', label: 'Wattage', type: FilterType.range, sortOrder: 2, min: 400, max: 1600 },
-      { key: 'specs.efficiency', label: 'Certification', type: FilterType.checkbox, options: ['80 Plus Bronze', '80 Plus Gold', '80 Plus Platinum', '80 Plus Titanium'], sortOrder: 3 },
-      { key: 'specs.modular', label: 'Modular Type', type: FilterType.checkbox, options: ['Fully Modular', 'Semi Modular', 'Non Modular'], sortOrder: 4 },
+      { key: 'specs.wattage', label: 'Wattage', type: FilterType.checkbox, options: ['400', '450', '500', '520', '550', '650', '750', '850', '1000', '1200'], sortOrder: 2 },
+      { key: 'specs.series', label: 'Series', type: FilterType.checkbox, options: ['ATOM', 'AURA', 'AXi', 'C', 'CSK', 'HX', 'RM', 'RMx'], sortOrder: 3 },
+      { key: 'specs.efficiency', label: 'Certification', type: FilterType.checkbox, options: ['Bronze', 'Gold', 'Platinum', 'Silver', 'Titanium'], sortOrder: 4 },
+      { key: 'specs.modular', label: 'Modular', type: FilterType.checkbox, options: ['Fully', 'Non', 'Semi'], sortOrder: 5 },
+      { key: 'specs.pcie62', label: 'PCIe Connector (6+2)', type: FilterType.checkbox, options: ['1', '2', '3', '4', '5'], sortOrder: 6 },
+      { key: 'specs.sata', label: 'SATA Connector', type: FilterType.checkbox, options: ['2', '3', '4', '5', '6'], sortOrder: 7 },
+      { key: 'specs.peripheral4pin', label: 'Peripheral 4-Pin', type: FilterType.checkbox, options: ['1', '2', '3', '4', '5'], sortOrder: 8 },
     ]
   },
+  // ── CABINET ────────────────────────────────────────────────────────────────
   {
     category: Category.CABINET,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['Aerocool', 'Ant Esports', 'Antec', 'Cooler Master', 'Corsair', 'Lian Li', 'NZXT'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AEROCOOL', 'Ant Esports', 'ANTEC', 'ARCTIC', 'ASUS', 'Cooler Master', 'Corsair', 'Lian Li', 'NZXT'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.formFactor', label: 'Cabinet Size', type: FilterType.checkbox, options: ['Full Tower', 'Mid Tower', 'Mini Tower'], sortOrder: 2 },
-      { key: 'specs.motherboardSupport', label: 'Motherboard Size', type: FilterType.checkbox, options: ['ATX', 'E-ATX', 'Micro-ATX', 'Mini-ITX'], sortOrder: 3 },
+      { key: 'specs.formFactor', label: 'Cabinet Size', type: FilterType.checkbox, options: ['Full', 'Mid', 'Mini', 'Super', 'SFF'], sortOrder: 2 },
+      { key: 'specs.motherboardSupport', label: 'Motherboard Size', type: FilterType.checkbox, options: ['ATX', 'E-ATX', 'ITX', 'M-ATX', 'M-ITX'], sortOrder: 3 },
+      { key: 'specs.radiatorSupport', label: 'Radiator Support', type: FilterType.checkbox, options: ['120mm', '140mm', '240mm', '280mm', '360mm'], sortOrder: 4 },
     ]
   },
+  // ── MONITOR ────────────────────────────────────────────────────────────────
   {
     category: Category.MONITOR,
     filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['Acer', 'ASUS', 'BenQ', 'Dell', 'LG', 'MSI', 'Samsung'], sortOrder: 0 },
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AOC', 'ASUS', 'BENQ', 'COOLER MASTER', 'DELL', 'LG', 'MSI', 'Samsung', 'ViewSonic'], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.size', label: 'Screen Size', type: FilterType.checkbox, options: ['24 Inch', '27 Inch', '32 Inch', '34 Inch'], sortOrder: 2 },
-      { key: 'specs.panel', label: 'Panel Type', type: FilterType.checkbox, options: ['IPS', 'VA', 'TN', 'OLED'], sortOrder: 3 },
-      { key: 'specs.resolution', label: 'Resolution', type: FilterType.checkbox, options: ['1080p', '1440p', '4K'], sortOrder: 4 },
-      { key: 'specs.refreshRate', label: 'Refresh Rate', type: FilterType.checkbox, options: ['60Hz', '75Hz', '144Hz', '165Hz', '240Hz'], sortOrder: 5 },
-      { key: 'specs.surface', label: 'Screen Surface', type: FilterType.checkbox, options: ['Flat', 'Curved'], sortOrder: 6 },
+      { key: 'specs.size', label: 'Screen Size', type: FilterType.checkbox, options: ['22 Inch', '24 Inch', '27 Inch', '32 Inch', '34 Inch', '49 Inch'], sortOrder: 2 },
+      { key: 'specs.displayType', label: 'Display Type', type: FilterType.checkbox, options: ['FHD', 'QHD', 'UHD', 'DQHD', '5K HDR'], sortOrder: 3 },
+      { key: 'specs.panel', label: 'Panel Type', type: FilterType.checkbox, options: ['IPS', 'OLED', 'QD-OLED', 'TN', 'VA'], sortOrder: 4 },
+      { key: 'specs.resolution', label: 'Resolution', type: FilterType.checkbox, options: ['1080p', '1440p', '2K', '4K', '5K'], sortOrder: 5 },
+      { key: 'specs.responseTime', label: 'Response Time', type: FilterType.checkbox, options: ['0.5ms', '1ms', '2ms', '4ms', '5ms'], sortOrder: 6 },
+      { key: 'specs.refreshRate', label: 'Refresh Rate', type: FilterType.checkbox, options: ['60Hz', '75Hz', '144Hz', '165Hz', '240Hz', '360Hz'], sortOrder: 7 },
+      { key: 'specs.surface', label: 'Screen Surface', type: FilterType.checkbox, options: ['CURVED', 'FLAT'], sortOrder: 8 },
+      { key: 'specs.connectivity', label: 'Connectivity', type: FilterType.checkbox, options: ['D-SUB', 'DISPLAY PORT', 'DVI', 'HDMI', 'USB-C'], sortOrder: 9 },
     ]
   },
+  // ── PERIPHERALS ────────────────────────────────────────────────────────────
   {
     category: Category.PERIPHERAL,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: [], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Type', type: FilterType.checkbox, options: ['Keyboard', 'Mouse', 'Headset'], sortOrder: 2 },
+      { key: 'specs.type', label: 'Type', type: FilterType.checkbox, options: ['Headset', 'Keyboard', 'Mouse', 'Mouse Pad', 'Speaker', 'Headphone', 'Webcam', 'Software'], sortOrder: 2 },
       { key: 'specs.connectivity', label: 'Connectivity', type: FilterType.checkbox, options: ['Wired', 'Wireless', 'Bluetooth'], sortOrder: 3 },
     ]
   },
+  // ── NETWORKING ─────────────────────────────────────────────────────────────
   {
     category: Category.NETWORKING,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: [], sortOrder: 0 },
       { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Device Type', type: FilterType.checkbox, options: ['Router', 'Switch', 'Adapter'], sortOrder: 2 },
+      { key: 'specs.type', label: 'Device Type', type: FilterType.checkbox, options: ['Router', 'Switch', 'Adapter', 'Cable'], sortOrder: 2 },
+    ]
+  },
+  // ── LAPTOP ─────────────────────────────────────────────────────────────────
+  {
+    category: Category.LAPTOP,
+    filters: [
+      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ACER', 'ASUS', 'HP', 'MSI', 'Lenovo', 'Dell'], sortOrder: 0 },
+      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
+      { key: 'specs.processor', label: 'Processor', type: FilterType.checkbox, options: ['AMD Ryzen 3', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Intel Core 5', 'Intel Core i3', 'Intel Core i5', 'Intel Core i7'], sortOrder: 2 },
+      { key: 'specs.processorSeries', label: 'Processor Series', type: FilterType.checkbox, options: ['Intel 12th Gen', 'Intel 13th Gen', 'Intel 14th Gen', 'Ryzen 5000 Series', 'Ryzen 7000 Series'], sortOrder: 3 },
+      { key: 'specs.memorySize', label: 'Memory Size', type: FilterType.checkbox, options: ['8GB', '16GB', '32GB'], sortOrder: 4 },
+      { key: 'specs.memoryType', label: 'Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5', 'LPDDR5'], sortOrder: 5 },
+      { key: 'specs.ssd', label: 'SSD', type: FilterType.checkbox, options: ['256GB NVMe', '512GB NVMe', '1TB NVMe'], sortOrder: 6 },
+      { key: 'specs.graphics', label: 'Graphics', type: FilterType.checkbox, options: ['AMD Radeon', 'Integrated', 'Intel Graphics', 'Iris Xe', 'UHD', 'NVIDIA RTX 3050', 'NVIDIA RTX 4050', 'NVIDIA RTX 4060'], sortOrder: 7 },
+      { key: 'specs.screenResolution', label: 'Screen Resolution', type: FilterType.checkbox, options: ['1080p', '1440p', '2K', '4K'], sortOrder: 8 },
     ]
   },
 ];
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ORDERS
@@ -1694,64 +1772,45 @@ async function main() {
 
   // Top-level nodes from categoryTree.ts (condensed — full tree is represented)
   const TOP_LEVEL_NODES = [
+    // ── Custom Liquid Cooling ──
     {
-      label: 'Cooling', category: Category.COOLER,
+      label: 'Custom Liquid Cooling', category: Category.COOLER,
       children: [
-        {
-          label: 'CPU Cooler', children: [
-            {
-              label: 'AIO Liquid Cooler', children: [
-                { label: 'ARGB AIO Cooler', query: 'ARGB AIO' },
-                { label: 'RGB AIO Cooler', query: 'RGB AIO' },
-                { label: 'LCD AIO Cooler', query: 'LCD' },
-              ]
-            },
-            {
-              label: 'Air Cooler', children: [
-                { label: 'ARGB Air Cooler', query: 'ARGB Air' },
-                { label: 'RGB Air Cooler', query: 'RGB Air' },
-              ]
-            },
-          ]
-        },
-        {
-          label: 'Shop By Brand (Cooler)', children: [
-            { label: 'Cooler Master', brand: 'Cooler Master' },
-            { label: 'DeepCool', brand: 'DeepCool' },
-            { label: 'Lian Li', brand: 'Lian Li' },
-            { label: 'NZXT', brand: 'NZXT' },
-          ]
-        },
-      ],
+        { label: 'CPU Water Block', query: 'Water Block' },
+        { label: 'GPU Water Block', query: 'GPU Block' },
+        { label: 'Pump And Reservoir', query: 'Pump' },
+        { label: 'Radiator', query: 'Radiator' },
+        { label: 'Tubing', query: 'Tubing' },
+        { label: 'Fitting Adapters', query: 'Fitting' },
+        { label: 'Coolant', query: 'Coolant' },
+        { label: 'Distro Plate', query: 'Distro' },
+        { label: 'DIY Accessories', query: 'Accessory' },
+      ]
     },
+    // ── Processor ──
     {
       label: 'Processor', category: Category.PROCESSOR,
       children: [
-        {
-          label: 'AMD (CPU)', brand: 'AMD', children: [
-            { label: 'Ryzen 3', query: 'Ryzen 3' },
-            { label: 'Ryzen 5', query: 'Ryzen 5' },
-            { label: 'Ryzen 7', query: 'Ryzen 7' },
-            { label: 'Ryzen 9', query: 'Ryzen 9' },
-            { label: 'Ryzen Threadripper', query: 'Threadripper' },
-            { label: 'AMD 9000 Series', query: '9000' },
-            { label: 'AMD 7000 Series', query: '7000' },
-            { label: 'AMD 5000 Series', query: '5000' },
-          ]
-        },
-        {
-          label: 'Intel (CPU)', brand: 'Intel', children: [
-            { label: 'Core i3', query: 'i3' },
-            { label: 'Core i5', query: 'i5' },
-            { label: 'Core i7', query: 'i7' },
-            { label: 'Core i9', query: 'i9' },
-            { label: 'Intel 14th Gen', query: '14th' },
-            { label: 'Intel 13th Gen', query: '13th' },
-            { label: 'Intel 12th Gen', query: '12th' },
-          ]
-        },
-      ],
+        { label: 'Intel Processor', brand: 'Intel' },
+        { label: 'AMD Processor', brand: 'AMD' },
+        { label: 'Extreme-level Processor', query: 'Extreme' },
+        { label: 'High-end Processor', query: 'High-end' },
+        { label: 'Mid-Range Processor', query: 'Mid-Range' },
+        { label: 'Entry-level Processor', query: 'Entry' },
+        { label: 'Server CPU', query: 'Server' },
+      ]
     },
+    // ── CPU Cooler ──
+    {
+      label: 'CPU Cooler', category: Category.COOLER,
+      children: [
+        { label: 'Liquid Cooler', query: 'Liquid' },
+        { label: 'Thermal Paste', query: 'Paste' },
+        { label: 'Air Cooler', query: 'Air Cooler' },
+        { label: 'Cooling Accessories', query: 'Accessory' },
+      ]
+    },
+    // ── Motherboard ──
     {
       label: 'Motherboard', category: Category.MOTHERBOARD,
       children: [
@@ -1767,159 +1826,166 @@ async function main() {
           label: 'Intel Chipset', children: [
             { label: 'Z890', query: 'Z890' }, { label: 'Z790', query: 'Z790' },
             { label: 'B760', query: 'B760' }, { label: 'H610', query: 'H610' },
+            { label: 'H510', query: 'H510' },
           ]
         },
-        {
-          label: 'Shop By Brand (MOBO)', children: [
-            { label: 'ASUS (MOBO)', brand: 'ASUS' },
-            { label: 'ASRock (MOBO)', brand: 'ASRock' },
-            { label: 'Gigabyte (MOBO)', brand: 'Gigabyte' },
-            { label: 'MSI (MOBO)', brand: 'MSI' },
-          ]
-        },
+        { label: 'Overclocking Motherboard', query: 'Overclocking' },
+        { label: 'Workstation Motherboard', query: 'Workstation' },
       ],
     },
+    // ── Graphics Card ──
     {
       label: 'Graphics Card', category: Category.GPU,
       children: [
+        { label: 'Intel Arc Graphics Card', query: 'Arc' },
         {
-          label: 'AMD GPU', children: [
+          label: 'Nvidia', children: [
+            { label: 'RTX 50 Series', query: '50 Series' },
+            { label: 'RTX 40 Series', query: '40 Series' },
+            { label: 'RTX 30 Series', query: '30 Series' },
+            { label: 'Quadro', query: 'Quadro' },
+          ]
+        },
+        { label: 'Graphics Card Accessories', query: 'Accessory' },
+        {
+          label: 'Amd Radeon', children: [
+            { label: 'RX 9000 Series', query: '9000' },
             { label: 'RX 7000 Series', query: '7000' },
             { label: 'RX 6000 Series', query: '6000' },
           ]
         },
-        {
-          label: 'NVIDIA GPU', children: [
-            { label: 'RTX 50 Series', query: '50 Series' },
-            { label: 'RTX 40 Series', query: '40 Series' },
-            { label: 'RTX 30 Series', query: '30 Series' },
-          ]
-        },
-        {
-          label: 'Shop By Brand (GPU)', children: [
-            { label: 'ASUS (GPU)', brand: 'ASUS' },
-            { label: 'Gigabyte (GPU)', brand: 'Gigabyte' },
-            { label: 'Sapphire', brand: 'Sapphire' },
-            { label: 'Zotac', brand: 'Zotac' },
-          ]
-        },
       ],
     },
+    // ── RAM ──
     {
       label: 'RAM', category: Category.RAM,
       children: [
-        { label: 'DDR5 (RAM)', query: 'DDR5' },
-        { label: 'DDR4 (RAM)', query: 'DDR4' },
-        {
-          label: 'By Brand (RAM)', children: [
-            { label: 'Corsair (RAM)', brand: 'Corsair' },
-            { label: 'G.Skill (RAM)', brand: 'G.Skill' },
-            { label: 'Kingston (RAM)', brand: 'Kingston' },
-          ]
-        },
+        { label: 'Desktop Ram', query: 'Desktop' },
+        { label: 'Laptop Ram', query: 'Laptop' },
+        { label: 'DDR4 Ram', query: 'DDR4' },
+        { label: 'DDR3 Ram', query: 'DDR3' },
+        { label: 'DDR5 Ram', query: 'DDR5' },
+        { label: 'Single Channel Ram', query: 'Single' },
+        { label: 'Dual Channel Ram', query: 'Dual' },
+        { label: 'Quad Channel Ram', query: 'Quad' },
       ],
     },
+    // ── Storage ──
     {
       label: 'Storage', category: Category.STORAGE,
       children: [
         {
-          label: 'SSD', children: [
-            { label: 'NVMe Gen4', query: 'Gen4' },
-            { label: 'NVMe Gen3', query: 'Gen3' },
-            { label: 'SATA SSD', query: 'SATA' },
-          ]
-        },
-        {
           label: 'HDD', children: [
             { label: 'Internal HDD', query: 'Internal' },
             { label: 'External HDD', query: 'External' },
+            { label: 'Enterprise HDD', query: 'Enterprise' },
           ]
         },
         {
-          label: 'Shop By Brand (Storage)', children: [
-            { label: 'Samsung (STG)', brand: 'Samsung' },
-            { label: 'Western Digital (STG)', brand: 'Western Digital' },
-            { label: 'Kingston (STG)', brand: 'Kingston' },
+          label: 'SSD', children: [
+            { label: 'NVMe Gen5', query: 'Gen5' },
+            { label: 'NVMe Gen4', query: 'Gen4' },
+            { label: 'NVMe Gen3', query: 'Gen3' },
+            { label: 'SATA 2.5"', query: 'SATA' },
+            { label: 'External SSD', query: 'External' },
           ]
         },
+        { label: 'Pen Drive', query: 'Pen Drive' },
       ],
     },
+    // ── SMPS (PSU) ──
     {
       label: 'SMPS (PSU)', category: Category.PSU,
       children: [
-        { label: '80 Plus Gold', query: 'Gold' },
-        { label: '80 Plus Bronze', query: 'Bronze' },
-        { label: '80 Plus Platinum', query: 'Platinum' },
-        {
-          label: 'Shop By Brand (PSU)', children: [
-            { label: 'Corsair (PSU)', brand: 'Corsair' },
-            { label: 'Cooler Master (PSU)', brand: 'Cooler Master' },
-            { label: 'MSI (PSU)', brand: 'MSI' },
-          ]
-        },
+        { label: 'Non Modular', query: 'Non Modular' },
+        { label: 'Fully Modular', query: 'Fully Modular' },
+        { label: 'Semi Modular', query: 'Semi Modular' },
+        { label: 'Platinum', query: 'Platinum' },
+        { label: 'Gold', query: 'Gold' },
+        { label: 'Bronze', query: 'Bronze' },
       ],
     },
+    // ── Cabinet ──
     {
       label: 'Cabinet', category: Category.CABINET,
       children: [
-        { label: 'Full Tower', query: 'Full' },
-        { label: 'Mid Tower', query: 'Mid' },
-        { label: 'Mini Tower', query: 'Mini' },
-        {
-          label: 'Shop By Brand (CAB)', children: [
-            { label: 'Lian Li (CAB)', brand: 'Lian Li' },
-            { label: 'Corsair (CAB)', brand: 'Corsair' },
-            { label: 'Cooler Master (CAB)', brand: 'Cooler Master' },
-          ]
-        },
+        { label: 'Full Tower', query: 'Full Tower' },
+        { label: 'ARGB', query: 'ARGB' },
+        { label: 'Mid Tower', query: 'Mid Tower' },
+        { label: 'Case Accessories', query: 'Accessory' },
+        { label: 'Mini Tower', query: 'Mini Tower' },
+        { label: 'With RGB Fan', query: 'RGB Fan' },
+        { label: 'DIY', query: 'DIY' },
+        { label: 'With SMPS', query: 'SMPS' },
+        { label: 'Under INR 3500', query: 'Budget' },
+        { label: 'Small Form Factor', query: 'SFF' },
       ],
     },
+    // ── Monitor ──
     {
       label: 'Monitor', category: Category.MONITOR,
       children: [
-        { label: 'Gaming (MON)', query: 'Gaming' },
-        { label: 'Professional (MON)', query: 'Professional' },
+        { label: '22 inch', query: '22' },
+        { label: '24 inch', query: '24' },
+        { label: '27 inch', query: '27' },
+        { label: '2K', query: '2K' },
+        { label: '32 inch', query: '32' },
+        { label: '34 inch', query: '34' },
         { label: '4K', query: '4K' },
-        { label: '27 Inch', query: '27' },
-        { label: '32 Inch', query: '32' },
-        {
-          label: 'Shop By Brand (MON)', children: [
-            { label: 'LG (MON)', brand: 'LG' },
-            { label: 'BenQ (MON)', brand: 'BenQ' },
-            { label: 'Samsung (MON)', brand: 'Samsung' },
-          ]
-        },
+        { label: 'Gaming', query: 'Gaming' },
+        { label: 'Curved', query: 'Curved' },
+        { label: 'Professional', query: 'Professional' },
       ],
     },
+    // ── Peripherals ──
     {
       label: 'Peripherals', category: Category.PERIPHERAL,
       children: [
+        { label: 'Headset', query: 'Headset' },
         {
           label: 'Keyboard', children: [
-            { label: 'Mechanical Keyboard', query: 'Mechanical' },
-            { label: 'Wireless Keyboard', query: 'Wireless' },
+            { label: 'Mechanical', query: 'Mechanical' },
+            { label: 'Gaming', query: 'Gaming' },
+            { label: 'Wireless', query: 'Wireless' },
+            { label: 'Wired', query: 'Wired' },
+            { label: 'Combos', query: 'Combo' },
           ]
         },
         {
           label: 'Mouse', children: [
-            { label: 'Gaming Mouse', query: 'Gaming' },
-            { label: 'Wireless Mouse', query: 'Wireless' },
+            { label: 'Gaming', query: 'Gaming' },
+            { label: 'RGB', query: 'RGB' },
+            { label: 'Wired', query: 'Wired' },
+            { label: 'Wireless', query: 'Wireless' },
+            { label: 'Combos', query: 'Combo' },
           ]
         },
+        { label: 'Mouse Pad', query: 'Mouse Pad' },
         {
-          label: 'Headsets', children: [
-            { label: 'Wired Headset', query: 'Wired' },
-            { label: 'Wireless Headset', query: 'Wireless' },
-          ]
-        },
-        {
-          label: 'Networking (NAV)', category: Category.NETWORKING, children: [
+          label: 'Networking', category: Category.NETWORKING, children: [
             { label: 'Router', query: 'Router' },
             { label: 'Switch', query: 'Switch' },
+            { label: 'Cable', query: 'Cable' },
             { label: 'Adapter', query: 'Adapter' },
           ]
         },
+        {
+          label: 'Printer & Scanner', children: [
+            { label: 'Printer', query: 'Printer' },
+            { label: 'Scanner', query: 'Scanner' },
+            { label: 'Cartridge', query: 'Cartridge' },
+            { label: 'Toner', query: 'Toner' },
+          ]
+        },
+        { label: 'Software', query: 'Software' },
+        { label: 'Speaker', query: 'Speaker' },
+        { label: 'Headphone', query: 'Headphone' },
+        { label: 'Webcam', query: 'Webcam' },
       ],
+    },
+    // ── Laptop ──
+    {
+      label: 'Laptop', category: Category.LAPTOP,
     },
   ];
 

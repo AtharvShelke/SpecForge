@@ -23,6 +23,7 @@ enum Category {
   MONITOR
   PERIPHERAL
   NETWORKING
+  LAPTOP
 }
 
 enum OrderStatus {
@@ -77,6 +78,8 @@ enum FilterType {
   checkbox
   range
   boolean
+  search
+  dropdown
 }
 
 // ─────────────────────────────────────────────────

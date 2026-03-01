@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, X, Wrench, Check, Filter, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Wrench, Check, Filter, SlidersHorizontal, Search } from 'lucide-react';
 import { CategoryNode } from '../data/categoryTree';
 import { useShop } from '../context/ShopContext';
 import { useBuild } from '../context/BuildContext';
@@ -100,6 +100,53 @@ const TreeNode: React.FC<{
               depth={depth + 1}
             />
           ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── SearchFilterGroup ───────────────────────────────────────────────────────
+const SearchFilterGroup: React.FC<{
+  filter: FilterDefinition;
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ filter, value, onChange }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  return (
+    <div className="mb-4 pb-4 border-b border-border/50 last:border-0 last:mb-0 last:pb-0">
+      <button
+        className="flex items-center justify-between w-full text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 hover:text-foreground transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <span>{filter.label}</span>
+        <ChevronDown
+          size={13}
+          strokeWidth={2.5}
+          className={`transition-transform duration-200 text-muted-foreground ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+        />
+      </button>
+
+      {isExpanded && (
+        <div className="relative">
+          <Search
+            size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+          />
+          <input
+            type="text"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={filter.label}
+            className="
+              w-full rounded-md border border-input bg-background pl-8 pr-2.5 py-1.5
+              text-[13px] text-foreground placeholder:text-muted-foreground
+              focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring
+              transition-colors
+            "
+          />
         </div>
       )}
     </div>
@@ -247,9 +294,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const visibleFilters = useMemo(() => {
     return categoryFilters.filter((filter: FilterDefinition) => {
-      if (!filter.dependency) return true;
-      const parentSelection = selectedFilters[filter.dependency.key] || [];
-      return parentSelection.includes(filter.dependency.value);
+      // Support both formats: dependency object (frontend) and dependencyKey/dependencyValue (DB)
+      const depKey = filter.dependency?.key || filter.dependencyKey;
+      const depValue = filter.dependency?.value || filter.dependencyValue;
+      if (!depKey || !depValue) return true;
+      const parentSelection = selectedFilters[depKey] || [];
+      return parentSelection.includes(depValue);
     });
   }, [categoryFilters, selectedFilters]);
 
@@ -500,16 +550,36 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
 
-              {/* Dynamic category filters */}
-              {visibleFilters.map((filter: FilterDefinition) => (
-                <FilterGroup
-                  key={filter.key}
-                  filter={filter}
-                  products={currentProducts}
-                  selectedValues={selectedFilters[filter.key] || []}
-                  onChange={val => onFilterChange(filter.key, val)}
-                />
-              ))}
+              {/* Search filters */}
+              {visibleFilters
+                .filter((f: FilterDefinition) => f.type === 'search')
+                .map((filter: FilterDefinition) => (
+                  <SearchFilterGroup
+                    key={filter.key}
+                    filter={filter}
+                    value={(selectedFilters[filter.key] || [])[0] || ''}
+                    onChange={val => onFilterChange(filter.key, val)}
+                  />
+                ))}
+
+              {/* Dynamic category filters (checkbox, dropdown, etc.) */}
+              {visibleFilters
+                .filter((f: FilterDefinition) => f.type !== 'search')
+                .map((filter: FilterDefinition) => {
+                  // For filters with duplicate keys (e.g. AMD vs Intel family),
+                  // use key + dependency value as the unique key
+                  const depValue = filter.dependency?.value || filter.dependencyValue || '';
+                  const uniqueKey = depValue ? `${filter.key}__${depValue}` : filter.key;
+                  return (
+                    <FilterGroup
+                      key={uniqueKey}
+                      filter={filter}
+                      products={currentProducts}
+                      selectedValues={selectedFilters[filter.key] || []}
+                      onChange={val => onFilterChange(filter.key, val)}
+                    />
+                  );
+                })}
 
               {/* Empty state */}
               {visibleFilters.length === 0 && (
