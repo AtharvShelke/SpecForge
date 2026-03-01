@@ -89,9 +89,6 @@ const ProductDetail: React.FC = () => {
         products,
         cart,
         addToCart,
-        isInWishlist,
-        addToWishlist,
-        removeFromWishlist,
         getProductReviews,
         getProductRating,
         addReview,
@@ -127,7 +124,6 @@ const ProductDetail: React.FC = () => {
     const hypotheticalCart = [...cart, { ...product, quantity: 1 }];
     const report = validateBuild(hypotheticalCart);
     const inCart = cart.find((c: any) => c.id === product.id);
-    const inWishlist = isInWishlist(product.id);
 
     const { average, count } = getProductRating(product.id);
     const reviews = getProductReviews(product.id);
@@ -226,23 +222,6 @@ const ProductDetail: React.FC = () => {
                                 >
                                     <ShoppingCart size={20} />
                                     {inCart ? 'In Cart' : 'Add to Build'}
-                                </button>
-
-                                <button
-                                    onClick={() =>
-                                        inWishlist
-                                            ? removeFromWishlist(product.id)
-                                            : addToWishlist(product.id)
-                                    }
-                                    className={`p-4 rounded-xl border ${inWishlist
-                                        ? 'border-red-200 bg-red-50 text-red-500'
-                                        : 'border-zinc-200 text-zinc-400'
-                                        }`}
-                                >
-                                    <Heart
-                                        size={22}
-                                        className={inWishlist ? 'fill-current' : ''}
-                                    />
                                 </button>
                             </div>
                         </div>

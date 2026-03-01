@@ -19,11 +19,10 @@ interface ShopContextType {
   isCartOpen: boolean;
   setCartOpen: (isOpen: boolean) => void;
 
-  // Wishlist
-  wishlist: string[];
-  addToWishlist: (productId: string) => void;
-  removeFromWishlist: (productId: string) => void;
-  isInWishlist: (productId: string) => boolean;
+  // Compare
+  compareItems: Product[];
+  addToCompare: (product: Product) => void;
+  removeFromCompare: (productId: string) => void;
 
   // Catalog
   products: Product[];
@@ -70,7 +69,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [compareItems, setCompareItems] = useState<Product[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [cmsContent, setCmsContent] = useState<LandingPageCMS | null>(null);
@@ -170,7 +169,31 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
     init();
+
+    // Load persisted state
+    try {
+      const savedCart = localStorage.getItem('nexus_cart');
+      if (savedCart) setCart(JSON.parse(savedCart));
+
+      const savedCompare = localStorage.getItem('nexus_compare');
+      if (savedCompare) setCompareItems(JSON.parse(savedCompare));
+    } catch (err) {
+      console.error('Failed to load persisted state:', err);
+    }
   }, [refreshProducts, refreshCategories, refreshBrands, refreshCMS, refreshReviews, refreshFilterConfigs]);
+
+  // --- PERSIST STATE ---
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('nexus_cart', JSON.stringify(cart));
+    }
+  }, [cart, isLoading]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('nexus_compare', JSON.stringify(compareItems));
+    }
+  }, [compareItems, isLoading]);
 
   // --- CART ACTIONS ---
 
@@ -228,17 +251,27 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
     [cart]);
 
-  // --- WISHLIST ACTIONS ---
+  // --- COMPARE ACTIONS ---
 
-  const addToWishlist = useCallback((productId: string) => {
-    setWishlist(prev => prev.includes(productId) ? prev : [...prev, productId]);
+  const addToCompare = useCallback((product: Product) => {
+    setCompareItems(prev => {
+      if (prev.find(item => item.id === product.id)) return prev;
+      if (prev.length >= 4) {
+        setTimeout(() => toast({ title: "Compare limit reached", description: "You can compare up to 4 items max.", variant: "destructive" }), 0);
+        return prev;
+      }
+      if (prev.length > 0 && prev[0].category !== product.category) {
+        setTimeout(() => toast({ title: "Different category", description: "You can only compare items from the same category.", variant: "destructive" }), 0);
+        return prev;
+      }
+      setTimeout(() => toast({ title: "Added to compare", description: `${product.name} added to comparison.` }), 0);
+      return [...prev, product];
+    });
+  }, [toast]);
+
+  const removeFromCompare = useCallback((productId: string) => {
+    setCompareItems(prev => prev.filter(item => item.id !== productId));
   }, []);
-
-  const removeFromWishlist = useCallback((productId: string) => {
-    setWishlist(prev => prev.filter(id => id !== productId));
-  }, []);
-
-  const isInWishlist = useCallback((productId: string) => wishlist.includes(productId), [wishlist]);
 
   // --- REVIEW HELPERS ---
 
@@ -304,10 +337,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     cartTotal,
     isCartOpen,
     setCartOpen,
-    wishlist,
-    addToWishlist,
-    removeFromWishlist,
-    isInWishlist,
+    compareItems,
+    addToCompare,
+    removeFromCompare,
     products,
     refreshProducts,
     categories,
@@ -329,7 +361,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isLoading
   }), [
     cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
-    isCartOpen, setCartOpen, wishlist, addToWishlist, removeFromWishlist, isInWishlist,
+    isCartOpen, setCartOpen, compareItems, addToCompare, removeFromCompare,
     products, refreshProducts, categories, refreshCategories,
     brands, refreshBrands, orders, refreshOrders,
     reviews, refreshReviews, addReview, getProductReviews, getProductRating,

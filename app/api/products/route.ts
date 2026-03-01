@@ -41,32 +41,148 @@ export async function GET(req: NextRequest) {
         const page = parseInt(searchParams.get("page") || "1", 10);
         const limit = parseInt(searchParams.get("limit") || "50", 10);
 
+        const sort = searchParams.get("sort") || "popularity";
+
+        let nodeBrand = searchParams.get("nodeBrand");
+        let nodeQuery = searchParams.get("nodeQuery");
+        let globalSearch = searchParams.get("q");
+        let sidebarSearch = searchParams.get("sq");
+
         const where: any = {};
+
+        // 1. Initial category constraint logic
         if (category && CategoryEnum.safeParse(category).success) {
             where.category = category;
         }
         if (brandId) where.brandId = brandId;
-        if (search) {
-            where.OR = [
-                { name: { contains: search, mode: "insensitive" } },
-                { sku: { contains: search, mode: "insensitive" } },
-            ];
-        }
+
         if (minPrice) where.price = { ...where.price, gte: parseFloat(minPrice) };
         if (maxPrice) where.price = { ...where.price, lte: parseFloat(maxPrice) };
+
+        // 2. Add text search constraints
+        const searchConditions: any[] = [];
+        if (globalSearch) {
+            const term = globalSearch.toLowerCase();
+            // Global search overrides specific category if not in build mode, 
+            // but since we accept 'category' explicit parameter we leave it in the AND chain.
+            searchConditions.push({
+                OR: [
+                    { name: { contains: term, mode: "insensitive" } },
+                    { sku: { contains: term, mode: "insensitive" } },
+                    { description: { contains: term, mode: "insensitive" } },
+                    { specs: { some: { value: { contains: term, mode: "insensitive" } } } }
+                ]
+            });
+        }
+
+        if (sidebarSearch) {
+            const term = sidebarSearch.toLowerCase();
+            searchConditions.push({
+                OR: [
+                    { name: { contains: term, mode: "insensitive" } },
+                    { specs: { some: { value: { contains: term, mode: "insensitive" } } } }
+                ]
+            });
+        }
+
+        if (nodeBrand) {
+            // Need to match the actual Brand relations name. We can search brand string
+            searchConditions.push({ brand: { name: { equals: nodeBrand, mode: "insensitive" } } });
+        }
+
+        if (nodeQuery) {
+            const term = nodeQuery.toLowerCase();
+            searchConditions.push({
+                OR: [
+                    { name: { contains: term, mode: "insensitive" } },
+                    { specs: { some: { value: { contains: term, mode: "insensitive" } } } }
+                ]
+            });
+        }
+
+        // 3. Dynamic attributes from query string
+        const specsConditions: any[] = [];
+        Array.from(searchParams.keys()).forEach(key => {
+            if (key === 'f_stock_status') {
+                const vals = searchParams.getAll(key);
+                if (vals.includes('In Stock') && !vals.includes('Out of Stock')) {
+                    where.stock = { gt: 0 };
+                } else if (!vals.includes('In Stock') && vals.includes('Out of Stock')) {
+                    where.stock = { equals: 0 };
+                }
+            } else if (key === 'f_brand') {
+                const vals = searchParams.getAll(key);
+                if (vals.length > 0) {
+                    specsConditions.push({ brand: { name: { in: vals, mode: "insensitive" } } });
+                }
+            } else if (key.startsWith('f_specs.')) {
+                const specKey = key.replace('f_specs.', '');
+                const specValues = searchParams.getAll(key);
+                if (specValues.length > 0) {
+                    // In Prisma, we want to match AT LEAST ONE of the selected values for this specific specKey
+                    specsConditions.push({
+                        specs: {
+                            some: {
+                                key: specKey,
+                                value: { in: specValues }
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        // Combine constraints
+        const andConditions = [...searchConditions, ...specsConditions];
+        if (andConditions.length > 0) {
+            where.AND = andConditions;
+        }
+
+        let orderBy: any = { createdAt: "desc" };
+        if (sort === "price-asc") orderBy = { price: "asc" };
+        else if (sort === "price-desc") orderBy = { price: "desc" };
+        else if (sort === "newest") orderBy = { createdAt: "desc" };
+
+        let filterOptions = undefined;
+        if (searchParams.get("getFilters") === "true") {
+            const allMatch = await prisma.product.findMany({
+                where,
+                select: {
+                    brand: { select: { name: true } },
+                    specs: { select: { key: true, value: true } }
+                }
+            });
+            const brandsSet = new Set<string>();
+            const specsMap: Record<string, Set<string>> = {};
+            for (const p of allMatch) {
+                if (p.brand?.name) brandsSet.add(p.brand.name);
+                for (const s of p.specs) {
+                    if (!specsMap[s.key]) specsMap[s.key] = new Set();
+                    specsMap[s.key].add(s.value);
+                }
+            }
+            const specsObj: Record<string, string[]> = {};
+            for (const key in specsMap) {
+                specsObj[key] = Array.from(specsMap[key]).sort();
+            }
+            filterOptions = {
+                brands: Array.from(brandsSet).sort(),
+                specs: specsObj
+            };
+        }
 
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
                 include: { specs: true, brand: true },
-                orderBy: { createdAt: "desc" },
+                orderBy,
                 skip: (page - 1) * limit,
                 take: limit,
             }),
             prisma.product.count({ where }),
         ]);
 
-        return NextResponse.json({ products, total, page, limit });
+        return NextResponse.json({ products, total, page, limit, filterOptions });
     } catch (error) {
         console.error("GET /api/products error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

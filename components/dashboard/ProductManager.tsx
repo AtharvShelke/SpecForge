@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
 import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec } from '@/types';
-import { Edit, Plus, Trash, AlertCircle, Package, DollarSign, Layers } from 'lucide-react';
+import { Edit, Plus, Trash, AlertCircle, Package, DollarSign, Layers, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 const MAX_IMAGE_SIZE_MB = 2;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -30,6 +31,72 @@ const ProductManager = () => {
     const [error, setError] = useState<string | null>(null);
 
     const [isEditing, setIsEditing] = useState(false);
+
+    // Pagination & Filtering State
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
+    const [totalProducts, setTotalProducts] = useState(0);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+    const currentPage = parseInt(searchParams.get("page") || "1", 10);
+    const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
+    const currentCategory = searchParams.get("category") || "all";
+    const currentSearch = searchParams.get("q") || "";
+    const currentStockStatus = searchParams.get("f_stock_status") || "all";
+    const currentMinPrice = searchParams.get("minPrice") || "";
+    const currentMaxPrice = searchParams.get("maxPrice") || "";
+
+    useEffect(() => {
+        const fetchPaginatedProducts = async () => {
+            setIsLoadingProducts(true);
+            try {
+                // We use searchParams.toString() directly to reuse current query filters,
+                // but we explicitly add default limit if not present.
+                const query = new URLSearchParams(searchParams.toString());
+                if (!query.has("limit")) query.set("limit", "10");
+                if (!query.has("page")) query.set("page", "1");
+
+                const res = await fetch(`/api/products?${query.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setPaginatedProducts(data.products);
+                    setTotalProducts(data.total);
+                }
+            } catch (err) {
+                console.error("Failed to fetch paginated products:", err);
+            } finally {
+                setIsLoadingProducts(false);
+            }
+        };
+
+        // Only fetch if NOT creating/editing a product
+        if (!isEditing) {
+            fetchPaginatedProducts();
+        }
+    }, [searchParams, isEditing]);
+
+    const updateQueryParams = (newParams: Record<string, string | null>) => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        // Reset page to 1 if any filter logic changes, except when explicitly changing page
+        if (!newParams.page && (newParams.category !== undefined || newParams.q !== undefined || newParams.f_stock_status !== undefined || newParams.minPrice !== undefined || newParams.maxPrice !== undefined)) {
+            params.set("page", "1");
+        }
+
+        Object.entries(newParams).forEach(([key, value]) => {
+            if (value === null || value === "all" || value === "") {
+                params.delete(key);
+            } else {
+                params.set(key, value);
+            }
+        });
+
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
     const [currentProduct, setCurrentProduct] = useState<ProductFormState>({
         id: '',
         sku: '',
@@ -270,7 +337,7 @@ const ProductManager = () => {
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">Product Management</h2>
                     <p className="text-sm text-gray-500 mt-1">
-                        {products.length} product{products.length !== 1 ? 's' : ''} in catalog
+                        {totalProducts} product{totalProducts !== 1 ? 's' : ''} found in catalog matching filters
                     </p>
                 </div>
                 {!isEditing && (
@@ -606,108 +673,213 @@ const ProductManager = () => {
                     </div>
                 </form>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Product
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Category
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Brand
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Price
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Stock
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {products.length === 0 ? (
+                <div className="space-y-4">
+                    {/* Filters Bar */}
+                    <div className="flex flex-wrap gap-3 bg-gray-50 p-4 border border-gray-200 rounded-xl items-center justify-between">
+                        {/* Search and Category */}
+                        <div className="flex flex-wrap gap-3 flex-1">
+                            <div className="relative max-w-xs w-full">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
+                                    className="pl-9 pr-3 py-2 w-full text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    value={currentSearch}
+                                    onChange={(e) => updateQueryParams({ q: e.target.value })}
+                                />
+                            </div>
+
+                            <select
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                value={currentCategory}
+                                onChange={(e) => updateQueryParams({ category: e.target.value })}
+                            >
+                                <option value="all">All Categories</option>
+                                {Object.values(Category).map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                value={currentStockStatus}
+                                onChange={(e) => updateQueryParams({ f_stock_status: e.target.value })}
+                            >
+                                <option value="all">Any Stock Status</option>
+                                <option value="In Stock">In Stock (&gt;0)</option>
+                                <option value="Out of Stock">Out of Stock (=0)</option>
+                            </select>
+                        </div>
+
+                        {/* Price Range */}
+                        <div className="flex items-center gap-2 bg-white px-3 py-1 border border-gray-300 rounded-lg">
+                            <DollarSign size={14} className="text-gray-400" />
+                            <input
+                                type="number"
+                                placeholder="Min Price"
+                                className="w-20 text-sm focus:outline-none py-1"
+                                value={currentMinPrice}
+                                onChange={(e) => updateQueryParams({ minPrice: e.target.value })}
+                            />
+                            <span className="text-gray-300">-</span>
+                            <input
+                                type="number"
+                                placeholder="Max Price"
+                                className="w-20 text-sm focus:outline-none py-1"
+                                value={currentMaxPrice}
+                                onChange={(e) => updateQueryParams({ maxPrice: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Table View */}
+                    <div className="overflow-x-auto rounded-xl border border-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Package size={48} className="text-gray-300" />
-                                            <p className="text-gray-500">No products yet</p>
-                                            <button
-                                                onClick={handleAddNew}
-                                                className="text-blue-600 hover:text-blue-700 font-medium"
-                                            >
-                                                Add your first product
-                                            </button>
-                                        </div>
-                                    </td>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Product
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Category
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Brand
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Price
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Stock
+                                    </th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                    </th>
                                 </tr>
-                            ) : (
-                                products.map(product => (
-                                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center gap-3">
-                                                <img
-                                                    src={product.image}
-                                                    alt={product.name}
-                                                    className="h-10 w-10 rounded-lg object-contain bg-gray-100 border border-gray-200"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300';
-                                                    }}
-                                                />
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {product.name}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {product.sku}
-                                                    </div>
-                                                </div>
-                                            </div>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {isLoadingProducts ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
+                                            Loading products...
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span className="px-2 py-1 bg-gray-100 rounded text-xs">
-                                                {product.category}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {product.brand?.name || product.specs.find(s => s.key === 'brand')?.value || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            ₹{product.price.toLocaleString('en-IN')}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStockBadgeClass(product.stock)}`}>
-                                                {product.stock} {product.stock === 1 ? 'unit' : 'units'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end gap-3">
-                                                <button
-                                                    onClick={() => handleEdit(product)}
-                                                    className="text-blue-600 hover:text-blue-900 transition-colors"
-                                                    title="Edit product"
-                                                >
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(product.id)}
-                                                    className="text-red-600 hover:text-red-900 transition-colors"
-                                                    title="Delete product"
-                                                >
-                                                    <Trash size={16} />
-                                                </button>
+                                    </tr>
+                                ) : paginatedProducts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <Package size={48} className="text-gray-300" />
+                                                <p className="text-gray-500">No products match your filters</p>
+                                                {(currentCategory !== 'all' || currentSearch || currentStockStatus !== 'all' || currentMinPrice || currentMaxPrice) ? (
+                                                    <button
+                                                        onClick={() => router.push(pathname)}
+                                                        className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                                                    >
+                                                        Clear all filters
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={handleAddNew}
+                                                        className="text-blue-600 hover:text-blue-700 font-medium"
+                                                    >
+                                                        Add your first product
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    paginatedProducts.map(product => (
+                                        <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-3">
+                                                    <img
+                                                        src={product.image}
+                                                        alt={product.name}
+                                                        className="h-10 w-10 rounded-lg object-contain bg-gray-100 border border-gray-200"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300';
+                                                        }}
+                                                    />
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900 max-w-[200px] truncate" title={product.name}>
+                                                            {product.name}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {product.sku}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <span className="px-2 py-1 bg-gray-100 rounded text-xs border border-gray-200">
+                                                    {product.category}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {product.brand?.name || product.specs.find(s => s.key === 'brand')?.value || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                ₹{product.price.toLocaleString('en-IN')}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStockBadgeClass(product.stock)}`}>
+                                                    {product.stock} {product.stock === 1 ? 'unit' : 'units'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button
+                                                        onClick={() => handleEdit(product)}
+                                                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                        title="Edit product"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(product.id)}
+                                                        className="text-red-600 hover:text-red-900 transition-colors"
+                                                        title="Delete product"
+                                                    >
+                                                        <Trash size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {!isLoadingProducts && totalProducts > 0 && (
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-2">
+                            <div className="text-sm text-gray-500">
+                                Showing <span className="font-semibold text-gray-900">{(currentPage - 1) * currentLimit + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(currentPage * currentLimit, totalProducts)}</span> of <span className="font-semibold text-gray-900">{totalProducts}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    disabled={currentPage <= 1}
+                                    onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
+                                    className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronLeft size={18} />
+                                </button>
+                                <div className="px-4 py-1.5 text-sm font-medium border border-gray-200 rounded-md bg-gray-50">
+                                    Page {currentPage} of {Math.max(1, Math.ceil(totalProducts / currentLimit))}
+                                </div>
+                                <button
+                                    disabled={currentPage >= Math.ceil(totalProducts / currentLimit)}
+                                    onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
+                                    className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronRight size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

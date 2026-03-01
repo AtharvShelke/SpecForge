@@ -42,6 +42,7 @@ const CATEGORY_ICON: Record<Category, ReactNode> = {
   [Category.MONITOR]: <Monitor size={14} />,
   [Category.PERIPHERAL]: <Monitor size={14} />,
   [Category.NETWORKING]: <HardDrive size={14} />,
+  [Category.LAPTOP]: <Monitor size={14} />,
 };
 
 // -------------------------------------------------------------------
@@ -85,8 +86,7 @@ const CompatChip: React.FC<{ build: SavedBuild }> = ({ build }) => {
 // Share helper
 // -------------------------------------------------------------------
 function buildShareUrl(build: SavedBuild): string {
-  const ids = build.items.map((i) => i.id).join(',');
-  return `${typeof window !== 'undefined' ? window.location.origin : ''}/builds?shared=${encodeURIComponent(ids)}&name=${encodeURIComponent(build.name)}`;
+  return `${typeof window !== 'undefined' ? window.location.origin : ''}/builds/${build.id}`;
 }
 
 // -------------------------------------------------------------------
@@ -206,11 +206,6 @@ const BuildModal: React.FC<{
 // -------------------------------------------------------------------
 function BuildsContent() {
   const { savedBuilds, loadBuild, deleteBuild, refreshSavedBuilds } = useBuild();
-  const { products } = useShop();
-
-  const searchParams = useSearchParams();
-  const sharedIds = searchParams.get('shared');
-  const sharedName = searchParams.get('name');
 
   React.useEffect(() => {
     refreshSavedBuilds();
@@ -222,25 +217,6 @@ function BuildsContent() {
     loadBuild(buildId);
     setActiveBuild(null);
   };
-
-  React.useEffect(() => {
-    if (sharedIds && products.length > 0) {
-      const ids = sharedIds.split(',');
-      const items = ids.map(id => {
-        const p = products.find(prod => prod.id === id);
-        return p ? { id, productId: id, quantity: 1, product: p } as SavedBuildItem : null;
-      }).filter(Boolean) as SavedBuildItem[];
-
-      const syntheticBuild: SavedBuild = {
-        id: 'shared',
-        name: sharedName || 'Shared Build',
-        total: items.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0),
-        createdAt: new Date().toISOString(),
-        items
-      };
-      setActiveBuild(syntheticBuild);
-    }
-  }, [sharedIds, sharedName, products]);
 
   const handleCopyDirect = (e: React.MouseEvent, build: SavedBuild) => {
     e.stopPropagation();

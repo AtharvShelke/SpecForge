@@ -14,8 +14,12 @@ import {
     X,
     TrendingDown,
     TrendingUp,
-    Filter
+    Filter,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { InventoryItem, Category } from '@/types';
 
 const InventoryManager = () => {
     const { products } = useShop();
@@ -33,8 +37,63 @@ const InventoryManager = () => {
     const [adjType, setAdjType] = useState<StockMovementType>('INWARD');
     const [adjQty, setAdjQty] = useState(0);
     const [adjReason, setAdjReason] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
+
+    // Pagination & Filtering State
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    const [paginatedInventory, setPaginatedInventory] = useState<InventoryItem[]>([]);
+    const [totalItems, setTotalItems] = useState(0);
+    const [isLoadingInventory, setIsLoadingInventory] = useState(true);
+
+    const currentPage = parseInt(searchParams.get("page") || "1", 10);
+    const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
+    const currentCategory = searchParams.get("category") || "all";
+    const currentSearch = searchParams.get("q") || "";
+    const currentStockStatus = searchParams.get("f_stock_status") || "all";
+
+    React.useEffect(() => {
+        const fetchPaginatedInventory = async () => {
+            setIsLoadingInventory(true);
+            try {
+                const query = new URLSearchParams(searchParams.toString());
+                if (!query.has("limit")) query.set("limit", "10");
+                if (!query.has("page")) query.set("page", "1");
+
+                const res = await fetch(`/api/inventory?${query.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setPaginatedInventory(data.items);
+                    setTotalItems(data.total);
+                }
+            } catch (err) {
+                console.error("Failed to fetch paginated inventory:", err);
+            } finally {
+                setIsLoadingInventory(false);
+            }
+        };
+
+        fetchPaginatedInventory();
+    }, [searchParams]);
+
+    const updateQueryParams = (newParams: Record<string, string | null>) => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        if (!newParams.page && (newParams.category !== undefined || newParams.q !== undefined || newParams.f_stock_status !== undefined)) {
+            params.set("page", "1");
+        }
+
+        Object.entries(newParams).forEach(([key, value]) => {
+            if (value === null || value === "all" || value === "") {
+                params.delete(key);
+            } else {
+                params.set(key, value);
+            }
+        });
+
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
     const handleAdjustment = (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,25 +108,12 @@ const InventoryManager = () => {
             setAdjQty(0);
             setAdjReason('');
             setAdjType('INWARD');
+            // Refresh local paginated view after adjustment
+            router.refresh();
         }
     };
 
-    const filteredInventory = useMemo(() => {
-        return inventory.filter(item => {
-            const product = products.find(p => p.id === item.productId);
-            const searchStr = searchTerm.toLowerCase();
-            const matchesSearch =
-                item.sku.toLowerCase().includes(searchStr) ||
-                (product && product.name.toLowerCase().includes(searchStr));
-
-            if (!matchesSearch) return false;
-
-            if (stockFilter === 'low') return item.quantity > 0 && item.quantity <= item.reorderLevel;
-            if (stockFilter === 'out') return item.quantity === 0;
-            return true;
-        });
-    }, [inventory, products, searchTerm, stockFilter]);
-
+    // Calculate Global KPIs safely based off context 'inventory'
     const lowStockCount = inventory.filter(i => i.quantity > 0 && i.quantity <= i.reorderLevel).length;
     const outOfStockCount = inventory.filter(i => i.quantity === 0).length;
     const totalStockValue = inventory.reduce(
@@ -174,35 +220,48 @@ const InventoryManager = () => {
             {/* Stock Levels Table */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <h3 className="text-lg font-semibold text-gray-900">Stock Levels</h3>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-900">Stock Levels</h3>
+                            <p className="text-sm text-gray-500">
+                                {totalItems} items matching filters
+                            </p>
+                        </div>
 
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            {/* Stock Filter */}
-                            <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-1.5">
-                                <Filter size={16} className="text-gray-400" />
-                                <select
-                                    value={stockFilter}
-                                    onChange={e => setStockFilter(e.target.value as 'all' | 'low' | 'out')}
-                                    className="text-sm border-0 focus:ring-0 bg-transparent pr-8"
-                                >
-                                    <option value="all">All Items</option>
-                                    <option value="low">Low Stock</option>
-                                    <option value="out">Out of Stock</option>
-                                </select>
-                            </div>
-
-                            {/* Search */}
-                            <div className="relative">
-                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        {/* Filters Bar natively integrated */}
+                        <div className="flex flex-wrap gap-3 items-center">
+                            <div className="relative max-w-xs w-full sm:flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="text"
                                     placeholder="Search SKU or product..."
-                                    className="pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="pl-9 pr-3 py-2 w-full text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    value={currentSearch}
+                                    onChange={(e) => updateQueryParams({ q: e.target.value })}
                                 />
                             </div>
+
+                            <select
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                value={currentCategory}
+                                onChange={(e) => updateQueryParams({ category: e.target.value })}
+                            >
+                                <option value="all">All Categories</option>
+                                {Object.values(Category).map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                value={currentStockStatus}
+                                onChange={(e) => updateQueryParams({ f_stock_status: e.target.value })}
+                            >
+                                <option value="all">Any Stock Status</option>
+                                <option value="in">In Stock (&gt;0)</option>
+                                <option value="low">Low Stock (≤ Reorder Level)</option>
+                                <option value="out">Out of Stock (=0)</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -235,22 +294,26 @@ const InventoryManager = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredInventory.length === 0 ? (
+                            {isLoadingInventory ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">
+                                        Loading inventory items...
+                                    </td>
+                                </tr>
+                            ) : paginatedInventory.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="px-6 py-12 text-center">
                                         <Package size={48} className="mx-auto text-gray-300 mb-3" />
                                         <p className="text-gray-500">
-                                            {searchTerm || stockFilter !== 'all'
+                                            {currentSearch || currentStockStatus !== 'all' || currentCategory !== 'all'
                                                 ? 'No items match your filters'
                                                 : 'No inventory items yet'}
                                         </p>
                                     </td>
                                 </tr>
                             ) : (
-                                filteredInventory.map(item => {
-                                    const product = products.find(p => p.id === item.productId);
-                                    const isLow = item.quantity > 0 && item.quantity <= item.reorderLevel;
-                                    const isOut = item.quantity === 0;
+                                paginatedInventory.map((item: InventoryItem & { product?: any }) => {
+                                    const product = item.product || products.find(p => p.id === item.productId);
 
                                     return (
                                         <tr key={item.sku} className="hover:bg-gray-50">
@@ -267,7 +330,7 @@ const InventoryManager = () => {
                                                         />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                                                        <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={product?.name}>
                                                             {product?.name || 'Unknown Product'}
                                                         </div>
                                                         <div className="text-xs text-gray-500">
@@ -314,6 +377,35 @@ const InventoryManager = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {!isLoadingInventory && totalItems > 0 && (
+                    <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-white">
+                        <div className="text-sm text-gray-500">
+                            Showing <span className="font-semibold text-gray-900">{(currentPage - 1) * currentLimit + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(currentPage * currentLimit, totalItems)}</span> of <span className="font-semibold text-gray-900">{totalItems}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                disabled={currentPage <= 1}
+                                onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
+                                className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ChevronLeft size={18} />
+                            </button>
+                            <div className="px-4 py-1.5 text-sm font-medium border border-gray-200 rounded-md bg-gray-50">
+                                Page {currentPage} of {Math.max(1, Math.ceil(totalItems / currentLimit))}
+                            </div>
+                            <button
+                                disabled={currentPage >= Math.ceil(totalItems / currentLimit)}
+                                onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
+                                className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Stock Movement History */}

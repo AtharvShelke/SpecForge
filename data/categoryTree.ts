@@ -47,8 +47,6 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
     label: 'Processor',
     category: Category.PROCESSOR,
     children: [
-      { label: 'Intel Processor', brand: 'Intel' },
-      { label: 'AMD Processor', brand: 'AMD' },
       { label: 'Extreme-level Processor', query: 'Extreme' },
       { label: 'High-end Processor', query: 'High-end' },
       { label: 'Mid-Range Processor', query: 'Mid-Range' },

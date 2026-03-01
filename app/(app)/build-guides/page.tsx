@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
     Cpu,
@@ -20,6 +20,10 @@ import {
 } from 'lucide-react';
 import { useShop } from '@/context/ShopContext';
 import { useRouter } from 'next/navigation';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { Container } from '@/components/layout/Container';
+import { Section } from '@/components/layout/Section';
 
 // -------------------------------------------------------------------
 // Guide Data
@@ -28,7 +32,6 @@ import { useRouter } from 'next/navigation';
 interface GuideComponent {
     category: string;
     name: string;
-    approxPrice: number;
 }
 
 interface Guide {
@@ -60,12 +63,12 @@ const GUIDES: Guide[] = [
         description: 'The essential daily driver — fast boots, smooth browsing, and MS Office performance without breaking the bank.',
         highlights: ['Fast SSD boot', 'Integrated graphics', 'Low power consumption', 'Silent operation'],
         components: [
-            { category: 'Processor', name: 'Intel Core i3-12100F', approxPrice: 9000 },
-            { category: 'Motherboard', name: 'Gigabyte H610M S2H', approxPrice: 7000 },
-            { category: 'RAM', name: 'Kingston Fury 8GB DDR4', approxPrice: 2500 },
-            { category: 'Storage', name: 'Crucial P3 500GB NVMe', approxPrice: 3500 },
-            { category: 'Power Supply', name: 'Cooler Master MWE 550 Bronze', approxPrice: 4500 },
-            { category: 'Cabinet', name: 'Corsair 4000D Airflow', approxPrice: 7000 },
+            { category: 'Processor', name: 'Intel Core i3-12100F' },
+            { category: 'Motherboard', name: 'Gigabyte H610M S2H' },
+            { category: 'RAM', name: 'Kingston Fury 8GB DDR4' },
+            { category: 'Storage', name: 'Crucial P3 500GB NVMe' },
+            { category: 'Power Supply', name: 'Cooler Master MWE 550 Bronze' },
+            { category: 'Cabinet', name: 'Corsair 4000D Airflow' },
         ],
     },
     {
@@ -81,12 +84,12 @@ const GUIDES: Guide[] = [
         description: 'Smooth 60–100 FPS in popular titles at 1080p. AMD Ryzen + RX 6600 is the sweet spot for budget builders.',
         highlights: ['60–100 FPS in popular titles', 'AMD efficient architecture', 'Upgradeable platform', 'Great price-to-performance'],
         components: [
-            { category: 'Processor', name: 'AMD Ryzen 5 5600', approxPrice: 12500 },
-            { category: 'Motherboard', name: 'MSI B550 Tomahawk', approxPrice: 14500 },
-            { category: 'RAM', name: 'Corsair Vengeance LPX 16GB DDR4', approxPrice: 4500 },
-            { category: 'GPU', name: 'Gigabyte RX 6600 Eagle 8GB', approxPrice: 19500 },
-            { category: 'Storage', name: 'Samsung 990 Pro 1TB NVMe', approxPrice: 10500 },
-            { category: 'Power Supply', name: 'Corsair RM850e', approxPrice: 11000 },
+            { category: 'Processor', name: 'AMD Ryzen 5 5600' },
+            { category: 'Motherboard', name: 'MSI B550 Tomahawk' },
+            { category: 'RAM', name: 'Corsair Vengeance LPX 16GB DDR4' },
+            { category: 'GPU', name: 'Gigabyte RX 6600 Eagle 8GB' },
+            { category: 'Storage', name: 'Samsung 990 Pro 1TB NVMe' },
+            { category: 'Power Supply', name: 'Corsair RM850e' },
         ],
     },
     {
@@ -102,13 +105,13 @@ const GUIDES: Guide[] = [
         description: 'Buttery smooth 1440p gaming with 100+ FPS. Ryzen 7 7800X3D is the king CPU for gaming right now.',
         highlights: ['100+ FPS at 1440p', 'AMD 3D V-Cache tech', 'PCIe 5.0 ready', 'DDR5 platform'],
         components: [
-            { category: 'Processor', name: 'AMD Ryzen 7 7800X3D', approxPrice: 36000 },
-            { category: 'Motherboard', name: 'ASUS TUF B650-PLUS', approxPrice: 19000 },
-            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5', approxPrice: 12500 },
-            { category: 'GPU', name: 'Sapphire Nitro+ RX 7800 XT 16GB', approxPrice: 52000 },
-            { category: 'Storage', name: 'Samsung 990 Pro 1TB', approxPrice: 10500 },
-            { category: 'Power Supply', name: 'Corsair RM850e Gold', approxPrice: 11000 },
-            { category: 'Cooler', name: 'DeepCool LS720 ARGB AIO', approxPrice: 11000 },
+            { category: 'Processor', name: 'AMD Ryzen 7 7800X3D' },
+            { category: 'Motherboard', name: 'ASUS TUF B650-PLUS' },
+            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5' },
+            { category: 'GPU', name: 'Sapphire Nitro+ RX 7800 XT 16GB' },
+            { category: 'Storage', name: 'Samsung 990 Pro 1TB' },
+            { category: 'Power Supply', name: 'Corsair RM850e Gold' },
+            { category: 'Cooler', name: 'DeepCool LS720 ARGB AIO' },
         ],
     },
     {
@@ -124,13 +127,13 @@ const GUIDES: Guide[] = [
         description: 'Built for DaVinci Resolve, Premiere Pro, and live streaming. High core count + fast RAM = snappy timelines.',
         highlights: ['16-core CPU for rendering', 'Fast 4K editing', 'Dual-channel DDR5', 'NVENC streaming support'],
         components: [
-            { category: 'Processor', name: 'AMD Ryzen 9 7950X', approxPrice: 52000 },
-            { category: 'Motherboard', name: 'ASUS ROG Strix X670E-E', approxPrice: 42000 },
-            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5 6000MHz', approxPrice: 12500 },
-            { category: 'GPU', name: 'Zotac RTX 4070 Twin Edge 12GB', approxPrice: 56000 },
-            { category: 'Storage', name: 'Samsung 990 Pro 1TB + WD Blue 2TB', approxPrice: 15300 },
-            { category: 'Power Supply', name: 'MSI MPG A1000G Gold', approxPrice: 16000 },
-            { category: 'Cooler', name: 'DeepCool LS720 360mm AIO', approxPrice: 11000 },
+            { category: 'Processor', name: 'AMD Ryzen 9 7950X' },
+            { category: 'Motherboard', name: 'ASUS ROG Strix X670E-E' },
+            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5 6000MHz' },
+            { category: 'GPU', name: 'Zotac RTX 4070 Twin Edge 12GB' },
+            { category: 'Storage', name: 'Samsung 990 Pro 1TB + WD Blue 2TB' },
+            { category: 'Power Supply', name: 'MSI MPG A1000G Gold' },
+            { category: 'Cooler', name: 'DeepCool LS720 360mm AIO' },
         ],
     },
     {
@@ -146,13 +149,13 @@ const GUIDES: Guide[] = [
         description: 'Uncompromised 4K gaming at ultra settings. RTX 4090 + i9 is the pinnacle of gaming performance in 2024.',
         highlights: ['4K Ultra 60+ FPS', 'VR-ready', 'PCIe 5.0 GPU slot', 'Full tower thermals'],
         components: [
-            { category: 'Processor', name: 'Intel Core i9-14900K', approxPrice: 55000 },
-            { category: 'Motherboard', name: 'MSI MAG Z790 Tomahawk WiFi', approxPrice: 28000 },
-            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5', approxPrice: 12500 },
-            { category: 'GPU', name: 'NVIDIA RTX 4090 Founders Edition 24GB', approxPrice: 185000 },
-            { category: 'Storage', name: 'Samsung 990 Pro 1TB + WD 2TB', approxPrice: 15300 },
-            { category: 'Power Supply', name: 'MSI MPG A1000G Gold 1000W', approxPrice: 16000 },
-            { category: 'Cooler', name: 'DeepCool LS720 360mm AIO', approxPrice: 11000 },
+            { category: 'Processor', name: 'Intel Core i9-14900K' },
+            { category: 'Motherboard', name: 'MSI MAG Z790 Tomahawk WiFi' },
+            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5' },
+            { category: 'GPU', name: 'NVIDIA RTX 4090 Founders Edition 24GB' },
+            { category: 'Storage', name: 'Samsung 990 Pro 1TB + WD 2TB' },
+            { category: 'Power Supply', name: 'MSI MPG A1000G Gold 1000W' },
+            { category: 'Cooler', name: 'DeepCool LS720 360mm AIO' },
         ],
     },
     {
@@ -168,13 +171,13 @@ const GUIDES: Guide[] = [
         description: 'Threadripper-class performance for 3D rendering, scientific computing, AI model training, and CAD.',
         highlights: ['24-core HEDT CPU', 'Massive multi-thread performance', 'ECC-capable', 'Extreme storage throughput'],
         components: [
-            { category: 'Processor', name: 'AMD Ryzen Threadripper 7960X', approxPrice: 135000 },
-            { category: 'Motherboard', name: 'ASUS ROG Strix X670E-E Gaming', approxPrice: 42000 },
-            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5 6000MHz (×2)', approxPrice: 25000 },
-            { category: 'GPU', name: 'NVIDIA RTX 4090 24GB', approxPrice: 185000 },
-            { category: 'Storage', name: 'Samsung 990 Pro 1TB (×2) + WD 2TB', approxPrice: 25800 },
-            { category: 'Power Supply', name: 'MSI MPG A1000G Gold 1000W', approxPrice: 16000 },
-            { category: 'Cooler', name: 'EKWB Quantum Velocity + Corsair XD5', approxPrice: 24000 },
+            { category: 'Processor', name: 'AMD Ryzen Threadripper 7960X' },
+            { category: 'Motherboard', name: 'ASUS ROG Strix X670E-E Gaming' },
+            { category: 'RAM', name: 'G.Skill Trident Z5 32GB DDR5 6000MHz (×2)' },
+            { category: 'GPU', name: 'NVIDIA RTX 4090 24GB' },
+            { category: 'Storage', name: 'Samsung 990 Pro 1TB (×2) + WD 2TB' },
+            { category: 'Power Supply', name: 'MSI MPG A1000G Gold 1000W' },
+            { category: 'Cooler', name: 'EKWB Quantum Velocity + Corsair XD5' },
         ],
     },
 ];
@@ -199,12 +202,35 @@ const BUDGET_MIN: Record<BudgetLabel, number> = {
 };
 
 // -------------------------------------------------------------------
+// Helper functions
+// -------------------------------------------------------------------
+function getMatchedProductsForGuide(guide: Guide, products: any[]) {
+    return guide.components.map(comp => {
+        const searchTerms = comp.name.toLowerCase().split(' ').filter(word => word.length > 2);
+        let matched = products.find(p => searchTerms.some(term => p.name.toLowerCase().includes(term)) && p.category.toLowerCase() === comp.category.toLowerCase());
+
+        if (!matched) {
+            matched = products.find(p => p.name.toLowerCase().includes(comp.name.toLowerCase()) || comp.name.toLowerCase().includes(p.name.toLowerCase()));
+        }
+
+        if (!matched && process.env.NODE_ENV === 'development') {
+            console.warn(`[Build Guides] Could not find product match for component: ${comp.name} (${comp.category})`);
+        }
+
+        return {
+            guideComponent: comp,
+            matchedProduct: matched || null
+        };
+    });
+}
+// -------------------------------------------------------------------
 // Guide Card
 // -------------------------------------------------------------------
-const GuideCard: React.FC<{ guide: Guide; onStartBuild: () => void }> = ({ guide, onStartBuild }) => {
+const GuideCard: React.FC<{ guide: Guide; products: any[]; onStartBuild: () => void }> = ({ guide, products, onStartBuild }) => {
     const [expanded, setExpanded] = useState(false);
     const Icon = guide.icon;
-    const total = guide.components.reduce((s, c) => s + c.approxPrice, 0);
+    const matchedProducts = useMemo(() => getMatchedProductsForGuide(guide, products), [guide, products]);
+    const total = useMemo(() => matchedProducts.reduce((sum, item) => sum + (item.matchedProduct?.price || 0), 0), [matchedProducts]);
 
     return (
         <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
@@ -261,13 +287,15 @@ const GuideCard: React.FC<{ guide: Guide; onStartBuild: () => void }> = ({ guide
 
                 {expanded && (
                     <div className="mb-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
-                        {guide.components.map((comp, i) => (
+                        {matchedProducts.map(({ guideComponent: comp, matchedProduct }, i) => (
                             <div key={i} className="flex items-center justify-between text-xs px-3 py-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
-                                <div>
+                                <div className="min-w-0 pr-4">
                                     <span className="font-semibold text-zinc-500 uppercase text-[10px] tracking-wide block">{comp.category}</span>
-                                    <span className="text-zinc-800 font-medium">{comp.name}</span>
+                                    <span className="text-zinc-800 font-medium truncate block">{matchedProduct ? matchedProduct.name : comp.name}</span>
                                 </div>
-                                <span className="font-bold text-zinc-700 ml-4 flex-shrink-0">₹{comp.approxPrice.toLocaleString('en-IN')}</span>
+                                <span className="font-bold text-zinc-700 ml-4 flex-shrink-0">
+                                    {matchedProduct ? `₹${matchedProduct.price.toLocaleString('en-IN')}` : <span className="text-red-500">Unavailable</span>}
+                                </span>
                             </div>
                         ))}
                         <div className="flex justify-between px-3 py-2.5 bg-blue-50 rounded-lg border border-blue-100 text-sm font-bold text-blue-800">
@@ -305,70 +333,49 @@ export default function BuildGuidesPage() {
     });
 
     const handleStartBuild = (guide: Guide) => {
-        const newCart: any[] = [];
-        guide.components.forEach(comp => {
-            // Find a product whose name loosely matches the component name
-            const searchTerms = comp.name.toLowerCase().split(' ').filter(word => word.length > 2);
-            let matched = products.find(p => searchTerms.some(term => p.name.toLowerCase().includes(term)) && p.category.toLowerCase() === comp.category.toLowerCase());
+        const matched = getMatchedProductsForGuide(guide, products);
+        const newCart = matched
+            .filter(item => item.matchedProduct)
+            .map(item => ({ ...item.matchedProduct, quantity: 1 }));
 
-            // Fallback: just match by name if category mismatched slightly
-            if (!matched) {
-                matched = products.find(p => p.name.toLowerCase().includes(comp.name.toLowerCase()) || comp.name.toLowerCase().includes(p.name.toLowerCase()));
-            }
-
-            if (matched) newCart.push({ ...matched, quantity: 1 });
-        });
         loadCart(newCart);
         router.push('/products?mode=build');
         setTimeout(() => setCartOpen(true), 500);
     };
 
     return (
-        <div className="min-h-screen bg-zinc-50">
-            <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        h1,h2,h3,h4 { font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.025em; }
-        .animate-in { animation: slideDown 0.2s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-
+        <PageLayout bgClass="bg-zinc-50">
             {/* Hero */}
-            <div className="bg-white border-b border-zinc-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-                    <div className="max-w-2xl">
-                        <div className="inline-flex items-center gap-2 bg-violet-50 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+            <PageLayout.Header>
+                <PageTitle
+                    title="PC Build Guides"
+                    subtitle="Curated PC builds for every budget and use-case — hand-picked by our experts. Click 'Start This Build' to jump straight into Build Mode with the right category pre-selected."
+                    badge={
+                        <div className="inline-flex items-center gap-2 bg-violet-50 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full">
                             <BookOpen size={12} /> Expert Guides
                         </div>
-                        <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-3">
-                            PC Build Guides
-                        </h1>
-                        <p className="text-zinc-500 text-base leading-relaxed">
-                            Curated PC builds for every budget and use-case — hand-picked by our experts.
-                            Click "Start This Build" to jump straight into Build Mode with the right category pre-selected.
-                        </p>
-                    </div>
+                    }
+                />
 
-                    {/* Budget Filter Chips */}
-                    <div className="flex flex-wrap gap-2 mt-8">
-                        {BUDGET_FILTERS.map((f) => (
-                            <button
-                                key={f.label}
-                                onClick={() => setActiveFilter(f.label)}
-                                className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all
+                {/* Budget Filter Chips */}
+                <div className="flex flex-wrap gap-2 mt-8">
+                    {BUDGET_FILTERS.map((f) => (
+                        <button
+                            key={f.label}
+                            onClick={() => setActiveFilter(f.label)}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all
                   ${activeFilter === f.label
-                                        ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm'
-                                        : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'}`}
-                            >
-                                {f.label}
-                            </button>
-                        ))}
-                    </div>
+                                    ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm'
+                                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'}`}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
                 </div>
-            </div>
+            </PageLayout.Header>
 
             {/* Guide Grid */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <PageLayout.Content padding="lg">
                 {filtered.length === 0 ? (
                     <div className="text-center py-20 bg-white rounded-2xl border border-zinc-200">
                         <p className="text-zinc-500">No guides match this budget filter.</p>
@@ -381,29 +388,31 @@ export default function BuildGuidesPage() {
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {filtered.map((guide) => (
-                                <GuideCard key={guide.id} guide={guide} onStartBuild={() => handleStartBuild(guide)} />
+                                <GuideCard key={guide.id} guide={guide} products={products} onStartBuild={() => handleStartBuild(guide)} />
                             ))}
                         </div>
                     </>
                 )}
 
                 {/* Bottom CTA */}
-                <div className="mt-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 sm:p-10 text-center">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                        Want a Custom Build?
-                    </h2>
-                    <p className="text-blue-100 text-sm mb-6 max-w-lg mx-auto">
-                        Use our Build Mode to configure any combination — our compatibility checker will flag issues in real time.
-                    </p>
-                    <Link
-                        href="/products?mode=build"
-                        className="inline-flex items-center gap-2 px-8 py-3 bg-white text-blue-700 
-              font-bold rounded-xl text-sm hover:bg-blue-50 transition-all shadow-lg"
-                    >
-                        Open Build Mode <ArrowRight size={16} />
-                    </Link>
-                </div>
-            </div>
-        </div>
+                <Section spacing="xl" container={false} className="mt-8">
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 sm:p-10 text-center">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                            Want a Custom Build?
+                        </h2>
+                        <p className="text-blue-100 text-sm mb-6 max-w-lg mx-auto">
+                            Use our Build Mode to configure any combination — our compatibility checker will flag issues in real time.
+                        </p>
+                        <Link
+                            href="/products?mode=build"
+                            className="inline-flex items-center gap-2 px-8 py-3 bg-white text-blue-700 
+                  font-bold rounded-xl text-sm hover:bg-blue-50 transition-all shadow-lg"
+                        >
+                            Open Build Mode <ArrowRight size={16} />
+                        </Link>
+                    </div>
+                </Section>
+            </PageLayout.Content>
+        </PageLayout>
     );
 }

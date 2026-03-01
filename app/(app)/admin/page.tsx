@@ -10,6 +10,8 @@ import BillingInvoices from '@/components/dashboard/BillingInvoices';
 import CMSManager from '@/components/dashboard/CMSManager';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useAdmin } from '@/context/AdminContext';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageTitle } from '@/components/layout/PageTitle';
 
 const ADMIN_TABS = [
     { key: 'overview', label: 'Overview' },
@@ -50,19 +52,15 @@ const AdminDashboard: React.FC = () => {
     }, [refreshInvoices, refreshCustomers, refreshBillingProfile, refreshCMSVersions, refreshOrders, refreshReviews]);
 
     return (
-        <div className="flex min-h-screen flex-col bg-gray-50">
+        <PageLayout.Content padding="none" className="min-h-screen bg-transparent">
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:gap-6 mb-4 sm:mb-6">
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                            Admin Dashboard
-                        </h1>
-                        <p className="text-sm sm:text-base text-gray-500">
-                            Manage catalog, orders, and system settings.
-                        </p>
-                    </div>
+                    <PageTitle
+                        title="Admin Dashboard"
+                        subtitle="Manage catalog, orders, and system settings."
+                    />
 
                     {/* Navigation Tabs */}
 
@@ -155,7 +153,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
 
             </div>
-        </div>
+        </PageLayout.Content>
     );
 };
 

@@ -7,6 +7,9 @@ import * as LucideIcons from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useShop } from '@/context/ShopContext';
 import { Category } from '../types';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { Section } from '@/components/layout/Section';
+import { Container } from '@/components/layout/Container';
 
 const Home: React.FC = () => {
   const { products, cmsContent } = useShop();
@@ -19,19 +22,19 @@ const Home: React.FC = () => {
     );
   }
 
- const sections = cmsContent?.content?.sections;
+  const sections = cmsContent?.content?.sections;
 
-if (!sections) {
-  return (
-    <>
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-pulse text-slate-400 text-lg">Loading content…</div>
-      </div>
-    </>
-  );
-}
+  if (!sections) {
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="animate-pulse text-slate-400 text-lg">Loading content…</div>
+        </div>
+      </>
+    );
+  }
 
-const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sections;
+  const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sections;
 
   // Get featured products dynamically
   const featuredGPUs = products.filter(p => p.category === Category.GPU).slice(0, 2);
@@ -45,9 +48,9 @@ const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sectio
   };
 
   return (
-    <div className="bg-white">
+    <PageLayout bgClass="bg-white">
       {/* HERO SECTION */}
-      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-white">
+      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-white py-16 lg:py-12">
         {/* Subtle noise texture overlay */}
         <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIwLjA1Ii8+PC9zdmc+')]" />
 
@@ -55,7 +58,7 @@ const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sectio
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-radial from-blue-50 via-transparent to-transparent opacity-40 blur-3xl" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-radial from-slate-50 via-transparent to-transparent opacity-30 blur-3xl" />
 
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12 py-16 lg:py-12 relative z-10 w-full">
+        <Container className="relative z-10">
           <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-16 lg:gap-20 items-center">
             {/* Left - Content */}
             <motion.div
@@ -178,166 +181,160 @@ const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sectio
               </div>
             </motion.div>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* CATEGORIES SECTION */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">{categories.sectionTitle}</h2>
-          </motion.div>
+      <Section className="bg-slate-50">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-4xl font-bold text-slate-900 mb-4">{categories.sectionTitle}</h2>
+        </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.categories
-              .sort((a, b) => a.order - b.order)
-              .map((category, i) => {
-                const Icon = getIcon(category.icon);
-                return (
-                  <motion.div
-                    key={category.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.05, duration: 0.5 }}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {categories.categories
+            .sort((a, b) => a.order - b.order)
+            .map((category, i) => {
+              const Icon = getIcon(category.icon);
+              return (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05, duration: 0.5 }}
+                >
+                  <Link
+                    href={`/catalog?category=${encodeURIComponent(category.categoryKey)}`}
+                    className="group block bg-white rounded-xl p-6 hover:shadow-lg transition-all border border-slate-200 hover:border-blue-300"
                   >
-                    <Link
-                      href={`/catalog?category=${encodeURIComponent(category.categoryKey)}`}
-                      className="group block bg-white rounded-xl p-6 hover:shadow-lg transition-all border border-slate-200 hover:border-blue-300"
-                    >
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-slate-100 group-hover:bg-blue-50 flex items-center justify-center transition-colors">
-                        <Icon className="w-6 h-6 text-slate-700 group-hover:text-blue-600 transition-colors" />
-                      </div>
-                      <h3 className="text-center font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {category.name}
-                      </h3>
-                    </Link>
-                  </motion.div>
-                );
-              })}
-          </div>
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-slate-100 group-hover:bg-blue-50 flex items-center justify-center transition-colors">
+                      <Icon className="w-6 h-6 text-slate-700 group-hover:text-blue-600 transition-colors" />
+                    </div>
+                    <h3 className="text-center font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {category.name}
+                    </h3>
+                  </Link>
+                </motion.div>
+              );
+            })}
         </div>
-      </section>
+      </Section>
 
       {/* FEATURED PRODUCTS */}
-      <section className="py-12 bg-gradient-to-b from-white to-slate-50">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="mb-16"
-          >
-            <h2 className="text-5xl font-bold text-slate-900 mb-4">{featuredProducts.sectionTitle}</h2>
-            <p className="text-xl text-slate-600">{featuredProducts.sectionSubtitle}</p>
-          </motion.div>
+      <Section className="bg-gradient-to-b from-white to-slate-50">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="mb-16"
+        >
+          <h2 className="text-5xl font-bold text-slate-900 mb-4">{featuredProducts.sectionTitle}</h2>
+          <p className="text-xl text-slate-600">{featuredProducts.sectionSubtitle}</p>
+        </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {selectedProducts.map((product, i) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.7 }}
-              >
-                <Link href={`/product/${product.id}`}>
-                  <div className="group relative bg-white rounded-2xl overflow-hidden border-2 border-slate-100 hover:border-slate-200 transition-all hover:shadow-xl">
-                    {/* Image */}
-                    <div className="aspect-square bg-slate-50 relative overflow-hidden">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {product.stock < 5 && (
-                        <div className="absolute top-4 right-4 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
-                          Low Stock
-                        </div>
-                      )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {selectedProducts.map((product, i) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1, duration: 0.7 }}
+            >
+              <Link href={`/product/${product.id}`}>
+                <div className="group relative bg-white rounded-2xl overflow-hidden border-2 border-slate-100 hover:border-slate-200 transition-all hover:shadow-xl">
+                  {/* Image */}
+                  <div className="aspect-square bg-slate-50 relative overflow-hidden">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    {product.stock < 5 && (
+                      <div className="absolute top-4 right-4 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                        Low Stock
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6">
+                    <div className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">
+                      {product.category}
                     </div>
+                    <h3 className="font-bold text-slate-900 mb-2 line-clamp-2 min-h-[3rem]">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                      {product.description}
+                    </p>
 
-                    {/* Content */}
-                    <div className="p-6">
-                      <div className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">
-                        {product.category}
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                      <div className="text-2xl font-bold text-slate-900">
+                        ₹{(product.price / 1000).toFixed(0)}k
                       </div>
-                      <h3 className="font-bold text-slate-900 mb-2 line-clamp-2 min-h-[3rem]">
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-slate-600 mb-4 line-clamp-2">
-                        {product.description}
-                      </p>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                        <div className="text-2xl font-bold text-slate-900">
-                          ₹{(product.price / 1000).toFixed(0)}k
-                        </div>
-                        <button className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                          <ShoppingBag className="w-5 h-5" />
-                        </button>
-                      </div>
+                      <button className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                        <ShoppingBag className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mt-12"
-          >
-            <Link href={featuredProducts.ctaLink}>
-              <button className="px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all inline-flex items-center gap-2">
-                {featuredProducts.ctaText}
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </Link>
-          </motion.div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
         </div>
-      </section>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center mt-12"
+        >
+          <Link href={featuredProducts.ctaLink}>
+            <button className="px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all inline-flex items-center gap-2">
+              {featuredProducts.ctaText}
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </Link>
+        </motion.div>
+      </Section>
 
       {/* TRUST INDICATORS */}
-      <section className="py-12 bg-white border-y border-slate-100">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
-            {trustIndicators.features
-              .sort((a, b) => a.order - b.order)
-              .map((feature, i) => {
-                const Icon = getIcon(feature.icon);
-                return (
-                  <motion.div
-                    key={feature.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1, duration: 0.6 }}
-                    className="text-center"
-                  >
-                    <div className="w-14 h-14 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                      <Icon className="w-7 h-7 text-slate-700" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-2">{feature.title}</h3>
-                    <p className="text-slate-600 leading-relaxed">{feature.description}</p>
-                  </motion.div>
-                );
-              })}
-          </div>
+      <Section className="bg-white border-y border-slate-100">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {trustIndicators.features
+            .sort((a, b) => a.order - b.order)
+            .map((feature, i) => {
+              const Icon = getIcon(feature.icon);
+              return (
+                <motion.div
+                  key={feature.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1, duration: 0.6 }}
+                  className="text-center"
+                >
+                  <div className="w-14 h-14 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Icon className="w-7 h-7 text-slate-700" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">{feature.title}</h3>
+                  <p className="text-slate-600 leading-relaxed">{feature.description}</p>
+                </motion.div>
+              );
+            })}
         </div>
-      </section>
+      </Section>
 
       {/* FINAL CTA */}
-      <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+      <Section className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden" spacing="xl">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem]" />
 
         <motion.div
@@ -345,7 +342,7 @@ const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sectio
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="max-w-[1400px] mx-auto px-6 lg:px-12 relative z-10 text-center"
+          className="relative z-10 text-center"
         >
           <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
             {finalCTA.headline}
@@ -360,8 +357,8 @@ const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sectio
             </button>
           </Link>
         </motion.div>
-      </section>
-    </div>
+      </Section>
+    </PageLayout>
   );
 };
 

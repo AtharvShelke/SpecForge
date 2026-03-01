@@ -5,30 +5,82 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const search = searchParams.get("search");
-        const lowStock = searchParams.get("lowStock");
+        const search = searchParams.get("search") || searchParams.get("q");
+        const category = searchParams.get("category");
+        const fStockStatus = searchParams.get("f_stock_status");
+
+        // Pagination parameters
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "1000", 10);
+        const skip = (page - 1) * limit;
+
+        // Note: For 'low stock', since quantity <= reorderLevel requires a field comparison,
+        // Prisma doesn't support comparing fields inside standard `where`. We will either query raw,
+        // or just apply a programmatic filter over a wider result set. But wait, if someone asks for
+        // paginated low stock items, doing it purely in memory breaks pagination limit accuracy.
+        // A simple Prisma workaround: Since reorderLevel is generally consistent or small (e.g., 5-10),
+        // we can fetch with a fixed ceiling or fall back to raw SQL to find the correctly paginated IDs.
+        // For simplicity and assuming thousands of inventory rows, we'll try a fast fetch of item IDs first.
+
+        let dbWhere: any = {};
+
+        // 1. Text Search
+        if (search && search.trim() !== "") {
+            dbWhere.OR = [
+                { sku: { contains: search, mode: "insensitive" } },
+                { productName: { contains: search, mode: "insensitive" } },
+            ];
+        }
+
+        // 2. Category Filter
+        if (category && category !== "all") {
+            dbWhere.product = {
+                category: category
+            };
+        }
+
+        // 3. Stock Status Filter
+        if (fStockStatus === "out") {
+            dbWhere.quantity = 0;
+        }
+
+        let queryIds: { id: string }[] | null = null;
+
+        // If 'low' stock is requested, we MUST do a raw SQL query or pull all matching records briefly
+        // to filter `quantity <= reorderLevel` properly before taking the paginated slice.
+        if (fStockStatus === "low") {
+            const rawItems = await prisma.inventoryItem.findMany({
+                where: { ...dbWhere, quantity: { gt: 0 } },
+                select: { id: true, quantity: true, reorderLevel: true }
+            });
+            const validLowStockIds = rawItems
+                .filter(item => item.quantity <= item.reorderLevel)
+                .map(item => item.id);
+
+            dbWhere.id = { in: validLowStockIds };
+        } else if (fStockStatus === "in") {
+            dbWhere.quantity = { gt: 0 };
+        }
+
+        // Execute primary paginated query
+        const total = await prisma.inventoryItem.count({ where: dbWhere });
 
         const items = await prisma.inventoryItem.findMany({
-            where: search
-                ? {
-                    OR: [
-                        { sku: { contains: search, mode: "insensitive" } },
-                        { productName: { contains: search, mode: "insensitive" } },
-                    ],
-                }
-                : undefined,
+            where: dbWhere,
             include: {
                 product: { include: { brand: true } },
             },
             orderBy: { productName: "asc" },
+            skip,
+            take: limit
         });
 
-        // Filter low-stock items in memory if needed
-        const result = lowStock === "true"
-            ? items.filter((i) => i.quantity <= i.reorderLevel)
-            : items;
-
-        return NextResponse.json(result);
+        return NextResponse.json({
+            items,
+            total,
+            page,
+            limit
+        });
     } catch (error) {
         console.error("GET /api/inventory error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
