@@ -43,6 +43,7 @@ const ProductsContent: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState(searchParams?.get('q') || '');
     const [activeTab, setActiveTab] = useState<CategoryNode | null>(initialTab);
     const [selectedNode, setSelectedNode] = useState<CategoryNode | null>(null);
+    const [sidebarSearchTerm, setSidebarSearchTerm] = useState('');
     const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(() => {
         const filters: Record<string, string[]> = {};
         searchParams.forEach((value, key) => {
@@ -160,6 +161,7 @@ const ProductsContent: React.FC = () => {
         if (selectedNode) params.set('sub', selectedNode.label);
         if (isBuildMode) params.set('mode', 'build');
         if (searchTerm) params.set('q', searchTerm);
+        if (sidebarSearchTerm) params.set('sq', sidebarSearchTerm);
         if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
         if (priceRange.max < DEFAULT_MAX_PRICE) params.set('maxPrice', priceRange.max.toString());
 
@@ -238,19 +240,22 @@ const ProductsContent: React.FC = () => {
         setSelectedNode(null);
         setSelectedFilters({});
         setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
+        setSidebarSearchTerm('');
     };
 
     const filteredProducts = useMemo(() => {
         let result = products;
 
-        if (!activeTab) return [];
-
-        result = result.filter(product => product.category === activeTab.category);
-
         if (isBuildMode) {
+            // Build mode naturally constrains by active category, but we still apply it.
+            if (activeTab) {
+                const actualCategory = selectedNode?.category || activeTab.category;
+                result = result.filter(product => product.category === actualCategory);
+            }
+
             const cpu = cart.find(i => i.category === Category.PROCESSOR);
             const mobo = cart.find(i => i.category === Category.MOTHERBOARD);
-            const activeCategory = activeTab.category;
+            const activeCategory = activeTab?.category;
 
             const cpuSpecs = cpu ? specsToFlat(cpu.specs) : null;
             const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
@@ -274,8 +279,31 @@ const ProductsContent: React.FC = () => {
                     return pSpecs.ramType === type;
                 });
             }
+        } else {
+            // NOT Build Mode
+            // Global search bypasses category restrictions completely
+            if (searchTerm) {
+                // If there's a global search term, we search across ALL products
+                const lower = searchTerm.toLowerCase();
+                result = result.filter(product => {
+                    const inName = product.name.toLowerCase().includes(lower);
+                    const flattenedSpecs = specsToFlat(product.specs);
+                    const inSpecs = Object.values(flattenedSpecs).some(val =>
+                        val && String(val).toLowerCase().includes(lower)
+                    );
+                    const inDesc = product.description?.toLowerCase().includes(lower);
+                    return inName || inSpecs || inDesc;
+                });
+            } else {
+                // Regular category navigation filtering
+                if (activeTab) {
+                    const actualCategory = selectedNode?.category || activeTab.category;
+                    result = result.filter(product => product.category === actualCategory);
+                }
+            }
         }
 
+        // Subcategory spec/brand filtering
         if (selectedNode) {
             result = result.filter(product => {
                 let matches = true;
@@ -293,6 +321,20 @@ const ProductsContent: React.FC = () => {
             });
         }
 
+        // Scoped sidebar search filtering
+        if (sidebarSearchTerm) {
+            const lower = sidebarSearchTerm.toLowerCase();
+            result = result.filter(product => {
+                const inName = product.name.toLowerCase().includes(lower);
+                const flattenedSpecs = specsToFlat(product.specs);
+                const inSpecs = Object.values(flattenedSpecs).some(val =>
+                    val && String(val).toLowerCase().includes(lower)
+                );
+                return inName || inSpecs;
+            });
+        }
+
+        // Dynamic attribute filters from sidebar
         Object.entries(selectedFilters).forEach(([key, selectedValues]) => {
             if (selectedValues.length === 0) return;
 
@@ -311,17 +353,13 @@ const ProductsContent: React.FC = () => {
             }
         });
 
+        // Price filtering
         if (priceRange.min > 0 || priceRange.max < DEFAULT_MAX_PRICE) {
             result = result.filter(p => p.price >= priceRange.min && p.price <= priceRange.max);
         }
 
-        if (searchTerm) {
-            const lower = searchTerm.toLowerCase();
-            result = result.filter(p => p.name.toLowerCase().includes(lower));
-        }
-
         return result;
-    }, [searchTerm, activeTab, selectedNode, selectedFilters, priceRange, isBuildMode, cart, products]);
+    }, [searchTerm, sidebarSearchTerm, activeTab, selectedNode, selectedFilters, priceRange, isBuildMode, cart, products]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -513,6 +551,35 @@ const ProductsContent: React.FC = () => {
                         </nav>
                     </div>
 
+                    {/* Subcategories Row (Dynamic) */}
+                    {activeTab && activeTab.children && activeTab.children.length > 0 && (
+                        <div className="bg-zinc-50 border-t border-zinc-200/60 shadow-inner">
+                            <div className="flex overflow-x-auto scrollbar-hide py-3 md:py-4 px-4 sm:px-6 lg:px-8 gap-2">
+                                <button
+                                    onClick={() => setSelectedNode(null)}
+                                    className={`whitespace-nowrap px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all border ${!selectedNode
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                                        : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
+                                        }`}
+                                >
+                                    All {activeTab.label}
+                                </button>
+                                {activeTab.children.map((subNode) => (
+                                    <button
+                                        key={subNode.label}
+                                        onClick={() => setSelectedNode(subNode)}
+                                        className={`whitespace-nowrap px-4 py-1.5 text-xs sm:text-sm font-medium border rounded-full transition-all ${selectedNode?.label === subNode.label
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                                            : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
+                                            }`}
+                                    >
+                                        {subNode.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
 
                 </div>
             </header>
@@ -542,6 +609,8 @@ const ProductsContent: React.FC = () => {
                                     selectedFilters={selectedFilters}
                                     onFilterChange={handleFilterChange}
                                     onClearFilters={clearAllFilters}
+                                    sidebarSearchTerm={sidebarSearchTerm}
+                                    onSidebarSearchChange={setSidebarSearchTerm}
                                 />
                             )}
                         </aside>
@@ -565,6 +634,8 @@ const ProductsContent: React.FC = () => {
                                         selectedFilters={selectedFilters}
                                         onFilterChange={handleFilterChange}
                                         onClearFilters={clearAllFilters}
+                                        sidebarSearchTerm={sidebarSearchTerm}
+                                        onSidebarSearchChange={setSidebarSearchTerm}
                                     />
                                 </div>
                             </div>

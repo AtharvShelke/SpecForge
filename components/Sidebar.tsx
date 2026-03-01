@@ -20,91 +20,9 @@ interface SidebarProps {
   selectedFilters: Record<string, string[]>;
   onFilterChange: (key: string, value: string) => void;
   onClearFilters: () => void;
+  sidebarSearchTerm: string;
+  onSidebarSearchChange: (value: string) => void;
 }
-
-// ─── TreeNode ────────────────────────────────────────────────────────────────
-// FIX: Separate expand/collapse (chevron click) from selection (label click).
-// Previously both actions were merged into one handler, causing the sidebar to
-// "collapse" on mobile because onSelect triggered a page-level navigation that
-// unmounted/reset state before the local isOpen toggle could take effect.
-const TreeNode: React.FC<{
-  node: CategoryNode;
-  onSelect: (node: CategoryNode) => void;
-  selectedNode: CategoryNode | null;
-  depth: number;
-}> = ({ node, onSelect, selectedNode, depth }) => {
-  const [isOpen, setIsOpen] = useState(node.isOpen ?? false);
-  const hasChildren = node.children && node.children.length > 0;
-  const isSelected = selectedNode === node;
-
-  // Only toggles the open/closed state — does NOT call onSelect
-  const handleChevronClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsOpen(prev => !prev);
-  };
-
-  // Selects this node AND, if it has children, also expands it
-  const handleLabelClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelect(node);
-    if (hasChildren) setIsOpen(prev => !prev);
-  };
-
-  const depthPadding = depth * 14 + 10;
-
-  return (
-    <div className="w-full">
-      <div
-        className={`
-          group flex items-center justify-between py-1.5 rounded-md transition-colors duration-150 cursor-pointer select-none
-          ${isSelected
-            ? 'bg-primary/10 text-primary font-medium'
-            : 'text-foreground/70 hover:bg-accent hover:text-foreground'
-          }
-        `}
-        style={{ paddingLeft: `${depthPadding}px`, paddingRight: '8px' }}
-        onClick={handleLabelClick}
-      >
-        <span className={`flex-1 truncate text-[13px] leading-snug ${depth === 0 ? 'font-semibold' : ''}`}>
-          {node.label}
-        </span>
-
-        {/* Chevron: clicking it ONLY toggles open/close, no selection */}
-        {hasChildren && (
-          <button
-            onClick={handleChevronClick}
-            className={`
-              ml-1 p-0.5 rounded transition-colors
-              ${isSelected ? 'text-primary/70 hover:text-primary' : 'text-muted-foreground hover:text-foreground'}
-            `}
-            aria-label={isOpen ? 'Collapse' : 'Expand'}
-          >
-            <ChevronDown
-              size={13}
-              strokeWidth={2.5}
-              className={`transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
-            />
-          </button>
-        )}
-      </div>
-
-      {/* Children — only rendered when open */}
-      {hasChildren && isOpen && (
-        <div className="w-full border-l border-border/40 ml-4">
-          {node.children!.map((child, idx) => (
-            <TreeNode
-              key={`${child.label}-${idx}`}
-              node={child}
-              onSelect={onSelect}
-              selectedNode={selectedNode}
-              depth={depth + 1}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // ─── SearchFilterGroup ───────────────────────────────────────────────────────
 const SearchFilterGroup: React.FC<{
@@ -283,6 +201,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   selectedFilters,
   onFilterChange,
   onClearFilters,
+  sidebarSearchTerm,
+  onSidebarSearchChange,
 }) => {
   const { cart, filterConfigs } = useShop();
   const { isBuildMode, toggleBuildMode } = useBuild();
@@ -470,28 +390,41 @@ const Sidebar: React.FC<SidebarProps> = ({
           ) : (
             /* ──────── BROWSE MODE ──────── */
             <>
-              {/* Subcategory tree */}
-              {nodes.length > 0 && (
-                <div className="mb-5">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 px-1">
-                    Subcategories
-                  </p>
-                  <div className="space-y-0.5">
-                    {nodes.map((node, idx) => (
-                      <TreeNode
-                        key={`${node.label}-${idx}`}
-                        node={node}
-                        onSelect={onSelect}
-                        selectedNode={selectedNode}
-                        depth={0}
-                      />
-                    ))}
-                  </div>
+              {/* Category-Scoped Search */}
+              <div className="mb-5">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 px-1">
+                  Search within {activeCategory ? activeCategory.charAt(0) + activeCategory.slice(1).toLowerCase() : 'Category'}
+                </p>
+                <div className="relative">
+                  <Search
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                  />
+                  <input
+                    type="text"
+                    value={sidebarSearchTerm}
+                    onChange={e => onSidebarSearchChange(e.target.value)}
+                    placeholder="Search category..."
+                    className="
+                      w-full rounded-md border border-input bg-background pl-8 pr-3 py-2
+                      text-[13px] text-foreground placeholder:text-muted-foreground
+                      focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring
+                      transition-colors
+                    "
+                  />
+                  {sidebarSearchTerm && (
+                    <button
+                      onClick={() => onSidebarSearchChange('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Divider before filters */}
-              {nodes.length > 0 && <div className="border-t border-border/50 mb-5" />}
+              <div className="border-t border-border/50 mb-5" />
 
               {/* Filters header */}
               <div className="flex justify-between items-center mb-4">
