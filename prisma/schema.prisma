@@ -297,6 +297,8 @@ model Order {
   email        String
   phone        String?
   date         DateTime    @default(now())
+  subtotal     Float       @default(0)
+  gstAmount    Float       @default(0)
   total        Float
   status       OrderStatus @default(PENDING)
 

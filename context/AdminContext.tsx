@@ -15,7 +15,7 @@ interface AdminContextType {
     refreshInventory: () => Promise<void>;
     stockMovements: StockMovement[];
     refreshStockMovements: () => Promise<void>;
-    adjustStock: (inventoryItemId: string, quantity: number, type: StockMovementType, reason: string) => Promise<void>;
+    adjustStock: (inventoryItemId: string, quantity: number, type: StockMovementType, reason?: string) => Promise<void>;
     getInventoryItem: (sku: string) => InventoryItem | undefined;
 
     // Orders
@@ -108,7 +108,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const res = await fetch('/api/inventory');
             const data = await res.json();
-            setInventory(Array.isArray(data) ? data : []);
+
+            // The API returns a pagination object { items, total, page, limit }
+            // If items exists, use it. Otherwise, if it's somehow a raw array, map that.
+            const newInventory = data.items ? data.items : (Array.isArray(data) ? data : []);
+            setInventory(newInventory);
         } catch (err) { console.error(err); }
     }, []);
 
@@ -240,7 +244,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // --- ACTIONS ---
 
-    const adjustStock = useCallback(async (inventoryItemId: string, quantity: number, type: StockMovementType, reason: string) => {
+    const adjustStock = useCallback(async (inventoryItemId: string, quantity: number, type: StockMovementType, reason?: string) => {
         try {
             const res = await fetch(`/api/inventory/${inventoryItemId}/movements`, {
                 method: 'POST',

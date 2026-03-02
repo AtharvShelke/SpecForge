@@ -31,10 +31,11 @@ const PageLayoutHeader: React.FC<{
     children: React.ReactNode;
     className?: string;
     border?: boolean;
-}> = ({ children, className = '', border = true }) => {
+    compact?: boolean;
+}> = ({ children, className = '', border = true, compact = false }) => {
     return (
         <header className={`bg-white ${border ? 'border-b border-zinc-200' : ''} ${className}`}>
-            <Container className="py-4 sm:py-5 lg:py-6">
+            <Container className={compact ? "py-3 sm:py-4" : "py-4 sm:py-5 lg:py-6"}>
                 {children}
             </Container>
         </header>

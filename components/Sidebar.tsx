@@ -221,24 +221,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [activeCategory, filterConfigs]);
 
   const visibleFilters = useMemo(() => {
-    const baseFilters = categoryFilters.filter((filter: FilterDefinition) => {
+    return categoryFilters.filter((filter: FilterDefinition) => {
       // Support both formats: dependency object (frontend) and dependencyKey/dependencyValue (DB)
       const depKey = filter.dependency?.key || filter.dependencyKey;
       const depValue = filter.dependency?.value || filter.dependencyValue;
       if (!depKey || !depValue) return true;
       const parentSelection = selectedFilters[depKey] || [];
+      if (parentSelection.length === 0) return true;
       return parentSelection.includes(depValue);
     });
-
-    if (dynamicFilters?.brands && dynamicFilters.brands.length > 0) {
-      const brandFilter: FilterDefinition = {
-        key: 'brand',
-        label: 'Brand',
-        type: 'checkbox'
-      };
-      return [brandFilter, ...baseFilters];
-    }
-    return baseFilters;
   }, [categoryFilters, selectedFilters, dynamicFilters]);
 
   const activeFilterCount = useMemo(() => {
@@ -278,7 +269,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [cart]);
 
   return (
-    <div className="h-full flex flex-col bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+    <div className="h-full flex flex-col bg-card border border-border rounded-lg overflow-hidden">
       {/* ── Scrollbar styles ── */}
       <style>{`
         .sidebar-scroll::-webkit-scrollbar { width: 4px; }

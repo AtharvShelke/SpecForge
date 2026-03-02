@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { calculateOrderFinancials } from "@/lib/gst";
 
 const CategoryEnum = z.enum([
     "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
 
             const inventoryUpdates = [];
             const stockMovements = [];
-            let total = 0;
+            const calculationItems: { price: number; quantity: number }[] = [];
 
             for (const item of data.items) {
                 const product = productMap.get(item.productId);
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
                     throw new Error(`Insufficient stock for product ${item.productId}`);
                 }
 
-                total += product.price * item.quantity;
+                calculationItems.push({ price: product.price, quantity: item.quantity });
 
                 inventoryUpdates.push({
                     id: product.inventoryItem.id,
@@ -124,6 +125,8 @@ export async function POST(req: NextRequest) {
                 });
             }
 
+            const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
+
             // Create the order
             const o = await tx.order.create({
                 data: {
@@ -131,7 +134,9 @@ export async function POST(req: NextRequest) {
                     customerName: data.customerName,
                     email: data.email,
                     phone: data.phone,
-                    total: data.total, // Depending on trust level, can use total from server calculation here instead
+                    subtotal,
+                    gstAmount,
+                    total: data.total || total, // Depending on trust level, can use total from server calculation here instead
                     status: "PENDING",
                     shippingStreet: data.shippingStreet,
                     shippingCity: data.shippingCity,

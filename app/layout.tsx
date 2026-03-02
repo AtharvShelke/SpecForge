@@ -36,12 +36,12 @@ export default function RootLayout({
       >
         <ShopProvider>
           <BuildProvider>
-            <Navbar />
+            
             <main className="min-h-screen pb-16 md:pb-0">
               {children}
             </main>
             <CartDrawer />
-            <Footer />
+            
             <Toaster />
           </BuildProvider>
         </ShopProvider>

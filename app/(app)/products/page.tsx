@@ -5,7 +5,6 @@ import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
 import { Search, Plus, CheckCircle, AlertTriangle, XCircle, Star, Filter, Grid3x3, Grid2x2, ChevronLeft, ChevronRight, ShoppingCart, ArrowUpDown, List, Columns, BarChart2 } from 'lucide-react';
 import { validateBuild } from '@/services/compatibility';
-// import { Link, useSearchParams } from 'react-router-dom';
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar';
@@ -375,7 +374,7 @@ const ProductsContent: React.FC = () => {
     }, [activeTab]);
 
     return (
-        <PageLayout bgClass="bg-zinc-50">
+        <PageLayout bgClass="bg-white">
             <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
         
@@ -405,8 +404,8 @@ const ProductsContent: React.FC = () => {
         
         @media (min-width: 1024px) {
           .product-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.04), 0 4px 12px -4px rgba(0, 0, 0, 0.02);
           }
         }
         
@@ -416,7 +415,7 @@ const ProductsContent: React.FC = () => {
         
         @media (min-width: 1024px) {
           .product-card:hover .product-image-wrapper {
-            transform: scale(1.05);
+            transform: scale(1.03);
           }
         }
         
@@ -430,24 +429,7 @@ const ProductsContent: React.FC = () => {
         }
         
         .category-tab {
-          position: relative;
           transition: all 0.2s ease;
-        }
-        
-        .category-tab::after {
-          content: '';
-          position: absolute;
-          bottom: -1px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 2px;
-          background: #18181b;
-          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .category-tab.active::after {
-          width: 100%;
         }
         
         .fade-in {
@@ -461,81 +443,92 @@ const ProductsContent: React.FC = () => {
       `}</style>
 
             {/* Elegant Header */}
-            <PageLayout.Header>
-                <PageTitle
-                    title={isBuildMode ? `Select ${initialCategoryParam || 'Component'}` : 'Components catalog'}
-                    subtitle={isBuildMode
-                        ? 'Choose the perfect component for your custom PC build.'
-                        : 'Explore our vast collection of PC components.'}
-                    actions={
-                        isBuildMode ? (
-                            <button
-                                onClick={() => router.push('/builds/new')}
-                                className="px-4 py-2 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Back to Build
-                            </button>
-                        ) : null
-                    }
-                    className="mb-3"
-                />
+            <PageLayout.Header compact>
+                <div className="flex flex-col gap-2">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+                        <PageTitle
+                            title={isBuildMode ? `Select ${initialCategoryParam || 'Component'}` : 'Components catalog'}
+                            subtitle={isBuildMode
+                                ? 'Choose the perfect component for your custom PC build.'
+                                : 'Explore our vast collection of PC components.'}
+                            actions={
+                                isBuildMode ? (
+                                    <button
+                                        onClick={() => router.push('/builds/new')}
+                                        className="px-2.5 py-1 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md font-medium text-xs transition-colors flex items-center gap-1.5"
+                                    >
+                                        <ArrowLeft className="w-3.5 h-3.5" />
+                                        Back to Build
+                                    </button>
+                                ) : null
+                            }
+                            className=""
+                        />
 
-                <div className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between gap-3 sm:gap-6">
-                        {/* Refined Search */}
-                        <div className="relative flex-1 max-w-2xl group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Search className="h-5 w-5 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" strokeWidth={2} />
+                        <div className="flex items-center gap-2 w-full lg:w-auto flex-shrink-0">
+                            {/* Refined Search */}
+                            <div className="relative flex-1 lg:w-72 group">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <Search className="h-3.5 w-3.5 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" strokeWidth={2} />
+                                </div>
+                                <input
+                                    type="text"
+                                    className="w-full h-8 pl-8 pr-3 bg-white border border-zinc-200 rounded-md text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 transition-all"
+                                    placeholder="Search products..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                                    >
+                                        <XCircle size={14} />
+                                    </button>
+                                )}
                             </div>
-                            <input
-                                type="text"
-                                className="w-full h-12 pl-12 pr-4 bg-white border border-zinc-200 rounded-xl text-sm
-                          placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 
-                          focus:border-zinc-300 transition-all"
-                                placeholder="Search products..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            {searchTerm && (
-                                <button
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                                >
-                                    <XCircle size={18} />
-                                </button>
+
+                            {isBuildMode && (
+                                <div className="hidden lg:flex items-center gap-1.5 text-xs font-medium px-3 h-8 bg-blue-600/90 text-white rounded-md">
+                                    <CheckCircle size={14} strokeWidth={2.5} />
+                                    Build Mode
+                                </div>
                             )}
+
+                            <button
+                                onClick={() => setIsMobileFiltersOpen(true)}
+                                className="lg:hidden flex items-center gap-1.5 h-8 px-2.5 bg-white border border-zinc-200 rounded-md text-zinc-700 font-medium text-xs hover:bg-zinc-50 transition-all whitespace-nowrap"
+                            >
+                                <Filter size={14} />
+                                Filters
+                            </button>
                         </div>
-
-                        {isBuildMode && (
-                            <div className="hidden lg:flex items-center gap-2 text-sm font-medium px-4 py-2.5 
-                            bg-blue-600/90 text-white rounded-xl">
-                                <CheckCircle size={16} strokeWidth={2.5} />
-                                Build Mode
-                            </div>
-                        )}
-
-                        <button
-                            onClick={() => setIsMobileFiltersOpen(true)}
-                            className="lg:hidden flex items-center gap-2 h-12 px-4 bg-white border border-zinc-200 
-                        rounded-xl text-zinc-700 font-medium hover:bg-zinc-50 transition-all"
-                        >
-                            <Filter size={18} />
-                            Filters
-                        </button>
                     </div>
 
                     {/* Refined Category Navigation */}
-                    <div className="border-t border-zinc-100">
-                        <nav className="flex overflow-x-auto scrollbar-hide -mb-px">
-                            <div className="flex items-center gap-1 py-2">
+                    <div className="border-t border-zinc-100 relative group">
+                        {canScrollLeft && (
+                            <button
+                                onClick={() => scrollCategories('left')}
+                                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 m-0.5 bg-white/90 shadow-sm border border-zinc-200 rounded-full text-zinc-600 hover:text-zinc-900 transition-opacity opacity-0 group-hover:opacity-100"
+                                aria-label="Scroll left"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                        )}
+                        <nav
+                            ref={categoryNavRef}
+                            onScroll={updateScrollButtons}
+                            className="flex overflow-x-auto scrollbar-hide -mb-px px-1"
+                        >
+                            <div className="flex items-center gap-0.5 py-1">
                                 {categories.map((node) => (
                                     <button
                                         key={node.label}
                                         onClick={() => setActiveTab(node)}
-                                        className={`category-tab whitespace-nowrap px-5 py-3 text-sm font-medium rounded-t-lg transition-colors ${activeTab?.label === node.label
-                                            ? 'active text-zinc-900'
-                                            : 'text-zinc-500 hover:text-zinc-700'
+                                        className={`category-tab whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-t-md transition-colors ${activeTab?.label === node.label
+                                            ? 'active text-zinc-900 font-semibold'
+                                            : 'text-zinc-500 hover:text-zinc-800'
                                             }`}
                                     >
                                         {node.label}
@@ -543,17 +536,26 @@ const ProductsContent: React.FC = () => {
                                 ))}
                             </div>
                         </nav>
+                        {canScrollRight && (
+                            <button
+                                onClick={() => scrollCategories('right')}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 m-0.5 bg-white/90 shadow-sm border border-zinc-200 rounded-full text-zinc-600 hover:text-zinc-900 transition-opacity opacity-0 group-hover:opacity-100"
+                                aria-label="Scroll right"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        )}
                     </div>
 
                     {/* Subcategories Row (Dynamic) */}
                     {activeTab && activeTab.children && activeTab.children.length > 0 && (
-                        <div className="bg-zinc-50 border-t border-zinc-200/60 shadow-inner -mx-4 sm:-mx-6 lg:-mx-8">
-                            <div className="flex overflow-x-auto scrollbar-hide py-3 md:py-4 px-4 sm:px-6 lg:px-8 gap-2">
+                        <div className="bg-white border-t border-zinc-100 -mx-4 sm:-mx-6 lg:-mx-8 relative">
+                            <div className="flex overflow-x-auto scrollbar-hide py-2 px-4 sm:px-6 lg:px-8 gap-3 snap-x snap-mandatory">
                                 <button
                                     onClick={() => setSelectedNode(null)}
-                                    className={`whitespace-nowrap px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all border ${!selectedNode
-                                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                                        : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
+                                    className={`snap-start whitespace-nowrap px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all ${!selectedNode
+                                        ? 'text-zinc-900 bg-zinc-100'
+                                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
                                         }`}
                                 >
                                     All {activeTab.label}
@@ -562,9 +564,9 @@ const ProductsContent: React.FC = () => {
                                     <button
                                         key={subNode.label}
                                         onClick={() => setSelectedNode(subNode)}
-                                        className={`whitespace-nowrap px-4 py-1.5 text-xs sm:text-sm font-medium border rounded-full transition-all ${selectedNode?.label === subNode.label
-                                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                                            : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
+                                        className={`snap-start whitespace-nowrap px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all ${selectedNode?.label === subNode.label
+                                            ? 'text-zinc-900 bg-zinc-100'
+                                            : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
                                             }`}
                                     >
                                         {subNode.label}
@@ -682,22 +684,7 @@ const ProductsContent: React.FC = () => {
                                                 <List size={16} />
                                             </button>
                                         </div>
-                                    </div>                                {/* <div className="self-start sm:self-auto flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
-                    <button
-                      onClick={() => setGridDensity("comfortable")}
-                      className={`p-2 sm:px-3 sm:py-2 rounded-md transition-all ${!isCompact ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-600"
-                        }`}
-                    >
-                      <Grid2x2 size={14} />
-                    </button>
-                    <button
-                      onClick={() => setGridDensity("compact")}
-                      className={`p-2 sm:px-3 sm:py-2 rounded-md transition-all ${isCompact ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-600"
-                        }`}
-                    >
-                      <Grid3x3 size={14} />
-                    </button>
-                  </div> */}
+                                    </div>
                                 </div>
 
                                 {/* Active Filters */}
@@ -709,9 +696,9 @@ const ProductsContent: React.FC = () => {
 
                                         <div className="flex gap-2 overflow-x-auto scrollbar-none">
                                             {selectedNode && (
-                                                <span className="inline-flex shrink-0 items-center gap-2 bg-blue-600/90 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
+                                                <span className="inline-flex shrink-0 items-center gap-1.5 text-zinc-800 text-sm font-medium">
                                                     {selectedNode.label}
-                                                    <button onClick={() => setSelectedNode(null)}>
+                                                    <button onClick={() => setSelectedNode(null)} className="text-zinc-400 hover:text-zinc-900 transition-colors">
                                                         <XCircle size={14} />
                                                     </button>
                                                 </span>
@@ -721,10 +708,10 @@ const ProductsContent: React.FC = () => {
                                                 values.map((val) => (
                                                     <span
                                                         key={`${key}-${val}`}
-                                                        className="inline-flex shrink-0 items-center gap-2 bg-zinc-100 text-zinc-700 px-3 py-1.5 rounded-lg text-sm font-medium"
+                                                        className="inline-flex shrink-0 items-center gap-1.5 text-zinc-600 text-sm font-medium"
                                                     >
                                                         {val}
-                                                        <button onClick={() => handleFilterChange(key, val)}>
+                                                        <button onClick={() => handleFilterChange(key, val)} className="text-zinc-400 hover:text-zinc-900 transition-colors">
                                                             <XCircle size={14} />
                                                         </button>
                                                     </span>
@@ -733,13 +720,14 @@ const ProductsContent: React.FC = () => {
 
                                             {(priceRange.min > 0 ||
                                                 priceRange.max < DEFAULT_MAX_PRICE) && (
-                                                    <span className="inline-flex shrink-0 items-center gap-2 bg-zinc-100 text-zinc-700 px-3 py-1.5 rounded-lg text-sm font-medium">
+                                                    <span className="inline-flex shrink-0 items-center gap-1.5 text-zinc-600 text-sm font-medium">
                                                         ₹{priceRange.min.toLocaleString()} - ₹
                                                         {priceRange.max.toLocaleString()}
                                                         <button
                                                             onClick={() =>
                                                                 setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE })
                                                             }
+                                                            className="text-zinc-400 hover:text-zinc-900 transition-colors"
                                                         >
                                                             <XCircle size={14} />
                                                         </button>
@@ -800,97 +788,107 @@ const ProductsContent: React.FC = () => {
                                                 return (
                                                     <div
                                                         key={product.id}
-                                                        className={`group bg-white border border-zinc-200 rounded-2xl overflow-hidden flex transition-all duration-300 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/40 ${viewMode === 'list' && !isCompact ? 'flex-row h-[220px]' : 'flex-col h-[440px]'}`}
+                                                        className={`group bg-white border border-zinc-200/80 rounded-2xl overflow-hidden flex transition-all duration-500 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/40 relative ${viewMode === 'list' && !isCompact ? 'flex-row h-[190px]' : 'flex-col h-full'}`}
                                                     >
-                                                        {/* Image */}
-                                                        <Link
-                                                            href={`/products/${product.id}`}
-                                                            className={`relative block bg-zinc-50/50 shrink-0 overflow-hidden ${viewMode === 'list' && !isCompact ? 'w-56 h-full border-r border-zinc-100 p-4' : 'h-48 p-4 border-b border-zinc-100'}`}
-                                                        >
-                                                            <div className="absolute inset-0 flex items-center justify-center p-6">
-                                                                <img
-                                                                    src={product.image}
-                                                                    alt={product.name}
-                                                                    className="max-w-full max-h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
-                                                                />
-                                                            </div>
-                                                            {/* Generic Stock Badge inside image area */}
-                                                            <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+                                                        {/* Image Area */}
+                                                        <div className={`relative shrink-0 overflow-hidden bg-zinc-50/40 group-hover:bg-zinc-50 transition-colors duration-500 flex items-center justify-center ${viewMode === 'list' && !isCompact ? 'w-48 h-full border-r border-zinc-100 p-4' : 'h-40 sm:h-44 p-4 border-b border-zinc-100'}`}>
+                                                            <Link
+                                                                href={`/products/${product.id}`}
+                                                                className="absolute inset-0 z-0"
+                                                            >
+                                                                <span className="sr-only">View {product.name}</span>
+                                                            </Link>
+
+                                                            <img
+                                                                src={product.image}
+                                                                alt={product.name}
+                                                                className="max-w-full max-h-full object-contain mix-blend-multiply transition-transform duration-700 ease-out group-hover:scale-110 relative z-10 pointer-events-none"
+                                                            />
+
+                                                            {/* Stock Badge */}
+                                                            <div className="absolute top-3 left-3 flex flex-col gap-2 z-20 pointer-events-none">
                                                                 {product.stock <= 0 && (
-                                                                    <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider shadow-sm">
+                                                                    <span className="bg-red-500/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm">
                                                                         Out of Stock
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                        </Link>
+
+                                                            {/* Compare Button (hover only) */}
+                                                            <button
+                                                                onClick={(e) => handleCompareToggle(e as any, product)}
+                                                                className={`absolute top-3 right-3 z-20 flex items-center justify-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 shadow-sm border ${!!compareItems.find(i => i.id === product.id)
+                                                                    ? 'opacity-100 bg-zinc-900 text-white border-zinc-900'
+                                                                    : 'opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 bg-white/90 backdrop-blur-md text-zinc-600 border-zinc-200 hover:text-zinc-900 hover:border-zinc-300 hover:shadow-md'
+                                                                    }`}
+                                                            >
+                                                                {!!compareItems.find(i => i.id === product.id) ? (
+                                                                    <>
+                                                                        <CheckCircle size={12} strokeWidth={2.5} />
+                                                                        <span>Compared</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <BarChart2 size={12} strokeWidth={2.5} />
+                                                                        <span>Compare</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
 
                                                         {/* Content */}
-                                                        <div className="p-4 sm:p-5 flex flex-col flex-1 relative bg-white">
-                                                            <Link href={`/products/${product.id}`} className="block mb-3">
-                                                                <h3 className="font-semibold text-zinc-900 text-sm sm:text-base line-clamp-2 min-h-[40px] sm:min-h-[48px] group-hover:text-blue-600 transition-colors">
+                                                        <div className="p-3.5 flex flex-col flex-1 relative bg-white z-10 w-full">
+                                                            <Link href={`/products/${product.id}`} className="block mb-1 group/title">
+                                                                <h3 className="font-medium text-zinc-900 text-[13px] leading-snug line-clamp-2 min-h-[36px] group-hover/title:text-blue-600 transition-colors duration-300">
                                                                     {product.name}
                                                                 </h3>
                                                             </Link>
 
-                                                            {/* 3 Key Specs */}
-                                                            <div className="mb-4 flex flex-wrap gap-1.5 h-[52px] overflow-hidden content-start">
-                                                                {specKeys.map(key => (
-                                                                    <span key={key} className="inline-flex items-center bg-zinc-50 border border-zinc-200 text-zinc-600 text-[11px] px-2 py-1 rounded-md font-medium truncate max-w-full">
-                                                                        {String(flatSpecs[key])}
-                                                                    </span>
-                                                                ))}
+                                                            {/* 3 Key Specs - Dot separated text */}
+                                                            <div className="mb-2 text-[11px] text-zinc-500 font-medium truncate">
+                                                                {specKeys.map(key => String(flatSpecs[key])).join(' • ')}
                                                             </div>
 
                                                             {/* Footer actions pushed to bottom */}
-                                                            <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-zinc-100">
+                                                            <div className="mt-auto flex flex-col gap-2 pt-2.5 border-t border-zinc-100/80">
                                                                 <div className="flex items-center justify-between gap-2">
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-lg sm:text-xl font-bold text-zinc-900 heading-font leading-none">
+                                                                        <span className="text-base font-bold text-zinc-900 heading-font tracking-tight">
                                                                             ₹{product.price.toLocaleString('en-IN')}
                                                                         </span>
-                                                                        <label className="flex items-center gap-1.5 mt-2 cursor-pointer group/compare w-max">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
-                                                                                checked={!!compareItems.find(i => i.id === product.id)}
-                                                                                onChange={(e) => handleCompareToggle(e as any, product)}
-                                                                            />
-                                                                            <span className="text-[11px] font-medium text-zinc-500 group-hover/compare:text-zinc-700 select-none uppercase tracking-wide">Compare</span>
-                                                                        </label>
                                                                     </div>
 
                                                                     <div className="flex flex-col items-end gap-2">
-                                                                        <button
-                                                                            onClick={() => addToCart(product)}
-                                                                            disabled={(isIncompatible && !inCart) || product.stock <= 0}
-                                                                            className={`h-10 px-5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center min-w-[90px] ${inCart
-                                                                                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                                                                                : product.stock <= 0
-                                                                                    ? "bg-zinc-100 text-zinc-400 cursor-not-allowed"
-                                                                                    : "bg-zinc-900 text-white hover:bg-zinc-800 shadow-md shadow-zinc-900/10"
-                                                                                } ${(isIncompatible && !inCart)
-                                                                                    ? "opacity-50 cursor-not-allowed"
-                                                                                    : ""
-                                                                                }`}
-                                                                        >
-                                                                            {inCart ? "In Cart" : product.stock <= 0 ? "Out" : "Add"}
-                                                                        </button>
-                                                                        {!inCart && (
-                                                                            <div
-                                                                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${isIncompatible
-                                                                                    ? "text-red-600 bg-red-50"
-                                                                                    : isWarning
-                                                                                        ? "text-amber-600 bg-amber-50"
-                                                                                        : "text-emerald-600 bg-emerald-50"
+                                                                        <div className="flex items-center gap-2.5">
+                                                                            {!inCart && (
+                                                                                <div className="flex flex-col justify-center items-center">
+                                                                                    <div
+                                                                                        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isIncompatible
+                                                                                            ? "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"
+                                                                                            : isWarning
+                                                                                                ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                                                                                                : "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+                                                                                            }`}
+                                                                                        title={isIncompatible ? "Incompatible" : isWarning ? "Warning" : "Compatible"}
+                                                                                    />
+                                                                                </div>
+                                                                            )}
+                                                                            <button
+                                                                                onClick={() => addToCart(product)}
+                                                                                disabled={(isIncompatible && !inCart) || product.stock <= 0}
+                                                                                className={`h-7 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all duration-300 flex items-center justify-center min-w-[64px] ${inCart
+                                                                                    ? "bg-zinc-100 text-zinc-900 border border-zinc-200"
+                                                                                    : product.stock <= 0
+                                                                                        ? "bg-zinc-50 text-zinc-400 cursor-not-allowed border border-zinc-100"
+                                                                                        : "bg-zinc-900 text-white hover:bg-black hover:shadow-md hover:shadow-black/10 hover:-translate-y-0.5"
+                                                                                    } ${(isIncompatible && !inCart)
+                                                                                        ? "opacity-50 cursor-not-allowed"
+                                                                                        : ""
                                                                                     }`}
                                                                             >
-                                                                                {isIncompatible
-                                                                                    ? "Incompatible"
-                                                                                    : isWarning
-                                                                                        ? "Warning"
-                                                                                        : "Compatible"}
-                                                                            </div>
-                                                                        )}
+                                                                                {inCart ? "In" : product.stock <= 0 ? "Out" : "Add"}
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -935,29 +933,24 @@ const ProductsContent: React.FC = () => {
 
                 {/* Sticky Compare Bar */}
                 {compareItems.length > 0 && (
-                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-zinc-200 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] transform transition-transform duration-300">
-                        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-zinc-200 shadow-[0_-8px_30px_rgba(0,0,0,0.04)] transform transition-transform duration-300">
+                        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div className="flex items-center gap-4 w-full sm:w-auto overflow-x-auto scrollbar-hide">
                                 <div className="flex-shrink-0">
-                                    <h4 className="font-bold text-zinc-900 text-sm">Compare Products</h4>
-                                    <p className="text-xs text-zinc-500">{compareItems.length} / 4 Selected</p>
+                                    <h4 className="font-semibold text-zinc-900 text-sm">Compare</h4>
+                                    <p className="text-[11px] text-zinc-500">{compareItems.length} selected</p>
                                 </div>
-                                <div className="h-8 w-px bg-zinc-200 hidden sm:block"></div>
+                                <div className="h-6 w-px bg-zinc-200 hidden sm:block"></div>
                                 <div className="flex items-center gap-2">
                                     {compareItems.map(item => (
-                                        <div key={item.id} className="relative w-12 h-12 rounded-lg bg-zinc-50 border border-zinc-200 flex items-center justify-center group flex-shrink-0">
+                                        <div key={item.id} className="relative w-10 h-10 rounded-lg bg-white flex items-center justify-center group flex-shrink-0">
                                             <img src={item.image} alt={item.name} className="max-w-full max-h-full p-1 object-contain mix-blend-multiply" />
                                             <button
                                                 onClick={() => removeFromCompare(item.id)}
-                                                className="absolute -top-1.5 -right-1.5 bg-white rounded-full text-zinc-400 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute -top-1.5 -right-1.5 bg-white rounded-full text-zinc-400 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity border border-zinc-100"
                                             >
-                                                <XCircle size={16} className="fill-white" />
+                                                <XCircle size={14} className="fill-white bg-white rounded-full" />
                                             </button>
-                                        </div>
-                                    ))}
-                                    {Array.from({ length: Math.max(0, 4 - compareItems.length) }).map((_, i) => (
-                                        <div key={`empty-${i}`} className="w-12 h-12 rounded-lg border border-dashed border-zinc-200 flex items-center justify-center bg-zinc-50/50 flex-shrink-0">
-                                            <Plus size={16} className="text-zinc-300" />
                                         </div>
                                     ))}
                                 </div>
@@ -965,13 +958,13 @@ const ProductsContent: React.FC = () => {
                             <div className="flex items-center gap-3 w-full sm:w-auto">
                                 <button
                                     onClick={() => compareItems.forEach(item => removeFromCompare(item.id))}
-                                    className="text-sm font-medium text-zinc-500 hover:text-red-600 transition-colors px-3 py-2"
+                                    className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors px-3 py-2"
                                 >
                                     Clear All
                                 </button>
                                 <Link
                                     href="/compare"
-                                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${compareItems.length >= 2 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}
+                                    className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${compareItems.length >= 2 ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-md shadow-zinc-900/10' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}
                                     onClick={(e) => {
                                         if (compareItems.length < 2) e.preventDefault();
                                     }}

@@ -3,6 +3,7 @@
 import { Category, OrderStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { calculateOrderFinancials } from "@/lib/gst";
 
 
 const CategoryEnum = z.nativeEnum(Category);
@@ -43,11 +44,11 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             // Fast lookup map
             const productMap = new Map(products.map(p => [p.id, p]));
 
-            // 2. Validate stock and calculate total
-            let total = 0;
+            // 2. Validate stock and prepare items
             const orderItemsData = [];
             const inventoryUpdates = [];
             const stockMovements = [];
+            const calculationItems: { price: number; quantity: number }[] = [];
 
             for (const item of data.items) {
                 const product = productMap.get(item.productId);
@@ -60,8 +61,8 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     throw new Error(`Insufficient stock for product ${product.name}`);
                 }
 
-                // Add to total cost safely
-                total += product.price * item.quantity;
+                // Push for GST calculation
+                calculationItems.push({ price: product.price, quantity: item.quantity });
 
                 // Prepare item insertion
                 orderItemsData.push({
@@ -93,12 +94,16 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             // 3. Create the order
             const orderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
+            const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
+
             const newOrder = await tx.order.create({
                 data: {
                     id: orderId,
                     customerName: data.customerName,
                     email: data.email,
                     phone: data.phone,
+                    subtotal,
+                    gstAmount,
                     total, // Calculated purely on the server!
                     status: "PENDING",
                     shippingStreet: data.shippingStreet,

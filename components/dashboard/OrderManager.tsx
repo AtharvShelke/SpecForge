@@ -173,10 +173,10 @@ const NEXT_STATUS_BUTTON: Record<OrderStatus, { label: string; icon: React.React
 // ─────────────────────────────────────────────────────────────
 
 const generateInvoiceHTML = (order: Order): string => {
-  const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const taxRate = 0.18;
-  const taxAmount = Math.round(subtotal * taxRate);
-  const total = subtotal + taxAmount;
+  // Backward hook for historical orders
+  const subtotal = order.subtotal || Math.round(order.total / 1.18);
+  const taxAmount = order.gstAmount || (order.total - subtotal);
+  const total = order.total;
   const invoiceNumber = `INV-${order.id}-${new Date().getFullYear()}`;
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 

@@ -6,10 +6,6 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
   {
     category: Category.PROCESSOR,
     filters: [
-      // Search filters
-      { key: 'search_description', label: 'Search in Descriptions', type: 'search' },
-      { key: 'search_subcategory', label: 'Search in Subcategories', type: 'search' },
-
       // Universal filters
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AMD', 'Intel'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },

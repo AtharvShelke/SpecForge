@@ -64,11 +64,17 @@ const InventoryManager = () => {
                 const res = await fetch(`/api/inventory?${query.toString()}`);
                 if (res.ok) {
                     const data = await res.json();
-                    setPaginatedInventory(data.items);
-                    setTotalItems(data.total);
+                    // Defensively map items to array
+                    setPaginatedInventory(Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []));
+                    setTotalItems(data.total || 0);
+                } else {
+                    setPaginatedInventory([]);
+                    setTotalItems(0);
                 }
             } catch (err) {
                 console.error("Failed to fetch paginated inventory:", err);
+                setPaginatedInventory([]);
+                setTotalItems(0);
             } finally {
                 setIsLoadingInventory(false);
             }
@@ -102,7 +108,7 @@ const InventoryManager = () => {
                 adjustmentModal.sku,
                 adjQty,
                 adjType,
-                adjReason || 'Manual Adjustment'
+                adjReason
             );
             setAdjustmentModal(null);
             setAdjQty(0);
@@ -552,7 +558,6 @@ const InventoryManager = () => {
                                     value={adjReason}
                                     onChange={e => setAdjReason(e.target.value)}
                                     placeholder="e.g., New shipment, Damaged goods..."
-                                    required
                                 />
                             </div>
 

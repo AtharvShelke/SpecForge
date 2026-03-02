@@ -5,26 +5,10 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-
-import { Loader2 } from "lucide-react";
+import { Form } from "@/components/ui/form";
+import { Loader2, AlertCircle, Cpu } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const loginSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -79,56 +63,114 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-zinc-50 p-4 font-sans">
-            <div className="w-full max-w-[400px] bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-100 p-8 sm:p-10">
-                <div className="text-center mb-8">
-                    <div className="w-12 h-12 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-5 shadow-lg shadow-blue-600/20">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="3" y="11" width="18" height="10" rx="2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                    <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Admin Portal</h1>
-                    <p className="text-sm text-zinc-500 mt-2">Log in to manage Nexus Hardware</p>
+        <div className="min-h-screen w-full flex bg-white font-sans">
+            {/* Left Side - Branding (Hidden on Mobile) */}
+            <div className="hidden lg:flex w-1/2 bg-zinc-950 text-white flex-col justify-between p-12 relative overflow-hidden">
+                {/* Subtle background glow/gradient effect */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div className="absolute -top-[25%] -left-[10%] w-[70%] h-[70%] rounded-full bg-zinc-800/20 blur-[120px]" />
+                    <div className="absolute bottom-[10%] right-[10%] w-[50%] h-[50%] rounded-full bg-zinc-800/10 blur-[100px]" />
                 </div>
 
-                <div className="mt-8">
-                    <Form {...form}>
-                        {/* Notice: form.handleSubmit requires a plain function matching standard form inputs.
-                             We manually wire up our standard raw input styles instead of heavy Component library wrappers to guarantee the specific requested styling. 
-                          */}
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-zinc-700 uppercase tracking-wider ml-1">Email Address</label>
-                                <input
-                                    {...form.register("email")}
-                                    type="email"
-                                    placeholder="admin@nexus.com"
-                                    className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-zinc-400"
-                                />
-                                {form.formState.errors.email && (
-                                    <p className="text-xs text-red-500 font-medium ml-1 mt-1">{form.formState.errors.email.message}</p>
-                                )}
-                            </div>
+                <div className="relative z-10 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                        <Cpu className="w-5 h-5 text-zinc-950" />
+                    </div>
+                    <Link href='/' className="text-xl font-bold tracking-tight">Nexus Hardware</Link>
+                </div>
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between ml-1">
-                                    <label className="text-xs font-semibold text-zinc-700 uppercase tracking-wider">Password</label>
+                <div className="relative z-10 space-y-6 max-w-lg">
+                    <h1 className="text-4xl font-medium tracking-tight leading-tight text-zinc-100">
+                        Manage your infrastructure with precision.
+                    </h1>
+                    <p className="text-lg text-zinc-400">
+                        The enterprise-grade administrative portal for monitoring, deploying, and scaling Nexus systems globally.
+                    </p>
+                </div>
+
+                <div className="relative z-10 text-sm text-zinc-500 font-medium">
+                    &copy; {new Date().getFullYear()} Nexus Inc. All rights reserved.
+                </div>
+            </div>
+
+            {/* Right Side - Login Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-16">
+                <div className="w-full max-w-[400px] space-y-8">
+                    {/* Mobile Branding (Visible only on small screens) */}
+                    <div className="flex lg:hidden items-center gap-2 mb-8">
+                        <div className="w-8 h-8 bg-zinc-950 rounded-lg flex items-center justify-center">
+                            <Cpu className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-xl font-bold tracking-tight text-zinc-950">Nexus</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        <h2 className="text-3xl font-semibold tracking-tight text-zinc-950">Welcome back</h2>
+                        <p className="text-sm text-zinc-500">Enter your credentials to access the admin portal.</p>
+                    </div>
+
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        {...form.register("email")}
+                                        id="email"
+                                        type="email"
+                                        disabled={loading}
+                                        placeholder="admin@nexus.com"
+                                        className={cn(
+                                            "flex h-11 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
+                                            form.formState.errors.email
+                                                ? "border-red-500 focus-visible:ring-red-500"
+                                                : "border-zinc-200 focus-visible:ring-zinc-950"
+                                        )}
+                                    />
+                                    {form.formState.errors.email && (
+                                        <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1.5">
+                                            <AlertCircle className="w-3.5 h-3.5" />
+                                            {form.formState.errors.email.message}
+                                        </p>
+                                    )}
                                 </div>
-                                <input
-                                    {...form.register("password")}
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-zinc-400"
-                                />
-                                {form.formState.errors.password && (
-                                    <p className="text-xs text-red-500 font-medium ml-1 mt-1">{form.formState.errors.password.message}</p>
-                                )}
+
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900">
+                                            Password
+                                        </label>
+                                        <a href="#" className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors">
+                                            Forgot password?
+                                        </a>
+                                    </div>
+                                    <input
+                                        {...form.register("password")}
+                                        id="password"
+                                        type="password"
+                                        disabled={loading}
+                                        placeholder="••••••••"
+                                        className={cn(
+                                            "flex h-11 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
+                                            form.formState.errors.password
+                                                ? "border-red-500 focus-visible:ring-red-500"
+                                                : "border-zinc-200 focus-visible:ring-zinc-950"
+                                        )}
+                                    />
+                                    {form.formState.errors.password && (
+                                        <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1.5">
+                                            <AlertCircle className="w-3.5 h-3.5" />
+                                            {form.formState.errors.password.message}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {error && (
-                                <div className="p-3 mt-4 rounded-xl bg-red-50 border border-red-100 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-red-500 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="currentColor" fillOpacity="0.1" /><path d="M12 8V13M12 16H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                <div className="p-3 rounded-md bg-red-50 border border-red-200 flex items-start gap-2.5">
+                                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                                     <p className="text-sm font-medium text-red-600 leading-snug">{error}</p>
                                 </div>
                             )}
@@ -136,10 +178,10 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full h-12 mt-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-blue-600/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-zinc-50 hover:bg-zinc-900/90 h-11 w-full shadow-sm"
                             >
-                                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
+                                {loading && <Loader2 className="mr-2 w-4 h-4 animate-spin" />}
+                                {loading ? 'Authenticating...' : 'Sign In'}
                             </button>
                         </form>
                     </Form>

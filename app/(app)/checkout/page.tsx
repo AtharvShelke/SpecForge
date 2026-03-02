@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useRouter } from 'next/navigation';
 import { processCheckout } from '@/app/actions/checkout';
+import { calculateOrderFinancials } from '@/lib/gst';
 import { CreditCard, ShoppingBag, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -98,6 +99,8 @@ export default function CheckoutPage() {
             setIsSubmitting(false);
         }
     };
+
+    const { subtotal, gstAmount, total } = calculateOrderFinancials(cart);
 
     return (
         <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -277,7 +280,11 @@ export default function CheckoutPage() {
                                 <div className="border-t border-gray-100 mt-6 pt-6 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm text-gray-600">Subtotal</p>
-                                        <p className="text-sm font-medium text-gray-900">₹{cartTotal.toLocaleString('en-IN')}</p>
+                                        <p className="text-sm font-medium text-gray-900">₹{subtotal.toLocaleString('en-IN')}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm text-gray-600">GST (18%)</p>
+                                        <p className="text-sm font-medium text-gray-900">₹{gstAmount.toLocaleString('en-IN')}</p>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm text-gray-600">Shipping</p>
@@ -285,7 +292,7 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                                         <p className="text-base font-bold text-gray-900">Total</p>
-                                        <p className="text-xl font-bold text-gray-900">₹{cartTotal.toLocaleString('en-IN')}</p>
+                                        <p className="text-xl font-bold text-gray-900">₹{total.toLocaleString('en-IN')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -300,7 +307,7 @@ export default function CheckoutPage() {
                                     {isSubmitting ? 'Processing...' : (
                                         <>
                                             <CreditCard size={20} />
-                                            Pay ₹{cartTotal.toLocaleString('en-IN')} (Mock)
+                                            Pay ₹{total.toLocaleString('en-IN')} (Mock)
                                         </>
                                     )}
                                 </button>

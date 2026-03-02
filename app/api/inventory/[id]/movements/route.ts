@@ -9,7 +9,7 @@ const StockMovementTypeEnum = z.enum([
 const createMovementSchema = z.object({
     type: StockMovementTypeEnum,
     quantity: z.number().int().positive(),
-    reason: z.string().optional(),
+    reason: z.string().nullable().optional(),
     performedBy: z.string().default("System"),
 });
 
@@ -19,9 +19,9 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params;
+        const { id: sku } = await params;
         const movements = await prisma.stockMovement.findMany({
-            where: { inventoryItemId: id },
+            where: { inventoryItem: { sku } },
             orderBy: { createdAt: "desc" },
             take: 100,
         });
@@ -39,12 +39,12 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params;
+        const { id: sku } = await params;
         const body = await req.json();
         const data = createMovementSchema.parse(body);
 
         const result = await prisma.$transaction(async (tx) => {
-            const inv = await tx.inventoryItem.findUnique({ where: { id } });
+            const inv = await tx.inventoryItem.findUnique({ where: { sku } });
             if (!inv) throw new Error("NOT_FOUND");
 
             let qtyDelta = 0;
@@ -73,7 +73,7 @@ export async function POST(
             const newReserved = Math.max(0, inv.reserved + reservedDelta);
 
             await tx.inventoryItem.update({
-                where: { id },
+                where: { id: inv.id },
                 data: {
                     quantity: newQty,
                     reserved: newReserved,
@@ -89,7 +89,7 @@ export async function POST(
 
             const movement = await tx.stockMovement.create({
                 data: {
-                    inventoryItemId: id,
+                    inventoryItemId: inv.id,
                     type: data.type,
                     quantity: data.quantity,
                     reason: data.reason,

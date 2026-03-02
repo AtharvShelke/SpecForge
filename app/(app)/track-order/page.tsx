@@ -346,9 +346,29 @@ export default function TrackOrderPage() {
                                     </li>
                                 ))}
                             </ul>
-                            <div className="px-6 py-4 border-t border-zinc-100 flex justify-between items-center bg-zinc-50">
-                                <span className="text-sm text-zinc-500 font-medium">Order Total</span>
-                                <span className="text-lg font-bold text-zinc-900">₹{foundOrder.total.toLocaleString('en-IN')}</span>
+                            <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50 space-y-2">
+                                {/* Fallback logic for historical orders without explicit subtotal */}
+                                {(() => {
+                                    const subtotal = foundOrder.subtotal || Math.round(foundOrder.total / 1.18);
+                                    const gst = foundOrder.gstAmount || (foundOrder.total - subtotal);
+
+                                    return (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-zinc-500 font-medium">Subtotal</span>
+                                                <span className="text-sm font-semibold text-zinc-700">₹{subtotal.toLocaleString('en-IN')}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-zinc-500 font-medium">GST (18%)</span>
+                                                <span className="text-sm font-semibold text-zinc-700">₹{gst.toLocaleString('en-IN')}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-2 mt-2 border-t border-zinc-200">
+                                                <span className="text-base text-zinc-900 font-bold">Order Total</span>
+                                                <span className="text-lg font-bold text-zinc-900">₹{foundOrder.total.toLocaleString('en-IN')}</span>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
 

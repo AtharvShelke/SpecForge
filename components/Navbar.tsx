@@ -9,18 +9,12 @@ import {
   MapPin,
   Store,
   User,
+  Cpu,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useShop } from "@/context/ShopContext";
-
-// shadcn
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const Navbar: React.FC = () => {
   const { cart, setCartOpen } = useShop();
@@ -28,111 +22,86 @@ const Navbar: React.FC = () => {
 
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  const isActive = (path: string) =>
-    pathname === path
-      ? "text-blue-600"
-      : "text-gray-600 hover:text-gray-900";
+  // Helper for active link styling
+  const isActive = (path: string) => pathname === path;
 
-  /* ---------- Shared badge (desktop + mobile) ---------- */
+  /* ---------- Shared badge ---------- */
   const CountBadge = ({ count }: { count: number }) =>
     count > 0 ? (
-      <span
-        className="
-        absolute -top-1.5 -right-1.5
-        min-w-[16px] h-4 px-1
-        flex items-center justify-center
-        rounded-full bg-red-600
-        text-[10px] font-medium text-white
-        leading-none
-      "
-      >
+      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-zinc-900 px-1 text-[10px] font-semibold text-white leading-none shadow-sm ring-2 ring-white">
         {count > 99 ? "99+" : count}
       </span>
     ) : null;
 
   /* ---------------- Desktop Navbar ---------------- */
-
   const DesktopNavbar = (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+    <nav className="sticky top-0 z-50 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between gap-8">
+          
           {/* Brand */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="bg-blue-600/90 p-1.5 rounded-lg shadow-sm">
-              <Monitor className="h-5 w-5 text-white" />
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-950 shadow-sm transition-transform group-hover:scale-105">
+              <Cpu className="h-4 w-4 text-white" />
             </div>
-            <span className="font-semibold text-lg tracking-tight text-gray-900">
-              PC Parts
+            <span className="font-bold tracking-tight text-zinc-950">
+              Nexus Hardware
             </span>
           </Link>
+
+          {/* Mobile Admin Link */}
           <Link
             href="/admin"
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
+            className="md:hidden p-2 -mr-2 text-zinc-500 hover:text-zinc-900 transition-colors"
           >
             <User size={20} />
           </Link>
-          {/* Navigation */}
-          <NavigationMenu className="hidden md:block">
-            <NavigationMenuList className="gap-6">
-              <NavigationMenuItem>
-                <Link href="/products" className={`${isActive("/products")} flex items-center gap-1.5  text-sm`}>
-                  <ShoppingCart size={15} />
-                  Products
-                </Link>
-              </NavigationMenuItem>
 
-              <NavigationMenuItem>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex flex-1 items-center justify-center">
+            <div className="flex items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50/50 p-1 shadow-sm">
+              {[
+                { to: "/products", label: "Products", icon: Store },
+                { to: "/builds", label: "Saved Builds", icon: Save },
+                { to: "/build-guides", label: "Build Guides", icon: BookOpen },
+                { to: "/track-order", label: "Track Order", icon: MapPin },
+              ].map(({ to, label, icon: Icon }) => (
                 <Link
-                  href="/builds"
-                  className={`${isActive("/builds")} flex items-center gap-1.5 text-sm`}
+                  key={to}
+                  href={to}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200",
+                    isActive(to)
+                      ? "bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200/50"
+                      : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50"
+                  )}
                 >
-                  <Save size={15} />
-                  Saved Builds
+                  <Icon size={14} className={isActive(to) ? "text-zinc-950" : "text-zinc-400"} />
+                  {label}
                 </Link>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <Link
-                  href="/build-guides"
-                  className={`${isActive("/build-guides")} flex items-center gap-1.5 text-sm`}
-                >
-                  <BookOpen size={15} />
-                  Build Guides
-                </Link>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <Link
-                  href="/track-order"
-                  className={`${isActive("/track-order")} flex items-center gap-1.5 text-sm`}
-                >
-                  <MapPin size={15} />
-                  Track Order
-                </Link>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+              ))}
+            </div>
+          </div>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-2">
-            {/* Cart */}
+          <div className="hidden md:flex items-center gap-3 shrink-0">
             <button
               onClick={() => setCartOpen(true)}
-              className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
+              className="group relative flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-950"
+              aria-label="Open cart"
             >
-              <span className="relative inline-flex">
-                <ShoppingCart size={20} />
-                <CountBadge count={cartItemCount} />
-              </span>
+              <ShoppingCart size={16} />
+              <CountBadge count={cartItemCount} />
             </button>
 
+            <div className="h-4 w-[1px] bg-zinc-200" aria-hidden="true" />
 
-            {/* User (future auth) */}
             <Link
               href="/admin"
-              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-950"
+              aria-label="Go to admin dashboard"
             >
-              <User size={20} />
+              <User size={16} />
             </Link>
           </div>
         </div>
@@ -141,10 +110,9 @@ const Navbar: React.FC = () => {
   );
 
   /* ---------------- Mobile Bottom Navbar ---------------- */
-
   const MobileBottomNav = (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden">
-      <div className="flex items-center justify-around h-14">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200/80 bg-white/80 backdrop-blur-xl md:hidden pb-safe">
+      <div className="flex h-16 items-center justify-around px-2">
         {[
           { to: "/products", label: "Shop", icon: Store },
           { to: "/builds", label: "Builds", icon: Save },
@@ -154,26 +122,31 @@ const Navbar: React.FC = () => {
           <Link
             key={to}
             href={to}
-            className={`flex flex-col items-center justify-center text-xs ${pathname === to
-              ? "text-blue-600"
-              : "text-gray-500"
-              }`}
+            className={cn(
+              "flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors",
+              isActive(to) ? "text-zinc-950" : "text-zinc-500 hover:text-zinc-900"
+            )}
           >
-            <div className="relative">
-              <Icon size={20} />
+            <div className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+              isActive(to) ? "bg-zinc-100" : "bg-transparent"
+            )}>
+              <Icon size={18} strokeWidth={isActive(to) ? 2.5 : 2} />
             </div>
+            {label}
           </Link>
         ))}
 
-        {/* Cart (mobile only) */}
+        {/* Mobile Cart */}
         <button
           onClick={() => setCartOpen(true)}
-          className="flex flex-col items-center justify-center text-xs text-gray-500"
+          className="flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-medium text-zinc-500 transition-colors hover:text-zinc-900"
         >
-          <div className="relative">
-            <ShoppingCart size={20} />
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-transparent">
+            <ShoppingCart size={18} />
             <CountBadge count={cartItemCount} />
           </div>
+          Cart
         </button>
       </div>
     </nav>

@@ -311,6 +311,8 @@ export interface Order {
   email: string;
   phone?: string;
   date: string;        // ISO DateTime
+  subtotal: number;
+  gstAmount: number;
   total: number;
   status: OrderStatus;
 

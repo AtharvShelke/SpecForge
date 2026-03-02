@@ -6,7 +6,7 @@ import { ArrowRight, ShoppingBag, Award } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useShop } from '@/context/ShopContext';
-import { Category } from '../types';
+import { Category } from '@/types';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Section } from '@/components/layout/Section';
 import { Container } from '@/components/layout/Container';
