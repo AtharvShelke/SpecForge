@@ -3,20 +3,33 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import {
     Product, Category, CategoryNode, Brand, CategorySchema, AttributeDefinition,
-    CategoryFilterConfig, FilterDefinition, InventoryItem, StockMovement, StockMovementType,
+    CategoryFilterConfig, FilterDefinition, WarehouseInventory, StockMovement, StockMovementType,
     Order, OrderStatus, Invoice, Customer, BillingProfile, CMSVersion,
-    Review, ReviewStatus,
+    Review, ReviewStatus, Supplier, PurchaseOrder, CreditNote
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
 interface AdminContextType {
     // Inventory
-    inventory: InventoryItem[];
+    inventory: WarehouseInventory[];
     refreshInventory: () => Promise<void>;
     stockMovements: StockMovement[];
     refreshStockMovements: () => Promise<void>;
-    adjustStock: (inventoryItemId: string, quantity: number, type: StockMovementType, reason?: string) => Promise<void>;
-    getInventoryItem: (sku: string) => InventoryItem | undefined;
+    adjustStock: (warehouseInventoryId: string, quantity: number, type: StockMovementType, reason?: string) => Promise<void>;
+    transferStock: (sourceWarehouseId: string, targetWarehouseId: string, variantId: string, quantity: number, reason?: string) => Promise<void>;
+    getInventoryItem: (sku: string) => WarehouseInventory | undefined;
+
+    // Procurement
+    suppliers: Supplier[];
+    refreshSuppliers: () => Promise<void>;
+    createSupplier: (data: Partial<Supplier>) => Promise<void>;
+    updateSupplier: (id: string, data: Partial<Supplier>) => Promise<void>;
+    deleteSupplier: (id: string) => Promise<void>;
+
+    purchaseOrders: PurchaseOrder[];
+    refreshPurchaseOrders: () => Promise<void>;
+    createPurchaseOrder: (data: Partial<PurchaseOrder>) => Promise<void>;
+    receivePurchaseOrder: (id: string, items: { itemId: string, quantityReceiving: number }[]) => Promise<void>;
 
     // Orders
     orders: Order[];
@@ -47,7 +60,8 @@ interface AdminContextType {
     refreshInvoices: () => Promise<void>;
     createInvoice: (data: Partial<Invoice>) => Promise<void>;
     updateInvoice: (id: string, data: Partial<Invoice>) => Promise<void>;
-    deleteInvoice: (id: string) => Promise<void>;
+    voidInvoice: (id: string) => Promise<void>;
+    createCreditNote: (data: { originalInvoiceId: string; orderId?: string; reason: string; items: { name: string; quantity: number; unitPrice: number; taxRatePct?: number }[] }) => Promise<void>;
 
     // Public Data (for Admin Reference)
     products: Product[];
@@ -88,7 +102,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [isLoading, setIsLoading] = useState(true);
 
     // --- STATE ---
-    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [inventory, setInventory] = useState<WarehouseInventory[]>([]);
     const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [schemas, setSchemas] = useState<CategorySchema[]>([]);
@@ -97,10 +111,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [billingProfile, setBillingProfile] = useState<BillingProfile | null>(null);
     const [cmsVersions, setCmsVersions] = useState<CMSVersion[]>([]);
-    const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
     const [reviews, setReviews] = useState<Review[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
 
     // --- FETCHERS ---
 
@@ -212,6 +228,22 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, []);
 
+    const refreshSuppliers = useCallback(async () => {
+        try {
+            const res = await fetch('/api/suppliers');
+            const data = await res.json();
+            setSuppliers(data);
+        } catch (err) { console.error(err); }
+    }, []);
+
+    const refreshPurchaseOrders = useCallback(async () => {
+        try {
+            const res = await fetch('/api/inventory/purchase-orders');
+            const data = await res.json();
+            setPurchaseOrders(data);
+        } catch (err) { console.error(err); }
+    }, []);
+
     // --- INITIAL LOAD ---
     useEffect(() => {
         const init = async () => {
@@ -229,7 +261,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 refreshProducts(),
                 refreshCategories(),
                 refreshBrands(),
-                refreshReviews()
+                refreshReviews(),
+                refreshSuppliers(),
+                refreshPurchaseOrders()
             ]);
             setIsLoading(false);
         };
@@ -239,14 +273,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         refreshFilterConfigs, refreshInvoices, refreshCustomers,
         refreshBillingProfile, refreshCMSVersions,
         refreshProducts, refreshCategories, refreshBrands,
-        refreshReviews
+        refreshReviews, refreshSuppliers, refreshPurchaseOrders
     ]);
 
     // --- ACTIONS ---
 
-    const adjustStock = useCallback(async (inventoryItemId: string, quantity: number, type: StockMovementType, reason?: string) => {
+    const adjustStock = useCallback(async (warehouseInventoryId: string, quantity: number, type: StockMovementType, reason?: string) => {
         try {
-            const res = await fetch(`/api/inventory/${inventoryItemId}/movements`, {
+            const res = await fetch(`/api/inventory/${warehouseInventoryId}/movements`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type, quantity, reason }),
@@ -267,10 +301,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             });
             if (res.ok) {
                 toast({ title: "Order status updated" });
-                await refreshOrders();
+                await Promise.all([refreshOrders(), refreshInvoices()]);
+            } else {
+                const data = await res.json();
+                toast({ title: "Update Failed", description: data.error || "Could not update order status", variant: "destructive" });
             }
         } catch (err) { console.error(err); }
-    }, [refreshOrders, toast]);
+    }, [refreshOrders, refreshInvoices, toast]);
 
     const addProduct = useCallback(async (product: Partial<Product>, initialStock: number, costPrice: number) => {
         try {
@@ -403,12 +440,36 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshInvoices, toast]);
 
-    const deleteInvoice = useCallback(async (id: string) => {
+    const voidInvoice = useCallback(async (id: string) => {
         try {
-            const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/invoices/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'voided' }),
+            });
             if (res.ok) {
-                toast({ title: "Invoice deleted" });
+                toast({ title: "Invoice voided" });
                 await refreshInvoices();
+            } else {
+                const data = await res.json();
+                toast({ title: "Failed", description: data.error || "Could not void invoice", variant: "destructive" });
+            }
+        } catch (err) { console.error(err); }
+    }, [refreshInvoices, toast]);
+
+    const createCreditNote = useCallback(async (data: { originalInvoiceId: string; orderId?: string; reason: string; items: { name: string; quantity: number; unitPrice: number; taxRatePct?: number }[] }) => {
+        try {
+            const res = await fetch('/api/credit-notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (res.ok) {
+                toast({ title: "Credit note created" });
+                await refreshInvoices();
+            } else {
+                const json = await res.json();
+                toast({ title: "Failed", description: json.error || "Could not create credit note", variant: "destructive" });
             }
         } catch (err) { console.error(err); }
     }, [refreshInvoices, toast]);
@@ -483,19 +544,128 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshReviews, toast]);
 
+    // --- NEW INVENTORY PROCUREMENT ACTIONS ---
+
+    const transferStock = useCallback(async (sourceWarehouseId: string, targetWarehouseId: string, variantId: string, quantity: number, reason?: string) => {
+        try {
+            const res = await fetch(`/api/inventory/transfer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourceWarehouseId, targetWarehouseId, variantId, quantity, reason }),
+            });
+
+            if (res.ok) {
+                toast({ title: "Stock transferred successfully" });
+                await refreshInventory();
+                await refreshStockMovements();
+            } else {
+                const data = await res.json();
+                toast({ title: "Transfer Failed", description: data.error || "Could not transfer stock", variant: "destructive" });
+                throw new Error(data.error);
+            }
+        } catch (err) { console.error(err); throw err; }
+    }, [refreshInventory, refreshStockMovements, toast]);
+
+    const createSupplier = useCallback(async (data: Partial<Supplier>) => {
+        try {
+            const res = await fetch('/api/suppliers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (res.ok) {
+                toast({ title: "Supplier Created" });
+                await refreshSuppliers();
+            } else {
+                const json = await res.json();
+                toast({ title: "Failed", description: json.error || "Could not create supplier", variant: "destructive" });
+            }
+        } catch (err) { console.error(err); }
+    }, [refreshSuppliers, toast]);
+
+    const updateSupplier = useCallback(async (id: string, data: Partial<Supplier>) => {
+        try {
+            const res = await fetch(`/api/suppliers/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (res.ok) {
+                toast({ title: "Supplier Updated" });
+                await refreshSuppliers();
+            } else {
+                const json = await res.json();
+                toast({ title: "Failed", description: json.error || "Could not update supplier", variant: "destructive" });
+            }
+        } catch (err) { console.error(err); }
+    }, [refreshSuppliers, toast]);
+
+    const deleteSupplier = useCallback(async (id: string) => {
+        try {
+            const res = await fetch(`/api/suppliers/${id}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                toast({ title: "Supplier Deleted" });
+                await refreshSuppliers();
+            } else {
+                const json = await res.json();
+                toast({ title: "Failed", description: json.error || "Could not delete supplier", variant: "destructive" });
+            }
+        } catch (err) { console.error(err); }
+    }, [refreshSuppliers, toast]);
+
+    const createPurchaseOrder = useCallback(async (data: Partial<PurchaseOrder>) => {
+        try {
+            const res = await fetch('/api/inventory/purchase-orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (res.ok) {
+                toast({ title: "Purchase Order Created" });
+                await refreshPurchaseOrders();
+            } else {
+                const json = await res.json();
+                toast({ title: "Failed", description: json.error || "Could not create purchase order", variant: "destructive" });
+            }
+        } catch (err) { console.error(err); }
+    }, [refreshPurchaseOrders, toast]);
+
+    const receivePurchaseOrder = useCallback(async (id: string, items: { itemId: string, quantityReceiving: number }[]) => {
+        try {
+            const res = await fetch(`/api/inventory/purchase-orders/${id}/receive`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items }),
+            });
+            if (res.ok) {
+                toast({ title: "Items Received Successfully" });
+                await refreshPurchaseOrders();
+                await refreshInventory();
+                await refreshStockMovements();
+            } else {
+                const json = await res.json();
+                toast({ title: "Failed", description: json.error || "Could not receive items", variant: "destructive" });
+            }
+        } catch (err) { console.error(err); }
+    }, [refreshPurchaseOrders, refreshInventory, refreshStockMovements, toast]);
+
     const getInventoryItem = useCallback((sku: string) => {
         const arr = Array.isArray(inventory) ? inventory : [];
-        return arr.find(i => i.sku === sku);
+        return arr.find(i => i.variant?.sku === sku);
     }, [inventory]);
 
     const value = useMemo(() => ({
-        inventory, refreshInventory, stockMovements, refreshStockMovements, adjustStock, getInventoryItem,
+        inventory, refreshInventory, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
+        suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
+        purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
         orders, refreshOrders, updateOrderStatus,
         addProduct, updateProduct, deleteProduct,
         updateCategories, addBrand, updateBrand, deleteBrand,
         schemas, refreshSchemas, updateSchema,
         filterConfigs, refreshFilterConfigs, updateFilterConfig,
-        invoices, refreshInvoices, createInvoice, updateInvoice, deleteInvoice,
+        invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice, createCreditNote,
         customers, refreshCustomers, createCustomer,
         billingProfile, refreshBillingProfile, saveBillingProfile,
         cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion,
@@ -503,13 +673,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         reviews, refreshReviews, updateReviewStatus,
         isLoading
     }), [
-        inventory, refreshInventory, stockMovements, refreshStockMovements, adjustStock, getInventoryItem,
+        inventory, refreshInventory, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
+        suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
+        purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
         orders, refreshOrders, updateOrderStatus,
         addProduct, updateProduct, deleteProduct,
         updateCategories, addBrand, updateBrand, deleteBrand,
         schemas, refreshSchemas, updateSchema,
         filterConfigs, refreshFilterConfigs, updateFilterConfig,
-        invoices, refreshInvoices, createInvoice, updateInvoice, deleteInvoice,
+        invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice, createCreditNote,
         customers, refreshCustomers, createCustomer,
         billingProfile, refreshBillingProfile, saveBillingProfile,
         cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion,

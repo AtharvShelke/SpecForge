@@ -8,6 +8,7 @@ import CategoryManager from '@/components/dashboard/CategoryManager';
 import Overview from '@/components/dashboard/Overview';
 import BillingInvoices from '@/components/dashboard/BillingInvoices';
 import CMSManager from '@/components/dashboard/CMSManager';
+import ProcurementManager from '@/components/dashboard/ProcurementManager';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useAdmin } from '@/context/AdminContext';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -18,6 +19,7 @@ const ADMIN_TABS = [
     { key: 'orders', label: 'Orders' },
     { key: 'products', label: 'Products' },
     { key: 'inventory', label: 'Inventory' },
+    { key: 'procurement', label: 'Procurement' },
     { key: 'categories', label: 'Categories' },
     { key: 'brands', label: 'Brands' },
     { key: 'billing', label: 'Billing & Invoices' },
@@ -34,7 +36,7 @@ const AdminDashboard: React.FC = () => {
         refreshReviews
     } = useAdmin();
     const [activeTab, setActiveTab] = useState<
-        'overview' | 'products' | 'categories' | 'brands' | 'inventory' | 'orders' | 'billing' | 'cms'
+        'overview' | 'products' | 'categories' | 'brands' | 'inventory' | 'procurement' | 'orders' | 'billing' | 'cms'
     >('overview');
 
     React.useEffect(() => {
@@ -146,6 +148,7 @@ const AdminDashboard: React.FC = () => {
                             {activeTab === 'orders' && <OrderManager />}
                             {activeTab === 'products' && <ProductManager />}
                             {activeTab === 'inventory' && <InventoryManager />}
+                            {activeTab === 'procurement' && <ProcurementManager />}
                             {activeTab === 'categories' && <CategoryManager />}
                             {activeTab === 'brands' && <BrandManager />}
                             {activeTab === 'billing' && <BillingInvoices />}

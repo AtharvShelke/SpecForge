@@ -49,18 +49,18 @@ const CATEGORY_ICON: Record<Category, ReactNode> = {
 // Smart Cover Image (GPU > CPU > first item)
 // -------------------------------------------------------------------
 function getCoverImage(build: SavedBuild): string | null {
-  const gpu = build.items.find((i) => i.product?.category === Category.GPU);
-  if (gpu?.product) return gpu.product.image;
-  const cpu = build.items.find((i) => i.product?.category === Category.PROCESSOR);
-  if (cpu?.product) return cpu.product.image;
-  return build.items[0]?.product?.image ?? null;
+  const gpu = build.items.find((i) => i.variant?.product?.category === Category.GPU);
+  if (gpu?.variant?.product) return gpu.variant.product.media?.[0]?.url || null;
+  const cpu = build.items.find((i) => i.variant?.product?.category === Category.PROCESSOR);
+  if (cpu?.variant?.product) return cpu.variant.product.media?.[0]?.url || null;
+  return build.items[0]?.variant?.product?.media?.[0]?.url ?? null;
 }
 
 // -------------------------------------------------------------------
 // Compatibility Badge (small, for card)
 // -------------------------------------------------------------------
 const CompatChip: React.FC<{ build: SavedBuild }> = ({ build }) => {
-  const cartItems = useMemo(() => build.items.map(i => i.product ? ({ ...i.product, quantity: i.quantity }) : null).filter(Boolean) as CartItem[], [build]);
+  const cartItems = useMemo(() => build.items.map(i => i.variant?.product ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant }) : null).filter(Boolean) as CartItem[], [build]);
   const report = useMemo(() => validateBuild(cartItems), [cartItems]);
 
   if (report.status === CompatibilityLevel.INCOMPATIBLE)
@@ -97,7 +97,7 @@ const BuildModal: React.FC<{
   onClose: () => void;
   onLoad: () => void;
 }> = ({ build, onClose, onLoad }) => {
-  const cartItems = useMemo(() => build.items.map(i => i.product ? ({ ...i.product, quantity: i.quantity }) : null).filter(Boolean) as CartItem[], [build]);
+  const cartItems = useMemo(() => build.items.map(i => i.variant?.product ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant }) : null).filter(Boolean) as CartItem[], [build]);
   const report = useMemo(() => validateBuild(cartItems), [cartItems]);
   const [copied, setCopied] = useState(false);
 
@@ -150,16 +150,16 @@ const BuildModal: React.FC<{
           {build.items.map((item) => (
             <div key={item.id} className="flex items-center gap-4 border border-zinc-100 rounded-xl p-3.5 hover:bg-zinc-50 transition-colors">
               <div className="w-14 h-14 bg-zinc-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-contain p-1.5" />
+                <img src={item.variant?.product?.media?.[0]?.url || '/placeholder.png'} alt={item.variant?.product?.name} className="w-full h-full object-contain p-1.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-zinc-900 text-sm truncate">{item.product?.name}</p>
+                <p className="font-semibold text-zinc-900 text-sm truncate">{item.variant?.product?.name}</p>
                 <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-0.5">
-                  <span className="text-zinc-300">{item.product ? CATEGORY_ICON[item.product.category] : null}</span>
-                  {item.product?.category} · Qty {item.quantity}
+                  <span className="text-zinc-300">{item.variant?.product ? CATEGORY_ICON[item.variant.product.category] : null}</span>
+                  {item.variant?.product?.category} · Qty {item.quantity}
                 </div>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {item.product && Object.entries(item.product.specs).slice(0, 3).map(([k, v]) => (
+                  {item.variant?.product && Object.entries(item.variant.product.specs).slice(0, 3).map(([k, v]) => (
                     <span key={k} className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded-full">
                       {k}: {typeof v === 'object' ? (v as any).value : v}
                     </span>
@@ -167,7 +167,7 @@ const BuildModal: React.FC<{
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-bold text-zinc-900 text-sm">₹{item.product?.price.toLocaleString('en-IN')}</p>
+                <p className="font-bold text-zinc-900 text-sm">₹{item.variant?.price?.toLocaleString('en-IN')}</p>
                 {item.quantity > 1 && (
                   <p className="text-[10px] text-zinc-400">×{item.quantity}</p>
                 )}
@@ -315,8 +315,8 @@ function BuildsContent() {
                   <div className="px-5 pb-4 space-y-1.5">
                     {build.items.slice(0, 4).map((item: SavedBuildItem) => (
                       <div key={item.id} className="flex items-center gap-2 text-xs text-zinc-600">
-                        <span className="text-zinc-300 flex-shrink-0">{item.product ? CATEGORY_ICON[item.product.category as Category] : null}</span>
-                        <span className="truncate flex-1">{item.product?.name}</span>
+                        <span className="text-zinc-300 flex-shrink-0">{item.variant?.product ? CATEGORY_ICON[item.variant.product.category as Category] : null}</span>
+                        <span className="truncate flex-1">{item.variant?.product?.name}</span>
                         {item.quantity > 1 && <span className="text-zinc-400 flex-shrink-0">×{item.quantity}</span>}
                       </div>
                     ))}

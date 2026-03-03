@@ -57,11 +57,23 @@ export enum ReviewStatus {
 
 export type StockMovementType = 'PURCHASE' | 'INWARD' | 'OUTWARD' | 'SALE' | 'RETURN' | 'ADJUSTMENT' | 'RESERVE';
 
-export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled' | 'refunded';
+export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled' | 'refunded' | 'voided';
+
+export type InvoiceType = 'STANDARD' | 'CREDIT_NOTE';
 
 export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP';
 
 export type FilterType = 'checkbox' | 'range' | 'boolean' | 'search' | 'dropdown';
+
+export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'WAREHOUSE_STAFF' | 'FINANCE' | 'USER';
+
+export type SalesChannel = 'ONLINE' | 'POS' | 'MANUAL' | 'API' | 'PHONE';
+
+export type PaymentMethodEnum = 'CARD' | 'UPI' | 'BANK_TRANSFER' | 'CASH' | 'WALLET';
+
+export type PaymentStatusType = 'INITIATED' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
 
 // ──────────────────────────────────────────────────────
 // CATALOG — Product
@@ -74,23 +86,55 @@ export interface ProductSpec {
   value: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+}
+
+export interface ProductMedia {
+  id: string;
+  productId: string;
+  url: string;
+  altText?: string;
+  sortOrder: number;
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  sku: string;
+  price: number;
+  compareAtPrice?: number;
+  attributes?: Record<string, string>;
+  status: string;
+  deletedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  product?: Product; // parent relation
+}
+
 export interface Product {
   id: string;
-  sku: string;
+  slug: string;
   name: string;
+  metaTitle?: string;
+  metaDescription?: string;
   category: Category;
-  price: number;
-  stock: number;
-  image: string;
-  description?: string; // nullable in DB
+  description?: string;
+  status: ProductStatus;
+  deletedAt?: string;
+  version: number;
 
-  brandId?: string; // FK to Brand (nullable)
-  brand?: Brand;    // included relation
+  brandId?: string;
+  brand?: Brand;
 
   createdAt: string;
   updatedAt: string;
 
   specs: ProductSpec[];
+  variants: ProductVariant[];
+  media: ProductMedia[];
+  tags: Tag[];
 
   // Frontend-only
   imageFile?: File;
@@ -143,6 +187,7 @@ export function flatToSpecs(flat: ProductSpecsFlat): Partial<ProductSpec>[] {
 
 export interface CartItem extends Product {
   quantity: number;
+  selectedVariant: ProductVariant;
 }
 
 // ──────────────────────────────────────────────────────
@@ -234,32 +279,86 @@ export interface CategoryFilterConfig {
 // INVENTORY
 // ──────────────────────────────────────────────────────
 
-export interface InventoryItem {
+export interface Warehouse {
   id: string;
-  productId: string;
-  sku: string;
-  productName: string;
+  name: string;
+  code: string;
+  address?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WarehouseInventory {
+  id: string;
+  variantId: string;
+  warehouseId: string;
   quantity: number;
   reserved: number;
   reorderLevel: number;
   costPrice: number;
   location: string;
-  lastUpdated?: string; // nullable DateTime
+  lastUpdated?: string;
 
-  product?: Product; // included relation
+  variant?: ProductVariant;
+  warehouse?: Warehouse;
 }
 
 export interface StockMovement {
   id: string;
-  inventoryItemId: string;
+  warehouseInventoryId: string;
+  warehouseId: string;
   type: StockMovementType;
   quantity: number;
-  reason?: string; // nullable in DB
+  previousQuantity: number;
+  newQuantity: number;
+  reason?: string;
   performedBy: string;
+  orderId?: string;
+  purchaseOrderId?: string;
   createdAt: string;
   // Added for frontend compatibility/lookup
   sku: string;
   date: string;
+}
+
+// ──────────────────────────────────────────────────────
+// SUPPLIERS & PURCHASE ORDERS
+// ──────────────────────────────────────────────────────
+
+export interface Supplier {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  purchaseOrderId: string;
+  variantId: string;
+  quantityOrdered: number;
+  quantityReceived: number;
+  unitCost: number;
+  variant?: ProductVariant;
+}
+
+export type PurchaseOrderStatus = "PENDING" | "PARTIAL" | "COMPLETED" | "CANCELLED";
+
+export interface PurchaseOrder {
+  id: string;
+  supplierId: string;
+  warehouseId: string;
+  status: PurchaseOrderStatus;
+  expectedDelivery?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  supplier?: Supplier;
+  items: PurchaseOrderItem[];
 }
 
 // ──────────────────────────────────────────────────────
@@ -288,13 +387,14 @@ export interface Customer {
 export interface OrderItem {
   id: string;
   orderId: string;
-  productId: string;
+  variantId: string;
   name: string;
   category: Category;
   price: number;
   quantity: number;
   image?: string;
   sku?: string;
+  variantSnapshot?: Record<string, any>;
 }
 
 export interface OrderLog {
@@ -306,15 +406,22 @@ export interface OrderLog {
 }
 
 export interface Order {
-  id: string;          // Not auto-generated in DB, must be provided (e.g., ORD-xxx)
+  id: string;
+  channel: SalesChannel;
   customerName: string;
   email: string;
   phone?: string;
-  date: string;        // ISO DateTime
+  date: string;
   subtotal: number;
   gstAmount: number;
+  taxAmount: number;
+  discountAmount: number;
   total: number;
   status: OrderStatus;
+  version: number;
+
+  customerId?: string;
+  customer?: Customer;
 
   // Flat shipping fields (match DB)
   shippingStreet?: string;
@@ -327,12 +434,14 @@ export interface Order {
   paymentMethod?: string;
   paymentTransactionId?: string;
   paymentStatus?: string;
+  source?: Record<string, any>;
 
   createdAt: string;
   updatedAt: string;
 
   items: OrderItem[];
   logs: OrderLog[];
+  payments?: PaymentTransaction[];
 }
 
 // ──────────────────────────────────────────────────────
@@ -342,9 +451,9 @@ export interface Order {
 export interface SavedBuildItem {
   id: string;
   savedBuildId: string;
-  productId: string;
+  variantId: string;
   quantity: number;
-  product?: Product; // included relation
+  variant?: ProductVariant;
 }
 
 export interface SavedBuild {
@@ -414,7 +523,8 @@ export interface InvoiceLineItem {
   description?: string;
   quantity: number;
   unitPrice: number;
-  taxRatePct: number; // Default 18 in DB, not nullable
+  taxRatePct: number;
+  hsnCode?: string;
 }
 
 export type InvoiceAuditEventType =
@@ -441,8 +551,10 @@ export interface Invoice {
   invoiceNumber: string;
   status: InvoiceStatus;
   customerId: string;
-  customer?: Customer;  // included relation
+  customer?: Customer;
   currency: Currency;
+  orderId?: string;
+  type: InvoiceType;
 
   subtotal: number;
   taxTotal: number;
@@ -457,6 +569,7 @@ export interface Invoice {
   refundedAt?: string;
   cancelledAt?: string;
   paidAt?: string;
+  voidedAt?: string;
 
   createdAt: string;
   dueDate: string;
@@ -464,6 +577,7 @@ export interface Invoice {
 
   lineItems: InvoiceLineItem[];
   audit: InvoiceAuditEvent[];
+  creditNotes?: CreditNote[];
 }
 
 export type InvoiceFilterStatus = 'all' | InvoiceStatus;
@@ -602,4 +716,65 @@ export interface PaymentMethod {
   label: string;
   isDefault: boolean;
   details?: Record<string, string>;
+}
+
+// ──────────────────────────────────────────────────────
+// PAYMENT TRANSACTIONS
+// ──────────────────────────────────────────────────────
+
+export interface PaymentTransaction {
+  id: string;
+  orderId: string;
+  method: PaymentMethodEnum;
+  gatewayTxnId?: string;
+  amount: number;
+  currency: Currency;
+  status: PaymentStatusType;
+  idempotencyKey: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ──────────────────────────────────────────────────────
+// CREDIT NOTES
+// ──────────────────────────────────────────────────────
+
+export interface CreditNoteLineItem {
+  id: string;
+  creditNoteId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  taxRatePct: number;
+  hsnCode?: string;
+}
+
+export interface CreditNote {
+  id: string;
+  creditNoteNumber: string;
+  originalInvoiceId: string;
+  orderId?: string;
+  reason: string;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+  createdAt: string;
+  lineItems: CreditNoteLineItem[];
+}
+
+// ──────────────────────────────────────────────────────
+// AUDIT LOG
+// ──────────────────────────────────────────────────────
+
+export interface AuditLog {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  actor: string;
+  before?: Record<string, any>;
+  after?: Record<string, any>;
+  metadata?: Record<string, any>;
+  createdAt: string;
 }

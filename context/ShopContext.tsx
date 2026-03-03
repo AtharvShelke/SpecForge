@@ -200,12 +200,13 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addToCart = useCallback((product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
+      const isOut = product.variants?.[0]?.status === 'OUT_OF_STOCK';
 
       if (existing) {
-        if (existing.quantity + 1 > product.stock) {
+        if (isOut) {
           setTimeout(() => toast({
             title: "Out of stock",
-            description: `Only ${product.stock} units available.`,
+            description: `This product is no longer available.`,
             variant: "destructive",
           }), 0);
           return prev;
@@ -216,13 +217,13 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         );
       }
 
-      if (product.stock < 1) {
+      if (isOut) {
         setTimeout(() => toast({ title: "Out of stock", variant: "destructive" }), 0);
         return prev;
       }
 
       setTimeout(() => toast({ title: "Added to cart", description: `${product.name} added successfully.` }), 0);
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any }];
     });
   }, [toast]);
 
@@ -233,7 +234,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateQuantity = useCallback((productId: string, quantity: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === productId) {
-        if (quantity > item.stock) {
+        if (item.selectedVariant?.status === 'OUT_OF_STOCK') {
           setTimeout(() => toast({ title: "Insufficient stock", variant: "destructive" }), 0);
           return item;
         }
@@ -248,7 +249,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loadCart = useCallback((items: CartItem[]) => setCart(items), []);
 
   const cartTotal = useMemo(() =>
-    cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    cart.reduce((sum, item) => sum + ((item.selectedVariant?.price || 0) * item.quantity), 0),
     [cart]);
 
   // --- COMPARE ACTIONS ---
@@ -307,12 +308,13 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         email,
         items: cart.map(item => ({
           productId: item.id,
+          variantId: item.selectedVariant?.id || '',
           name: item.name,
           category: item.category,
-          price: item.price,
+          price: item.selectedVariant?.price || 0,
           quantity: item.quantity,
-          image: item.image,
-          sku: item.sku,
+          image: item.media?.[0]?.url || '',
+          sku: item.selectedVariant?.sku || '',
         })),
         total: cartTotal,
       }),

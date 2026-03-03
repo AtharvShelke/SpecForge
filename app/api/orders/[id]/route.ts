@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { confirmInventory, restoreInventory } from "@/services/inventoryService";
+import { generateOrderInvoice } from "@/services/invoiceService";
 
 const OrderStatusEnum = z.enum([
     "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED",
@@ -10,6 +12,15 @@ const updateOrderSchema = z.object({
     status: OrderStatusEnum,
     note: z.string().optional(),
 });
+
+// Valid order state transitions
+const VALID_TRANSITIONS: Record<string, string[]> = {
+    PENDING: ["PAID", "CANCELLED"],
+    PAID: ["PROCESSING", "CANCELLED"],
+    PROCESSING: ["SHIPPED", "CANCELLED"],
+    SHIPPED: ["DELIVERED"],
+    DELIVERED: ["RETURNED"],
+};
 
 // ── GET /api/orders/[id] ────────────────────────────────
 export async function GET(
@@ -23,6 +34,8 @@ export async function GET(
             include: {
                 items: true,
                 logs: { orderBy: { timestamp: "asc" } },
+                invoices: { include: { lineItems: true } },
+                payments: { orderBy: { createdAt: "desc" } },
             },
         });
 
@@ -59,105 +72,53 @@ export async function PATCH(
             const oldStatus = existing.status;
             const newStatus = data.status;
 
-            // Only run inventory loops if the state is actually changing
-            if (oldStatus !== newStatus) {
-                // Pre-fetch all necessary inventory items to avoid N+1 queries
-                const productIds = existing.items.map(i => i.productId);
-                const inventoryItems = await tx.inventoryItem.findMany({
-                    where: { productId: { in: productIds } },
-                });
-                const invMap = new Map(inventoryItems.map(i => [i.productId, i]));
-
-                const inventoryUpdates: Promise<any>[] = [];
-                const stockMovements: any[] = [];
-                const productUpdates: Promise<any>[] = [];
-
-                for (const item of existing.items) {
-                    const inv = invMap.get(item.productId);
-                    if (!inv) continue;
-
-                    let newInvQuantity = inv.quantity;
-
-                    // Handle inventory transitions
-                    if (newStatus === "SHIPPED" && oldStatus !== "SHIPPED") {
-                        inventoryUpdates.push(tx.inventoryItem.update({
-                            where: { id: inv.id },
-                            data: {
-                                reserved: { decrement: item.quantity },
-                                lastUpdated: new Date(),
-                            },
-                        }));
-                        stockMovements.push({
-                            inventoryItemId: inv.id,
-                            type: "SALE",
-                            quantity: item.quantity,
-                            reason: `Order ${id} shipped`,
-                            performedBy: "System",
-                        });
-                    } else if (newStatus === "CANCELLED" && oldStatus !== "CANCELLED") {
-                        const isPreShip = ["PENDING", "PAID", "PROCESSING"].includes(oldStatus);
-                        newInvQuantity = inv.quantity + item.quantity;
-
-                        if (isPreShip) {
-                            inventoryUpdates.push(tx.inventoryItem.update({
-                                where: { id: inv.id },
-                                data: {
-                                    quantity: { increment: item.quantity },
-                                    reserved: { decrement: item.quantity },
-                                    lastUpdated: new Date(),
-                                },
-                            }));
-                        } else {
-                            inventoryUpdates.push(tx.inventoryItem.update({
-                                where: { id: inv.id },
-                                data: {
-                                    quantity: { increment: item.quantity },
-                                    lastUpdated: new Date(),
-                                },
-                            }));
-                        }
-
-                        stockMovements.push({
-                            inventoryItemId: inv.id,
-                            type: "RETURN",
-                            quantity: item.quantity,
-                            reason: `Order ${id} cancelled from ${oldStatus}`,
-                            performedBy: "System",
-                        });
-                    } else if (newStatus === "RETURNED" && oldStatus !== "RETURNED") {
-                        newInvQuantity = inv.quantity + item.quantity;
-                        inventoryUpdates.push(tx.inventoryItem.update({
-                            where: { id: inv.id },
-                            data: {
-                                quantity: { increment: item.quantity },
-                                lastUpdated: new Date(),
-                            },
-                        }));
-                        stockMovements.push({
-                            inventoryItemId: inv.id,
-                            type: "RETURN",
-                            quantity: item.quantity,
-                            reason: `Order ${id} returned`,
-                            performedBy: "System",
-                        });
-                    }
-
-                    // Sync product stock count based on the new quantity calculated in-memory
-                    productUpdates.push(tx.product.update({
-                        where: { id: item.productId },
-                        data: { stock: newInvQuantity },
-                    }));
-                }
-
-                // Execute all batched operations concurrently
-                await Promise.all(inventoryUpdates);
-                if (stockMovements.length > 0) {
-                    await tx.stockMovement.createMany({ data: stockMovements });
-                }
-                await Promise.all(productUpdates);
+            // Validate state transition
+            if (oldStatus === newStatus) {
+                throw new Error("SAME_STATUS");
+            }
+            const allowed = VALID_TRANSITIONS[oldStatus] ?? [];
+            if (!allowed.includes(newStatus)) {
+                throw new Error(`INVALID_TRANSITION:${oldStatus}→${newStatus}`);
             }
 
-            // Update order status and add log
+            // Optimistic concurrency via version
+            const versionCheck = await tx.order.updateMany({
+                where: { id, version: existing.version },
+                data: { version: { increment: 1 } },
+            });
+            if (versionCheck.count === 0) throw new Error("CONCURRENT_MODIFICATION");
+
+            const inventoryItems = existing.items
+                .filter(i => !!i.variantId)
+                .map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+
+            // Handle inventory based on transition
+            if (newStatus === "SHIPPED") {
+                await confirmInventory(tx, inventoryItems, id);
+            } else if (newStatus === "CANCELLED") {
+                const isPreShip = ["PENDING", "PAID", "PROCESSING"].includes(oldStatus);
+                await restoreInventory(
+                    tx, inventoryItems, id, isPreShip,
+                    `Order ${id} cancelled from ${oldStatus}`
+                );
+            } else if (newStatus === "RETURNED") {
+                await restoreInventory(
+                    tx, inventoryItems, id, false,
+                    `Order ${id} returned`
+                );
+            }
+
+            // Auto-generate invoice when order is PAID
+            if (newStatus === "PAID") {
+                try {
+                    await generateOrderInvoice(tx, id);
+                } catch (invoiceError) {
+                    console.error(`[Invoice Generation] Failed for order ${id}:`, invoiceError);
+                    // Don't block the order status change — invoice can be retried
+                }
+            }
+
+            // Update order status
             const updated = await tx.order.update({
                 where: { id },
                 data: {
@@ -169,13 +130,29 @@ export async function PATCH(
                         },
                     },
                 },
-                include: { items: true, logs: { orderBy: { timestamp: "asc" } } },
+                include: {
+                    items: true,
+                    logs: { orderBy: { timestamp: "asc" } },
+                    payments: { orderBy: { createdAt: "desc" } },
+                },
+            });
+
+            // Log to unified audit
+            await tx.auditLog.create({
+                data: {
+                    entityType: 'Order',
+                    entityId: id,
+                    action: 'status_changed',
+                    actor: 'System',
+                    before: { status: oldStatus },
+                    after: { status: newStatus },
+                },
             });
 
             return updated;
         }, {
-            maxWait: 5000, // wait up to 5s for a connection
-            timeout: 10000, // allow transaction up to 10s to execute
+            maxWait: 5000,
+            timeout: 15000,
         });
 
         const duration = Date.now() - startTime;
@@ -188,6 +165,15 @@ export async function PATCH(
         }
         if (error?.message === "NOT_FOUND") {
             return NextResponse.json({ error: "Order not found" }, { status: 404 });
+        }
+        if (error?.message === "SAME_STATUS") {
+            return NextResponse.json({ error: "Order already has this status" }, { status: 400 });
+        }
+        if (error?.message?.startsWith("INVALID_TRANSITION")) {
+            return NextResponse.json({ error: `Invalid status transition: ${error.message.split(':')[1]}` }, { status: 400 });
+        }
+        if (error?.message === "CONCURRENT_MODIFICATION") {
+            return NextResponse.json({ error: "Order was modified by another request. Please retry." }, { status: 409 });
         }
         console.error(`[Order Transaction Error] PATCH /api/orders/[id] failed:`, error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

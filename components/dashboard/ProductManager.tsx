@@ -12,6 +12,10 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
     specs: ProductSpecsFlat;
+    price?: number;
+    stock?: number;
+    sku?: string;
+    image?: string;
 }
 
 const ProductManager = () => {
@@ -324,10 +328,9 @@ const ProductManager = () => {
         handleSpecChange(key, newVals);
     };
 
-    const getStockBadgeClass = (stock: number): string => {
-        if (stock === 0) return 'bg-red-100 text-red-800';
-        if (stock < 5) return 'bg-orange-100 text-orange-800';
-        if (stock < 10) return 'bg-yellow-100 text-yellow-800';
+    const getStockBadgeClass = (status: string | undefined): string => {
+        if (status === 'OUT_OF_STOCK') return 'bg-red-100 text-red-800';
+        if (status === 'LOW_STOCK') return 'bg-orange-100 text-orange-800';
         return 'bg-green-100 text-green-800';
     };
 
@@ -794,7 +797,7 @@ const ProductManager = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <img
-                                                        src={product.image}
+                                                        src={product.media?.[0]?.url || '/placeholder.png'}
                                                         alt={product.name}
                                                         className="h-10 w-10 rounded-lg object-contain bg-gray-100 border border-gray-200"
                                                         onError={(e) => {
@@ -806,7 +809,7 @@ const ProductManager = () => {
                                                             {product.name}
                                                         </div>
                                                         <div className="text-xs text-gray-500">
-                                                            {product.sku}
+                                                            {product.variants?.[0]?.sku || ''}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -820,11 +823,11 @@ const ProductManager = () => {
                                                 {product.brand?.name || product.specs.find(s => s.key === 'brand')?.value || '-'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                ₹{product.price.toLocaleString('en-IN')}
+                                                ₹{(product.variants?.[0]?.price || 0).toLocaleString('en-IN')}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStockBadgeClass(product.stock)}`}>
-                                                    {product.stock} {product.stock === 1 ? 'unit' : 'units'}
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStockBadgeClass(product.variants?.[0]?.status)}`}>
+                                                    {product.variants?.[0]?.status?.replace(/_/g, ' ') || 'UNKNOWN'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

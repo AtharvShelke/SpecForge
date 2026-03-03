@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const buildItemSchema = z.object({
     productId: z.string().uuid(),
+    variantId: z.string().optional(),
     quantity: z.number().int().positive().default(1),
 });
 
@@ -20,7 +21,7 @@ export async function GET() {
             include: {
                 items: {
                     include: {
-                        product: { include: { specs: true, brand: true } },
+                        variant: { include: { product: { include: { specs: true, brand: true } } } },
                     },
                 },
             },
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
                 items: {
                     create: data.items.map((i) => ({
                         productId: i.productId,
+                        variantId: i.variantId || '',
                         quantity: i.quantity,
                     })),
                 },
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
             include: {
                 items: {
                     include: {
-                        product: { include: { specs: true, brand: true } },
+                        variant: { include: { product: { include: { specs: true, brand: true } } } },
                     },
                 },
             },

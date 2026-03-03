@@ -63,7 +63,7 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 body: JSON.stringify({
                     name,
                     total: cartTotal,
-                    items: cart.map(i => ({ productId: i.id, quantity: i.quantity }))
+                    items: cart.map(i => ({ productId: i.id, variantId: i.selectedVariant?.id || '', quantity: i.quantity }))
                 }),
             });
             if (res.ok) {
@@ -86,9 +86,10 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         const newCart: any[] = [];
         for (const item of build.items) {
-            const product = products.find(p => p.id === item.productId);
+            const product = products.find(p => p.variants?.some(v => v.id === item.variantId));
             if (product) {
-                newCart.push({ ...product, quantity: item.quantity });
+                const variant = product.variants?.find(v => v.id === item.variantId) || product.variants?.[0];
+                newCart.push({ ...product, quantity: item.quantity, selectedVariant: variant });
             }
         }
         loadCart(newCart);

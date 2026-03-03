@@ -29,10 +29,9 @@ const createProductSchema = z.object({
     location: z.string().default(""),
 });
 
-// ── GET /api/products ───────────────────────────────────
-export async function GET(req: NextRequest) {
+export async function getProductsData(searchParams: URLSearchParams) {
     try {
-        const { searchParams } = new URL(req.url);
+
         const category = searchParams.get("category");
         const brandId = searchParams.get("brandId");
         const search = searchParams.get("search");
@@ -106,9 +105,9 @@ export async function GET(req: NextRequest) {
             if (key === 'f_stock_status') {
                 const vals = searchParams.getAll(key);
                 if (vals.includes('In Stock') && !vals.includes('Out of Stock')) {
-                    where.stock = { gt: 0 };
+                    where.variants = { some: { warehouseInventories: { some: { quantity: { gt: 0 } } } } };
                 } else if (!vals.includes('In Stock') && vals.includes('Out of Stock')) {
-                    where.stock = { equals: 0 };
+                    where.variants = { none: { warehouseInventories: { some: { quantity: { gt: 0 } } } } };
                 }
             } else if (key === 'f_brand') {
                 const vals = searchParams.getAll(key);
@@ -174,7 +173,7 @@ export async function GET(req: NextRequest) {
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
-                include: { specs: true, brand: true },
+                include: { specs: true, brand: true, variants: true, media: true },
                 orderBy,
                 skip: (page - 1) * limit,
                 take: limit,
@@ -184,9 +183,15 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ products, total, page, limit, filterOptions });
     } catch (error) {
-        console.error("GET /api/products error:", error);
+        console.error("getProductsData error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
+}
+
+// ── GET /api/products ───────────────────────────────────
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    return getProductsData(searchParams);
 }
 
 // ── POST /api/products ──────────────────────────────────
@@ -196,7 +201,7 @@ export async function POST(req: NextRequest) {
         const data = createProductSchema.parse(body);
 
         // Check SKU uniqueness
-        const existing = await prisma.product.findUnique({ where: { sku: data.sku } });
+        const existing = await prisma.productVariant.findUnique({ where: { sku: data.sku } });
         if (existing) {
             return NextResponse.json({ error: "SKU already exists" }, { status: 409 });
         }
@@ -205,27 +210,43 @@ export async function POST(req: NextRequest) {
         const product = await prisma.$transaction(async (tx) => {
             const p = await tx.product.create({
                 data: {
-                    sku: data.sku,
+                    slug: data.sku, // MOCK slug from sku for now
                     name: data.name,
                     category: data.category,
-                    price: data.price,
-                    stock: data.stock,
-                    image: data.image,
                     description: data.description,
                     brandId: data.brandId,
                     specs: {
                         create: data.specs.map((s) => ({ key: s.key, value: s.value })),
                     },
+                    media: {
+                        create: [{ url: data.image, sortOrder: 0 }]
+                    },
+                    variants: {
+                        create: [{ sku: data.sku, price: data.price, status: 'IN_STOCK' }]
+                    }
                 },
-                include: { specs: true, brand: true },
+                include: { specs: true, brand: true, variants: true, media: true },
             });
 
+            // Ensure a primary warehouse exists
+            let defaultWarehouse = await tx.warehouse.findFirst({
+                where: { code: "MAIN" }
+            });
+            if (!defaultWarehouse) {
+                defaultWarehouse = await tx.warehouse.create({
+                    data: {
+                        name: "Main Warehouse",
+                        code: "MAIN",
+                        isActive: true,
+                    }
+                });
+            }
+
             // Create inventory item
-            const inv = await tx.inventoryItem.create({
+            const inv = await tx.warehouseInventory.create({
                 data: {
-                    productId: p.id,
-                    sku: data.sku,
-                    productName: data.name,
+                    variantId: p.variants[0].id,
+                    warehouseId: defaultWarehouse.id,
                     quantity: data.stock,
                     reserved: 0,
                     reorderLevel: data.reorderLevel,
@@ -238,9 +259,11 @@ export async function POST(req: NextRequest) {
             if (data.stock > 0) {
                 await tx.stockMovement.create({
                     data: {
-                        inventoryItemId: inv.id,
+                        warehouseInventoryId: inv.id,
+                        warehouseId: defaultWarehouse.id,
                         type: "INWARD" as const,
                         quantity: data.stock,
+                        newQuantity: data.stock,
                         reason: "Initial stock entry",
                         performedBy: "System",
                     },

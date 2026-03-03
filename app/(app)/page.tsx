@@ -253,13 +253,14 @@ const Home: React.FC = () => {
                   {/* Image */}
                   <div className="aspect-square bg-slate-50 relative overflow-hidden">
                     <img
-                      src={product.image}
+                      src={product.media?.[0]?.url || ''}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    {product.stock < 5 && (
-                      <div className="absolute top-4 right-4 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
-                        Low Stock
+                    {product.variants?.[0]?.status !== 'IN_STOCK' && (
+                      <div className={`absolute top-4 right-4 px-3 py-1 text-white text-xs font-bold rounded-full ${product.variants?.[0]?.status === 'OUT_OF_STOCK' ? 'bg-red-500' : 'bg-amber-500'
+                        }`}>
+                        {product.variants?.[0]?.status?.replace(/_/g, ' ') || 'OUT OF STOCK'}
                       </div>
                     )}
                   </div>
@@ -278,7 +279,7 @@ const Home: React.FC = () => {
 
                     <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                       <div className="text-2xl font-bold text-slate-900">
-                        ₹{(product.price / 1000).toFixed(0)}k
+                        ₹{((product.variants?.[0]?.price || 0) / 1000).toFixed(0)}k
                       </div>
                       <button className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-blue-600 transition-colors">
                         <ShoppingBag className="w-5 h-5" />

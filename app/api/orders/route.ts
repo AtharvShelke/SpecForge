@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { calculateOrderFinancials } from "@/lib/gst";
+import { calculateOrderFinancials } from "@/lib/tax-engine";
+import { reserveInventory, InsufficientStockError } from "@/services/inventoryService";
+import { createPaymentTransaction } from "@/services/paymentService";
 
 const CategoryEnum = z.enum([
     "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING",
+    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
 ]);
 
 const OrderStatusEnum = z.enum([
     "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED",
 ]);
 
+const SalesChannelEnum = z.enum(["ONLINE", "POS", "MANUAL", "API", "PHONE"]);
+const PaymentMethodEnum = z.enum(["CARD", "UPI", "BANK_TRANSFER", "CASH", "WALLET"]);
+
 const orderItemSchema = z.object({
     productId: z.string().min(1),
+    variantId: z.string().min(1),
     name: z.string().min(1),
     category: CategoryEnum,
     price: z.number().positive(),
@@ -23,7 +29,8 @@ const orderItemSchema = z.object({
 });
 
 const createOrderSchema = z.object({
-    id: z.string().min(1), // Must be provided (e.g. ORD-xxx)
+    id: z.string().min(1),
+    channel: SalesChannelEnum.default("ONLINE"),
     customerName: z.string().min(1),
     email: z.string().email(),
     phone: z.string().optional(),
@@ -33,9 +40,11 @@ const createOrderSchema = z.object({
     shippingState: z.string().optional(),
     shippingZip: z.string().optional(),
     shippingCountry: z.string().optional(),
-    paymentMethod: z.string().optional(),
+    paymentMethod: PaymentMethodEnum.optional(),
     paymentTransactionId: z.string().optional(),
     paymentStatus: z.string().optional(),
+    idempotencyKey: z.string().optional(),
+    source: z.record(z.string(), z.any()).optional(),
     items: z.array(orderItemSchema).min(1),
 });
 
@@ -44,6 +53,7 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status");
+        const channel = searchParams.get("channel");
         const email = searchParams.get("email");
         const search = searchParams.get("search");
         const page = parseInt(searchParams.get("page") || "1", 10);
@@ -52,6 +62,9 @@ export async function GET(req: NextRequest) {
         const where: any = {};
         if (status && OrderStatusEnum.safeParse(status).success) {
             where.status = status;
+        }
+        if (channel && SalesChannelEnum.safeParse(channel).success) {
+            where.channel = channel;
         }
         if (email) where.email = email;
         if (search) {
@@ -65,7 +78,11 @@ export async function GET(req: NextRequest) {
         const [orders, total] = await Promise.all([
             prisma.order.findMany({
                 where,
-                include: { items: true, logs: { orderBy: { timestamp: "asc" } } },
+                include: {
+                    items: true,
+                    logs: { orderBy: { timestamp: "asc" } },
+                    payments: { orderBy: { createdAt: "desc" } },
+                },
                 orderBy: { date: "desc" },
                 skip: (page - 1) * limit,
                 take: limit,
@@ -86,57 +103,49 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const data = createOrderSchema.parse(body);
 
-        const order = await prisma.$transaction(async (tx) => {
-            // Bulk fetch inventory
-            const productIds = data.items.map(i => i.productId);
-            const products = await tx.product.findMany({
-                where: { id: { in: productIds } },
-                include: { inventoryItem: true }
+        // Idempotency check
+        if (data.idempotencyKey) {
+            const existingOrder = await prisma.order.findUnique({
+                where: { idempotencyKey: data.idempotencyKey },
+                include: { items: true, logs: true },
             });
-            const productMap = new Map(products.map(p => [p.id, p]));
+            if (existingOrder) return NextResponse.json(existingOrder, { status: 200 });
+        }
 
-            const inventoryUpdates = [];
-            const stockMovements = [];
-            const calculationItems: { price: number; quantity: number }[] = [];
+        const order = await prisma.$transaction(async (tx) => {
+            // Calculate financials using unified tax engine
+            const calculationItems = data.items.map(i => ({
+                price: i.price,
+                quantity: i.quantity,
+            }));
+            const { subtotal, gstAmount, taxAmount, total } = calculateOrderFinancials(calculationItems);
 
-            for (const item of data.items) {
-                const product = productMap.get(item.productId);
-                if (!product || !product.inventoryItem) {
-                    throw new Error(`Insufficient stock or product not found: ${item.productId}`);
-                }
-                if (product.inventoryItem.quantity < item.quantity) {
-                    throw new Error(`Insufficient stock for product ${item.productId}`);
-                }
-
-                calculationItems.push({ price: product.price, quantity: item.quantity });
-
-                inventoryUpdates.push({
-                    id: product.inventoryItem.id,
-                    quantity: product.inventoryItem.quantity - item.quantity,
-                    reserved: product.inventoryItem.reserved + item.quantity
-                });
-
-                stockMovements.push({
-                    inventoryItemId: product.inventoryItem.id,
-                    type: "RESERVE" as const,
-                    quantity: item.quantity,
-                    reason: `Order ${data.id} placed`,
-                    performedBy: "System",
+            // Find or create customer
+            let customer = await tx.customer.findFirst({ where: { email: data.email } });
+            if (!customer) {
+                customer = await tx.customer.create({
+                    data: {
+                        name: data.customerName,
+                        email: data.email,
+                        phone: data.phone,
+                    },
                 });
             }
-
-            const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
 
             // Create the order
             const o = await tx.order.create({
                 data: {
                     id: data.id,
+                    channel: data.channel,
                     customerName: data.customerName,
                     email: data.email,
                     phone: data.phone,
+                    customerId: customer.id,
                     subtotal,
                     gstAmount,
-                    total: data.total || total, // Depending on trust level, can use total from server calculation here instead
+                    taxAmount,
+                    discountAmount: 0,
+                    total: total,
                     status: "PENDING",
                     shippingStreet: data.shippingStreet,
                     shippingCity: data.shippingCity,
@@ -146,9 +155,11 @@ export async function POST(req: NextRequest) {
                     paymentMethod: data.paymentMethod,
                     paymentTransactionId: data.paymentTransactionId,
                     paymentStatus: data.paymentStatus,
+                    idempotencyKey: data.idempotencyKey,
+                    source: data.source,
                     items: {
                         create: data.items.map((item) => ({
-                            productId: item.productId,
+                            variantId: item.variantId,
                             name: item.name,
                             category: item.category,
                             price: item.price,
@@ -160,38 +171,60 @@ export async function POST(req: NextRequest) {
                     logs: {
                         create: {
                             status: "PENDING",
-                            note: "Order placed successfully.",
+                            note: `Order placed via ${data.channel} channel.`,
                         },
                     },
                 },
                 include: { items: true, logs: true },
             });
 
-            // Apply updates in batch
-            for (const update of inventoryUpdates) {
-                await tx.inventoryItem.update({
-                    where: { id: update.id },
-                    data: {
-                        quantity: update.quantity,
-                        reserved: update.reserved,
-                        lastUpdated: new Date()
-                    }
-                });
-            }
+            // Reserve inventory using centralized service
+            const inventoryItems = data.items.map(i => ({
+                variantId: i.variantId,
+                quantity: i.quantity,
+            }));
+            await reserveInventory(tx, inventoryItems, data.id);
 
-            if (stockMovements.length > 0) {
-                await tx.stockMovement.createMany({
-                    data: stockMovements
+            // For POS/CASH orders, create payment transaction and auto-mark as PAID
+            if (data.channel === "POS" && data.paymentMethod) {
+                await createPaymentTransaction(tx, {
+                    orderId: data.id,
+                    method: data.paymentMethod as any,
+                    amount: total,
+                    idempotencyKey: `pay-${data.id}-${Date.now()}`,
+                    status: 'COMPLETED',
+                    metadata: { channel: data.channel },
+                });
+
+                // Auto-transition POS orders to PAID
+                await tx.order.update({
+                    where: { id: data.id },
+                    data: {
+                        status: "PAID",
+                        paymentStatus: "COMPLETED",
+                        logs: {
+                            create: {
+                                status: "PAID",
+                                note: "POS payment — auto-confirmed.",
+                            },
+                        },
+                    },
                 });
             }
 
             return o;
+        }, {
+            maxWait: 5000,
+            timeout: 15000,
         });
 
         return NextResponse.json(order, { status: 201 });
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 });
+        }
+        if (error instanceof InsufficientStockError) {
+            return NextResponse.json({ error: error.message }, { status: 409 });
         }
         if (error?.message?.includes("Insufficient stock")) {
             return NextResponse.json({ error: error.message }, { status: 409 });

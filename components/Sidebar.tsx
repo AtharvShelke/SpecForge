@@ -84,7 +84,7 @@ const FilterGroup: React.FC<{
   const [showAll, setShowAll] = useState(false);
 
   const getProductValue = (p: Product, key: string): string | undefined => {
-    if (key === 'stock_status') return p.stock > 0 ? 'In Stock' : 'Out of Stock';
+    if (key === 'stock_status') return p.variants?.[0]?.status === 'IN_STOCK' ? 'In Stock' : 'Out of Stock';
     if (key.startsWith('specs.')) {
       const specKey = key.split('.')[1];
       const spec = p.specs.find(s => s.key === specKey);

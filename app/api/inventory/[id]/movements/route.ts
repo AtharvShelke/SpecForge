@@ -21,7 +21,7 @@ export async function GET(
     try {
         const { id: sku } = await params;
         const movements = await prisma.stockMovement.findMany({
-            where: { inventoryItem: { sku } },
+            where: { warehouseInventory: { variant: { sku } } },
             orderBy: { createdAt: "desc" },
             take: 100,
         });
@@ -44,7 +44,9 @@ export async function POST(
         const data = createMovementSchema.parse(body);
 
         const result = await prisma.$transaction(async (tx) => {
-            const inv = await tx.inventoryItem.findUnique({ where: { sku } });
+            const inv = await tx.warehouseInventory.findFirst({
+                where: { variant: { sku } }
+            });
             if (!inv) throw new Error("NOT_FOUND");
 
             let qtyDelta = 0;
@@ -72,7 +74,7 @@ export async function POST(
             const newQty = Math.max(0, inv.quantity + qtyDelta);
             const newReserved = Math.max(0, inv.reserved + reservedDelta);
 
-            await tx.inventoryItem.update({
+            await tx.warehouseInventory.update({
                 where: { id: inv.id },
                 data: {
                     quantity: newQty,
@@ -82,16 +84,19 @@ export async function POST(
             });
 
             // Sync product stock
-            await tx.product.update({
-                where: { id: inv.productId },
-                data: { stock: newQty },
+            await tx.productVariant.update({
+                where: { id: inv.variantId },
+                data: { status: newQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK" },
             });
 
             const movement = await tx.stockMovement.create({
                 data: {
-                    inventoryItemId: inv.id,
+                    warehouseInventoryId: inv.id,
+                    warehouseId: inv.warehouseId,
                     type: data.type,
                     quantity: data.quantity,
+                    previousQuantity: inv.quantity,
+                    newQuantity: newQty,
                     reason: data.reason,
                     performedBy: data.performedBy,
                 },

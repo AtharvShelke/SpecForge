@@ -6,9 +6,11 @@ export async function GET(req: NextRequest) {
     try {
         const movements = await prisma.stockMovement.findMany({
             include: {
-                inventoryItem: {
+                warehouseInventory: {
                     select: {
-                        sku: true,
+                        variant: {
+                            select: { sku: true }
+                        }
                     },
                 },
             },
@@ -19,14 +21,17 @@ export async function GET(req: NextRequest) {
         // Map database fields to frontend expectations (date/sku)
         const formattedMovements = movements.map((m) => ({
             id: m.id,
-            inventoryItemId: m.inventoryItemId,
+            warehouseInventoryId: m.warehouseInventoryId,
+            warehouseId: m.warehouseId,
             type: m.type,
             quantity: m.quantity,
+            previousQuantity: m.previousQuantity,
+            newQuantity: m.newQuantity,
             reason: m.reason,
             performedBy: m.performedBy,
             createdAt: m.createdAt.toISOString(),
             date: m.createdAt.toISOString(), // Added for frontend compatibility
-            sku: m.inventoryItem.sku,        // Added for frontend compatibility
+            sku: m.warehouseInventory?.variant?.sku || 'N/A', // Added for frontend compatibility
         }));
 
         return NextResponse.json(formattedMovements);

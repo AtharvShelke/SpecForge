@@ -81,6 +81,7 @@ export default function CheckoutPage() {
                 ...formData,
                 items: cart.map(item => ({
                     productId: item.id,
+                    variantId: item.selectedVariant?.id || '',
                     quantity: item.quantity,
                 }))
             });
@@ -100,7 +101,12 @@ export default function CheckoutPage() {
         }
     };
 
-    const { subtotal, gstAmount, total } = calculateOrderFinancials(cart);
+    const { subtotal, gstAmount, total } = calculateOrderFinancials(
+        cart.map(item => ({
+            price: item.selectedVariant?.price || 0,
+            quantity: item.quantity
+        }))
+    );
 
     return (
         <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -261,7 +267,7 @@ export default function CheckoutPage() {
                                         <li key={product.id} className="py-4 flex gap-4">
                                             <div className="h-16 w-16 flex-shrink-0 bg-gray-50 rounded-lg p-1 border border-gray-100">
                                                 <img
-                                                    src={product.image}
+                                                    src={product.media?.[0]?.url || '/placeholder.png'}
                                                     alt={product.name}
                                                     className="w-full h-full object-contain"
                                                 />
@@ -271,7 +277,7 @@ export default function CheckoutPage() {
                                                 <p className="mt-1 text-sm text-gray-500">Qty: {product.quantity}</p>
                                             </div>
                                             <div className="flex-shrink-0 text-sm font-medium text-gray-900 mt-0.5">
-                                                ₹{(product.price * product.quantity).toLocaleString('en-IN')}
+                                                ₹{((product.selectedVariant?.price || 0) * product.quantity).toLocaleString('en-IN')}
                                             </div>
                                         </li>
                                     ))}

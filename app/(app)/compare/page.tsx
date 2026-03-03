@@ -80,21 +80,21 @@ export default function ComparePage() {
                                             <XCircle size={20} />
                                         </button>
                                         <div className="w-24 h-24 mx-auto mb-4 bg-zinc-50 rounded-xl p-2 border border-zinc-100 flex items-center justify-center">
-                                            <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
+                                            <img src={item.media?.[0]?.url || '/placeholder.png'} alt={item.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
                                         </div>
                                         <h3 className="font-bold text-zinc-900 text-sm line-clamp-2 leading-tight mb-2 min-h-[40px]">
                                             {item.name}
                                         </h3>
                                         <div className="text-lg font-bold text-blue-600 mb-3">
-                                            ₹{item.price.toLocaleString('en-IN')}
+                                            ₹{(item.variants?.[0]?.price || 0).toLocaleString('en-IN')}
                                         </div>
                                         <button
-                                            onClick={() => addToCart(item)}
-                                            disabled={item.stock <= 0}
-                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-colors ${item.stock <= 0 ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                            onClick={() => addToCart(item as any)}
+                                            disabled={item.variants?.[0]?.status !== 'IN_STOCK'}
+                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-colors ${item.variants?.[0]?.status !== 'IN_STOCK' ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                                         >
                                             <ShoppingCart size={16} />
-                                            {item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                                            {item.variants?.[0]?.status !== 'IN_STOCK' ? 'Out of Stock' : 'Add to Cart'}
                                         </button>
                                     </th>
                                 ))}

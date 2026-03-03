@@ -117,7 +117,7 @@ const CartDrawer: React.FC = () => {
                     <li key={product.id} className="py-6 flex">
                       <div className="flex-shrink-0 w-20 h-20 border border-gray-200 rounded-md overflow-hidden bg-gray-50">
                         <img
-                          src={product.image}
+                          src={product.media?.[0]?.url || '/placeholder.png'}
                           alt={product.name}
                           className="w-full h-full object-center object-cover"
                         />
@@ -126,7 +126,7 @@ const CartDrawer: React.FC = () => {
                         <div>
                           <div className="flex justify-between text-base font-medium text-gray-900">
                             <h3>{product.name}</h3>
-                            <p className="ml-4">₹{(product.price * product.quantity).toLocaleString('en-IN')}</p>
+                            <p className="ml-4">₹{((product.selectedVariant?.price || 0) * product.quantity).toLocaleString('en-IN')}</p>
                           </div>
                           <p className="mt-1 text-sm text-gray-500">{product.category}</p>
                         </div>

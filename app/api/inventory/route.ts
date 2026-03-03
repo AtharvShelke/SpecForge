@@ -24,19 +24,20 @@ export async function GET(req: NextRequest) {
 
         let dbWhere: any = {};
 
-        // 1. Text Search
+        // 1. Text Search & 2. Category Filter
+        let productFilter: any = {};
         if (search && search.trim() !== "") {
-            dbWhere.OR = [
+            productFilter.OR = [
                 { sku: { contains: search, mode: "insensitive" } },
-                { productName: { contains: search, mode: "insensitive" } },
+                { name: { contains: search, mode: "insensitive" } },
             ];
         }
-
-        // 2. Category Filter
         if (category && category !== "all") {
-            dbWhere.product = {
-                category: category
-            };
+            productFilter.category = category;
+        }
+
+        if (Object.keys(productFilter).length > 0) {
+            dbWhere.product = productFilter;
         }
 
         // 3. Stock Status Filter
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
         // If 'low' stock is requested, we MUST do a raw SQL query or pull all matching records briefly
         // to filter `quantity <= reorderLevel` properly before taking the paginated slice.
         if (fStockStatus === "low") {
-            const rawItems = await prisma.inventoryItem.findMany({
+            const rawItems = await prisma.warehouseInventory.findMany({
                 where: { ...dbWhere, quantity: { gt: 0 } },
                 select: { id: true, quantity: true, reorderLevel: true }
             });
@@ -63,14 +64,14 @@ export async function GET(req: NextRequest) {
         }
 
         // Execute primary paginated query
-        const total = await prisma.inventoryItem.count({ where: dbWhere });
+        const total = await prisma.warehouseInventory.count({ where: dbWhere });
 
-        const items = await prisma.inventoryItem.findMany({
+        const items = await prisma.warehouseInventory.findMany({
             where: dbWhere,
             include: {
-                product: { include: { brand: true } },
+                variant: { include: { product: { include: { brand: true } } } },
             },
-            orderBy: { productName: "asc" },
+            orderBy: { variant: { product: { name: "asc" } } },
             skip,
             take: limit
         });

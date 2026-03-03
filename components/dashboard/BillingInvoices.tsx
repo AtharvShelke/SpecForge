@@ -151,6 +151,7 @@ const INV_STATUS_CONFIG: Record<InvoiceStatus, { label: string; dotClass: string
   overdue: { label: 'Overdue', dotClass: 'bg-red-500', badgeClass: 'bg-red-50 text-red-700 border-red-200' },
   cancelled: { label: 'Cancelled', dotClass: 'bg-rose-400', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' },
   refunded: { label: 'Refunded', dotClass: 'bg-indigo-400', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  voided: { label: 'Voided', dotClass: 'bg-gray-500', badgeClass: 'bg-gray-100 text-gray-600 border-gray-300' },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -335,7 +336,7 @@ const EMPTY_POS: PosState = {
 };
 
 interface PosCounterProps {
-  products: Product[];
+  products: (Product & { stock: number })[];
   customers: Customer[];
   onComplete: (invoice: Invoice) => void;
   onCancel: () => void;
@@ -354,7 +355,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
     if (!q) return products.slice(0, 20);
     return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
-      p.sku.toLowerCase().includes(q) ||
+      (p.variants?.[0]?.sku || '').toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q)
     ).slice(0, 20);
   }, [products, productSearch]);
@@ -381,9 +382,9 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
         name: p.name,
         description: p.category,
         quantity: 1,
-        unitPrice: p.price,
+        unitPrice: p.variants?.[0]?.price || 0,
         taxRatePct: 18,
-        image: p.image,
+        image: p.media?.[0]?.url || '/placeholder.png',
       };
       return { ...prev, items: [...prev.items, newItem] };
     });
@@ -431,6 +432,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
       id: uid('inv'),
       invoiceNumber: `INV-${Date.now().toString().slice(-7)}`,
       status: 'paid',
+      type: 'STANDARD',
       customerId: pos.customer.id,
       customer: pos.customer,
       createdAt: now,
@@ -532,16 +534,16 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 text-left transition-colors group"
                       >
                         <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
-                          <img src={p.image} alt={p.name} className="w-full h-full object-contain"
+                          <img src={p.media?.[0]?.url || '/placeholder.png'} alt={p.name} className="w-full h-full object-contain"
                             onError={e => { (e.target as HTMLImageElement).src = 'https://picsum.photos/80/80'; }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-slate-800 line-clamp-1 group-hover:text-indigo-700">{p.name}</p>
-                          <p className="text-[10px] text-slate-400 font-mono">{p.sku}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">{p.variants?.[0]?.sku || ''}</p>
                         </div>
                         <div className="flex-shrink-0 text-right">
-                          <p className="text-xs font-bold text-slate-900">{fmtINR(p.price)}</p>
-                          {p.stock <= 5 && <p className="text-[10px] text-amber-600">Low: {p.stock}</p>}
+                          <p className="text-xs font-bold text-slate-900">{fmtINR(p.variants?.[0]?.price || 0)}</p>
+                          {(p.stock || 0) <= 5 && <p className="text-[10px] text-amber-600">Low: {p.stock}</p>}
                         </div>
                       </button>
                     ))}
@@ -802,7 +804,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
 interface InvoiceDetailProps {
   invoice: Invoice;
   onUpdateStatus: (id: string, status: InvoiceStatus) => void;
-  onDelete: (id: string) => void;
+  onVoid: (id: string) => void;
   onPrint: (inv: Invoice) => void;
   onDownload: (inv: Invoice) => void;
   onSend: (inv: Invoice) => void;
@@ -810,7 +812,7 @@ interface InvoiceDetailProps {
 }
 
 const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
-  invoice, onUpdateStatus, onDelete, onPrint, onDownload, onSend, onBack
+  invoice, onUpdateStatus, onVoid, onPrint, onDownload, onSend, onBack
 }) => {
   const { subtotal, taxTotal, discountAmount, total } = computeTotals(
     invoice.lineItems,
@@ -878,8 +880,8 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2 cursor-pointer text-red-600" onClick={() => onDelete(invoice.id)}>
-                    <Trash2 size={13} /> Delete
+                  <DropdownMenuItem className="gap-2 cursor-pointer text-red-600" onClick={() => onVoid(invoice.id)}>
+                    <Trash2 size={13} /> Void Invoice
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1074,7 +1076,7 @@ type PageView = 'list' | 'pos';
 const BillingInvoices: React.FC = () => {
   const { products } = useShop();
   const {
-    invoices, refreshInvoices, createInvoice, updateInvoice, deleteInvoice,
+    invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice,
     inventory, customers, refreshCustomers, createCustomer,
     billingProfile, refreshBillingProfile, saveBillingProfile,
     isLoading
@@ -1089,11 +1091,11 @@ const BillingInvoices: React.FC = () => {
   const [sendEmail, setSendEmail] = useState('');
 
   // Enrich products with inventory stock
-  const enrichedProducts = useMemo<Product[]>(() => {
+  const enrichedProducts = useMemo<(Product & { stock: number })[]>(() => {
     const inventoryArr = Array.isArray(inventory) ? inventory : [];
     return products.map(p => {
-      const inv = inventoryArr.find(i => i.productId === p.id);
-      return { ...p, stock: inv?.quantity ?? p.stock };
+      const inv = inventoryArr.find(i => p.variants?.some(v => v.id === i.variantId));
+      return { ...p, stock: inv?.quantity ?? 0 };
     });
   }, [products, inventory]);
 
@@ -1140,8 +1142,8 @@ const BillingInvoices: React.FC = () => {
     await updateInvoice(id, { status });
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteInvoice(id);
+  const handleVoid = async (id: string) => {
+    await voidInvoice(id);
     if (selectedId === id) setSelectedId(null);
   };
 
@@ -1319,7 +1321,7 @@ const BillingInvoices: React.FC = () => {
               <InvoiceDetail
                 invoice={selectedInvoice}
                 onUpdateStatus={handleUpdateStatus}
-                onDelete={handleDelete}
+                onVoid={handleVoid}
                 onPrint={handlePrint}
                 onDownload={handleDownload}
                 onSend={handleSend}
@@ -1395,6 +1397,7 @@ function buildSampleInvoices(): Invoice[] {
       id: uid('inv'),
       invoiceNumber: overrides.invoiceNumber,
       status: overrides.status,
+      type: overrides.type ?? 'STANDARD',
       customerId: overrides.customer?.id || '',
       customer: overrides.customer,
       createdAt: overrides.createdAt ?? d(10),

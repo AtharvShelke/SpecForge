@@ -1581,35 +1581,37 @@ async function main() {
 
   // ── 3. Products + Specs ────────────────────────────────────────────────────
   console.log('  → Seeding products and specs...');
+  const variantMap = new Map<string, string>();
+
   for (const p of PRODUCTS_DATA) {
     const cat = categoryToEnum(p.category);
     const brandId = p.brandName ? brandMap[p.brandName] : undefined;
 
-    await prisma.product.upsert({
-      where: { sku: p.sku },
-      update: {
-        name: p.name,
-        category: cat,
-        price: p.price,
-        stock: p.stock,
-        image: p.image,
-        description: p.description,
-        brandId: brandId ?? null,
-      },
-      create: {
+    const prod = await prisma.product.create({
+      data: {
         id: p.id,
-        sku: p.sku,
+        slug: p.id, // using id as slug for seeding
         name: p.name,
         category: cat,
-        price: p.price,
-        stock: p.stock,
-        image: p.image,
         description: p.description,
         brandId: brandId ?? null,
+        media: {
+          create: [{ url: p.image, sortOrder: 0 }]
+        },
+        variants: {
+          create: [{
+            sku: p.sku,
+            price: p.price,
+            status: 'IN_STOCK'
+          }]
+        }
       },
+      include: { variants: true }
     });
 
-    // Clear existing specs so we can cleanly recreate them (supports multi-value attributes where unique keys were removed)
+    variantMap.set(p.id, prod.variants[0].id);
+
+    // Clear existing specs
     await prisma.productSpec.deleteMany({
       where: { productId: p.id },
     });
@@ -1627,28 +1629,40 @@ async function main() {
 
   // ── 4. Inventory ───────────────────────────────────────────────────────────
   console.log('  → Seeding inventory...');
+  let defaultWarehouse = await prisma.warehouse.findFirst();
+  if (!defaultWarehouse) {
+    defaultWarehouse = await prisma.warehouse.create({
+      data: { name: 'Main Warehouse', code: 'MAIN', isActive: true, address: 'Bengaluru, India' }
+    });
+  }
+
   for (const p of PRODUCTS_DATA) {
-    const existing = await prisma.inventoryItem.findUnique({ where: { productId: p.id } });
+    const variantId = variantMap.get(p.id);
+    if (!variantId) continue;
+
+    const existing = await prisma.warehouseInventory.findFirst({ where: { variantId: variantId } });
     if (!existing) {
-      const inv = await prisma.inventoryItem.create({
+      const inv = await prisma.warehouseInventory.create({
         data: {
-          productId: p.id,
-          sku: p.sku,
-          productName: p.name,
+          variantId: variantId,
+          warehouseId: defaultWarehouse.id,
           quantity: p.stock,
           reserved: 0,
           reorderLevel: Math.max(2, Math.floor(p.stock * 0.15)), // ~15% of stock
           costPrice: Math.round(p.price * 0.65),              // assumed 65% of retail
-          location: 'Warehouse A',
+          location: 'Aisle 1',
           lastUpdated: new Date(),
         },
       });
       // Record initial inward stock movement
       await prisma.stockMovement.create({
         data: {
-          inventoryItemId: inv.id,
+          warehouseInventoryId: inv.id,
+          warehouseId: defaultWarehouse.id,
           type: 'INWARD',
           quantity: p.stock,
+          previousQuantity: 0,
+          newQuantity: p.stock,
           reason: 'Initial stock from seed',
           performedBy: 'System',
         },
@@ -2022,10 +2036,13 @@ async function main() {
     if (existingItems === 0) {
       for (const item of o.items) {
         const prod = productById(item.productId);
+        const variantId = variantMap.get(item.productId);
+        if (!variantId) continue;
+
         await prisma.orderItem.create({
           data: {
             orderId: order.id,
-            productId: item.productId,
+            variantId: variantId,
             name: prod.name,
             category: categoryToEnum(prod.category),
             price: prod.price,
@@ -2080,8 +2097,8 @@ async function main() {
           total: b.total,
           createdAt: b.createdAt,
           items: {
-            create: b.items.map(item => ({
-              productId: item.productId,
+            create: b.items.filter(i => variantMap.has(i.productId)).map(item => ({
+              variantId: variantMap.get(item.productId)!,
               quantity: item.quantity,
             })),
           },

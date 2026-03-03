@@ -41,7 +41,7 @@ const Overview = () => {
 
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const pendingOrders = orders.filter(o => o.status === OrderStatus.PENDING).length;
-  const lowStockProducts = products.filter(p => p.stock < 5);
+  const lowStockProducts = products.filter(p => p.variants?.[0]?.status === 'LOW_STOCK' || p.variants?.[0]?.status === 'OUT_OF_STOCK');
   const pendingReviews = reviews.filter(r => r.status === 'PENDING');
 
   const salesData = [
@@ -208,11 +208,11 @@ const Overview = () => {
                         {product.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {product.sku}
+                        {product.variants?.[0]?.sku || ''}
                       </p>
                     </div>
                     <Badge variant="destructive">
-                      {product.stock} left
+                      {product.variants?.[0]?.status?.replace(/_/g, ' ') || 'Check stock'}
                     </Badge>
                   </div>
                 ))

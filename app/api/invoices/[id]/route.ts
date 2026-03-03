@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { isInvoiceImmutable, isValidInvoiceTransition } from "@/services/invoiceService";
 
-const InvoiceStatusEnum = z.enum(["draft", "pending", "paid", "overdue", "cancelled", "refunded"]);
+const InvoiceStatusEnum = z.enum(["draft", "pending", "paid", "overdue", "cancelled", "refunded", "voided"]);
 
 const lineItemSchema = z.object({
     name: z.string().min(1),
@@ -10,6 +11,7 @@ const lineItemSchema = z.object({
     quantity: z.number().int().positive(),
     unitPrice: z.number().positive(),
     taxRatePct: z.number().min(0).default(18),
+    hsnCode: z.string().optional(),
 });
 
 const updateInvoiceSchema = z.object({
@@ -39,6 +41,7 @@ export async function GET(
                 customer: true,
                 lineItems: true,
                 audit: { orderBy: { createdAt: "asc" } },
+                creditNotes: { include: { lineItems: true } },
             },
         });
 
@@ -54,6 +57,8 @@ export async function GET(
 }
 
 // ── PUT /api/invoices/[id] ──────────────────────────────
+// IMMUTABILITY: Only draft/pending invoices can be modified.
+// Once paid/overdue/cancelled/refunded/voided, only status transitions are allowed.
 export async function PUT(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -68,6 +73,62 @@ export async function PUT(
             return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
         }
 
+        // IMMUTABILITY GUARD: If invoice is finalized, only allow status transitions
+        if (isInvoiceImmutable(existing.status)) {
+            // Only status changes allowed on immutable invoices
+            if (!data.status) {
+                return NextResponse.json(
+                    { error: `Invoice ${existing.invoiceNumber} is ${existing.status} and cannot be modified. Use credit notes for corrections.` },
+                    { status: 403 }
+                );
+            }
+
+            // Validate allowed status transition
+            if (!isValidInvoiceTransition(existing.status, data.status)) {
+                return NextResponse.json(
+                    { error: `Cannot transition from ${existing.status} to ${data.status}` },
+                    { status: 400 }
+                );
+            }
+
+            // Only apply the status change
+            const invoice = await prisma.$transaction(async (tx) => {
+                const updateData: any = { status: data.status };
+                if (data.status === "voided") updateData.voidedAt = new Date();
+
+                const inv = await tx.invoice.update({
+                    where: { id },
+                    data: updateData,
+                    include: { customer: true, lineItems: true, audit: true, creditNotes: true },
+                });
+
+                await tx.invoiceAuditEvent.create({
+                    data: {
+                        invoiceId: id,
+                        type: data.status!,
+                        actor: "System",
+                        message: `Status changed from ${existing.status} to ${data.status}`,
+                    },
+                });
+
+                await tx.auditLog.create({
+                    data: {
+                        entityType: 'Invoice',
+                        entityId: id,
+                        action: 'status_changed',
+                        actor: 'System',
+                        before: { status: existing.status },
+                        after: { status: data.status },
+                    },
+                });
+
+                return inv;
+            });
+
+            return NextResponse.json(invoice);
+        }
+
+        // DRAFT/PENDING INVOICES: Allow full modification
         const invoice = await prisma.$transaction(async (tx) => {
             // Update line items if provided
             if (data.lineItems) {
@@ -80,6 +141,7 @@ export async function PUT(
                         quantity: li.quantity,
                         unitPrice: li.unitPrice,
                         taxRatePct: li.taxRatePct,
+                        hsnCode: li.hsnCode,
                     })),
                 });
             }
@@ -96,12 +158,13 @@ export async function PUT(
                 if (data.status === "cancelled") updateData.cancelledAt = new Date();
                 if (data.status === "refunded") updateData.refundedAt = new Date();
                 if (data.status === "pending") updateData.sentAt = new Date();
+                if (data.status === "voided") updateData.voidedAt = new Date();
             }
 
             const inv = await tx.invoice.update({
                 where: { id },
                 data: updateData,
-                include: { customer: true, lineItems: true, audit: true },
+                include: { customer: true, lineItems: true, audit: true, creditNotes: true },
             });
 
             // Add audit event
@@ -129,29 +192,5 @@ export async function PUT(
     }
 }
 
-// ── DELETE /api/invoices/[id] ───────────────────────────
-export async function DELETE(
-    _req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-
-        // Use a transaction to ensure all related data is deleted
-        await prisma.$transaction(async (tx) => {
-            // Delete related line items
-            await tx.invoiceLineItem.deleteMany({ where: { invoiceId: id } });
-
-            // Delete related audit events
-            await tx.invoiceAuditEvent.deleteMany({ where: { invoiceId: id } });
-
-            // Delete the invoice itself
-            await tx.invoice.delete({ where: { id } });
-        });
-
-        return NextResponse.json({ success: true, message: "Invoice deleted successfully" });
-    } catch (error) {
-        console.error("DELETE /api/invoices/[id] error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+// NOTE: DELETE endpoint has been REMOVED for compliance.
+// Invoices must never be deleted. Use voiding + credit notes instead.

@@ -13,7 +13,7 @@ export async function GET(
             include: {
                 items: {
                     include: {
-                        product: { include: { specs: true, brand: true } },
+                        variant: { include: { product: { include: { specs: true, brand: true } } } },
                     },
                 },
             },

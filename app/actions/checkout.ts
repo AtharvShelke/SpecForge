@@ -10,6 +10,7 @@ const CategoryEnum = z.nativeEnum(Category);
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
+    variantId: z.string().min(1),
     quantity: z.number().int().positive(),
 });
 
@@ -38,7 +39,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             const productIds = data.items.map(i => i.productId);
             const products = await tx.product.findMany({
                 where: { id: { in: productIds } },
-                include: { inventoryItem: true }
+                include: { variants: { include: { warehouseInventories: true } }, media: true }
             });
 
             // Fast lookup map
@@ -56,23 +57,28 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     throw new Error(`Product not found: ${item.productId}`);
                 }
 
-                const inv = product.inventoryItem;
+                const variant = product.variants?.[0]; // Defaulting to first variant mapped
+                if (!variant) throw new Error(`Product variant missing for ${product.name}`);
+
+                // For now grab the first warehouse inventory
+                const inv = variant.warehouseInventories[0];
                 if (!inv || inv.quantity < item.quantity) {
                     throw new Error(`Insufficient stock for product ${product.name}`);
                 }
 
                 // Push for GST calculation
-                calculationItems.push({ price: product.price, quantity: item.quantity });
+                calculationItems.push({ price: variant.price, quantity: item.quantity });
 
                 // Prepare item insertion
                 orderItemsData.push({
                     productId: product.id,
+                    variantId: variant.id,
                     name: product.name,
                     category: product.category,
-                    price: product.price,
+                    price: variant.price,
                     quantity: item.quantity,
-                    image: product.image,
-                    sku: product.sku,
+                    image: product.media?.[0]?.url || '',
+                    sku: variant.sku,
                 });
 
                 // Prepare stock reduction
@@ -83,9 +89,12 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                 });
 
                 stockMovements.push({
-                    inventoryItemId: inv.id,
-                    type: "RESERVE",
+                    warehouseInventoryId: inv.id,
+                    warehouseId: inv.warehouseId,
+                    type: "RESERVE" as const,
                     quantity: item.quantity,
+                    previousQuantity: inv.quantity,
+                    newQuantity: inv.quantity - item.quantity,
                     reason: `Order checkout`,
                     performedBy: "System",
                 });
@@ -128,7 +137,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
             // 4. Batch update inventory
             for (const update of inventoryUpdates) {
-                await tx.inventoryItem.update({
+                await tx.warehouseInventory.update({
                     where: { id: update.id },
                     data: {
                         quantity: update.quantity,
@@ -143,9 +152,12 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                 await tx.stockMovement.createMany({
                     data: stockMovements.map(sm => ({
                         reason: `${sm.reason} ${orderId}`,
-                        inventoryItemId: sm.inventoryItemId,
+                        warehouseInventoryId: sm.warehouseInventoryId,
+                        warehouseId: sm.warehouseId,
                         type: sm.type as "RESERVE",
                         quantity: sm.quantity,
+                        previousQuantity: sm.previousQuantity,
+                        newQuantity: sm.newQuantity,
                         performedBy: sm.performedBy
                     }))
                 });

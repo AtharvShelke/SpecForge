@@ -36,7 +36,8 @@ export async function GET(
                 specs: true,
                 brand: true,
                 reviews: { orderBy: { createdAt: "desc" } },
-                inventoryItem: true,
+                variants: { include: { warehouseInventories: true } },
+                media: true
             },
         });
 
@@ -75,20 +76,53 @@ export async function PUT(
                 });
             }
 
-            const { specs: _, ...productData } = data;
+            const { specs: _, price, stock, image, ...productData } = data;
             const p = await tx.product.update({
                 where: { id },
                 data: productData,
-                include: { specs: true, brand: true },
+                include: { specs: true, brand: true, variants: true, media: true },
             });
 
-            // Sync inventory productName if name changed
-            if (data.name) {
-                await tx.inventoryItem.updateMany({
-                    where: { productId: id },
-                    data: { productName: data.name },
-                });
+            // Map flat API updates to variant/media models if passed
+            if (price !== undefined || stock !== undefined) {
+                const variant = await tx.productVariant.findFirst({ where: { productId: id } });
+                if (variant) {
+                    await tx.productVariant.update({
+                        where: { id: variant.id },
+                        data: {
+                            ...(price !== undefined ? { price } : {})
+                        }
+                    });
+                    // If stock passed, update main warehouse
+                    if (stock !== undefined) {
+                        const defaultWarehouse = await tx.warehouse.findFirst({ where: { code: "MAIN" } });
+                        if (defaultWarehouse) {
+                            const inv = await tx.warehouseInventory.findUnique({ where: { variantId_warehouseId: { variantId: variant.id, warehouseId: defaultWarehouse.id } } });
+                            if (inv) {
+                                await tx.warehouseInventory.update({
+                                    where: { id: inv.id },
+                                    data: { quantity: stock }
+                                });
+                            }
+                        }
+                    }
+                }
             }
+
+            if (image !== undefined) {
+                const mediaNode = await tx.productMedia.findFirst({ where: { productId: id } });
+                if (mediaNode) {
+                    await tx.productMedia.update({
+                        where: { id: mediaNode.id },
+                        data: { url: image }
+                    });
+                } else {
+                    await tx.productMedia.create({
+                        data: { productId: id, url: image, sortOrder: 0 }
+                    });
+                }
+            }
+
 
             return p;
         });

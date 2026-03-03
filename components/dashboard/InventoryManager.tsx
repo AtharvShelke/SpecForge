@@ -19,7 +19,7 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { InventoryItem, Category } from '@/types';
+import { WarehouseInventory, Category } from '@/types';
 
 const InventoryManager = () => {
     const { products } = useShop();
@@ -27,6 +27,7 @@ const InventoryManager = () => {
         inventory,
         stockMovements,
         adjustStock,
+        transferStock,
     } = useAdmin();
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
@@ -34,6 +35,18 @@ const InventoryManager = () => {
         sku: string;
         currentQty: number;
     } | null>(null);
+
+    // Transfer Modal State
+    const [transferModal, setTransferModal] = useState<{
+        isOpen: boolean;
+        sku: string;
+        variantId: string;
+        sourceWarehouseId: string;
+        currentQty: number;
+    } | null>(null);
+    const [transferTarget, setTransferTarget] = useState<string>('');
+    const [transferQty, setTransferQty] = useState<number>(0);
+    const [transferReason, setTransferReason] = useState<string>('');
     const [adjType, setAdjType] = useState<StockMovementType>('INWARD');
     const [adjQty, setAdjQty] = useState(0);
     const [adjReason, setAdjReason] = useState('');
@@ -43,7 +56,7 @@ const InventoryManager = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const [paginatedInventory, setPaginatedInventory] = useState<InventoryItem[]>([]);
+    const [paginatedInventory, setPaginatedInventory] = useState<WarehouseInventory[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [isLoadingInventory, setIsLoadingInventory] = useState(true);
 
@@ -116,6 +129,28 @@ const InventoryManager = () => {
             setAdjType('INWARD');
             // Refresh local paginated view after adjustment
             router.refresh();
+        }
+    };
+
+    const handleTransfer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (transferModal && transferQty > 0 && transferTarget) {
+            try {
+                await transferStock(
+                    transferModal.sourceWarehouseId,
+                    transferTarget,
+                    transferModal.variantId,
+                    transferQty,
+                    transferReason
+                );
+                setTransferModal(null);
+                setTransferQty(0);
+                setTransferTarget('');
+                setTransferReason('');
+                router.refresh();
+            } catch (err) {
+                console.error("Transfer failed", err);
+            }
         }
     };
 
@@ -318,18 +353,19 @@ const InventoryManager = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedInventory.map((item: InventoryItem & { product?: any }) => {
-                                    const product = item.product || products.find(p => p.id === item.productId);
+                                paginatedInventory.map((item: WarehouseInventory & { product?: any }) => {
+                                    const product = products.find(p => p.variants?.some(v => v.id === item.variantId));
+                                    const variant = product?.variants?.find(v => v.id === item.variantId);
 
                                     return (
-                                        <tr key={item.sku} className="hover:bg-gray-50">
+                                        <tr key={item.id} className="hover:bg-gray-50">
                                             <td className="px-4 sm:px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                                                         <img
                                                             className="h-full w-full object-contain"
-                                                            src={product?.image}
-                                                            alt={product?.name}
+                                                            src={product?.media?.[0]?.url || '/placeholder.png'}
+                                                            alt={product?.name || variant?.sku}
                                                             onError={(e) => {
                                                                 (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300';
                                                             }}
@@ -346,7 +382,7 @@ const InventoryManager = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">
-                                                {item.sku}
+                                                {variant?.sku || 'Unknown'}
                                             </td>
                                             <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {item.location}
@@ -363,18 +399,34 @@ const InventoryManager = () => {
                                                 </span>
                                             </td>
                                             <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button
-                                                    onClick={() =>
-                                                        setAdjustmentModal({
-                                                            isOpen: true,
-                                                            sku: item.sku,
-                                                            currentQty: item.quantity,
-                                                        })
-                                                    }
-                                                    className="text-blue-600 hover:text-blue-900 font-medium"
-                                                >
-                                                    Adjust
-                                                </button>
+                                                <div className="flex justify-end gap-3">
+                                                    <button
+                                                        onClick={() =>
+                                                            setTransferModal({
+                                                                isOpen: true,
+                                                                sku: variant?.sku || item.variantId,
+                                                                variantId: item.variantId,
+                                                                sourceWarehouseId: item.warehouseId,
+                                                                currentQty: item.quantity,
+                                                            })
+                                                        }
+                                                        className="text-indigo-600 hover:text-indigo-900 font-medium"
+                                                    >
+                                                        Transfer
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            setAdjustmentModal({
+                                                                isOpen: true,
+                                                                sku: variant?.sku || item.variantId,
+                                                                currentQty: item.quantity,
+                                                            })
+                                                        }
+                                                        className="text-blue-600 hover:text-blue-900 font-medium"
+                                                    >
+                                                        Adjust
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -574,6 +626,94 @@ const InventoryManager = () => {
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                 >
                                     Save Adjustment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Transfer Modal */}
+            {transferModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Transfer Stock
+                            </h3>
+                            <button
+                                onClick={() => setTransferModal(null)}
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleTransfer} className="p-6 space-y-4">
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                                <p className="text-sm font-medium text-indigo-900">
+                                    SKU: {transferModal.sku}
+                                </p>
+                                <p className="text-xs text-indigo-700 mt-1">
+                                    Available to transfer: {transferModal.currentQty} units
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Target Warehouse ID
+                                </label>
+                                <input
+                                    type="text"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    value={transferTarget}
+                                    onChange={e => setTransferTarget(e.target.value)}
+                                    placeholder="Enter Destination Warehouse ID"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Quantity to Transfer
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max={transferModal.currentQty}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    value={transferQty}
+                                    onChange={e => setTransferQty(Number(e.target.value))}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Reason (Optional)
+                                </label>
+                                <textarea
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    rows={2}
+                                    value={transferReason}
+                                    onChange={e => setTransferReason(e.target.value)}
+                                    placeholder="e.g., Rebalancing stock..."
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setTransferModal(null)}
+                                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                    disabled={transferQty < 1 || transferQty > transferModal.currentQty || !transferTarget}
+                                >
+                                    Execute Transfer
                                 </button>
                             </div>
                         </form>

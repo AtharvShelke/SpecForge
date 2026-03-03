@@ -21,7 +21,7 @@ export async function GET(
         const { id } = await params;
         const brand = await prisma.brand.findUnique({
             where: { id },
-            include: { products: { select: { id: true, name: true, sku: true } } },
+            include: { products: { select: { id: true, name: true, variants: { select: { sku: true } } } } },
         });
         if (!brand) {
             return NextResponse.json({ error: "Brand not found" }, { status: 404 });
