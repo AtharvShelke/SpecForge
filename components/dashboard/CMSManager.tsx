@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import ImageUploader from '../uploadthing/ImageUploader';
 
 // ─────────────────────────────────────────────────────────────
 // TYPES & CONSTANTS
@@ -57,11 +58,11 @@ const CATEGORY_KEYS = [
 ];
 
 const SECTION_NAV: { key: SectionKey; label: string; shortLabel: string; icon: React.ReactNode; description: string }[] = [
-  { key: 'hero', label: 'Hero Section', shortLabel: 'Hero', icon: <Sparkles size={15} />, description: 'Badge, headline, CTAs, stats, image' },
-  { key: 'categories', label: 'Categories', shortLabel: 'Categories', icon: <Layers size={15} />, description: 'Category tiles and labels' },
-  { key: 'featured', label: 'Featured Products', shortLabel: 'Featured', icon: <Star size={15} />, description: 'Section title, subtitle, CTA' },
-  { key: 'trust', label: 'Trust Indicators', shortLabel: 'Trust', icon: <Shield size={15} />, description: 'Feature cards with icons' },
-  { key: 'cta', label: 'Final CTA', shortLabel: 'CTA', icon: <Zap size={15} />, description: 'Bottom call-to-action block' },
+  { key: 'hero', label: 'Hero Section', shortLabel: 'Hero', icon: <Sparkles size={15} />, description: 'Main landing hero area' },
+  { key: 'categories', label: 'Categories', shortLabel: 'Categories', icon: <Layers size={15} />, description: 'Product category navigation' },
+  { key: 'featured', label: 'Featured Products', shortLabel: 'Featured', icon: <Star size={15} />, description: 'Curated product showcase' },
+  { key: 'trust', label: 'Trust Indicators', shortLabel: 'Trust', icon: <Shield size={15} />, description: 'Customer assurance signals' },
+  { key: 'cta', label: 'Call to Action', shortLabel: 'CTA', icon: <Zap size={15} />, description: 'Final conversion section' },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -69,15 +70,19 @@ const SECTION_NAV: { key: SectionKey; label: string; shortLabel: string; icon: R
 // ─────────────────────────────────────────────────────────────
 
 const FieldLabel = ({ children, hint }: { children: React.ReactNode; hint?: string }) => (
-  <div className="flex items-center gap-1.5 mb-1.5">
-    <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{children}</Label>
+  <div className="flex items-center gap-1.5 mb-2">
+    <Label className="text-sm font-medium text-zinc-700">{children}</Label>
     {hint && (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Info size={12} className="text-slate-400 cursor-help" />
-        </TooltipTrigger>
-        <TooltipContent side="right" className="text-xs max-w-48">{hint}</TooltipContent>
-      </Tooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info size={12} className="text-zinc-300 cursor-help hover:text-zinc-500 transition-colors" />
+          </TooltipTrigger>
+          <TooltipContent side="right" className="bg-zinc-900 text-white border-zinc-800 text-xs max-w-48">
+            {hint}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )}
   </div>
 );
@@ -88,20 +93,20 @@ const FieldGroup = ({ title, icon, children, defaultOpen = true }: {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="border-slate-200 shadow-sm overflow-hidden">
+      <Card className="border-zinc-200 shadow-sm overflow-hidden bg-white">
         <CollapsibleTrigger asChild>
-          <CardHeader className="px-4 py-3 cursor-pointer hover:bg-slate-50/60 transition-colors border-b border-slate-100">
+          <CardHeader className="px-5 py-3.5 cursor-pointer hover:bg-zinc-50 transition-colors border-b border-zinc-100">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span className="text-slate-400">{icon}</span>
+              <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                <span className="text-zinc-400">{icon}</span>
                 {title}
               </CardTitle>
-              <ChevronDown size={14} className={cn('text-slate-400 transition-transform duration-200', open && 'rotate-180')} />
+              <ChevronDown size={14} className={cn('text-zinc-400 transition-transform duration-300', open && 'rotate-180')} />
             </div>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="px-4 py-4 space-y-4">
+          <CardContent className="px-5 py-5 space-y-6 bg-white">
             {children}
           </CardContent>
         </CollapsibleContent>
@@ -113,21 +118,21 @@ const FieldGroup = ({ title, icon, children, defaultOpen = true }: {
 const IconSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
   const Icon = (LucideIcons as any)[value] || LucideIcons.Package;
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0">
-        <Icon size={15} className="text-slate-600" />
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-200 flex items-center justify-center shrink-0">
+        <Icon size={16} className="text-zinc-900" />
       </div>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 text-xs border-slate-200 flex-1">
+        <SelectTrigger className="h-10 text-xs font-bold border-zinc-200 flex-1 uppercase tracking-tight focus:ring-zinc-900">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="max-h-56">
+        <SelectContent className="max-h-56 bg-white border-zinc-200 shadow-xl">
           {AVAILABLE_ICONS.map(icon => {
             const I = (LucideIcons as any)[icon] || LucideIcons.Package;
             return (
-              <SelectItem key={icon} value={icon}>
+              <SelectItem key={icon} value={icon} className="text-[10px] font-bold uppercase tracking-tight">
                 <div className="flex items-center gap-2">
-                  <I size={13} className="text-slate-500" /> {icon}
+                  <I size={13} className="text-zinc-400" /> {icon}
                 </div>
               </SelectItem>
             );
@@ -146,67 +151,66 @@ const MiniPreview = ({ content, activeSection }: { content: CMSContent; activeSe
   const { hero, categories, trustIndicators, finalCTA, featuredProducts } = content.sections;
 
   return (
-    <div className="w-full h-full bg-white overflow-hidden rounded-lg border border-slate-200 text-[0.5rem] leading-tight select-none pointer-events-none">
+    <div className="w-full h-full bg-white overflow-hidden rounded-xl border border-zinc-200 text-[0.5rem] leading-tight select-none pointer-events-none shadow-sm">
       {/* Simulated browser bar */}
-      <div className="bg-slate-100 border-b border-slate-200 px-2 py-1 flex items-center gap-1.5">
-        <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
-        <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-        <div className="ml-2 flex-1 bg-white rounded text-[0.45rem] text-slate-400 px-1.5 py-0.5 truncate">
-          nexushardware.com
+      <div className="bg-zinc-50 border-b border-zinc-100 px-3 py-1.5 flex items-center gap-2">
+        <div className="flex gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
+          <div className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
+          <div className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
+        </div>
+        <div className="flex-1 bg-white border border-zinc-200 rounded px-2 py-0.5 text-[0.4rem] text-zinc-400 font-mono tracking-tighter truncate">
+          nexushardware.com/preview
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100%-24px)]">
-        <div className="px-3 py-2 space-y-3">
+      <ScrollArea className="h-[calc(100%-28px)]">
+        <div className="px-4 py-4 space-y-4">
 
           {/* Hero preview */}
-          <div className={cn('rounded-lg p-2 space-y-1 transition-all', activeSection === 'hero' ? 'ring-2 ring-blue-500 bg-blue-50/30' : 'bg-slate-50')}>
-            <div className="inline-flex items-center gap-0.5 bg-slate-200 rounded-full px-1.5 py-0.5">
-              <div className="w-0.5 h-0.5 rounded-full bg-blue-600" />
-              <span className="text-slate-600 text-[0.45rem]">{hero.badge.text}</span>
+          <div className={cn('rounded-xl p-3 space-y-2 transition-all border', activeSection === 'hero' ? 'ring-2 ring-zinc-900 bg-zinc-50 border-zinc-300' : 'bg-white border-zinc-100')}>
+            <div className="inline-flex items-center gap-1 bg-zinc-900 rounded-full px-2 py-0.5">
+              <span className="text-white text-[0.4rem] font-black uppercase tracking-widest">{hero.badge.text}</span>
             </div>
-            <div className="text-slate-800 font-bold" style={{ fontSize: '0.6rem' }}>
-              {hero.headline.line1}{' '}
-              <span className="text-blue-600">{hero.headline.line2}</span>
+            <div className="text-zinc-900 font-black uppercase tracking-tighter" style={{ fontSize: '0.7rem' }}>
+              {hero.headline.line1}<br />
+              <span className="text-zinc-400">{hero.headline.line2}</span>
             </div>
-            <p className="text-slate-500 line-clamp-2" style={{ fontSize: '0.45rem' }}>{hero.subheadline}</p>
-            <div className="flex gap-1 mt-1">
-              <span className="bg-slate-900 text-white rounded px-1.5 py-0.5 text-[0.4rem]">{hero.primaryCTA.text}</span>
-              <span className="bg-white border border-slate-300 text-slate-700 rounded px-1.5 py-0.5 text-[0.4rem]">{hero.secondaryCTA.text}</span>
+            <p className="text-zinc-500 line-clamp-2" style={{ fontSize: '0.45rem' }}>{hero.subheadline}</p>
+            <div className="flex gap-2 pt-1">
+              <span className="bg-zinc-900 text-white rounded px-2 py-1 text-[0.4rem] font-bold uppercase tracking-widest">{hero.primaryCTA.text}</span>
+              <span className="bg-white border border-zinc-200 text-zinc-900 rounded px-2 py-1 text-[0.4rem] font-bold uppercase tracking-widest">{hero.secondaryCTA.text}</span>
             </div>
           </div>
 
           {/* Categories preview */}
-          <div className={cn('rounded-lg p-2 space-y-1 transition-all', activeSection === 'categories' ? 'ring-2 ring-blue-500 bg-blue-50/30' : 'bg-slate-50')}>
-            <p className="font-bold text-slate-700 text-[0.5rem]">{categories.sectionTitle}</p>
-            <div className="flex flex-wrap gap-1">
+          <div className={cn('rounded-xl p-3 space-y-2 transition-all border', activeSection === 'categories' ? 'ring-2 ring-zinc-900 bg-zinc-100 border-zinc-300' : 'bg-white border-zinc-100')}>
+            <p className="font-black text-zinc-900 uppercase tracking-widest text-[0.45rem]">{categories.sectionTitle}</p>
+            <div className="grid grid-cols-2 gap-2">
               {categories.categories.slice(0, 4).map(c => (
-                <span key={c.id} className="bg-white border border-slate-200 text-slate-600 rounded px-1 py-0.5 text-[0.4rem]">{c.name}</span>
+                <div key={c.id} className="bg-zinc-50 border border-zinc-200 rounded-lg p-1.5 text-center">
+                  <span className="text-zinc-900 font-bold uppercase tracking-tighter text-[0.4rem]">{c.name}</span>
+                </div>
               ))}
-              {categories.categories.length > 4 && (
-                <span className="text-slate-400 text-[0.4rem] self-center">+{categories.categories.length - 4}</span>
-              )}
             </div>
           </div>
 
           {/* Trust preview */}
-          <div className={cn('rounded-lg p-2 space-y-1 transition-all', activeSection === 'trust' ? 'ring-2 ring-blue-500 bg-blue-50/30' : 'bg-slate-50')}>
-            <div className="grid grid-cols-2 gap-1">
+          <div className={cn('rounded-xl p-3 space-y-2 transition-all border', activeSection === 'trust' ? 'ring-2 ring-zinc-900 bg-zinc-100 border-zinc-300' : 'bg-white border-zinc-100')}>
+            <div className="grid grid-cols-2 gap-2">
               {trustIndicators.features.slice(0, 4).map(f => (
-                <div key={f.id} className="bg-white border border-slate-200 rounded p-1">
-                  <p className="font-semibold text-slate-700" style={{ fontSize: '0.4rem' }}>{f.title}</p>
-                  <p className="text-slate-500 line-clamp-1" style={{ fontSize: '0.38rem' }}>{f.description}</p>
+                <div key={f.id} className="bg-zinc-50 border border-zinc-200 rounded-lg p-1.5">
+                  <p className="font-black text-zinc-900 uppercase tracking-tighter" style={{ fontSize: '0.4rem' }}>{f.title}</p>
+                  <div className="w-full h-1 bg-zinc-200 rounded-full mt-1" />
                 </div>
               ))}
             </div>
           </div>
 
           {/* CTA preview */}
-          <div className={cn('rounded-lg p-2 text-center space-y-1 transition-all', activeSection === 'cta' ? 'ring-2 ring-blue-500 bg-blue-50/30' : 'bg-slate-900')}>
-            <p className="font-bold text-white text-[0.5rem]">{finalCTA.headline}</p>
-            <p className="text-slate-400 text-[0.4rem] line-clamp-1">{finalCTA.subheadline}</p>
-            <span className="inline-block bg-blue-600 text-white rounded px-1.5 py-0.5 text-[0.4rem]">{finalCTA.ctaText}</span>
+          <div className={cn('rounded-xl p-4 text-center space-y-2 transition-all border', activeSection === 'cta' ? 'ring-2 ring-zinc-900 border-zinc-300' : 'bg-zinc-900 border-zinc-900')}>
+            <p className="font-black text-white uppercase tracking-widest text-[0.45rem]">{finalCTA.headline}</p>
+            <span className="inline-block bg-white text-zinc-900 rounded px-2 py-1 text-[0.4rem] font-black uppercase tracking-widest">{finalCTA.ctaText}</span>
           </div>
 
         </div>
@@ -225,36 +229,36 @@ const HeroEditor = ({ content, updateHero }: {
 }) => {
   const hero = content.sections.hero;
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <FieldGroup title="Badge" icon={<Tag size={13} />}>
         <div>
-          <FieldLabel hint="Short text shown above the headline">Badge Text</FieldLabel>
+          <FieldLabel hint="Micro-copy shown as a badge above the headline">Badge Text</FieldLabel>
           <Input value={hero.badge.text}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ badge: { ...hero.badge, text: e.target.value } })}
-            className="h-8 text-sm border-slate-200" placeholder="e.g. Premium PC Components" />
+            className="h-10 text-xs font-bold border-zinc-200 focus:ring-zinc-900 uppercase tracking-widest" placeholder="e.g. PERFORMANCE OPTIMIZED" />
         </div>
-        <div className="flex items-center justify-between py-1">
+        <div className="flex items-center justify-between py-2 bg-zinc-50 px-4 rounded-xl border border-zinc-100">
           <FieldLabel>Show Badge Icon</FieldLabel>
           <Switch checked={hero.badge.icon}
             onCheckedChange={(v: boolean) => updateHero({ badge: { ...hero.badge, icon: v } })} />
         </div>
       </FieldGroup>
 
-      <FieldGroup title="Headline" icon={<Type size={13} />}>
+      <FieldGroup title="Headline & Copy" icon={<Type size={13} />}>
         <div>
-          <FieldLabel>Line 1</FieldLabel>
+          <FieldLabel>Headline (Line 1)</FieldLabel>
           <Input value={hero.headline.line1}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ headline: { ...hero.headline, line1: e.target.value } })}
-            className="h-8 text-sm border-slate-200" placeholder="e.g. Build Without" />
+            className="h-10 text-xs font-bold border-zinc-200 focus:ring-zinc-900 uppercase tracking-widest" placeholder="e.g. BEYOND THE" />
         </div>
         <div>
-          <FieldLabel hint="This line is displayed with gradient styling when enabled">Line 2 (Accent)</FieldLabel>
+          <FieldLabel hint="Rendered with high-contrast accenting">Headline (Line 2)</FieldLabel>
           <Input value={hero.headline.line2}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ headline: { ...hero.headline, line2: e.target.value } })}
-            className="h-8 text-sm border-slate-200" placeholder="e.g. Compromise" />
+            className="h-10 text-xs font-black border-zinc-200 focus:ring-zinc-900 uppercase tracking-widest" placeholder="e.g. LIMITS" />
         </div>
-        <div className="flex items-center justify-between py-1">
-          <FieldLabel>Gradient on Line 2</FieldLabel>
+        <div className="flex items-center justify-between py-2 bg-zinc-50 px-4 rounded-xl border border-zinc-100">
+          <FieldLabel>Enable Gradient</FieldLabel>
           <Switch checked={hero.headline.line2Gradient}
             onCheckedChange={(v: boolean) => updateHero({ headline: { ...hero.headline, line2Gradient: v } })} />
         </div>
@@ -262,104 +266,75 @@ const HeroEditor = ({ content, updateHero }: {
           <FieldLabel>Subheadline</FieldLabel>
           <Textarea value={hero.subheadline}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateHero({ subheadline: e.target.value })}
-            rows={3} className="text-sm border-slate-200 resize-none" placeholder="Supporting description text…" />
+            className="text-xs font-medium border-zinc-200 focus:ring-zinc-900 resize-none min-h-[100px] leading-relaxed" placeholder="Detailed architectural description…" />
         </div>
       </FieldGroup>
 
-      <FieldGroup title="Call to Actions" icon={<LinkIcon size={13} />}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <FieldLabel>Primary Button Text</FieldLabel>
-            <Input value={hero.primaryCTA.text}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ primaryCTA: { ...hero.primaryCTA, text: e.target.value } })}
-              className="h-8 text-sm border-slate-200" />
-          </div>
-          <div>
-            <FieldLabel>Primary Button Link</FieldLabel>
-            <Input value={hero.primaryCTA.link}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ primaryCTA: { ...hero.primaryCTA, link: e.target.value } })}
-              className="h-8 text-sm border-slate-200" placeholder="/catalog" />
-          </div>
-          <div>
-            <FieldLabel>Secondary Button Text</FieldLabel>
-            <Input value={hero.secondaryCTA.text}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ secondaryCTA: { ...hero.secondaryCTA, text: e.target.value } })}
-              className="h-8 text-sm border-slate-200" />
-          </div>
-          <div>
-            <FieldLabel>Secondary Button Link</FieldLabel>
-            <Input value={hero.secondaryCTA.link}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ secondaryCTA: { ...hero.secondaryCTA, link: e.target.value } })}
-              className="h-8 text-sm border-slate-200" placeholder="/saved-builds" />
-          </div>
-        </div>
-      </FieldGroup>
-
-      <FieldGroup title="Stats Bar" icon={<Hash size={13} />}>
-        <div className="space-y-3">
-          {hero.stats.map((stat, i) => (
-            <div key={i} className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Stat {i + 1} Value</FieldLabel>
-                <Input value={stat.value}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const next = [...hero.stats];
-                    next[i] = { ...stat, value: e.target.value };
-                    updateHero({ stats: next });
-                  }}
-                  className="h-8 text-sm border-slate-200" placeholder="900+" />
-              </div>
-              <div>
-                <FieldLabel>Label</FieldLabel>
-                <Input value={stat.label}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const next = [...hero.stats];
-                    next[i] = { ...stat, label: e.target.value };
-                    updateHero({ stats: next });
-                  }}
-                  className="h-8 text-sm border-slate-200" placeholder="Components" />
-              </div>
+      <FieldGroup title="Call-to-Action Buttons" icon={<LinkIcon size={13} />}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <FieldLabel>Primary Button Text</FieldLabel>
+              <Input value={hero.primaryCTA.text}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ primaryCTA: { ...hero.primaryCTA, text: e.target.value } })}
+                className="h-10 text-[10px] font-bold border-zinc-200 uppercase tracking-widest" />
             </div>
-          ))}
+            <div>
+              <FieldLabel>Primary URL</FieldLabel>
+              <Input value={hero.primaryCTA.link}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ primaryCTA: { ...hero.primaryCTA, link: e.target.value } })}
+                className="h-10 text-xs font-mono border-zinc-200" placeholder="/catalog" />
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <FieldLabel>Secondary Button Text</FieldLabel>
+              <Input value={hero.secondaryCTA.text}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ secondaryCTA: { ...hero.secondaryCTA, text: e.target.value } })}
+                className="h-10 text-[10px] font-bold border-zinc-200 uppercase tracking-widest" />
+            </div>
+            <div>
+              <FieldLabel>Secondary URL</FieldLabel>
+              <Input value={hero.secondaryCTA.link}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ secondaryCTA: { ...hero.secondaryCTA, link: e.target.value } })}
+                className="h-10 text-xs font-mono border-zinc-200" placeholder="/saved-builds" />
+            </div>
+          </div>
         </div>
       </FieldGroup>
 
       <FieldGroup title="Hero Image" icon={<ImageIcon size={13} />}>
-        <div>
-          <FieldLabel hint="Direct URL to the hero image. Use a PNG/WebP with transparent background for best results">Image URL</FieldLabel>
-          <Input value={hero.heroImage.url}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ heroImage: { ...hero.heroImage, url: e.target.value } })}
-            className="h-8 text-sm border-slate-200 font-mono text-xs" placeholder="https://…" />
-        </div>
-        <div>
-          <FieldLabel>Alt Text</FieldLabel>
-          <Input value={hero.heroImage.alt}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ heroImage: { ...hero.heroImage, alt: e.target.value } })}
-            className="h-8 text-sm border-slate-200" />
-        </div>
-        {hero.heroImage.url && (
-          <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center p-4 h-36">
-            <img src={hero.heroImage.url} alt={hero.heroImage.alt}
-              className="max-h-full max-w-full object-contain"
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        <div className="space-y-4">
+          <div className="flex gap-4 items-start">
+            <div className="flex-1">
+              <FieldLabel hint="Direct CDN link to image. Preferred: high-res transparent PNG">Image URL</FieldLabel>
+              <Input value={hero.heroImage.url}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ heroImage: { ...hero.heroImage, url: e.target.value } })}
+                className="h-10 text-xs font-mono border-zinc-200" placeholder="https://cdn.nexushardware.com/assets/..." />
+            </div>
+            <div className="shrink-0 pt-6">
+              <ImageUploader
+                endpoint="imageUploader"
+                onUploadComplete={(url) => updateHero({ heroImage: { ...hero.heroImage, url } })}
+                onUploadError={(err) => console.error('Upload Error:', err)}
+              />
+            </div>
           </div>
-        )}
-      </FieldGroup>
-
-      <FieldGroup title="Floating Badge" icon={<LucideIcons.Award size={13} />} defaultOpen={false}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <FieldLabel>Title</FieldLabel>
-            <Input value={hero.floatingBadge.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ floatingBadge: { ...hero.floatingBadge, title: e.target.value } })}
-              className="h-8 text-sm border-slate-200" />
-          </div>
-          <div>
-            <FieldLabel>Subtitle</FieldLabel>
-            <Input value={hero.floatingBadge.subtitle}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateHero({ floatingBadge: { ...hero.floatingBadge, subtitle: e.target.value } })}
-              className="h-8 text-sm border-slate-200" />
-          </div>
+          {hero.heroImage.url && (
+            <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-50/50 flex items-center justify-center p-8 h-48 group relative">
+              <div className="absolute top-2 right-2 px-2 py-1 bg-white border border-zinc-200 rounded text-[9px] font-bold text-zinc-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Asset Preview</div>
+              <img src={hero.heroImage.url} alt={hero.heroImage.alt}
+                className="max-h-full max-w-full object-contain drop-shadow-2xl"
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <button
+                type="button"
+                onClick={() => updateHero({ heroImage: { ...hero.heroImage, url: '' } })}
+                className="absolute top-2 left-2 p-1 bg-white border border-red-100 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          )}
         </div>
       </FieldGroup>
     </div>
@@ -372,7 +347,7 @@ const CategoriesEditor = ({ content, setContent }: { content: CMSContent; setCon
   const addCategory = () => {
     const newCat: CategoryItem = {
       id: `cat-${Date.now()}`,
-      name: 'New Category',
+      name: 'NEW ENTITY',
       icon: 'Package',
       categoryKey: 'Processor',
       order: cats.categories.length + 1,
@@ -396,7 +371,7 @@ const CategoriesEditor = ({ content, setContent }: { content: CMSContent; setCon
     });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <FieldGroup title="Section Title" icon={<Type size={13} />}>
         <div>
           <FieldLabel>Title</FieldLabel>
@@ -405,72 +380,77 @@ const CategoriesEditor = ({ content, setContent }: { content: CMSContent; setCon
               if (!prev) return prev;
               return { ...prev, sections: { ...prev.sections, categories: { ...prev.sections.categories, sectionTitle: e.target.value } } };
             })}
-            className="h-8 text-sm border-slate-200" />
+            className="h-10 text-xs font-bold border-zinc-200 uppercase tracking-widest focus:ring-zinc-900" />
         </div>
       </FieldGroup>
 
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="px-4 py-3 border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-bold text-slate-700 flex items-center gap-2">
-              <Layers size={13} className="text-slate-400" /> Category Tiles
-              <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">{cats.categories.length}</span>
-            </CardTitle>
-            <Button size="sm" variant="outline" onClick={addCategory} className="h-7 text-xs gap-1 border-slate-200">
-              <Plus size={12} /> Add
-            </Button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2">
+            <Layers size={14} className="text-zinc-400" />
+            <span className="text-xs font-semibold text-zinc-900">Categories</span>
+            <Badge variant="outline" className="bg-zinc-50 text-zinc-500 border-zinc-200 text-[11px] font-medium h-5 px-1.5 rounded">{cats.categories.length}</Badge>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+          <Button size="sm" variant="outline" onClick={addCategory} className="h-8 text-xs font-medium gap-2 bg-white border-zinc-200 hover:bg-zinc-50 rounded-md">
+            <Plus size={12} /> Add Category
+          </Button>
+        </div>
+
+        <div className="space-y-3">
           {cats.categories.length === 0 ? (
-            <div className="py-10 text-center">
-              <Layers size={24} className="mx-auto text-slate-300 mb-2" />
-              <p className="text-sm text-slate-400">No categories yet</p>
+            <div className="py-12 text-center bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
+              <Layers size={24} className="mx-auto text-zinc-200 mb-2" />
+              <p className="text-sm text-zinc-400">No categories added</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-50">
-              {[...cats.categories].sort((a, b) => a.order - b.order).map(cat => (
-                <div key={cat.id} className="px-4 py-3 group hover:bg-slate-50/50 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <GripVertical size={14} className="text-slate-300 mt-2 flex-shrink-0 cursor-grab" />
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <FieldLabel>Name</FieldLabel>
-                        <Input value={cat.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(cat.id, { name: e.target.value })}
-                          className="h-7 text-xs border-slate-200" />
-                      </div>
-                      <div>
-                        <FieldLabel>Category Key</FieldLabel>
-                        <Select value={cat.categoryKey} onValueChange={v => update(cat.id, { categoryKey: v })}>
-                          <SelectTrigger className="h-7 text-xs border-slate-200">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CATEGORY_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
+            [...cats.categories].sort((a, b) => a.order - b.order).map(cat => (
+              <div key={cat.id} className="bg-white border border-zinc-200 rounded-2xl p-5 group hover:border-zinc-900 transition-all shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center cursor-grab active:cursor-grabbing text-zinc-300 group-hover:text-zinc-400 shrink-0">
+                    <GripVertical size={14} />
+                  </div>
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <FieldLabel>Name</FieldLabel>
+                      <Input value={cat.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(cat.id, { name: e.target.value })}
+                        className="h-10 text-xs font-bold border-zinc-200 uppercase tracking-tight" />
+                    </div>
+                    <div>
+                      <FieldLabel>Category Key</FieldLabel>
+                      <Select value={cat.categoryKey} onValueChange={v => update(cat.id, { categoryKey: v })}>
+                        <SelectTrigger className="h-10 text-xs font-bold border-zinc-200 uppercase tracking-tight">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-zinc-200">
+                          {CATEGORY_KEYS.map(k => <SelectItem key={k} value={k} className="text-[10px] font-bold uppercase">{k}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="sm:col-span-2 grid grid-cols-2 gap-6">
                       <div>
                         <FieldLabel>Icon</FieldLabel>
                         <IconSelect value={cat.icon} onChange={v => update(cat.id, { icon: v })} />
                       </div>
-                      <div>
+                      <div className="flex flex-col">
                         <FieldLabel>Order</FieldLabel>
-                        <Input type="number" value={cat.order} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(cat.id, { order: parseInt(e.target.value) || 1 })}
-                          className="h-7 text-xs border-slate-200 w-20" />
+                        <div className="flex items-center gap-3">
+                          <Input type="number" value={cat.order} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(cat.id, { order: parseInt(e.target.value) || 1 })}
+                            className="h-10 text-xs font-mono border-zinc-200 w-24 text-center" />
+                          <div className="flex-1" />
+                          <Button size="icon" variant="ghost" onClick={() => remove(cat.id)}
+                            className="h-10 w-10 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    <Button size="icon" variant="ghost" onClick={() => remove(cat.id)}
-                      className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
-                      <Trash2 size={13} />
-                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
@@ -484,36 +464,44 @@ const FeaturedEditor = ({ content, setContent }: { content: CMSContent; setConte
     });
 
   return (
-    <div className="space-y-4">
-      <FieldGroup title="Section Content" icon={<Star size={13} />}>
+    <div className="space-y-6">
+      <FieldGroup title="Section Config" icon={<Star size={13} />}>
         <div>
           <FieldLabel>Section Title</FieldLabel>
-          <Input value={fp.sectionTitle} onChange={e => update({ sectionTitle: e.target.value })} className="h-8 text-sm border-slate-200" />
+          <Input value={fp.sectionTitle} onChange={e => update({ sectionTitle: e.target.value })} className="h-10 text-xs font-bold border-zinc-200 uppercase tracking-widest" />
         </div>
         <div>
-          <FieldLabel hint="Shown below the section title as a subtitle">Section Subtitle</FieldLabel>
-          <Input value={fp.sectionSubtitle} onChange={e => update({ sectionSubtitle: e.target.value })} className="h-8 text-sm border-slate-200" />
+          <FieldLabel hint="Supporting text beneath the title">Subtitle</FieldLabel>
+          <Input value={fp.sectionSubtitle} onChange={e => update({ sectionSubtitle: e.target.value })} className="h-10 text-xs font-medium border-zinc-200" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <FieldLabel>CTA Button Text</FieldLabel>
-            <Input value={fp.ctaText} onChange={e => update({ ctaText: e.target.value })} className="h-8 text-sm border-slate-200" />
+            <FieldLabel>CTA Text</FieldLabel>
+            <Input value={fp.ctaText} onChange={e => update({ ctaText: e.target.value })} className="h-10 text-[10px] font-bold border-zinc-200 uppercase tracking-widest" />
           </div>
           <div>
-            <FieldLabel>CTA Button Link</FieldLabel>
-            <Input value={fp.ctaLink} onChange={e => update({ ctaLink: e.target.value })} className="h-8 text-sm border-slate-200" placeholder="/catalog" />
+            <FieldLabel>CTA Link</FieldLabel>
+            <Input value={fp.ctaLink} onChange={e => update({ ctaLink: e.target.value })} className="h-10 text-xs font-mono border-zinc-200" placeholder="/catalog" />
           </div>
         </div>
       </FieldGroup>
 
-      <Card className="border-blue-200 bg-blue-50/40 shadow-sm">
-        <CardContent className="px-4 py-3 flex items-start gap-3">
-          <Info size={15} className="text-blue-600 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-blue-700 leading-relaxed">
-            <strong>Auto-selected products:</strong> Featured products are dynamically pulled from your catalog — the top 2 GPUs and 2 CPUs by listing order. This section only controls the text content surrounding them.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="p-5 bg-zinc-900 rounded-2xl border border-zinc-800 shadow-xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-2">
+          <Zap size={40} className="text-white/5 rotate-12" />
+        </div>
+        <div className="flex items-start gap-4 transition-all">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
+            <Sparkles size={18} className="text-white/80" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-white">Auto-Curated</p>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Products are dynamically selected based on listing priority (top GPUs & CPUs).
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -536,9 +524,9 @@ const TrustEditor = ({ content, setContent }: { content: CMSContent; setContent:
   const add = () => {
     const newFeature: TrustFeature = {
       id: `trust-${Date.now()}`,
-      icon: 'Star',
-      title: 'New Feature',
-      description: 'Feature description',
+      icon: 'Shield',
+      title: 'NEW INTEGRITY METRIC',
+      description: 'Provide technical assurance details...',
       order: features.length + 1,
     };
     setContent(prev => {
@@ -548,65 +536,65 @@ const TrustEditor = ({ content, setContent }: { content: CMSContent; setContent:
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="px-4 py-3 border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-bold text-slate-700 flex items-center gap-2">
-              <Shield size={13} className="text-slate-400" /> Trust Features
-              <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">{features.length}</span>
-            </CardTitle>
-            <Button size="sm" variant="outline" onClick={add} className="h-7 text-xs gap-1 border-slate-200">
-              <Plus size={12} /> Add
-            </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between px-2">
+        <div className="flex items-center gap-2">
+          <Shield size={14} className="text-zinc-400" />
+          <span className="text-xs font-semibold text-zinc-900">Trust Features</span>
+          <Badge variant="outline" className="bg-zinc-50 text-zinc-500 border-zinc-200 text-[11px] font-medium h-5 px-1.5 rounded">{features.length}</Badge>
+        </div>
+        <Button size="sm" variant="outline" onClick={add} className="h-8 text-xs font-medium gap-2 bg-white border-zinc-200 hover:bg-zinc-50 rounded-md">
+          <Plus size={12} /> Add Feature
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        {features.length === 0 ? (
+          <div className="py-12 text-center bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
+            <Shield size={24} className="mx-auto text-zinc-200 mb-2" />
+            <p className="text-sm text-zinc-400">No features defined</p>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {features.length === 0 ? (
-            <div className="py-10 text-center">
-              <Shield size={24} className="mx-auto text-slate-300 mb-2" />
-              <p className="text-sm text-slate-400">No trust features added</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              {[...features].sort((a, b) => a.order - b.order).map(f => (
-                <div key={f.id} className="px-4 py-4 group hover:bg-slate-50/30 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <GripVertical size={14} className="text-slate-300 mt-2 flex-shrink-0 cursor-grab" />
-                    <div className="flex-1 space-y-2.5">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                        <div>
-                          <FieldLabel>Icon</FieldLabel>
-                          <IconSelect value={f.icon} onChange={v => update(f.id, { icon: v })} />
-                        </div>
-                        <div>
-                          <FieldLabel>Title</FieldLabel>
-                          <Input value={f.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(f.id, { title: e.target.value })}
-                            className="h-7 text-xs border-slate-200" />
-                        </div>
-                        <div>
-                          <FieldLabel>Order</FieldLabel>
-                          <Input type="number" value={f.order} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(f.id, { order: parseInt(e.target.value) || 1 })}
-                            className="h-7 text-xs border-slate-200 w-20" />
-                        </div>
-                      </div>
-                      <div>
-                        <FieldLabel>Description</FieldLabel>
-                        <Textarea value={f.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update(f.id, { description: e.target.value })}
-                          rows={2} className="text-xs border-slate-200 resize-none" />
-                      </div>
+        ) : (
+          [...features].sort((a, b) => a.order - b.order).map(f => (
+            <div key={f.id} className="bg-white border border-zinc-200 rounded-2xl p-5 group hover:border-zinc-900 transition-all shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center cursor-grab active:cursor-grabbing text-zinc-300 group-hover:text-zinc-400 shrink-0">
+                  <GripVertical size={14} />
+                </div>
+                <div className="flex-1 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <FieldLabel>Title</FieldLabel>
+                      <Input value={f.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(f.id, { title: e.target.value })}
+                        className="h-10 text-xs font-bold border-zinc-200 uppercase tracking-tight" />
+                    </div>
+                    <div>
+                      <FieldLabel>Icon</FieldLabel>
+                      <IconSelect value={f.icon} onChange={v => update(f.id, { icon: v })} />
+                    </div>
+                  </div>
+                  <div>
+                    <FieldLabel>Description</FieldLabel>
+                    <Textarea value={f.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update(f.id, { description: e.target.value })}
+                      className="text-xs font-medium border-zinc-200 min-h-[80px]" />
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-zinc-50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-zinc-400">Sort Order</span>
+                      <Input type="number" value={f.order} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(f.id, { order: parseInt(e.target.value) || 1 })}
+                        className="h-8 text-xs font-mono border-zinc-200 w-20 text-center" />
                     </div>
                     <Button size="icon" variant="ghost" onClick={() => remove(f.id)}
-                      className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
-                      <Trash2 size={13} />
+                      className="h-9 w-9 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                      <Trash2 size={15} />
                     </Button>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };
@@ -620,50 +608,49 @@ const CtaEditor = ({ content, setContent }: { content: CMSContent; setContent: R
     });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <FieldGroup title="CTA Content" icon={<Zap size={13} />}>
         <div>
           <FieldLabel>Headline</FieldLabel>
-          <Input value={cta.headline} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ headline: e.target.value })} className="h-8 text-sm border-slate-200" />
+          <Input value={cta.headline} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ headline: e.target.value })} className="h-10 text-xs font-bold border-zinc-200 uppercase tracking-widest" />
         </div>
         <div>
-          <FieldLabel>Subheadline</FieldLabel>
+          <FieldLabel>Subtitle</FieldLabel>
           <Textarea value={cta.subheadline} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update({ subheadline: e.target.value })}
-            rows={2} className="text-sm border-slate-200 resize-none" />
+            className="text-xs font-medium border-zinc-200 min-h-[80px]" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <FieldLabel>Button Text</FieldLabel>
-            <Input value={cta.ctaText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ ctaText: e.target.value })} className="h-8 text-sm border-slate-200" />
+            <Input value={cta.ctaText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ ctaText: e.target.value })} className="h-10 text-[10px] font-bold border-zinc-200 uppercase tracking-widest" />
           </div>
           <div>
             <FieldLabel>Button Link</FieldLabel>
-            <Input value={cta.ctaLink} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ ctaLink: e.target.value })} className="h-8 text-sm border-slate-200" placeholder="/catalog" />
+            <Input value={cta.ctaLink} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ ctaLink: e.target.value })} className="h-10 text-xs font-mono border-zinc-200" placeholder="/catalog" />
           </div>
         </div>
       </FieldGroup>
 
-      <FieldGroup title="Background Style" icon={<Layout size={13} />}>
-        <div>
-          <FieldLabel hint="Controls the visual appearance of the CTA section background">Style</FieldLabel>
+      <FieldGroup title="Visual Style" icon={<Layout size={13} />}>
+        <div className="space-y-4">
+          <FieldLabel hint="Controls the visual background of the CTA section">Background Style</FieldLabel>
           <Select value={cta.backgroundStyle} onValueChange={v => update({ backgroundStyle: v as any })}>
-            <SelectTrigger className="h-8 text-sm border-slate-200">
+            <SelectTrigger className="h-10 text-xs font-bold border-zinc-200 uppercase tracking-widest">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gradient">Gradient</SelectItem>
-              <SelectItem value="solid">Solid Dark</SelectItem>
-              <SelectItem value="pattern">Pattern</SelectItem>
+            <SelectContent className="bg-white border-zinc-200">
+              <SelectItem value="gradient" className="text-[10px] font-bold uppercase tracking-widest">Gradient Wash</SelectItem>
+              <SelectItem value="solid" className="text-[10px] font-bold uppercase tracking-widest">Monolithe Solid</SelectItem>
+              <SelectItem value="pattern" className="text-[10px] font-bold uppercase tracking-widest">Technical Grid</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        {/* Live preview of bg style */}
-        <div className={cn('rounded-xl h-16 flex items-center justify-center text-sm font-bold text-white transition-all', {
-          'bg-gradient-to-r from-blue-600 to-indigo-700': cta.backgroundStyle === 'gradient',
-          'bg-slate-900': cta.backgroundStyle === 'solid',
-          'bg-slate-800 bg-[radial-gradient(circle,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:16px_16px]': cta.backgroundStyle === 'pattern',
+        <div className={cn('rounded-[2rem] h-24 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.3em] text-white shadow-inner transition-all duration-500', {
+          'bg-zinc-900': cta.backgroundStyle === 'solid',
+          'bg-gradient-to-br from-zinc-800 to-zinc-950': cta.backgroundStyle === 'gradient',
+          'bg-zinc-900 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:14px_14px]': cta.backgroundStyle === 'pattern',
         })}>
-          {cta.ctaText || 'CTA Preview'}
+          {cta.ctaText || 'Preview Interface'}
         </div>
       </FieldGroup>
     </div>
@@ -684,48 +671,54 @@ const HistoryDrawer = ({ open, onClose, onRestore, versions }: {
 
   return (
     <Dialog open={open} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-white">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Clock size={16} className="text-slate-600" /> Version History
-          </DialogTitle>
-          <DialogDescription>
-            Restore any previously published version. This will create a new version with that content.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-xl bg-white border-zinc-200 rounded-[2rem] shadow-2xl p-0 overflow-hidden">
+        <div className="bg-zinc-50 border-b border-zinc-100 px-8 py-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-zinc-900 font-semibold text-lg">
+              <Clock size={20} className="text-zinc-400" /> Version History
+            </DialogTitle>
+            <DialogDescription className="text-sm text-zinc-500 mt-1">
+              Published versions and rollback options
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <ScrollArea className="max-h-[400px] -mx-6 px-6">
+        <ScrollArea className="max-h-[500px] px-8 py-6">
           {published.length === 0 ? (
-            <div className="py-8 text-center">
-              <Clock size={32} className="mx-auto text-slate-300 mb-2" />
-              <p className="text-sm text-slate-400">No version history yet</p>
+            <div className="py-16 text-center">
+              <Clock size={32} className="mx-auto text-zinc-100 mb-4" />
+              <p className="text-sm text-zinc-400">No versions found.</p>
             </div>
           ) : (
-            <div className="space-y-2 py-2">
+            <div className="space-y-4">
               {published.map((ver, idx) => (
                 <div key={ver.id} className={cn(
-                  'rounded-xl border p-4 transition-colors',
-                  idx === 0 ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 hover:bg-slate-50'
+                  'rounded-2xl border p-5 transition-all group',
+                  idx === 0 ? 'border-zinc-900 bg-zinc-900 shadow-xl' : 'border-zinc-100 bg-zinc-50/50 hover:border-zinc-300'
                 )}>
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between gap-6">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-slate-800 text-sm">Version {ver.id}</span>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className={cn("font-semibold text-xs", idx === 0 ? "text-white" : "text-zinc-900")}>
+                          Version {ver.id}
+                        </span>
                         {idx === 0 && (
-                          <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-300 bg-blue-50 px-1.5 py-0.5">Current</Badge>
+                          <Badge className="bg-emerald-500 text-white border-none text-[10px] font-medium px-2 h-5">ACTIVE</Badge>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500">
-                        {new Date(ver.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      {ver.label && (
-                        <p className="text-xs text-slate-600 mt-1 italic">{ver.label}</p>
-                      )}
+                      <div className="flex items-center gap-4">
+                        <p className={cn("text-[11px] font-mono", idx === 0 ? "text-zinc-400" : "text-zinc-500")}>
+                          {new Date(ver.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).toUpperCase()}
+                        </p>
+                        {ver.label && (
+                          <p className={cn("text-[10px] font-bold uppercase tracking-tight", idx === 0 ? "text-zinc-500" : "text-zinc-400")}>— {ver.label}</p>
+                        )}
+                      </div>
                     </div>
                     {idx !== 0 && (
-                      <Button size="sm" variant="outline" className="h-7 text-xs border-slate-200 gap-1 flex-shrink-0"
+                      <Button size="sm" variant="outline" className="h-8 px-4 text-xs font-medium border-zinc-200 hover:bg-indigo-600 hover:text-white transition-all rounded-md shrink-0"
                         onClick={() => onRestore(ver)}>
-                        <RotateCcw size={11} /> Restore
+                        <Undo size={14} className="mr-2" /> Rollback
                       </Button>
                     )}
                   </div>
@@ -735,9 +728,9 @@ const HistoryDrawer = ({ open, onClose, onRestore, versions }: {
           )}
         </ScrollArea>
 
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
-        </DialogFooter>
+        <div className="px-8 py-4 bg-zinc-50 border-t border-zinc-100 flex justify-end">
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs font-medium text-zinc-400 hover:text-zinc-900">Close</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -751,29 +744,40 @@ const PublishDialog = ({ open, onClose, onConfirm, isSaving }: {
   open: boolean; onClose: () => void; onConfirm: () => void; isSaving: boolean;
 }) => (
   <Dialog open={open} onOpenChange={(o: boolean) => !o && onClose()}>
-    <DialogContent className="sm:max-w-sm">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Upload size={16} className="text-blue-600" /> Publish Changes
-        </DialogTitle>
-        <DialogDescription>
-          This will make your changes <strong>live on the website immediately</strong> and create a new version in history. This cannot be undone without a rollback.
-        </DialogDescription>
-      </DialogHeader>
-      <div className="py-2">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 flex items-start gap-2">
-          <AlertCircle size={13} className="mt-0.5 flex-shrink-0" />
-          <span>All visitors will see the updated landing page once published.</span>
+    <DialogContent className="sm:max-w-sm bg-white border-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden p-0">
+      <div className="p-8 space-y-6">
+        <div className="w-16 h-16 rounded-[1.5rem] bg-zinc-900 flex items-center justify-center mx-auto shadow-xl">
+          <Upload size={24} className="text-white" />
+        </div>
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-zinc-900">Publish Changes</h3>
+          <p className="text-sm text-zinc-500 mt-2 px-4 leading-relaxed">
+            This will deploy your changes to production immediately.
+          </p>
+        </div>
+
+        <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
+          <div className="flex items-start gap-4">
+            <AlertCircle size={16} className="text-zinc-900 mt-0.5 shrink-0" />
+            <p className="text-[10px] font-bold text-zinc-600 leading-relaxed uppercase tracking-tight">
+              Status: <span className="text-zinc-900">Immediate Global Update</span><br />
+              Voters will witness structural shifts across the nexushardware.com surface.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <Button onClick={onConfirm} disabled={isSaving}
+            className="h-12 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all shadow-sm active:scale-[0.98]">
+            {isSaving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Shield size={16} className="mr-2" />}
+            {isSaving ? 'Publishing…' : 'Publish Now'}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSaving}
+            className="h-10 text-xs font-medium text-zinc-400 hover:text-zinc-900">
+            Cancel Request
+          </Button>
         </div>
       </div>
-      <DialogFooter className="gap-2">
-        <Button variant="ghost" size="sm" onClick={onClose} disabled={isSaving}>Cancel</Button>
-        <Button size="sm" onClick={onConfirm} disabled={isSaving}
-          className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-          {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-          {isSaving ? 'Publishing…' : 'Publish Now'}
-        </Button>
-      </DialogFooter>
     </DialogContent>
   </Dialog>
 );
@@ -786,341 +790,216 @@ const CMSManager: React.FC = () => {
   const { cmsContent, refreshCMS } = useShop();
   const { cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion } = useAdmin();
   const [content, setContent] = useState<CMSContent | null>(null);
-  const [activePage, setActivePage] = useState<LandingPageCMS | null>(null);
-  const [isDraft, setIsDraft] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>('hero');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [showHistory, setShowHistory] = useState(false);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
-  const [showPreview, setShowPreview] = useState(true);
-  const [showMobileNav, setShowMobileNav] = useState(false);
 
-  // Sync local editor state from ShopContext CMS content
   useEffect(() => {
     if (cmsContent && !content) {
-      setContent(cmsContent.content);
-      setActivePage(cmsContent);
+      setContent(JSON.parse(JSON.stringify(cmsContent.content)));
     }
-  }, [cmsContent, content]);
+  }, [cmsContent]);
 
-  // ── Update helpers ──
+  useEffect(() => { refreshCMSVersions(); }, []);
 
-  const updateHero = useCallback((updates: Partial<HeroContent>) => {
-    setContent(prev => {
-      if (!prev) return prev;
-      return { ...prev, sections: { ...prev.sections, hero: { ...prev.sections.hero, ...updates } } };
-    });
-    setIsDraft(true);
-  }, []);
-
-  const handleSaveDraft = async () => {
-    if (!content) return;
-    setSaveStatus('saving');
-    try {
-      await saveCMS({ content, isPublished: false });
-      setIsDraft(true);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2500);
-    } catch {
-      setSaveStatus('error');
-    }
-  };
-
-  const handlePublish = async () => {
-    if (!content) return;
-    setSaveStatus('saving');
-    try {
-      await saveCMS({ content, isPublished: true });
-      setIsDraft(false);
-      setSaveStatus('saved');
-      setShowPublishDialog(false);
-      setTimeout(() => setSaveStatus('idle'), 2500);
-    } catch {
-      setSaveStatus('error');
-    }
-  };
-
-  const handleDiscard = () => {
-    if (cmsContent) {
-      setContent(cmsContent.content);
-      setActivePage(cmsContent);
-      setIsDraft(false);
-    }
-  };
-
-  const handleRestoreVersion = async (version: CMSVersion) => {
-    await restoreCMSVersion(version.id);
-    await refreshCMS();
-    if (cmsContent) {
-      setContent(cmsContent.content);
-      setActivePage(cmsContent);
-    }
-    setIsDraft(false);
-    setShowHistory(false);
-  };
-
-  // ── Save status UI ──
-  const saveStatusEl = useMemo(() => {
-    if (saveStatus === 'saving') return (
-      <span className="flex items-center gap-1.5 text-xs text-slate-500">
-        <Loader2 size={12} className="animate-spin" /> Saving…
-      </span>
-    );
-    if (saveStatus === 'saved') return (
-      <span className="flex items-center gap-1.5 text-xs text-emerald-600">
-        <Check size={12} /> Saved
-      </span>
-    );
-    if (isDraft) return (
-      <span className="flex items-center gap-1.5 text-xs text-amber-600">
-        <AlertCircle size={12} /> Unsaved changes
-      </span>
-    );
-    return (
-      <span className="flex items-center gap-1.5 text-xs text-emerald-600">
-        <CheckCircle2 size={12} /> Published
-      </span>
-    );
-  }, [saveStatus, isDraft]);
-
-  // Guard: if CMS content not loaded yet
-  if (!content) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 size={24} className="animate-spin text-slate-400" />
+  // Live Preview Column
+  const PreviewColumn = () => (
+    <div className="lg:col-span-4 xl:col-span-4 hidden lg:block">
+      <div className="sticky top-6 space-y-4">
+        <div className="flex items-center justify-between mb-2 px-2">
+          <h3 className="text-xs font-medium text-zinc-500 flex items-center gap-2">
+            <Eye size={14} className="text-zinc-400" /> Preview
+          </h3>
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] font-medium px-2 h-5 rounded">
+            LIVE
+          </Badge>
+        </div>
+        <div className="aspect-[9/16] xl:aspect-[10/14] max-h-[750px] shadow-2xl rounded-[2.5rem] overflow-hidden border-[8px] border-zinc-900 ring-1 ring-zinc-200 ring-offset-4 ring-offset-zinc-50 bg-zinc-900">
+          {content && <MiniPreview content={content} activeSection={activeSection} />}
+        </div>
+        <div className="p-4 bg-zinc-900 rounded-2xl text-white shadow-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-2 opacity-5 scale-150">
+            <Monitor size={48} />
+          </div>
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/5">
+              <Monitor size={15} className="text-zinc-400" />
+            </div>
+            <div>
+              <p className="text-[10px] font-medium text-zinc-500">Preview</p>
+              <p className="text-xs font-semibold text-white/90">Responsive Preview</p>
+            </div>
+          </div>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  const activeNavItem = SECTION_NAV.find(n => n.key === activeSection)!;
+  if (!content) return (
+    <div className="h-[600px] flex items-center justify-center bg-zinc-50 rounded-3xl border border-dashed border-zinc-200">
+      <div className="text-center">
+        <div className="relative w-16 h-16 mx-auto mb-6">
+          <div className="absolute inset-0 rounded-2xl border-2 border-zinc-200 border-t-zinc-900 animate-spin" />
+          <div className="absolute inset-2 rounded-xl border border-zinc-100 border-b-zinc-400 animate-[spin_1.5s_linear_infinite_reverse]" />
+        </div>
+        <p className="text-sm text-zinc-500 animate-pulse">Loading content...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <TooltipProvider>
-      <div className="flex flex-col h-full min-h-0 overflow-hidden -m-6">
-
-        {/* ─── TOP HEADER ─── */}
-        <div className="flex-shrink-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: title + status */}
-            <div className="flex items-center gap-3 min-w-0">
-              {/* Mobile nav toggle */}
-              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 flex-shrink-0"
-                onClick={() => setShowMobileNav(v => !v)}>
-                <Layers size={16} className="text-slate-600" />
-              </Button>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
-                  Landing Page CMS
-                </h1>
-                <div className="mt-0.5">{saveStatusEl}</div>
-              </div>
+    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+      {/* Ultra-Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-4 border-b border-zinc-100">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-zinc-900 rounded-xl shadow-lg">
+              <Layout className="w-5 h-5 text-white" />
             </div>
-
-            {/* Right: action buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700"
-                    onClick={() => setShowHistory(true)}>
-                    <Clock size={15} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Version History</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hidden xl:flex text-slate-500 hover:text-slate-700"
-                    onClick={() => setShowPreview(v => !v)}>
-                    {showPreview ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{showPreview ? 'Hide' : 'Show'} preview</TooltipContent>
-              </Tooltip>
-
-              {isDraft && (
-                <Button variant="ghost" size="sm" onClick={handleDiscard}
-                  className="h-8 text-xs text-slate-500 hover:text-slate-700 gap-1.5 hidden sm:flex">
-                  <Undo size={12} /> Discard
-                </Button>
-              )}
-
-              <Button variant="outline" size="sm" onClick={handleSaveDraft}
-                disabled={saveStatus === 'saving'}
-                className="h-8 text-xs border-slate-200 gap-1.5">
-                <Save size={12} />
-                <span className="hidden sm:inline">Save Draft</span>
-              </Button>
-
-              <Button size="sm" onClick={() => setShowPublishDialog(true)}
-                disabled={saveStatus === 'saving'}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-                <Upload size={12} />
-                <span className="hidden sm:inline">Publish</span>
-              </Button>
-            </div>
+            <h2 className="text-xl font-semibold text-zinc-900 leading-none">
+              Content Manager
+            </h2>
           </div>
+          <p className="text-sm text-zinc-500 flex items-center gap-2 pl-12">
+            CMS <span className="w-1 h-1 rounded-full bg-zinc-200" /> Landing page editor
+          </p>
         </div>
 
-        {/* ─── MAIN BODY ─── */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-
-          {/* ─── LEFT SIDEBAR: Section Nav ─── */}
-          <div className={cn(
-            'flex-col bg-white border-r border-slate-200 flex-shrink-0 w-[220px] xl:w-[240px]',
-            'hidden lg:flex',
-            // Mobile overlay
-            showMobileNav && 'flex fixed inset-y-0 left-0 z-50 shadow-2xl'
-          )}>
-            {/* Mobile close */}
-            {showMobileNav && (
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 lg:hidden">
-                <span className="text-sm font-bold text-slate-700">Sections</span>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowMobileNav(false)}>
-                  <X size={14} />
-                </Button>
-              </div>
-            )}
-
-            <div className="px-3 py-3 border-b border-slate-100">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Sections</p>
-            </div>
-
-            <ScrollArea className="flex-1">
-              <nav className="p-2 space-y-0.5">
-                {SECTION_NAV.map(item => (
-                  <button key={item.key}
-                    onClick={() => { setActiveSection(item.key); setShowMobileNav(false); }}
-                    className={cn(
-                      'w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-start gap-2.5 group',
-                      activeSection === item.key
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
-                    )}>
-                    <span className={cn('mt-0.5 flex-shrink-0', activeSection === item.key ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-500')}>
-                      {item.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className={cn('text-sm font-semibold leading-tight', activeSection === item.key && 'text-blue-700')}>{item.label}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 leading-tight line-clamp-1">{item.description}</p>
-                    </div>
-                    {activeSection === item.key && (
-                      <ChevronRight size={12} className="text-blue-600 flex-shrink-0 mt-1 ml-auto" />
-                    )}
-                  </button>
-                ))}
-              </nav>
-            </ScrollArea>
-
-            {/* Footer: last saved */}
-            <div className="px-4 py-3 border-t border-slate-100">
-              <p className="text-[10px] text-slate-400 leading-relaxed">
-                Last updated{' '}
-                {activePage?.updatedAt ? new Date(activePage.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'N/A'}
-              </p>
-            </div>
-          </div>
-
-          {/* Mobile nav backdrop */}
-          {showMobileNav && (
-            <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setShowMobileNav(false)} />
-          )}
-
-          {/* ─── CENTRE: Editor ─── */}
-          <div className="flex-1 min-w-0 overflow-y-auto bg-slate-50">
-            <div className="p-4 sm:p-6 max-w-2xl">
-              {/* Mobile section indicator */}
-              <div className="flex items-center gap-2 mb-4 lg:hidden">
-                <span className="text-slate-400">{activeNavItem.icon}</span>
-                <div>
-                  <h2 className="text-base font-bold text-slate-800">{activeNavItem.label}</h2>
-                  <p className="text-xs text-slate-400">{activeNavItem.description}</p>
-                </div>
-              </div>
-
-              {/* Desktop section heading */}
-              <div className="hidden lg:flex items-center gap-2 mb-5">
-                <span className="text-slate-500">{activeNavItem.icon}</span>
-                <div>
-                  <h2 className="text-base font-bold text-slate-800">{activeNavItem.label}</h2>
-                  <p className="text-xs text-slate-400">{activeNavItem.description}</p>
-                </div>
-              </div>
-
-              {/* Section editors */}
-              {activeSection === 'hero' && (
-                <HeroEditor content={content} updateHero={updateHero} />
-              )}
-              {activeSection === 'categories' && (
-                <CategoriesEditor content={content} setContent={setContent} />
-              )}
-              {activeSection === 'featured' && (
-                <FeaturedEditor content={content} setContent={setContent} />
-              )}
-              {activeSection === 'trust' && (
-                <TrustEditor content={content} setContent={setContent} />
-              )}
-              {activeSection === 'cta' && (
-                <CtaEditor content={content} setContent={setContent} />
-              )}
-
-              {/* Bottom action bar on mobile */}
-              <div className="sticky bottom-0 bg-white border-t border-slate-200 px-4 py-3 -mx-4 sm:-mx-6 mt-8 flex items-center justify-between gap-3 lg:hidden">
-                <div>{saveStatusEl}</div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleSaveDraft}
-                    disabled={saveStatus === 'saving'} className="h-8 text-xs border-slate-200 gap-1.5">
-                    <Save size={12} /> Save
-                  </Button>
-                  <Button size="sm" onClick={() => setShowPublishDialog(true)}
-                    className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-                    <Upload size={12} /> Publish
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ─── RIGHT: Live Preview ─── */}
-          {showPreview && (
-            <div className="hidden xl:flex flex-col flex-shrink-0 w-[280px] 2xl:w-[320px] bg-slate-100 border-l border-slate-200">
-              <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <Monitor size={13} /> Live Preview
-                </span>
-                <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-200 bg-emerald-50 px-1.5 py-0.5">
-                  <span className="w-1 h-1 rounded-full bg-emerald-400 inline-block mr-1 animate-pulse" />
-                  Live
-                </Badge>
-              </div>
-              <div className="flex-1 p-3 overflow-hidden">
-                <MiniPreview content={content} activeSection={activeSection} />
-              </div>
-              <div className="px-3 py-2 border-t border-slate-200 bg-white">
-                <p className="text-[10px] text-slate-400 text-center">
-                  Highlighted sections reflect active editor
-                </p>
-              </div>
-            </div>
-          )}
+        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-zinc-200 shadow-xl">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowHistory(true)}
+            className="h-9 px-4 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-all rounded-md"
+          >
+            <Clock size={16} className="mr-2" /> History
+          </Button>
+          <Separator orientation="vertical" className="h-8 bg-zinc-100" />
+          <Button
+            size="sm"
+            onClick={() => setShowPublishDialog(true)}
+            disabled={saveStatus === 'saving'}
+            className="h-9 px-6 bg-indigo-600 text-white hover:bg-indigo-700 font-medium text-sm shadow-sm rounded-md transition-all active:scale-95 group"
+          >
+            {saveStatus === 'saving' ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Upload size={16} className="mr-2 group-hover:-translate-y-0.5 transition-transform" />}
+            Publish
+          </Button>
         </div>
       </div>
 
-      {/* ─── DIALOGS ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        {/* Navigation Sidebar */}
+        <div className="lg:col-span-3 xl:col-span-2 space-y-4">
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-zinc-400 pl-3 mb-2 block">Sections</span>
+            {SECTION_NAV.map((nav) => (
+              <button
+                key={nav.key}
+                onClick={() => setActiveSection(nav.key)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left border transition-all group relative overflow-hidden",
+                  activeSection === nav.key
+                    ? "bg-zinc-900 border-zinc-900 text-white shadow-md"
+                    : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50 shadow-sm"
+                )}
+              >
+                {activeSection === nav.key && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/20" />
+                )}
+                <span className={cn("transition-all duration-300", activeSection === nav.key ? "text-white scale-110" : "text-zinc-300 group-hover:text-zinc-900")}>
+                  {nav.icon}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold truncate">{nav.shortLabel}</p>
+                  <p className={cn("text-[11px] truncate opacity-50 mt-0.5", activeSection === nav.key ? "text-white" : "text-zinc-400")}>{nav.description}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-6 p-5 bg-zinc-900 rounded-xl shadow-lg relative overflow-hidden group">
+            <div className="absolute -bottom-4 -left-4 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Shield size={64} className="text-white" />
+            </div>
+            <div className="flex items-center gap-2 mb-2 relative z-10">
+              <Shield size={14} className="text-white/40" />
+              <span className="text-xs font-medium text-white">Version Control</span>
+            </div>
+            <p className="text-xs text-zinc-500 leading-relaxed relative z-10">
+              All changes are versioned and can be rolled back from the history panel.
+            </p>
+          </div>
+        </div>
+
+        {/* Editor Column */}
+        <div className="lg:col-span-5 xl:col-span-6 space-y-8">
+          <div className="bg-white rounded-xl border border-zinc-200 p-8 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 scale-[3] opacity-[0.02] pointer-events-none rotate-12">
+              {SECTION_NAV.find(n => n.key === activeSection)?.icon}
+            </div>
+
+            <div className="flex items-center justify-between mb-8 border-b border-zinc-100 pb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-zinc-900 flex items-center justify-center border border-zinc-800 shadow-sm overflow-hidden relative group">
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-white relative z-10">
+                    {SECTION_NAV.find(n => n.key === activeSection)?.icon}
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <h3 className="text-lg font-semibold text-zinc-900 leading-none">
+                    {SECTION_NAV.find(n => n.key === activeSection)?.label}
+                  </h3>
+                  <p className="text-xs text-zinc-400">Section configuration</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="animate-in slide-in-from-bottom-4 duration-500 ease-out">
+              {activeSection === 'hero' && <HeroEditor content={content} updateHero={(h) => setContent(prev => prev ? ({ ...prev, sections: { ...prev.sections, hero: { ...prev.sections.hero, ...h } } }) : null)} />}
+              {activeSection === 'categories' && <CategoriesEditor content={content} setContent={setContent} />}
+              {activeSection === 'featured' && <FeaturedEditor content={content} setContent={setContent} />}
+              {activeSection === 'trust' && <TrustEditor content={content} setContent={setContent} />}
+              {activeSection === 'cta' && <CtaEditor content={content} setContent={setContent} />}
+            </div>
+          </div>
+        </div>
+
+        {/* Preview Column */}
+        <PreviewColumn />
+      </div>
+
       <HistoryDrawer
         open={showHistory}
         onClose={() => setShowHistory(false)}
-        onRestore={handleRestoreVersion}
+        onRestore={async (v) => { await restoreCMSVersion(v.id); setShowHistory(false); refreshCMS(); setContent(null); }}
         versions={cmsVersions}
       />
+
       <PublishDialog
         open={showPublishDialog}
-        onClose={() => setShowPublishDialog(false)}
-        onConfirm={handlePublish}
         isSaving={saveStatus === 'saving'}
+        onClose={() => setShowPublishDialog(false)}
+        onConfirm={async () => {
+          setSaveStatus('saving');
+          try {
+            const res = await saveCMS(content);
+            if (res) {
+              setSaveStatus('saved');
+              setTimeout(() => setSaveStatus('idle'), 3000);
+              refreshCMS();
+              refreshCMSVersions();
+              setShowPublishDialog(false);
+            }
+            else { setSaveStatus('error'); }
+          } catch { setSaveStatus('error'); }
+        }}
       />
-    </TooltipProvider>
+    </div>
   );
 };
 
 export default CMSManager;
+

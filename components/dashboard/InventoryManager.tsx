@@ -17,9 +17,35 @@ import {
     Filter,
     ChevronLeft,
     ChevronRight,
+    RefreshCw,
+    MoveHorizontal,
+    MoreVertical,
+    History
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { WarehouseInventory, Category } from '@/types';
+import { cn } from '@/lib/utils';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 const InventoryManager = () => {
     const { products } = useShop();
@@ -77,7 +103,6 @@ const InventoryManager = () => {
                 const res = await fetch(`/api/inventory?${query.toString()}`);
                 if (res.ok) {
                     const data = await res.json();
-                    // Defensively map items to array
                     setPaginatedInventory(Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []));
                     setTotalItems(data.total || 0);
                 } else {
@@ -127,7 +152,6 @@ const InventoryManager = () => {
             setAdjQty(0);
             setAdjReason('');
             setAdjType('INWARD');
-            // Refresh local paginated view after adjustment
             router.refresh();
         }
     };
@@ -154,7 +178,6 @@ const InventoryManager = () => {
         }
     };
 
-    // Calculate Global KPIs safely based off context 'inventory'
     const lowStockCount = inventory.filter(i => i.quantity > 0 && i.quantity <= i.reorderLevel).length;
     const outOfStockCount = inventory.filter(i => i.quantity === 0).length;
     const totalStockValue = inventory.reduce(
@@ -162,193 +185,142 @@ const InventoryManager = () => {
         0
     );
 
-    const getStockStatusClass = (quantity: number, reorderLevel: number): string => {
-        if (quantity === 0) return 'bg-red-100 text-red-800';
-        if (quantity <= reorderLevel) return 'bg-yellow-100 text-yellow-800';
-        return 'bg-green-100 text-green-800';
-    };
-
-    const getStockStatusLabel = (quantity: number, reorderLevel: number): string => {
-        if (quantity === 0) return 'Out of Stock';
-        if (quantity <= reorderLevel) return 'Low Stock';
-        return 'In Stock';
-    };
-
     return (
         <div className="space-y-6">
 
             {/* Header */}
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                    Track stock levels and movements across all products
-                </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-zinc-900">Inventory Management</h2>
+                    <p className="text-sm text-zinc-500 mt-0.5">
+                        Real-time stock tracking · {inventory.length} active SKUs
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="h-8 text-sm font-medium gap-2 rounded-md">
+                        <History size={14} /> Audit Log
+                    </Button>
+                    <Button size="sm" className="h-8 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 gap-2 rounded-md">
+                        <RefreshCw size={14} /> Sync
+                    </Button>
+                </div>
             </div>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Total Stock Value</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
-                                ₹{totalStockValue.toLocaleString('en-IN')}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-blue-100 rounded-lg">
-                            <DollarSign size={24} className="text-blue-600" />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <TrendingUp size={12} className="text-green-600" />
-                        <span>Across {inventory.length} SKUs</span>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Low Stock Items</p>
-                            <p className="text-2xl font-bold text-yellow-600 mt-1">
-                                {lowStockCount}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-yellow-100 rounded-lg">
-                            <AlertTriangle size={24} className="text-yellow-600" />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <TrendingDown size={12} className="text-yellow-600" />
-                        <span>Requires attention</span>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Out of Stock</p>
-                            <p className="text-2xl font-bold text-red-600 mt-1">
-                                {outOfStockCount}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-red-100 rounded-lg">
-                            <AlertTriangle size={24} className="text-red-600" />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <span>Immediate reorder needed</span>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Total SKUs</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
-                                {inventory.length}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-purple-100 rounded-lg">
-                            <Package size={24} className="text-purple-600" />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <span>Active inventory items</span>
-                    </div>
-                </div>
+                {[
+                    { label: 'Total Valuation', value: `₹${totalStockValue.toLocaleString('en-IN')}`, sub: `Across ${inventory.length} SKUs`, icon: <DollarSign size={16} />, color: 'text-zinc-900 bg-white border-zinc-200' },
+                    { label: 'Low Stock Items', value: lowStockCount, sub: 'Requires immediate reorder', icon: <AlertTriangle size={16} />, color: 'text-amber-600 bg-amber-50/50 border-amber-100' },
+                    { label: 'Out of Stock', value: outOfStockCount, sub: 'Zero availability recorded', icon: <Package size={16} />, color: 'text-red-600 bg-red-50/50 border-red-100' },
+                    { label: 'Total Stocked Units', value: inventory.reduce((s, i) => s + i.quantity, 0), sub: 'Gross inventory count', icon: <TrendingUp size={16} />, color: 'text-zinc-600 bg-white border-zinc-200' },
+                ].map((item, idx) => (
+                    <Card key={idx} className={cn("border shadow-sm", item.color)}>
+                        <CardContent className="p-5">
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-medium text-zinc-500">{item.label}</p>
+                                <div className="p-1.5 rounded-md bg-white/50 shrink-0">{item.icon}</div>
+                            </div>
+                            <p className="text-2xl font-semibold leading-tight tabular-nums">{item.value}</p>
+                            <p className="text-xs text-zinc-400 mt-1">{item.sub}</p>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
 
             {/* Stock Levels Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Stock Levels</h3>
-                            <p className="text-sm text-gray-500">
-                                {totalItems} items matching filters
-                            </p>
+            <Card className="border shadow-sm overflow-hidden">
+                <CardHeader className="px-6 py-5 border-b border-zinc-100 bg-zinc-50/50">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                <Package size={16} className="text-zinc-500" />
+                                Stock Levels
+                            </CardTitle>
+                            <CardDescription className="text-xs text-zinc-500 mt-1">
+                                {totalItems} items matching current filters
+                            </CardDescription>
                         </div>
 
-                        {/* Filters Bar natively integrated */}
-                        <div className="flex flex-wrap gap-3 items-center">
-                            <div className="relative max-w-xs w-full sm:flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="Search SKU or product..."
-                                    className="pl-9 pr-3 py-2 w-full text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="relative group max-w-sm">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 transition-colors" size={14} />
+                                <Input
+                                    placeholder="SKU, Name..."
+                                    className="pl-9 h-9 text-xs bg-white border-zinc-200 focus-visible:ring-zinc-900 shadow-none transition-all w-48 sm:w-64"
                                     value={currentSearch}
                                     onChange={(e) => updateQueryParams({ q: e.target.value })}
                                 />
                             </div>
 
-                            <select
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                value={currentCategory}
-                                onChange={(e) => updateQueryParams({ category: e.target.value })}
-                            >
-                                <option value="all">All Categories</option>
-                                {Object.values(Category).map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
+                            <Select value={currentCategory} onValueChange={(val) => updateQueryParams({ category: val })}>
+                                <SelectTrigger className="h-9 text-sm font-medium w-36 border-zinc-200 bg-white shadow-none">
+                                    <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all" className="text-xs">All Categories</SelectItem>
+                                    {Object.values(Category).map(cat => (
+                                        <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
-                            <select
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                value={currentStockStatus}
-                                onChange={(e) => updateQueryParams({ f_stock_status: e.target.value })}
-                            >
-                                <option value="all">Any Stock Status</option>
-                                <option value="in">In Stock (&gt;0)</option>
-                                <option value="low">Low Stock (≤ Reorder Level)</option>
-                                <option value="out">Out of Stock (=0)</option>
-                            </select>
+                            <Select value={currentStockStatus} onValueChange={(val) => updateQueryParams({ f_stock_status: val })}>
+                                <SelectTrigger className="h-9 text-[10px] font-bold uppercase tracking-wider w-36 border-zinc-200 bg-white shadow-none">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all" className="text-xs">Any Availability</SelectItem>
+                                    <SelectItem value="in" className="text-xs">In Stock</SelectItem>
+                                    <SelectItem value="low" className="text-xs">Low Stock</SelectItem>
+                                    <SelectItem value="out" className="text-xs">Out of Stock</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
-                </div>
+                </CardHeader>
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-zinc-200">
+                        <thead className="bg-zinc-50/50">
                             <tr>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">
                                     Product
                                 </th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">
                                     SKU
                                 </th>
-                                <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="hidden md:table-cell px-6 py-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">
                                     Location
                                 </th>
-                                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Available
+                                <th className="px-6 py-4 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                                    Availability
                                 </th>
-                                <th className="hidden sm:table-cell px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="hidden sm:table-cell px-6 py-4 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">
                                     Reserved
                                 </th>
-                                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">
                                     Status
                                 </th>
-                                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-zinc-200">
                             {isLoadingInventory ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">
-                                        Loading inventory items...
+                                    <td colSpan={7} className="px-6 py-12 text-center text-sm text-zinc-400">
+                                        Loading inventory...
                                     </td>
                                 </tr>
                             ) : paginatedInventory.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center">
-                                        <Package size={48} className="mx-auto text-gray-300 mb-3" />
-                                        <p className="text-gray-500">
+                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                        <Package size={32} className="mx-auto text-zinc-200 mb-4" />
+                                        <p className="text-sm text-zinc-400">
                                             {currentSearch || currentStockStatus !== 'all' || currentCategory !== 'all'
-                                                ? 'No items match your filters'
-                                                : 'No inventory items yet'}
+                                                ? 'No items match current filters'
+                                                : 'Inventory is empty'}
                                         </p>
                                     </td>
                                 </tr>
@@ -358,10 +330,10 @@ const InventoryManager = () => {
                                     const variant = product?.variants?.find(v => v.id === item.variantId);
 
                                     return (
-                                        <tr key={item.id} className="hover:bg-gray-50">
-                                            <td className="px-4 sm:px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                        <tr key={item.id} className="hover:bg-zinc-50/50 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-12 w-12 shrink-0 bg-zinc-100 rounded-lg overflow-hidden border border-zinc-200 p-1">
                                                         <img
                                                             className="h-full w-full object-contain"
                                                             src={product?.media?.[0]?.url || '/placeholder.png'}
@@ -372,35 +344,45 @@ const InventoryManager = () => {
                                                         />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={product?.name}>
-                                                            {product?.name || 'Unknown Product'}
+                                                        <div className="text-sm font-medium text-zinc-900 truncate leading-tight mb-0.5" title={product?.name}>
+                                                            {product?.name || 'Undefined Product'}
                                                         </div>
-                                                        <div className="text-xs text-gray-500">
-                                                            {product?.category}
-                                                        </div>
+                                                        <Badge variant="outline" className="text-[11px] h-5 font-medium rounded bg-zinc-50 border-zinc-200 text-zinc-500 px-1.5">
+                                                            {product?.category || 'Standard'}
+                                                        </Badge>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">
-                                                {variant?.sku || 'Unknown'}
+                                            <td className="px-6 py-4 whitespace-nowrap text-xs font-mono font-medium text-zinc-600">
+                                                {variant?.sku || 'N/A'}
                                             </td>
-                                            <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {item.location}
+                                            <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-xs font-medium text-zinc-500 uppercase tracking-tighter">
+                                                {item.location || 'WAREHOUSE-01'}
                                             </td>
-                                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-zinc-900 tabular-nums">
                                                 {item.quantity}
                                             </td>
-                                            <td className="hidden sm:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-orange-600">
+                                            <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-right text-xs font-medium text-amber-600 tabular-nums">
                                                 {item.reserved}
                                             </td>
-                                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right">
-                                                <span className={`inline-flex px-2.5 py-1 text-xs rounded-full font-medium ${getStockStatusClass(item.quantity, item.reorderLevel)}`}>
-                                                    {getStockStatusLabel(item.quantity, item.reorderLevel)}
-                                                </span>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <Badge className={cn(
+                                                    "text-[11px] font-medium h-6 px-2 rounded border",
+                                                    item.quantity === 0 ? "bg-red-50 text-red-700 border-red-100" :
+                                                        item.quantity <= item.reorderLevel ? "bg-amber-50 text-amber-700 border-amber-100" :
+                                                            "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                                )}>
+                                                    {item.quantity === 0 ? 'Out of Stock' :
+                                                        item.quantity <= item.reorderLevel ? 'Low Level' :
+                                                            'Optimal'}
+                                                </Badge>
                                             </td>
-                                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex justify-end gap-3">
-                                                    <button
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-7 text-xs font-medium px-2 gap-1.5 border-zinc-200 rounded-md"
                                                         onClick={() =>
                                                             setTransferModal({
                                                                 isOpen: true,
@@ -410,11 +392,13 @@ const InventoryManager = () => {
                                                                 currentQty: item.quantity,
                                                             })
                                                         }
-                                                        className="text-indigo-600 hover:text-indigo-900 font-medium"
                                                     >
-                                                        Transfer
-                                                    </button>
-                                                    <button
+                                                        <MoveHorizontal size={12} /> Transfer
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-7 text-xs font-medium px-2 gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-md"
                                                         onClick={() =>
                                                             setAdjustmentModal({
                                                                 isOpen: true,
@@ -422,10 +406,9 @@ const InventoryManager = () => {
                                                                 currentQty: item.quantity,
                                                             })
                                                         }
-                                                        className="text-blue-600 hover:text-blue-900 font-medium"
                                                     >
-                                                        Adjust
-                                                    </button>
+                                                        <RefreshCw size={12} /> Adjust
+                                                    </Button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -438,97 +421,86 @@ const InventoryManager = () => {
 
                 {/* Pagination Controls */}
                 {!isLoadingInventory && totalItems > 0 && (
-                    <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-white">
-                        <div className="text-sm text-gray-500">
-                            Showing <span className="font-semibold text-gray-900">{(currentPage - 1) * currentLimit + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(currentPage * currentLimit, totalItems)}</span> of <span className="font-semibold text-gray-900">{totalItems}</span>
+                    <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/30 flex items-center justify-between">
+                        <div className="text-xs text-zinc-500">
+                            Showing <span className="font-medium text-zinc-700">{(currentPage - 1) * currentLimit + 1}</span> to <span className="font-medium text-zinc-700">{Math.min(currentPage * currentLimit, totalItems)}</span> of <span className="font-medium text-zinc-700">{totalItems}</span>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <button
+                        <div className="flex items-center gap-1.5">
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 disabled={currentPage <= 1}
                                 onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
-                                className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-8 w-8 p-0 border-zinc-200"
                             >
-                                <ChevronLeft size={18} />
-                            </button>
-                            <div className="px-4 py-1.5 text-sm font-medium border border-gray-200 rounded-md bg-gray-50">
-                                Page {currentPage} of {Math.max(1, Math.ceil(totalItems / currentLimit))}
+                                <ChevronLeft size={16} />
+                            </Button>
+                            <div className="px-3 h-8 flex items-center text-xs font-medium border border-zinc-200 rounded-md bg-white text-zinc-600">
+                                {currentPage} / {Math.max(1, Math.ceil(totalItems / currentLimit))}
                             </div>
-                            <button
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 disabled={currentPage >= Math.ceil(totalItems / currentLimit)}
                                 onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
-                                className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-8 w-8 p-0 border-zinc-200"
                             >
-                                <ChevronRight size={18} />
-                            </button>
+                                <ChevronRight size={16} />
+                            </Button>
                         </div>
                     </div>
                 )}
-            </div>
+            </Card>
 
             {/* Stock Movement History */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <h3 className="text-lg font-semibold text-gray-900">Recent Stock Movements</h3>
-                </div>
-                <div className="overflow-x-auto max-h-80">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50 sticky top-0">
+            <Card className="border shadow-sm overflow-hidden">
+                <CardHeader className="px-6 py-5 border-b border-zinc-100 bg-zinc-50/50">
+                    <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                        <History size={16} className="text-zinc-500" />
+                        Stock Movement History
+                    </CardTitle>
+                </CardHeader>
+                <div className="overflow-x-auto max-h-[300px]">
+                    <table className="min-w-full divide-y divide-zinc-200">
+                        <thead className="bg-zinc-50/50 sticky top-0">
                             <tr>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date
-                                </th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    SKU
-                                </th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Type
-                                </th>
-                                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Quantity
-                                </th>
-                                <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Reason
-                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Date</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">SKU</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Type</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">Qty</th>
+                                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Reasoning</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-zinc-200">
                             {stockMovements.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 text-sm">
-                                        No stock movements recorded yet
+                                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-400">
+                                        No stock movements recorded
                                     </td>
                                 </tr>
                             ) : (
                                 stockMovements.slice(0, 20).map(mov => (
-                                    <tr key={mov.id} className="hover:bg-gray-50">
-                                        <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs text-gray-600">
-                                            {new Date(mov.date).toLocaleDateString('en-IN', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
+                                    <tr key={mov.id} className="hover:bg-zinc-50/30 transition-colors">
+                                        <td className="px-6 py-3 whitespace-nowrap text-xs font-medium text-zinc-500">
+                                            {new Date(mov.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </td>
-                                        <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs font-mono text-gray-900">
+                                        <td className="px-6 py-3 whitespace-nowrap text-xs font-mono font-medium text-zinc-900">
                                             {mov.sku}
                                         </td>
-                                        <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs">
-                                            <span className={`flex items-center gap-1.5 ${mov.type === 'INWARD'
-                                                ? 'text-green-600'
-                                                : 'text-red-600'
-                                                }`}>
-                                                {mov.type === 'INWARD' ? (
-                                                    <ArrowDownRight size={14} />
-                                                ) : (
-                                                    <ArrowUpRight size={14} />
-                                                )}
+                                        <td className="px-6 py-3 whitespace-nowrap">
+                                            <Badge variant="outline" className={cn(
+                                                "text-[11px] font-medium h-5 px-1.5 rounded",
+                                                mov.type === 'INWARD' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
+                                            )}>
+                                                {mov.type === 'INWARD' ? <ArrowDownRight size={10} className="mr-1" /> : <ArrowUpRight size={10} className="mr-1" />}
                                                 {mov.type}
-                                            </span>
+                                            </Badge>
                                         </td>
-                                        <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs text-right font-semibold text-gray-900">
+                                        <td className="px-6 py-3 whitespace-nowrap text-xs text-right font-semibold text-zinc-900 tabular-nums">
                                             {mov.quantity}
                                         </td>
-                                        <td className="hidden md:table-cell px-4 sm:px-6 py-3 text-xs text-gray-600">
+                                        <td className="hidden md:table-cell px-6 py-3 text-xs font-medium text-zinc-500">
                                             <span className="line-clamp-1">{mov.reason}</span>
                                         </td>
                                     </tr>
@@ -537,189 +509,122 @@ const InventoryManager = () => {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </Card>
 
-            {/* Adjustment Modal */}
-            {adjustmentModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                Adjust Stock
-                            </h3>
-                            <button
-                                onClick={() => setAdjustmentModal(null)}
-                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <X size={20} className="text-gray-500" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleAdjustment} className="p-6 space-y-4">
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                <p className="text-sm font-medium text-blue-900">
-                                    SKU: {adjustmentModal.sku}
-                                </p>
-                                <p className="text-xs text-blue-700 mt-1">
-                                    Current stock: {adjustmentModal.currentQty} units
-                                </p>
+            {/* Adjustment Dialog */}
+            <Dialog open={!!adjustmentModal} onOpenChange={() => setAdjustmentModal(null)}>
+                <DialogContent className="sm:max-w-md bg-white border-zinc-200">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold text-zinc-900">Stock Adjustment</DialogTitle>
+                        <DialogDescription className="text-sm text-zinc-500">
+                            Adjusting stock for SKU: <span className="font-medium text-zinc-700">{adjustmentModal?.sku}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    {adjustmentModal && (
+                        <div className="space-y-4 py-2">
+                            <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
+                                <p className="text-xs text-zinc-500">Current Stock</p>
+                                <p className="text-sm font-semibold text-zinc-900 mt-1">{adjustmentModal.currentQty} units</p>
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Movement Type
-                                </label>
-                                <select
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={adjType}
-                                    onChange={e =>
-                                        setAdjType(e.target.value as StockMovementType)
-                                    }
-                                >
-                                    <option value="INWARD">Add Stock (Inward)</option>
-                                    <option value="ADJUSTMENT">
-                                        Correction (Reduce/Add)
-                                    </option>
-                                    <option value="OUTWARD">
-                                        Remove Stock (Damage/Loss)
-                                    </option>
-                                </select>
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-zinc-700">Type</label>
+                                <Select value={adjType} onValueChange={(val: any) => setAdjType(val)}>
+                                    <SelectTrigger className="h-9 text-sm border-zinc-200 bg-white rounded-md">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="INWARD" className="text-xs">Inward (Replenishment)</SelectItem>
+                                        <SelectItem value="ADJUSTMENT" className="text-xs">Manual Correction</SelectItem>
+                                        <SelectItem value="OUTWARD" className="text-xs">Outward (Loss/Damage)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Quantity
-                                </label>
-                                <input
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-zinc-700">Quantity</label>
+                                <Input
                                     type="number"
-                                    min="1"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="h-10 text-sm font-bold border-zinc-200"
                                     value={adjQty}
                                     onChange={e => setAdjQty(Number(e.target.value))}
-                                    required
                                 />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Reason
-                                </label>
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-zinc-700">Reason</label>
                                 <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    rows={3}
+                                    className="w-full min-h-[80px] px-3 py-2 text-xs font-medium border border-zinc-200 rounded-lg focus-visible:ring-zinc-900 outline-none"
                                     value={adjReason}
                                     onChange={e => setAdjReason(e.target.value)}
-                                    placeholder="e.g., New shipment, Damaged goods..."
+                                    placeholder="Brief explanation for this audit entry..."
                                 />
                             </div>
-
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                                <button
-                                    type="button"
-                                    onClick={() => setAdjustmentModal(null)}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    Save Adjustment
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-            {/* Transfer Modal */}
-            {transferModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                Transfer Stock
-                            </h3>
-                            <button
-                                onClick={() => setTransferModal(null)}
-                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <X size={20} className="text-gray-500" />
-                            </button>
                         </div>
+                    )}
+                    <DialogFooter className="sm:justify-end gap-2">
+                        <Button variant="outline" onClick={() => setAdjustmentModal(null)} className="h-9 text-sm font-medium border-zinc-200 rounded-md">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleAdjustment} className="h-9 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-md">
+                            Save
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                        <form onSubmit={handleTransfer} className="p-6 space-y-4">
-                            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-                                <p className="text-sm font-medium text-indigo-900">
-                                    SKU: {transferModal.sku}
-                                </p>
-                                <p className="text-xs text-indigo-700 mt-1">
-                                    Available to transfer: {transferModal.currentQty} units
-                                </p>
+            {/* Transfer Dialog */}
+            <Dialog open={!!transferModal} onOpenChange={() => setTransferModal(null)}>
+                <DialogContent className="sm:max-w-md bg-white border-zinc-200">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold text-zinc-900">Warehouse Transfer</DialogTitle>
+                        <DialogDescription className="text-sm text-zinc-500">
+                            Transfer stock for SKU: <span className="font-medium text-zinc-700">{transferModal?.sku}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    {transferModal && (
+                        <div className="space-y-4 py-2">
+                            <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
+                                <p className="text-xs text-zinc-500">Available at Source</p>
+                                <p className="text-sm font-semibold text-zinc-900 mt-1">{transferModal.currentQty} units in {transferModal.sourceWarehouseId}</p>
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Target Warehouse ID
-                                </label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-zinc-700">Destination Warehouse</label>
+                                <Input
+                                    className="h-9 text-sm border-zinc-200 rounded-md"
                                     value={transferTarget}
                                     onChange={e => setTransferTarget(e.target.value)}
-                                    placeholder="Enter Destination Warehouse ID"
-                                    required
+                                    placeholder="Enter Facility ID..."
                                 />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Quantity to Transfer
-                                </label>
-                                <input
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-zinc-700">Quantity</label>
+                                <Input
                                     type="number"
-                                    min="1"
                                     max={transferModal.currentQty}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="h-10 text-sm font-bold border-zinc-200"
                                     value={transferQty}
                                     onChange={e => setTransferQty(Number(e.target.value))}
-                                    required
                                 />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Reason (Optional)
-                                </label>
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-zinc-700">Reason</label>
                                 <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    rows={2}
+                                    className="w-full min-h-[80px] px-3 py-2 text-xs font-medium border border-zinc-200 rounded-lg focus-visible:ring-zinc-900 outline-none"
                                     value={transferReason}
                                     onChange={e => setTransferReason(e.target.value)}
-                                    placeholder="e.g., Rebalancing stock..."
+                                    placeholder="Enter reasoning for transfer..."
                                 />
                             </div>
-
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                                <button
-                                    type="button"
-                                    onClick={() => setTransferModal(null)}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                                    disabled={transferQty < 1 || transferQty > transferModal.currentQty || !transferTarget}
-                                >
-                                    Execute Transfer
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        </div>
+                    )}
+                    <DialogFooter className="sm:justify-end gap-2">
+                        <Button variant="outline" onClick={() => setTransferModal(null)} className="h-9 text-sm font-medium border-zinc-200 rounded-md">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleTransfer} className="h-9 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-md" disabled={!transferQty || !transferTarget}>
+                            Transfer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

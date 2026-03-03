@@ -5,12 +5,14 @@ import {
     Product, Category, CategoryNode, Brand, CategorySchema, AttributeDefinition,
     CategoryFilterConfig, FilterDefinition, WarehouseInventory, StockMovement, StockMovementType,
     Order, OrderStatus, Invoice, Customer, BillingProfile, CMSVersion,
-    Review, ReviewStatus, Supplier, PurchaseOrder, CreditNote
+    Review, ReviewStatus, Supplier, PurchaseOrder, CreditNote, Warehouse
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
 interface AdminContextType {
     // Inventory
+    warehouses: Warehouse[];
+    refreshWarehouses: () => Promise<void>;
     inventory: WarehouseInventory[];
     refreshInventory: () => Promise<void>;
     stockMovements: StockMovement[];
@@ -84,13 +86,17 @@ interface AdminContextType {
     // CMS Management
     cmsVersions: CMSVersion[];
     refreshCMSVersions: () => Promise<void>;
-    saveCMS: (data: any) => Promise<void>;
-    restoreCMSVersion: (versionId: string) => Promise<void>;
+    saveCMS: (data: any) => Promise<boolean>;
+    restoreCMSVersion: (versionId: string) => Promise<boolean>;
 
     // Reviews
     reviews: Review[];
     refreshReviews: () => Promise<void>;
     updateReviewStatus: (reviewId: string, status: ReviewStatus) => Promise<void>;
+
+    // UI/Navigation State
+    activeTab: string;
+    setActiveTab: (tab: string) => void;
 
     isLoading: boolean;
 }
@@ -100,6 +106,7 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('overview');
 
     // --- STATE ---
     const [inventory, setInventory] = useState<WarehouseInventory[]>([]);
@@ -117,6 +124,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
     // --- FETCHERS ---
 
@@ -129,6 +137,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             // If items exists, use it. Otherwise, if it's somehow a raw array, map that.
             const newInventory = data.items ? data.items : (Array.isArray(data) ? data : []);
             setInventory(newInventory);
+        } catch (err) { console.error(err); }
+    }, []);
+
+    const refreshWarehouses = useCallback(async () => {
+        try {
+            const res = await fetch('/api/warehouses');
+            const data = await res.json();
+            setWarehouses(data);
         } catch (err) { console.error(err); }
     }, []);
 
@@ -263,7 +279,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 refreshBrands(),
                 refreshReviews(),
                 refreshSuppliers(),
-                refreshPurchaseOrders()
+                refreshPurchaseOrders(),
+                refreshWarehouses()
             ]);
             setIsLoading(false);
         };
@@ -273,7 +290,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         refreshFilterConfigs, refreshInvoices, refreshCustomers,
         refreshBillingProfile, refreshCMSVersions,
         refreshProducts, refreshCategories, refreshBrands,
-        refreshReviews, refreshSuppliers, refreshPurchaseOrders
+        refreshReviews, refreshSuppliers, refreshPurchaseOrders, refreshWarehouses
     ]);
 
     // --- ACTIONS ---
@@ -344,14 +361,27 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshInventory, toast]);
 
+    const sanitizeCategoryNodes = (nodes: CategoryNode[]): CategoryNode[] =>
+        nodes.map(({ category, brand, query, children, ...rest }) => ({
+            ...rest,
+            ...(category ? { category } : {}),
+            ...(brand ? { brand } : {}),
+            ...(query ? { query } : {}),
+            children: children?.length ? sanitizeCategoryNodes(children) : [],
+        }));
+
     const updateCategories = useCallback(async (nodes: CategoryNode[]) => {
         try {
             const res = await fetch('/api/categories/hierarchy', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(nodes),
+                body: JSON.stringify(sanitizeCategoryNodes(nodes)),
             });
             if (res.ok) toast({ title: "Categories updated" });
+            else {
+                const data = await res.json();
+                toast({ title: "Update Failed", description: JSON.stringify(data.error), variant: "destructive" });
+            }
         } catch (err) { console.error(err); }
     }, [toast]);
 
@@ -512,8 +542,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             if (res.ok) {
                 toast({ title: "CMS saved" });
                 await refreshCMSVersions();
+                return true;
             }
-        } catch (err) { console.error(err); }
+            return false;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
     }, [refreshCMSVersions, toast]);
 
     const restoreCMSVersion = useCallback(async (versionId: string) => {
@@ -526,8 +561,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             if (res.ok) {
                 toast({ title: "CMS version restored" });
                 await refreshCMSVersions();
+                return true;
             }
-        } catch (err) { console.error(err); }
+            return false;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
     }, [refreshCMSVersions, toast]);
 
     const updateReviewStatus = useCallback(async (reviewId: string, status: ReviewStatus) => {
@@ -657,7 +697,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [inventory]);
 
     const value = useMemo(() => ({
-        inventory, refreshInventory, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
+        inventory, refreshInventory, warehouses, refreshWarehouses, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
         suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
         purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
         orders, refreshOrders, updateOrderStatus,
@@ -671,9 +711,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion,
         products, refreshProducts, categories, refreshCategories, brands, refreshBrands,
         reviews, refreshReviews, updateReviewStatus,
+        activeTab,
+        setActiveTab,
         isLoading
     }), [
-        inventory, refreshInventory, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
+        inventory, refreshInventory, warehouses, refreshWarehouses, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
         suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
         purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
         orders, refreshOrders, updateOrderStatus,
@@ -687,6 +729,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion,
         products, refreshProducts, categories, refreshCategories, brands, refreshBrands,
         reviews, refreshReviews, updateReviewStatus,
+        activeTab,
+        setActiveTab,
         isLoading
     ]);
 

@@ -4,8 +4,45 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
 import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec } from '@/types';
-import { Edit, Plus, Trash, AlertCircle, Package, DollarSign, Layers, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+    Edit,
+    Plus,
+    Trash,
+    AlertCircle,
+    Package,
+    DollarSign,
+    Layers,
+    Search,
+    Filter,
+    ChevronLeft,
+    ChevronRight,
+    Image as ImageIcon,
+    CheckCircle2,
+    X,
+    MoreHorizontal,
+    LayoutGrid,
+    Settings2,
+    Save,
+    ArrowLeft
+} from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import ImageUploader from '../uploadthing/ImageUploader';
+import { cn } from '@/lib/utils';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const MAX_IMAGE_SIZE_MB = 2;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -15,7 +52,7 @@ interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
     price?: number;
     stock?: number;
     sku?: string;
-    image?: string;
+    images: string[];
 }
 
 const ProductManager = () => {
@@ -29,11 +66,8 @@ const ProductManager = () => {
         schemas,
     } = useAdmin();
 
-    const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [error, setError] = useState<string | null>(null);
-
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
 
     // Pagination & Filtering State
@@ -57,8 +91,6 @@ const ProductManager = () => {
         const fetchPaginatedProducts = async () => {
             setIsLoadingProducts(true);
             try {
-                // We use searchParams.toString() directly to reuse current query filters,
-                // but we explicitly add default limit if not present.
                 const query = new URLSearchParams(searchParams.toString());
                 if (!query.has("limit")) query.set("limit", "10");
                 if (!query.has("page")) query.set("page", "1");
@@ -76,7 +108,6 @@ const ProductManager = () => {
             }
         };
 
-        // Only fetch if NOT creating/editing a product
         if (!isEditing) {
             fetchPaginatedProducts();
         }
@@ -85,7 +116,6 @@ const ProductManager = () => {
     const updateQueryParams = (newParams: Record<string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString());
 
-        // Reset page to 1 if any filter logic changes, except when explicitly changing page
         if (!newParams.page && (newParams.category !== undefined || newParams.q !== undefined || newParams.f_stock_status !== undefined || newParams.minPrice !== undefined || newParams.maxPrice !== undefined)) {
             params.set("page", "1");
         }
@@ -108,25 +138,19 @@ const ProductManager = () => {
         price: 0,
         stock: 0,
         category: Category.PROCESSOR,
-        image: 'https://picsum.photos/300/300',
-        imageFile: undefined,
+        images: ['https://picsum.photos/300/300'],
         specs: { brand: '' },
         description: ''
     });
     const [newProductCost, setNewProductCost] = useState(0);
 
-    // Get schema for current category and filter based on dependencies
     const currentSchema = useMemo(() => {
         const schema = schemas.find(s => s.category === currentProduct.category);
         if (!schema) return [];
 
         return schema.attributes.filter(attr => {
             if (!attr.dependencyKey) return true;
-
-            // Check if the required dependency condition is met
             const dependencyVal = currentProduct.specs?.[attr.key === 'socket' ? 'brand' : attr.dependencyKey];
-
-            // Allow checking against arrays (e.g if brand was somehow multi-select) or strings
             if (Array.isArray(dependencyVal)) {
                 return dependencyVal.includes(attr.dependencyValue || '');
             }
@@ -134,90 +158,57 @@ const ProductManager = () => {
         });
     }, [currentProduct.category, currentProduct.specs, schemas]);
 
-    // Get available brands for current category
     const availableBrands = useMemo(() => {
         return brands.filter(b =>
             b.categories.includes(currentProduct.category as Category)
         );
     }, [currentProduct.category, brands]);
 
-    // ----------------- image upload utils -------------------
-    const validateImage = (file: File) => {
-        if (!ALLOWED_TYPES.includes(file.type)) {
-            return "Only JPG, PNG, or WEBP images are allowed.";
-        }
-
-        if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-            return `Image must be under ${MAX_IMAGE_SIZE_MB}MB.`;
-        }
-
-        return null;
-    };
-    const simulateUpload = () => {
-        setUploadProgress(0);
-
-        const interval = setInterval(() => {
-            setUploadProgress((prev) => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    return 100;
-                }
-                return prev + 10;
-            });
-        }, 150);
-    };
-    const handleFile = (file: File) => {
-        const validationError = validateImage(file);
-        if (validationError) {
-            setError(validationError);
-            return;
-        }
-
-        setError(null);
-        setImageFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        simulateUpload();
+    const handleUploadComplete = (url: string) => {
+        setPreviewUrl(url);
+        setUploadError(null);
+        setCurrentProduct(prev => ({
+            ...prev,
+            images: [...prev.images.filter(img => img === 'https://picsum.photos/300/300' ? false : true), url]
+        }));
     };
 
-    // Auto-generate SKU if not provided
+    const handleUploadError = (err: Error) => {
+        setUploadError(err.message);
+    };
+
     const generateSKU = (product: ProductFormState): string => {
         if (product.sku && product.sku.trim()) return product.sku.trim();
-
         const catPrefix = product.category?.substring(0, 3).toUpperCase() || 'PRD';
         const brandPrefix = String(product.specs?.brand || '').substring(0, 3).toUpperCase() || 'XXX';
         const timestamp = Date.now().toString().slice(-6);
-
         return `${catPrefix}-${brandPrefix}-${timestamp}`;
     };
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Validate required fields
         if (!currentProduct.name?.trim()) {
             alert('Product name is required');
             return;
         }
-
         if (!currentProduct.specs?.brand) {
             alert('Brand is required');
             return;
         }
 
-        // Convert flat specs to array for API
         const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
 
-        // Check if editing existing product
         if (currentProduct.id && products.find(p => p.id === currentProduct.id)) {
             updateProduct({
                 ...currentProduct,
-                specs: apiSpecs
-            } as Product);
+                specs: apiSpecs,
+                price: currentProduct.price,
+                stock: currentProduct.stock,
+                images: currentProduct.images
+            } as any);
         } else {
-            // Creating new product
             const newId = `prod-${Date.now()}`;
             const generatedSKU = generateSKU(currentProduct);
-
             const newProduct: Product = {
                 ...currentProduct,
                 id: newId,
@@ -226,11 +217,10 @@ const ProductManager = () => {
                 price: currentProduct.price || 0,
                 stock: currentProduct.stock || 0,
                 category: currentProduct.category || Category.PROCESSOR,
-                image: currentProduct.image || 'https://picsum.photos/300/300',
+                images: currentProduct.images.length > 0 ? currentProduct.images : ['https://picsum.photos/300/300'],
                 description: currentProduct.description || '',
                 specs: apiSpecs
             } as Product;
-
             addProduct(newProduct, currentProduct.stock || 0, newProductCost);
         }
 
@@ -239,10 +229,22 @@ const ProductManager = () => {
     };
 
     const handleEdit = (product: Product) => {
+        const firstVariant = product.variants?.[0];
+        const firstMedia = product.media?.[0];
+        const mainStock = firstVariant?.warehouseInventories?.find(inv => inv.warehouse?.code === 'MAIN')?.quantity
+            || firstVariant?.warehouseInventories?.[0]?.quantity
+            || 0;
+
         setCurrentProduct({
             ...product,
+            sku: firstVariant?.sku || '',
+            price: firstVariant?.price || 0,
+            stock: mainStock,
+            images: product.media?.length ? product.media.map(m => m.url) : [product.image || 'https://picsum.photos/300/300'],
             specs: specsToFlat(product.specs)
         });
+
+        setPreviewUrl(firstMedia?.url || product.image || null);
         setIsEditing(true);
     };
 
@@ -260,11 +262,12 @@ const ProductManager = () => {
             price: 0,
             stock: 0,
             category: Category.PROCESSOR,
-            image: 'https://picsum.photos/300/300',
+            images: ['https://picsum.photos/300/300'],
             specs: { brand: '' },
             description: ''
         });
         setNewProductCost(0);
+        setPreviewUrl(null);
     };
 
     const handleCancel = () => {
@@ -277,11 +280,11 @@ const ProductManager = () => {
         setIsEditing(true);
     };
 
-    const handleCategoryChange = (newCategory: Category) => {
+    const handleCategoryChange = (val: string) => {
         setCurrentProduct({
             ...currentProduct,
-            category: newCategory,
-            specs: { brand: '' } // Reset specs when category changes
+            category: val as Category,
+            specs: { brand: '' }
         });
     };
 
@@ -291,21 +294,14 @@ const ProductManager = () => {
             [key]: value
         };
 
-        // If the changed spec is a parent dependency (e.g. brand), we need to cascade and clear 
-        // any child attributes that no longer match the new parent value.
         const schema = schemas.find(s => s.category === currentProduct.category);
         if (schema) {
             schema.attributes.forEach(attr => {
-                // For socket, the seed data uses dependencyKey = 'brand'
                 const depKey = attr.key === 'socket' ? 'brand' : attr.dependencyKey;
-
                 if (depKey === key) {
-                    // The parent was just changed! Check if the new value satisfies this attribute
                     const isSatisfied = Array.isArray(value)
                         ? value.includes(attr.dependencyValue || '')
                         : value === attr.dependencyValue;
-
-                    // If it's no longer satisfied, clear the value from the specs
                     if (!isSatisfied && newSpecs[attr.key] !== undefined) {
                         delete newSpecs[attr.key];
                     }
@@ -313,10 +309,7 @@ const ProductManager = () => {
             });
         }
 
-        setCurrentProduct({
-            ...currentProduct,
-            specs: newSpecs
-        });
+        setCurrentProduct({ ...currentProduct, specs: newSpecs });
     };
 
     const handleMultiSelectToggle = (key: string, option: string) => {
@@ -324,565 +317,478 @@ const ProductManager = () => {
         const newVals = currentVals.includes(option)
             ? currentVals.filter(v => v !== option)
             : [...currentVals, option];
-
         handleSpecChange(key, newVals);
     };
 
-    const getStockBadgeClass = (status: string | undefined): string => {
-        if (status === 'OUT_OF_STOCK') return 'bg-red-100 text-red-800';
-        if (status === 'LOW_STOCK') return 'bg-orange-100 text-orange-800';
-        return 'bg-green-100 text-green-800';
+    const getStatusStyles = (status: string | undefined) => {
+        switch (status) {
+            case 'OUT_OF_STOCK':
+                return 'bg-red-50 text-red-700 border-red-100';
+            case 'LOW_STOCK':
+                return 'bg-amber-50 text-amber-700 border-amber-100';
+            default:
+                return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+        }
     };
 
     return (
-        <div className="flex-1 overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-6">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Product Management</h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                        {totalProducts} product{totalProducts !== 1 ? 's' : ''} found in catalog matching filters
+                    <h2 className="text-lg font-semibold text-zinc-900">Products</h2>
+                    <p className="text-sm text-zinc-500 mt-0.5">
+                        Product management · {totalProducts} active SKUs
                     </p>
                 </div>
                 {!isEditing && (
-                    <button
+                    <Button
                         onClick={handleAddNew}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        size="sm"
+                        className="h-8 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 gap-2 rounded-md"
                     >
-                        <Plus size={16} /> Add Product
-                    </button>
+                        <Plus size={14} /> Add Product
+                    </Button>
                 )}
             </div>
 
             {isEditing ? (
-                <form onSubmit={handleSave} className="space-y-6">
-                    {/* Basic Information */}
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Package size={20} className="text-gray-600" />
-                            <h3 className="text-sm font-bold text-gray-700 uppercase">Basic Information</h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Product Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    required
-                                    type="text"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={currentProduct.name}
-                                    onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })}
-                                    placeholder="e.g., AMD Ryzen 7 7800X3D"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    SKU (Auto-generated if empty)
-                                </label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={currentProduct.sku}
-                                    onChange={e => setCurrentProduct({ ...currentProduct, sku: e.target.value })}
-                                    placeholder="Leave empty for auto-generation"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Category <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={currentProduct.category}
-                                    onChange={e => handleCategoryChange(e.target.value as Category)}
-                                >
-                                    {Object.values(Category).map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Brand <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={currentProduct.specs?.brand || ''}
-                                    onChange={e => handleSpecChange('brand', e.target.value)}
-                                >
-                                    <option value="">Select Brand</option>
-                                    {availableBrands.map(brand => (
-                                        <option key={brand.id} value={brand.name}>{brand.name}</option>
-                                    ))}
-                                </select>
-                                {availableBrands.length === 0 && (
-                                    <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
-                                        <AlertCircle size={12} />
-                                        No brands available for this category
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Description
-                                </label>
-                                <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    rows={3}
-                                    value={currentProduct.description}
-                                    onChange={e => setCurrentProduct({ ...currentProduct, description: e.target.value })}
-                                    placeholder="Brief product description..."
-                                />
-                            </div>
-
-                            <div>
-                                <div
-                                    onDrop={(e) => {
-                                        e.preventDefault();
-                                        const file = e.dataTransfer.files?.[0];
-                                        if (file) handleFile(file);
-                                    }}
-                                    onDragOver={(e) => e.preventDefault()}
-                                    className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed
-             border-gray-300 bg-gray-50 p-6 text-center transition
-             hover:border-blue-400 hover:bg-blue-50"
-                                >
-                                    <p className="text-sm font-medium text-gray-700">
-                                        Drag & drop an image here
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        JPG, PNG, WEBP · Max {MAX_IMAGE_SIZE_MB}MB
-                                    </p>
-
-                                    <label className="mt-4 cursor-pointer rounded-md bg-blue-600 px-4 py-2
-                    text-sm font-medium text-white hover:bg-blue-700">
-                                        Browse File
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) handleFile(file);
-                                            }}
-                                        />
-                                    </label>
-                                </div>
-                                {uploadProgress > 0 && uploadProgress < 100 && (
-                                    <div className="mt-4">
-                                        <div className="h-2 w-full rounded-full bg-gray-200">
-                                            <div
-                                                className="h-2 rounded-full bg-blue-600 transition-all"
-                                                style={{ width: `${uploadProgress}%` }}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="lg:col-span-2 space-y-6">
+                        <Card className="border shadow-sm">
+                            <CardHeader className="px-6 py-5 border-b border-zinc-100 bg-zinc-50/50">
+                                <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                    <LayoutGrid size={16} className="text-zinc-500" />
+                                    General Information
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <form onSubmit={handleSave} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-zinc-700">Name</Label>
+                                            <Input
+                                                required
+                                                value={currentProduct.name}
+                                                onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })}
+                                                placeholder="Enter identifying name..."
+                                                className="h-9 text-xs border-zinc-200 focus-visible:ring-zinc-900"
                                             />
                                         </div>
-                                        <p className="mt-1 text-xs text-gray-600">
-                                            Uploading... {uploadProgress}%
-                                        </p>
-                                    </div>
-                                )}
-                                {previewUrl && uploadProgress === 100 && (
-                                    <div className="mt-4 flex items-center gap-4">
-                                        <img
-                                            src={previewUrl}
-                                            alt="Preview"
-                                            className="h-24 w-24 rounded-lg border object-cover"
-                                        />
-                                        <span className="text-sm font-medium text-green-600">
-                                            Image ready
-                                        </span>
-                                    </div>
-                                )}
-                                {error && (
-                                    <p className="mt-3 text-sm text-red-600">
-                                        {error}
-                                    </p>
-                                )}
 
-                            </div>
-
-                            <div>
-                                {currentProduct.image && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Preview</label>
-                                        <img
-                                            src={currentProduct.image}
-                                            alt="Product preview"
-                                            className="h-16 w-16 object-contain bg-gray-100 rounded-lg border border-gray-200"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300';
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Pricing & Inventory */}
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                        <div className="flex items-center gap-2 mb-4">
-                            <DollarSign size={20} className="text-gray-600" />
-                            <h3 className="text-sm font-bold text-gray-700 uppercase">Pricing & Inventory</h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Selling Price (₹) <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    required
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={currentProduct.price}
-                                    onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })}
-                                />
-                            </div>
-
-                            {!currentProduct.id && (
-                                <>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Initial Stock <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            required
-                                            type="number"
-                                            min="0"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={currentProduct.stock}
-                                            onChange={e => setCurrentProduct({ ...currentProduct, stock: Number(e.target.value) })}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Cost Price (₹) <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            required
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={newProductCost}
-                                            onChange={e => setNewProductCost(Number(e.target.value))}
-                                        />
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Technical Specifications */}
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Layers size={20} className="text-gray-600" />
-                            <h3 className="text-sm font-bold text-gray-700 uppercase">
-                                Technical Specifications - {currentProduct.category}
-                            </h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {currentSchema.map(attr => (
-                                <div key={attr.key}>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                        {attr.label}
-                                        {attr.required && <span className="text-red-500 ml-1">*</span>}
-                                        {attr.unit && <span className="text-gray-500 ml-1">({attr.unit})</span>}
-                                    </label>
-
-                                    {attr.type === 'multi-select' ? (
-                                        <div className="flex flex-wrap gap-2 mt-1">
-                                            {attr.options?.map(option => {
-                                                const currentVals = (currentProduct.specs?.[attr.key] as string[]) || [];
-                                                const isSelected = currentVals.includes(option);
-                                                return (
-                                                    <label key={option} className="flex items-center gap-1.5 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                                            checked={isSelected}
-                                                            onChange={() => handleMultiSelectToggle(attr.key, option)}
-                                                        />
-                                                        <span className="text-sm text-gray-700">{option}</span>
-                                                    </label>
-                                                );
-                                            })}
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-zinc-700">SKU</Label>
+                                            <Input
+                                                value={currentProduct.sku}
+                                                onChange={e => setCurrentProduct({ ...currentProduct, sku: e.target.value })}
+                                                placeholder="Leave empty for auto-generation"
+                                                className="h-9 text-xs border-zinc-200 focus-visible:ring-zinc-900 font-mono"
+                                            />
                                         </div>
-                                    ) : attr.type === 'select' ? (
-                                        <select
-                                            required={attr.required}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={(currentProduct.specs?.[attr.key] as string) || ''}
-                                            onChange={e => handleSpecChange(attr.key, e.target.value)}
-                                        >
-                                            <option value="">Select...</option>
-                                            {attr.options?.map(option => (
-                                                <option key={option} value={option}>{option}</option>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-zinc-700">Category</Label>
+                                            <Select value={currentProduct.category} onValueChange={handleCategoryChange}>
+                                                <SelectTrigger className="h-9 text-xs border-zinc-200 focus:ring-zinc-900">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Object.values(Category).map(cat => (
+                                                        <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-zinc-700">Brand</Label>
+                                            <Select value={currentProduct.specs?.brand as string || ''} onValueChange={val => handleSpecChange('brand', val)}>
+                                                <SelectTrigger className="h-9 text-xs border-zinc-200 focus:ring-zinc-900">
+                                                    <SelectValue placeholder="Select Brand..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableBrands.map(brand => (
+                                                        <SelectItem key={brand.id} value={brand.name} className="text-xs">{brand.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="md:col-span-2 space-y-2">
+                                            <Label className="text-sm font-medium text-zinc-700">Description</Label>
+                                            <Textarea
+                                                value={currentProduct.description}
+                                                onChange={e => setCurrentProduct({ ...currentProduct, description: e.target.value })}
+                                                placeholder="Technical details and overview..."
+                                                className="min-h-[100px] text-xs border-zinc-200 focus-visible:ring-zinc-900 resize-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <Separator className="bg-zinc-100" />
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <Settings2 size={16} className="text-zinc-500" />
+                                            <h3 className="text-sm font-semibold text-zinc-900">Specifications</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {currentSchema.map(attr => (
+                                                <div key={attr.key} className="space-y-2">
+                                                    <Label className="text-sm font-medium text-zinc-700 flex items-center gap-1">
+                                                        {attr.label}
+                                                        {attr.unit && <span className="normal-case opacity-50">({attr.unit})</span>}
+                                                    </Label>
+
+                                                    {attr.type === 'multi-select' ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {attr.options?.map(option => {
+                                                                const isSelected = ((currentProduct.specs?.[attr.key] as string[]) || []).includes(option);
+                                                                return (
+                                                                    <Badge
+                                                                        key={option}
+                                                                        variant={isSelected ? "default" : "outline"}
+                                                                        className={cn(
+                                                                            "text-[11px] font-medium uppercase tracking-wide cursor-pointer h-6",
+                                                                            isSelected ? "bg-zinc-900 text-white" : "bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                                                                        )}
+                                                                        onClick={() => handleMultiSelectToggle(attr.key, option)}
+                                                                    >
+                                                                        {option}
+                                                                    </Badge>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : attr.type === 'select' ? (
+                                                        <Select value={(currentProduct.specs?.[attr.key] as string) || ''} onValueChange={val => handleSpecChange(attr.key, val)}>
+                                                            <SelectTrigger className="h-9 text-xs border-zinc-200">
+                                                                <SelectValue placeholder="Select..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {attr.options?.map(option => (
+                                                                    <SelectItem key={option} value={option} className="text-xs">{option}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    ) : (
+                                                        <Input
+                                                            type={attr.type === 'number' ? 'number' : 'text'}
+                                                            className="h-9 text-xs border-zinc-200"
+                                                            value={currentProduct.specs?.[attr.key] || ''}
+                                                            onChange={e => handleSpecChange(attr.key, attr.type === 'number' ? Number(e.target.value) : e.target.value)}
+                                                        />
+                                                    )}
+                                                </div>
                                             ))}
-                                        </select>
-                                    ) : (
-                                        <input
-                                            type={attr.type === 'number' ? 'number' : 'text'}
-                                            required={attr.required}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={currentProduct.specs?.[attr.key] || ''}
-                                            onChange={e => handleSpecChange(
-                                                attr.key,
-                                                attr.type === 'number' ? Number(e.target.value) : e.target.value
+                                        </div>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="space-y-6">
+                        {/* Media Gallery */}
+                        <Card className="border shadow-sm">
+                            <CardHeader className="px-6 py-5 border-b border-zinc-100 bg-zinc-50/50">
+                                <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                    <ImageIcon size={16} className="text-zinc-500" />
+                                    Images
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    {currentProduct.images.map((img, index) => (
+                                        <div key={index} className="relative group aspect-square bg-zinc-50 rounded-lg border border-zinc-200 overflow-hidden">
+                                            <img
+                                                src={img}
+                                                alt={`Product ${index + 1}`}
+                                                className="w-full h-full object-contain p-2"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newImages = currentProduct.images.filter((_, i) => i !== index);
+                                                    setCurrentProduct({ ...currentProduct, images: newImages.length > 0 ? newImages : ['https://picsum.photos/300/300'] });
+                                                }}
+                                                className="absolute top-1.5 right-1.5 p-1 bg-white border border-red-100 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"
+                                            >
+                                                <Trash size={12} />
+                                            </button>
+                                            {index === 0 && (
+                                                <Badge className="absolute bottom-1.5 left-1.5 text-[10px] font-medium h-4 px-1.5 bg-white/80 backdrop-blur-sm text-zinc-900 border-zinc-200 rounded">
+                                                    Primary
+                                                </Badge>
                                             )}
+                                        </div>
+                                    ))}
+                                    <div className="aspect-square border-2 border-dashed border-zinc-200 rounded-lg hover:border-zinc-300 transition-colors flex items-center justify-center bg-zinc-50/30">
+                                        <ImageUploader
+                                            onUploadComplete={handleUploadComplete}
+                                            onUploadError={handleUploadError}
+                                            endpoint="imageUploader"
                                         />
-                                    )}
+                                    </div>
                                 </div>
-                            ))}
+                                {uploadError && <p className="text-[10px] font-bold text-red-500 uppercase">{uploadError}</p>}
+                            </CardContent>
+                        </Card>
 
-                            {currentSchema.length === 0 && (
-                                <div className="md:col-span-3">
-                                    <p className="text-sm text-gray-400 italic flex items-center gap-2">
-                                        <AlertCircle size={16} />
-                                        No specific schema defined for this category
-                                    </p>
+                        {/* Financial Registry */}
+                        <Card className="border shadow-sm">
+                            <CardHeader className="px-6 py-5 border-b border-zinc-100 bg-zinc-50/50">
+                                <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                    <DollarSign size={16} className="text-zinc-500" />
+                                    Pricing
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-6">
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-zinc-700">Selling Price (₹)</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        className="h-9 text-xs border-zinc-200"
+                                        value={currentProduct.price}
+                                        onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })}
+                                    />
                                 </div>
-                            )}
-                        </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                        <button
-                            type="button"
-                            onClick={handleCancel}
-                            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                            {currentProduct.id ? 'Update Product' : 'Create Product'}
-                        </button>
+                                {!currentProduct.id && (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-zinc-700">Cost Price (₹)</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                className="h-9 text-xs border-zinc-200"
+                                                value={newProductCost}
+                                                onChange={e => setNewProductCost(Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-zinc-700">Initial Stock</Label>
+                                            <Input
+                                                type="number"
+                                                className="h-9 text-xs border-zinc-200"
+                                                value={currentProduct.stock}
+                                                onChange={e => setCurrentProduct({ ...currentProduct, stock: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                <div className="pt-4 flex flex-col gap-2">
+                                    <Button onClick={handleSave} className="h-9 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 gap-2 rounded-md">
+                                        <Save size={14} /> Save Product
+                                    </Button>
+                                    <Button variant="outline" onClick={handleCancel} className="h-9 text-xs font-medium border-zinc-200 gap-2 rounded-md">
+                                        <ArrowLeft size={14} /> Cancel
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
-                </form>
+                </div>
             ) : (
-                <div className="space-y-4">
-                    {/* Filters Bar */}
-                    <div className="flex flex-wrap gap-3 bg-gray-50 p-4 border border-gray-200 rounded-xl items-center justify-between">
-                        {/* Search and Category */}
-                        <div className="flex flex-wrap gap-3 flex-1">
-                            <div className="relative max-w-xs w-full">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="Search products..."
-                                    className="pl-9 pr-3 py-2 w-full text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={currentSearch}
-                                    onChange={(e) => updateQueryParams({ q: e.target.value })}
-                                />
+                <div className="space-y-6">
+                    {/* Catalog Controls */}
+                    <Card className="border shadow-sm">
+                        <CardHeader className="px-6 py-5 border-b border-zinc-100 bg-zinc-100/30">
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="relative group max-w-sm">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 transition-colors" size={14} />
+                                        <Input
+                                            placeholder="Search catalog..."
+                                            className="pl-9 h-9 text-xs bg-white border-zinc-200 focus-visible:ring-zinc-900 shadow-none transition-all w-48 sm:w-64"
+                                            value={currentSearch}
+                                            onChange={e => updateQueryParams({ q: e.target.value })}
+                                        />
+                                    </div>
+                                    <Select value={currentCategory} onValueChange={val => updateQueryParams({ category: val })}>
+                                        <SelectTrigger className="h-9 text-xs font-medium w-36 border-zinc-200 bg-white shadow-none">
+                                            <SelectValue placeholder="Category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all" className="text-xs">All Categories</SelectItem>
+                                            {Object.values(Category).map(cat => (
+                                                <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={currentStockStatus} onValueChange={val => updateQueryParams({ f_stock_status: val })}>
+                                        <SelectTrigger className="h-9 text-xs font-medium w-36 border-zinc-200 bg-white shadow-none">
+                                            <SelectValue placeholder="Availability" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all" className="text-xs">Any Availability</SelectItem>
+                                            <SelectItem value="In Stock" className="text-xs">In Stock</SelectItem>
+                                            <SelectItem value="Out of Stock" className="text-xs">Out of Stock</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white px-3 py-1.5 border border-zinc-200 rounded-md">
+                                    <DollarSign size={14} className="text-zinc-400" />
+                                    <input
+                                        type="number"
+                                        placeholder="Min"
+                                        className="w-14 text-[10px] font-bold outline-none placeholder:font-normal"
+                                        value={currentMinPrice}
+                                        onChange={e => updateQueryParams({ minPrice: e.target.value })}
+                                    />
+                                    <span className="text-zinc-200 mx-1">—</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Max"
+                                        className="w-14 text-[10px] font-bold outline-none placeholder:font-normal"
+                                        value={currentMaxPrice}
+                                        onChange={e => updateQueryParams({ maxPrice: e.target.value })}
+                                    />
+                                </div>
                             </div>
+                        </CardHeader>
 
-                            <select
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                value={currentCategory}
-                                onChange={(e) => updateQueryParams({ category: e.target.value })}
-                            >
-                                <option value="all">All Categories</option>
-                                {Object.values(Category).map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-
-                            <select
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                value={currentStockStatus}
-                                onChange={(e) => updateQueryParams({ f_stock_status: e.target.value })}
-                            >
-                                <option value="all">Any Stock Status</option>
-                                <option value="In Stock">In Stock (&gt;0)</option>
-                                <option value="Out of Stock">Out of Stock (=0)</option>
-                            </select>
-                        </div>
-
-                        {/* Price Range */}
-                        <div className="flex items-center gap-2 bg-white px-3 py-1 border border-gray-300 rounded-lg">
-                            <DollarSign size={14} className="text-gray-400" />
-                            <input
-                                type="number"
-                                placeholder="Min Price"
-                                className="w-20 text-sm focus:outline-none py-1"
-                                value={currentMinPrice}
-                                onChange={(e) => updateQueryParams({ minPrice: e.target.value })}
-                            />
-                            <span className="text-gray-300">-</span>
-                            <input
-                                type="number"
-                                placeholder="Max Price"
-                                className="w-20 text-sm focus:outline-none py-1"
-                                value={currentMaxPrice}
-                                onChange={(e) => updateQueryParams({ maxPrice: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Table View */}
-                    <div className="overflow-x-auto rounded-xl border border-gray-200">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Product
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Category
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Brand
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Price
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Stock
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {isLoadingProducts ? (
+                        {/* Table Engine */}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-zinc-200">
+                                <thead className="bg-zinc-50/50">
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
-                                            Loading products...
-                                        </td>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Product</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Category</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Brand</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">Price</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">Stock</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wide">Actions</th>
                                     </tr>
-                                ) : paginatedProducts.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Package size={48} className="text-gray-300" />
-                                                <p className="text-gray-500">No products match your filters</p>
-                                                {(currentCategory !== 'all' || currentSearch || currentStockStatus !== 'all' || currentMinPrice || currentMaxPrice) ? (
-                                                    <button
-                                                        onClick={() => router.push(pathname)}
-                                                        className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                                                    >
-                                                        Clear all filters
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={handleAddNew}
-                                                        className="text-blue-600 hover:text-blue-700 font-medium"
-                                                    >
-                                                        Add your first product
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    paginatedProducts.map(product => (
-                                        <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <img
-                                                        src={product.media?.[0]?.url || '/placeholder.png'}
-                                                        alt={product.name}
-                                                        className="h-10 w-10 rounded-lg object-contain bg-gray-100 border border-gray-200"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300';
-                                                        }}
-                                                    />
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900 max-w-[200px] truncate" title={product.name}>
-                                                            {product.name}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">
-                                                            {product.variants?.[0]?.sku || ''}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <span className="px-2 py-1 bg-gray-100 rounded text-xs border border-gray-200">
-                                                    {product.category}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                                {product.brand?.name || product.specs.find(s => s.key === 'brand')?.value || '-'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                ₹{(product.variants?.[0]?.price || 0).toLocaleString('en-IN')}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStockBadgeClass(product.variants?.[0]?.status)}`}>
-                                                    {product.variants?.[0]?.status?.replace(/_/g, ' ') || 'UNKNOWN'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <button
-                                                        onClick={() => handleEdit(product)}
-                                                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                                                        title="Edit product"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(product.id)}
-                                                        className="text-red-600 hover:text-red-900 transition-colors"
-                                                        title="Delete product"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
-                                                </div>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-zinc-200">
+                                    {isLoadingProducts ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-sm text-zinc-400 animate-pulse">
+                                                Loading products...
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    ) : paginatedProducts.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-16 text-center">
+                                                <Package size={32} className="mx-auto text-zinc-200 mb-4" />
+                                                <p className="text-sm text-zinc-400">No products found</p>
+                                                <Button
+                                                    variant="link"
+                                                    className="text-indigo-600 font-medium text-xs mt-2"
+                                                    onClick={() => router.push(pathname)}
+                                                >
+                                                    Clear Filters
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        paginatedProducts.map(product => {
+                                            const firstVar = product.variants?.[0];
+                                            const brand = product.brand?.name || product.specs.find(s => s.key === 'brand')?.value || 'Generic';
 
-                    {/* Pagination Controls */}
-                    {!isLoadingProducts && totalProducts > 0 && (
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-2">
-                            <div className="text-sm text-gray-500">
-                                Showing <span className="font-semibold text-gray-900">{(currentPage - 1) * currentLimit + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(currentPage * currentLimit, totalProducts)}</span> of <span className="font-semibold text-gray-900">{totalProducts}</span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    disabled={currentPage <= 1}
-                                    onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
-                                    className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <ChevronLeft size={18} />
-                                </button>
-                                <div className="px-4 py-1.5 text-sm font-medium border border-gray-200 rounded-md bg-gray-50">
-                                    Page {currentPage} of {Math.max(1, Math.ceil(totalProducts / currentLimit))}
-                                </div>
-                                <button
-                                    disabled={currentPage >= Math.ceil(totalProducts / currentLimit)}
-                                    onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
-                                    className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <ChevronRight size={18} />
-                                </button>
-                            </div>
+                                            return (
+                                                <tr key={product.id} className="hover:bg-zinc-50/50 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="h-12 w-12 shrink-0 bg-zinc-100 rounded-lg overflow-hidden border border-zinc-200 p-1">
+                                                                <img
+                                                                    className="h-full w-full object-contain"
+                                                                    src={product.media?.[0]?.url || '/placeholder.png'}
+                                                                    alt={product.name}
+                                                                />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="text-sm font-semibold text-zinc-900 truncate leading-tight" title={product.name}>
+                                                                    {product.name}
+                                                                </div>
+                                                                <div className="text-[10px] font-mono font-bold text-zinc-400 mt-0.5">
+                                                                    {firstVar?.sku || 'NO-SKU'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <Badge variant="outline" className="text-[11px] font-medium uppercase rounded tracking-wide bg-white border-zinc-200 text-zinc-600 px-1.5 h-5">
+                                                            {product.category}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-xs font-medium text-zinc-500">
+                                                        {brand}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-zinc-900">
+                                                        ₹{(firstVar?.price || 0).toLocaleString('en-IN')}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <Badge className={cn(
+                                                            "text-[11px] font-medium uppercase tracking-wide h-5 px-1.5 border rounded",
+                                                            getStatusStyles(firstVar?.status)
+                                                        )}>
+                                                            {firstVar?.status?.replace(/_/g, ' ') || 'UNKNOWN'}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-7 w-7 p-0 border-zinc-200 hover:bg-zinc-100"
+                                                                onClick={() => handleEdit(product)}
+                                                            >
+                                                                <Edit size={12} className="text-zinc-600" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-7 w-7 p-0 border-zinc-200 hover:bg-red-50 hover:border-red-200"
+                                                                onClick={() => handleDelete(product.id)}
+                                                            >
+                                                                <Trash size={12} className="text-red-500" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+
+                        {/* Inventory Pagination */}
+                        {!isLoadingProducts && totalProducts > 0 && (
+                            <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/30 flex items-center justify-between">
+                                <div className="text-xs font-medium text-zinc-400">
+                                    Displaying <span className="text-zinc-900">{(currentPage - 1) * currentLimit + 1}</span> to <span className="text-zinc-900">{Math.min(currentPage * currentLimit, totalProducts)}</span> of <span className="text-zinc-900">{totalProducts}</span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage <= 1}
+                                        onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
+                                        className="h-8 w-8 p-0 border-zinc-200"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </Button>
+                                    <div className="px-3 h-8 flex items-center text-xs font-medium border border-zinc-200 rounded-md bg-white text-zinc-600">
+                                        {currentPage} / {Math.ceil(totalProducts / currentLimit)}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage >= Math.ceil(totalProducts / currentLimit)}
+                                        onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
+                                        className="h-8 w-8 p-0 border-zinc-200"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </Card>
                 </div>
             )}
         </div>

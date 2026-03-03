@@ -14,8 +14,39 @@ import {
     ListFilter,
     Plus,
     Trash,
-    X
+    X,
+    Settings2,
+    Save,
+    ArrowLeft,
+    Search,
+    Filter,
+    LayoutGrid,
+    MoreVertical
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 const CategoryManager = () => {
     const {
@@ -73,12 +104,11 @@ const CategoryManager = () => {
     const saveNode = () => {
         if (!editingNodePath && !isAddingRoot) return;
 
-        const newTree = JSON.parse(JSON.stringify(categories)); // Deep clone
+        const newTree = JSON.parse(JSON.stringify(categories));
 
         if (isAddingRoot) {
             newTree.push(nodeForm);
         } else if (editingNodePath!.endsWith('-new')) {
-            // Add child
             const parentPath = editingNodePath!
                 .replace('-new', '')
                 .split('-')
@@ -90,7 +120,6 @@ const CategoryManager = () => {
             if (!current.children) current.children = [];
             current.children.push(nodeForm);
         } else {
-            // Edit existing
             const path = editingNodePath!.split('-').map(Number);
             let current = newTree[path[0]];
             for (let i = 1; i < path.length; i++) {
@@ -123,7 +152,6 @@ const CategoryManager = () => {
         updateCategories(newTree);
     };
 
-    // --- FILTER CONFIG HELPERS ---
     const activeFilters = useMemo(() => {
         return (
             filterConfigs.find((c) => c.category === selectedCatForFilters)?.filters || []
@@ -161,7 +189,6 @@ const CategoryManager = () => {
         updateFilterConfig(selectedCatForFilters, newFilters);
     };
 
-    // --- RENDERERS ---
     const renderTree = (
         nodes: any[],
         pathPrefix: string = '',
@@ -176,145 +203,146 @@ const CategoryManager = () => {
             return (
                 <div key={currentPath} className="relative">
                     <div
-                        className={`group flex items-center gap-3 p-3 mb-2 rounded-xl border transition-all 
-                ${isEditing
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-transparent hover:border-blue-200 hover:bg-white hover:shadow-sm'
-                            }
-             `}
+                        className={cn(
+                            "group flex items-center gap-3 p-3 mb-2 rounded-lg border transition-all",
+                            isEditing
+                                ? "border-zinc-900 bg-zinc-50"
+                                : "border-zinc-100 hover:border-zinc-200 hover:bg-white hover:shadow-sm"
+                        )}
                     >
-                        <div className="text-gray-300 cursor-grab flex-shrink-0">
-                            <GripVertical size={16} />
+                        <div className="text-zinc-300 cursor-grab flex-shrink-0">
+                            <GripVertical size={14} />
                         </div>
                         <button
                             onClick={() => toggleExpand(currentPath)}
-                            className={`p-1 rounded text-gray-500 hover:bg-blue-50 ${!hasChildren ? 'invisible' : ''
-                                }`}
-                        >
-                            {isExpanded ? (
-                                <ChevronDown size={16} />
-                            ) : (
-                                <ChevronRight size={16} />
+                            className={cn(
+                                "p-1 rounded text-zinc-400 hover:bg-zinc-100 transition-colors",
+                                !hasChildren && "invisible"
                             )}
+                        >
+                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         </button>
-                        <div className="p-2 bg-gray-100 rounded-lg text-gray-500">
-                            <Folder size={20} />
+                        <div className="p-2 bg-zinc-100 rounded-md text-zinc-500">
+                            <Folder size={18} />
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-900">{node.label}</h4>
+                            <h4 className="text-sm font-semibold text-zinc-900">{node.label}</h4>
                             <div className="flex flex-wrap gap-2 mt-1">
                                 {node.category && (
-                                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 rounded font-medium">
+                                    <Badge variant="outline" className="text-[11px] font-medium bg-zinc-50 border-zinc-200 text-zinc-500 h-5 px-1.5 rounded">
                                         {node.category}
-                                    </span>
+                                    </Badge>
                                 )}
                                 {node.brand && (
-                                    <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 rounded font-medium">
+                                    <Badge variant="outline" className="text-[11px] font-medium bg-zinc-50 border-zinc-200 text-zinc-500 h-5 px-1.5 rounded">
                                         {node.brand}
-                                    </span>
+                                    </Badge>
                                 )}
                             </div>
                         </div>
 
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
+                            <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={() => handleAddSubcategory(currentPath)}
-                                className="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors"
-                                title="Add subcategory"
+                                className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
                             >
-                                <Plus size={16} />
-                            </button>
-                            <button
+                                <Plus size={14} />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={() => handleEditNode(node, currentPath)}
-                                className="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
-                                title="Edit"
+                                className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
                             >
-                                <Edit size={16} />
-                            </button>
-                            <button
+                                <Edit size={14} />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={() => deleteNode(currentPath)}
-                                className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
-                                title="Delete"
+                                className="h-8 w-8 p-0 text-zinc-400 hover:text-red-500 hover:bg-red-50"
                             >
-                                <Trash size={16} />
-                            </button>
+                                <Trash size={14} />
+                            </Button>
                         </div>
                     </div>
 
-                    {/* Inline Editor for Hierarchy */}
                     {(isEditing || editingNodePath === `${currentPath}-new`) && (
-                        <div className="ml-12 mb-4 p-4 bg-white border border-blue-200 rounded-lg shadow-sm">
-                            <h4 className="text-xs font-semibold text-gray-700 uppercase mb-3">
+                        <div className="ml-12 mb-4 p-4 bg-white border border-zinc-200 rounded-lg shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                            <h4 className="text-xs font-medium text-zinc-500 mb-3">
                                 {editingNodePath?.endsWith('-new')
-                                    ? 'New Subcategory'
+                                    ? 'Add Subcategory'
                                     : 'Edit Category'}
                             </h4>
-                            <div className="grid grid-cols-2 gap-3">
-                                <input
-                                    type="text"
-                                    placeholder="Label"
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={nodeForm.label}
-                                    onChange={(e) =>
-                                        setNodeForm({ ...nodeForm, label: e.target.value })
-                                    }
-                                />
-                                <select
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={nodeForm.category}
-                                    onChange={(e) =>
-                                        setNodeForm({
-                                            ...nodeForm,
-                                            category: e.target.value as Category,
-                                        })
-                                    }
-                                >
-                                    <option value="">No Mapping</option>
-                                    {Object.values(Category).map((c) => (
-                                        <option key={c} value={c}>
-                                            {c}
-                                        </option>
-                                    ))}
-                                </select>
-                                <input
-                                    type="text"
-                                    placeholder="Brand Filter"
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={nodeForm.brand}
-                                    onChange={(e) =>
-                                        setNodeForm({ ...nodeForm, brand: e.target.value })
-                                    }
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Search Query"
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={nodeForm.query}
-                                    onChange={(e) =>
-                                        setNodeForm({ ...nodeForm, query: e.target.value })
-                                    }
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm font-medium text-zinc-700">Label</Label>
+                                    <Input
+                                        placeholder="Label"
+                                        className="h-9 text-xs border-zinc-200"
+                                        value={nodeForm.label}
+                                        onChange={(e) => setNodeForm({ ...nodeForm, label: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Category Mapping</Label>
+                                    <Select
+                                        value={nodeForm.category ?? 'none'}
+                                        onValueChange={(val) => setNodeForm({ ...nodeForm, category: val === 'none' ? undefined : val as Category })}
+                                    >
+                                        <SelectTrigger className="h-9 text-xs border-zinc-200">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none" className="text-xs italic text-zinc-400">No Mapping</SelectItem>
+                                            {Object.values(Category).map((c) => (
+                                                <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Brand Filter</Label>
+                                    <Input
+                                        placeholder="Brand Filter"
+                                        className="h-9 text-xs border-zinc-200"
+                                        value={nodeForm.brand ?? ''}
+                                        onChange={(e) => setNodeForm({ ...nodeForm, brand: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Query Constraint</Label>
+                                    <Input
+                                        placeholder="Search Query"
+                                        className="h-9 text-xs border-zinc-200"
+                                        value={nodeForm.query ?? ''}
+                                        onChange={(e) => setNodeForm({ ...nodeForm, query: e.target.value })}
+                                    />
+                                </div>
                             </div>
-                            <div className="flex justify-end gap-2 mt-3">
-                                <button
+                            <div className="flex justify-end gap-2 mt-4">
+                                <Button
+                                    variant="outline"
                                     onClick={() => setEditingNodePath(null)}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                                    className="h-8 text-sm font-medium border-zinc-200 rounded-md"
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={saveNode}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                    className="h-8 text-sm font-medium bg-zinc-900 text-white hover:bg-zinc-700 rounded-md"
                                 >
                                     Save
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     )}
 
                     {hasChildren && isExpanded && (
-                        <div className="pl-8 ml-4 border-l-2 border-dashed border-gray-200">
+                        <div className="pl-6 ml-6 border-l border-zinc-200">
                             {renderTree(node.children, `${currentPath}-`, depth + 1)}
                         </div>
                     )}
@@ -325,121 +353,140 @@ const CategoryManager = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header & Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Header & Control Tabs */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                        Category & Filter Manager
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Configure hierarchy and dynamic filters
+                    <h2 className="text-lg font-semibold text-zinc-900">Categories & Filters</h2>
+                    <p className="text-sm text-zinc-500 mt-0.5">
+                        Category hierarchy and filter configuration
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <button
+                <div className="flex items-center gap-1.5 bg-zinc-100 p-1 rounded-lg border border-zinc-200">
+                    <Button
+                        size="sm"
+                        variant={configMode === 'hierarchy' ? 'default' : 'ghost'}
                         onClick={() => setConfigMode('hierarchy')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${configMode === 'hierarchy'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
-                            }`}
+                        className={cn(
+                            "h-8 text-sm font-medium gap-2 rounded-md",
+                            configMode === 'hierarchy' ? "bg-white text-zinc-900 shadow-sm border border-zinc-200 hover:bg-white" : "text-zinc-500 hover:text-zinc-900 hover:bg-transparent"
+                        )}
                     >
-                        <Layers size={16} /> Hierarchy
-                    </button>
-                    <button
+                        <Layers size={14} /> Hierarchy
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant={configMode === 'filters' ? 'default' : 'ghost'}
                         onClick={() => setConfigMode('filters')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${configMode === 'filters'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
-                            }`}
+                        className={cn(
+                            "h-8 text-sm font-medium gap-2 rounded-md",
+                            configMode === 'filters' ? "bg-white text-zinc-900 shadow-sm border border-zinc-200 hover:bg-white" : "text-zinc-500 hover:text-zinc-900 hover:bg-transparent"
+                        )}
                     >
-                        <ListFilter size={16} /> Filters
-                    </button>
+                        <ListFilter size={14} /> Filters
+                    </Button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                <div className="p-6">
-                    {configMode === 'hierarchy' ? (
+            <Card className="border shadow-sm overflow-hidden">
+                <CardHeader className="px-6 py-5 border-b border-zinc-100 bg-zinc-50/50">
+                    <div className="flex items-center justify-between">
                         <div>
-                            <div className="mb-6 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-900">
-                                    Root Categories
-                                </h3>
-                                <button
-                                    onClick={() => {
-                                        setIsAddingRoot(true);
-                                        setNodeForm({});
-                                    }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
-                                >
-                                    <Plus size={16} /> Add Root
-                                </button>
-                            </div>
+                            <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                {configMode === 'hierarchy' ? <Layers size={16} className="text-zinc-500" /> : <ListFilter size={16} className="text-zinc-500" />}
+                                {configMode === 'hierarchy' ? 'Category Hierarchy' : 'Filter Configuration'}
+                            </CardTitle>
+                            <CardDescription className="text-xs text-zinc-500 mt-1">
+                                {configMode === 'hierarchy' ? 'Configure navigation tree and node relationships' : 'Define filter parameters per category'}
+                            </CardDescription>
+                        </div>
+                        {configMode === 'hierarchy' ? (
+                            <Button
+                                size="sm"
+                                onClick={() => { setIsAddingRoot(true); setNodeForm({}); }}
+                                className="h-8 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 gap-2 rounded-md"
+                            >
+                                <Plus size={14} /> Add Root Category
+                            </Button>
+                        ) : (
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    setShowFilterModal(true);
+                                    setEditingFilterIdx(null);
+                                    setFilterForm({ key: '', label: '', type: 'checkbox', options: [] });
+                                }}
+                                className="h-8 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 gap-2 rounded-md"
+                            >
+                                <Plus size={14} /> Add Filter
+                            </Button>
+                        )}
+                    </div>
+                </CardHeader>
 
+                <CardContent className="p-6">
+                    {configMode === 'hierarchy' ? (
+                        <div className="animate-in fade-in duration-300">
                             {isAddingRoot && (
-                                <div className="mb-6 p-4 bg-white border border-blue-200 rounded-lg shadow-sm">
-                                    <h4 className="text-xs font-semibold text-gray-700 uppercase mb-3">
-                                        New Root Category
-                                    </h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input
-                                            type="text"
-                                            placeholder="Label"
-                                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={nodeForm.label}
-                                            onChange={(e) =>
-                                                setNodeForm({ ...nodeForm, label: e.target.value })
-                                            }
-                                        />
-                                        <select
-                                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={nodeForm.category}
-                                            onChange={(e) =>
-                                                setNodeForm({
-                                                    ...nodeForm,
-                                                    category: e.target.value as Category,
-                                                })
-                                            }
-                                        >
-                                            <option value="">No Mapping</option>
-                                            {Object.values(Category).map((c) => (
-                                                <option key={c} value={c}>
-                                                    {c}
-                                                </option>
-                                            ))}
-                                        </select>
+                                <div className="mb-6 p-4 bg-zinc-50 border border-zinc-200 rounded-lg shadow-sm">
+                                    <h4 className="text-xs font-medium text-zinc-500 mb-3">Add Root Category</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Display Label</Label>
+                                            <Input
+                                                placeholder="Label"
+                                                className="h-9 text-xs border-zinc-200 bg-white"
+                                                value={nodeForm.label ?? ''}
+                                                onChange={(e) => setNodeForm({ ...nodeForm, label: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Category Mapping</Label>
+                                            <Select
+                                                value={nodeForm.category ?? 'none'}
+                                                onValueChange={(val) => setNodeForm({ ...nodeForm, category: val === 'none' ? undefined : val as Category })}
+                                            >
+                                                <SelectTrigger className="h-9 text-xs border-zinc-200 bg-white">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none" className="text-xs italic text-zinc-400">No Mapping</SelectItem>
+                                                    {Object.values(Category).map((c) => (
+                                                        <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-end gap-2 mt-3">
-                                        <button
+                                    <div className="flex justify-end gap-2 mt-4">
+                                        <Button
+                                            variant="outline"
                                             onClick={() => setIsAddingRoot(false)}
-                                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                                            className="h-8 text-[10px] font-bold uppercase tracking-wider border-zinc-200"
                                         >
                                             Cancel
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
                                             onClick={saveNode}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                            className="h-8 text-[10px] font-bold uppercase tracking-wider bg-zinc-900 text-white"
                                         >
                                             Save
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
                             )}
 
                             <div className="space-y-2">
                                 {categories.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <Folder size={48} className="mx-auto text-gray-300 mb-3" />
-                                        <p className="text-gray-500">No categories yet</p>
-                                        <button
-                                            onClick={() => {
-                                                setIsAddingRoot(true);
-                                                setNodeForm({});
-                                            }}
-                                            className="mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                                    <div className="text-center py-16">
+                                        <Folder size={32} className="mx-auto text-zinc-200 mb-4" />
+                                        <p className="text-sm text-zinc-400">No categories configured</p>
+                                        <Button
+                                            variant="link"
+                                            onClick={() => { setIsAddingRoot(true); setNodeForm({}); }}
+                                            className="text-indigo-600 font-medium text-sm mt-2"
                                         >
-                                            Create your first category
-                                        </button>
+                                            Add first category
+                                        </Button>
                                     </div>
                                 ) : (
                                     renderTree(categories)
@@ -447,208 +494,156 @@ const CategoryManager = () => {
                             </div>
                         </div>
                     ) : (
-                        /* Filter Configuration Panel */
-                        <div>
-                            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div className="flex-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Select Category
-                                    </label>
-                                    <select
-                                        className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={selectedCatForFilters}
-                                        onChange={(e) =>
-                                            setSelectedCatForFilters(e.target.value as Category)
-                                        }
-                                    >
-                                        {Object.values(Category).map((c) => (
-                                            <option key={c} value={c}>
-                                                {c}
-                                            </option>
-                                        ))}
-                                    </select>
+                        <div className="animate-in fade-in duration-300 space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 bg-zinc-50 border border-zinc-200 p-4 rounded-lg">
+                                <div className="space-y-1.5 flex-1 max-w-sm">
+                                    <Label className="text-sm font-medium text-zinc-700">Category</Label>
+                                    <Select value={selectedCatForFilters} onValueChange={(val) => setSelectedCatForFilters(val as Category)}>
+                                        <SelectTrigger className="h-9 text-sm border-zinc-200 bg-white rounded-md">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.values(Category).map((c) => (
+                                                <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setShowFilterModal(true);
-                                        setEditingFilterIdx(null);
-                                        setFilterForm({
-                                            key: '',
-                                            label: '',
-                                            type: 'checkbox',
-                                            options: [],
-                                        });
-                                    }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                                >
-                                    <Plus size={16} /> Add Filter
-                                </button>
+                                <div className="text-xs text-zinc-500 pb-2">
+                                    {activeFilters.length} active filters
+                                </div>
                             </div>
 
-                            {activeFilters.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <ListFilter size={48} className="mx-auto text-gray-300 mb-3" />
-                                    <p className="text-gray-500">No filters configured</p>
-                                    <button
-                                        onClick={() => setShowFilterModal(true)}
-                                        className="mt-3 text-blue-600 hover:text-blue-700 font-medium"
-                                    >
-                                        Add your first filter
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {activeFilters.map((filter, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors group"
-                                        >
-                                            <div className="flex-1">
-                                                <h4 className="font-medium text-gray-900">
-                                                    {filter.label}
-                                                </h4>
-                                                <p className="text-sm text-gray-500 mt-1">
-                                                    Key: <code className="bg-white px-1.5 py-0.5 rounded text-xs">{filter.key}</code> • Type: {filter.type}
-                                                    {filter.options && filter.options.length > 0 && (
-                                                        <> • {filter.options.length} options</>
-                                                    )}
-                                                </p>
+                            <div className="space-y-3">
+                                {activeFilters.length === 0 ? (
+                                    <div className="text-center py-16 bg-zinc-50/50 rounded-lg border border-dashed border-zinc-200">
+                                        <ListFilter size={28} className="mx-auto text-zinc-300 mb-3" />
+                                        <p className="text-sm text-zinc-400">No filters defined for this category</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {activeFilters.map((filter, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="flex items-center justify-between p-4 bg-white border border-zinc-200 rounded-lg hover:border-zinc-300 transition-colors duration-150 group"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-semibold text-zinc-900 truncate">{filter.label}</h4>
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        <Badge variant="outline" className="text-[9px] font-mono font-bold bg-zinc-50 border-zinc-200 text-zinc-500 h-4 px-1">
+                                                            KEY: {filter.key}
+                                                        </Badge>
+                                                        <Badge className="text-[9px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border-emerald-100 h-4 px-1">
+                                                            {filter.type}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => { setEditingFilterIdx(idx); setFilterForm(filter); setShowFilterModal(true); }}
+                                                        className="h-8 w-8 p-0 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900"
+                                                    >
+                                                        <Edit size={14} />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => handleDeleteFilter(idx)}
+                                                        className="h-8 w-8 p-0 hover:bg-red-50 text-zinc-400 hover:text-red-500"
+                                                    >
+                                                        <Trash size={14} />
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingFilterIdx(idx);
-                                                        setFilterForm(filter);
-                                                        setShowFilterModal(true);
-                                                    }}
-                                                    className="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
-                                                    title="Edit filter"
-                                                >
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteFilter(idx)}
-                                                    className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
-                                                    title="Delete filter"
-                                                >
-                                                    <Trash size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
-                </div>
-            </div>
+                </CardContent>
+            </Card>
 
-            {/* Filter Modal */}
-            {showFilterModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                {editingFilterIdx !== null ? 'Edit Filter' : 'Add Filter'}
-                            </h3>
-                            <button
-                                onClick={() => setShowFilterModal(false)}
-                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <X size={20} className="text-gray-500" />
-                            </button>
-                        </div>
+            {/* Filter Architect Modal */}
+            <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
+                <DialogContent className="sm:max-w-lg bg-white border-zinc-200">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold text-zinc-900">Filter Configuration</DialogTitle>
+                        <DialogDescription className="text-sm text-zinc-500">
+                            Configure filters for: <span className="font-medium text-zinc-700">{selectedCatForFilters}</span>
+                        </DialogDescription>
+                    </DialogHeader>
 
-                        <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Filter Key <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., specs.brand"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={filterForm.key}
-                                        onChange={(e) =>
-                                            setFilterForm({ ...filterForm, key: e.target.value })
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Filter Label <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., Brand"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={filterForm.label}
-                                        onChange={(e) =>
-                                            setFilterForm({ ...filterForm, label: e.target.value })
-                                        }
-                                    />
-                                </div>
+                    <div className="space-y-4 py-2">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium text-zinc-700">Filter Key</Label>
+                                <Input
+                                    placeholder="e.g. specs.brand"
+                                    className="h-10 text-xs font-mono border-zinc-200"
+                                    value={filterForm.key}
+                                    onChange={(e) => setFilterForm({ ...filterForm, key: e.target.value })}
+                                />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Filter Type
-                                </label>
-                                <select
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={filterForm.type}
-                                    onChange={(e) =>
-                                        setFilterForm({
-                                            ...filterForm,
-                                            type: e.target.value as 'checkbox' | 'range',
-                                        })
-                                    }
-                                >
-                                    <option value="checkbox">Checkbox</option>
-                                    <option value="range">Range</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Options (comma-separated)
-                                </label>
-                                <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    rows={3}
-                                    placeholder="AMD, Intel, NVIDIA"
-                                    value={filterForm.options?.join(', ') || ''}
-                                    onChange={(e) =>
-                                        setFilterForm({
-                                            ...filterForm,
-                                            options: e.target.value
-                                                .split(',')
-                                                .map((s) => s.trim())
-                                                .filter(Boolean),
-                                        })
-                                    }
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium text-zinc-700">Display Label</Label>
+                                <Input
+                                    placeholder="e.g. Manufacturer"
+                                    className="h-10 text-xs border-zinc-200"
+                                    value={filterForm.label}
+                                    onChange={(e) => setFilterForm({ ...filterForm, label: e.target.value })}
                                 />
                             </div>
                         </div>
 
-                        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                            <button
-                                onClick={() => setShowFilterModal(false)}
-                                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-zinc-700">Filter Type</Label>
+                            <Select
+                                value={filterForm.type}
+                                onValueChange={(val) => setFilterForm({ ...filterForm, type: val as 'checkbox' | 'range' })}
                             >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSaveFilter}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                            >
-                                {editingFilterIdx !== null ? 'Update Filter' : 'Add Filter'}
-                            </button>
+                                <SelectTrigger className="h-9 text-sm border-zinc-200 rounded-md">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="checkbox" className="text-sm">Checkbox</SelectItem>
+                                    <SelectItem value="range" className="text-sm">Range (Price/Value)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-zinc-700">Options</Label>
+                            <Textarea
+                                className="min-h-[100px] text-xs font-medium border-zinc-200 resize-none"
+                                placeholder="AMD, Intel, NVIDIA (Comma-separated)..."
+                                value={filterForm.options?.join(', ') || ''}
+                                onChange={(e) =>
+                                    setFilterForm({
+                                        ...filterForm,
+                                        options: e.target.value
+                                            .split(',')
+                                            .map((s) => s.trim())
+                                            .filter(Boolean),
+                                    })
+                                }
+                            />
+                            <p className="text-xs text-zinc-400">Separate values with commas.</p>
                         </div>
                     </div>
-                </div>
-            )}
+
+                    <DialogFooter className="sm:justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowFilterModal(false)} className="h-9 text-sm font-medium border-zinc-200 rounded-md">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSaveFilter} className="h-9 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-md">
+                            Save Filter
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -28,12 +28,11 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Overview = () => {
   const { products } = useShop();
@@ -45,19 +44,18 @@ const Overview = () => {
   const pendingReviews = reviews.filter(r => r.status === 'PENDING');
 
   const salesData = [
-    { name: 'Mon', sales: 40000 },
-    { name: 'Tue', sales: 30000 },
-    { name: 'Wed', sales: 20000 },
-    { name: 'Thu', sales: 27800 },
-    { name: 'Fri', sales: 18900 },
-    { name: 'Sat', sales: 23900 },
-    { name: 'Sun', sales: 34900 },
+    { name: 'Mon', sales: 42000 },
+    { name: 'Tue', sales: 35000 },
+    { name: 'Wed', sales: 28000 },
+    { name: 'Thu', sales: 31000 },
+    { name: 'Fri', sales: 22000 },
+    { name: 'Sat', sales: 29000 },
+    { name: 'Sun', sales: 38000 },
   ];
 
   const avgDailySales =
     salesData.reduce((sum, day) => sum + day.sales, 0) / salesData.length;
   const todaySales = salesData[salesData.length - 1].sales;
-  const salesTrend = todaySales > avgDailySales ? 'up' : 'down';
   const salesTrendPct = Math.abs(
     ((todaySales - avgDailySales) / avgDailySales) * 100
   ).toFixed(1);
@@ -65,174 +63,203 @@ const Overview = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold">Dashboard Overview</h2>
-        <p className="text-sm text-muted-foreground">
-          Monitor store performance and operational health
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-zinc-900">Dashboard Overview</h2>
+          <p className="text-sm text-zinc-500 mt-0.5">
+            Real-time operational metrics and performance data
+          </p>
+        </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Revenue
-            </CardTitle>
-            <DollarSign className="h-5 w-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{totalRevenue.toLocaleString('en-IN')}
-            </div>
-            <Badge variant="secondary" className="mt-2 text-green-600">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              +12% from last month
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Orders
-            </CardTitle>
-            <ClipboardList className="h-5 w-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingOrders}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Awaiting fulfillment
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Low Stock
-            </CardTitle>
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{lowStockProducts.length}</div>
-            <Badge
-              variant="secondary"
-              className={`mt-2 ${lowStockProducts.length > 0
-                ? 'text-red-600'
-                : 'text-green-600'
-                }`}
-            >
-              {lowStockProducts.length > 0
-                ? 'Reorder required'
-                : 'All healthy'}
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Store Traffic
-            </CardTitle>
-            <TrendingUp className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,240</div>
-            <Badge variant="secondary" className="mt-2 text-purple-600">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              +5% this week
-            </Badge>
-          </CardContent>
-        </Card>
+        {[
+          {
+            title: "Total Revenue",
+            value: `₹${totalRevenue.toLocaleString('en-IN')}`,
+            icon: DollarSign,
+            trend: todaySales >= avgDailySales ? "up" : "down",
+            trendValue: `${salesTrendPct}%`,
+            iconColor: "text-emerald-600",
+            iconBg: "bg-emerald-50",
+          },
+          {
+            title: "Pending Orders",
+            value: pendingOrders,
+            icon: ClipboardList,
+            trend: "neutral",
+            trendValue: "",
+            iconColor: "text-zinc-600",
+            iconBg: "bg-zinc-100",
+          },
+          {
+            title: "Low Stock Items",
+            value: lowStockProducts.length,
+            icon: AlertTriangle,
+            trend: lowStockProducts.length > 0 ? "down" : "up",
+            trendValue: lowStockProducts.length > 0 ? "Reorder needed" : "All stocked",
+            iconColor: lowStockProducts.length > 0 ? "text-amber-600" : "text-emerald-600",
+            iconBg: lowStockProducts.length > 0 ? "bg-amber-50" : "bg-emerald-50",
+          },
+          {
+            title: "Active Users",
+            value: "1.2k",
+            icon: TrendingUp,
+            trend: "up",
+            trendValue: "+12%",
+            iconColor: "text-indigo-600",
+            iconBg: "bg-indigo-50",
+          }
+        ].map((stat, i) => (
+          <Card key={i} className="border-zinc-200 rounded-lg shadow-sm bg-white">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-zinc-500">{stat.title}</span>
+                <div className={cn("p-2 rounded-md", stat.iconBg)}>
+                  <stat.icon size={16} className={stat.iconColor} />
+                </div>
+              </div>
+              <div className="text-2xl font-semibold text-zinc-900 tabular-nums">{stat.value}</div>
+              {stat.trendValue && (
+                <div className="flex items-center gap-1 mt-1.5">
+                  {stat.trend === 'up' && <ArrowUpRight size={14} className="text-emerald-600" />}
+                  {stat.trend === 'down' && <ArrowDownRight size={14} className="text-red-500" />}
+                  <span className={cn(
+                    "text-xs font-medium",
+                    stat.trend === 'up' ? "text-emerald-600" : stat.trend === 'down' ? "text-red-500" : "text-zinc-400"
+                  )}>
+                    {stat.trendValue}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Weekly Sales</CardTitle>
-            <CardDescription>
-              Revenue trend over the last 7 days
-            </CardDescription>
+      {/* Chart + Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Revenue Chart */}
+        <Card className="lg:col-span-2 border-zinc-200 rounded-lg shadow-sm bg-white">
+          <CardHeader className="px-5 py-4 border-b border-zinc-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                  <TrendingUp size={16} className="text-zinc-500" />
+                  Revenue Trend
+                </CardTitle>
+                <p className="text-xs text-zinc-500 mt-1">7-day performance</p>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="h-64 sm:h-80">
+          <CardContent className="p-5 h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fontWeight: 500, fill: '#71717a' }}
+                  dy={12}
+                />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`}
+                  tick={{ fontSize: 12, fontWeight: 500, fill: '#71717a' }}
                 />
                 <Tooltip
+                  cursor={{ stroke: '#e4e4e7', strokeWidth: 1 }}
+                  contentStyle={{ backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #e4e4e7', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px 14px' }}
+                  labelStyle={{ fontWeight: 600, fontSize: '12px', color: '#18181b', marginBottom: '4px' }}
+                  itemStyle={{ fontSize: '13px', fontWeight: 500, color: '#3f3f46', padding: '0' }}
                   formatter={(v?: number) => [
                     v ? `₹${v.toLocaleString('en-IN')}` : '₹0',
-                    'Sales',
+                    'Revenue',
                   ]}
                 />
                 <Line
                   type="monotone"
                   dataKey="sales"
-                  stroke="#2563eb"
-                  strokeWidth={3}
+                  stroke="#4f46e5"
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 5, fill: '#4f46e5', stroke: '#fff', strokeWidth: 2 }}
+                  animationDuration={1000}
                 />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Low Stock */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Low Stock Alerts</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+        {/* Right Column */}
+        <div className="space-y-4">
+          {/* Low Stock List */}
+          <Card className="border-zinc-200 rounded-lg shadow-sm bg-white">
+            <CardHeader className="px-5 py-4 border-b border-zinc-100">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-zinc-900">Stock Alerts</CardTitle>
+                <AlertTriangle size={14} className="text-amber-500" />
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {lowStockProducts.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center">
-                  All stock levels are healthy
-                </p>
-              ) : (
-                lowStockProducts.slice(0, 5).map(product => (
-                  <div
-                    key={product.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {product.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {product.variants?.[0]?.sku || ''}
-                      </p>
-                    </div>
-                    <Badge variant="destructive">
-                      {product.variants?.[0]?.status?.replace(/_/g, ' ') || 'Check stock'}
-                    </Badge>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[240px]">
+                {lowStockProducts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <Package size={24} className="text-zinc-300 mb-2" />
+                    <p className="text-sm text-zinc-400">All items in stock</p>
                   </div>
-                ))
-              )}
+                ) : (
+                  <div className="divide-y divide-zinc-100">
+                    {lowStockProducts.map(product => (
+                      <div
+                        key={product.id}
+                        className="px-5 py-3 flex items-center justify-between hover:bg-zinc-50 transition-colors duration-150"
+                      >
+                        <div className="min-w-0 pr-3">
+                          <p className="text-sm font-medium text-zinc-900 truncate">{product.name}</p>
+                          <p className="text-xs text-zinc-400 mt-0.5">
+                            SKU: {product.variants?.[0]?.sku || '—'}
+                          </p>
+                        </div>
+                        <span className={cn(
+                          "text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap",
+                          product.variants?.[0]?.status === 'OUT_OF_STOCK'
+                            ? "bg-red-50 text-red-700"
+                            : "bg-amber-50 text-amber-700"
+                        )}>
+                          {product.variants?.[0]?.status?.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
 
-          {/* Reviews */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Pending Reviews</CardTitle>
-              <Star className="h-4 w-4 text-amber-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-center">
+          {/* Reviews Summary */}
+          <Card className="border-zinc-200 rounded-lg shadow-sm bg-white">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-1 mb-3 text-amber-500">
+                {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} fill="currentColor" />)}
+              </div>
+              <div className="text-2xl font-semibold text-zinc-900 tabular-nums">
                 {pendingReviews.length}
               </div>
-              <p className="text-sm text-muted-foreground text-center mt-1">
-                Awaiting moderation
-              </p>
+              <p className="text-sm text-zinc-500 mt-1">Pending reviews</p>
+              <div className="grid grid-cols-2 gap-4 pt-4 mt-4 border-t border-zinc-100">
+                <div>
+                  <p className="text-xs text-zinc-400">Avg. Rating</p>
+                  <p className="text-sm font-semibold text-zinc-900 mt-0.5">4.8 / 5.0</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-zinc-400">This week</p>
+                  <p className="text-sm font-semibold text-emerald-600 mt-0.5">+12</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

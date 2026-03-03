@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const CategoryEnum = z.enum([
     "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING",
+    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
 ]);
 
 const attributeSchema = z.object({

@@ -52,6 +52,12 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
 
     const flatSpecs = useMemo(() => product ? specsToFlat(product.specs) : {}, [product]);
 
+    const [selectedImage, setSelectedImage] = useState(0);
+    const media = useMemo(() => {
+        const list = product.media?.length ? product.media.map(m => m.url) : [product.image || '/placeholder.png'];
+        return list;
+    }, [product]);
+
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [reviewForm, setReviewForm] = useState({
         name: '',
@@ -105,16 +111,40 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
                 {/* TOP SECTION */}
                 <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden mb-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2">
-                        {/* IMAGE */}
-                        <div className="p-6 bg-zinc-100 flex items-center justify-center relative min-h-[400px]">
-                            <Image
-                                src={product.media?.[0]?.url || '/placeholder.png'}
-                                alt={product.name}
-                                fill
-                                sizes="(max-width: 768px) 100vw, 50vw"
-                                priority
-                                className="object-contain p-6"
-                            />
+                        {/* GALLERY */}
+                        <div className="p-6 bg-zinc-100 flex flex-col gap-4">
+                            <div className="relative aspect-square w-full max-w-[500px] mx-auto bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden group">
+                                <Image
+                                    src={media[selectedImage] || '/placeholder.png'}
+                                    alt={product.name}
+                                    fill
+                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                    priority
+                                    className="object-contain p-8 transition-transform duration-500 group-hover:scale-110"
+                                />
+                            </div>
+
+                            {media.length > 1 && (
+                                <div className="flex gap-3 justify-center overflow-x-auto py-2 px-1 no-scrollbar">
+                                    {media.map((url, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedImage(idx)}
+                                            className={`relative w-20 h-20 bg-white rounded-lg border-2 p-1 overflow-hidden transition-all hover:shadow-md ${selectedImage === idx ? 'border-blue-600 shadow-blue-100' : 'border-zinc-200 opacity-60 hover:opacity-100'
+                                                }`}
+                                        >
+                                            <div className="w-full h-full relative">
+                                                <Image
+                                                    src={url}
+                                                    alt={`View ${idx + 1}`}
+                                                    fill
+                                                    className="object-contain"
+                                                />
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* BUY BOX */}

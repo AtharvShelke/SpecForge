@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const CategoryEnum = z.enum([
     "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING",
+    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
 ]);
 
 // ── Helper: build tree from flat records ────────────────
@@ -86,10 +86,16 @@ export async function PUT(req: NextRequest) {
             };
 
             const flat = flatten(tree, null, 0);
-            // Insert in order (parents first)
-            for (const node of flat) {
-                await tx.categoryHierarchy.create({ data: node });
+
+            // Insert in bulk for performance
+            if (flat.length > 0) {
+                await tx.categoryHierarchy.createMany({
+                    data: flat
+                });
             }
+        }, {
+            maxWait: 5000,
+            timeout: 30000,
         });
 
         // Return the new tree

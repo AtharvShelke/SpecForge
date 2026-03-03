@@ -99,24 +99,24 @@ interface StatusConfig {
 const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   [OrderStatus.PENDING]: {
     label: 'Pending',
-    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
-    dotClass: 'bg-amber-400',
+    badgeClass: 'bg-zinc-50 text-zinc-600 border-zinc-200',
+    dotClass: 'bg-zinc-400',
     icon: <Clock size={12} />,
-    description: 'Order placed, awaiting payment',
+    description: 'Order placed, awaiting initial action',
   },
   [OrderStatus.PAID]: {
     label: 'Paid',
-    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
-    dotClass: 'bg-blue-500',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dotClass: 'bg-emerald-500',
     icon: <Banknote size={12} />,
-    description: 'Payment confirmed, ready to process',
+    description: 'Payment verified successfully',
   },
   [OrderStatus.PROCESSING]: {
     label: 'Processing',
-    badgeClass: 'bg-violet-50 text-violet-700 border-violet-200',
-    dotClass: 'bg-violet-500',
+    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+    dotClass: 'bg-blue-500',
     icon: <Box size={12} />,
-    description: 'Being packed at warehouse',
+    description: 'Order being packed',
   },
   [OrderStatus.SHIPPED]: {
     label: 'Shipped',
@@ -127,10 +127,10 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   },
   [OrderStatus.DELIVERED]: {
     label: 'Delivered',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dotClass: 'bg-emerald-500',
+    badgeClass: 'bg-zinc-900 text-white border-zinc-900',
+    dotClass: 'bg-white',
     icon: <CheckCheck size={12} />,
-    description: 'Successfully delivered',
+    description: 'Delivery confirmed',
   },
   [OrderStatus.CANCELLED]: {
     label: 'Cancelled',
@@ -141,10 +141,10 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   },
   [OrderStatus.RETURNED]: {
     label: 'Returned',
-    badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-    dotClass: 'bg-slate-400',
+    badgeClass: 'bg-zinc-50 text-zinc-500 border-zinc-200',
+    dotClass: 'bg-zinc-400',
     icon: <RotateCcw size={12} />,
-    description: 'Return initiated',
+    description: 'Return processed',
   },
 };
 
@@ -295,7 +295,7 @@ const StatusBadge = ({ status }: { status: OrderStatus }) => {
   const cfg = STATUS_CONFIG[status];
   return (
     <span className={cn(
-      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
+      'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium uppercase tracking-wide border transition-all duration-300',
       cfg.badgeClass
     )}>
       <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', cfg.dotClass)} />
@@ -305,13 +305,13 @@ const StatusBadge = ({ status }: { status: OrderStatus }) => {
 };
 
 const MetaItem = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
-  <div className="flex items-start gap-3 min-w-0">
-    <div className="p-2 bg-slate-50 rounded-lg text-slate-500 flex-shrink-0 mt-0.5 border border-slate-100">
+  <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-50 border border-zinc-100 group hover:border-zinc-200 transition-all duration-150">
+    <div className="p-2 bg-white rounded-lg text-zinc-400 group-hover:text-zinc-900 shadow-sm transition-colors">
       {icon}
     </div>
     <div className="min-w-0">
-      <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className="text-sm font-medium text-slate-800 truncate">{value}</p>
+      <p className="text-xs font-medium text-zinc-400 mb-0.5">{label}</p>
+      <div className="text-sm font-semibold text-zinc-900 truncate">{value}</div>
     </div>
   </div>
 );
@@ -331,19 +331,19 @@ const StatsBar = ({ orders }: { orders: Order[] }) => {
   }, [orders]);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {[
-        { label: 'Total Orders', value: stats.total, sub: 'All time', icon: <ClipboardList size={16} />, color: 'text-slate-600 bg-slate-50 border-slate-200' },
-        { label: 'Net Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, sub: 'Excl. cancelled & returned', icon: <TrendingUp size={16} />, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-        { label: 'Awaiting Action', value: stats.pending, sub: 'Pending + Paid', icon: <AlertTriangle size={16} />, color: 'text-amber-700 bg-amber-50 border-amber-200' },
-        { label: 'In Fulfillment', value: stats.processing, sub: 'Processing + Shipped', icon: <Truck size={16} />, color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+        { label: 'Total Orders', value: stats.total, sub: `${stats.total} records`, icon: <ClipboardList size={16} />, color: 'text-zinc-900' },
+        { label: 'Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, sub: 'Net revenue', icon: <TrendingUp size={16} />, color: 'text-zinc-900 bg-zinc-900 text-white' },
+        { label: 'Needs Action', value: stats.pending, sub: 'Pending / paid', icon: <AlertTriangle size={16} />, color: 'text-amber-600' },
+        { label: 'In Progress', value: stats.processing, sub: 'Processing / shipped', icon: <Package size={16} />, color: 'text-zinc-900' },
       ].map(item => (
-        <div key={item.label} className={cn('flex items-center gap-3 px-4 py-3 rounded-xl border', item.color)}>
-          <div className="flex-shrink-0">{item.icon}</div>
+        <div key={item.label} className={cn('flex items-center gap-4 px-5 py-4 rounded-lg border border-zinc-200 transition-all duration-150 group cursor-default', item.color)}>
+          <div className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-100 shrink-0">{item.icon}</div>
           <div className="min-w-0">
-            <p className="text-xs font-medium opacity-70 truncate">{item.label}</p>
-            <p className="text-lg font-bold leading-tight truncate">{item.value}</p>
-            <p className="text-[10px] opacity-60 truncate">{item.sub}</p>
+            <p className="text-xs font-medium text-zinc-400 mb-0.5">{item.label}</p>
+            <p className="text-xl font-semibold leading-tight truncate">{item.value}</p>
+            <p className="text-[11px] text-zinc-400">{item.sub}</p>
           </div>
         </div>
       ))}
@@ -456,13 +456,13 @@ const OrderManager = () => {
   // ── Empty State ──
   if (sortedOrders.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center py-16">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Package size={28} className="text-slate-400" />
+      <div className="flex items-center justify-center min-h-[500px] animate-in fade-in duration-700">
+        <div className="text-center p-16 bg-zinc-50 rounded-2xl border border-zinc-200 max-w-lg">
+          <div className="w-20 h-20 bg-white rounded-xl shadow-sm flex items-center justify-center mx-auto mb-6 border border-zinc-100">
+            <Package size={36} className="text-zinc-200" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-800 mb-1">No Orders Yet</h3>
-          <p className="text-sm text-slate-500">Orders will appear here once customers start placing them.</p>
+          <h3 className="text-lg font-semibold text-zinc-900 mb-1">No Orders Yet</h3>
+          <p className="text-sm text-zinc-400">Orders will appear here once customers start placing them</p>
         </div>
       </div>
     );
@@ -471,19 +471,23 @@ const OrderManager = () => {
   // ── Main Layout ──
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full min-h-0 overflow-hidden -m-6">
+      <div className="flex flex-col h-[calc(100vh-12rem)] min-h-[700px] overflow-hidden rounded-lg bg-white border border-zinc-200 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
 
         {/* ─── HEADER BAR ─── */}
-        <div className="flex-shrink-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Order Management</h1>
-              <p className="text-xs text-slate-500 mt-0.5">{sortedOrders.length} total orders · Last updated just now</p>
+        <div className="flex-shrink-0 bg-white border-b border-zinc-200 px-6 py-5">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-5 bg-indigo-600 rounded-full" />
+                <h1 className="text-xl font-semibold text-zinc-900">Orders</h1>
+              </div>
+              <p className="text-sm text-zinc-500">
+                {sortedOrders.length} orders · Live processing
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs hidden sm:flex gap-1 items-center text-emerald-700 border-emerald-200 bg-emerald-50">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live
+            <div className="flex items-center gap-3">
+              <Badge className="h-8 px-4 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
+                {sortedOrders.length} total
               </Badge>
             </div>
           </div>
@@ -500,36 +504,36 @@ const OrderManager = () => {
           )}>
 
             {/* Search + Filter */}
-            <div className="px-3 py-3 border-b border-slate-100 space-y-2">
-              <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="px-4 py-4 border-b border-zinc-100 space-y-3 bg-zinc-50/30">
+              <div className="relative group">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 transition-colors" />
                 <Input
-                  placeholder="Search by name, ID, email…"
+                  placeholder="ID, Customer, Email..."
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                  className="pl-8 h-8 text-sm bg-slate-50 border-slate-200 focus-visible:ring-1 focus-visible:ring-blue-500"
+                  className="pl-9 h-9 text-sm bg-white border-zinc-200 focus-visible:ring-zinc-900 shadow-none transition-all"
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="h-8 text-xs flex-1 border-slate-200 bg-slate-50">
-                    <SelectValue placeholder="Filter status" />
+                  <SelectTrigger className="h-9 text-xs font-medium flex-1 border-zinc-200 bg-white shadow-none">
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All">All Statuses</SelectItem>
+                    <SelectItem value="All">All Orders</SelectItem>
                     {Object.values(OrderStatus).map(s => (
-                      <SelectItem key={s} value={s}>
+                      <SelectItem key={s} value={s} className="text-xs font-medium">
                         <div className="flex items-center gap-2">
-                          <span className={cn('w-2 h-2 rounded-full', STATUS_CONFIG[s].dotClass)} />
+                          <span className={cn('w-1.5 h-1.5 rounded-full', STATUS_CONFIG[s].dotClass)} />
                           {STATUS_CONFIG[s].label}
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-slate-400 flex-shrink-0 tabular-nums">
-                  {filteredOrders.length} result{filteredOrders.length !== 1 ? 's' : ''}
-                </span>
+                <div className="px-2 py-1 bg-zinc-100 rounded text-[11px] font-medium text-zinc-500 tabular-nums shrink-0">
+                  {filteredOrders.length} Hits
+                </div>
               </div>
             </div>
 
@@ -599,7 +603,7 @@ const OrderManager = () => {
           {/* ─── RIGHT PANEL: Order Detail ─── */}
           {selectedOrder && (
             <div className={cn(
-              'flex-1 overflow-y-auto bg-slate-50 min-w-0',
+              'flex-1 overflow-y-auto bg-zinc-50/30 min-w-0',
               !showMobileDetail && 'hidden lg:block'
             )}>
               <div className="p-4 sm:p-6 max-w-5xl mx-auto">

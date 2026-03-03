@@ -49,6 +49,10 @@ import {
   Banknote,
   Building2,
   AlertTriangle,
+  Shield,
+  Monitor,
+  Layout,
+  Layers,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -287,19 +291,30 @@ const buildInvoiceHtml = (invoice: Invoice, profile: BillingProfile): string => 
 const InvStatusBadge = ({ status }: { status: InvoiceStatus }) => {
   const cfg = INV_STATUS_CONFIG[status];
   return (
-    <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border', cfg.badgeClass)}>
-      <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', cfg.dotClass)} />
+    <span className={cn(
+      'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium uppercase tracking-wide border transition-all duration-150',
+      cfg.badgeClass,
+      (status === 'paid') && 'bg-emerald-600 text-white border-emerald-600',
+      (status === 'overdue') && 'bg-red-600 text-white border-red-600'
+    )}>
+      <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0',
+        status === 'paid' ? 'bg-white' :
+          status === 'overdue' ? 'bg-white' :
+            cfg.dotClass
+      )} />
       {cfg.label}
     </span>
   );
 };
 
 const MetaItem = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
-  <div className="flex items-start gap-3 min-w-0">
-    <div className="p-2 bg-slate-50 rounded-lg text-slate-500 flex-shrink-0 mt-0.5 border border-slate-100">{icon}</div>
-    <div className="min-w-0">
-      <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
-      <div className="text-sm font-medium text-slate-800">{value}</div>
+  <div className="flex items-start gap-3 min-w-0 group">
+    <div className="w-9 h-9 rounded-lg bg-zinc-50 border border-zinc-100 text-zinc-400 flex items-center justify-center shrink-0 transition-all group-hover:bg-zinc-900 group-hover:text-white group-hover:border-zinc-800 shadow-sm">
+      {icon}
+    </div>
+    <div className="min-w-0 space-y-0.5">
+      <p className="text-xs font-medium text-zinc-400">{label}</p>
+      <div className="text-sm font-semibold text-zinc-900 truncate">{value}</div>
     </div>
   </div>
 );
@@ -420,11 +435,9 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
   };
 
   const handleCharge = () => {
-    if (!pos.customer) { alert('Please select a customer'); return; }
-    if (pos.items.length === 0) { alert('Add at least one item'); return; }
-    if (pos.paymentMethod === 'cash' && parseFloat(pos.cashTendered) < total) {
-      alert('Cash tendered is less than the total'); return;
-    }
+    if (!pos.customer) return;
+    if (pos.items.length === 0) return;
+    if (pos.paymentMethod === 'cash' && parseFloat(pos.cashTendered) < total) return;
     setShowPayDialog(false);
 
     const now = new Date().toISOString();
@@ -437,7 +450,6 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
       customer: pos.customer,
       createdAt: now,
       dueDate: now,
-      sentAt: undefined,
       paidAt: now,
       currency: 'INR',
       lineItems: pos.items,
@@ -463,246 +475,236 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
   const selectedPmConfig = PAYMENT_METHODS.find(p => p.id === pos.paymentMethod)!;
 
   return (
-    <div className="flex flex-col xl:flex-row h-full min-h-0 overflow-hidden bg-slate-50">
-
+    <div className="flex flex-col xl:flex-row h-full min-h-0 bg-white">
       {/* ── LEFT: Product Search ── */}
-      <div className="flex flex-col xl:w-[460px] flex-shrink-0 bg-white border-r border-slate-200">
-
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <ShoppingCart size={14} className="text-white" />
-            </div>
-            <span className="font-bold text-slate-800 text-sm">New Sale</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onCancel} className="h-7 px-2 text-slate-400 hover:text-slate-700">
-            <X size={14} /> Cancel
-          </Button>
-        </div>
-
-        {/* Customer selector */}
-        <div className="px-4 py-3 border-b border-slate-100">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Customer</label>
-          <Select
-            value={pos.customer?.id ?? ''}
-            onValueChange={(v: string) => setPos(p => ({ ...p, customer: customers.find(c => c.id === v) ?? null }))}
-          >
-            <SelectTrigger className="h-9 text-sm border-slate-200 bg-slate-50">
-              <SelectValue placeholder="Select customer…" />
-            </SelectTrigger>
-            <SelectContent>
-              {customers.map(c => (
-                <SelectItem key={c.id} value={c.id} className='bg-white'>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{c.name}</span>
-                    {c.company && <span className="text-xs text-slate-400">{c.company}</span>}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Add Item Tabs */}
-        <div className="px-4 py-3 border-b border-slate-100">
-          <Tabs value={addMode} onValueChange={(v: string) => setAddMode(v as 'catalog' | 'manual')}>
-            <TabsList className="h-8 w-full mb-3">
-              <TabsTrigger value="catalog" className="flex-1 text-xs gap-1.5"><Package size={12} /> Catalog</TabsTrigger>
-              <TabsTrigger value="manual" className="flex-1 text-xs gap-1.5"><Edit size={12} />  Manual</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="catalog" className="mt-0 space-y-2">
-              <div className="relative">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <Input
-                  ref={searchRef}
-                  placeholder="Search by name, SKU, category…"
-                  value={productSearch}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductSearch(e.target.value)}
-                  className="pl-8 h-8 text-sm bg-slate-50 border-slate-200"
-                />
+      <div className="flex flex-col xl:w-[480px] shrink-0 border-r border-zinc-200 bg-zinc-50/50">
+        <div className="px-8 py-6 border-b border-zinc-200 bg-white">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center shadow-sm">
+                <ShoppingCart size={18} className="text-white" />
               </div>
-              <ScrollArea className="h-44">
-                <div className="space-y-1 pr-2">
-                  {filteredProducts.length === 0
-                    ? <p className="text-xs text-slate-400 text-center py-6">No products found</p>
-                    : filteredProducts.map(p => (
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900">Point of Sale</h3>
+                <p className="text-xs text-zinc-400">New sale</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onCancel} className="h-8 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 text-xs font-medium gap-2">
+              <X size={14} /> Cancel
+            </Button>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="text-xs font-medium text-zinc-500 mb-2 block">Customer</label>
+              <Select
+                value={pos.customer?.id ?? ''}
+                onValueChange={(v: string) => setPos(p => ({ ...p, customer: customers.find(c => c.id === v) ?? null }))}
+              >
+                <SelectTrigger className="h-10 text-xs font-medium border-zinc-200 bg-white focus:ring-zinc-900">
+                  <SelectValue placeholder="Select customer…" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-zinc-200 shadow-2xl">
+                  {customers.map(c => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs font-medium">
+                      <div className="flex flex-col">
+                        <span className="text-zinc-900">{c.name}</span>
+                        {c.company && <span className="text-[8px] text-zinc-400">{c.company}</span>}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Tabs value={addMode} onValueChange={(v: string) => setAddMode(v as 'catalog' | 'manual')}>
+              <TabsList className="h-10 w-full bg-zinc-100 p-1 rounded-xl">
+                <TabsTrigger value="catalog" className="flex-1 text-xs font-medium gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all">
+                  <Package size={14} /> Catalog
+                </TabsTrigger>
+                <TabsTrigger value="manual" className="flex-1 text-xs font-medium gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all">
+                  <Edit size={14} /> Manual
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="catalog" className="mt-4 space-y-4">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <Input
+                    ref={searchRef}
+                    placeholder="Search products…"
+                    value={productSearch}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductSearch(e.target.value)}
+                    className="pl-10 h-10 text-xs font-medium border-zinc-200 bg-white focus:ring-zinc-900"
+                  />
+                </div>
+                <ScrollArea className="h-[280px]">
+                  <div className="space-y-2 pr-4">
+                    {filteredProducts.map(p => (
                       <button
                         key={p.id}
                         onClick={() => addProduct(p)}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 text-left transition-colors group"
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-white border border-zinc-100 hover:border-zinc-300 hover:shadow-sm text-left transition-all group"
                       >
-                        <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
-                          <img src={p.media?.[0]?.url || '/placeholder.png'} alt={p.name} className="w-full h-full object-contain"
-                            onError={e => { (e.target as HTMLImageElement).src = 'https://picsum.photos/80/80'; }} />
+                        <div className="w-12 h-12 rounded-xl bg-zinc-50 border border-zinc-100 shrink-0 overflow-hidden flex items-center justify-center p-2">
+                          <img src={p.media?.[0]?.url || '/placeholder.png'} alt={p.name} className="max-w-full max-h-full object-contain"
+                            onError={e => { (e.target as HTMLImageElement).src = 'https://picsum.photos/100/100'; }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-slate-800 line-clamp-1 group-hover:text-indigo-700">{p.name}</p>
-                          <p className="text-[10px] text-slate-400 font-mono">{p.variants?.[0]?.sku || ''}</p>
+                          <p className="text-xs font-semibold text-zinc-900 truncate group-hover:text-zinc-600 transition-colors">{p.name}</p>
+                          <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{p.variants?.[0]?.sku || 'NO-SKU'}</p>
                         </div>
-                        <div className="flex-shrink-0 text-right">
-                          <p className="text-xs font-bold text-slate-900">{fmtINR(p.variants?.[0]?.price || 0)}</p>
-                          {(p.stock || 0) <= 5 && <p className="text-[10px] text-amber-600">Low: {p.stock}</p>}
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-semibold text-zinc-900">{fmtINR(p.variants?.[0]?.price || 0)}</p>
+                          {(p.stock || 0) <= 5 && <Badge variant="outline" className="text-[10px] font-medium bg-red-50 text-red-600 border-red-100 mt-1 h-4 px-1.5 rounded">Low Stock</Badge>}
                         </div>
                       </button>
                     ))}
-                </div>
-              </ScrollArea>
-            </TabsContent>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
 
-            <TabsContent value="manual" className="mt-0">
+              <TabsContent value="manual" className="mt-4 space-y-4">
+                <div className="space-y-3 p-4 bg-white border border-zinc-200 rounded-lg shadow-sm">
+                  <Input placeholder="Item name *" className="h-10 text-xs font-medium border-zinc-200 focus:ring-zinc-900"
+                    value={manualItem.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, name: e.target.value }))} />
+                  <div className="grid grid-cols-3 gap-3">
+                    <Input type="number" placeholder="Price" className="h-10 text-xs font-medium border-zinc-200 focus:ring-zinc-900"
+                      value={manualItem.price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, price: e.target.value }))} />
+                    <Input type="number" placeholder="Qty" min="1" className="h-10 text-xs font-medium border-zinc-200 focus:ring-zinc-900"
+                      value={manualItem.qty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, qty: e.target.value }))} />
+                    <Input type="number" placeholder="Tax %" min="0" max="100" className="h-10 text-xs font-medium border-zinc-200 focus:ring-zinc-900"
+                      value={manualItem.tax} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, tax: e.target.value }))} />
+                  </div>
+                  <Button size="sm" className="w-full h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-all shadow-sm"
+                    onClick={addManualItem}>
+                    <Plus size={14} className="mr-2" /> Add Item
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        <div className="flex-1 p-8 space-y-8">
+          <div>
+            <label className="text-xs font-medium text-zinc-500 mb-3 block">Sale Options</label>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Input placeholder="Item name *" className="h-8 text-sm border-slate-200"
-                  value={manualItem.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, name: e.target.value }))} />
-                <div className="grid grid-cols-3 gap-2">
-                  <Input type="number" placeholder="Price ₹ *" className="h-8 text-sm border-slate-200"
-                    value={manualItem.price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, price: e.target.value }))} />
-                  <Input type="number" placeholder="Qty" min="1" className="h-8 text-sm border-slate-200"
-                    value={manualItem.qty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, qty: e.target.value }))} />
-                  <Input type="number" placeholder="Tax %" min="0" max="100" className="h-8 text-sm border-slate-200"
-                    value={manualItem.tax} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualItem(m => ({ ...m, tax: e.target.value }))} />
-                </div>
-                <Button size="sm" className="w-full h-8 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
-                  onClick={addManualItem}>
-                  <Plus size={13} /> Add Item
-                </Button>
+                <p className="text-xs font-medium text-zinc-500 ml-1">Discount %</p>
+                <Input type="number" min="0" max="100" className="h-10 text-xs font-medium border-zinc-200 bg-white focus:ring-zinc-900"
+                  value={pos.discountPct} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, discountPct: parseFloat(e.target.value) || 0 }))} />
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Discount & Shipping */}
-        <div className="px-4 py-3 border-b border-slate-100">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Discount %</label>
-              <Input type="number" min="0" max="100" className="h-8 text-sm border-slate-200"
-                value={pos.discountPct} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, discountPct: parseFloat(e.target.value) || 0 }))} />
-            </div>
-            <div className="col-span-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Shipping ₹</label>
-              <Input type="number" min="0" className="h-8 text-sm border-slate-200"
-                value={pos.shipping} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, shipping: parseFloat(e.target.value) || 0 }))} />
-            </div>
-            <div className="col-span-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Note</label>
-              <Input placeholder="Optional" className="h-8 text-sm border-slate-200"
-                value={pos.notes} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, notes: e.target.value }))} />
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-zinc-500 ml-1">Shipping</p>
+                <Input type="number" min="0" className="h-10 text-xs font-medium border-zinc-200 bg-white focus:ring-zinc-900"
+                  value={pos.shipping} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, shipping: parseFloat(e.target.value) || 0 }))} />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Payment method selector */}
-        <div className="px-4 py-3">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Payment Method</label>
-          <div className="grid grid-cols-2 gap-2">
-            {PAYMENT_METHODS.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setPos(p => ({ ...p, paymentMethod: m.id, paymentRef: '', cashTendered: '' }))}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all',
-                  pos.paymentMethod === m.id ? m.color + ' ring-2 ring-offset-1 ring-current' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                )}
-              >
-                {m.icon} {m.label}
-              </button>
-            ))}
+          <div>
+            <label className="text-xs font-medium text-zinc-500 mb-3 block">Payment Method</label>
+            <div className="grid grid-cols-2 gap-3">
+              {PAYMENT_METHODS.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setPos(p => ({ ...p, paymentMethod: m.id, paymentRef: '', cashTendered: '' }))}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3 rounded-lg border text-xs font-medium transition-all shadow-sm',
+                    pos.paymentMethod === m.id ? 'bg-zinc-900 text-white border-zinc-900 ring-2 ring-zinc-100' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                  )}
+                >
+                  <span className={cn(pos.paymentMethod === m.id ? 'text-white' : 'text-zinc-400')}>{m.icon}</span>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
+              {pos.paymentMethod === 'cash' ? (
+                <div className="p-4 bg-zinc-900 rounded-lg space-y-3 border border-zinc-800 shadow-sm">
+                  <p className="text-xs font-medium text-zinc-400">Cash tendered</p>
+                  <Input type="number" placeholder={`Min: ${fmtINR(total)}`} className="h-10 bg-white/5 border-white/10 text-white font-semibold text-sm focus:ring-white/20"
+                    value={pos.cashTendered} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, cashTendered: e.target.value }))} />
+                  {pos.cashTendered && (
+                    <div className={cn("px-3 py-2 rounded-md text-xs font-medium flex items-center justify-between",
+                      cashChange >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400")}>
+                      <span>{cashChange >= 0 ? 'Change' : 'Insufficient'}</span>
+                      <span>{fmtINR(Math.abs(cashChange))}</span>
+                    </div>
+                  )}
+                </div>
+              ) : selectedPmConfig.placeholder && (
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-3 shadow-sm">
+                  <p className="text-xs font-medium text-zinc-400">{selectedPmConfig.placeholder}</p>
+                  <Input placeholder="Enter reference…" className="h-10 text-xs font-medium border-zinc-200 focus:ring-zinc-900"
+                    value={pos.paymentRef} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, paymentRef: e.target.value }))} />
+                </div>
+              )}
+            </div>
           </div>
-
-          {pos.paymentMethod === 'cash' && (
-            <div className="mt-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Cash Tendered ₹</label>
-              <Input type="number" placeholder={`Min: ${fmtINR(total)}`} className="h-8 text-sm border-slate-200"
-                value={pos.cashTendered} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, cashTendered: e.target.value }))} />
-              {pos.cashTendered && cashChange >= 0 && (
-                <p className="text-xs font-bold text-emerald-700 mt-1">Change: {fmtINR(cashChange)}</p>
-              )}
-              {pos.cashTendered && cashChange < 0 && (
-                <p className="text-xs font-bold text-red-600 mt-1">Short by {fmtINR(Math.abs(cashChange))}</p>
-              )}
-            </div>
-          )}
-
-          {pos.paymentMethod !== 'cash' && selectedPmConfig.placeholder && (
-            <div className="mt-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                {selectedPmConfig.placeholder}
-              </label>
-              <Input placeholder="Reference number…" className="h-8 text-sm border-slate-200"
-                value={pos.paymentRef} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPos(p => ({ ...p, paymentRef: e.target.value }))} />
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── RIGHT: Cart + Charge ── */}
-      <div className="flex flex-col flex-1 min-h-0">
-
-        {/* Cart items */}
-        <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
-          <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <ReceiptText size={14} className="text-indigo-600" />
-            Cart
-            {pos.items.length > 0 && (
-              <span className="w-5 h-5 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {pos.items.length}
-              </span>
-            )}
-          </h3>
-          {pos.items.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
-              onClick={() => setPos(p => ({ ...p, items: [] }))}>
-              Clear All
-            </Button>
-          )}
+      {/* ── RIGHT: Cart + Finalize ── */}
+      <div className="flex flex-col flex-1 min-w-0 bg-white">
+        <div className="px-8 py-6 border-b border-zinc-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ReceiptText size={18} className="text-zinc-400" />
+              <h3 className="text-lg font-semibold text-zinc-900">Cart</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="h-6 rounded-md text-xs font-medium bg-zinc-50 border-zinc-200 text-zinc-500">
+                {pos.items.length} items
+              </Badge>
+              {pos.items.length > 0 && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                  onClick={() => setPos(p => ({ ...p, items: [] }))}>
+                  <Trash2 size={16} />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
 
-        <ScrollArea className="flex-1 bg-white">
+        <ScrollArea className="flex-1 p-10">
           {pos.items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-center">
-              <ShoppingCart size={32} className="text-slate-200 mb-3" />
-              <p className="text-sm text-slate-400 font-medium">Cart is empty</p>
-              <p className="text-xs text-slate-300 mt-1">Search and add products or enter items manually</p>
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
+              <div className="w-24 h-24 rounded-[2rem] border-4 border-dashed border-zinc-200 flex items-center justify-center mb-6">
+                <ShoppingCart size={40} className="text-zinc-300" />
+              </div>
+              <p className="text-sm font-medium">No items added</p>
+              <p className="text-xs text-zinc-400 mt-2 max-w-xs leading-relaxed">Search products or add items manually to start the sale.</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="space-y-4">
               {pos.items.map(item => {
-                const lineSubtotal = item.quantity * item.unitPrice;
-                const lineTax = lineSubtotal * ((item.taxRatePct ?? 18) / 100);
+                const lineTotal = item.quantity * item.unitPrice;
+                const lineTax = lineTotal * ((item.taxRatePct ?? 18) / 100);
                 return (
-                  <div key={item.id} className="px-4 py-3 flex items-center gap-3 group hover:bg-slate-50/50 transition-colors">
-                    {item.image && (
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-contain"
-                          onError={e => { (e.target as HTMLImageElement).src = 'https://picsum.photos/80/80'; }} />
-                      </div>
-                    )}
+                  <div key={item.id} className="flex items-center gap-4 p-4 rounded-lg border border-zinc-100 hover:border-zinc-300 transition-all group bg-zinc-50/30">
+                    <div className="w-16 h-16 rounded-2xl bg-white border border-zinc-100 p-2 shrink-0 flex items-center justify-center shadow-sm">
+                      <img src={item.image || '/placeholder.png'} alt={item.name} className="max-w-full max-h-full object-contain"
+                        onError={e => { (e.target as HTMLImageElement).src = 'https://picsum.photos/100/100'; }} />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 line-clamp-1">{item.name}</p>
-                      <p className="text-xs text-slate-400">{fmtINR(item.unitPrice)} · GST {item.taxRatePct}%</p>
+                      <p className="text-sm font-semibold text-zinc-900 truncate">{item.name}</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">{fmtINR(item.unitPrice)} · GST {item.taxRatePct}%</p>
                     </div>
-                    {/* Qty controls */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => updateQty(item.id, -1)}
-                        className="w-6 h-6 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
-                        <Minus size={11} className="text-slate-600" />
-                      </button>
-                      <span className="w-8 text-center text-sm font-bold text-slate-800">{item.quantity}</span>
-                      <button onClick={() => updateQty(item.id, 1)}
-                        className="w-6 h-6 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
-                        <Plus size={11} className="text-slate-600" />
-                      </button>
+                    <div className="flex items-center gap-2 bg-white border border-zinc-200 p-1.5 rounded-xl shrink-0 shadow-sm">
+                      <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg transition-all"><Minus size={14} /></button>
+                      <span className="w-10 text-center text-xs font-semibold text-zinc-900 tabular-nums">{item.quantity}</span>
+                      <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg transition-all"><Plus size={14} /></button>
                     </div>
-                    <div className="text-right flex-shrink-0 min-w-[80px]">
-                      <p className="text-sm font-bold text-slate-900">{fmtINR(lineSubtotal + lineTax)}</p>
-                      <p className="text-[10px] text-slate-400">incl. tax</p>
+                    <div className="w-32 text-right shrink-0">
+                      <p className="text-sm font-semibold text-zinc-900 tabular-nums">{fmtINR(lineTotal + lineTax)}</p>
+                      <p className="text-[10px] text-zinc-300 mt-0.5">incl. tax</p>
                     </div>
-                    <button onClick={() => removeItem(item.id)}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0">
-                      <Trash2 size={13} />
-                    </button>
+                    <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="w-10 h-10 text-zinc-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 shrink-0">
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                 );
               })}
@@ -710,87 +712,85 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
           )}
         </ScrollArea>
 
-        {/* Order totals + Charge button */}
-        <div className="bg-white border-t border-slate-200 p-4 space-y-2">
-          <div className="space-y-1.5">
-            {[
-              { label: 'Subtotal', value: fmtINR(subtotal), className: 'text-slate-500 text-sm' },
-              { label: 'Tax (GST)', value: fmtINR(taxTotal), className: 'text-slate-500 text-sm' },
-              ...(discountAmount > 0 ? [{ label: `Discount (${pos.discountPct}%)`, value: `–${fmtINR(discountAmount)}`, className: 'text-emerald-700 text-sm' }] : []),
-              ...(pos.shipping > 0 ? [{ label: 'Shipping', value: fmtINR(pos.shipping), className: 'text-slate-500 text-sm' }] : []),
-            ].map(row => (
-              <div key={row.label} className={cn('flex justify-between', row.className)}>
-                <span>{row.label}</span><span>{row.value}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-            <span className="text-base font-bold text-slate-900">Total</span>
-            <span className="text-2xl font-black text-indigo-700 tracking-tight">{fmtINR(total)}</span>
-          </div>
-
-          <Button
-            className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base gap-2 rounded-xl shadow-sm transition-all active:scale-[0.99]"
-            disabled={pos.items.length === 0 || !pos.customer}
-            onClick={() => setShowPayDialog(true)}
-          >
-            <Zap size={18} />
-            Charge {pos.items.length > 0 ? fmtINR(total) : ''}
-          </Button>
-          {!pos.customer && <p className="text-[11px] text-center text-amber-600 flex items-center justify-center gap-1"><AlertTriangle size={10} /> Select a customer first</p>}
-        </div>
-      </div>
-
-      {/* Payment Confirmation Dialog */}
-      <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                {selectedPmConfig.icon}
-              </div>
-              Confirm Payment
-            </DialogTitle>
-            <DialogDescription>
-              Review and confirm the transaction for <strong>{pos.customer?.name}</strong>.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-2">
-            <div className="bg-slate-50 rounded-xl p-4 space-y-2 border border-slate-200">
-              {pos.items.map(i => (
-                <div key={i.id} className="flex justify-between text-sm">
-                  <span className="text-slate-600 truncate mr-2">{i.name} ×{i.quantity}</span>
-                  <span className="text-slate-800 font-medium flex-shrink-0">{fmtINR(i.quantity * i.unitPrice)}</span>
-                </div>
-              ))}
-              <Separator />
-              <div className="flex justify-between font-extrabold text-slate-900 text-base">
-                <span>Total</span><span className="text-indigo-700">{fmtINR(total)}</span>
-              </div>
+        <div className="p-10 border-t border-zinc-100 bg-zinc-50/50">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-8 pb-8 border-b border-zinc-200">
+            <div>
+              <p className="text-xs font-medium text-zinc-400 mb-0.5">Subtotal</p>
+              <p className="text-sm font-semibold text-zinc-900">{fmtINR(subtotal)}</p>
             </div>
-
-            <div className={cn('flex items-center gap-3 px-4 py-3 rounded-xl border font-semibold text-sm', selectedPmConfig.color)}>
-              {selectedPmConfig.icon}
-              <span>Paying via {selectedPmConfig.label}</span>
-              {pos.paymentRef && <span className="ml-auto text-xs font-mono opacity-70">{pos.paymentRef}</span>}
+            <div>
+              <p className="text-xs font-medium text-zinc-400 mb-0.5">Tax</p>
+              <p className="text-sm font-semibold text-zinc-900">{fmtINR(taxTotal)}</p>
             </div>
-
-            {pos.paymentMethod === 'cash' && parseFloat(pos.cashTendered) > 0 && (
-              <div className="flex justify-between text-sm px-1">
-                <span className="text-slate-500">Change Due</span>
-                <span className={cn('font-bold', cashChange >= 0 ? 'text-emerald-700' : 'text-red-600')}>{fmtINR(Math.abs(cashChange))}</span>
+            {discountAmount > 0 && (
+              <div>
+                <p className="text-xs font-medium text-emerald-500 mb-0.5">Discount</p>
+                <p className="text-sm font-semibold text-emerald-600">-{fmtINR(discountAmount)}</p>
+              </div>
+            )}
+            {pos.shipping > 0 && (
+              <div>
+                <p className="text-xs font-medium text-zinc-400 mb-0.5">Shipping</p>
+                <p className="text-sm font-semibold text-zinc-900">{fmtINR(pos.shipping)}</p>
               </div>
             )}
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setShowPayDialog(false)}>Back</Button>
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 flex-1" onClick={handleCharge}>
-              <CheckCircle2 size={14} /> Confirm & Issue Invoice
-            </Button>
-          </DialogFooter>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-zinc-400">Total</p>
+              <p className="text-4xl font-semibold text-zinc-900">{fmtINR(total)}</p>
+            </div>
+            <div className="flex flex-col gap-3 min-w-[320px]">
+              <Button
+                size="lg"
+                className="h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg rounded-xl shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
+                disabled={pos.items.length === 0 || !pos.customer || (pos.paymentMethod === 'cash' && cashChange < 0)}
+                onClick={() => setShowPayDialog(true)}
+              >
+                <Zap size={20} className="mr-3 text-white/50" /> Complete Sale
+              </Button>
+              <p className="text-xs font-medium text-zinc-400 text-center">
+                {!pos.customer ? 'Select a customer to proceed' : pos.items.length === 0 ? 'Add items to the cart' : pos.paymentMethod === 'cash' && cashChange < 0 ? 'Insufficient cash tendered' : 'Ready to complete sale'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>
+        <DialogContent className="sm:max-w-sm bg-white rounded-xl shadow-lg p-0 overflow-hidden">
+          <div className="p-8 space-y-6">
+            <div className="w-16 h-16 bg-zinc-900 rounded-xl flex items-center justify-center mx-auto shadow-sm">
+              {selectedPmConfig.icon}
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="text-xl font-semibold text-zinc-900">Confirm Payment</h3>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Processing payment for <span className="text-zinc-900 font-semibold">{pos.customer?.name}</span>.
+              </p>
+            </div>
+
+            <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3">
+              <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-zinc-100 shadow-sm">
+                <span className="text-xs font-medium text-zinc-400">Total</span>
+                <span className="text-lg font-black text-zinc-900">{fmtINR(total)}</span>
+              </div>
+              <div className={cn("flex items-center gap-3 p-3 rounded-lg border font-medium text-xs shadow-sm", selectedPmConfig.color.replace('bg-', 'bg-').replace('text-', 'text-'))}>
+                {selectedPmConfig.icon} {selectedPmConfig.label}
+                {pos.paymentRef && <span className="ml-auto opacity-50 font-mono">#{pos.paymentRef}</span>}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button onClick={handleCharge} className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-all shadow-sm">
+                <Shield size={16} className="mr-2" /> Confirm Payment
+              </Button>
+              <Button variant="ghost" onClick={() => setShowPayDialog(false)} className="h-9 text-xs font-medium text-zinc-400 hover:text-zinc-900">
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -821,216 +821,208 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
   );
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      {/* Mobile back */}
-      <Button variant="ghost" size="sm"
-        className="lg:hidden mb-4 -ml-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-1.5"
-        onClick={onBack}>
-        <ArrowLeft size={15} /> Back
-      </Button>
-
-      {/* Header Card */}
-      <Card className="mb-4 border-slate-200 shadow-sm">
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-mono">
+    <div className="flex flex-col h-full bg-white">
+      {/* ── HEADER ── */}
+      <div className="px-10 py-8 border-b border-zinc-100 bg-white shrink-0 sticky top-0 z-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <Button variant="ghost" size="icon" onClick={onBack} className="h-12 w-12 rounded-2xl hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-all">
+              <ArrowLeft size={20} />
+            </Button>
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-xl font-semibold text-zinc-900 font-mono">
                   {invoice.invoiceNumber}
                 </h2>
                 <InvStatusBadge status={invoice.status} />
               </div>
-              <p className="text-sm text-slate-500">
-                Created {fmtDate(invoice.createdAt)} · Due {fmtDate(invoice.dueDate)}
+              <p className="text-sm text-zinc-400">
+                Created {fmtDate(invoice.createdAt)}
               </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                  onClick={() => onUpdateStatus(invoice.id, 'paid')}>
-                  <Check size={14} /> Mark Paid
-                </Button>
-              )}
-              <Button size="sm" variant="outline" className="gap-1.5 border-slate-200"
-                onClick={() => onSend(invoice)}>
-                <Send size={13} /> Send
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" className="gap-1.5 border-slate-200">
-                    <FileText size={13} /> Invoice <ChevronDown size={11} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 bg-white">
-                  <DropdownMenuLabel className="text-xs text-slate-500">Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => onPrint(invoice)}><Printer size={13} /> Print</DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => onDownload(invoice)}><Download size={13} /> Download HTML</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {invoice.status === 'pending' && (
-                    <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => onUpdateStatus(invoice.id, 'overdue')}>
-                      <AlertTriangle size={13} className="text-amber-500" /> Mark Overdue
-                    </DropdownMenuItem>
-                  )}
-                  {!['cancelled', 'refunded'].includes(invoice.status) && (
-                    <DropdownMenuItem className="gap-2 cursor-pointer text-rose-600" onClick={() => onUpdateStatus(invoice.id, 'cancelled')}>
-                      <XCircle size={13} /> Cancel Invoice
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2 cursor-pointer text-red-600" onClick={() => onVoid(invoice.id)}>
-                    <Trash2 size={13} /> Void Invoice
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
 
-          <Separator className="my-4" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <MetaItem icon={<User size={14} />} label="Customer" value={invoice.customer?.name || 'N/A'} />
-            <MetaItem icon={<Mail size={14} />} label="Email" value={invoice.customer?.email || 'N/A'} />
-            <MetaItem icon={<Hash size={14} />} label="Items" value={`${invoice.lineItems.length} item${invoice.lineItems.length !== 1 ? 's' : ''}`} />
-            <MetaItem icon={<Wallet size={14} />} label="Amount Due"
+          <div className="flex flex-wrap items-center gap-3">
+            {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+              <Button size="lg" className="h-10 px-5 gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-md shadow-sm transition-all active:scale-95"
+                onClick={() => onUpdateStatus(invoice.id, 'paid')}>
+                <CheckCircle2 size={15} /> Mark as Paid
+              </Button>
+            )}
+            <Button size="lg" variant="outline" className="h-10 px-5 gap-2 border-zinc-200 text-zinc-600 font-medium text-sm rounded-md hover:bg-zinc-50 transition-all"
+              onClick={() => onSend(invoice)}>
+              <Send size={15} /> Send
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="lg" variant="outline" className="h-10 px-5 gap-2 border-zinc-200 text-zinc-600 font-medium text-sm rounded-md hover:bg-zinc-50 transition-all">
+                  <MoreHorizontal size={15} /> More
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-white border-zinc-200 shadow-lg rounded-lg p-1">
+                <DropdownMenuLabel className="text-xs font-medium text-zinc-400 p-2">Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-zinc-100" />
+                <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-zinc-50 text-xs font-medium" onClick={() => onPrint(invoice)}>
+                  <Printer size={14} className="text-zinc-400" /> Print
+                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-zinc-50 text-xs font-medium" onClick={() => onDownload(invoice)}>
+                  <Download size={14} className="text-zinc-400" /> Download
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-zinc-100" />
+                {invoice.status === 'pending' && (
+                  <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-zinc-50 text-xs font-medium text-amber-600" onClick={() => onUpdateStatus(invoice.id, 'overdue')}>
+                    <AlertTriangle size={14} /> Mark Overdue
+                  </DropdownMenuItem>
+                )}
+                {!['cancelled', 'refunded'].includes(invoice.status) && (
+                  <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-zinc-50 text-xs font-medium text-red-500" onClick={() => onUpdateStatus(invoice.id, 'cancelled')}>
+                    <XCircle size={14} /> Cancel Invoice
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator className="bg-zinc-100" />
+                <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-red-50 text-xs font-medium text-red-600" onClick={() => onVoid(invoice.id)}>
+                  <Trash2 size={14} /> Void Invoice
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="px-10 py-10 space-y-10">
+          {/* ── ENTITY INTEL ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <MetaItem icon={<User size={16} />} label="Customer" value={invoice.customer?.name || 'Unknown'} />
+            <MetaItem icon={<Mail size={16} />} label="Email" value={invoice.customer?.email || 'N/A'} />
+            <MetaItem icon={<Layout size={16} />} label="Items" value={`${invoice.lineItems.length} line items`} />
+            <MetaItem icon={<Shield size={16} />} label="Balance"
               value={
-                <span className={cn('font-bold', invoice.amountDue > 0 ? 'text-red-600' : 'text-emerald-700')}>
-                  {invoice.amountDue > 0 ? fmtINR(invoice.amountDue) : 'Paid in Full'}
+                <span className={cn('font-semibold', invoice.amountDue > 0 ? 'text-red-500' : 'text-emerald-500')}>
+                  {invoice.amountDue > 0 ? `Due: ${fmtINR(invoice.amountDue)}` : 'Paid'}
                 </span>
               }
             />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Line Items */}
-      <Card className="mb-4 border-slate-200 shadow-sm overflow-hidden">
-        <CardHeader className="px-4 sm:px-6 py-3.5 border-b border-slate-100 bg-slate-50/80">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <ReceiptText size={14} className="text-slate-500" /> Line Items
-            </CardTitle>
-            <span className="text-xs text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded-md font-medium">
-              {invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {/* Desktop table */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-white border-b border-slate-100">
-                <tr>
-                  {['Description', 'Qty', 'Unit Price', 'Tax', 'Total'].map((h, i) => (
-                    <th key={h} className={cn('px-4 sm:px-6 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide',
-                      i === 0 ? 'text-left' : 'text-right', i === 1 && 'text-center')}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {invoice.lineItems.map(item => {
-                  const lineTotal = item.quantity * item.unitPrice;
-                  const tax = lineTotal * ((item.taxRatePct ?? 18) / 100);
-                  return (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 sm:px-6 py-3.5">
-                        <p className="font-semibold text-slate-800">{item.name}</p>
-                        {item.description && <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>}
-                      </td>
-                      <td className="px-4 py-3.5 text-center">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold text-sm">{item.quantity}</span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right text-slate-600">{fmtINR(item.unitPrice)}</td>
-                      <td className="px-4 py-3.5 text-right">
-                        <span className="text-indigo-600 font-medium text-xs">{item.taxRatePct ?? 18}%</span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3.5 text-right font-bold text-slate-900">{fmtINR(lineTotal + tax)}</td>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            {/* ── ASSET LIST ── */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                  <Layers size={15} className="text-zinc-400" /> Line Items
+                </h3>
+              </div>
+
+              <div className="border border-zinc-100 rounded-lg overflow-hidden bg-zinc-50/30">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-white border-b border-zinc-100">
+                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Item</th>
+                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-center">Qty</th>
+                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-right">Unit Price</th>
+                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-right">Total</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100">
+                    {invoice.lineItems.map(item => {
+                      const lineTotal = item.quantity * item.unitPrice;
+                      const tax = lineTotal * ((item.taxRatePct ?? 18) / 100);
+                      return (
+                        <tr key={item.id} className="group hover:bg-white transition-all">
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-semibold text-zinc-900">{item.name}</p>
+                            {item.description && <p className="text-xs text-zinc-400 mt-0.5">{item.description}</p>}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[32px] h-7 px-2 rounded-md bg-zinc-100 text-zinc-900 font-semibold text-xs tabular-nums border border-zinc-200">
+                              {item.quantity}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right text-sm font-medium text-zinc-500 tabular-nums">{fmtINR(item.unitPrice)}</td>
+                          <td className="px-6 py-4 text-right font-semibold text-zinc-900 tabular-nums">{fmtINR(lineTotal + tax)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Mobile card view */}
-          <div className="sm:hidden divide-y divide-slate-100">
-            {invoice.lineItems.map(item => {
-              const lineTotal = item.quantity * item.unitPrice;
-              const tax = lineTotal * ((item.taxRatePct ?? 18) / 100);
-              return (
-                <div key={item.id} className="p-4">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="font-semibold text-slate-800 text-sm">{item.name}</p>
-                    <p className="font-bold text-slate-900 text-sm ml-2">{fmtINR(lineTotal + tax)}</p>
-                  </div>
-                  {item.description && <p className="text-xs text-slate-400">{item.description}</p>}
-                  <div className="flex gap-4 mt-2 text-xs text-slate-500">
-                    <span>Qty: <strong className="text-slate-700">{item.quantity}</strong></span>
-                    <span>Unit: <strong className="text-slate-700">{fmtINR(item.unitPrice)}</strong></span>
-                    <span>GST: <strong className="text-indigo-600">{item.taxRatePct ?? 18}%</strong></span>
+              {invoice.notes && (
+                <div className="p-6 bg-zinc-50 border border-zinc-200 rounded-lg flex items-start gap-3">
+                  <StickyNote size={16} className="text-zinc-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-zinc-400 mb-1">Notes</p>
+                    <p className="text-sm text-zinc-900 whitespace-pre-wrap font-medium leading-relaxed">{invoice.notes}</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </div>
 
-          {/* Totals footer */}
-          <div className="px-4 sm:px-6 py-4 bg-slate-50/80 border-t border-slate-100">
-            <div className="ml-auto max-w-xs space-y-1.5">
-              {[
-                { l: 'Subtotal', v: fmtINR(subtotal), cls: 'text-slate-500 text-sm' },
-                { l: 'Tax (GST)', v: fmtINR(taxTotal), cls: 'text-slate-500 text-sm' },
-                ...(discountAmount > 0 ? [{ l: `Discount (${invoice.discountPct}%)`, v: `–${fmtINR(discountAmount)}`, cls: 'text-emerald-700 text-sm' }] : []),
-                ...((invoice.shipping ?? 0) > 0 ? [{ l: 'Shipping', v: fmtINR(invoice.shipping!), cls: 'text-slate-500 text-sm' }] : []),
-              ].map(r => (
-                <div key={r.l} className={cn('flex justify-between', r.cls)}><span>{r.l}</span><span>{r.v}</span></div>
-              ))}
-              <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-1">
-                <span className="font-bold text-slate-900">Total</span>
-                <span className="text-xl font-extrabold text-indigo-700">{fmtINR(total)}</span>
+            {/* ── FINANCIAL SYNC ── */}
+            <div className="space-y-8">
+              <div className="p-8 bg-zinc-900 rounded-xl text-white shadow-lg relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity scale-[3] rotate-12">
+                  <TrendingUp size={100} />
+                </div>
+
+                <h3 className="text-xs font-medium text-zinc-500 mb-6">Summary</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-zinc-400 text-xs font-medium">
+                    <span>Subtotal</span>
+                    <span className="text-white">{fmtINR(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-zinc-400 text-xs font-medium">
+                    <span>Tax</span>
+                    <span className="text-white">{fmtINR(taxTotal)}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between items-center text-emerald-400 text-xs font-medium">
+                      <span>Discount</span>
+                      <span>-{fmtINR(discountAmount)}</span>
+                    </div>
+                  )}
+                  {((invoice.shipping ?? 0) > 0) && (
+                    <div className="flex justify-between items-center text-zinc-400 text-xs font-medium">
+                      <span>Shipping</span>
+                      <span className="text-white">{fmtINR(invoice.shipping!)}</span>
+                    </div>
+                  )}
+                  <Separator className="bg-white/10" />
+                  <div className="flex justify-between items-end pt-4">
+                    <span className="text-xs font-medium text-zinc-500">Total</span>
+                    <span className="text-3xl font-semibold">{fmtINR(total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── AUDIT LOG ── */}
+              <div className="p-6 bg-zinc-50 border border-zinc-200 rounded-lg shadow-sm">
+                <h3 className="text-xs font-medium text-zinc-400 mb-4 flex items-center gap-2">
+                  <Monitor size={14} /> Audit Log
+                </h3>
+                <div className="space-y-6">
+                  {[...invoice.audit].reverse().map((ev, idx) => (
+                    <div key={ev.id} className="flex gap-4 group">
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className={cn('w-2.5 h-2.5 rounded-full border-2 border-zinc-50', idx === 0 ? 'bg-zinc-900 shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-zinc-300')} />
+                        {idx !== invoice.audit.length - 1 && <div className="w-0.5 flex-1 bg-zinc-200 my-1" />}
+                      </div>
+                      <div className="pb-6">
+                        <p className={cn('text-xs font-semibold mb-0.5', idx === 0 ? 'text-zinc-900' : 'text-zinc-500')}>
+                          {ev.message}
+                        </p>
+                        <p className="text-[11px] text-zinc-400">{ev.actor} · {fmtDate(ev.createdAt)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Audit trail */}
-      {invoice.audit.length > 0 && (
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="px-4 py-3 pb-2 border-b border-slate-100">
-            <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-2">
-              <StickyNote size={12} /> Audit Trail
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 py-3">
-            <div className="relative pl-4 border-l-2 border-slate-200 space-y-4">
-              {[...invoice.audit].reverse().map((ev, idx) => (
-                <div key={ev.id} className="relative">
-                  <div className={cn('absolute -left-[21px] top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white',
-                    idx === 0 ? 'bg-indigo-500' : 'bg-slate-200')} />
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className={cn('text-xs font-bold', idx === 0 ? 'text-slate-900' : 'text-slate-500')}>
-                      {ev.message}
-                    </span>
-                    {idx === 0 && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-semibold">Latest</span>}
-                  </div>
-                  <p className="text-[11px] text-slate-400">{ev.actor} · {fmtDate(ev.createdAt)}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {invoice.notes && (
-        <Card className="mt-4 border-slate-200 shadow-sm">
-          <CardContent className="px-4 py-3 flex items-start gap-3">
-            <StickyNote size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-slate-600 whitespace-pre-wrap">{invoice.notes}</p>
-          </CardContent>
-        </Card>
-      )}
+        </div>
+      </ScrollArea>
     </div>
   );
 };
@@ -1048,18 +1040,32 @@ const StatsBar = ({ invoices }: { invoices: Invoice[] }) => {
   }, [invoices]);
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {[
-        { label: 'Total Invoices', value: s.total, icon: <FileText size={15} />, color: 'text-slate-600 bg-slate-50 border-slate-200' },
-        { label: 'Revenue (Paid)', value: fmtINR(s.revenue), icon: <TrendingUp size={15} />, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-        { label: 'Outstanding', value: fmtINR(s.outstanding), icon: <Wallet size={15} />, color: 'text-amber-700 bg-amber-50 border-amber-200' },
-        { label: 'Overdue', value: s.overdue, icon: <AlertTriangle size={15} />, color: 'text-red-700 bg-red-50 border-red-200' },
+        { label: 'Total Invoices', value: s.total, icon: <FileText size={16} />, color: 'bg-white border-zinc-200 text-zinc-900', secondary: `${s.total} records` },
+        { label: 'Revenue', value: fmtINR(s.revenue), icon: <TrendingUp size={16} />, color: 'bg-zinc-900 border-zinc-800 text-white', secondary: 'Collected payments' },
+        { label: 'Outstanding', value: fmtINR(s.outstanding), icon: <Wallet size={16} />, color: 'bg-white border-zinc-200 text-zinc-900', secondary: 'Pending collection' },
+        { label: 'Overdue', value: s.overdue, icon: <AlertTriangle size={16} />, color: 'bg-red-50 border-red-100 text-red-600', secondary: 'Action needed' },
       ].map(item => (
-        <div key={item.label} className={cn('flex items-center gap-3 px-4 py-3 rounded-xl border', item.color)}>
-          <div className="flex-shrink-0">{item.icon}</div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium opacity-70 truncate">{item.label}</p>
-            <p className="text-lg font-bold leading-tight truncate">{item.value}</p>
+        <div key={item.label} className={cn('relative overflow-hidden group p-5 rounded-lg border shadow-sm transition-all', item.color)}>
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity scale-150 rotate-12">
+            {item.icon}
+          </div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className={cn("p-2 rounded-lg border",
+              item.color.includes('bg-zinc-900') ? "bg-white/10 border-white/10" : "bg-zinc-50 border-zinc-100"
+            )}>
+              {item.icon}
+            </div>
+            <p className={cn("text-xs font-medium",
+              item.color.includes('bg-zinc-900') ? "text-zinc-400" : "text-zinc-500"
+            )}>{item.label}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xl font-semibold">{item.value}</p>
+            <p className={cn("text-[11px] opacity-50",
+              item.color.includes('bg-zinc-900') ? "text-white" : "text-zinc-600"
+            )}>{item.secondary}</p>
           </div>
         </div>
       ))}
@@ -1180,24 +1186,13 @@ const BillingInvoices: React.FC = () => {
   // ── POS view ──
   if (view === 'pos') {
     return (
-      <div className="flex flex-col h-full min-h-0 overflow-hidden -m-6">
-        <div className="flex-shrink-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <ShoppingCart size={16} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">POS Billing Counter</h1>
-            <p className="text-xs text-slate-500">Quick sale — add items, accept payment, generate invoice</p>
-          </div>
-        </div>
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <PosCounter
-            products={enrichedProducts}
-            customers={customers}
-            onComplete={handlePosComplete}
-            onCancel={() => setView('list')}
-          />
-        </div>
+      <div className="flex flex-col h-full min-h-0 bg-white -m-8">
+        <PosCounter
+          products={enrichedProducts}
+          customers={customers}
+          onComplete={handlePosComplete}
+          onCancel={() => setView('list')}
+        />
       </div>
     );
   }
@@ -1205,50 +1200,52 @@ const BillingInvoices: React.FC = () => {
   // ── List view ──
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full min-h-0 overflow-hidden -m-6">
+      <div className="flex flex-col lg:flex-row h-full min-h-0 bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-sm -m-8">
 
-        {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Billing & Invoices</h1>
-              <p className="text-xs text-slate-500 mt-0.5">{sortedInvoices.length} invoices · GSTIN {BILLING_PROFILE.gstin}</p>
-            </div>
-            <Button
-              onClick={() => setView('pos')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-sm h-9"
-              size="sm"
-            >
-              <Zap size={14} /> New Sale
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-
-          {/* LEFT: Invoice list */}
-          <div className={cn(
-            'flex flex-col bg-white border-r border-slate-200 flex-shrink-0',
-            'w-full lg:w-[340px] xl:w-[380px]',
-            showMobileDetail ? 'hidden lg:flex' : 'flex'
-          )}>
-            {/* Search + filter */}
-            <div className="px-3 py-3 border-b border-slate-100 space-y-2">
-              <div className="relative">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <Input placeholder="Search invoices…" value={searchQuery} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                  className="pl-8 h-8 text-sm bg-slate-50 border-slate-200" />
+        {/* LEFT: Master List */}
+        <div className={cn(
+          'flex flex-col bg-zinc-50/50 border-r border-zinc-200 shrink-0 h-full transition-all duration-300',
+          'w-full lg:w-[400px] xl:w-[440px]',
+          showMobileDetail ? 'hidden lg:flex' : 'flex'
+        )}>
+          {/* List Header */}
+          <div className="px-6 py-5 border-b border-zinc-200 bg-white shrink-0">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-xl font-semibold text-zinc-900">Billing & Invoices</h1>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <p className="text-sm text-zinc-500 mt-0.5 flex items-center gap-2">
+                  {sortedInvoices.length} invoices
+                </p>
               </div>
-              <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setView('pos')}
+                className="h-9 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-md shadow-sm transition-all active:scale-95 gap-2"
+              >
+                <Zap size={15} /> New Sale
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="relative group">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-zinc-900" />
+                <Input
+                  placeholder="Search invoices…"
+                  value={searchQuery}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                  className="pl-12 h-10 text-xs font-medium border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-zinc-900 transition-all rounded-md"
+                />
+              </div>
+              <div className="flex items-center gap-3">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="h-8 text-xs flex-1 border-slate-200 bg-slate-50">
+                  <SelectTrigger className="h-9 text-xs font-medium border-zinc-200 bg-white focus:ring-zinc-900 flex-1 rounded-md shadow-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectContent className="bg-white border-zinc-200 shadow-lg rounded-lg p-1">
+                    <SelectItem value="all" className="rounded-md p-2 text-xs font-medium">All Invoices</SelectItem>
                     {(Object.keys(INV_STATUS_CONFIG) as InvoiceStatus[]).map(s => (
-                      <SelectItem key={s} value={s}>
-                        <div className="flex items-center gap-2">
+                      <SelectItem key={s} value={s} className="rounded-md p-2 text-xs font-medium cursor-pointer">
+                        <div className="flex items-center gap-3">
                           <span className={cn('w-2 h-2 rounded-full', INV_STATUS_CONFIG[s].dotClass)} />
                           {INV_STATUS_CONFIG[s].label}
                         </div>
@@ -1256,90 +1253,116 @@ const BillingInvoices: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-slate-400 flex-shrink-0 tabular-nums">{filteredInvoices.length} result{filteredInvoices.length !== 1 ? 's' : ''}</span>
+                <div className="h-9 px-3 bg-zinc-100 rounded-md flex items-center justify-center shrink-0 border border-zinc-200">
+                  <span className="text-xs font-medium text-zinc-500 tabular-nums">{filteredInvoices.length} results</span>
+                </div>
               </div>
             </div>
-
-            {/* List */}
-            <ScrollArea className="flex-1">
-              {filteredInvoices.length === 0 ? (
-                <div className="p-10 text-center">
-                  <FileText size={32} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm text-slate-500">No invoices found.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {filteredInvoices.map(inv => {
-                    const isSelected = selectedId === inv.id;
-                    const isOverdue = inv.status === 'overdue';
-                    return (
-                      <button key={inv.id} onClick={() => { setSelectedId(inv.id); setShowMobileDetail(true); }}
-                        className={cn('w-full text-left px-4 py-3.5 transition-all group hover:bg-slate-50 relative',
-                          isSelected && 'bg-indigo-50/70 border-l-[3px] !border-l-indigo-600')}>
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={cn('text-xs font-mono font-bold tracking-tight truncate',
-                              isSelected ? 'text-indigo-700' : 'text-slate-700')}>
-                              {inv.invoiceNumber}
-                            </span>
-                            <InvStatusBadge status={inv.status} />
-                          </div>
-                          <ChevronRight size={14} className={cn('flex-shrink-0 transition-opacity mt-0.5',
-                            isSelected ? 'text-indigo-600 opacity-100' : 'text-slate-400 opacity-0 group-hover:opacity-100')} />
-                        </div>
-                        <p className="text-sm font-semibold text-slate-800 truncate mb-0.5">{inv.customer?.name || 'Unknown'}</p>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-slate-400 flex items-center gap-1">
-                            <Calendar size={11} /> {fmtDate(inv.createdAt)}
-                          </span>
-                          <span className={cn('text-sm font-bold', inv.amountDue > 0 ? 'text-red-600' : 'text-slate-900')}>
-                            {fmtINR(inv.total)}
-                          </span>
-                        </div>
-                        {isOverdue && (
-                          <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-red-600">
-                            <AlertTriangle size={10} /> Overdue
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </ScrollArea>
           </div>
 
-          {/* RIGHT: Invoice detail */}
+          {/* Master List Content */}
+          <ScrollArea className="flex-1">
+            {filteredInvoices.length === 0 ? (
+              <div className="p-20 text-center opacity-20">
+                <FileText size={48} className="mx-auto text-zinc-400 mb-6" />
+                <p className="text-sm font-medium">No invoices found</p>
+                <p className="text-xs text-zinc-400 mt-2">Try adjusting your search or filter criteria.</p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-2">
+                {filteredInvoices.map(inv => {
+                  const isSelected = selectedId === inv.id;
+                  const isOverdue = inv.status === 'overdue';
+                  return (
+                    <button
+                      key={inv.id}
+                      onClick={() => { setSelectedId(inv.id); setShowMobileDetail(true); }}
+                      className={cn(
+                        'w-full text-left p-5 rounded-lg transition-all group relative border',
+                        isSelected
+                          ? 'bg-zinc-900 border-zinc-900 text-white shadow-lg z-10'
+                          : 'bg-white border-zinc-100 hover:border-zinc-200 hover:shadow-sm text-zinc-900'
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <span className={cn(
+                            'text-xs font-mono font-medium truncate',
+                            isSelected ? 'text-zinc-400' : 'text-zinc-500'
+                          )}>
+                            {inv.invoiceNumber}
+                          </span>
+                          <p className={cn(
+                            'text-sm font-semibold truncate',
+                            isSelected ? 'text-white' : 'text-zinc-900'
+                          )}>{inv.customer?.name || 'Unknown'}</p>
+                        </div>
+                        <InvStatusBadge status={inv.status} />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 mt-auto pt-4 border-t border-current opacity-10">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={12} className={cn(isSelected ? 'text-zinc-500' : 'text-zinc-300')} />
+                          <span className={cn('text-[11px] font-medium', isSelected ? 'text-zinc-500' : 'text-zinc-400')}>
+                            {fmtDate(inv.createdAt)}
+                          </span>
+                        </div>
+                        <span className={cn('text-base font-semibold', isSelected ? 'text-white' : 'text-zinc-900')}>
+                          {fmtINR(inv.total)}
+                        </span>
+                      </div>
+
+                      {isOverdue && !isSelected && (
+                        <div className="absolute bottom-5 right-5 flex items-center gap-1 text-[10px] font-medium text-red-500 animate-pulse">
+                          <AlertTriangle size={10} /> Critical
+                        </div>
+                      )}
+
+                      {isSelected && (
+                        <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-white rounded-l-full shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+
+        {/* RIGHT: Detail View */}
+        <div className={cn(
+          'flex-1 flex flex-col bg-white min-w-0 transition-opacity duration-500',
+          !showMobileDetail && 'hidden lg:flex'
+        )}>
           {selectedInvoice ? (
-            <div className={cn(
-              'flex-1 overflow-y-auto bg-slate-50 min-w-0',
-              !showMobileDetail && 'hidden lg:block'
-            )}>
-              <div className="hidden xl:block px-6 pt-6">
+            <>
+              <div className="hidden xl:block px-10 pt-10 pb-2">
                 <StatsBar invoices={invoices} />
               </div>
-              <InvoiceDetail
-                invoice={selectedInvoice}
-                onUpdateStatus={handleUpdateStatus}
-                onVoid={handleVoid}
-                onPrint={handlePrint}
-                onDownload={handleDownload}
-                onSend={handleSend}
-                onBack={() => setShowMobileDetail(false)}
-              />
-            </div>
-          ) : (
-            <div className="hidden lg:flex flex-1 items-center justify-center bg-slate-50">
-              <div className="text-center">
-                <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <FileText size={24} className="text-slate-400" />
-                </div>
-                <p className="font-semibold text-slate-700">No invoice selected</p>
-                <p className="text-sm text-slate-400 mt-1">Choose one from the list or start a new sale</p>
-                <Button onClick={() => setView('pos')} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white gap-2" size="sm">
-                  <Zap size={13} /> New Sale
-                </Button>
+              <div className="flex-1 overflow-hidden">
+                <InvoiceDetail
+                  invoice={selectedInvoice}
+                  onUpdateStatus={handleUpdateStatus}
+                  onVoid={handleVoid}
+                  onPrint={handlePrint}
+                  onDownload={handleDownload}
+                  onSend={handleSend}
+                  onBack={() => setShowMobileDetail(false)}
+                />
               </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-20">
+              <div className="w-24 h-24 bg-zinc-50 rounded-xl border border-dashed border-zinc-200 flex items-center justify-center mb-6">
+                <FileText size={40} className="text-zinc-200" />
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-900">No Invoice Selected</h3>
+              <p className="text-sm text-zinc-400 mt-2 max-w-xs leading-relaxed">
+                Select an invoice from the list to view details, or create a new sale.
+              </p>
+              <Button onClick={() => setView('pos')} className="mt-8 h-10 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-md shadow-sm transition-all active:scale-95 gap-2" size="lg">
+                <Zap size={16} /> New Sale
+              </Button>
             </div>
           )}
         </div>

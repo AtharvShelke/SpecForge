@@ -111,6 +111,7 @@ export interface ProductVariant {
   createdAt: string;
   updatedAt: string;
   product?: Product; // parent relation
+  warehouseInventories?: WarehouseInventory[];
 }
 
 export interface Product {
@@ -138,6 +139,7 @@ export interface Product {
 
   // Frontend-only
   imageFile?: File;
+  image?: string;
 }
 
 /** Convenience type for flat specs (frontend display/compatibility logic) */

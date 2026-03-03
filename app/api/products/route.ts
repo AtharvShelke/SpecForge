@@ -5,7 +5,7 @@ import { z } from "zod";
 // ── Validation ──────────────────────────────────────────
 const CategoryEnum = z.enum([
     "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING",
+    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
 ]);
 
 const specSchema = z.object({
@@ -19,7 +19,7 @@ const createProductSchema = z.object({
     category: CategoryEnum,
     price: z.number().positive(),
     stock: z.number().int().min(0).default(0),
-    image: z.string().min(1),
+    images: z.array(z.string().min(1)).min(1), // Support multiple images
     description: z.string().optional(),
     brandId: z.string().uuid().optional(),
     specs: z.array(specSchema).default([]),
@@ -219,7 +219,10 @@ export async function POST(req: NextRequest) {
                         create: data.specs.map((s) => ({ key: s.key, value: s.value })),
                     },
                     media: {
-                        create: [{ url: data.image, sortOrder: 0 }]
+                        create: data.images.map((url, index) => ({
+                            url,
+                            sortOrder: index
+                        }))
                     },
                     variants: {
                         create: [{ sku: data.sku, price: data.price, status: 'IN_STOCK' }]

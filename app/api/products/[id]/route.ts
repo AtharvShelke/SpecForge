@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const CategoryEnum = z.enum([
     "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING",
+    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
 ]);
 
 const specSchema = z.object({
@@ -17,7 +17,7 @@ const updateProductSchema = z.object({
     category: CategoryEnum.optional(),
     price: z.number().positive().optional(),
     stock: z.number().int().min(0).optional(),
-    image: z.string().min(1).optional(),
+    images: z.array(z.string().min(1)).optional(), // Support multiple images
     description: z.string().nullable().optional(),
     brandId: z.string().uuid().nullable().optional(),
     specs: z.array(specSchema).optional(),
@@ -76,14 +76,14 @@ export async function PUT(
                 });
             }
 
-            const { specs: _, price, stock, image, ...productData } = data;
+            const { specs: _, price, stock, images, ...productData } = data;
             const p = await tx.product.update({
                 where: { id },
                 data: productData,
                 include: { specs: true, brand: true, variants: true, media: true },
             });
 
-            // Map flat API updates to variant/media models if passed
+            // Map flat API updates to variant models if passed
             if (price !== undefined || stock !== undefined) {
                 const variant = await tx.productVariant.findFirst({ where: { productId: id } });
                 if (variant) {
@@ -109,18 +109,16 @@ export async function PUT(
                 }
             }
 
-            if (image !== undefined) {
-                const mediaNode = await tx.productMedia.findFirst({ where: { productId: id } });
-                if (mediaNode) {
-                    await tx.productMedia.update({
-                        where: { id: mediaNode.id },
-                        data: { url: image }
-                    });
-                } else {
-                    await tx.productMedia.create({
-                        data: { productId: id, url: image, sortOrder: 0 }
-                    });
-                }
+            if (images !== undefined) {
+                // Delete existing media and create new ones
+                await tx.productMedia.deleteMany({ where: { productId: id } });
+                await tx.productMedia.createMany({
+                    data: images.map((url, index) => ({
+                        productId: id,
+                        url,
+                        sortOrder: index
+                    }))
+                });
             }
 
 
