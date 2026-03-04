@@ -1,5 +1,5 @@
+// components/dashboard/AdminSidebar.tsx
 'use client';
-
 import React from 'react';
 import {
     LayoutDashboard,
@@ -12,11 +12,8 @@ import {
     FileText,
     LogOut,
     X,
-    Settings,
-    User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface NavItem {
@@ -49,14 +46,13 @@ interface AdminSidebarProps {
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     activeTab,
     setActiveTab,
-    onLogout,
     isOpen,
     setIsOpen
 }) => {
     const renderNavItem = (item: NavItem) => {
         const isActive = activeTab === item.key;
         const Icon = item.icon;
-
+        
         return (
             <button
                 key={item.key}
@@ -65,20 +61,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     if (window.innerWidth < 1024) setIsOpen(false);
                 }}
                 className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors duration-150 relative",
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative",
                     isActive
-                        ? "bg-white/10 text-white"
-                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                        ? "bg-black text-white shadow-sm"
+                        : "text-zinc-500 hover:text-black hover:bg-zinc-100/80"
                 )}
             >
-                {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-indigo-500 rounded-r-sm" />
-                )}
                 <Icon className={cn(
-                    "w-4 h-4 shrink-0",
-                    isActive ? "text-indigo-400" : "text-zinc-500"
-                )} />
-                <span>{item.label}</span>
+                    "w-4 h-4 shrink-0 transition-colors duration-200",
+                    isActive ? "text-white" : "text-zinc-400 group-hover:text-black"
+                )} strokeWidth={isActive ? 2 : 1.5} />
+                <span className="tracking-tight">{item.label}</span>
             </button>
         );
     };
@@ -88,87 +81,57 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {/* Mobile Overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-200"
+                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden transition-all duration-300"
                     onClick={() => setIsOpen(false)}
                 />
             )}
-
+            
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-60 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-transform duration-200 ease-out lg:static lg:translate-x-0 h-screen",
-                isOpen ? "translate-x-0" : "-translate-x-full"
+                "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-zinc-100 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 h-screen",
+                isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
             )}>
-                {/* Brand */}
-                <div className="px-4 h-14 flex items-center gap-3 border-b border-zinc-800 shrink-0">
-                    <div className="w-8 h-8 rounded-md bg-indigo-600 flex items-center justify-center">
-                        <Layers className="w-4 h-4 text-white" />
+                {/* Brand Logo Area */}
+                <div className="px-6 h-20 flex items-center gap-3 shrink-0">
+                    <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center shadow-sm">
+                        <Layers className="w-4 h-4 text-white" strokeWidth={2} />
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-sm font-semibold text-white leading-none">Nexus Admin</h1>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">v2.4.0</p>
+                        <h1 className="text-sm font-semibold text-black tracking-tight leading-none">Nexus OS</h1>
+                        <p className="text-[11px] text-zinc-400 mt-1 font-medium tracking-wide uppercase">Admin Hub</p>
                     </div>
                     <button
-                        className="ml-auto lg:hidden p-1 rounded hover:bg-zinc-800 transition-colors"
+                        className="ml-auto lg:hidden p-2 -mr-2 rounded-full hover:bg-zinc-100 transition-colors"
                         onClick={() => setIsOpen(false)}
                     >
-                        <X className="w-4 h-4 text-zinc-400" />
+                        <X className="w-4 h-4 text-zinc-500" />
                     </button>
                 </div>
 
                 <ScrollArea className="flex-1">
-                    <div className="px-3 py-4 space-y-6">
-                        {/* Operations */}
+                    <div className="px-4 py-4 space-y-8">
+                        {/* Operations Group */}
                         <div>
-                            <p className="px-3 mb-2 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Operations</p>
-                            <div className="space-y-0.5">
+                            <p className="px-3 mb-3 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">
+                                Operations
+                            </p>
+                            <div className="space-y-1">
                                 {NAV_ITEMS.filter(i => i.group === 'primary').map(renderNavItem)}
                             </div>
                         </div>
 
-                        {/* Management */}
+                        {/* Management Group */}
                         <div>
-                            <p className="px-3 mb-2 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Management</p>
-                            <div className="space-y-0.5">
+                            <p className="px-3 mb-3 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">
+                                Management
+                            </p>
+                            <div className="space-y-1">
                                 {NAV_ITEMS.filter(i => i.group === 'secondary').map(renderNavItem)}
-                            </div>
-                        </div>
-
-                        {/* Configuration */}
-                        <div>
-                            <p className="px-3 mb-2 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Configuration</p>
-                            <div className="space-y-0.5">
-                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-150">
-                                    <Settings className="w-4 h-4 text-zinc-500" />
-                                    Settings
-                                </button>
-                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-150">
-                                    <User className="w-4 h-4 text-zinc-500" />
-                                    Access Control
-                                </button>
                             </div>
                         </div>
                     </div>
                 </ScrollArea>
-
-                {/* Account Footer */}
-                <div className="p-3 mt-auto shrink-0 border-t border-zinc-800">
-                    <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-md bg-zinc-800/50">
-                        <div className="w-8 h-8 rounded-md bg-zinc-700 flex items-center justify-center">
-                            <User className="w-4 h-4 text-zinc-300" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <p className="text-[13px] font-medium text-zinc-200 truncate">Admin</p>
-                            <p className="text-[11px] text-zinc-500 truncate">Administrator</p>
-                        </div>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        className="w-full h-9 justify-center gap-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 text-[13px] font-medium rounded-md transition-colors duration-150"
-                        onClick={onLogout}
-                    >
-                        <LogOut className="w-4 h-4" />
-                        Log out
-                    </Button>
-                </div>
+                
+                
             </aside>
         </>
     );

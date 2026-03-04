@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
-import { Order, OrderStatus, CartItem } from '@/types';
+import { Order, OrderStatus } from '@/types';
 import {
   ArrowLeft,
   Calendar,
@@ -12,9 +11,7 @@ import {
   Mail,
   MapPin,
   Package,
-  Truck,
   User,
-  ClipboardList,
   AlertCircle,
   Clock,
   ChevronRight,
@@ -23,22 +20,12 @@ import {
   Download,
   RefreshCw,
   Search,
-  Filter,
-  MoreHorizontal,
   Hash,
   Warehouse,
-  TrendingUp,
   XCircle,
   RotateCcw,
-  CheckCheck,
-  Send,
-  Banknote,
-  Box,
-  Info,
   ChevronDown,
-  StickyNote,
   AlertTriangle,
-  PhoneCall,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,7 +41,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -83,273 +69,10 @@ import {
 } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-
-// ─────────────────────────────────────────────────────────────
-// TYPES & CONSTANTS
-// ─────────────────────────────────────────────────────────────
-
-interface StatusConfig {
-  label: string;
-  badgeClass: string;
-  dotClass: string;
-  icon: React.ReactNode;
-  description: string;
-}
-
-const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
-  [OrderStatus.PENDING]: {
-    label: 'Pending',
-    badgeClass: 'bg-zinc-50 text-zinc-600 border-zinc-200',
-    dotClass: 'bg-zinc-400',
-    icon: <Clock size={12} />,
-    description: 'Order placed, awaiting initial action',
-  },
-  [OrderStatus.PAID]: {
-    label: 'Paid',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dotClass: 'bg-emerald-500',
-    icon: <Banknote size={12} />,
-    description: 'Payment verified successfully',
-  },
-  [OrderStatus.PROCESSING]: {
-    label: 'Processing',
-    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
-    dotClass: 'bg-blue-500',
-    icon: <Box size={12} />,
-    description: 'Order being packed',
-  },
-  [OrderStatus.SHIPPED]: {
-    label: 'Shipped',
-    badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    dotClass: 'bg-indigo-500',
-    icon: <Truck size={12} />,
-    description: 'In transit to customer',
-  },
-  [OrderStatus.DELIVERED]: {
-    label: 'Delivered',
-    badgeClass: 'bg-zinc-900 text-white border-zinc-900',
-    dotClass: 'bg-white',
-    icon: <CheckCheck size={12} />,
-    description: 'Delivery confirmed',
-  },
-  [OrderStatus.CANCELLED]: {
-    label: 'Cancelled',
-    badgeClass: 'bg-red-50 text-red-700 border-red-200',
-    dotClass: 'bg-red-400',
-    icon: <XCircle size={12} />,
-    description: 'Order cancelled',
-  },
-  [OrderStatus.RETURNED]: {
-    label: 'Returned',
-    badgeClass: 'bg-zinc-50 text-zinc-500 border-zinc-200',
-    dotClass: 'bg-zinc-400',
-    icon: <RotateCcw size={12} />,
-    description: 'Return processed',
-  },
-};
-
-const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
-  [OrderStatus.PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
-  [OrderStatus.PAID]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
-  [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-  [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED, OrderStatus.RETURNED],
-  [OrderStatus.DELIVERED]: [OrderStatus.RETURNED],
-  [OrderStatus.CANCELLED]: [],
-  [OrderStatus.RETURNED]: [],
-};
-
-const NEXT_STATUS_BUTTON: Record<OrderStatus, { label: string; icon: React.ReactNode; variant: 'default' | 'destructive' | 'outline' | 'secondary' } | null> = {
-  [OrderStatus.PENDING]: { label: 'Confirm Payment', icon: <Banknote size={14} />, variant: 'default' },
-  [OrderStatus.PAID]: { label: 'Start Processing', icon: <Box size={14} />, variant: 'default' },
-  [OrderStatus.PROCESSING]: { label: 'Mark as Shipped', icon: <Send size={14} />, variant: 'default' },
-  [OrderStatus.SHIPPED]: { label: 'Mark Delivered', icon: <CheckCheck size={14} />, variant: 'default' },
-  [OrderStatus.DELIVERED]: null,
-  [OrderStatus.CANCELLED]: null,
-  [OrderStatus.RETURNED]: null,
-};
-
-// ─────────────────────────────────────────────────────────────
-// HELPER: Generate Invoice HTML & Print
-// ─────────────────────────────────────────────────────────────
-
-const generateInvoiceHTML = (order: Order): string => {
-  // Backward hook for historical orders
-  const subtotal = order.subtotal || Math.round(order.total / 1.18);
-  const taxAmount = order.gstAmount || (order.total - subtotal);
-  const total = order.total;
-  const invoiceNumber = `INV-${order.id}-${new Date().getFullYear()}`;
-  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-
-  const itemRows = order.items.map(item => `
-    <tr>
-      <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">${item.name}<br/><span style="font-size:11px;color:#6b7280;">${item.sku}</span></td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:center;">${item.quantity}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;">₹${item.price.toLocaleString('en-IN')}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;">₹${(item.price * item.quantity).toLocaleString('en-IN')}</td>
-    </tr>
-  `).join('');
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Invoice ${invoiceNumber}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; color: #111; background: #fff; }
-    .page { max-width: 800px; margin: 0 auto; padding: 48px 40px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 48px; }
-    .brand { font-size: 22px; font-weight: 800; color: #1d4ed8; letter-spacing: -0.5px; }
-    .brand-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .invoice-meta { text-align: right; }
-    .invoice-meta h2 { font-size: 28px; font-weight: 800; color: #111; letter-spacing: -1px; }
-    .invoice-meta p { font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .status-chip { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #dcfce7; color: #15803d; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 40px; }
-    .section-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-    .section-value { font-size: 13px; color: #111; line-height: 1.7; }
-    .section-value strong { font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    thead tr { background: #f8fafc; }
-    thead th { padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; text-align: left; }
-    thead th:last-child, thead th:nth-child(3), thead th:nth-child(2) { text-align: right; }
-    thead th:nth-child(2) { text-align: center; }
-    .totals { margin-left: auto; max-width: 280px; }
-    .total-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; color: #374151; }
-    .total-row.final { font-size: 16px; font-weight: 800; color: #111; border-top: 2px solid #111; margin-top: 8px; padding-top: 10px; }
-    .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; }
-    @media print { .page { padding: 20px; } }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <div class="header">
-      <div>
-        <div class="brand">Nexus Hardware</div>
-        <div class="brand-sub">123, Tech Park, MG Road, Bengaluru 560001<br/>GSTIN: 29ABCDE1234F1Z5 | billing@nexushardware.com</div>
-      </div>
-      <div class="invoice-meta">
-        <h2>INVOICE</h2>
-        <p>${invoiceNumber}</p>
-        <p>Date: ${today}</p>
-        <span class="status-chip">${order.status.toUpperCase()}</span>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div>
-        <div class="section-label">Bill To</div>
-        <div class="section-value">
-          <strong>${order.customerName}</strong><br/>
-          ${order.email}<br/>
-          ${order.shippingStreet}<br/>
-          ${order.shippingCity}, ${order.shippingState} – ${order.shippingZip}<br/>
-          ${order.shippingCountry}
-        </div>
-      </div>
-      <div>
-        <div class="section-label">Order Details</div>
-        <div class="section-value">
-          <strong>Order ID:</strong> ${order.id}<br/>
-          <strong>Order Date:</strong> ${new Date(order.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}<br/>
-          <strong>Payment:</strong> ${order.paymentMethod}<br/>
-          ${order.paymentTransactionId ? `<strong>TXN ID:</strong> ${order.paymentTransactionId}<br/>` : ''}
-          <strong>Payment Status:</strong> ${order.paymentStatus}
-        </div>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Qty</th>
-          <th>Unit Price</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>${itemRows}</tbody>
-    </table>
-
-    <div class="totals">
-      <div class="total-row"><span>Subtotal</span><span>₹${subtotal.toLocaleString('en-IN')}</span></div>
-      <div class="total-row"><span>Shipping</span><span>Free</span></div>
-      <div class="total-row"><span>GST (18%)</span><span>₹${taxAmount.toLocaleString('en-IN')}</span></div>
-      <div class="total-row final"><span>Total Due</span><span>₹${total.toLocaleString('en-IN')}</span></div>
-    </div>
-
-    <div class="footer">
-      <span>Thank you for your business!</span>
-      <span>Generated: ${today} | ${invoiceNumber}</span>
-    </div>
-  </div>
-</body>
-</html>`;
-};
-
-// ─────────────────────────────────────────────────────────────
-// SUB-COMPONENTS
-// ─────────────────────────────────────────────────────────────
-
-const StatusBadge = ({ status }: { status: OrderStatus }) => {
-  const cfg = STATUS_CONFIG[status];
-  return (
-    <span className={cn(
-      'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium uppercase tracking-wide border transition-all duration-300',
-      cfg.badgeClass
-    )}>
-      <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', cfg.dotClass)} />
-      {cfg.label}
-    </span>
-  );
-};
-
-const MetaItem = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
-  <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-50 border border-zinc-100 group hover:border-zinc-200 transition-all duration-150">
-    <div className="p-2 bg-white rounded-lg text-zinc-400 group-hover:text-zinc-900 shadow-sm transition-colors">
-      {icon}
-    </div>
-    <div className="min-w-0">
-      <p className="text-xs font-medium text-zinc-400 mb-0.5">{label}</p>
-      <div className="text-sm font-semibold text-zinc-900 truncate">{value}</div>
-    </div>
-  </div>
-);
-
-// ─────────────────────────────────────────────────────────────
-// STATS BAR (Top KPIs)
-// ─────────────────────────────────────────────────────────────
-const StatsBar = ({ orders }: { orders: Order[] }) => {
-  const stats = useMemo(() => {
-    const total = orders.length;
-    const revenue = orders
-      .filter(o => o.status !== OrderStatus.CANCELLED && o.status !== OrderStatus.RETURNED)
-      .reduce((s, o) => s + o.total, 0);
-    const pending = orders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length;
-    const processing = orders.filter(o => o.status === OrderStatus.PROCESSING || o.status === OrderStatus.SHIPPED).length;
-    return { total, revenue, pending, processing };
-  }, [orders]);
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {[
-        { label: 'Total Orders', value: stats.total, sub: `${stats.total} records`, icon: <ClipboardList size={16} />, color: 'text-zinc-900' },
-        { label: 'Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, sub: 'Net revenue', icon: <TrendingUp size={16} />, color: 'text-zinc-900 bg-zinc-900 text-white' },
-        { label: 'Needs Action', value: stats.pending, sub: 'Pending / paid', icon: <AlertTriangle size={16} />, color: 'text-amber-600' },
-        { label: 'In Progress', value: stats.processing, sub: 'Processing / shipped', icon: <Package size={16} />, color: 'text-zinc-900' },
-      ].map(item => (
-        <div key={item.label} className={cn('flex items-center gap-4 px-5 py-4 rounded-lg border border-zinc-200 transition-all duration-150 group cursor-default', item.color)}>
-          <div className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-100 shrink-0">{item.icon}</div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-zinc-400 mb-0.5">{item.label}</p>
-            <p className="text-xl font-semibold leading-tight truncate">{item.value}</p>
-            <p className="text-[11px] text-zinc-400">{item.sub}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
+import { NEXT_STATUS_BUTTON, STATUS_CONFIG, STATUS_FLOW } from '@/data/constants';
+import { generateInvoiceHTML } from '@/lib/invoice';
+import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
+import { ConfirmStatusDialog, InvoicePreviewDialog } from '../helper-components/OrderManagerDialogs';
 
 // ─────────────────────────────────────────────────────────────
 // MAIN ORDER MANAGER
@@ -998,254 +721,22 @@ const OrderManager = () => {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────
-          CONFIRM STATUS CHANGE DIALOG
-      ───────────────────────────────────────────────── */}
-      <Dialog open={confirmDialog.open} onOpenChange={(open: boolean) => setConfirmDialog(d => ({ ...d, open }))}>
-        <DialogContent className="sm:max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <RefreshCw size={16} className="text-blue-600" />
-              Update Order Status
-            </DialogTitle>
-            <DialogDescription className="text-sm">
-              You're updating <span className="font-mono font-semibold text-slate-800">{confirmDialog.orderId}</span> to{' '}
-              <StatusBadge status={confirmDialog.newStatus} />.
-              {confirmDialog.newStatus === OrderStatus.SHIPPED && (
-                <span className="block mt-2 p-2.5 bg-indigo-50 text-indigo-700 text-xs rounded-lg border border-indigo-200">
-                  <strong>Inventory Update:</strong> Stock will be deducted from reserved and marked as shipped (SALE movement logged).
-                </span>
-              )}
-              {confirmDialog.newStatus === OrderStatus.CANCELLED && (
-                <span className="block mt-2 p-2.5 bg-amber-50 text-amber-700 text-xs rounded-lg border border-amber-200">
-                  <strong>Inventory Update:</strong> Reserved stock will be released back to available quantity.
-                </span>
-              )}
-              {confirmDialog.newStatus === OrderStatus.RETURNED && (
-                <span className="block mt-2 p-2.5 bg-slate-50 text-slate-600 text-xs rounded-lg border border-slate-200">
-                  <strong>Inventory Update:</strong> Items will be added back to stock as RETURN movement.
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
+      <ConfirmStatusDialog
+        confirmDialog={confirmDialog}
+        setConfirmDialog={setConfirmDialog}
+        confirmStatusUpdate={confirmStatusUpdate}
+        selectedOrder={selectedOrder}
+        inventoryArray={inventoryArray}
+      />
 
-          <div className="space-y-3 py-2">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">
-                Add a note (optional)
-              </label>
-              <Textarea
-                placeholder={
-                  confirmDialog.newStatus === OrderStatus.SHIPPED
-                    ? 'e.g. Shipped via BlueDart. AWB: BD2025011182345'
-                    : confirmDialog.newStatus === OrderStatus.CANCELLED
-                      ? 'e.g. Payment failed / Customer requested cancellation'
-                      : `Notes for status: ${confirmDialog.newStatus}`
-                }
-                value={confirmDialog.note}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConfirmDialog(d => ({ ...d, note: e.target.value }))}
-                className="resize-none h-20 text-sm border-slate-200 focus-visible:ring-1 focus-visible:ring-blue-500"
-              />
-            </div>
-
-            {/* Inventory Preview */}
-            {(confirmDialog.newStatus === OrderStatus.SHIPPED ||
-              confirmDialog.newStatus === OrderStatus.CANCELLED ||
-              confirmDialog.newStatus === OrderStatus.RETURNED) && selectedOrder && (
-                <div className="rounded-lg border border-slate-200 overflow-hidden">
-                  <div className="bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide border-b border-slate-200 flex items-center gap-1.5">
-                    <Warehouse size={11} /> Inventory Changes
-                  </div>
-                  <div className="divide-y divide-slate-100">
-                    {selectedOrder.items.map(item => {
-                      const inv = inventoryArray.find(i => i.variantId === item.variantId);
-                      const current = inv?.quantity ?? 0;
-                      let after = current;
-                      let changeLabel = '';
-                      let changeColor = '';
-                      if (confirmDialog.newStatus === OrderStatus.SHIPPED) {
-                        after = current; // reserved → gone
-                        changeLabel = `Reserved −${item.quantity}`;
-                        changeColor = 'text-indigo-600';
-                      } else if (confirmDialog.newStatus === OrderStatus.CANCELLED) {
-                        after = current + item.quantity;
-                        changeLabel = `+${item.quantity} released`;
-                        changeColor = 'text-emerald-600';
-                      } else if (confirmDialog.newStatus === OrderStatus.RETURNED) {
-                        after = current + item.quantity;
-                        changeLabel = `+${item.quantity} returned`;
-                        changeColor = 'text-slate-600';
-                      }
-                      return (
-                        <div key={item.id} className="px-3 py-2 flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-slate-700 truncate">{item.name}</p>
-                            <p className="text-[10px] text-slate-400 font-mono">{item.sku}</p>
-                          </div>
-                          <span className={cn('text-xs font-bold flex-shrink-0', changeColor)}>
-                            {changeLabel}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setConfirmDialog(d => ({ ...d, open: false }))}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              className={cn(
-                'gap-1.5',
-                confirmDialog.newStatus === OrderStatus.CANCELLED
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              )}
-              onClick={confirmStatusUpdate}
-            >
-              <CheckCircle2 size={14} />
-              Confirm Update
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ─────────────────────────────────────────────────
-          INVOICE PREVIEW DIALOG
-      ───────────────────────────────────────────────── */}
-      <Dialog open={invoiceDialog} onOpenChange={setInvoiceDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col bg-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText size={16} className="text-blue-600" />
-              Invoice — {selectedOrder?.id}
-            </DialogTitle>
-            <DialogDescription>
-              Preview your invoice before printing or downloading.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedOrder && (
-            <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
-              {/* Invoice Preview */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-                {/* Header */}
-                <div className="flex justify-between items-start p-6 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
-                  <div>
-                    <h3 className="text-xl font-extrabold tracking-tight">Nexus Hardware</h3>
-                    <p className="text-xs text-blue-200 mt-1">123, Tech Park, MG Road, Bengaluru<br />GSTIN: 29ABCDE1234F1Z5</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-black tracking-tight opacity-90">INVOICE</p>
-                    <p className="text-xs text-blue-200 mt-1">INV-{selectedOrder.id}-{new Date().getFullYear()}</p>
-                    <p className="text-xs text-blue-200">{new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
-                  </div>
-                </div>
-
-                {/* Bill To / Order Info */}
-                <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 border-b border-slate-200">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bill To</p>
-                    <p className="font-bold text-slate-800">{selectedOrder.customerName}</p>
-                    <p className="text-xs text-slate-500 mt-1">{selectedOrder.email}</p>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      {selectedOrder.shippingStreet}<br />
-                      {selectedOrder.shippingCity}, {selectedOrder.shippingState} {selectedOrder.shippingZip}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Order Info</p>
-                    <div className="space-y-1">
-                      {[
-                        { label: 'Order ID', value: selectedOrder.id },
-                        { label: 'Date', value: new Date(selectedOrder.date).toLocaleDateString('en-IN') },
-                        { label: 'Payment', value: selectedOrder.paymentMethod },
-                        { label: 'Status', value: selectedOrder.paymentStatus },
-                      ].map(row => (
-                        <div key={row.label} className="flex items-center gap-2 text-xs">
-                          <span className="text-slate-400 w-16 flex-shrink-0">{row.label}</span>
-                          <span className="font-semibold text-slate-700">{row.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Line Items */}
-                <div className="p-6">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b-2 border-slate-200">
-                        <th className="text-left pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Item</th>
-                        <th className="text-center pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Qty</th>
-                        <th className="text-right pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Price</th>
-                        <th className="text-right pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedOrder.items.map(item => (
-                        <tr key={item.id} className="border-b border-slate-100">
-                          <td className="py-3">
-                            <p className="font-semibold text-slate-800">{item.name}</p>
-                            <p className="text-xs text-slate-400 font-mono">{item.sku}</p>
-                          </td>
-                          <td className="py-3 text-center text-slate-600">{item.quantity}</td>
-                          <td className="py-3 text-right text-slate-600">₹{item.price.toLocaleString('en-IN')}</td>
-                          <td className="py-3 text-right font-bold text-slate-900">₹{(item.price * item.quantity).toLocaleString('en-IN')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {/* Totals */}
-                  {(() => {
-                    const { subtotal, tax, total } = calcFinancials(selectedOrder);
-                    return (
-                      <div className="mt-4 ml-auto max-w-xs space-y-1.5">
-                        <div className="flex justify-between text-sm text-slate-500">
-                          <span>Subtotal</span><span>₹{subtotal.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="flex justify-between text-sm text-slate-500">
-                          <span>Shipping</span><span className="text-emerald-600 font-semibold">Free</span>
-                        </div>
-                        <div className="flex justify-between text-sm text-slate-500">
-                          <span>GST (18%)</span><span>₹{tax.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="flex justify-between font-extrabold text-slate-900 text-base pt-2 border-t-2 border-slate-900 mt-2">
-                          <span>Total</span><span>₹{total.toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center">
-                  <p className="text-xs text-slate-400">Thank you for your purchase! For queries, contact billing@nexushardware.com</p>
-                </div>
-              </div>
-            </ScrollArea>
-          )}
-
-          <DialogFooter className="gap-2 pt-4 border-t border-slate-100">
-            <Button variant="ghost" size="sm" onClick={() => setInvoiceDialog(false)}>Close</Button>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={handleDownloadInvoice}>
-              <Download size={13} /> Download
-            </Button>
-            <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePrintInvoice}>
-              <Printer size={13} /> Print Invoice
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <InvoicePreviewDialog
+        invoiceDialog={invoiceDialog}
+        setInvoiceDialog={setInvoiceDialog}
+        selectedOrder={selectedOrder}
+        handlePrintInvoice={handlePrintInvoice}
+        handleDownloadInvoice={handleDownloadInvoice}
+        calcFinancials={calcFinancials}
+      />
     </TooltipProvider>
   );
 };

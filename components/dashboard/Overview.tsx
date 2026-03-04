@@ -40,7 +40,11 @@ const Overview = () => {
 
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const pendingOrders = orders.filter(o => o.status === OrderStatus.PENDING).length;
-  const lowStockProducts = products.filter(p => p.variants?.[0]?.status === 'LOW_STOCK' || p.variants?.[0]?.status === 'OUT_OF_STOCK');
+  const lowStockProducts = products.filter(
+    p =>
+      p.variants?.[0]?.status === 'LOW_STOCK' ||
+      p.variants?.[0]?.status === 'OUT_OF_STOCK'
+  );
   const pendingReviews = reviews.filter(r => r.status === 'PENDING');
 
   const salesData = [
@@ -54,81 +58,95 @@ const Overview = () => {
   ];
 
   const avgDailySales =
-    salesData.reduce((sum, day) => sum + day.sales, 0) / salesData.length;
+    salesData.reduce((sum, day) => sum + day.sales, 0) /
+    salesData.length;
+
   const todaySales = salesData[salesData.length - 1].sales;
+
   const salesTrendPct = Math.abs(
     ((todaySales - avgDailySales) / avgDailySales) * 100
   ).toFixed(1);
 
+  const isUp = todaySales >= avgDailySales;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900">Dashboard Overview</h2>
-          <p className="text-sm text-zinc-500 mt-0.5">
-            Real-time operational metrics and performance data
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+          Overview
+        </h1>
+        <p className="text-sm text-neutral-500 mt-2">
+          Operational performance and real-time business metrics.
+        </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         {[
           {
-            title: "Total Revenue",
+            title: "Revenue",
             value: `₹${totalRevenue.toLocaleString('en-IN')}`,
+            trend: isUp ? "up" : "down",
+            trendValue: `${salesTrendPct}% vs avg`,
             icon: DollarSign,
-            trend: todaySales >= avgDailySales ? "up" : "down",
-            trendValue: `${salesTrendPct}%`,
-            iconColor: "text-emerald-600",
-            iconBg: "bg-emerald-50",
           },
           {
             title: "Pending Orders",
             value: pendingOrders,
+            trend: null,
+            trendValue: null,
             icon: ClipboardList,
-            trend: "neutral",
-            trendValue: "",
-            iconColor: "text-zinc-600",
-            iconBg: "bg-zinc-100",
           },
           {
-            title: "Low Stock Items",
+            title: "Stock Alerts",
             value: lowStockProducts.length,
-            icon: AlertTriangle,
             trend: lowStockProducts.length > 0 ? "down" : "up",
-            trendValue: lowStockProducts.length > 0 ? "Reorder needed" : "All stocked",
-            iconColor: lowStockProducts.length > 0 ? "text-amber-600" : "text-emerald-600",
-            iconBg: lowStockProducts.length > 0 ? "bg-amber-50" : "bg-emerald-50",
+            trendValue:
+              lowStockProducts.length > 0
+                ? "Action required"
+                : "Healthy",
+            icon: AlertTriangle,
           },
           {
-            title: "Active Users",
-            value: "1.2k",
-            icon: TrendingUp,
-            trend: "up",
-            trendValue: "+12%",
-            iconColor: "text-indigo-600",
-            iconBg: "bg-indigo-50",
-          }
+            title: "Pending Reviews",
+            value: pendingReviews.length,
+            trend: null,
+            trendValue: null,
+            icon: Star,
+          },
         ].map((stat, i) => (
-          <Card key={i} className="border-zinc-200 rounded-lg shadow-sm bg-white">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-zinc-500">{stat.title}</span>
-                <div className={cn("p-2 rounded-md", stat.iconBg)}>
-                  <stat.icon size={16} className={stat.iconColor} />
-                </div>
+          <Card
+            key={i}
+            className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm"
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-sm font-medium text-neutral-500">
+                  {stat.title}
+                </span>
+                <stat.icon size={16} className="text-neutral-400" />
               </div>
-              <div className="text-2xl font-semibold text-zinc-900 tabular-nums">{stat.value}</div>
+
+              <div className="text-3xl font-semibold tracking-tight text-neutral-900 tabular-nums">
+                {stat.value}
+              </div>
+
               {stat.trendValue && (
-                <div className="flex items-center gap-1 mt-1.5">
-                  {stat.trend === 'up' && <ArrowUpRight size={14} className="text-emerald-600" />}
-                  {stat.trend === 'down' && <ArrowDownRight size={14} className="text-red-500" />}
-                  <span className={cn(
-                    "text-xs font-medium",
-                    stat.trend === 'up' ? "text-emerald-600" : stat.trend === 'down' ? "text-red-500" : "text-zinc-400"
-                  )}>
+                <div className="flex items-center gap-1 mt-3 text-xs font-medium">
+                  {stat.trend === 'up' && (
+                    <ArrowUpRight size={14} className="text-emerald-600" />
+                  )}
+                  {stat.trend === 'down' && (
+                    <ArrowDownRight size={14} className="text-red-500" />
+                  )}
+                  <span
+                    className={cn(
+                      stat.trend === 'up'
+                        ? "text-emerald-600"
+                        : "text-red-500"
+                    )}
+                  >
                     {stat.trendValue}
                   </span>
                 </div>
@@ -138,43 +156,56 @@ const Overview = () => {
         ))}
       </div>
 
-      {/* Chart + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Chart + Right Column */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Revenue Chart */}
-        <Card className="lg:col-span-2 border-zinc-200 rounded-lg shadow-sm bg-white">
-          <CardHeader className="px-5 py-4 border-b border-zinc-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                  <TrendingUp size={16} className="text-zinc-500" />
-                  Revenue Trend
-                </CardTitle>
-                <p className="text-xs text-zinc-500 mt-1">7-day performance</p>
-              </div>
-            </div>
+        <Card className="xl:col-span-2 rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
+          <CardHeader className="px-6 pt-6">
+            <CardTitle className="text-base font-semibold tracking-tight text-neutral-900 flex items-center gap-2">
+              <TrendingUp size={16} className="text-neutral-400" />
+              Revenue Trend
+            </CardTitle>
+            <p className="text-xs text-neutral-500 mt-1">
+              Last 7 days performance
+            </p>
           </CardHeader>
-          <CardContent className="p-5 h-80">
+
+          <CardContent className="p-6 pt-4 h-[340px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f1f5f9"
+                />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fontWeight: 500, fill: '#71717a' }}
-                  dy={12}
+                  tick={{
+                    fontSize: 12,
+                    fill: '#6b7280',
+                    fontWeight: 500,
+                  }}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`}
-                  tick={{ fontSize: 12, fontWeight: 500, fill: '#71717a' }}
+                  tick={{
+                    fontSize: 12,
+                    fill: '#6b7280',
+                    fontWeight: 500,
+                  }}
                 />
                 <Tooltip
-                  cursor={{ stroke: '#e4e4e7', strokeWidth: 1 }}
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #e4e4e7', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px 14px' }}
-                  labelStyle={{ fontWeight: 600, fontSize: '12px', color: '#18181b', marginBottom: '4px' }}
-                  itemStyle={{ fontSize: '13px', fontWeight: 500, color: '#3f3f46', padding: '0' }}
+                  cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.06)',
+                  }}
                   formatter={(v?: number) => [
                     v ? `₹${v.toLocaleString('en-IN')}` : '₹0',
                     'Revenue',
@@ -183,11 +214,15 @@ const Overview = () => {
                 <Line
                   type="monotone"
                   dataKey="sales"
-                  stroke="#4f46e5"
+                  stroke="#0f172a"
                   strokeWidth={2}
-                  dot={{ r: 0 }}
-                  activeDot={{ r: 5, fill: '#4f46e5', stroke: '#fff', strokeWidth: 2 }}
-                  animationDuration={1000}
+                  dot={false}
+                  activeDot={{
+                    r: 6,
+                    fill: '#0f172a',
+                    stroke: '#fff',
+                    strokeWidth: 2,
+                  }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -195,40 +230,45 @@ const Overview = () => {
         </Card>
 
         {/* Right Column */}
-        <div className="space-y-4">
-          {/* Low Stock List */}
-          <Card className="border-zinc-200 rounded-lg shadow-sm bg-white">
-            <CardHeader className="px-5 py-4 border-b border-zinc-100">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-zinc-900">Stock Alerts</CardTitle>
-                <AlertTriangle size={14} className="text-amber-500" />
-              </div>
+        <div className="space-y-6">
+          {/* Stock Alerts */}
+          <Card className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
+            <CardHeader className="px-6 pt-6">
+              <CardTitle className="text-base font-semibold tracking-tight text-neutral-900">
+                Stock Alerts
+              </CardTitle>
             </CardHeader>
+
             <CardContent className="p-0">
-              <ScrollArea className="h-[240px]">
+              <ScrollArea className="h-[260px]">
                 {lowStockProducts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                    <Package size={24} className="text-zinc-300 mb-2" />
-                    <p className="text-sm text-zinc-400">All items in stock</p>
+                  <div className="flex flex-col items-center justify-center h-full py-16 text-center">
+                    <Package size={28} className="text-neutral-300 mb-3" />
+                    <p className="text-sm text-neutral-500">
+                      All products are sufficiently stocked.
+                    </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-zinc-100">
+                  <div className="divide-y divide-neutral-100">
                     {lowStockProducts.map(product => (
                       <div
                         key={product.id}
-                        className="px-5 py-3 flex items-center justify-between hover:bg-zinc-50 transition-colors duration-150"
+                        className="px-6 py-4 flex items-center justify-between hover:bg-neutral-50 transition-colors"
                       >
-                        <div className="min-w-0 pr-3">
-                          <p className="text-sm font-medium text-zinc-900 truncate">{product.name}</p>
-                          <p className="text-xs text-zinc-400 mt-0.5">
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            {product.name}
+                          </p>
+                          <p className="text-xs text-neutral-400 mt-1">
                             SKU: {product.variants?.[0]?.sku || '—'}
                           </p>
                         </div>
+
                         <span className={cn(
-                          "text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap",
+                          "text-xs font-medium px-3 py-1 rounded-full",
                           product.variants?.[0]?.status === 'OUT_OF_STOCK'
-                            ? "bg-red-50 text-red-700"
-                            : "bg-amber-50 text-amber-700"
+                            ? "bg-red-50 text-red-600"
+                            : "bg-amber-50 text-amber-600"
                         )}>
                           {product.variants?.[0]?.status?.replace(/_/g, ' ')}
                         </span>
@@ -237,29 +277,6 @@ const Overview = () => {
                   </div>
                 )}
               </ScrollArea>
-            </CardContent>
-          </Card>
-
-          {/* Reviews Summary */}
-          <Card className="border-zinc-200 rounded-lg shadow-sm bg-white">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-1 mb-3 text-amber-500">
-                {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} fill="currentColor" />)}
-              </div>
-              <div className="text-2xl font-semibold text-zinc-900 tabular-nums">
-                {pendingReviews.length}
-              </div>
-              <p className="text-sm text-zinc-500 mt-1">Pending reviews</p>
-              <div className="grid grid-cols-2 gap-4 pt-4 mt-4 border-t border-zinc-100">
-                <div>
-                  <p className="text-xs text-zinc-400">Avg. Rating</p>
-                  <p className="text-sm font-semibold text-zinc-900 mt-0.5">4.8 / 5.0</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-zinc-400">This week</p>
-                  <p className="text-sm font-semibold text-emerald-600 mt-0.5">+12</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

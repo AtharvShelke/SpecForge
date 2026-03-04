@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
-  AlertCircle, ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight,
+  AlertCircle, ChevronDown, ChevronRight,
   Clock, Eye, EyeOff, FileText, GripVertical, Hash, Image as ImageIcon,
   Info, Layout, Link as LinkIcon, Loader2, Monitor, Package, Plus,
   RefreshCw, RotateCcw, Save, Sparkles, Star, Tag, Trash2, Type,

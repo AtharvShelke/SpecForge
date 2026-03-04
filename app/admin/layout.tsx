@@ -1,3 +1,4 @@
+// app/admin/layout.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -30,7 +31,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <div className="flex h-screen bg-[#f8f9fa] overflow-hidden selection:bg-indigo-600 selection:text-white">
+        <div className="flex h-screen bg-[#FDFDFD] overflow-hidden selection:bg-black selection:text-white font-sans antialiased">
             <AdminSidebar
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -46,8 +47,8 @@ function AdminShell({ children }: { children: React.ReactNode }) {
                     title={tabLabels[activeTab] || 'Admin Dashboard'}
                 />
 
-                <main className="flex-1 overflow-y-auto overflow-x-hidden">
-                    <div className="p-6 max-w-[1600px] mx-auto">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#FDFDFD]">
+                    <div className="p-8 max-w-[1400px] mx-auto 2xl:max-w-[1600px] transition-all duration-300">
                         {children}
                     </div>
                 </main>

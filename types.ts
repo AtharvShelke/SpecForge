@@ -780,3 +780,16 @@ export interface AuditLog {
   metadata?: Record<string, any>;
   createdAt: string;
 }
+
+
+// ──────────────────────────────────────────────────────
+// Order manager 
+// ──────────────────────────────────────────────────────
+
+export interface StatusConfig {
+  label: string;
+  badgeClass: string;
+  dotClass: string;
+  icon: React.ReactNode;
+  description: string;
+}
