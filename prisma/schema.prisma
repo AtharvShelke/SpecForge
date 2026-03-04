@@ -446,6 +446,7 @@ model Customer {
 
   invoices Invoice[]
   orders   Order[]
+  lead     Lead?
 
   @@index([email])
 }
@@ -792,4 +793,87 @@ model CMSLandingPageVersion {
   page      CMSLandingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId, createdAt])
+}
+
+// ─────────────────────────────────────────────────
+// MARKETING & LEADS
+// ─────────────────────────────────────────────────
+
+// Represents a potential or existing customer entering a funnel
+model Lead {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  source    String?  // e.g., "Footer Newsletter", "Exit Popup"
+  
+  // Link to a full Customer if they eventually convert/create an account
+  customerId String? @unique
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  unsubscribed Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  events    MarketingEvent[]
+  logs      EmailLog[]
+  
+  @@index([email])
+}
+
+enum MarketingEventType {
+  PAGE_VIEW
+  CART_VISIT
+  CART_ABANDONED
+  CHECKOUT_STARTED
+  PRODUCT_VIEWED
+  CUSTOM
+}
+
+// Immutable ledger of actions taken by a Lead
+model MarketingEvent {
+  id        String             @id @default(uuid())
+  leadId    String
+  type      MarketingEventType
+  metadata  Json?              // e.g., { "cartId": "123", "value": 150.00 }
+  createdAt DateTime           @default(now())
+  
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  @@index([leadId])
+  @@index([type, createdAt])
+}
+
+// Defines an automated sequence of rules
+model MarketingCampaign {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(false)
+  triggerType MarketingEventType // What starts the campaign
+  
+  // JSON defining the logic, e.g., 
+  // { delayHours: 2, condition: "cart_value > 50", templateId: "abandoned_cart_1" }
+  rulesConfig Json     
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  emailLogs EmailLog[]
+}
+
+// Record of emails sent to prevent duplicates and track delivery
+model EmailLog {
+  id         String   @id @default(uuid())
+  leadId     String
+  campaignId String?
+  
+  subject    String
+  status     String   @default("SENT") // SENT, DELIVERED, BOUNCED, OPENED
+  sentAt     DateTime @default(now())
+  
+  lead       Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campaign   MarketingCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  
+  @@index([leadId, campaignId])
+  @@index([sentAt])
 }

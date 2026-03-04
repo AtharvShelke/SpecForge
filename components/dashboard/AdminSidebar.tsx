@@ -11,6 +11,7 @@ import {
     CreditCard,
     FileText,
     LogOut,
+    Megaphone,
     X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Brands', icon: Bookmark, key: 'brands', group: 'secondary' },
     { label: 'Billing & Invoices', icon: CreditCard, key: 'billing', group: 'secondary' },
     { label: 'CMS', icon: FileText, key: 'cms', group: 'secondary' },
+    { label: 'Marketing', icon: Megaphone, key: 'marketing', group: 'secondary' },
 ];
 
 interface AdminSidebarProps {
@@ -52,7 +54,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     const renderNavItem = (item: NavItem) => {
         const isActive = activeTab === item.key;
         const Icon = item.icon;
-        
+
         return (
             <button
                 key={item.key}
@@ -85,7 +87,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     onClick={() => setIsOpen(false)}
                 />
             )}
-            
+
             <aside className={cn(
                 "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-zinc-100 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 h-screen",
                 isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
@@ -130,8 +132,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         </div>
                     </div>
                 </ScrollArea>
-                
-                
+
+
             </aside>
         </>
     );

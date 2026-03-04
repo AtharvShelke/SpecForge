@@ -9,6 +9,7 @@ import Overview from '@/components/dashboard/Overview';
 import BillingInvoices from '@/components/dashboard/BillingInvoices';
 import CMSManager from '@/components/dashboard/CMSManager';
 import ProcurementManager from '@/components/dashboard/ProcurementManager';
+import { MarketingManager } from '@/components/dashboard/MarketingManager';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useAdmin } from '@/context/AdminContext';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -26,6 +27,7 @@ const ADMIN_TABS = [
     { key: 'brands', label: 'Brands' },
     { key: 'billing', label: 'Billing & Invoices' },
     { key: 'cms', label: 'CMS' },
+    { key: 'marketing', label: 'Marketing' },
 ] as const;
 
 const AdminDashboard: React.FC = () => {
@@ -64,6 +66,7 @@ const AdminDashboard: React.FC = () => {
             {activeTab === 'brands' && <BrandManager />}
             {activeTab === 'billing' && <BillingInvoices />}
             {activeTab === 'cms' && <CMSManager />}
+            {activeTab === 'marketing' && <MarketingManager />}
         </div>
     );
 };
