@@ -13,6 +13,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
+import BuildProgressSidebar from '@/components/build/BuildProgressSidebar';
 
 const DEFAULT_MAX_PRICE = 500000;
 
@@ -579,18 +580,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                 </div>
             </PageLayout.Header>
 
-            {isBuildMode && (
-                <div className="lg:hidden bg-blue-600/90 text-white px-4 py-2.5 text-sm font-medium text-center">
-                    Build Mode Active
-                </div>
-            )}
-
-            {/* Main Content */}
             <PageLayout.Content className="flex-1 overflow-hidden" padding="sm" container={false}>
                 <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 h-full">
-                    <div className="flex gap-6 h-full">
+                    <div className="flex h-full">
                         {/* Sidebar */}
-                        <aside className="hidden lg:block w-80 flex-shrink-0 h-full">
+                        <aside className="hidden lg:block w-80 flex-shrink-0 h-full mr-6">
                             {activeTab && (
                                 <Sidebar
                                     nodes={activeTab.children || []}
@@ -767,9 +761,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                     )}
                                     {!isLoadingProducts && paginatedProducts.length > 0 && (
                                         <div
-                                            className={`grid gap-4 sm:gap-5 ${isCompact
-                                                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
-                                                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                                            className={`grid gap-4 sm:gap-5 ${viewMode === 'list'
+                                                ? isBuildMode ? "grid-cols-1" : "grid-cols-1 2xl:grid-cols-2"
+                                                : isCompact
+                                                    ? isBuildMode ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+                                                    : isBuildMode ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                                                 }`}
                                         >
                                             {paginatedProducts.map((product) => {
@@ -789,10 +785,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                 return (
                                                     <div
                                                         key={product.id}
-                                                        className={`group bg-white border border-zinc-200/80 rounded-2xl overflow-hidden flex transition-all duration-500 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/40 relative ${viewMode === 'list' && !isCompact ? 'flex-row h-[190px]' : 'flex-col h-full'}`}
+                                                        className={`group bg-white border border-zinc-200/80 rounded-2xl overflow-hidden flex transition-all duration-300 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/40 relative ${viewMode === 'list' ? 'flex-col sm:flex-row sm:h-[190px]' : 'flex-col h-full'}`}
                                                     >
                                                         {/* Image Area */}
-                                                        <div className={`relative shrink-0 overflow-hidden bg-zinc-50/40 group-hover:bg-zinc-50 transition-colors duration-500 flex items-center justify-center ${viewMode === 'list' && !isCompact ? 'w-48 h-full border-r border-zinc-100 p-4' : 'h-40 sm:h-44 p-4 border-b border-zinc-100'}`}>
+                                                        <div className={`relative shrink-0 overflow-hidden bg-zinc-50/40 group-hover:bg-zinc-50 transition-colors duration-300 flex items-center justify-center ${viewMode === 'list' ? 'h-40 sm:h-full sm:w-48 border-b sm:border-b-0 sm:border-r border-zinc-100 p-4' : 'h-40 sm:h-44 p-4 border-b border-zinc-100'}`}>
                                                             <Link
                                                                 href={`/products/${product.id}`}
                                                                 className="absolute inset-0 z-0"
@@ -805,7 +801,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                                 alt={product.name}
                                                                 fill
                                                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                                                className="object-contain mix-blend-multiply transition-transform duration-700 ease-out group-hover:scale-110 relative z-10 pointer-events-none"
+                                                                className="object-contain mix-blend-multiply transition-transform duration-300 ease-out group-hover:scale-105 relative z-10 pointer-events-none"
                                                             />
 
                                                             {/* Stock Badge */}
@@ -825,7 +821,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                             {/* Compare Button (hover only) */}
                                                             <button
                                                                 onClick={(e) => handleCompareToggle(e as any, product)}
-                                                                className={`absolute top-3 right-3 z-20 flex items-center justify-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 shadow-sm border ${!!compareItems.find(i => i.id === product.id)
+                                                                className={`absolute top-3 right-3 z-30 cursor-pointer flex items-center justify-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm border ${!!compareItems.find(i => i.id === product.id)
                                                                     ? 'opacity-100 bg-zinc-900 text-white border-zinc-900'
                                                                     : 'opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 bg-white/90 backdrop-blur-md text-zinc-600 border-zinc-200 hover:text-zinc-900 hover:border-zinc-300 hover:shadow-md'
                                                                     }`}
@@ -846,8 +842,8 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
                                                         {/* Content */}
                                                         <div className="p-3.5 flex flex-col flex-1 relative bg-white z-10 w-full">
-                                                            <Link href={`/products/${product.id}`} className="block mb-1 group/title">
-                                                                <h3 className="font-medium text-zinc-900 text-[13px] leading-snug line-clamp-2 min-h-[36px] group-hover/title:text-blue-600 transition-colors duration-300">
+                                                            <Link href={`/products/${product.id}`} className="block mb-1 group/title cursor-pointer">
+                                                                <h3 className="font-medium text-zinc-900 text-[13px] leading-snug line-clamp-2 min-h-[36px] group-hover/title:text-blue-600 transition-colors duration-200">
                                                                     {product.name}
                                                                 </h3>
                                                             </Link>
@@ -884,11 +880,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                                             <button
                                                                                 onClick={() => addToCart(product)}
                                                                                 disabled={(isIncompatible && !inCart) || product.variants?.[0]?.status === 'OUT_OF_STOCK'}
-                                                                                className={`h-7 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all duration-300 flex items-center justify-center min-w-[64px] ${inCart
-                                                                                    ? "bg-zinc-100 text-zinc-900 border border-zinc-200"
+                                                                                className={`h-7 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center justify-center min-w-[64px] ${inCart
+                                                                                    ? "bg-zinc-100 text-zinc-900 border border-zinc-200 cursor-pointer"
                                                                                     : product.variants?.[0]?.status === 'OUT_OF_STOCK'
                                                                                         ? "bg-zinc-50 text-zinc-400 cursor-not-allowed border border-zinc-100"
-                                                                                        : "bg-zinc-900 text-white hover:bg-black hover:shadow-md hover:shadow-black/10 hover:-translate-y-0.5"
+                                                                                        : "bg-zinc-900 text-white cursor-pointer hover:bg-black hover:shadow-md hover:shadow-black/10 hover:-translate-y-0.5"
                                                                                     } ${(isIncompatible && !inCart)
                                                                                         ? "opacity-50 cursor-not-allowed"
                                                                                         : ""
@@ -936,6 +932,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 </div>
                             </div>
                         </main>
+                        <BuildProgressSidebar
+                            activeCategory={activeTab?.category}
+                            onStepClick={handleBuildCategorySelect}
+                        />
                     </div>
                 </div>
 

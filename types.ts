@@ -487,6 +487,8 @@ export interface Review {
 export interface CompatibilityIssue {
   level: CompatibilityLevel;
   message: string;
+  reason?: string;
+  resolution?: string;
   componentIds: string[];
 }
 
