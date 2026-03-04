@@ -285,7 +285,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                     }
                     if (activeCategory === Category.RAM && (cpuSpecs || moboSpecs)) {
                         const type = moboSpecs?.ramType || cpuSpecs?.ramType;
-                        if (type) params.set('f_specs.Ram Type', type as string);
+                        if (type) params.set('f_specs.ramType', type as string);
                     }
                 } else {
                     if (searchTerm) params.set('q', searchTerm);

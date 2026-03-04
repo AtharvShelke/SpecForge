@@ -63,7 +63,7 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 body: JSON.stringify({
                     name,
                     total: cartTotal,
-                    items: cart.map(i => ({ productId: i.id, variantId: i.selectedVariant?.id || '', quantity: i.quantity }))
+                    items: cart.map(i => ({ productId: i.id, variantId: i.selectedVariant?.id || (i.variants && i.variants.length > 0 ? i.variants[0].id : ''), quantity: i.quantity }))
                 }),
             });
             if (res.ok) {

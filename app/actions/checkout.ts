@@ -71,7 +71,6 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
                 // Prepare item insertion
                 orderItemsData.push({
-                    productId: product.id,
                     variantId: variant.id,
                     name: product.name,
                     category: product.category,

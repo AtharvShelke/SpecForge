@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const buildItemSchema = z.object({
-    productId: z.string().uuid(),
-    variantId: z.string().optional(),
+    productId: z.string().min(1),
+    variantId: z.string().min(1),
     quantity: z.number().int().positive().default(1),
 });
 
@@ -41,15 +41,15 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const data = createBuildSchema.parse(body);
 
-        // Verify all products exist
-        const productIds = data.items.map((i) => i.productId);
-        const products = await prisma.product.findMany({
-            where: { id: { in: productIds } },
+        // Verify all products/variants exist
+        const variantIds = data.items.map((i) => i.variantId);
+        const variants = await prisma.productVariant.findMany({
+            where: { id: { in: variantIds } },
             select: { id: true },
         });
-        if (products.length !== productIds.length) {
+        if (variants.length !== variantIds.length) {
             return NextResponse.json(
-                { error: "One or more products not found" },
+                { error: "One or more products/variants not found" },
                 { status: 404 }
             );
         }
@@ -60,8 +60,7 @@ export async function POST(req: NextRequest) {
                 total: data.total,
                 items: {
                     create: data.items.map((i) => ({
-                        productId: i.productId,
-                        variantId: i.variantId || '',
+                        variantId: i.variantId,
                         quantity: i.quantity,
                     })),
                 },
