@@ -26,14 +26,36 @@ export async function GET(req: NextRequest) {
 
         // 1. Text Search & 2. Category Filter
         let productFilter: any = {};
+
+
         if (search && search.trim() !== "") {
-            productFilter.OR = [
-                { sku: { contains: search, mode: "insensitive" } },
-                { name: { contains: search, mode: "insensitive" } },
+            dbWhere.OR = [
+                {
+                    variant: {
+                        sku: {
+                            contains: search,
+                            mode: "insensitive"
+                        }
+                    }
+                },
+                {
+                    variant: {
+                        product: {
+                            name: {
+                                contains: search,
+                                mode: "insensitive"
+                            }
+                        }
+                    }
+                }
             ];
         }
+
         if (category && category !== "all") {
-            productFilter.category = category;
+            dbWhere.variant = {
+                ...(dbWhere.variant || {}),
+                product: { category }
+            };
         }
 
         if (Object.keys(productFilter).length > 0) {

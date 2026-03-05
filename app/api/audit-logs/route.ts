@@ -7,6 +7,15 @@ export async function GET(req: NextRequest) {
         const limit = parseInt(searchParams.get("limit") || "50", 10);
 
         const logs = await prisma.auditLog.findMany({
+            select: {
+                id: true,
+                action: true,
+                actor: true,
+                entityType: true,
+                entityId: true,
+                metadata: true,
+                createdAt: true,
+            },
             orderBy: { createdAt: "desc" },
             take: limit,
         });

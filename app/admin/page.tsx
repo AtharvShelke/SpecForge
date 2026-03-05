@@ -15,7 +15,7 @@ import { useAdmin } from '@/context/AdminContext';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { LogOut } from 'lucide-react';
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const ADMIN_TABS = [
     { key: 'overview', label: 'Overview' },
@@ -30,9 +30,22 @@ const ADMIN_TABS = [
     { key: 'marketing', label: 'Marketing' },
 ] as const;
 
+import { Suspense } from 'react';
+
 const AdminDashboard: React.FC = () => {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AdminDashboardContent />
+        </Suspense>
+    );
+};
+
+const AdminDashboardContent: React.FC = () => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const {
         activeTab,
+        setActiveTab,
         refreshInvoices,
         refreshCustomers,
         refreshBillingProfile,

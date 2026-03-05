@@ -106,7 +106,32 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTabState] = useState('overview');
+
+    // Handle initial tab from URL and history sync
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab) {
+            setActiveTabState(tab);
+        }
+
+        const handlePopState = () => {
+            const currentParams = new URLSearchParams(window.location.search);
+            const currentTab = currentParams.get('tab') || 'overview';
+            setActiveTabState(currentTab);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    const setActiveTab = useCallback((tab: string) => {
+        setActiveTabState(tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.pushState({}, '', url.toString());
+    }, []);
 
     // --- STATE ---
     const [inventory, setInventory] = useState<WarehouseInventory[]>([]);
@@ -352,14 +377,33 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [toast]);
 
     const deleteProduct = useCallback(async (productId: string) => {
+        // optimistic removal
+        setProducts(prev => prev.filter(p => p.id !== productId));
+
         try {
-            const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
-            if (res.ok) {
-                toast({ title: "Product deleted" });
-                await refreshInventory();
+            const res = await fetch(`/api/products/${productId}`, { method: "DELETE" });
+            console.log(await res.json())
+            if (!res.ok) {
+                throw new Error("Delete failed");
             }
-        } catch (err) { console.error(err); }
-    }, [refreshInventory, toast]);
+
+            toast({ title: "Product deleted" });
+
+            // optional background consistency check
+            refreshProducts();
+
+        } catch (err) {
+            console.error(err);
+
+            toast({
+                title: "Delete failed",
+                variant: "destructive"
+            });
+
+            // rollback
+            refreshProducts();
+        }
+    }, [refreshProducts, toast]);
 
     const sanitizeCategoryNodes = (nodes: CategoryNode[]): CategoryNode[] =>
         nodes.map(({ category, brand, query, children, ...rest }) => ({

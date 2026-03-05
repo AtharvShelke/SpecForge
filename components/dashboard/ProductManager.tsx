@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
 import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec } from '@/types';
@@ -39,6 +40,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    AlertDialog,
+    AlertDialogTrigger,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogCancel,
+    AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
@@ -78,14 +90,24 @@ const ProductManager = () => {
     const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
     const [totalProducts, setTotalProducts] = useState(0);
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [refreshTrigger, setRefreshTrigger] = useState(false);
 
     const currentPage = parseInt(searchParams.get("page") || "1", 10);
     const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
     const currentCategory = searchParams.get("category") || "all";
-    const currentSearch = searchParams.get("q") || "";
+    const currentSearchQuery = searchParams.get("q") || "";
+    const [searchTerm, setSearchTerm] = useState(currentSearchQuery);
+    const debouncedSearch = useDebounce(searchTerm, 500);
+
     const currentStockStatus = searchParams.get("f_stock_status") || "all";
     const currentMinPrice = searchParams.get("minPrice") || "";
     const currentMaxPrice = searchParams.get("maxPrice") || "";
+
+    useEffect(() => {
+        if (debouncedSearch !== currentSearchQuery) {
+            updateQueryParams({ q: debouncedSearch });
+        }
+    }, [debouncedSearch]);
 
     useEffect(() => {
         const fetchPaginatedProducts = async () => {
@@ -111,7 +133,7 @@ const ProductManager = () => {
         if (!isEditing) {
             fetchPaginatedProducts();
         }
-    }, [searchParams, isEditing]);
+    }, [searchParams, isEditing, refreshTrigger]);
 
     const updateQueryParams = (newParams: Record<string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -205,7 +227,7 @@ const ProductManager = () => {
                 price: currentProduct.price,
                 stock: currentProduct.stock,
                 images: currentProduct.images
-            } as any);
+            } as any).then(() => setRefreshTrigger(prev => !prev));
         } else {
             const newId = `prod-${Date.now()}`;
             const generatedSKU = generateSKU(currentProduct);
@@ -221,7 +243,7 @@ const ProductManager = () => {
                 description: currentProduct.description || '',
                 specs: apiSpecs
             } as Product;
-            addProduct(newProduct, currentProduct.stock || 0, newProductCost);
+            addProduct(newProduct, currentProduct.stock || 0, newProductCost).then(() => setRefreshTrigger(prev => !prev));
         }
 
         setIsEditing(false);
@@ -249,9 +271,7 @@ const ProductManager = () => {
     };
 
     const handleDelete = (productId: string) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
-            deleteProduct(productId);
-        }
+        deleteProduct(productId).then(() => setRefreshTrigger(prev => !prev));
     };
 
     const resetForm = () => {
@@ -320,15 +340,17 @@ const ProductManager = () => {
         handleSpecChange(key, newVals);
     };
 
-    const getStatusStyles = (status: string | undefined) => {
-        switch (status) {
-            case 'OUT_OF_STOCK':
-                return 'bg-red-50 text-red-700 border-red-100';
-            case 'LOW_STOCK':
-                return 'bg-amber-50 text-amber-700 border-amber-100';
-            default:
-                return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    const getStatusStyles = (product: Product, variant: any) => {
+        // Calculate real stock from all warehouses
+        const totalStock = variant?.warehouseInventories?.reduce((acc: number, inv: any) => acc + inv.quantity, 0) || 0;
+
+        if (totalStock <= 0) {
+            return 'bg-red-50 text-red-700 border-red-100';
         }
+        if (totalStock <= 5) {
+            return 'bg-amber-50 text-amber-700 border-amber-100';
+        }
+        return 'bg-emerald-50 text-emerald-700 border-emerald-100';
     };
 
     return (
@@ -601,8 +623,8 @@ const ProductManager = () => {
                                         <Input
                                             placeholder="Search catalog..."
                                             className="pl-9 h-9 text-xs bg-white border-zinc-200 focus-visible:ring-zinc-900 shadow-none transition-all w-48 sm:w-64"
-                                            value={currentSearch}
-                                            onChange={e => updateQueryParams({ q: e.target.value })}
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
                                         />
                                     </div>
                                     <Select value={currentCategory} onValueChange={val => updateQueryParams({ category: val })}>
@@ -723,9 +745,9 @@ const ProductManager = () => {
                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                                         <Badge className={cn(
                                                             "text-[11px] font-medium uppercase tracking-wide h-5 px-1.5 border rounded",
-                                                            getStatusStyles(firstVar?.status)
+                                                            getStatusStyles(product, firstVar)
                                                         )}>
-                                                            {firstVar?.status?.replace(/_/g, ' ') || 'UNKNOWN'}
+                                                            {(firstVar?.warehouseInventories?.reduce((acc: number, inv: any) => acc + inv.quantity, 0) || 0) <= 0 ? 'OUT OF STOCK' : firstVar?.status?.replace(/_/g, ' ') || 'UNKNOWN'}
                                                         </Badge>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -736,16 +758,38 @@ const ProductManager = () => {
                                                                 className="h-7 w-7 p-0 border-zinc-200 hover:bg-zinc-100"
                                                                 onClick={() => handleEdit(product)}
                                                             >
-                                                                <Edit size={12} className="text-zinc-600" />
+                                                                <Edit size={16} className="text-zinc-600" />
                                                             </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-7 w-7 p-0 border-zinc-200 hover:bg-red-50 hover:border-red-200"
-                                                                onClick={() => handleDelete(product.id)}
-                                                            >
-                                                                <Trash size={12} className="text-red-500" />
-                                                            </Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="h-7 w-7 p-0 border-zinc-200 hover:bg-red-50 hover:border-red-200"
+                                                                    >
+                                                                        <Trash size={16} className="text-red-500" />
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Delete product?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            This action cannot be undone. This will permanently delete the product.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction
+                                                                            className="bg-red-600 hover:bg-red-700"
+                                                                            onClick={() => deleteProduct(product.id)}
+                                                                        >
+                                                                            Delete
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
                                                         </div>
                                                     </td>
                                                 </tr>

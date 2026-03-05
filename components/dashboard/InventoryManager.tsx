@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, FormEvent } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
 import { StockMovementType } from '@/types';
@@ -46,6 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { useDebounce } from '@/hooks/useDebounce';
 
 const InventoryManager = () => {
     const { products } = useShop();
@@ -105,6 +106,7 @@ const InventoryManager = () => {
     const [paginatedInventory, setPaginatedInventory] = useState<WarehouseInventory[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [isLoadingInventory, setIsLoadingInventory] = useState(true);
+    const [refreshTrigger, setRefreshTrigger] = useState(false);
 
     const currentPage = parseInt(searchParams.get("page") || "1", 10);
     const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
@@ -114,21 +116,18 @@ const InventoryManager = () => {
 
     const [searchTerm, setSearchTerm] = useState(currentSearch);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setSearchTerm(currentSearch);
     }, [currentSearch]);
 
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchTerm !== currentSearch) {
-                updateQueryParams({ q: searchTerm });
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchTerm]);
+    const debouncedSearch = useDebounce(searchTerm, 500);
+    useEffect(() => {
+        if (debouncedSearch !== currentSearch) {
+            updateQueryParams({ q: debouncedSearch });
+        }
+    }, [debouncedSearch]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchPaginatedInventory = async () => {
             setIsLoadingInventory(true);
             try {
@@ -155,7 +154,7 @@ const InventoryManager = () => {
         };
 
         fetchPaginatedInventory();
-    }, [searchParams]);
+    }, [searchParams, refreshTrigger]);
 
     const updateQueryParams = (newParams: Record<string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -175,7 +174,7 @@ const InventoryManager = () => {
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    const handleAdjustment = (e: React.FormEvent) => {
+    const handleAdjustment = (e: FormEvent) => {
         e.preventDefault();
         if (adjustmentModal && adjQty > 0) {
             adjustStock(
@@ -188,11 +187,11 @@ const InventoryManager = () => {
             setAdjQty(0);
             setAdjReason('');
             setAdjType('INWARD');
-            router.refresh();
+            setRefreshTrigger(prev => !prev);
         }
     };
 
-    const handleTransfer = async (e: React.FormEvent) => {
+    const handleTransfer = async (e: FormEvent) => {
         e.preventDefault();
         if (transferModal && transferQty > 0 && transferTarget) {
             try {
@@ -207,7 +206,7 @@ const InventoryManager = () => {
                 setTransferQty(0);
                 setTransferTarget('');
                 setTransferReason('');
-                router.refresh();
+                setRefreshTrigger(prev => !prev);
             } catch (err) {
                 console.error("Transfer failed", err);
             }

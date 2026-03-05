@@ -179,7 +179,16 @@ export async function getProductsData(searchParams: URLSearchParams) {
         const [rawProducts, total] = await Promise.all([
             prisma.product.findMany({
                 where,
-                include: { specs: true, brand: true, variants: true, media: true },
+                include: {
+                    specs: true,
+                    brand: true,
+                    variants: {
+                        include: {
+                            warehouseInventories: true
+                        }
+                    },
+                    media: true
+                },
                 ...(orderBy ? { orderBy } : {}),
                 ...(!isPriceSort ? { skip: (page - 1) * limit, take: limit } : {}),
             }),
@@ -243,7 +252,16 @@ export async function POST(req: NextRequest) {
                         create: [{ sku: data.sku, price: data.price, status: 'IN_STOCK' }]
                     }
                 },
-                include: { specs: true, brand: true, variants: true, media: true },
+                include: {
+                    specs: true,
+                    brand: true,
+                    variants: {
+                        include: {
+                            warehouseInventories: true
+                        }
+                    },
+                    media: true
+                },
             });
 
             // Ensure a primary warehouse exists
