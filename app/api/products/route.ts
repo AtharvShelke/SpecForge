@@ -55,11 +55,16 @@ export async function getProductsData(searchParams: URLSearchParams) {
         }
         if (brandId && !globalSearch) where.brandId = brandId;
 
-        if (minPrice) where.price = { ...where.price, gte: parseFloat(minPrice) };
-        if (maxPrice) where.price = { ...where.price, lte: parseFloat(maxPrice) };
-
         // 2. Add text search constraints
         const searchConditions: any[] = [];
+
+        if (minPrice || maxPrice) {
+            const priceFilter: any = {};
+            if (minPrice) priceFilter.gte = parseFloat(minPrice);
+            if (maxPrice) priceFilter.lte = parseFloat(maxPrice);
+            searchConditions.push({ variants: { some: { price: priceFilter } } });
+        }
+
         if (globalSearch) {
             const term = globalSearch.toLowerCase();
             // Global search overrides specific category if not in build mode, 
@@ -105,9 +110,9 @@ export async function getProductsData(searchParams: URLSearchParams) {
             if (key === 'f_stock_status') {
                 const vals = searchParams.getAll(key);
                 if (vals.includes('In Stock') && !vals.includes('Out of Stock')) {
-                    where.variants = { some: { warehouseInventories: { some: { quantity: { gt: 0 } } } } };
+                    specsConditions.push({ variants: { some: { warehouseInventories: { some: { quantity: { gt: 0 } } } } } });
                 } else if (!vals.includes('In Stock') && vals.includes('Out of Stock')) {
-                    where.variants = { none: { warehouseInventories: { some: { quantity: { gt: 0 } } } } };
+                    specsConditions.push({ variants: { none: { warehouseInventories: { some: { quantity: { gt: 0 } } } } } });
                 }
             } else if (key === 'f_brand') {
                 const vals = searchParams.getAll(key);
@@ -138,9 +143,10 @@ export async function getProductsData(searchParams: URLSearchParams) {
         }
 
         let orderBy: any = { createdAt: "desc" };
-        if (sort === "price-asc") orderBy = { price: "asc" };
-        else if (sort === "price-desc") orderBy = { price: "desc" };
-        else if (sort === "newest") orderBy = { createdAt: "desc" };
+        const isPriceSort = sort === "price-asc" || sort === "price-desc";
+
+        if (sort === "newest") orderBy = { createdAt: "desc" };
+        else if (isPriceSort) orderBy = undefined;
 
         let filterOptions = undefined;
         if (searchParams.get("getFilters") === "true") {
@@ -170,16 +176,25 @@ export async function getProductsData(searchParams: URLSearchParams) {
             };
         }
 
-        const [products, total] = await Promise.all([
+        const [rawProducts, total] = await Promise.all([
             prisma.product.findMany({
                 where,
                 include: { specs: true, brand: true, variants: true, media: true },
-                orderBy,
-                skip: (page - 1) * limit,
-                take: limit,
+                ...(orderBy ? { orderBy } : {}),
+                ...(!isPriceSort ? { skip: (page - 1) * limit, take: limit } : {}),
             }),
             prisma.product.count({ where }),
         ]);
+
+        let products = rawProducts;
+        if (isPriceSort) {
+            products.sort((a, b) => {
+                const aPrice = a.variants[0]?.price || 0;
+                const bPrice = b.variants[0]?.price || 0;
+                return sort === "price-asc" ? aPrice - bPrice : bPrice - aPrice;
+            });
+            products = products.slice((page - 1) * limit, page * limit);
+        }
 
         return NextResponse.json({ products, total, page, limit, filterOptions });
     } catch (error) {
