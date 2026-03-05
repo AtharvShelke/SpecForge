@@ -77,6 +77,26 @@ const InventoryManager = () => {
     const [adjQty, setAdjQty] = useState(0);
     const [adjReason, setAdjReason] = useState('');
 
+    const [auditLogModal, setAuditLogModal] = useState(false);
+    const [auditLogs, setAuditLogs] = useState<any[]>([]);
+    const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+
+    const openAuditLog = async () => {
+        setAuditLogModal(true);
+        setIsLoadingAudit(true);
+        try {
+            const res = await fetch('/api/audit-logs');
+            if (res.ok) {
+                const logs = await res.json();
+                setAuditLogs(logs);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoadingAudit(false);
+        }
+    };
+
     // Pagination & Filtering State
     const router = useRouter();
     const pathname = usePathname();
@@ -91,6 +111,22 @@ const InventoryManager = () => {
     const currentCategory = searchParams.get("category") || "all";
     const currentSearch = searchParams.get("q") || "";
     const currentStockStatus = searchParams.get("f_stock_status") || "all";
+
+    const [searchTerm, setSearchTerm] = useState(currentSearch);
+
+    React.useEffect(() => {
+        setSearchTerm(currentSearch);
+    }, [currentSearch]);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchTerm !== currentSearch) {
+                updateQueryParams({ q: searchTerm });
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm]);
 
     React.useEffect(() => {
         const fetchPaginatedInventory = async () => {
@@ -197,7 +233,7 @@ const InventoryManager = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="h-8 text-sm font-medium gap-2 rounded-md">
+                    <Button variant="outline" size="sm" onClick={openAuditLog} className="h-8 text-sm font-medium gap-2 rounded-md">
                         <History size={14} /> Audit Log
                     </Button>
                     <Button size="sm" className="h-8 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 gap-2 rounded-md">
@@ -247,8 +283,8 @@ const InventoryManager = () => {
                                 <Input
                                     placeholder="SKU, Name..."
                                     className="pl-9 h-9 text-xs bg-white border-zinc-200 focus-visible:ring-zinc-900 shadow-none transition-all w-48 sm:w-64"
-                                    value={currentSearch}
-                                    onChange={(e) => updateQueryParams({ q: e.target.value })}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
 
@@ -623,6 +659,38 @@ const InventoryManager = () => {
                             Transfer
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Audit Log Dialog */}
+            <Dialog open={auditLogModal} onOpenChange={setAuditLogModal}>
+                <DialogContent className="sm:max-w-2xl bg-white border-zinc-200">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold text-zinc-900">Audit Log</DialogTitle>
+                        <DialogDescription className="text-sm text-zinc-500">
+                            Recent system actions
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                            {isLoadingAudit ? (
+                                <div className="text-center text-zinc-500 mt-4">Loading logs...</div>
+                            ) : auditLogs.length === 0 ? (
+                                <div className="text-center text-zinc-500 mt-4">No audit logs found.</div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {auditLogs.map((log: any) => (
+                                        <div key={log.id} className="text-sm border-b pb-2">
+                                            <div className="font-semibold">{log.action || 'Action'} by {log.actor}</div>
+                                            <div className="text-xs text-zinc-500">{new Date(log.createdAt).toLocaleString()}</div>
+                                            <div className="text-xs text-zinc-600">Entity: {log.entityType} ({log.entityId})</div>
+                                            {log.metadata && <pre className="text-[10px] mt-1 bg-zinc-50 p-1 rounded break-all whitespace-pre-wrap">{JSON.stringify(log.metadata, null, 2)}</pre>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </ScrollArea>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

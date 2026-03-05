@@ -31,6 +31,7 @@ interface ConfirmStatusDialogProps {
     confirmStatusUpdate: () => void;
     selectedOrder: Order | null;
     inventoryArray: WarehouseInventory[];
+    isUpdating: boolean;
 }
 
 export const ConfirmStatusDialog = ({
@@ -38,12 +39,13 @@ export const ConfirmStatusDialog = ({
     setConfirmDialog,
     confirmStatusUpdate,
     selectedOrder,
-    inventoryArray
+    inventoryArray,
+    isUpdating
 }: ConfirmStatusDialogProps) => {
     return (
-        <Dialog open={confirmDialog.open} onOpenChange={(open: boolean) => setConfirmDialog(d => ({ ...d, open }))}>
-            <DialogContent className="sm:max-w-md bg-white">
-                <DialogHeader>
+        <Dialog open={confirmDialog.open} onOpenChange={(open: boolean) => !isUpdating && setConfirmDialog(d => ({ ...d, open }))}>
+            <DialogContent className="sm:max-w-md bg-white max-h-[90vh] flex flex-col overflow-hidden">
+                <DialogHeader className="flex-shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                         <RefreshCw size={16} className="text-blue-600" />
                         Update Order Status
@@ -69,7 +71,7 @@ export const ConfirmStatusDialog = ({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-3 py-2">
+                <div className="space-y-3 py-2 overflow-y-auto flex-1 px-1 -mx-1">
                     <div>
                         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">
                             Add a note (optional)
@@ -133,11 +135,12 @@ export const ConfirmStatusDialog = ({
                         )}
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="gap-2 sm:gap-0 flex-shrink-0 pt-3 border-t border-slate-100">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setConfirmDialog(d => ({ ...d, open: false }))}
+                        disabled={isUpdating}
                     >
                         Cancel
                     </Button>
@@ -150,9 +153,14 @@ export const ConfirmStatusDialog = ({
                                 : 'bg-blue-600 hover:bg-blue-700 text-white'
                         )}
                         onClick={confirmStatusUpdate}
+                        disabled={isUpdating}
                     >
-                        <CheckCircle2 size={14} />
-                        Confirm Update
+                        {isUpdating ? (
+                            <RefreshCw size={14} className="animate-spin" />
+                        ) : (
+                            <CheckCircle2 size={14} />
+                        )}
+                        {isUpdating ? 'Updating...' : 'Confirm Update'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

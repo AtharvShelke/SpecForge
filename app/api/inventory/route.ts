@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (Object.keys(productFilter).length > 0) {
-            dbWhere.product = productFilter;
+            dbWhere.variant = { product: productFilter };
         }
 
         // 3. Stock Status Filter

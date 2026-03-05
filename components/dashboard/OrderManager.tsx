@@ -95,6 +95,7 @@ const OrderManager = () => {
   }>({ open: false, orderId: '', newStatus: OrderStatus.PENDING, note: '' });
 
   const [invoiceDialog, setInvoiceDialog] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Sort orders by date (newest first)
   const sortedOrders = useMemo(() => {
@@ -131,10 +132,21 @@ const OrderManager = () => {
     setConfirmDialog({ open: true, orderId, newStatus, note: '', });
   };
 
-  const confirmStatusUpdate = () => {
+  const confirmStatusUpdate = async () => {
     const { orderId, newStatus, note } = confirmDialog;
-    updateOrderStatus(orderId, newStatus);
-    setConfirmDialog(d => ({ ...d, open: false }));
+    setIsUpdating(true);
+    try {
+      if (updateOrderStatus.constructor.name === "AsyncFunction") {
+        await updateOrderStatus(orderId, newStatus);
+      } else {
+        updateOrderStatus(orderId, newStatus);
+      }
+      setConfirmDialog(d => ({ ...d, open: false }));
+    } catch (error) {
+      console.error('Failed to update order status', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handlePrintInvoice = () => {
@@ -727,6 +739,7 @@ const OrderManager = () => {
         confirmStatusUpdate={confirmStatusUpdate}
         selectedOrder={selectedOrder}
         inventoryArray={inventoryArray}
+        isUpdating={isUpdating}
       />
 
       <InvoicePreviewDialog

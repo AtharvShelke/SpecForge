@@ -70,7 +70,7 @@ const Overview = () => {
   const isUp = todaySales >= avgDailySales;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
@@ -82,7 +82,7 @@ const Overview = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           {
             title: "Revenue",
@@ -120,15 +120,15 @@ const Overview = () => {
             key={i}
             className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm"
           >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-6">
+            <CardContent className="p-5 flex flex-col justify-center">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-neutral-500">
                   {stat.title}
                 </span>
                 <stat.icon size={16} className="text-neutral-400" />
               </div>
 
-              <div className="text-3xl font-semibold tracking-tight text-neutral-900 tabular-nums">
+              <div className="text-2xl font-bold tracking-tight text-neutral-900 tabular-nums">
                 {stat.value}
               </div>
 
@@ -157,10 +157,10 @@ const Overview = () => {
       </div>
 
       {/* Chart + Right Column */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Revenue Chart */}
         <Card className="xl:col-span-2 rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
-          <CardHeader className="px-6 pt-6">
+          <CardHeader className="px-5 pt-5 pb-0">
             <CardTitle className="text-base font-semibold tracking-tight text-neutral-900 flex items-center gap-2">
               <TrendingUp size={16} className="text-neutral-400" />
               Revenue Trend
@@ -170,7 +170,7 @@ const Overview = () => {
             </p>
           </CardHeader>
 
-          <CardContent className="p-6 pt-4 h-[340px]">
+          <CardContent className="p-5 pt-3 h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={salesData}>
                 <CartesianGrid
@@ -233,14 +233,14 @@ const Overview = () => {
         <div className="space-y-6">
           {/* Stock Alerts */}
           <Card className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
-            <CardHeader className="px-6 pt-6">
+            <CardHeader className="px-5 pt-5 pb-2">
               <CardTitle className="text-base font-semibold tracking-tight text-neutral-900">
                 Stock Alerts
               </CardTitle>
             </CardHeader>
 
             <CardContent className="p-0">
-              <ScrollArea className="h-[260px]">
+              <ScrollArea className="h-[250px]">
                 {lowStockProducts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                     <Package size={28} className="text-neutral-300 mb-3" />
@@ -253,7 +253,7 @@ const Overview = () => {
                     {lowStockProducts.map(product => (
                       <div
                         key={product.id}
-                        className="px-6 py-4 flex items-center justify-between hover:bg-neutral-50 transition-colors"
+                        className="px-5 py-3 flex items-center justify-between hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0"
                       >
                         <div>
                           <p className="text-sm font-medium text-neutral-900">
@@ -280,8 +280,8 @@ const Overview = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

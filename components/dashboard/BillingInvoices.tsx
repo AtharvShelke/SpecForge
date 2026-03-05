@@ -478,7 +478,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
     <div className="flex flex-col xl:flex-row h-full min-h-0 bg-white">
       {/* ── LEFT: Product Search ── */}
       <div className="flex flex-col xl:w-[480px] shrink-0 border-r border-zinc-200 bg-zinc-50/50">
-        <div className="px-8 py-6 border-b border-zinc-200 bg-white">
+        <div className="px-6 py-5 border-b border-zinc-200 bg-white">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center shadow-sm">
@@ -586,7 +586,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
           </div>
         </div>
 
-        <div className="flex-1 p-8 space-y-8">
+        <div className="flex-1 p-6 space-y-6">
           <div>
             <label className="text-xs font-medium text-zinc-500 mb-3 block">Sale Options</label>
             <div className="grid grid-cols-2 gap-4">
@@ -649,7 +649,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
 
       {/* ── RIGHT: Cart + Finalize ── */}
       <div className="flex flex-col flex-1 min-w-0 bg-white">
-        <div className="px-8 py-6 border-b border-zinc-100">
+        <div className="px-6 py-5 border-b border-zinc-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ReceiptText size={18} className="text-zinc-400" />
@@ -669,7 +669,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
           </div>
         </div>
 
-        <ScrollArea className="flex-1 p-10">
+        <ScrollArea className="flex-1 p-6">
           {pos.items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
               <div className="w-24 h-24 rounded-[2rem] border-4 border-dashed border-zinc-200 flex items-center justify-center mb-6">
@@ -712,7 +712,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
           )}
         </ScrollArea>
 
-        <div className="p-10 border-t border-zinc-100 bg-zinc-50/50">
+        <div className="p-6 border-t border-zinc-100 bg-zinc-50/50">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-8 pb-8 border-b border-zinc-200">
             <div>
               <p className="text-xs font-medium text-zinc-400 mb-0.5">Subtotal</p>
@@ -760,7 +760,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
 
       <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>
         <DialogContent className="sm:max-w-sm bg-white rounded-xl shadow-lg p-0 overflow-hidden">
-          <div className="p-8 space-y-6">
+          <div className="p-6 space-y-5">
             <div className="w-16 h-16 bg-zinc-900 rounded-xl flex items-center justify-center mx-auto shadow-sm">
               {selectedPmConfig.icon}
             </div>
@@ -823,7 +823,7 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
   return (
     <div className="flex flex-col h-full bg-white">
       {/* ── HEADER ── */}
-      <div className="px-10 py-8 border-b border-zinc-100 bg-white shrink-0 sticky top-0 z-10">
+      <div className="px-6 py-5 border-b border-zinc-100 bg-white shrink-0 sticky top-0 z-10">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-center gap-6">
             <Button variant="ghost" size="icon" onClick={onBack} className="h-12 w-12 rounded-2xl hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-all">
@@ -891,7 +891,7 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-10 py-10 space-y-10">
+        <div className="px-6 py-6 space-y-8">
           {/* ── ENTITY INTEL ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <MetaItem icon={<User size={16} />} label="Customer" value={invoice.customer?.name || 'Unknown'} />
@@ -906,7 +906,7 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* ── ASSET LIST ── */}
             <div className="lg:col-span-2 space-y-6">
               <div className="flex items-center justify-between mb-4">
@@ -1047,7 +1047,7 @@ const StatsBar = ({ invoices }: { invoices: Invoice[] }) => {
         { label: 'Outstanding', value: fmtINR(s.outstanding), icon: <Wallet size={16} />, color: 'bg-white border-zinc-200 text-zinc-900', secondary: 'Pending collection' },
         { label: 'Overdue', value: s.overdue, icon: <AlertTriangle size={16} />, color: 'bg-red-50 border-red-100 text-red-600', secondary: 'Action needed' },
       ].map(item => (
-        <div key={item.label} className={cn('relative overflow-hidden group p-5 rounded-lg border shadow-sm transition-all', item.color)}>
+        <div key={item.label} className={cn('relative overflow-hidden group p-4 rounded-lg border shadow-sm transition-all', item.color)}>
           <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity scale-150 rotate-12">
             {item.icon}
           </div>
@@ -1209,7 +1209,7 @@ const BillingInvoices: React.FC = () => {
           showMobileDetail ? 'hidden lg:flex' : 'flex'
         )}>
           {/* List Header */}
-          <div className="px-6 py-5 border-b border-zinc-200 bg-white shrink-0">
+          <div className="px-5 py-4 border-b border-zinc-200 bg-white shrink-0">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-xl font-semibold text-zinc-900">Billing & Invoices</h1>
@@ -1278,13 +1278,13 @@ const BillingInvoices: React.FC = () => {
                       key={inv.id}
                       onClick={() => { setSelectedId(inv.id); setShowMobileDetail(true); }}
                       className={cn(
-                        'w-full text-left p-5 rounded-lg transition-all group relative border',
+                        'w-full text-left p-4 rounded-lg transition-all group relative border',
                         isSelected
                           ? 'bg-zinc-900 border-zinc-900 text-white shadow-lg z-10'
                           : 'bg-white border-zinc-100 hover:border-zinc-200 hover:shadow-sm text-zinc-900'
                       )}
                     >
-                      <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex flex-col gap-1 min-w-0">
                           <span className={cn(
                             'text-xs font-mono font-medium truncate',
@@ -1313,7 +1313,7 @@ const BillingInvoices: React.FC = () => {
                       </div>
 
                       {isOverdue && !isSelected && (
-                        <div className="absolute bottom-5 right-5 flex items-center gap-1 text-[10px] font-medium text-red-500 animate-pulse">
+                        <div className="absolute bottom-4 right-4 flex items-center gap-1 text-[10px] font-medium text-red-500 animate-pulse">
                           <AlertTriangle size={10} /> Critical
                         </div>
                       )}
@@ -1336,7 +1336,7 @@ const BillingInvoices: React.FC = () => {
         )}>
           {selectedInvoice ? (
             <>
-              <div className="hidden xl:block px-10 pt-10 pb-2">
+              <div className="hidden xl:block px-6 pt-6 pb-2">
                 <StatsBar invoices={invoices} />
               </div>
               <div className="flex-1 overflow-hidden">
@@ -1366,10 +1366,10 @@ const BillingInvoices: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+      </div >
 
       {/* Send dialog */}
-      <Dialog open={sendDialog.open} onOpenChange={(open: boolean) => setSendDialog(d => ({ ...d, open }))}>
+      < Dialog open={sendDialog.open} onOpenChange={(open: boolean) => setSendDialog(d => ({ ...d, open }))}>
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Send size={15} className="text-indigo-600" /> Send Invoice</DialogTitle>
@@ -1398,8 +1398,8 @@ const BillingInvoices: React.FC = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-    </TooltipProvider>
+      </Dialog >
+    </TooltipProvider >
   );
 };
 

@@ -1,0 +1,10 @@
+add debouncing in products manager search bar
+increase the size of the icons in the actions of the product manager table
+require a refresh button when a product is updated or auto refresh something smooth
+need delete modal
+need refresh after product is deleted
+when applied filter out of stock, i see a product whose status is in stock, the product in reality is out of stock
+inventory page audit logs took 6 seconds to compile
+page needs to be refreshed after stock is adjusted
+and about refreshing, if i manually refresh it goes to overview, i need the admin to stay at the page whenever he refreshes like inventory or product
+still see ui inconsistency
