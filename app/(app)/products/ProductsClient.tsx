@@ -3,7 +3,12 @@ import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { Category, Product, CompatibilityLevel, specsToFlat } from '@/types';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
-import { Search, Plus, CheckCircle, AlertTriangle, XCircle, Star, Filter, Grid3x3, Grid2x2, ChevronLeft, ChevronRight, ShoppingCart, ArrowUpDown, List, Columns, BarChart2 } from 'lucide-react';
+import { Search, Plus, CheckCircle, AlertTriangle, XCircle, Star, Filter, Grid3x3, Grid2x2, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, ArrowUpDown, List, Columns, BarChart2 } from 'lucide-react';
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { validateBuild } from '@/services/compatibility';
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
@@ -507,8 +512,8 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                         </div>
                     </div>
 
-                    {/* Refined Category Navigation */}
-                    <div className="border-t border-zinc-100 relative group">
+                    {/* Refined Category Navigation with Dropdowns */}
+                    <div className="border-t border-zinc-100 relative group z-20">
                         {canScrollLeft && (
                             <button
                                 onClick={() => scrollCategories('left')}
@@ -521,21 +526,64 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                         <nav
                             ref={categoryNavRef}
                             onScroll={updateScrollButtons}
-                            className="flex overflow-x-auto scrollbar-hide -mb-px px-1"
+                            className="flex overflow-x-auto scrollbar-hide px-1"
                         >
-                            <div className="flex items-center gap-0.5 py-1">
-                                {categories.map((node) => (
-                                    <button
-                                        key={node.label}
-                                        onClick={() => setActiveTab(node)}
-                                        className={`category-tab whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-t-md transition-colors ${activeTab?.label === node.label
-                                            ? 'active text-zinc-900 font-semibold'
-                                            : 'text-zinc-500 hover:text-zinc-800'
-                                            }`}
-                                    >
-                                        {node.label}
-                                    </button>
-                                ))}
+                            <div className="flex items-center gap-1 py-2 px-1">
+                                {categories.map((node) => {
+                                    const isActive = activeTab?.label === node.label;
+                                    const hasChildren = node.children && node.children.length > 0;
+
+                                    if (!hasChildren) {
+                                        return (
+                                            <button
+                                                key={node.label}
+                                                onClick={() => setActiveTab(node)}
+                                                className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${isActive
+                                                    ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-sm border border-zinc-200/60'
+                                                    : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 border border-transparent'
+                                                    }`}
+                                            >
+                                                {node.label}
+                                            </button>
+                                        );
+                                    }
+
+                                    return (
+                                        <HoverCard key={node.label} openDelay={100} closeDelay={150}>
+                                            <HoverCardTrigger asChild>
+                                                <button
+                                                    onClick={() => { setActiveTab(node); setSelectedNode(null); }}
+                                                    className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${isActive
+                                                        ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-sm border border-zinc-200/60'
+                                                        : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 border border-transparent'
+                                                        }`}
+                                                >
+                                                    {node.label}
+                                                    <ChevronDown size={14} className="opacity-60" />
+                                                </button>
+                                            </HoverCardTrigger>
+                                            <HoverCardContent align="start" className="w-[180px] bg-white/90 backdrop-blur-xl border border-zinc-200/80 shadow-lg rounded-xl p-1 z-50 flex flex-col gap-0.5">
+                                                <button
+                                                    onClick={() => { setActiveTab(node); setSelectedNode(null); }}
+                                                    className={`w-full text-left text-[13px] font-medium rounded-lg cursor-pointer transition-colors px-2 py-1.5 ${!selectedNode && isActive ? 'bg-blue-50/50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-100/80'
+                                                        }`}
+                                                >
+                                                    All {node.label}
+                                                </button>
+                                                {node.children?.map((subNode) => (
+                                                    <button
+                                                        key={subNode.label}
+                                                        onClick={() => { setActiveTab(node); setSelectedNode(subNode); }}
+                                                        className={`w-full text-left text-[13px] font-medium rounded-lg cursor-pointer transition-colors px-2 py-1.5 ${selectedNode?.label === subNode.label && isActive ? 'bg-blue-50/50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-100/80'
+                                                            }`}
+                                                    >
+                                                        {subNode.label}
+                                                    </button>
+                                                ))}
+                                            </HoverCardContent>
+                                        </HoverCard>
+                                    );
+                                })}
                             </div>
                         </nav>
                         {canScrollRight && (
@@ -548,35 +596,6 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                             </button>
                         )}
                     </div>
-
-                    {/* Subcategories Row (Dynamic) */}
-                    {activeTab && activeTab.children && activeTab.children.length > 0 && (
-                        <div className="bg-white border-t border-zinc-100 -mx-4 sm:-mx-6 lg:-mx-8 relative">
-                            <div className="flex overflow-x-auto scrollbar-hide py-2 px-4 sm:px-6 lg:px-8 gap-3 snap-x snap-mandatory">
-                                <button
-                                    onClick={() => setSelectedNode(null)}
-                                    className={`snap-start whitespace-nowrap px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all ${!selectedNode
-                                        ? 'text-zinc-900 bg-zinc-100'
-                                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
-                                        }`}
-                                >
-                                    All {activeTab.label}
-                                </button>
-                                {activeTab.children.map((subNode) => (
-                                    <button
-                                        key={subNode.label}
-                                        onClick={() => setSelectedNode(subNode)}
-                                        className={`snap-start whitespace-nowrap px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all ${selectedNode?.label === subNode.label
-                                            ? 'text-zinc-900 bg-zinc-100'
-                                            : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
-                                            }`}
-                                    >
-                                        {subNode.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             </PageLayout.Header>
 

@@ -25,53 +25,6 @@ interface SidebarProps {
   onSidebarSearchChange: (value: string) => void;
 }
 
-// ─── SearchFilterGroup ───────────────────────────────────────────────────────
-const SearchFilterGroup: React.FC<{
-  filter: FilterDefinition;
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ filter, value, onChange }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  return (
-    <div className="mb-4 pb-4 border-b border-border/50 last:border-0 last:mb-0 last:pb-0">
-      <button
-        className="flex items-center justify-between w-full text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 hover:text-foreground transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-        aria-expanded={isExpanded}
-      >
-        <span>{filter.label}</span>
-        <ChevronDown
-          size={13}
-          strokeWidth={2.5}
-          className={`transition-transform duration-200 text-muted-foreground ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-        />
-      </button>
-
-      {isExpanded && (
-        <div className="relative">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-          />
-          <input
-            type="text"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={filter.label}
-            className="
-              w-full rounded-md border border-input bg-background pl-8 pr-2.5 py-1.5
-              text-[13px] text-foreground placeholder:text-muted-foreground
-              focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring
-              transition-colors
-            "
-          />
-        </div>
-      )}
-    </div>
-  );
-};
-
 // ─── FilterGroup ─────────────────────────────────────────────────────────────
 const FilterGroup: React.FC<{
   filter: FilterDefinition;
@@ -399,18 +352,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
           </div>
-
-          {/* Search filters */}
-          {visibleFilters
-            .filter((f: FilterDefinition) => f.type === 'search')
-            .map((filter: FilterDefinition) => (
-              <SearchFilterGroup
-                key={filter.key}
-                filter={filter}
-                value={(selectedFilters[filter.key] || [])[0] || ''}
-                onChange={val => onFilterChange(filter.key, val)}
-              />
-            ))}
 
           {/* Dynamic category filters (checkbox, dropdown, etc.) */}
           {visibleFilters
