@@ -50,10 +50,10 @@ export async function getProductsData(searchParams: URLSearchParams) {
         const where: any = {};
 
         // 1. Initial category constraint logic
-        if (category && CategoryEnum.safeParse(category).success) {
+        if (category && CategoryEnum.safeParse(category).success && !globalSearch) {
             where.category = category;
         }
-        if (brandId) where.brandId = brandId;
+        if (brandId && !globalSearch) where.brandId = brandId;
 
         if (minPrice) where.price = { ...where.price, gte: parseFloat(minPrice) };
         if (maxPrice) where.price = { ...where.price, lte: parseFloat(maxPrice) };
@@ -67,7 +67,7 @@ export async function getProductsData(searchParams: URLSearchParams) {
             searchConditions.push({
                 OR: [
                     { name: { contains: term, mode: "insensitive" } },
-                    { sku: { contains: term, mode: "insensitive" } },
+                    { variants: { some: { sku: { contains: term, mode: "insensitive" } } } },
                     { description: { contains: term, mode: "insensitive" } },
                     { specs: { some: { value: { contains: term, mode: "insensitive" } } } }
                 ]

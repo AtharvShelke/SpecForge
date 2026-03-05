@@ -37,17 +37,28 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const router = useRouter();
     const pathname = usePathname();
     const initialCategoryParam = searchParams.get('category');
+    const initialQueryParam = searchParams.get('q');
     const initialModeParam = searchParams.get('mode');
 
     const initialTab = useMemo(() => {
+        if (initialQueryParam) return null; // Prioritize search query over default category
         if (initialCategoryParam && categories.length > 0) {
             const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
             if (found) return found;
         }
         return categories.length > 0 ? categories[0] : null;
-    }, [initialCategoryParam, categories]);
+    }, [initialCategoryParam, categories, initialQueryParam]);
 
     const [searchTerm, setSearchTerm] = useState(searchParams?.get('q') || '');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     const [activeTab, setActiveTab] = useState<CategoryNode | null>(initialTab);
     const [selectedNode, setSelectedNode] = useState<CategoryNode | null>(null);
     const [sidebarSearchTerm, setSidebarSearchTerm] = useState('');
@@ -109,8 +120,19 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         });
     };
 
+    const hasInitializedCategories = useRef(false);
+
     useEffect(() => {
-        if (!activeTab && categories.length > 0) {
+        // Initialize once when categories are successfully loaded
+        if (categories.length > 0 && !hasInitializedCategories.current) {
+            hasInitializedCategories.current = true;
+
+            const q = searchParams.get('q');
+            if (q) {
+                setActiveTab(null);
+                return;
+            }
+
             if (initialCategoryParam) {
                 const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
                 if (found) {
@@ -120,7 +142,14 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             }
             setActiveTab(categories[0]);
         }
-    }, [activeTab, categories, initialCategoryParam]);
+    }, [categories, initialCategoryParam, searchParams]);
+
+    // Fallback if the user explicitly clears the search query while in global search mode
+    useEffect(() => {
+        if (!activeTab && categories.length > 0 && !searchTerm && hasInitializedCategories.current) {
+            setActiveTab(categories[0]);
+        }
+    }, [activeTab, categories, searchTerm]);
 
     useEffect(() => {
         if (initialModeParam === 'build' && !isBuildMode) {
@@ -176,7 +205,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         if (activeTab) params.set('category', activeTab.label);
         if (selectedNode) params.set('sub', selectedNode.label);
         if (isBuildMode) params.set('mode', 'build');
-        if (searchTerm) params.set('q', searchTerm);
+        if (debouncedSearchTerm) params.set('q', debouncedSearchTerm);
         if (sidebarSearchTerm) params.set('sq', sidebarSearchTerm);
         if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
         if (priceRange.max < DEFAULT_MAX_PRICE) params.set('maxPrice', priceRange.max.toString());
@@ -206,7 +235,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                 window.history.replaceState(null, '', href);
             }
         }
-    }, [activeTab, selectedNode, isBuildMode, searchTerm, sidebarSearchTerm, priceRange, selectedFilters, currentPage, pathname, sortOption, viewMode]);
+    }, [activeTab, selectedNode, isBuildMode, debouncedSearchTerm, sidebarSearchTerm, priceRange, selectedFilters, currentPage, pathname, sortOption, viewMode]);
 
     const prevCartLength = useRef(cart.length);
     const prevBuildMode = useRef(isBuildMode);
@@ -293,9 +322,9 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                         const type = moboSpecs?.ramType || cpuSpecs?.ramType;
                         if (type) params.set('f_specs.ramType', type as string);
                     }
-                } else {
-                    if (searchTerm) params.set('q', searchTerm);
                 }
+
+                if (debouncedSearchTerm) params.set('q', debouncedSearchTerm);
 
                 // Search
                 if (sidebarSearchTerm) params.set('sq', sidebarSearchTerm);
@@ -344,12 +373,12 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         };
 
         fetchProducts();
-    }, [activeTab, selectedNode, isBuildMode, cart, searchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption, currentPage]);
+    }, [activeTab, selectedNode, isBuildMode, cart, debouncedSearchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption, currentPage]);
 
     // Changing filters resets page to 1
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeTab, selectedNode, searchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption]);
+    }, [activeTab, selectedNode, debouncedSearchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption]);
 
     const paginatedProducts = fetchedProducts;
     const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -483,7 +512,13 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                     className="w-full h-8 pl-8 pr-3 bg-white border border-zinc-200 rounded-md text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 transition-all"
                                     placeholder="Search products..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        if (e.target.value.length > 0 && activeTab) {
+                                            setActiveTab(null);
+                                            clearAllFilters();
+                                        }
+                                    }}
                                 />
                                 {searchTerm && (
                                     <button
@@ -537,7 +572,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         return (
                                             <button
                                                 key={node.label}
-                                                onClick={() => setActiveTab(node)}
+                                                onClick={() => {
+                                                    setSearchTerm('');
+                                                    setActiveTab(node);
+                                                }}
                                                 className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${isActive
                                                     ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-sm border border-zinc-200/60'
                                                     : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 border border-transparent'
@@ -552,7 +590,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         <HoverCard key={node.label} openDelay={100} closeDelay={150}>
                                             <HoverCardTrigger asChild>
                                                 <button
-                                                    onClick={() => { setActiveTab(node); setSelectedNode(null); }}
+                                                    onClick={() => {
+                                                        setSearchTerm('');
+                                                        setActiveTab(node);
+                                                        setSelectedNode(null);
+                                                    }}
                                                     className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${isActive
                                                         ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-sm border border-zinc-200/60'
                                                         : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 border border-transparent'
@@ -564,7 +606,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                             </HoverCardTrigger>
                                             <HoverCardContent align="start" className="w-[180px] bg-white/90 backdrop-blur-xl border border-zinc-200/80 shadow-lg rounded-xl p-1 z-50 flex flex-col gap-0.5">
                                                 <button
-                                                    onClick={() => { setActiveTab(node); setSelectedNode(null); }}
+                                                    onClick={() => {
+                                                        setSearchTerm('');
+                                                        setActiveTab(node);
+                                                        setSelectedNode(null);
+                                                    }}
                                                     className={`w-full text-left text-[13px] font-medium rounded-lg cursor-pointer transition-colors px-2 py-1.5 ${!selectedNode && isActive ? 'bg-blue-50/50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-100/80'
                                                         }`}
                                                 >
@@ -573,7 +619,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                 {node.children?.map((subNode) => (
                                                     <button
                                                         key={subNode.label}
-                                                        onClick={() => { setActiveTab(node); setSelectedNode(subNode); }}
+                                                        onClick={() => {
+                                                            setSearchTerm('');
+                                                            setActiveTab(node);
+                                                            setSelectedNode(subNode);
+                                                        }}
                                                         className={`w-full text-left text-[13px] font-medium rounded-lg cursor-pointer transition-colors px-2 py-1.5 ${selectedNode?.label === subNode.label && isActive ? 'bg-blue-50/50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-100/80'
                                                             }`}
                                                     >
@@ -658,7 +708,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                                     <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
                                         <h2 className="text-xl sm:text-2xl font-semibold text-zinc-900 heading-font">
-                                            {activeTab?.label}
+                                            {activeTab?.label || 'Search Results'}
                                         </h2>
                                         <span className="text-xs sm:text-sm text-zinc-500 font-medium">
                                             {totalCount}{" "}
@@ -773,7 +823,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                             <Grid3x3 size={32} className="text-zinc-300 mb-4" />
                                             <h3 className="text-lg font-bold text-zinc-900 mb-1">No products found</h3>
                                             <p className="text-zinc-500">Try adjusting your filters or search terms.</p>
-                                            <button onClick={clearAllFilters} className="mt-4 px-6 py-2 bg-blue-50 text-blue-700 font-medium rounded-xl hover:bg-blue-100 transition-colors">
+                                            <button onClick={() => {
+                                                clearAllFilters();
+                                                setSearchTerm('');
+                                            }} className="mt-4 px-6 py-2 bg-blue-50 text-blue-700 font-medium rounded-xl hover:bg-blue-100 transition-colors">
                                                 Clear all filters
                                             </button>
                                         </div>
