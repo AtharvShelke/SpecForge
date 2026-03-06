@@ -147,13 +147,13 @@ export async function DELETE(
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
-        // Will fail if OrderItems reference this product (onDelete: Restrict)
+        // Will fail if OrderItems or BuildGuideItems reference this product (onDelete: Restrict)
         await prisma.product.delete({ where: { id } });
         return NextResponse.json({ message: "Product deleted" });
     } catch (error: any) {
         if (error?.code === "P2003") {
             return NextResponse.json(
-                { error: "Cannot delete product: it is referenced by existing orders" },
+                { error: "Cannot delete product: it is referenced by existing orders or build guides" },
                 { status: 409 }
             );
         }

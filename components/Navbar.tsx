@@ -63,7 +63,7 @@ const Navbar: React.FC = () => {
               {[
                 { to: "/products", label: "Products", icon: Store },
                 { to: "/builds", label: "Saved Builds", icon: Save },
-                { to: "/build-guides", label: "Build Guides", icon: BookOpen },
+                // { to: "/build-guides", label: "Build Guides", icon: BookOpen },
                 { to: "/track-order", label: "Track Order", icon: MapPin },
               ].map(({ to, label, icon: Icon }) => (
                 <Link

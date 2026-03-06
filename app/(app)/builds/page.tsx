@@ -345,12 +345,12 @@ function BuildsContent() {
                       >
                         <Upload size={12} /> Load
                       </button>
-                      <button
+                      {/* <button
                         onClick={(e) => { e.stopPropagation(); deleteBuild(build.id); }}
                         className="h-8 w-8 flex items-center justify-center text-zinc-300 hover:text-red-500 transition-colors"
                       >
                         <Trash2 size={15} />
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

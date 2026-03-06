@@ -19,19 +19,23 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     }
 
     const tabLabels: Record<string, string> = {
-        overview: 'Overview',
-        orders: 'Orders',
-        products: 'Products',
-        inventory: 'Inventory',
+        overview:    'Overview',
+        orders:      'Orders',
+        products:    'Products',
+        inventory:   'Inventory',
         procurement: 'Procurement',
-        categories: 'Categories',
-        brands: 'Brands',
-        billing: 'Billing & Invoices',
-        cms: 'CMS',
+        categories:  'Categories',
+        brands:      'Brands',
+        billing:     'Billing & Invoices',
+        cms:         'CMS',
+        marketing:   'Marketing',
     };
 
     return (
-        <div className="flex h-screen bg-[#FDFDFD] overflow-hidden selection:bg-black selection:text-white font-sans antialiased">
+        <div
+            className="flex h-screen bg-stone-50 overflow-hidden antialiased"
+            style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
+        >
             <AdminSidebar
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -40,15 +44,15 @@ function AdminShell({ children }: { children: React.ReactNode }) {
                 setIsOpen={setIsSidebarOpen}
             />
 
-            <div className="flex-1 flex flex-col min-w-0 relative">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <AdminHeader
                     onLogout={handleLogout}
                     onMenuClick={() => setIsSidebarOpen(true)}
-                    title={tabLabels[activeTab] || 'Admin Dashboard'}
+                    title={tabLabels[activeTab] || 'Admin'}
                 />
 
-                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#FDFDFD]">
-                    <div className="p-8 max-w-[1400px] mx-auto 2xl:max-w-[1600px] transition-all duration-300">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-stone-50">
+                    <div className="p-5 lg:p-6 max-w-[1400px] mx-auto 2xl:max-w-[1600px]">
                         {children}
                     </div>
                 </main>
@@ -57,11 +61,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default function AdminLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
     return (
         <AdminProvider>
             <AdminShell>

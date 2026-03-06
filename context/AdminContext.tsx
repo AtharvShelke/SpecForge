@@ -410,21 +410,23 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         try {
             const res = await fetch(`/api/products/${productId}`, { method: "DELETE" });
-            console.log(await res.json())
+            const data = await res.json();
+
             if (!res.ok) {
-                throw new Error("Delete failed");
+                throw new Error(data.error || "Delete failed");
             }
 
             toast({ title: "Product deleted" });
 
-            // optional background consistency check
+            // background consistency check
             refreshProducts();
 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
 
             toast({
                 title: "Delete failed",
+                description: err.message,
                 variant: "destructive"
             });
 

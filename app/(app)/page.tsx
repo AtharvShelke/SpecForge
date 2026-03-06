@@ -10,7 +10,7 @@ import { Category } from '@/types';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Section } from '@/components/layout/Section';
 import { Container } from '@/components/layout/Container';
-import { RecentActivity } from '@/components/storefront/RecentActivity';
+
 
 const Home: React.FC = () => {
   const { products, cmsContent } = useShop();
@@ -50,7 +50,6 @@ const Home: React.FC = () => {
 
   return (
     <PageLayout bgClass="bg-white">
-      <RecentActivity />
       {/* HERO SECTION */}
       <section className="relative flex items-center overflow-hidden bg-white py-8 lg:py-10">
         {/* Subtle noise texture overlay */}

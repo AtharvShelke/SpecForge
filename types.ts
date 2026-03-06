@@ -481,6 +481,10 @@ export interface Review {
   comment: string;
   status: ReviewStatus;
   createdAt: string; // ISO DateTime
+  product?: {
+    id: string;
+    name: string;
+  };
 }
 
 // ──────────────────────────────────────────────────────

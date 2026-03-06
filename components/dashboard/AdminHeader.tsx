@@ -3,15 +3,11 @@
 
 import React from 'react';
 import {
-    Search,
     Bell,
     Menu,
     LogOut,
-    User,
-    Settings,
+    ChevronDown,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,54 +25,72 @@ interface AdminHeaderProps {
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onLogout, onMenuClick, title }) => {
     return (
-        <header className="h-20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 lg:px-8 transition-all duration-300 border-b border-zinc-100/50">
-            <div className="h-full flex items-center justify-between gap-6">
-                
-                {/* Left: Mobile Menu + Title */}
-                <div className="flex items-center gap-4 min-w-0">
-                    <button
-                        onClick={onMenuClick}
-                        className="p-2 -ml-2 rounded-full hover:bg-zinc-100 lg:hidden text-zinc-500 transition-colors duration-200"
+        <header className="h-[60px] bg-white border-b border-stone-100 sticky top-0 z-30 px-5 lg:px-6 flex items-center justify-between gap-4">
+
+            {/* Left: hamburger + live badge */}
+            <div className="flex items-center gap-3 min-w-0">
+                <button
+                    onClick={onMenuClick}
+                    className="p-1.5 -ml-1 rounded-lg hover:bg-stone-100 lg:hidden text-stone-500 transition-colors"
+                >
+                    <Menu size={18} strokeWidth={1.75} />
+                </button>
+
+                {/* Page title (mobile only — desktop shows in sidebar) */}
+                <h2 className="text-sm font-bold text-stone-900 tracking-tight lg:hidden truncate">
+                    {title}
+                </h2>
+
+                {/* Live indicator */}
+                <div className="hidden lg:flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[11px] font-bold text-emerald-600 tracking-tight">Live</span>
+                </div>
+            </div>
+
+            {/* Right: bell + user */}
+            <div className="flex items-center gap-2">
+
+                {/* Notification bell */}
+                <button className="relative p-2 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors">
+                    <Bell size={15} strokeWidth={1.75} />
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-indigo-500 rounded-full ring-2 ring-white" />
+                </button>
+
+                <div className="w-px h-5 bg-stone-200 mx-1" />
+
+                {/* User dropdown */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg hover:bg-stone-100 transition-colors focus:outline-none">
+                            <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
+                                <span className="text-[10px] font-bold text-white tracking-wider">AD</span>
+                            </div>
+                            <span className="hidden sm:block text-xs font-semibold text-stone-700 tracking-tight">
+                                Admin User
+                            </span>
+                            <ChevronDown size={12} className="text-stone-400 hidden sm:block" />
+                        </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                        align="end"
+                        className="w-48 mt-2 bg-white border border-stone-200 shadow-lg rounded-xl p-1.5"
                     >
-                        <Menu size={20} strokeWidth={1.5} />
-                    </button>
-                    <div>
-                        <h2 className="text-lg font-semibold text-black tracking-tight">{title}</h2>
-                    </div>
-                </div>
-
-                {/* Right: Actions */}
-                <div className="flex items-center gap-3">
-                    
-
-                    <div className="w-px h-6 bg-zinc-200 mx-1 hidden sm:block"></div>
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-10 pl-2 pr-3 gap-3 hover:bg-zinc-100 rounded-full transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-black/5">
-                                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-zinc-800 to-zinc-900 flex items-center justify-center shadow-inner">
-                                    <span className="text-[11px] font-semibold text-white tracking-wider">AD</span>
-                                </div>
-                                <div className="hidden sm:flex flex-col items-start">
-                                    <span className="text-[13px] font-semibold text-black leading-none">Admin User</span>
-                                </div>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 mt-2 border-zinc-100 shadow-xl rounded-2xl p-2 bg-white/95 backdrop-blur-xl">
-                            <DropdownMenuLabel className="px-3 py-2.5">
-                                <p className="text-sm font-semibold text-black tracking-tight">Admin </p>
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator className="bg-zinc-100 my-1" />
-                            <DropdownMenuItem
-                                onClick={onLogout}
-                                className="px-3 py-2.5 gap-2.5 cursor-pointer rounded-xl text-[13px] font-medium text-red-600 focus:text-red-600 hover:bg-red-50 focus:bg-red-50 transition-colors"
-                            >
-                                <LogOut size={16} strokeWidth={1.5} />
-                                Sign out
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                        <DropdownMenuLabel className="px-2.5 py-2">
+                            <p className="text-xs font-bold text-stone-900">Admin User</p>
+                            <p className="text-[10px] text-stone-400 font-mono mt-0.5">admin@nexusos.com</p>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-stone-100 my-1" />
+                        <DropdownMenuItem
+                            onClick={onLogout}
+                            className="flex items-center gap-2 px-2.5 py-2 cursor-pointer rounded-lg text-xs font-semibold text-rose-600 focus:text-rose-600 hover:bg-rose-50 focus:bg-rose-50 transition-colors"
+                        >
+                            <LogOut size={13} strokeWidth={2} />
+                            Sign out
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </header>
     );
