@@ -82,7 +82,32 @@ const memoryRule: CompatibilityRule = {
     return issues;
   }
 };
+const coolerSocketRule: CompatibilityRule = {
+  name: 'CPU Cooler Socket Compatibility',
+  evaluate: (ctx) => {
+    const issues: CompatibilityIssue[] = [];
 
+    if (ctx.cpu && ctx.cooler) {
+      const supportedSockets = ctx.coolerSpecs.supportedSockets as string | undefined;
+
+      if (supportedSockets && ctx.cpuSpecs.socket) {
+        const sockets = supportedSockets.toLowerCase();
+
+        if (!sockets.includes(ctx.cpuSpecs.socket.toLowerCase())) {
+          issues.push({
+            level: CompatibilityLevel.INCOMPATIBLE,
+            message: `CPU Cooler does not support this CPU socket.`,
+            reason: `Cooler supports [${supportedSockets}] but CPU uses ${ctx.cpuSpecs.socket}.`,
+            resolution: `Choose a cooler compatible with ${ctx.cpuSpecs.socket}.`,
+            componentIds: [ctx.cooler.id, ctx.cpu.id]
+          });
+        }
+      }
+    }
+
+    return issues;
+  }
+};
 const powerDrawRule: CompatibilityRule = {
   name: 'Power Draw',
   evaluate: (ctx) => {
