@@ -22,26 +22,33 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status") as PurchaseOrderStatus | null;
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 200);
 
         const where = status ? { status } : undefined;
 
-        const orders = await prisma.purchaseOrder.findMany({
-            where,
-            include: {
-                supplier: true,
-                warehouse: true,
-                items: {
-                    include: {
-                        variant: {
-                            include: { product: { select: { name: true } } },
+        const [orders, total] = await Promise.all([
+            prisma.purchaseOrder.findMany({
+                where,
+                include: {
+                    supplier: true,
+                    warehouse: true,
+                    items: {
+                        include: {
+                            variant: {
+                                include: { product: { select: { name: true } } },
+                            },
                         },
                     },
                 },
-            },
-            orderBy: { createdAt: "desc" },
-        });
+                orderBy: { createdAt: "desc" },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.purchaseOrder.count({ where }),
+        ]);
 
-        return NextResponse.json(orders);
+        return NextResponse.json({ orders, total, page, limit });
     } catch (error) {
         console.error("GET /api/inventory/purchase-orders error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

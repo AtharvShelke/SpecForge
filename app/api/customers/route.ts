@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const search = searchParams.get("search");
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 200);
 
         const where = search
             ? {
@@ -30,12 +32,17 @@ export async function GET(req: NextRequest) {
             }
             : undefined;
 
-        const customers = await prisma.customer.findMany({
-            where,
-            orderBy: { name: "asc" },
-        });
+        const [customers, total] = await Promise.all([
+            prisma.customer.findMany({
+                where,
+                orderBy: { name: "asc" },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.customer.count({ where }),
+        ]);
 
-        return NextResponse.json(customers);
+        return NextResponse.json({ customers, total, page, limit });
     } catch (error) {
         console.error("GET /api/customers error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

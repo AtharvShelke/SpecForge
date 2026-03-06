@@ -447,23 +447,26 @@ export interface Order {
 }
 
 // ──────────────────────────────────────────────────────
-// SAVED BUILDS
+// BUILD GUIDES
 // ──────────────────────────────────────────────────────
 
-export interface SavedBuildItem {
+export interface BuildGuideItem {
   id: string;
-  savedBuildId: string;
+  buildGuideId: string;
   variantId: string;
   quantity: number;
   variant?: ProductVariant;
 }
 
-export interface SavedBuild {
+export interface BuildGuide {
   id: string;
-  name: string;
+  title: string;
+  description?: string;
+  category: string;
   total: number;
   createdAt: string;   // ISO DateTime
-  items: SavedBuildItem[];
+  updatedAt: string;
+  items: BuildGuideItem[];
 }
 
 // ──────────────────────────────────────────────────────

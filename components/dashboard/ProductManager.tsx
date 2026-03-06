@@ -81,6 +81,8 @@ const ProductManager = () => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [newSpecKey, setNewSpecKey] = useState('');
+    const [newSpecValue, setNewSpecValue] = useState('');
 
     // Pagination & Filtering State
     const router = useRouter();
@@ -207,7 +209,7 @@ const ProductManager = () => {
         return `${catPrefix}-${brandPrefix}-${timestamp}`;
     };
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentProduct.name?.trim()) {
             alert('Product name is required');
@@ -221,13 +223,14 @@ const ProductManager = () => {
         const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
 
         if (currentProduct.id && products.find(p => p.id === currentProduct.id)) {
-            updateProduct({
+            await updateProduct({
                 ...currentProduct,
                 specs: apiSpecs,
                 price: currentProduct.price,
                 stock: currentProduct.stock,
                 images: currentProduct.images
-            } as any).then(() => setRefreshTrigger(prev => !prev));
+            } as any);
+            setRefreshTrigger(prev => !prev);
         } else {
             const newId = `prod-${Date.now()}`;
             const generatedSKU = generateSKU(currentProduct);
@@ -243,7 +246,8 @@ const ProductManager = () => {
                 description: currentProduct.description || '',
                 specs: apiSpecs
             } as Product;
-            addProduct(newProduct, currentProduct.stock || 0, newProductCost).then(() => setRefreshTrigger(prev => !prev));
+            await addProduct(newProduct, currentProduct.stock || 0, newProductCost);
+            setRefreshTrigger(prev => !prev);
         }
 
         setIsEditing(false);
@@ -270,8 +274,9 @@ const ProductManager = () => {
         setIsEditing(true);
     };
 
-    const handleDelete = (productId: string) => {
-        deleteProduct(productId).then(() => setRefreshTrigger(prev => !prev));
+    const handleDelete = async (productId: string) => {
+        await deleteProduct(productId);
+        setRefreshTrigger(prev => !prev);
     };
 
     const resetForm = () => {
@@ -288,6 +293,8 @@ const ProductManager = () => {
         });
         setNewProductCost(0);
         setPreviewUrl(null);
+        setNewSpecKey('');
+        setNewSpecValue('');
     };
 
     const handleCancel = () => {
@@ -339,6 +346,23 @@ const ProductManager = () => {
             : [...currentVals, option];
         handleSpecChange(key, newVals);
     };
+
+    const addCustomSpec = () => {
+        if (newSpecKey.trim() && newSpecValue.trim()) {
+            handleSpecChange(newSpecKey.trim(), newSpecValue.trim());
+            setNewSpecKey('');
+            setNewSpecValue('');
+        }
+    };
+
+    const removeCustomSpec = (key: string) => {
+        const newSpecs = { ...currentProduct.specs };
+        delete newSpecs[key];
+        setCurrentProduct({ ...currentProduct, specs: newSpecs });
+    };
+
+    const schemaKeys = currentSchema.map(attr => attr.key);
+    const customSpecs = Object.entries(currentProduct.specs || {}).filter(([key]) => !schemaKeys.includes(key) && key !== 'brand');
 
     const getStatusStyles = (product: Product, variant: any) => {
         // Calculate real stock from all warehouses
@@ -501,6 +525,67 @@ const ProductManager = () => {
                                                     )}
                                                 </div>
                                             ))}
+                                        </div>
+
+                                        {/* Dynamic Specifications */}
+                                        <div className="pt-4 border-t border-zinc-100 space-y-3">
+                                            <Label className="text-sm font-medium text-zinc-700">Custom Specifications</Label>
+
+                                            {customSpecs.length > 0 && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                    {customSpecs.map(([key, value]) => (
+                                                        <div key={key} className="flex items-center gap-2">
+                                                            <div className="relative group w-full flex items-center">
+                                                                <span className="w-1/3 text-xs text-zinc-500 truncate pr-2 font-medium" title={key}>{key}</span>
+                                                                <Input
+                                                                    className="h-8 text-xs border-zinc-200 w-2/3"
+                                                                    value={String(value)}
+                                                                    onChange={e => handleSpecChange(key, e.target.value)}
+                                                                />
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 ml-1 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 flex-shrink-0 transition-opacity"
+                                                                    onClick={() => removeCustomSpec(key)}
+                                                                >
+                                                                    <Trash size={14} />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-2 max-w-md bg-zinc-50/50 p-3 rounded-lg border border-zinc-100">
+                                                <Input
+                                                    placeholder="Detail Name (e.g. Material)"
+                                                    className="h-8 text-xs border-zinc-200 w-1/2"
+                                                    value={newSpecKey}
+                                                    onChange={e => setNewSpecKey(e.target.value)}
+                                                />
+                                                <Input
+                                                    placeholder="Value (e.g. Aluminum)"
+                                                    className="h-8 text-xs border-zinc-200 w-1/2"
+                                                    value={newSpecValue}
+                                                    onChange={e => setNewSpecValue(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            addCustomSpec();
+                                                        }
+                                                    }}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 px-3 text-xs border-zinc-200 hover:bg-zinc-100 flex-shrink-0"
+                                                    onClick={addCustomSpec}
+                                                >
+                                                    Add
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </form>
@@ -783,7 +868,7 @@ const ProductManager = () => {
                                                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                                         <AlertDialogAction
                                                                             className="bg-red-600 hover:bg-red-700"
-                                                                            onClick={() => deleteProduct(product.id)}
+                                                                            onClick={() => handleDelete(product.id)}
                                                                         >
                                                                             Delete
                                                                         </AlertDialogAction>

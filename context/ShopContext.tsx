@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import {
   CartItem, Product, CategoryNode, Brand, Category,
@@ -149,8 +151,20 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  // --- INITIAL FETCH (Storefront Essentials Only) ---
+  const pathname = usePathname();
+  const hasInitialized = React.useRef(false);
+
+  // --- INITIAL FETCH (Once on mount, skipped for admin) ---
   useEffect(() => {
+    if (pathname?.startsWith('/admin')) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Only fetch once — not on every navigation
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     const init = async () => {
       setIsLoading(true);
       try {
@@ -180,7 +194,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.error('Failed to load persisted state:', err);
     }
-  }, [refreshProducts, refreshCategories, refreshBrands, refreshCMS, refreshReviews, refreshFilterConfigs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // --- PERSIST STATE ---
   useEffect(() => {

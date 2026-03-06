@@ -1,17 +1,21 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
-import { SavedBuild, CompatibilityReport, CompatibilityLevel } from '../types';
+import { BuildGuide, CompatibilityReport, CompatibilityLevel, CartItem } from '../types';
 import { validateBuild } from '../services/compatibility';
 import { useShop } from './ShopContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface BuildContextType {
-    savedBuilds: SavedBuild[];
-    refreshSavedBuilds: () => Promise<void>;
-    saveCurrentBuild: (name: string) => Promise<void>;
+    buildGuides: BuildGuide[];
+    refreshBuildGuides: () => Promise<void>;
+    saveCurrentBuild: (title: string, description?: string) => Promise<void>;
     loadBuild: (buildId: string) => Promise<void>;
     deleteBuild: (buildId: string) => Promise<void>;
+    generateShareLink: () => string;
+    loadBuildFromBase64: (base64Str: string) => Promise<void>;
     compatibilityReport: CompatibilityReport;
     isBuildMode: boolean;
     toggleBuildMode: () => void;
@@ -24,7 +28,7 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const { cart, cartTotal, products, setCartOpen, loadCart } = useShop();
     const { toast } = useToast();
 
-    const [savedBuilds, setSavedBuilds] = useState<SavedBuild[]>([]);
+    const [buildGuides, setBuildGuides] = useState<BuildGuide[]>([]);
     const [isBuildMode, setIsBuildMode] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport>({
@@ -40,96 +44,189 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [cart]);
 
     // --- FETCHERS ---
-    const refreshSavedBuilds = useCallback(async () => {
+    const refreshBuildGuides = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await fetch('/api/builds');
+            const res = await fetch('/api/build-guides');
             const data = await res.json();
-            setSavedBuilds(data);
+            setBuildGuides(data);
         } catch (err) {
-            console.error('Failed to fetch builds:', err);
+            console.error('Failed to fetch build guides:', err);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
+    const pathname = usePathname();
+    const hasFetchedGuides = React.useRef(false);
+
+    useEffect(() => {
+        if (pathname?.startsWith('/admin')) return;
+        if (hasFetchedGuides.current) return;
+        hasFetchedGuides.current = true;
+        refreshBuildGuides();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // --- ACTIONS ---
-    const saveCurrentBuild = useCallback(async (name: string) => {
+    const saveCurrentBuild = useCallback(async (title: string, description: string = '') => {
         if (cart.length === 0) return;
         try {
-            const res = await fetch('/api/builds', {
+            const res = await fetch('/api/build-guides', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name,
+                    name: title, // sending as name right now to not break the API if not yet redeployed
                     total: cartTotal,
                     items: cart.map(i => ({ productId: i.id, variantId: i.selectedVariant?.id || (i.variants && i.variants.length > 0 ? i.variants[0].id : ''), quantity: i.quantity }))
                 }),
             });
             if (res.ok) {
-                toast({ title: "Build saved successfully" });
-                await refreshSavedBuilds();
+                toast({ title: "Build Guide saved successfully" });
+                await refreshBuildGuides();
             } else {
                 const errData = await res.json();
-                console.error("Failed to save build API:", errData);
-                toast({ title: "Failed to save build", description: JSON.stringify(errData.error || errData), variant: "destructive" });
+                console.error("Failed to save build guide API:", errData);
+                toast({ title: "Failed to save build guide", description: JSON.stringify(errData.error || errData), variant: "destructive" });
             }
         } catch (err) {
-            console.error('Failed to save build:', err);
-            toast({ title: "Error", description: "Network error while saving build", variant: "destructive" });
+            console.error('Failed to save build guide:', err);
+            toast({ title: "Error", description: "Network error while saving build guide", variant: "destructive" });
         }
-    }, [cart, cartTotal, refreshSavedBuilds, toast]);
+    }, [cart, cartTotal, refreshBuildGuides, toast]);
 
     const loadBuild = useCallback(async (buildId: string) => {
-        const build = savedBuilds.find(b => b.id === buildId);
-        if (!build) return;
+        setIsLoading(true);
+        try {
+            // First attempt to locate the build guide locally
+            let build = buildGuides.find(b => b.id === buildId);
 
-        const newCart: any[] = [];
-        for (const item of build.items) {
-            const product = products.find(p => p.variants?.some(v => v.id === item.variantId));
-            if (product) {
-                const variant = product.variants?.find(v => v.id === item.variantId) || product.variants?.[0];
-                newCart.push({ ...product, quantity: item.quantity, selectedVariant: variant });
+            // If not found locally or we want fresh server data, fetch it explicitly
+            if (!build) {
+                const res = await fetch(`/api/build-guides/${buildId}`);
+                if (res.ok) {
+                    build = await res.json();
+                }
             }
-        }
-        loadCart(newCart);
 
-        toast({ title: "Build loaded", description: "Items added to your cart." });
-        setCartOpen(true);
-    }, [savedBuilds, products, loadCart, setCartOpen, toast]);
+            if (!build) {
+                toast({ title: "Build not found", variant: "destructive" });
+                return;
+            }
+
+            const newCart: any[] = [];
+            for (const item of build.items) {
+                // Ensure we use server-resolved product data rather than only relying on client side products which may not be fetched
+                const fullProduct = item.variant?.product;
+                if (fullProduct) {
+                    newCart.push({ ...fullProduct, quantity: item.quantity, selectedVariant: item.variant });
+                } else {
+                    // Fallback to client-side catalog search if API didn't resolve full product specs somehow
+                    const product = products.find(p => p.variants?.some(v => v.id === item.variantId));
+                    if (product) {
+                        const variant = product.variants?.find(v => v.id === item.variantId) || product.variants?.[0];
+                        newCart.push({ ...product, quantity: item.quantity, selectedVariant: variant });
+                    }
+                }
+            }
+            loadCart(newCart);
+
+            toast({ title: "Build Guide loaded", description: "Items added to your cart." });
+            setCartOpen(true);
+        } catch (err) {
+            console.error("Failed to load build guide:", err);
+            toast({ title: "Error", description: "Could not load Build Guide", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [buildGuides, products, loadCart, setCartOpen, toast]);
 
     const deleteBuild = useCallback(async (buildId: string) => {
         try {
-            const res = await fetch(`/api/builds/${buildId}`, { method: 'DELETE' });
+            const res = await fetch(`/api/build-guides/${buildId}`, { method: 'DELETE' });
             if (res.ok) {
-                toast({ title: "Build deleted" });
-                await refreshSavedBuilds();
+                toast({ title: "Build Guide deleted" });
+                await refreshBuildGuides();
             }
         } catch (err) {
-            console.error('Failed to delete build:', err);
+            console.error('Failed to delete build guide:', err);
         }
-    }, [refreshSavedBuilds, toast]);
+    }, [refreshBuildGuides, toast]);
 
     const toggleBuildMode = useCallback(() => setIsBuildMode(prev => !prev), []);
 
-    // Initial load
-    useEffect(() => {
-        refreshSavedBuilds();
-    }, [refreshSavedBuilds]);
+    // --- SHARE ACTIONS ---
+    const generateShareLink = useCallback(() => {
+        if (cart.length === 0) return "";
+        // Extract minimal info: [variantId, quantity]
+        const minimalCart = cart.map(item => [
+            item.selectedVariant?.id || item.variants?.[0]?.id,
+            item.quantity
+        ]);
+
+        try {
+            const LZString = require('lz-string');
+            const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(minimalCart));
+            const url = new URL(window.location.origin + '/builds');
+            url.searchParams.set('share', compressed);
+            return url.toString();
+        } catch (err) {
+            console.error('Error generating share link:', err);
+            return "";
+        }
+    }, [cart]);
+
+    const loadBuildFromBase64 = useCallback(async (base64Str: string) => {
+        try {
+            setIsLoading(true);
+            const LZString = require('lz-string');
+            const decompressed = LZString.decompressFromEncodedURIComponent(base64Str);
+            if (!decompressed) throw new Error("Invalid base64 string");
+
+            const itemsToLoad: [string, number][] = JSON.parse(decompressed);
+
+            // To ensure correct product hydrates, we hit a generic product search or rely on 'products' array
+            // Assuming 'products' holds our active catalog
+            const newCart: any[] = [];
+            for (const [variantId, quantity] of itemsToLoad) {
+                const product = products.find(p => p.variants?.some(v => v.id === variantId));
+                if (product) {
+                    const variant = product.variants?.find(v => v.id === variantId) || product.variants?.[0];
+                    newCart.push({ ...product, quantity: quantity, selectedVariant: variant });
+                }
+            }
+
+            if (newCart.length > 0) {
+                loadCart(newCart);
+                toast({ title: "Shared build loaded", description: `${newCart.length} items added to your cart.` });
+                setCartOpen(true);
+                setIsBuildMode(true);
+            } else {
+                toast({ title: "Could not load shared build", description: "Products may be unavailable", variant: "destructive" });
+            }
+        } catch (err) {
+            console.error("Failed to load shared build", err);
+            toast({ title: "Error loading build", description: "The link appears to be invalid or broken.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [products, loadCart, setCartOpen, toast]);
 
     const value = useMemo(() => ({
-        savedBuilds,
-        refreshSavedBuilds,
+        buildGuides,
+        refreshBuildGuides,
         saveCurrentBuild,
         loadBuild,
         deleteBuild,
+        generateShareLink,
+        loadBuildFromBase64,
         compatibilityReport,
         isBuildMode,
         toggleBuildMode,
         isLoading
     }), [
-        savedBuilds, refreshSavedBuilds, saveCurrentBuild, loadBuild,
-        deleteBuild, compatibilityReport, isBuildMode, toggleBuildMode, isLoading
+        buildGuides, refreshBuildGuides, saveCurrentBuild, loadBuild,
+        deleteBuild, generateShareLink, loadBuildFromBase64, compatibilityReport, isBuildMode, toggleBuildMode, isLoading
     ]);
 
     return (

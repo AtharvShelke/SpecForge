@@ -26,6 +26,7 @@ const checkoutSchema = z.object({
     paymentMethod: z.string().optional(),
     paymentTransactionId: z.string().optional(),
     paymentStatus: z.string().optional(),
+    isPosOverride: z.boolean().optional(),
     items: z.array(orderItemSchema).min(1),
 });
 
@@ -104,6 +105,8 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
             const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
 
+            const orderStatus = data.isPosOverride ? "PAID" : "PENDING";
+
             const newOrder = await tx.order.create({
                 data: {
                     id: orderId,
@@ -113,22 +116,22 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     subtotal,
                     gstAmount,
                     total, // Calculated purely on the server!
-                    status: "PENDING",
+                    status: orderStatus,
                     shippingStreet: data.shippingStreet,
                     shippingCity: data.shippingCity,
                     shippingState: data.shippingState,
                     shippingZip: data.shippingZip,
                     shippingCountry: data.shippingCountry,
-                    paymentMethod: data.paymentMethod,
-                    paymentTransactionId: data.paymentTransactionId,
-                    paymentStatus: data.paymentStatus,
+                    paymentMethod: data.isPosOverride ? "CASH" : data.paymentMethod,
+                    paymentTransactionId: data.isPosOverride ? `POS-${Date.now()}` : data.paymentTransactionId,
+                    paymentStatus: data.isPosOverride ? "COMPLETED" : data.paymentStatus,
                     items: {
                         create: orderItemsData,
                     },
                     logs: {
                         create: {
-                            status: "PENDING",
-                            note: "Order placed successfully.",
+                            status: orderStatus,
+                            note: data.isPosOverride ? "Order placed via POS override." : "Order placed successfully.",
                         },
                     },
                 }

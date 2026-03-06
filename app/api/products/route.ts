@@ -38,7 +38,7 @@ export async function getProductsData(searchParams: URLSearchParams) {
         const minPrice = searchParams.get("minPrice");
         const maxPrice = searchParams.get("maxPrice");
         const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = parseInt(searchParams.get("limit") || "50", 10);
+        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 1000);
 
         const sort = searchParams.get("sort") || "popularity";
 
@@ -143,28 +143,34 @@ export async function getProductsData(searchParams: URLSearchParams) {
         }
 
         let orderBy: any = { createdAt: "desc" };
-        const isPriceSort = sort === "price-asc" || sort === "price-desc";
 
         if (sort === "newest") orderBy = { createdAt: "desc" };
-        else if (isPriceSort) orderBy = undefined;
+        else if (sort === "price-asc") orderBy = { variants: { _min: { price: "asc" } } };
+        else if (sort === "price-desc") orderBy = { variants: { _min: { price: "desc" } } };
 
         let filterOptions = undefined;
         if (searchParams.get("getFilters") === "true") {
-            const allMatch = await prisma.product.findMany({
-                where,
-                select: {
-                    brand: { select: { name: true } },
-                    specs: { select: { key: true, value: true } }
-                }
-            });
+            // Use two lightweight queries instead of loading all product data
+            const [brandResults, specPairs] = await Promise.all([
+                prisma.product.findMany({
+                    where,
+                    select: { brand: { select: { name: true } } },
+                    distinct: ['brandId'],
+                }),
+                prisma.productSpec.findMany({
+                    where: { product: where },
+                    select: { key: true, value: true },
+                    distinct: ['key', 'value'],
+                }),
+            ]);
             const brandsSet = new Set<string>();
-            const specsMap: Record<string, Set<string>> = {};
-            for (const p of allMatch) {
+            for (const p of brandResults) {
                 if (p.brand?.name) brandsSet.add(p.brand.name);
-                for (const s of p.specs) {
-                    if (!specsMap[s.key]) specsMap[s.key] = new Set();
-                    specsMap[s.key].add(s.value);
-                }
+            }
+            const specsMap: Record<string, Set<string>> = {};
+            for (const s of specPairs) {
+                if (!specsMap[s.key]) specsMap[s.key] = new Set();
+                specsMap[s.key].add(s.value);
             }
             const specsObj: Record<string, string[]> = {};
             for (const key in specsMap) {
@@ -176,34 +182,66 @@ export async function getProductsData(searchParams: URLSearchParams) {
             };
         }
 
-        const [rawProducts, total] = await Promise.all([
+        const fields = searchParams.get("fields");
+
+        // Minimal mode for admin context — skip heavy nested queries
+        const productSelect = fields === "minimal"
+            ? {
+                id: true,
+                slug: true,
+                name: true,
+                category: true,
+                status: true,
+                createdAt: true,
+                brand: { select: { id: true, name: true } },
+                variants: {
+                    select: {
+                        id: true,
+                        sku: true,
+                        price: true,
+                        status: true,
+                    },
+                    take: 1,
+                },
+                media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' as const } },
+            }
+            : {
+                id: true,
+                slug: true,
+                name: true,
+                category: true,
+                description: true,
+                status: true,
+                createdAt: true,
+                specs: { select: { id: true, key: true, value: true } },
+                brand: { select: { id: true, name: true } },
+                variants: {
+                    select: {
+                        id: true,
+                        sku: true,
+                        price: true,
+                        compareAtPrice: true,
+                        status: true,
+                        attributes: true,
+                        warehouseInventories: {
+                            select: { id: true, quantity: true, reserved: true, warehouseId: true },
+                        },
+                    },
+                },
+                media: { select: { id: true, url: true, altText: true, sortOrder: true }, orderBy: { sortOrder: 'asc' as const }, take: 4 },
+                _count: { select: { reviews: true } },
+            };
+
+        const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
-                include: {
-                    specs: true,
-                    brand: true,
-                    variants: {
-                        include: {
-                            warehouseInventories: true
-                        }
-                    },
-                    media: true
-                },
-                ...(orderBy ? { orderBy } : {}),
-                ...(!isPriceSort ? { skip: (page - 1) * limit, take: limit } : {}),
+                select: productSelect,
+                orderBy,
+                skip: (page - 1) * limit,
+                take: limit,
             }),
             prisma.product.count({ where }),
         ]);
-
-        let products = rawProducts;
-        if (isPriceSort) {
-            products.sort((a, b) => {
-                const aPrice = a.variants[0]?.price || 0;
-                const bPrice = b.variants[0]?.price || 0;
-                return sort === "price-asc" ? aPrice - bPrice : bPrice - aPrice;
-            });
-            products = products.slice((page - 1) * limit, page * limit);
-        }
 
         return NextResponse.json({ products, total, page, limit, filterOptions });
     } catch (error) {

@@ -176,10 +176,13 @@ const computeTotals = (
   discountPct: number,
   shipping: number
 ) => {
-  const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const taxTotal = items.reduce((s, i) => s + i.quantity * i.unitPrice * ((i.taxRatePct ?? 18) / 100), 0);
-  const discountAmount = (subtotal * discountPct) / 100;
-  const total = subtotal + taxTotal - discountAmount + shipping;
+  const safeItems = items || [];
+  const safeDiscount = discountPct || 0;
+  const safeShipping = shipping || 0;
+  const subtotal = safeItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const taxTotal = safeItems.reduce((s, i) => s + i.quantity * i.unitPrice * ((i.taxRatePct ?? 18) / 100), 0);
+  const discountAmount = (subtotal * safeDiscount) / 100;
+  const total = subtotal + taxTotal - discountAmount + safeShipping;
   return { subtotal, taxTotal, discountAmount, total };
 };
 
@@ -190,7 +193,7 @@ const buildInvoiceHtml = (invoice: Invoice, profile: BillingProfile): string => 
     invoice.discountPct ?? 0,
     invoice.shipping ?? 0
   );
-  const rows = invoice.lineItems.map(i => {
+  const rows = (invoice.lineItems || []).map(i => {
     const lineTotal = i.quantity * i.unitPrice;
     const tax = lineTotal * ((i.taxRatePct ?? 18) / 100);
     return `
@@ -293,16 +296,16 @@ const InvStatusBadge = ({ status }: { status: InvoiceStatus }) => {
   return (
     <span className={cn(
       'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium uppercase tracking-wide border transition-all duration-150',
-      cfg.badgeClass,
+      cfg?.badgeClass,
       (status === 'paid') && 'bg-emerald-600 text-white border-emerald-600',
       (status === 'overdue') && 'bg-red-600 text-white border-red-600'
     )}>
       <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0',
         status === 'paid' ? 'bg-white' :
           status === 'overdue' ? 'bg-white' :
-            cfg.dotClass
+            cfg?.dotClass
       )} />
-      {cfg.label}
+      {cfg?.label}
     </span>
   );
 };
@@ -896,7 +899,7 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <MetaItem icon={<User size={16} />} label="Customer" value={invoice.customer?.name || 'Unknown'} />
             <MetaItem icon={<Mail size={16} />} label="Email" value={invoice.customer?.email || 'N/A'} />
-            <MetaItem icon={<Layout size={16} />} label="Items" value={`${invoice.lineItems.length} line items`} />
+            <MetaItem icon={<Layout size={16} />} label="Items" value={`${invoice.lineItems?.length || 0} line items`} />
             <MetaItem icon={<Shield size={16} />} label="Balance"
               value={
                 <span className={cn('font-semibold', invoice.amountDue > 0 ? 'text-red-500' : 'text-emerald-500')}>
@@ -926,7 +929,7 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {invoice.lineItems.map(item => {
+                    {invoice.lineItems?.map(item => {
                       const lineTotal = item.quantity * item.unitPrice;
                       const tax = lineTotal * ((item.taxRatePct ?? 18) / 100);
                       return (
@@ -1003,11 +1006,11 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
                   <Monitor size={14} /> Audit Log
                 </h3>
                 <div className="space-y-6">
-                  {[...invoice.audit].reverse().map((ev, idx) => (
+                  {[...(invoice?.audit || [])].reverse().map((ev, idx, arr) => (
                     <div key={ev.id} className="flex gap-4 group">
                       <div className="flex flex-col items-center shrink-0">
                         <div className={cn('w-2.5 h-2.5 rounded-full border-2 border-zinc-50', idx === 0 ? 'bg-zinc-900 shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-zinc-300')} />
-                        {idx !== invoice.audit.length - 1 && <div className="w-0.5 flex-1 bg-zinc-200 my-1" />}
+                        {idx !== arr.length - 1 && <div className="w-0.5 flex-1 bg-zinc-200 my-1" />}
                       </div>
                       <div className="pb-6">
                         <p className={cn('text-xs font-semibold mb-0.5', idx === 0 ? 'text-zinc-900' : 'text-zinc-500')}>
@@ -1032,10 +1035,11 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
 // ─────────────────────────────────────────────────────────────
 const StatsBar = ({ invoices }: { invoices: Invoice[] }) => {
   const s = useMemo(() => {
-    const total = invoices.length;
-    const revenue = invoices.filter(i => i.status === 'paid').reduce((a, i) => a + i.total, 0);
-    const outstanding = invoices.filter(i => ['pending', 'overdue'].includes(i.status)).reduce((a, i) => a + i.amountDue, 0);
-    const overdue = invoices.filter(i => i.status === 'overdue').length;
+    const safeInvoices = invoices || [];
+    const total = safeInvoices.length;
+    const revenue = safeInvoices.filter(i => i.status === 'paid').reduce((a, i) => a + i.total, 0);
+    const outstanding = safeInvoices.filter(i => ['pending', 'overdue'].includes(i.status)).reduce((a, i) => a + i.amountDue, 0);
+    const overdue = safeInvoices.filter(i => i.status === 'overdue').length;
     return { total, revenue, outstanding, overdue };
   }, [invoices]);
 
@@ -1107,7 +1111,7 @@ const BillingInvoices: React.FC = () => {
 
   // Sort newest first
   const sortedInvoices = useMemo(() =>
-    [...invoices].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [...(invoices || [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [invoices]
   );
 
@@ -1129,7 +1133,7 @@ const BillingInvoices: React.FC = () => {
   }, [sortedInvoices, filterStatus, searchQuery]);
 
   const selectedInvoice = useMemo(() =>
-    invoices.find(i => i.id === selectedId) ?? sortedInvoices[0] ?? null,
+    (invoices || []).find(i => i.id === selectedId) ?? sortedInvoices[0] ?? null,
     [invoices, selectedId, sortedInvoices]
   );
 

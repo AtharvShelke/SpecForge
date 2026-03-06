@@ -9,48 +9,22 @@ export async function GET(req: NextRequest) {
         const category = searchParams.get("category");
         const fStockStatus = searchParams.get("f_stock_status");
 
-        // Pagination parameters
+        // Pagination parameters — default 50, max 200
         const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = parseInt(searchParams.get("limit") || "1000", 10);
+        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 200);
         const skip = (page - 1) * limit;
-
-        // Note: For 'low stock', since quantity <= reorderLevel requires a field comparison,
-        // Prisma doesn't support comparing fields inside standard `where`. We will either query raw,
-        // or just apply a programmatic filter over a wider result set. But wait, if someone asks for
-        // paginated low stock items, doing it purely in memory breaks pagination limit accuracy.
-        // A simple Prisma workaround: Since reorderLevel is generally consistent or small (e.g., 5-10),
-        // we can fetch with a fixed ceiling or fall back to raw SQL to find the correctly paginated IDs.
-        // For simplicity and assuming thousands of inventory rows, we'll try a fast fetch of item IDs first.
 
         let dbWhere: any = {};
 
-        // 1. Text Search & 2. Category Filter
-        let productFilter: any = {};
-
-
+        // 1. Text Search
         if (search && search.trim() !== "") {
             dbWhere.OR = [
-                {
-                    variant: {
-                        sku: {
-                            contains: search,
-                            mode: "insensitive"
-                        }
-                    }
-                },
-                {
-                    variant: {
-                        product: {
-                            name: {
-                                contains: search,
-                                mode: "insensitive"
-                            }
-                        }
-                    }
-                }
+                { variant: { sku: { contains: search, mode: "insensitive" } } },
+                { variant: { product: { name: { contains: search, mode: "insensitive" } } } }
             ];
         }
 
+        // 2. Category Filter
         if (category && category !== "all") {
             dbWhere.variant = {
                 ...(dbWhere.variant || {}),
@@ -58,52 +32,58 @@ export async function GET(req: NextRequest) {
             };
         }
 
-        if (Object.keys(productFilter).length > 0) {
-            dbWhere.variant = { product: productFilter };
-        }
-
         // 3. Stock Status Filter
         if (fStockStatus === "out") {
             dbWhere.quantity = 0;
-        }
-
-        let queryIds: { id: string }[] | null = null;
-
-        // If 'low' stock is requested, we MUST do a raw SQL query or pull all matching records briefly
-        // to filter `quantity <= reorderLevel` properly before taking the paginated slice.
-        if (fStockStatus === "low") {
-            const rawItems = await prisma.warehouseInventory.findMany({
-                where: { ...dbWhere, quantity: { gt: 0 } },
-                select: { id: true, quantity: true, reorderLevel: true }
-            });
-            const validLowStockIds = rawItems
-                .filter(item => item.quantity <= item.reorderLevel)
-                .map(item => item.id);
-
-            dbWhere.id = { in: validLowStockIds };
+        } else if (fStockStatus === "low") {
+            // Use raw SQL to efficiently find items where quantity > 0 AND quantity <= reorderLevel
+            const lowStockIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
+                `SELECT id FROM "WarehouseInventory" WHERE quantity > 0 AND quantity <= "reorderLevel"`
+            );
+            dbWhere.id = { in: lowStockIds.map(r => r.id) };
         } else if (fStockStatus === "in") {
             dbWhere.quantity = { gt: 0 };
         }
 
-        // Execute primary paginated query
-        const total = await prisma.warehouseInventory.count({ where: dbWhere });
+        // Execute count + paginated query in parallel
+        const [total, items] = await Promise.all([
+            prisma.warehouseInventory.count({ where: dbWhere }),
+            prisma.warehouseInventory.findMany({
+                where: dbWhere,
+                select: {
+                    id: true,
+                    quantity: true,
+                    reserved: true,
+                    reorderLevel: true,
+                    costPrice: true,
+                    location: true,
+                    lastUpdated: true,
+                    warehouseId: true,
+                    variant: {
+                        select: {
+                            id: true,
+                            sku: true,
+                            price: true,
+                            status: true,
+                            product: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    category: true,
+                                    brand: { select: { id: true, name: true } },
+                                    media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: { lastUpdated: "desc" },
+                skip,
+                take: limit,
+            }),
+        ]);
 
-        const items = await prisma.warehouseInventory.findMany({
-            where: dbWhere,
-            include: {
-                variant: { include: { product: { include: { brand: true } } } },
-            },
-            orderBy: { variant: { product: { name: "asc" } } },
-            skip,
-            take: limit
-        });
-
-        return NextResponse.json({
-            items,
-            total,
-            page,
-            limit
-        });
+        return NextResponse.json({ items, total, page, limit });
     } catch (error) {
         console.error("GET /api/inventory error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

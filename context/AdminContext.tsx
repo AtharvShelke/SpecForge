@@ -98,6 +98,7 @@ interface AdminContextType {
     activeTab: string;
     setActiveTab: (tab: string) => void;
 
+    isAdmin: boolean;
     isLoading: boolean;
 }
 
@@ -239,7 +240,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const refreshProducts = useCallback(async () => {
         try {
-            const res = await fetch('/api/products');
+            const res = await fetch('/api/products?fields=minimal');
             const data = await res.json();
             setProducts(data.products ?? data);
         } catch (err) { console.error(err); }
@@ -273,7 +274,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const res = await fetch('/api/suppliers');
             const data = await res.json();
-            setSuppliers(data);
+            setSuppliers(data.suppliers ?? data);
         } catch (err) { console.error(err); }
     }, []);
 
@@ -281,36 +282,63 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const res = await fetch('/api/inventory/purchase-orders');
             const data = await res.json();
-            setPurchaseOrders(data);
+            setPurchaseOrders(data.orders ?? data);
         } catch (err) { console.error(err); }
     }, []);
 
-    // --- INITIAL LOAD ---
+    // --- LAZY LOAD TAB DATA ---
     useEffect(() => {
-        const init = async () => {
+        const initTabData = async () => {
             setIsLoading(true);
-            await Promise.all([
-                refreshInventory(),
-                refreshStockMovements(),
-                refreshOrders(),
-                refreshSchemas(),
-                refreshFilterConfigs(),
-                refreshInvoices(),
-                refreshCustomers(),
-                refreshBillingProfile(),
-                refreshCMSVersions(),
-                refreshProducts(),
-                refreshCategories(),
-                refreshBrands(),
-                refreshReviews(),
-                refreshSuppliers(),
-                refreshPurchaseOrders(),
-                refreshWarehouses()
-            ]);
-            setIsLoading(false);
+            try {
+                // Shared foundational data needed almost everywhere
+                const basePromises = [
+                    refreshProducts(),
+                    refreshCategories(),
+                    refreshBrands()
+                ];
+
+                let specificPromises: Promise<void>[] = [];
+                switch (activeTab) {
+                    case 'overview':
+                        specificPromises = [refreshOrders(), refreshInventory(), refreshInvoices(), refreshCustomers(), refreshStockMovements()];
+                        break;
+                    case 'orders':
+                        specificPromises = [refreshOrders(), refreshInventory(), refreshCustomers()];
+                        break;
+                    case 'products':
+                    case 'brands':
+                        break;
+                    case 'categories':
+                        specificPromises = [refreshSchemas(), refreshFilterConfigs()];
+                        break;
+                    case 'inventory':
+                        specificPromises = [refreshInventory(), refreshWarehouses(), refreshStockMovements()];
+                        break;
+                    case 'procurement':
+                        specificPromises = [refreshSuppliers(), refreshPurchaseOrders(), refreshInventory()];
+                        break;
+                    case 'billing':
+                        specificPromises = [refreshInvoices(), refreshCustomers(), refreshBillingProfile()];
+                        break;
+                    case 'cms':
+                        specificPromises = [refreshCMSVersions()];
+                        break;
+                    case 'marketing':
+                        specificPromises = [refreshReviews()];
+                        break;
+                }
+
+                await Promise.all([...basePromises, ...specificPromises]);
+            } catch (error) {
+                console.error('Failed to load tab data:', error);
+            } finally {
+                setIsLoading(false);
+            }
         };
-        init();
+        initTabData();
     }, [
+        activeTab,
         refreshInventory, refreshStockMovements, refreshOrders, refreshSchemas,
         refreshFilterConfigs, refreshInvoices, refreshCustomers,
         refreshBillingProfile, refreshCMSVersions,
@@ -519,7 +547,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const res = await fetch(`/api/invoices/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'voided' }),
+                body: JSON.stringify({ status: 'VOIDED' }),
             });
             if (res.ok) {
                 toast({ title: "Invoice voided" });
@@ -757,6 +785,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         reviews, refreshReviews, updateReviewStatus,
         activeTab,
         setActiveTab,
+        isAdmin: true, // For demo purposes, true inside AdminContext
         isLoading
     }), [
         inventory, refreshInventory, warehouses, refreshWarehouses, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,

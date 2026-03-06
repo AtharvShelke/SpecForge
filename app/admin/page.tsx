@@ -54,19 +54,8 @@ const AdminDashboardContent: React.FC = () => {
         refreshReviews
     } = useAdmin();
 
-    React.useEffect(() => {
-        const fetchAdminData = async () => {
-            await Promise.all([
-                refreshInvoices(),
-                refreshCustomers(),
-                refreshBillingProfile(),
-                refreshCMSVersions(),
-                refreshOrders(),
-                refreshReviews()
-            ]);
-        };
-        fetchAdminData();
-    }, [refreshInvoices, refreshCustomers, refreshBillingProfile, refreshCMSVersions, refreshOrders, refreshReviews]);
+    // Data fetching is now handled correctly via lazy loading in AdminContext.tsx 
+    // depending on the `activeTab`.
 
     return (
         <div className="space-y-6">

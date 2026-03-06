@@ -71,6 +71,19 @@ export async function reserveInventory(
                 performedBy,
             },
         });
+
+        // Trigger OUT_OF_STOCK status if total available quantity hits 0 across all warehouses
+        const allInv = await tx.warehouseInventory.aggregate({
+            where: { variantId: item.variantId },
+            _sum: { quantity: true }
+        });
+
+        if ((allInv._sum.quantity || 0) <= 0) {
+            await tx.productVariant.update({
+                where: { id: item.variantId },
+                data: { status: 'OUT_OF_STOCK' }
+            });
+        }
     }
 }
 
@@ -168,5 +181,18 @@ export async function restoreInventory(
                 performedBy,
             },
         });
+
+        // If returned item makes stock > 0, make sure status is ACTIVE
+        const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+            select: { status: true }
+        });
+
+        if (variant?.status === 'OUT_OF_STOCK' && newQuantity > 0) {
+            await tx.productVariant.update({
+                where: { id: item.variantId },
+                data: { status: 'ACTIVE' }
+            });
+        }
     }
 }

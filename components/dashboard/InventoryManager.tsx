@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, FormEvent } from 'react';
-import { useShop } from '@/context/ShopContext';
+
 import { useAdmin } from '@/context/AdminContext';
 import { StockMovementType } from '@/types';
 import {
@@ -49,7 +49,6 @@ import {
 import { useDebounce } from '@/hooks/useDebounce';
 
 const InventoryManager = () => {
-    const { products } = useShop();
     const {
         inventory,
         stockMovements,
@@ -360,9 +359,9 @@ const InventoryManager = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedInventory.map((item: WarehouseInventory & { product?: any }) => {
-                                    const product = products.find(p => p.variants?.some(v => v.id === item.variantId));
-                                    const variant = product?.variants?.find(v => v.id === item.variantId);
+                                paginatedInventory.map((item: WarehouseInventory) => {
+                                    const variant = item.variant;
+                                    const product = variant?.product;
 
                                     return (
                                         <tr key={item.id} className="hover:bg-zinc-50/50 transition-colors group">

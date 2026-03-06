@@ -17,6 +17,13 @@ interface ValidationContext {
   coolerSpecs: Record<string, any>;
 }
 
+// Utility to handle missing or unparseable numeric specs safely.
+const safeNumber = (val: any): number | null => {
+  if (val === undefined || val === null || val === '') return null;
+  const parsed = Number(val);
+  return isNaN(parsed) ? null : parsed;
+};
+
 interface CompatibilityRule {
   name: string;
   evaluate(ctx: ValidationContext): CompatibilityIssue[];
@@ -82,14 +89,17 @@ const powerDrawRule: CompatibilityRule = {
     const issues: CompatibilityIssue[] = [];
     if (ctx.psu) {
       let totalWattage = 50; // Base overhead
-      if (ctx.cpuSpecs.wattage) totalWattage += Number(ctx.cpuSpecs.wattage);
+      const cpuWattage = safeNumber(ctx.cpuSpecs.wattage);
+      if (cpuWattage) totalWattage += cpuWattage;
+
       ctx.gpuList.forEach(gpu => {
         const gpuSpecs = specsToFlat(gpu.specs);
-        if (gpuSpecs.wattage) totalWattage += Number(gpuSpecs.wattage);
+        const gpuWattage = safeNumber(gpuSpecs.wattage);
+        if (gpuWattage) totalWattage += gpuWattage;
       });
 
       const recommendedWattage = totalWattage * 1.2;
-      const psuCapacity = Number(ctx.psuSpecs.wattage);
+      const psuCapacity = safeNumber(ctx.psuSpecs.wattage);
 
       if (psuCapacity) {
         if (psuCapacity < totalWattage) {
@@ -153,13 +163,13 @@ const clearanceRule: CompatibilityRule = {
   evaluate: (ctx) => {
     const issues: CompatibilityIssue[] = [];
     if (ctx.cabinet) {
-      const maxGpuLength = Number(ctx.cabinetSpecs.maxGpuLength);
-      const maxCoolerHeight = Number(ctx.cabinetSpecs.maxCoolerHeight);
+      const maxGpuLength = safeNumber(ctx.cabinetSpecs.maxGpuLength);
+      const maxCoolerHeight = safeNumber(ctx.cabinetSpecs.maxCoolerHeight);
 
       if (maxGpuLength && ctx.gpuList.length > 0) {
         for (const gpu of ctx.gpuList) {
-          const gpuLength = Number(specsToFlat(gpu.specs).length);
-          if (gpuLength > maxGpuLength) {
+          const gpuLength = safeNumber(specsToFlat(gpu.specs).length);
+          if (gpuLength && gpuLength > maxGpuLength) {
             issues.push({
               level: CompatibilityLevel.INCOMPATIBLE,
               message: `GPU is too long for this cabinet.`,
@@ -172,8 +182,8 @@ const clearanceRule: CompatibilityRule = {
       }
 
       if (maxCoolerHeight && ctx.cooler) {
-        const coolerHeight = Number(ctx.coolerSpecs.height);
-        if (coolerHeight > maxCoolerHeight) {
+        const coolerHeight = safeNumber(ctx.coolerSpecs.height);
+        if (coolerHeight && coolerHeight > maxCoolerHeight) {
           issues.push({
             level: CompatibilityLevel.INCOMPATIBLE,
             message: `CPU Cooler is too tall for this cabinet.`,

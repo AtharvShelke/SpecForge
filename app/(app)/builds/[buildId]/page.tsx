@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
-import { SavedBuild, CartItem, CompatibilityLevel, Category } from '@/types';
+import { BuildGuide, CartItem, CompatibilityLevel, Category } from '@/types';
 import { validateBuild } from '@/services/compatibility';
 import {
     Upload,
@@ -42,7 +42,7 @@ export default function SharedBuildPage() {
     const buildId = params?.buildId as string;
     const { loadCart, setCartOpen } = useShop();
 
-    const [build, setBuild] = useState<SavedBuild | null>(null);
+    const [build, setBuild] = useState<BuildGuide | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export default function SharedBuildPage() {
         async function fetchBuild() {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/builds/${buildId}`);
+                const res = await fetch(`/api/build-guides/${buildId}`);
                 if (!res.ok) {
                     throw new Error(res.status === 404 ? 'Build not found' : 'Failed to load build');
                 }
@@ -139,9 +139,9 @@ export default function SharedBuildPage() {
                     {/* Header */}
                     <div className="p-6 sm:p-8 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{build.name}</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{build.title}</h1>
                             <p className="text-zinc-500 mt-1">
-                                {new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components · <span className="font-semibold text-zinc-900">₹{build.total.toLocaleString('en-IN')}</span>
+                                {new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components
                             </p>
                         </div>
                         <button

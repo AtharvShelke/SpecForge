@@ -22,7 +22,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Category, CompatibilityLevel, SavedBuild, SavedBuildItem, Product, CartItem } from '@/types';
+import { Category, CompatibilityLevel, BuildGuide, BuildGuideItem, Product, CartItem } from '@/types';
 import { useShop } from '@/context/ShopContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
@@ -48,7 +48,7 @@ const CATEGORY_ICON: Record<Category, ReactNode> = {
 // -------------------------------------------------------------------
 // Smart Cover Image (GPU > CPU > first item)
 // -------------------------------------------------------------------
-function getCoverImage(build: SavedBuild): string | null {
+function getCoverImage(build: BuildGuide): string | null {
   const gpu = build.items.find((i) => i.variant?.product?.category === Category.GPU);
   if (gpu?.variant?.product) return gpu.variant.product.media?.[0]?.url || null;
   const cpu = build.items.find((i) => i.variant?.product?.category === Category.PROCESSOR);
@@ -59,7 +59,7 @@ function getCoverImage(build: SavedBuild): string | null {
 // -------------------------------------------------------------------
 // Compatibility Badge (small, for card)
 // -------------------------------------------------------------------
-const CompatChip: React.FC<{ build: SavedBuild }> = ({ build }) => {
+const CompatChip: React.FC<{ build: BuildGuide }> = ({ build }) => {
   const cartItems = useMemo(() => build.items.map(i => i.variant?.product ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant }) : null).filter(Boolean) as CartItem[], [build]);
   const report = useMemo(() => validateBuild(cartItems), [cartItems]);
 
@@ -85,7 +85,7 @@ const CompatChip: React.FC<{ build: SavedBuild }> = ({ build }) => {
 // -------------------------------------------------------------------
 // Share helper
 // -------------------------------------------------------------------
-function buildShareUrl(build: SavedBuild): string {
+function buildShareUrl(build: BuildGuide): string {
   return `${typeof window !== 'undefined' ? window.location.origin : ''}/builds/${build.id}`;
 }
 
@@ -93,7 +93,7 @@ function buildShareUrl(build: SavedBuild): string {
 // Build Detail Modal
 // -------------------------------------------------------------------
 const BuildModal: React.FC<{
-  build: SavedBuild;
+  build: BuildGuide;
   onClose: () => void;
   onLoad: () => void;
 }> = ({ build, onClose, onLoad }) => {
@@ -126,9 +126,9 @@ const BuildModal: React.FC<{
         {/* Modal Header */}
         <div className="p-6 border-b border-zinc-100 flex items-start justify-between gap-4 flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-zinc-900">{build.name}</h2>
+            <h2 className="text-xl font-bold text-zinc-900">{build.title}</h2>
             <p className="text-sm text-zinc-400 mt-0.5">
-              {new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components · ₹{build.total.toLocaleString('en-IN')}
+              {new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg hover:bg-zinc-100 transition-all">
@@ -205,12 +205,12 @@ const BuildModal: React.FC<{
 // Builds Content
 // -------------------------------------------------------------------
 function BuildsContent() {
-  const { savedBuilds, loadBuild, deleteBuild, refreshSavedBuilds } = useBuild();
+  const { buildGuides, loadBuild, deleteBuild, refreshBuildGuides } = useBuild();
 
   React.useEffect(() => {
-    refreshSavedBuilds();
-  }, [refreshSavedBuilds]);
-  const [activeBuild, setActiveBuild] = useState<SavedBuild | null>(null);
+    refreshBuildGuides();
+  }, [refreshBuildGuides]);
+  const [activeBuild, setActiveBuild] = useState<BuildGuide | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleLoad = (buildId: string) => {
@@ -218,7 +218,7 @@ function BuildsContent() {
     setActiveBuild(null);
   };
 
-  const handleCopyDirect = (e: React.MouseEvent, build: SavedBuild) => {
+  const handleCopyDirect = (e: React.MouseEvent, build: BuildGuide) => {
     e.stopPropagation();
     navigator.clipboard.writeText(buildShareUrl(build));
     setCopiedId(build.id);
@@ -245,7 +245,7 @@ function BuildsContent() {
               </div>
               <h1 className="text-3xl font-bold text-zinc-900">Saved Builds</h1>
               <p className="text-zinc-500 text-sm mt-1">
-                {savedBuilds.length} build{savedBuilds.length !== 1 ? 's' : ''} saved — click any card to view details or share.
+                {buildGuides.length} build{buildGuides.length !== 1 ? 's' : ''} saved — click any card to view details or share.
               </p>
             </div>
             <Link
@@ -260,7 +260,7 @@ function BuildsContent() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {savedBuilds.length === 0 ? (
+        {buildGuides.length === 0 ? (
           <div className="text-center py-24 bg-white rounded-2xl border border-zinc-200">
             <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Box className="text-zinc-400" size={28} />
@@ -278,7 +278,7 @@ function BuildsContent() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {savedBuilds.map((build: SavedBuild) => {
+            {buildGuides.map((build: BuildGuide) => {
               const coverImg = getCoverImage(build);
               const isCopied = copiedId === build.id;
 
@@ -293,7 +293,7 @@ function BuildsContent() {
                     {coverImg ? (
                       <img
                         src={coverImg}
-                        alt={build.name}
+                        alt={build.title}
                         className="w-full h-full object-contain p-6"
                       />
                     ) : (
@@ -307,13 +307,13 @@ function BuildsContent() {
 
                   {/* Card Header */}
                   <div className="px-5 pt-4 pb-3">
-                    <h3 className="text-base font-bold text-zinc-900 truncate">{build.name}</h3>
+                    <h3 className="text-base font-bold text-zinc-900 truncate">{build.title}</h3>
                     <p className="text-xs text-zinc-400 mt-0.5">{new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components</p>
                   </div>
 
                   {/* Items Preview */}
                   <div className="px-5 pb-4 space-y-1.5">
-                    {build.items.slice(0, 4).map((item: SavedBuildItem) => (
+                    {build.items.slice(0, 4).map((item: BuildGuideItem) => (
                       <div key={item.id} className="flex items-center gap-2 text-xs text-zinc-600">
                         <span className="text-zinc-300 flex-shrink-0">{item.variant?.product ? CATEGORY_ICON[item.variant.product.category as Category] : null}</span>
                         <span className="truncate flex-1">{item.variant?.product?.name}</span>
@@ -326,10 +326,7 @@ function BuildsContent() {
                   </div>
 
                   {/* Card Footer */}
-                  <div className="px-5 py-4 border-t border-zinc-100 flex items-center justify-between">
-                    <span className="text-lg font-bold text-zinc-900">
-                      ₹{build.total.toLocaleString('en-IN')}
-                    </span>
+                  <div className="px-5 py-4 border-t border-zinc-100 flex items-center justify-end">
                     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={(e) => handleCopyDirect(e, build)}

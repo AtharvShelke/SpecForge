@@ -1481,7 +1481,7 @@ const INVOICES_DATA = [
   {
     id: 'inv-001',
     invoiceNumber: 'INV-2025-0001',
-    status: InvoiceStatus.paid,
+    status: InvoiceStatus.PAID,
     customerId: 'cust-1',
     currency: Currency.INR,
     subtotal: 78000,
@@ -1507,7 +1507,7 @@ const INVOICES_DATA = [
   {
     id: 'inv-002',
     invoiceNumber: 'INV-2025-0002',
-    status: InvoiceStatus.pending,
+    status: InvoiceStatus.PENDING,
     customerId: 'cust-2',
     currency: Currency.INR,
     subtotal: 201000,
@@ -1532,7 +1532,7 @@ const INVOICES_DATA = [
   {
     id: 'inv-003',
     invoiceNumber: 'INV-2025-0003',
-    status: InvoiceStatus.overdue,
+    status: InvoiceStatus.OVERDUE,
     customerId: 'cust-3',
     currency: Currency.INR,
     subtotal: 365000,
@@ -1587,27 +1587,34 @@ async function main() {
     const cat = categoryToEnum(p.category);
     const brandId = p.brandName ? brandMap[p.brandName] : undefined;
 
-    const prod = await prisma.product.create({
-      data: {
-        id: p.id,
-        slug: p.id, // using id as slug for seeding
-        name: p.name,
-        category: cat,
-        description: p.description,
-        brandId: brandId ?? null,
-        media: {
-          create: [{ url: p.image, sortOrder: 0 }]
-        },
-        variants: {
-          create: [{
-            sku: p.sku,
-            price: p.price,
-            status: 'IN_STOCK'
-          }]
-        }
-      },
+    let prod = await prisma.product.findUnique({
+      where: { id: p.id },
       include: { variants: true }
     });
+
+    if (!prod) {
+      prod = await prisma.product.create({
+        data: {
+          id: p.id,
+          slug: p.id, // using id as slug for seeding
+          name: p.name,
+          category: cat,
+          description: p.description,
+          brandId: brandId ?? null,
+          media: {
+            create: [{ url: p.image, sortOrder: 0 }]
+          },
+          variants: {
+            create: [{
+              sku: p.sku,
+              price: p.price,
+              status: 'IN_STOCK'
+            }]
+          }
+        },
+        include: { variants: true }
+      });
+    }
 
     variantMap.set(p.id, prod.variants[0].id);
 
@@ -2085,16 +2092,17 @@ async function main() {
     }).catch(() => { /* idempotent — skip if already exists */ });
   }
 
-  // ── 10. Saved Builds ───────────────────────────────────────────────────────
-  console.log('  → Seeding saved builds...');
+  // ── 10. Build Guides ───────────────────────────────────────────────────────
+  console.log('  → Seeding build guides...');
   for (const b of SAVED_BUILDS_DATA) {
-    const existingBuild = await prisma.savedBuild.findUnique({ where: { id: b.id } });
+    const existingBuild = await prisma.buildGuide.findUnique({ where: { id: b.id } });
     if (!existingBuild) {
-      await prisma.savedBuild.create({
+      await prisma.buildGuide.create({
         data: {
           id: b.id,
-          name: b.name,
-          total: b.total,
+          title: b.name,
+          description: "Pre-configured build guide based on popular choices.",
+          category: "Gaming",
           createdAt: b.createdAt,
           items: {
             create: b.items.filter(i => variantMap.has(i.productId)).map(item => ({

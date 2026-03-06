@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const productId = searchParams.get("productId");
         const status = searchParams.get("status");
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 200);
 
         const where: any = {};
         if (productId) where.productId = productId;
@@ -24,13 +26,27 @@ export async function GET(req: NextRequest) {
             where.status = status;
         }
 
-        const reviews = await prisma.review.findMany({
-            where,
-            orderBy: { createdAt: "desc" },
-            include: { product: { select: { id: true, name: true, variants: { select: { sku: true } } } } },
-        });
+        const [reviews, total] = await Promise.all([
+            prisma.review.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                select: {
+                    id: true,
+                    productId: true,
+                    customerName: true,
+                    rating: true,
+                    comment: true,
+                    status: true,
+                    createdAt: true,
+                    product: { select: { id: true, name: true } },
+                },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.review.count({ where }),
+        ]);
 
-        return NextResponse.json(reviews);
+        return NextResponse.json({ reviews, total, page, limit });
     } catch (error) {
         console.error("GET /api/reviews error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

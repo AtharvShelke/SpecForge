@@ -1,0 +1,76 @@
+﻿
+> md_client@0.1.0 db:seed
+> prisma db seed
+
+node.exe : Loaded Prisma config from prisma.config.ts.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\npm-global/node_modules/npm/ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Loaded Prisma c...isma.config.ts.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Running seed command `tsx lib/seed.ts` ...
+≡ƒî▒ Starting seed...
+  ΓåÆ Seeding brands...
+(node:10804) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 
+'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq 
+semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ΓåÆ Seeding products and specs...
+Γ¥î Seed failed: PrismaClientKnownRequestError: 
+Invalid `prisma.product.create()` invocation in
+E:\web-dev\pc-system\md_client\lib\seed.ts:1590:39
+
+  1587 const cat = categoryToEnum(p.category);
+  1588 const brandId = p.brandName ? brandMap[p.brandName] : undefined;
+  1589 
+ΓåÆ 1590 const prod = await prisma.product.create(
+Unique constraint failed on the fields: (`id`)
+    at zr.handleRequestError 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (E:\web-dev\pc-system\md_client\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async a (E:\web-dev\pc-system\md_client\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:808:24)
+    at async main (E:\web-dev\pc-system\md_client\lib\seed.ts:1590:18) {
+  code: 'P2002',
+  meta: {
+    modelName: 'Product',
+    driverAdapterError: DriverAdapterError: UniqueConstraintViolation
+        at PgTransaction.onError 
+(file:///E:/web-dev/pc-system/md_client/node_modules/@prisma/adapter-pg/dist/index.mjs:651:11)
+        at PgTransaction.performIO 
+(file:///E:/web-dev/pc-system/md_client/node_modules/@prisma/adapter-pg/dist/index.mjs:646:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async PgTransaction.queryRaw 
+(file:///E:/web-dev/pc-system/md_client/node_modules/@prisma/adapter-pg/dist/index.mjs:566:30)
+        at async e.interpretNode 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:186:26)
+        at async e.interpretNode 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:213:41)
+        at async e.interpretNode 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:128:29)
+        at async e.interpretNode 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:272:41)
+        at async e.interpretNode 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:262:25)
+        at async e.run 
+(E:\web-dev\pc-system\md_client\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:94:23) 
+{
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.4.2'
+}
+
+An error occurred while running the seed command:
+Error: Command failed with exit code 1: tsx lib/seed.ts

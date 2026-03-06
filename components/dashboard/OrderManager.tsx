@@ -75,6 +75,41 @@ import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManag
 import { ConfirmStatusDialog, InvoicePreviewDialog } from '../helper-components/OrderManagerDialogs';
 
 // ─────────────────────────────────────────────────────────────
+// STATUS PILL
+// ─────────────────────────────────────────────────────────────
+const StatusPill = ({ status }: { status: OrderStatus }) => {
+  const map: Record<string, { label: string; cls: string }> = {
+    [OrderStatus.PENDING]:    { label: 'Pending',    cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
+    [OrderStatus.PAID]:       { label: 'Paid',       cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+    [OrderStatus.PROCESSING]: { label: 'Processing', cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' },
+    [OrderStatus.SHIPPED]:    { label: 'Shipped',    cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
+    [OrderStatus.DELIVERED]:  { label: 'Delivered',  cls: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200' },
+    [OrderStatus.CANCELLED]:  { label: 'Cancelled',  cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' },
+    [OrderStatus.RETURNED]:   { label: 'Returned',   cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' },
+  };
+  const cfg = map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' };
+  return (
+    <span className={cn(
+      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap',
+      cfg.cls
+    )}>
+      <span className="w-1 h-1 rounded-full bg-current opacity-60" />
+      {cfg.label}
+    </span>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// SECTION LABEL
+// ─────────────────────────────────────────────────────────────
+const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
+  <div className="flex items-center gap-1.5">
+    <span className="text-stone-400">{icon}</span>
+    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">{children}</span>
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────
 // MAIN ORDER MANAGER
 // ─────────────────────────────────────────────────────────────
 const OrderManager = () => {
@@ -86,30 +121,21 @@ const OrderManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showMobileDetail, setShowMobileDetail] = useState(false);
 
-  // Dialogs
   const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean;
-    orderId: string;
-    newStatus: OrderStatus;
-    note: string;
+    open: boolean; orderId: string; newStatus: OrderStatus; note: string;
   }>({ open: false, orderId: '', newStatus: OrderStatus.PENDING, note: '' });
 
   const [invoiceDialog, setInvoiceDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Sort orders by date (newest first)
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [orders]);
 
-  // Auto-select latest
   useEffect(() => {
-    if (!selectedId && sortedOrders.length > 0) {
-      setSelectedId(sortedOrders[0].id);
-    }
+    if (!selectedId && sortedOrders.length > 0) setSelectedId(sortedOrders[0].id);
   }, [sortedOrders, selectedId]);
 
-  // Filtered + searched orders
   const filteredOrders = useMemo(() => {
     return sortedOrders.filter(o => {
       const matchStatus = filterStatus === 'All' || o.status === filterStatus;
@@ -126,17 +152,15 @@ const OrderManager = () => {
     return orders.find(o => o.id === selectedId) ?? sortedOrders[0] ?? null;
   }, [orders, selectedId, sortedOrders]);
 
-  // ── Handlers ──
-
   const openConfirmDialog = (orderId: string, newStatus: OrderStatus) => {
-    setConfirmDialog({ open: true, orderId, newStatus, note: '', });
+    setConfirmDialog({ open: true, orderId, newStatus, note: '' });
   };
 
   const confirmStatusUpdate = async () => {
-    const { orderId, newStatus, note } = confirmDialog;
+    const { orderId, newStatus } = confirmDialog;
     setIsUpdating(true);
     try {
-      if (updateOrderStatus.constructor.name === "AsyncFunction") {
+      if (updateOrderStatus.constructor.name === 'AsyncFunction') {
         await updateOrderStatus(orderId, newStatus);
       } else {
         updateOrderStatus(orderId, newStatus);
@@ -153,12 +177,7 @@ const OrderManager = () => {
     if (!selectedOrder) return;
     const html = generateInvoiceHTML(selectedOrder);
     const win = window.open('', '_blank', 'width=900,height=700');
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      setTimeout(() => win.print(), 500);
-    }
+    if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 500); }
   };
 
   const handleDownloadInvoice = () => {
@@ -167,13 +186,10 @@ const OrderManager = () => {
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `Invoice-${selectedOrder.id}.html`;
-    a.click();
+    a.href = url; a.download = `Invoice-${selectedOrder.id}.html`; a.click();
     URL.revokeObjectURL(url);
   };
 
-  // Calculate financials
   const calcFinancials = (order: Order) => {
     const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
     const tax = Math.round(subtotal * 0.18);
@@ -181,49 +197,53 @@ const OrderManager = () => {
     return { subtotal, tax, total };
   };
 
-  // Timeline dot style
-  const getTimelineDot = (status: OrderStatus, isLatest: boolean) => {
-    const cfg = STATUS_CONFIG[status];
-    if (isLatest) return `${cfg.dotClass} ring-4 ring-offset-1 ring-opacity-30 ring-${cfg.dotClass}`;
-    return 'bg-slate-200';
-  };
-
   // ── Empty State ──
   if (sortedOrders.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[500px] animate-in fade-in duration-700">
-        <div className="text-center p-16 bg-zinc-50 rounded-2xl border border-zinc-200 max-w-lg">
-          <div className="w-20 h-20 bg-white rounded-xl shadow-sm flex items-center justify-center mx-auto mb-6 border border-zinc-100">
-            <Package size={36} className="text-zinc-200" />
+      <div className="flex items-center justify-center min-h-[500px] bg-stone-50">
+        <div className="text-center p-16 bg-white border border-stone-200 rounded-2xl max-w-lg shadow-sm">
+          <div className="w-16 h-16 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <Package size={28} className="text-stone-300" />
           </div>
-          <h3 className="text-lg font-semibold text-zinc-900 mb-1">No Orders Yet</h3>
-          <p className="text-sm text-zinc-400">Orders will appear here once customers start placing them</p>
+          <h3 className="text-base font-semibold text-stone-800 mb-1 tracking-tight">No Orders Yet</h3>
+          <p className="text-sm text-stone-400">Orders will appear here once customers start placing them</p>
         </div>
       </div>
     );
   }
 
-  // ── Main Layout ──
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-[calc(100vh-12rem)] min-h-[700px] overflow-hidden rounded-lg bg-white border border-zinc-200 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <div
+        className="flex flex-col h-[calc(100vh-12rem)] min-h-[700px] overflow-hidden rounded-xl bg-white border border-stone-200 shadow-sm"
+        style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
+      >
 
-        {/* ─── HEADER BAR ─── */}
-        <div className="flex-shrink-0 bg-white border-b border-zinc-200 px-6 py-5">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <div className="w-1.5 h-5 bg-indigo-600 rounded-full" />
-                <h1 className="text-xl font-semibold text-zinc-900">Orders</h1>
+        {/* ─── HEADER ─── */}
+        <div className="flex-shrink-0 border-b border-stone-100 px-6 py-4 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-1 h-5 rounded-full bg-indigo-500" />
+                <h1 className="text-base font-bold text-stone-900 tracking-tight">Orders</h1>
               </div>
-              <p className="text-sm text-zinc-500">
-                {sortedOrders.length} orders · Live processing
-              </p>
+              <div className="hidden md:flex items-center gap-2.5 text-xs text-stone-400">
+                <span className="w-px h-3 bg-stone-200" />
+                <span className="tabular-nums">{sortedOrders.length} total</span>
+                {sortedOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length > 0 && (
+                  <>
+                    <span className="w-px h-3 bg-stone-200" />
+                    <span className="flex items-center gap-1 text-amber-600 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      {sortedOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length} need action
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge className="h-8 px-4 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
-                {sortedOrders.length} total
-              </Badge>
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live
             </div>
           </div>
         </div>
@@ -231,33 +251,33 @@ const OrderManager = () => {
         {/* ─── BODY ─── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
 
-          {/* ─── LEFT PANEL: Order List ─── */}
+          {/* ─── LEFT PANEL ─── */}
           <div className={cn(
-            'flex flex-col bg-white border-r border-slate-200 flex-shrink-0',
-            'w-full lg:w-[340px] xl:w-[380px]',
+            'flex flex-col bg-stone-50/60 border-r border-stone-100 flex-shrink-0',
+            'w-full lg:w-[320px] xl:w-[356px]',
             showMobileDetail ? 'hidden lg:flex' : 'flex'
           )}>
 
             {/* Search + Filter */}
-            <div className="px-4 py-4 border-b border-zinc-100 space-y-3 bg-zinc-50/30">
-              <div className="relative group">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 transition-colors" />
+            <div className="px-3 py-3 space-y-2 border-b border-stone-100 bg-white">
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                 <Input
-                  placeholder="ID, Customer, Email..."
+                  placeholder="Search by ID, name, email…"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9 text-sm bg-white border-zinc-200 focus-visible:ring-zinc-900 shadow-none transition-all"
+                  className="pl-8 h-8 text-xs bg-stone-50 border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 shadow-none rounded-lg"
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="h-9 text-xs font-medium flex-1 border-zinc-200 bg-white shadow-none">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className="h-8 text-xs flex-1 bg-stone-50 border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
+                    <SelectValue placeholder="All Statuses" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">All Orders</SelectItem>
+                  <SelectContent className="bg-white border-stone-200 text-stone-800 shadow-md">
+                    <SelectItem value="All" className="text-xs focus:bg-stone-50">All Orders</SelectItem>
                     {Object.values(OrderStatus).map(s => (
-                      <SelectItem key={s} value={s} className="text-xs font-medium">
+                      <SelectItem key={s} value={s} className="text-xs focus:bg-stone-50">
                         <div className="flex items-center gap-2">
                           <span className={cn('w-1.5 h-1.5 rounded-full', STATUS_CONFIG[s].dotClass)} />
                           {STATUS_CONFIG[s].label}
@@ -266,9 +286,9 @@ const OrderManager = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="px-2 py-1 bg-zinc-100 rounded text-[11px] font-medium text-zinc-500 tabular-nums shrink-0">
-                  {filteredOrders.length} Hits
-                </div>
+                <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-100 border border-stone-200 px-2 py-1 rounded-md shrink-0 tabular-nums">
+                  {filteredOrders.length}
+                </span>
               </div>
             </div>
 
@@ -276,57 +296,54 @@ const OrderManager = () => {
             <ScrollArea className="flex-1">
               {filteredOrders.length === 0 ? (
                 <div className="p-10 text-center">
-                  <AlertCircle size={32} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm text-slate-500">No orders match your filters.</p>
+                  <AlertCircle size={28} className="mx-auto text-stone-300 mb-2" />
+                  <p className="text-xs text-stone-400">No orders match your filters</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-stone-100">
                   {filteredOrders.map(order => {
                     const isSelected = selectedId === order.id;
+                    const needsAction = order.status === OrderStatus.PENDING || order.status === OrderStatus.PAID;
                     return (
                       <button
                         key={order.id}
-                        onClick={() => {
-                          setSelectedId(order.id);
-                          setShowMobileDetail(true);
-                        }}
+                        onClick={() => { setSelectedId(order.id); setShowMobileDetail(true); }}
                         className={cn(
-                          'w-full text-left px-4 py-3.5 transition-all group hover:bg-slate-50 relative',
-                          isSelected && 'bg-blue-50/70 border-l-[3px] !border-l-blue-600'
+                          'w-full text-left px-4 py-3.5 transition-all group relative',
+                          isSelected
+                            ? 'bg-white border-l-2 border-l-indigo-500'
+                            : 'hover:bg-white/70 border-l-2 border-l-transparent'
                         )}
                       >
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={cn(
-                              'text-xs font-mono font-bold tracking-tight truncate',
-                              isSelected ? 'text-blue-700' : 'text-slate-700'
-                            )}>
-                              {order.id}
-                            </span>
-                            <StatusBadge status={order.status} />
-                          </div>
-                          <ChevronRight
-                            size={14}
-                            className={cn(
-                              'flex-shrink-0 transition-opacity mt-0.5',
-                              isSelected ? 'text-blue-600 opacity-100' : 'text-slate-400 opacity-0 group-hover:opacity-100'
-                            )}
-                          />
+                        {needsAction && !isSelected && (
+                          <span className="absolute top-3.5 right-3.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        )}
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className={cn(
+                            'text-[10px] font-mono font-bold tracking-tight',
+                            isSelected ? 'text-indigo-600' : 'text-stone-400'
+                          )}>
+                            {order.id}
+                          </span>
+                          <StatusPill status={order.status} />
                         </div>
-                        <p className="text-sm font-semibold text-slate-800 truncate mb-0.5">{order.customerName}</p>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-slate-400 flex items-center gap-1">
-                            <Calendar size={11} />
+                        <p className={cn(
+                          'text-sm font-semibold truncate mb-1.5 tracking-tight',
+                          isSelected ? 'text-stone-900' : 'text-stone-700'
+                        )}>
+                          {order.customerName}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-stone-400 font-mono tabular-nums">
                             {new Date(order.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
-                          <span className="text-sm font-bold text-slate-900">₹{order.total.toLocaleString('en-IN')}</span>
+                          <span className={cn(
+                            'text-sm font-bold tabular-nums font-mono',
+                            isSelected ? 'text-stone-900' : 'text-stone-700'
+                          )}>
+                            ₹{order.total.toLocaleString('en-IN')}
+                          </span>
                         </div>
-                        {(order.status === OrderStatus.PENDING || order.status === OrderStatus.PAID) && (
-                          <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-amber-600">
-                            <AlertTriangle size={10} />
-                            Action required
-                          </div>
-                        )}
                       </button>
                     );
                   })}
@@ -335,44 +352,38 @@ const OrderManager = () => {
             </ScrollArea>
           </div>
 
-          {/* ─── RIGHT PANEL: Order Detail ─── */}
+          {/* ─── RIGHT PANEL ─── */}
           {selectedOrder && (
             <div className={cn(
-              'flex-1 overflow-y-auto bg-zinc-50/30 min-w-0',
+              'flex-1 overflow-y-auto bg-stone-50/40 min-w-0',
               !showMobileDetail && 'hidden lg:block'
             )}>
-              <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+              <div className="p-4 sm:p-5 max-w-5xl mx-auto space-y-4">
 
                 {/* Mobile back */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="lg:hidden mb-4 -ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5"
+                <button
+                  className="lg:hidden flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-semibold mb-1"
                   onClick={() => setShowMobileDetail(false)}
                 >
-                  <ArrowLeft size={15} /> Back to orders
-                </Button>
-
-                {/* Stats Bar — only on lg+ */}
-                <div className="hidden xl:block">
-                  <StatsBar orders={orders} />
-                </div>
+                  <ArrowLeft size={13} /> Back to orders
+                </button>
 
                 {/* ── ORDER HEADER CARD ── */}
-                <Card className="mb-4 border-slate-200 shadow-sm">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+                <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                  {/* Indigo top stripe */}
+                  <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
 
-                      {/* Left: ID & Status */}
+                  <div className="p-5 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-mono">
+                        <div className="flex flex-wrap items-center gap-2.5 mb-1">
+                          <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight font-mono">
                             {selectedOrder.id}
                           </h2>
-                          <StatusBadge status={selectedOrder.status} />
+                          <StatusPill status={selectedOrder.status} />
                         </div>
-                        <p className="text-sm text-slate-500">
-                          Placed {new Date(selectedOrder.date).toLocaleDateString('en-IN', {
+                        <p className="text-xs text-stone-400 font-mono tabular-nums">
+                          {new Date(selectedOrder.date).toLocaleDateString('en-IN', {
                             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                           })}
                           {' · '}
@@ -380,67 +391,51 @@ const OrderManager = () => {
                         </p>
                       </div>
 
-                      {/* Right: Action Buttons */}
+                      {/* Action Buttons */}
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* Primary Next-Status CTA */}
                         {NEXT_STATUS_BUTTON[selectedOrder.status] && (
-                          <Button
-                            size="sm"
-                            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                            onClick={() => openConfirmDialog(
-                              selectedOrder.id,
-                              STATUS_FLOW[selectedOrder.status][0]
-                            )}
+                          <button
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
+                            onClick={() => openConfirmDialog(selectedOrder.id, STATUS_FLOW[selectedOrder.status][0])}
                           >
                             {NEXT_STATUS_BUTTON[selectedOrder.status]!.icon}
                             {NEXT_STATUS_BUTTON[selectedOrder.status]!.label}
-                          </Button>
+                          </button>
                         )}
-
-                        {/* Cancel (if applicable) */}
                         {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.CANCELLED) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                          <button
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 text-xs font-semibold transition-colors"
                             onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.CANCELLED)}
                           >
-                            <XCircle size={14} /> Cancel
-                          </Button>
+                            <XCircle size={13} /> Cancel
+                          </button>
                         )}
-
-                        {/* Return (if applicable) */}
                         {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.RETURNED) &&
                           !STATUS_FLOW[selectedOrder.status].includes(OrderStatus.DELIVERED) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="gap-1.5 text-slate-600 hover:bg-slate-100"
+                            <button
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors"
                               onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.RETURNED)}
                             >
-                              <RotateCcw size={14} /> Return
-                            </Button>
+                              <RotateCcw size={13} /> Return
+                            </button>
                           )}
-
-                        {/* Invoice Dropdown */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="outline" className="gap-1.5 border-slate-200 bg-white">
-                              <FileText size={14} /> Invoice
-                              <ChevronDown size={12} />
-                            </Button>
+                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors">
+                              <FileText size={13} /> Invoice <ChevronDown size={11} />
+                            </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44 bg-white">
-                            <DropdownMenuLabel className="text-xs text-slate-500">Invoice Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setInvoiceDialog(true)} className="gap-2 cursor-pointer">
-                              <FileText size={13} /> Preview Invoice
+                          <DropdownMenuContent align="end" className="w-44 bg-white border-stone-200 shadow-md text-stone-700">
+                            <DropdownMenuLabel className="text-[10px] text-stone-400 uppercase tracking-widest">Invoice</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-stone-100" />
+                            <DropdownMenuItem onClick={() => setInvoiceDialog(true)} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
+                              <FileText size={12} /> Preview
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handlePrintInvoice} className="gap-2 cursor-pointer">
-                              <Printer size={13} /> Print Invoice
+                            <DropdownMenuItem onClick={handlePrintInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
+                              <Printer size={12} /> Print
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleDownloadInvoice} className="gap-2 cursor-pointer">
-                              <Download size={13} /> Download HTML
+                            <DropdownMenuItem onClick={handleDownloadInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
+                              <Download size={12} /> Download HTML
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -448,273 +443,270 @@ const OrderManager = () => {
                     </div>
 
                     {/* Customer Meta */}
-                    <Separator className="my-4" />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                      <MetaItem icon={<User size={14} />} label="Customer" value={selectedOrder.customerName} />
-                      <MetaItem icon={<Mail size={14} />} label="Email" value={selectedOrder.email} />
-                      <MetaItem
-                        icon={<CreditCard size={14} />}
-                        label="Payment"
-                        value={
-                          <span className="flex items-center gap-1.5">
-                            {selectedOrder.paymentMethod}
-                            <span className={cn('text-xs px-1.5 py-0.5 rounded font-semibold', {
-                              'bg-emerald-50 text-emerald-700': selectedOrder.paymentStatus === 'Success',
-                              'bg-amber-50 text-amber-700': selectedOrder.paymentStatus === 'Pending',
-                              'bg-red-50 text-red-600': selectedOrder.paymentStatus === 'Failed',
-                            })}>
-                              {selectedOrder.paymentStatus}
+                    <div className="mt-5 pt-5 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-5">
+                      {[
+                        { icon: <User size={12} />, label: 'Customer', value: selectedOrder.customerName },
+                        { icon: <Mail size={12} />, label: 'Email', value: selectedOrder.email },
+                        {
+                          icon: <CreditCard size={12} />, label: 'Payment',
+                          value: (
+                            <span className="flex items-center gap-1.5 flex-wrap">
+                              <span>{selectedOrder.paymentMethod}</span>
+                              <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide', {
+                                'bg-emerald-50 text-emerald-700': selectedOrder.paymentStatus === 'Success',
+                                'bg-amber-50 text-amber-700': selectedOrder.paymentStatus === 'Pending',
+                                'bg-rose-50 text-rose-600': selectedOrder.paymentStatus === 'Failed',
+                              })}>
+                                {selectedOrder.paymentStatus}
+                              </span>
                             </span>
-                          </span>
-                        }
-                      />
-                      <MetaItem icon={<Hash size={14} />} label="Items" value={`${selectedOrder.items.length} item${selectedOrder.items.length !== 1 ? 's' : ''}`} />
+                          )
+                        },
+                        {
+                          icon: <Hash size={12} />, label: 'Items',
+                          value: `${selectedOrder.items.length} item${selectedOrder.items.length !== 1 ? 's' : ''}`
+                        },
+                      ].map(({ icon, label, value }) => (
+                        <div key={label}>
+                          <div className="flex items-center gap-1 mb-1">
+                            <span className="text-stone-400">{icon}</span>
+                            <span className="text-[10px] uppercase tracking-widest font-bold text-stone-400">{label}</span>
+                          </div>
+                          <div className="text-xs font-semibold text-stone-800 truncate">{value as React.ReactNode}</div>
+                        </div>
+                      ))}
                     </div>
 
-                    {/* Transaction ID */}
                     {selectedOrder.paymentTransactionId && (
-                      <div className="mt-3 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
-                        <span className="text-xs text-slate-400 font-medium">TXN ID</span>
-                        <span className="font-mono text-xs text-slate-600">{selectedOrder.paymentTransactionId}</span>
+                      <div className="mt-4 flex items-center gap-2.5 px-3 py-2 bg-stone-50 border border-stone-100 rounded-lg">
+                        <span className="text-[10px] text-stone-400 font-mono uppercase tracking-wider font-bold">TXN</span>
+                        <span className="font-mono text-xs text-stone-600">{selectedOrder.paymentTransactionId}</span>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* ── MAIN CONTENT GRID ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-                  {/* ── ORDER ITEMS (spans 2 cols) ── */}
-                  <Card className="lg:col-span-2 border-slate-200 shadow-sm overflow-hidden">
-                    <CardHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/80">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                          <Package size={15} className="text-slate-500" />
-                          Order Items
-                        </CardTitle>
-                        <span className="text-xs text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded-md font-medium">
-                          {selectedOrder.items.length} item{selectedOrder.items.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      {selectedOrder.items.length > 0 ? (
-                        <>
-                          {/* Desktop table */}
-                          <div className="hidden sm:block overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead className="bg-white border-b border-slate-100">
-                                <tr>
-                                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">Product</th>
-                                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide">Qty</th>
-                                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide">Unit</th>
-                                  <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide">Total</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50">
-                                {selectedOrder.items.map(item => {
-                                  const inv = inventoryArray.find(i => i.variantId === item.variantId);
-                                  return (
-                                    <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                                      <td className="px-4 sm:px-6 py-3.5">
-                                        <div className="flex items-center gap-3">
-                                          <div className="h-11 w-11 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
-                                            <img
-                                              src={item.image}
-                                              alt={item.name}
-                                              className="h-full w-full object-contain"
-                                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
-                                            />
-                                          </div>
-                                          <div className="min-w-0">
-                                            <p className="font-semibold text-slate-800 text-sm leading-tight line-clamp-1">{item.name}</p>
-                                            <p className="text-xs text-slate-400 font-mono mt-0.5">{item.sku}</p>
-                                            {inv && inv.quantity <= inv.reorderLevel && (
-                                              <span className="text-[10px] text-amber-600 font-semibold flex items-center gap-0.5 mt-0.5">
-                                                <AlertTriangle size={9} /> Low stock: {inv.quantity} left
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-3.5 text-center">
-                                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold text-sm">
-                                          {item.quantity}
-                                        </span>
-                                      </td>
-                                      <td className="px-4 py-3.5 text-right text-slate-600 text-sm">
-                                        ₹{item.price.toLocaleString('en-IN')}
-                                      </td>
-                                      <td className="px-4 sm:px-6 py-3.5 text-right font-bold text-slate-900">
-                                        ₹{(item.price * item.quantity).toLocaleString('en-IN')}
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
+                  {/* ── ORDER ITEMS (2 cols) ── */}
+                  <div className="lg:col-span-2 rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                    <div className="px-5 py-3.5 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
+                      <SectionLabel icon={<Package size={12} />}>Order Items</SectionLabel>
+                      <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                        {selectedOrder.items.length}
+                      </span>
+                    </div>
 
-                          {/* Mobile cards */}
-                          <div className="sm:hidden divide-y divide-slate-100">
-                            {selectedOrder.items.map(item => (
-                              <div key={item.id} className="p-4">
-                                <div className="flex gap-3">
-                                  <div className="h-14 w-14 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0 overflow-hidden">
-                                    <img src={item.image} alt={item.name} className="h-full w-full object-contain"
-                                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }} />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-slate-800 text-sm">{item.name}</p>
-                                    <p className="text-xs text-slate-400 font-mono">{item.sku}</p>
-                                    <div className="flex items-center justify-between mt-2">
-                                      <span className="text-xs text-slate-500">Qty: <strong className="text-slate-800">{item.quantity}</strong></span>
-                                      <span className="font-bold text-slate-900 text-sm">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
-                                    </div>
-                                  </div>
+                    {selectedOrder.items.length > 0 ? (
+                      <>
+                        {/* Desktop table */}
+                        <div className="hidden sm:block overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-stone-100 bg-stone-50/30">
+                                <th className="px-5 py-3 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">Qty</th>
+                                <th className="px-4 py-3 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Unit</th>
+                                <th className="px-5 py-3 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-50">
+                              {selectedOrder.items.map(item => {
+                                const inv = inventoryArray.find(i => i.variantId === item.variantId);
+                                const isLow = inv && inv.quantity <= inv.reorderLevel;
+                                return (
+                                  <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
+                                    <td className="px-5 py-3.5">
+                                      <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
+                                          <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            className="h-full w-full object-contain"
+                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
+                                          />
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className="font-semibold text-stone-800 text-sm leading-tight line-clamp-1 tracking-tight">{item.name}</p>
+                                          <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                                          {isLow && (
+                                            <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 mt-0.5">
+                                              <AlertTriangle size={9} /> Low stock: {inv.quantity} left
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3.5 text-center">
+                                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-stone-100 text-stone-700 font-bold text-sm border border-stone-200">
+                                        {item.quantity}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3.5 text-right text-stone-500 text-sm font-mono tabular-nums">
+                                      ₹{item.price.toLocaleString('en-IN')}
+                                    </td>
+                                    <td className="px-5 py-3.5 text-right font-bold text-stone-900 font-mono tabular-nums">
+                                      ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile cards */}
+                        <div className="sm:hidden divide-y divide-stone-100">
+                          {selectedOrder.items.map(item => (
+                            <div key={item.id} className="p-4 flex gap-3">
+                              <div className="h-14 w-14 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
+                                <img src={item.image} alt={item.name} className="h-full w-full object-contain"
+                                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-stone-800 text-sm tracking-tight">{item.name}</p>
+                                <p className="text-[10px] text-stone-400 font-mono">{item.sku}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className="text-xs text-stone-400">Qty: <strong className="text-stone-700">{item.quantity}</strong></span>
+                                  <span className="font-bold text-stone-900 text-sm font-mono">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-
-                          {/* Financials Footer */}
-                          <div className="px-4 sm:px-6 py-4 bg-slate-50 border-t border-slate-100">
-                            {(() => {
-                              const { subtotal, tax, total } = calcFinancials(selectedOrder);
-                              return (
-                                <div className="ml-auto max-w-xs space-y-1.5">
-                                  {[
-                                    { label: 'Subtotal', value: `₹${subtotal.toLocaleString('en-IN')}`, className: 'text-slate-600' },
-                                    { label: 'Shipping', value: 'Free', className: 'text-emerald-600 font-semibold' },
-                                    { label: 'GST (18%)', value: `₹${tax.toLocaleString('en-IN')}`, className: 'text-slate-600' },
-                                  ].map(row => (
-                                    <div key={row.label} className="flex justify-between text-sm">
-                                      <span className="text-slate-400">{row.label}</span>
-                                      <span className={row.className}>{row.value}</span>
-                                    </div>
-                                  ))}
-                                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-1">
-                                    <span className="font-bold text-slate-900">Total</span>
-                                    <span className="text-lg font-extrabold text-slate-900">₹{total.toLocaleString('en-IN')}</span>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="p-10 text-center">
-                          <Package size={36} className="mx-auto text-slate-300 mb-2" />
-                          <p className="text-sm text-slate-400">No items in this order</p>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
+
+                        {/* Financials Footer */}
+                        <div className="px-5 py-4 border-t border-stone-100 bg-stone-50/50">
+                          {(() => {
+                            const { subtotal, tax, total } = calcFinancials(selectedOrder);
+                            return (
+                              <div className="ml-auto max-w-xs space-y-1.5">
+                                {[
+                                  { label: 'Subtotal', value: `₹${subtotal.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
+                                  { label: 'Shipping', value: 'Free', cls: 'text-emerald-600 font-semibold' },
+                                  { label: 'GST (18%)', value: `₹${tax.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
+                                ].map(row => (
+                                  <div key={row.label} className="flex justify-between text-xs font-mono tabular-nums">
+                                    <span className="text-stone-400">{row.label}</span>
+                                    <span className={row.cls}>{row.value}</span>
+                                  </div>
+                                ))}
+                                <div className="flex justify-between items-center pt-2.5 border-t border-stone-200 mt-1">
+                                  <span className="font-bold text-stone-700 text-sm">Total</span>
+                                  <span className="text-lg font-extrabold text-stone-900 font-mono tabular-nums">₹{total.toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-10 text-center">
+                        <Package size={28} className="mx-auto text-stone-300 mb-2" />
+                        <p className="text-xs text-stone-400">No items in this order</p>
+                      </div>
+                    )}
+                  </div>
 
                   {/* ── RIGHT COLUMN ── */}
                   <div className="flex flex-col gap-4">
 
                     {/* Shipping Address */}
-                    <Card className="border-slate-200 shadow-sm">
-                      <CardHeader className="px-4 py-3 pb-2 border-b border-slate-100">
-                        <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
-                          <MapPin size={13} /> Shipping Address
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-4 py-3">
+                    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
+                        <SectionLabel icon={<MapPin size={12} />}>Shipping</SectionLabel>
+                      </div>
+                      <div className="px-4 py-3.5">
                         {selectedOrder.shippingStreet ? (
-                          <div className="text-sm text-slate-600 leading-relaxed space-y-0.5">
-                            <p className="font-semibold text-slate-800">{selectedOrder.customerName}</p>
+                          <div className="text-xs text-stone-500 leading-relaxed space-y-0.5">
+                            <p className="font-bold text-stone-800 text-sm tracking-tight">{selectedOrder.customerName}</p>
                             <p>{selectedOrder.shippingStreet}</p>
                             <p>{selectedOrder.shippingCity}, {selectedOrder.shippingState}</p>
-                            <p className="font-mono text-xs text-slate-400">{selectedOrder.shippingZip} · {selectedOrder.shippingCountry}</p>
+                            <p className="font-mono text-[10px] text-stone-400 pt-0.5">{selectedOrder.shippingZip} · {selectedOrder.shippingCountry}</p>
                           </div>
                         ) : (
-                          <p className="text-sm text-slate-400 italic">No address provided</p>
+                          <p className="text-xs text-stone-400 italic">No address provided</p>
                         )}
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
-                    {/* Inventory Impact */}
-                    <Card className="border-slate-200 shadow-sm">
-                      <CardHeader className="px-4 py-3 pb-2 border-b border-slate-100">
-                        <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
-                          <Warehouse size={13} /> Inventory Snapshot
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-4 py-3">
-                        <div className="space-y-2">
-                          {selectedOrder.items.map(item => {
-                            const inv = inventoryArray.find(i => i.variantId === item.variantId);
-                            const available = inv?.quantity ?? 0;
-                            const reserved = inv?.reserved ?? 0;
-                            const isLow = available <= (inv?.reorderLevel ?? 5);
-                            return (
-                              <div key={item.id} className="flex items-center justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="text-xs font-semibold text-slate-700 truncate">{item.name}</p>
-                                  <p className="text-[10px] text-slate-400 font-mono">{item.sku}</p>
-                                </div>
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <span className={cn(
-                                        'text-xs font-bold px-1.5 py-0.5 rounded',
-                                        isLow ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
-                                      )}>
-                                        {available}
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="left" className="text-xs">
-                                      {available} available · {reserved} reserved
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  {isLow && <AlertTriangle size={11} className="text-amber-500" />}
-                                </div>
+                    {/* Inventory Snapshot */}
+                    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
+                        <SectionLabel icon={<Warehouse size={12} />}>Inventory</SectionLabel>
+                      </div>
+                      <div className="px-4 py-3.5 space-y-3">
+                        {selectedOrder.items.map(item => {
+                          const inv = inventoryArray.find(i => i.variantId === item.variantId);
+                          const available = inv?.quantity ?? 0;
+                          const reserved = inv?.reserved ?? 0;
+                          const isLow = available <= (inv?.reorderLevel ?? 5);
+                          return (
+                            <div key={item.id} className="flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-stone-700 truncate tracking-tight">{item.name}</p>
+                                <p className="text-[10px] text-stone-400 font-mono">{item.sku}</p>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <span className={cn(
+                                      'text-xs font-bold px-2 py-0.5 rounded-md font-mono tabular-nums',
+                                      isLow
+                                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                                        : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                                    )}>
+                                      {available}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="text-xs">
+                                    {available} available · {reserved} reserved
+                                  </TooltipContent>
+                                </Tooltip>
+                                {isLow && <AlertTriangle size={11} className="text-amber-500" />}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
                     {/* Order Timeline */}
-                    <Card className="border-slate-200 shadow-sm flex-1">
-                      <CardHeader className="px-4 py-3 pb-2 border-b border-slate-100">
-                        <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
-                          <Clock size={13} /> Order Timeline
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-4 py-4">
-                        <div className="relative pl-4 border-l-2 border-slate-200 space-y-5">
-                          {selectedOrder.logs.map((log, idx) => {
-                            const isLatest = idx === selectedOrder.logs.length - 1;
+                    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden flex-1">
+                      <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
+                        <SectionLabel icon={<Clock size={12} />}>Timeline</SectionLabel>
+                      </div>
+                      <div className="px-4 py-4">
+                        <div className="relative pl-4 border-l-2 border-stone-100 space-y-5">
+                          {(selectedOrder.logs || []).map((log, idx) => {
+                            const isLatest = idx === (selectedOrder.logs || []).length - 1;
                             const cfg = STATUS_CONFIG[log.status];
                             return (
                               <div key={idx} className="relative">
                                 <div className={cn(
-                                  'absolute -left-[21px] top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white',
-                                  isLatest ? cfg.dotClass : 'bg-slate-200'
+                                  'absolute -left-[21px] top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ring-2',
+                                  isLatest ? `${cfg.dotClass} ring-indigo-100` : 'bg-stone-200 ring-stone-50'
                                 )} />
                                 <div>
                                   <div className="flex items-center gap-1.5 mb-0.5">
                                     <span className={cn(
-                                      'text-xs font-bold',
-                                      isLatest ? 'text-slate-900' : 'text-slate-500'
+                                      'text-xs font-bold tracking-tight',
+                                      isLatest ? 'text-stone-900' : 'text-stone-500'
                                     )}>
                                       {cfg.label}
                                     </span>
                                     {isLatest && (
-                                      <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-semibold">Latest</span>
+                                      <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Now</span>
                                     )}
                                   </div>
-                                  <p className="text-[11px] text-slate-400 tabular-nums">
+                                  <p className="text-[10px] text-stone-400 font-mono tabular-nums">
                                     {new Date(log.timestamp).toLocaleString('en-IN', {
                                       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                                     })}
                                   </p>
                                   {log.note && (
-                                    <p className="text-xs text-slate-500 mt-1 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-100 leading-relaxed">
+                                    <p className="text-[11px] text-stone-500 mt-1 bg-stone-50 px-2.5 py-1.5 rounded-lg border border-stone-100 leading-relaxed">
                                       {log.note}
                                     </p>
                                   )}
@@ -723,8 +715,8 @@ const OrderManager = () => {
                             );
                           })}
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

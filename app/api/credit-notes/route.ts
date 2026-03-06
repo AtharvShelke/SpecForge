@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         if (!invoice) {
             return NextResponse.json({ error: "Original invoice not found" }, { status: 404 });
         }
-        if (invoice.status === "draft" || invoice.status === "cancelled") {
+        if (invoice.status === "DRAFT" || invoice.status === "CANCELLED") {
             return NextResponse.json(
                 { error: `Cannot issue credit note against a ${invoice.status} invoice` },
                 { status: 400 }

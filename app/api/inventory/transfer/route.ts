@@ -102,6 +102,18 @@ export async function POST(req: NextRequest) {
                 },
             });
 
+            // Recalculate global stock for safely turning out of stock
+            const allInv = await tx.warehouseInventory.aggregate({
+                where: { variantId: data.variantId },
+                _sum: { quantity: true }
+            });
+            if ((allInv._sum.quantity || 0) <= 0) {
+                await tx.productVariant.update({
+                    where: { id: data.variantId },
+                    data: { status: 'OUT_OF_STOCK' }
+                });
+            }
+
             return { updatedSource, updatedTarget };
         });
 

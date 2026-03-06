@@ -5,12 +5,18 @@ import { useShop } from '@/context/ShopContext';
 import { useRouter } from 'next/navigation';
 import { processCheckout } from '@/app/actions/checkout';
 import { calculateOrderFinancials } from '@/lib/gst';
-import { CreditCard, ShoppingBag, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { CreditCard, ShoppingBag, ArrowLeft, CheckCircle2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CheckoutPage() {
     const { cart, cartTotal, setCartOpen, clearCart } = useShop();
+    const [isAdmin, setIsAdmin] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        const query = new URLSearchParams(window.location.search);
+        setIsAdmin(query.get('admin') === 'true');
+    }, []);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -79,6 +85,7 @@ export default function CheckoutPage() {
         try {
             const res = await processCheckout({
                 ...formData,
+                isPosOverride: isAdmin, // If an admin is doing it, mark for POS flow
                 items: cart.map(item => ({
                     productId: item.id,
                     variantId: item.selectedVariant?.id || '',
@@ -308,9 +315,14 @@ export default function CheckoutPage() {
                                     type="submit"
                                     form="checkout-form"
                                     disabled={isSubmitting}
-                                    className="w-full flex items-center justify-center gap-2 py-4 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-wait transition-all"
+                                    className={`w-full flex items-center justify-center gap-2 py-4 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-75 disabled:cursor-wait transition-all ${isAdmin ? 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500' : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'}`}
                                 >
-                                    {isSubmitting ? 'Processing...' : (
+                                    {isSubmitting ? 'Processing...' : isAdmin ? (
+                                        <>
+                                            <ShieldAlert size={20} />
+                                            Admin Manual Reserve (POS)
+                                        </>
+                                    ) : (
                                         <>
                                             <CreditCard size={20} />
                                             Pay ₹{total.toLocaleString('en-IN')} (Mock)
@@ -318,7 +330,7 @@ export default function CheckoutPage() {
                                     )}
                                 </button>
                                 <p className="mt-4 text-xs text-center text-gray-500">
-                                    By clicking pay, your order will be generated and confirmation will be sent to WhatsApp and Email.
+                                    {isAdmin ? "This will bypass payment gateways and directly reserve inventory." : "By clicking pay, your order will be generated and confirmation will be sent to WhatsApp and Email."}
                                 </p>
                             </div>
                         </div>

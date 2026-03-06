@@ -51,6 +51,8 @@ import {
 const CategoryManager = () => {
     const {
         categories,
+        refreshCategories,
+        refreshFilterConfigs: refreshShopFilterConfigs,
     } = useShop();
     const {
         updateCategories,
@@ -83,6 +85,14 @@ const CategoryManager = () => {
         dependency: undefined,
     });
     const [showFilterModal, setShowFilterModal] = useState(false);
+
+    // --- DELETE CONFIRMATION STATE ---
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        type: 'filter' | 'node';
+        filterIdx?: number;
+        nodePath?: string;
+        label: string;
+    } | null>(null);
 
     // --- HIERARCHY HELPERS ---
     const toggleExpand = (path: string) => {
@@ -128,15 +138,17 @@ const CategoryManager = () => {
             Object.assign(current, nodeForm);
         }
 
-        updateCategories(newTree);
+        updateCategories(newTree).then(() => refreshCategories());
         setEditingNodePath(null);
         setIsAddingRoot(false);
         setNodeForm({ label: '', category: undefined, brand: '', query: '' });
     };
 
-    const deleteNode = (pathStr: string) => {
-        if (!window.confirm('Delete this category and all subcategories?')) return;
+    const deleteNode = (pathStr: string, nodeLabel: string) => {
+        setDeleteConfirm({ type: 'node', nodePath: pathStr, label: nodeLabel });
+    };
 
+    const confirmDeleteNode = (pathStr: string) => {
         const newTree = JSON.parse(JSON.stringify(categories));
         const path = pathStr.split('-').map(Number);
 
@@ -149,7 +161,7 @@ const CategoryManager = () => {
             }
             parent.children!.splice(path[path.length - 1], 1);
         }
-        updateCategories(newTree);
+        updateCategories(newTree).then(() => refreshCategories());
     };
 
     const activeFilters = useMemo(() => {
@@ -183,10 +195,24 @@ const CategoryManager = () => {
     };
 
     const handleDeleteFilter = (idx: number) => {
-        if (!window.confirm('Delete this filter?')) return;
+        const filter = activeFilters[idx];
+        setDeleteConfirm({ type: 'filter', filterIdx: idx, label: filter?.label || 'this filter' });
+    };
+
+    const confirmDeleteFilter = (idx: number) => {
         const newFilters = [...activeFilters];
         newFilters.splice(idx, 1);
-        updateFilterConfig(selectedCatForFilters, newFilters);
+        updateFilterConfig(selectedCatForFilters, newFilters).then(() => refreshShopFilterConfigs());
+    };
+
+    const handleConfirmDelete = () => {
+        if (!deleteConfirm) return;
+        if (deleteConfirm.type === 'filter' && deleteConfirm.filterIdx !== undefined) {
+            confirmDeleteFilter(deleteConfirm.filterIdx);
+        } else if (deleteConfirm.type === 'node' && deleteConfirm.nodePath) {
+            confirmDeleteNode(deleteConfirm.nodePath);
+        }
+        setDeleteConfirm(null);
     };
 
     const renderTree = (
@@ -262,7 +288,7 @@ const CategoryManager = () => {
                             <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => deleteNode(currentPath)}
+                                onClick={() => deleteNode(currentPath, node.label)}
                                 className="h-8 w-8 p-0 text-zinc-400 hover:text-red-500 hover:bg-red-50"
                             >
                                 <Trash size={14} />
@@ -640,6 +666,37 @@ const CategoryManager = () => {
                         </Button>
                         <Button onClick={handleSaveFilter} className="h-9 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-md">
                             Save Filter
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Modal */}
+            <Dialog open={deleteConfirm !== null} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
+                <DialogContent className="sm:max-w-md bg-white border-zinc-200">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold text-zinc-900">Confirm Delete</DialogTitle>
+                        <DialogDescription className="text-sm text-zinc-500">
+                            {deleteConfirm?.type === 'node'
+                                ? <>Are you sure you want to delete <span className="font-medium text-zinc-700">{deleteConfirm?.label}</span> and all its subcategories? This action cannot be undone.</>
+                                : <>Are you sure you want to delete the filter <span className="font-medium text-zinc-700">{deleteConfirm?.label}</span>? This action cannot be undone.</>
+                            }
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-end gap-2 pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteConfirm(null)}
+                            className="h-9 text-sm font-medium border-zinc-200 rounded-md"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleConfirmDelete}
+                            className="h-9 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-md"
+                        >
+                            <Trash size={14} className="mr-1.5" />
+                            Delete
                         </Button>
                     </DialogFooter>
                 </DialogContent>

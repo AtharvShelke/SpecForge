@@ -78,10 +78,26 @@ export async function GET(req: NextRequest) {
         const [orders, total] = await Promise.all([
             prisma.order.findMany({
                 where,
-                include: {
-                    items: true,
-                    logs: { orderBy: { timestamp: "asc" } },
-                    payments: { orderBy: { createdAt: "desc" } },
+                select: {
+                    id: true,
+                    channel: true,
+                    customerName: true,
+                    email: true,
+                    phone: true,
+                    date: true,
+                    subtotal: true,
+                    gstAmount: true,
+                    taxAmount: true,
+                    discountAmount: true,
+                    total: true,
+                    status: true,
+                    customerId: true,
+                    paymentMethod: true,
+                    paymentStatus: true,
+                    createdAt: true,
+                    items: {
+                        select: { id: true, name: true, category: true, price: true, quantity: true, image: true, sku: true },
+                    },
                 },
                 orderBy: { date: "desc" },
                 skip: (page - 1) * limit,

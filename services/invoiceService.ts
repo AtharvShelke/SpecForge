@@ -132,7 +132,7 @@ export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
             invoiceNumber,
             orderId,
             type: 'STANDARD',
-            status: 'paid',
+            status: 'PAID',
             customerId,
             currency: 'INR',
             subtotal: taxResult.subtotal,
@@ -164,7 +164,7 @@ export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
 // ─────────────────────────────────────────────────
 
 /** Statuses that indicate an invoice is finalized and cannot be modified */
-const IMMUTABLE_STATUSES = ['paid', 'overdue', 'cancelled', 'refunded', 'voided'];
+const IMMUTABLE_STATUSES = ['PAID', 'OVERDUE', 'CANCELLED', 'REFUNDED', 'VOIDED'];
 
 /**
  * Check if an invoice can be modified.
@@ -178,13 +178,13 @@ export function isInvoiceImmutable(status: string): boolean {
  * Valid status transitions for invoices.
  */
 const INVOICE_TRANSITIONS: Record<string, string[]> = {
-    draft: ['pending', 'cancelled'],
-    pending: ['paid', 'overdue', 'cancelled'],
-    overdue: ['paid', 'cancelled'],
-    paid: ['voided'],
-    cancelled: [],
-    refunded: [],
-    voided: [],
+    DRAFT: ['PENDING', 'CANCELLED'],
+    PENDING: ['PAID', 'OVERDUE', 'CANCELLED'],
+    OVERDUE: ['PAID', 'CANCELLED'],
+    PAID: ['VOIDED'],
+    CANCELLED: [],
+    REFUNDED: [],
+    VOIDED: [],
 };
 
 export function isValidInvoiceTransition(from: string, to: string): boolean {
@@ -256,7 +256,7 @@ export async function createCreditNote(tx: PrismaTx, input: CreditNoteInput) {
         await tx.invoice.update({
             where: { id: input.originalInvoiceId },
             data: {
-                status: 'voided',
+                status: 'VOIDED',
                 voidedAt: new Date(),
             },
         });

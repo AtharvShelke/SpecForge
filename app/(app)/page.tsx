@@ -10,6 +10,7 @@ import { Category } from '@/types';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Section } from '@/components/layout/Section';
 import { Container } from '@/components/layout/Container';
+import { RecentActivity } from '@/components/storefront/RecentActivity';
 
 const Home: React.FC = () => {
   const { products, cmsContent } = useShop();
@@ -36,10 +37,10 @@ const Home: React.FC = () => {
 
   const { hero, categories, featuredProducts, trustIndicators, finalCTA } = sections;
 
-  // Get featured products dynamically
-  const featuredGPUs = products.filter(p => p.category === Category.GPU).slice(0, 2);
-  const featuredCPUs = products.filter(p => p.category === Category.PROCESSOR).slice(0, 2);
-  const selectedProducts = [...featuredGPUs, ...featuredCPUs];
+  // Get featured products dynamically from CMS
+  const selectedProducts = (featuredProducts?.productIds || [])
+    .map((id: string) => products.find(p => p.id === id))
+    .filter(Boolean) as typeof products;
 
   // Helper to get icon component from string name
   const getIcon = (iconName: string) => {
@@ -49,6 +50,7 @@ const Home: React.FC = () => {
 
   return (
     <PageLayout bgClass="bg-white">
+      <RecentActivity />
       {/* HERO SECTION */}
       <section className="relative flex items-center overflow-hidden bg-white py-8 lg:py-10">
         {/* Subtle noise texture overlay */}

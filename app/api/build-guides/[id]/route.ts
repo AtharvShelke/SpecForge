@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// ── GET /api/builds/[id] ────────────────────────────────
+// ── GET /api/build-guides/[id] ────────────────────────────────
 export async function GET(
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { id } = await params;
-        const build = await prisma.savedBuild.findUnique({
+        const build = await prisma.buildGuide.findUnique({
             where: { id },
             include: {
                 items: {
@@ -30,19 +30,19 @@ export async function GET(
     }
 }
 
-// ── DELETE /api/builds/[id] ─────────────────────────────
+// ── DELETE /api/build-guides/[id] ─────────────────────────────
 export async function DELETE(
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { id } = await params;
-        const existing = await prisma.savedBuild.findUnique({ where: { id } });
+        const existing = await prisma.buildGuide.findUnique({ where: { id } });
         if (!existing) {
             return NextResponse.json({ error: "Build not found" }, { status: 404 });
         }
 
-        await prisma.savedBuild.delete({ where: { id } });
+        await prisma.buildGuide.delete({ where: { id } });
         return NextResponse.json({ message: "Build deleted" });
     } catch (error) {
         console.error("DELETE /api/builds/[id] error:", error);

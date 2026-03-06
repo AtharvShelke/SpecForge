@@ -38,7 +38,25 @@ export async function GET(req: NextRequest) {
 
         const configs = await prisma.categoryFilterConfig.findMany({
             where,
-            include: { filters: { orderBy: { sortOrder: "asc" } } },
+            select: {
+                id: true,
+                category: true,
+                filters: {
+                    select: {
+                        id: true,
+                        key: true,
+                        label: true,
+                        type: true,
+                        options: true,
+                        min: true,
+                        max: true,
+                        dependencyKey: true,
+                        dependencyValue: true,
+                        sortOrder: true,
+                    },
+                    orderBy: { sortOrder: "asc" },
+                },
+            },
         });
 
         return NextResponse.json(configs);
