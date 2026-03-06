@@ -17,6 +17,8 @@ import FeaturedBuildsSection from '@/components/storefront/FeaturedBuildsSection
 import CustomBuilderSection from '@/components/storefront/CustomBuilderSection'
 import TrustSection from '@/components/storefront/TrustSection'
 import CtaBanner from '@/components/storefront/CtaBanner'
+import StorefrontNavbar from '@/components/storefront/StorefrontNavbar'
+import StorefrontFooter from '@/components/storefront/StorefrontFooter'
 
 export default function StorefrontPage() {
   const { products, categories, brands, addToCart, getProductRating, isLoading } = useShop()
@@ -74,6 +76,8 @@ export default function StorefrontPage() {
         <link rel="canonical" href="/" />
       </Head>
 
+      <StorefrontNavbar />
+
       <PageLayout bgClass="bg-zinc-50">
 
         {/* 1. Immersive Hero with search + quick categories */}
@@ -109,6 +113,8 @@ export default function StorefrontPage() {
 
         {/* 9. Final CTA */}
         <CtaBanner />
+
+        <StorefrontFooter />
 
       </PageLayout>
     </>

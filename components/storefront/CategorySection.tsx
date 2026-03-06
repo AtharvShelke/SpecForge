@@ -11,7 +11,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
     PROCESSOR: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=1924&auto=format&fit=crop',
     GPU: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?q=80&w=2070&auto=format&fit=crop',
     MOTHERBOARD: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop',
-    RAM: 'https://images.unsplash.com/photo-1562976540-1502f7554b06?q=80&w=2070&auto=format&fit=crop',
+    RAM: 'https://imgs.search.brave.com/j2XqNWJP024qK2Hp_lZqk49_WbqMLUBtimW_FS59yj8/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93d3cu/cG5nYWxsLmNvbS93/cC1jb250ZW50L3Vw/bG9hZHMvNS9SR0It/UmFtLVBORy1JbWFn/ZS5wbmc',
     STORAGE: 'https://images.unsplash.com/photo-1531492746076-161ca9bcad58?q=80&w=1974&auto=format&fit=crop',
     CABINET: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?q=80&w=2070&auto=format&fit=crop',
     PSU: 'https://images.unsplash.com/photo-1517055745147-91a5efd24d9c?q=80&w=2070&auto=format&fit=crop',

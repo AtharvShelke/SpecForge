@@ -179,9 +179,9 @@ export default function SharedBuildPage() {
                                         {item.quantity > 1 && <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md text-xs font-medium ml-2">Qty {item.quantity}</span>}
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {(item as any).variant?.product && Object.entries((item as any).variant.product.specs).slice(0, 4).map(([k, v]) => (
-                                            <span key={k} className="text-[11px] font-medium bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md">
-                                                {k}: {typeof v === 'object' ? (v as any).value : v}
+                                        {(item as any).variant?.product?.specs && Array.isArray((item as any).variant.product.specs) && (item as any).variant.product.specs.slice(0, 4).map((spec: any) => (
+                                            <span key={spec.key || spec.id} className="text-[11px] font-medium bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md">
+                                                {spec.key}: {spec.value}
                                             </span>
                                         ))}
                                     </div>

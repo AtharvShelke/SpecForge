@@ -26,6 +26,10 @@ import { Category, CompatibilityLevel, BuildGuide, BuildGuideItem, Product, Cart
 import { useShop } from '@/context/ShopContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { motion } from 'framer-motion';
 
 // -------------------------------------------------------------------
 // Category Icon Map
@@ -65,19 +69,19 @@ const CompatChip: React.FC<{ build: BuildGuide }> = ({ build }) => {
 
   if (report.status === CompatibilityLevel.INCOMPATIBLE)
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded-full">
-        <AlertOctagon size={10} /> Incompatible
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase bg-red-500 text-white px-2 py-1 rounded-full shadow-lg">
+        <AlertOctagon size={12} /> Incompatible
       </span>
     );
   if (report.status === CompatibilityLevel.WARNING)
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-0.5 rounded-full">
-        <AlertTriangle size={10} /> Check Issues
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase bg-amber-400 text-white px-2 py-1 rounded-full shadow-lg">
+        <AlertTriangle size={12} /> Check Issues
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full">
-      <CheckCircle2 size={10} /> Compatible
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase bg-zinc-950 text-white px-3 py-1 rounded-full shadow-lg">
+      <CheckCircle2 size={12} /> Compatible
     </span>
   );
 };
@@ -101,8 +105,21 @@ const BuildModal: React.FC<{
   const report = useMemo(() => validateBuild(cartItems), [cartItems]);
   const [copied, setCopied] = useState(false);
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(buildShareUrl(build));
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    await copyToClipboard(buildShareUrl(build));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -120,56 +137,55 @@ const BuildModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col shadow-2xl">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ duration: 0.3 }}
+        className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] flex flex-col shadow-2xl"
+      >
         {/* Modal Header */}
         <div className="p-6 border-b border-zinc-100 flex items-start justify-between gap-4 flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-zinc-900">{build.title}</h2>
-            <p className="text-sm text-zinc-400 mt-0.5">
+            <h2 className="text-2xl font-bold text-zinc-950 heading-font">{build.title}</h2>
+            <p className="text-sm font-medium text-zinc-500 mt-1">
               {new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg hover:bg-zinc-100 transition-all">
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-zinc-100 text-zinc-500 hover:text-zinc-900 rounded-full transition-all">
             <X size={20} />
           </button>
         </div>
 
         {/* Compat Banner */}
-        <div className={`mx-6 mt-4 flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium ${compatCfg.bg}`}>
-          <CompatIcon size={15} />
+        <div className={`mx-6 mt-4 flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-2xl border text-sm font-bold ${compatCfg.bg}`}>
+          <CompatIcon size={18} />
           {compatCfg.label}
           {report.issues.length > 0 && (
-            <span className="ml-1 opacity-70 font-normal">— {report.issues[0].message}</span>
+            <span className="ml-1 opacity-80 font-semibold truncate">— {report.issues[0].message}</span>
           )}
         </div>
 
         {/* Component List */}
-        <div className="overflow-y-auto flex-1 p-6 space-y-3">
+        <div className="overflow-y-auto flex-1 p-6 space-y-3 scrollbar-thin scrollbar-thumb-zinc-200">
           {build.items.map((item) => (
-            <div key={item.id} className="flex items-center gap-4 border border-zinc-100 rounded-xl p-3.5 hover:bg-zinc-50 transition-colors">
-              <div className="w-14 h-14 bg-zinc-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                <img src={item.variant?.product?.media?.[0]?.url || '/placeholder.png'} alt={item.variant?.product?.name} className="w-full h-full object-contain p-1.5" />
+            <div key={item.id} className="flex items-center gap-4 border border-zinc-100 rounded-2xl p-4 hover:shadow-md hover:border-zinc-200 transition-all bg-white group">
+              <div className="w-16 h-16 bg-zinc-50 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img src={item.variant?.product?.media?.[0]?.url || '/placeholder.png'} alt={item.variant?.product?.name} className="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-zinc-900 text-sm truncate">{item.variant?.product?.name}</p>
-                <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-0.5">
-                  <span className="text-zinc-300">{item.variant?.product ? CATEGORY_ICON[item.variant.product.category] : null}</span>
+                <p className="font-bold text-zinc-950 text-sm truncate group-hover:text-indigo-600 transition-colors">{item.variant?.product?.name}</p>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 mt-1">
+                  <span className="text-zinc-400">{item.variant?.product ? CATEGORY_ICON[item.variant.product.category as Category] : null}</span>
                   {item.variant?.product?.category} · Qty {item.quantity}
-                </div>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {item.variant?.product && Object.entries(item.variant.product.specs).slice(0, 3).map(([k, v]) => (
-                    <span key={k} className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded-full">
-                      {k}: {typeof v === 'object' ? (v as any).value : v}
-                    </span>
-                  ))}
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-bold text-zinc-900 text-sm">₹{item.variant?.price?.toLocaleString('en-IN')}</p>
+                <p className="font-black text-zinc-950 text-base">₹{item.variant?.price?.toLocaleString('en-IN')}</p>
                 {item.quantity > 1 && (
-                  <p className="text-[10px] text-zinc-400">×{item.quantity}</p>
+                  <p className="text-xs font-bold text-zinc-400 mt-0.5">×{item.quantity}</p>
                 )}
               </div>
             </div>
@@ -177,26 +193,26 @@ const BuildModal: React.FC<{
         </div>
 
         {/* Modal Footer */}
-        <div className="p-6 border-t border-zinc-100 flex gap-3 flex-shrink-0">
+        <div className="p-6 border-t border-zinc-100 flex gap-3 flex-shrink-0 bg-zinc-50 rounded-b-3xl">
           <button
             onClick={onLoad}
-            className="flex-1 flex items-center justify-center gap-2 h-11 bg-blue-600 hover:bg-blue-700 
-              text-white font-semibold rounded-xl text-sm transition-all"
+            className="flex-1 flex items-center justify-center gap-2 h-12 bg-indigo-600 hover:bg-indigo-500 
+              text-white font-bold rounded-2xl shadow-xl shadow-indigo-600/20 text-sm transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
-            <Upload size={15} /> Load into Cart
+            <Upload size={18} /> Load into Cart
           </button>
           <button
             onClick={handleCopyLink}
-            className={`flex items-center justify-center gap-2 h-11 px-5 font-semibold rounded-xl text-sm transition-all border
+            className={`flex items-center justify-center gap-2 h-12 px-6 font-bold rounded-2xl text-sm transition-all border shadow-sm
               ${copied
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                : 'bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100'}`}
+                : 'bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-50'}`}
           >
-            {copied ? <CheckCircle2 size={15} /> : <Share2 size={15} />}
+            {copied ? <CheckCircle2 size={18} /> : <Share2 size={18} />}
             {copied ? 'Copied!' : 'Share'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -212,153 +228,155 @@ function BuildsContent() {
   }, [refreshBuildGuides]);
   const [activeBuild, setActiveBuild] = useState<BuildGuide | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  };
 
   const handleLoad = (buildId: string) => {
     loadBuild(buildId);
     setActiveBuild(null);
   };
 
-  const handleCopyDirect = (e: React.MouseEvent, build: BuildGuide) => {
+  const handleCopyDirect = async (e: React.MouseEvent, build: BuildGuide) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(buildShareUrl(build));
+    await copyToClipboard(buildShareUrl(build));
     setCopiedId(build.id);
+    toast({ title: 'Link copied!', description: 'Anyone with this link can view this build.' });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        h1,h2,h3,h4 { font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.025em; }
-        .build-card { transition: box-shadow 0.2s ease, transform 0.2s ease; }
-        .build-card:hover { box-shadow: 0 12px 32px -8px rgba(0,0,0,0.1); transform: translateY(-2px); }
-      `}</style>
-
+    <PageLayout bgClass="bg-zinc-50">
       {/* Page Header */}
-      <div className="bg-white border-b border-zinc-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
-                <Save size={12} /> Your Saved Builds
-              </div>
-              <h1 className="text-3xl font-bold text-zinc-900">Saved Builds</h1>
-              <p className="text-zinc-500 text-sm mt-1">
-                {buildGuides.length} build{buildGuides.length !== 1 ? 's' : ''} saved — click any card to view details or share.
-              </p>
+      <PageLayout.Header>
+        <PageTitle
+          title="Saved Builds"
+          subtitle={`${buildGuides.length} build${buildGuides.length !== 1 ? 's' : ''} saved — click any card to view details or share.`}
+          badge={
+            <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">
+              <Save size={14} /> Your Saved Builds
             </div>
+          }
+          actions={
             <Link
               href="/products?mode=build"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 
-                text-white text-sm font-semibold rounded-xl transition-all self-start sm:self-auto"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-950 hover:bg-indigo-600 
+                text-white text-sm font-bold uppercase tracking-wide rounded-full transition-all shadow-xl hover:shadow-indigo-600/20 hover:-translate-y-0.5 active:translate-y-0"
             >
-              <Plus size={15} /> New Build
+              <Plus size={18} /> New Build
             </Link>
-          </div>
-        </div>
-      </div>
+          }
+        />
+      </PageLayout.Header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <PageLayout.Content className="flex-1 overflow-hidden" padding="lg">
         {buildGuides.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-2xl border border-zinc-200">
-            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Box className="text-zinc-400" size={28} />
+          <div className="max-w-2xl mx-auto mt-12 text-center bg-white rounded-3xl border border-zinc-200 p-16 shadow-xl shadow-zinc-200/40">
+            <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Box className="text-zinc-300" size={36} />
             </div>
-            <h3 className="text-lg font-semibold text-zinc-800 mb-2">No saved builds yet</h3>
-            <p className="text-zinc-500 text-sm mb-6">
-              Use Build Mode to configure your perfect PC, then save it here.
+            <h3 className="text-2xl font-bold text-zinc-950 mb-3 heading-font">No saved builds yet</h3>
+            <p className="text-zinc-500 text-base font-medium mb-8">
+              Use Build Mode to configure your perfect PC with real-time compatibility checking.
             </p>
             <Link
               href="/products?mode=build"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-bold uppercase tracking-wide transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-600/20"
             >
-              Start Building <ArrowRight size={15} />
+              Start Building <ArrowRight size={18} />
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {buildGuides.map((build: BuildGuide) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {buildGuides.map((build: BuildGuide, i: number) => {
               const coverImg = getCoverImage(build);
               const isCopied = copiedId === build.id;
 
               return (
-                <div
+                <motion.div
                   key={build.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.4 }}
                   onClick={() => setActiveBuild(build)}
-                  className="build-card bg-white border border-zinc-200 rounded-2xl overflow-hidden cursor-pointer"
+                  className="group relative flex flex-col bg-white rounded-3xl overflow-hidden hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 border border-zinc-100 cursor-pointer"
                 >
-                  {/* Cover Image */}
-                  <div className="h-44 bg-zinc-50 flex items-center justify-center relative overflow-hidden border-b border-zinc-100">
+                  {/* Compat badge overlay */}
+                  <div className="absolute top-4 left-4 z-20">
+                    <CompatChip build={build} />
+                  </div>
+
+                  {/* Cover Image Container */}
+                  <div className="relative bg-zinc-50 aspect-video w-full overflow-hidden flex items-center justify-center p-8 border-b border-zinc-100">
                     {coverImg ? (
                       <img
                         src={coverImg}
                         alt={build.title}
-                        className="w-full h-full object-contain p-6"
+                        className="w-full h-full object-contain filter drop-shadow-xl group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                       />
                     ) : (
-                      <Box className="h-12 w-12 text-zinc-300" />
+                      <Box className="h-16 w-16 text-zinc-300 group-hover:scale-110 transition-transform duration-700" />
                     )}
-                    {/* Compat badge overlay */}
-                    <div className="absolute top-3 left-3">
-                      <CompatChip build={build} />
+                  </div>
+
+                  {/* Content Area */}
+                  <div className="p-6 flex flex-col flex-1">
+                    <h3 className="text-lg font-bold text-zinc-950 truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{build.title}</h3>
+                    <p className="text-xs font-semibold text-zinc-400 mt-1 uppercase tracking-widest">{new Date(build.createdAt).toLocaleDateString()} · {build.items.length} parts</p>
+
+                    {/* Items Preview */}
+                    <div className="mt-6 mb-8 space-y-2.5">
+                      {build.items.slice(0, 3).map((item: BuildGuideItem) => (
+                        <div key={item.id} className="flex items-center gap-3 text-sm font-medium text-zinc-600">
+                          <span className="text-zinc-400 flex-shrink-0 bg-zinc-50 p-1.5 rounded-lg">{item.variant?.product ? CATEGORY_ICON[item.variant.product.category as Category] : null}</span>
+                          <span className="truncate flex-1">{item.variant?.product?.name}</span>
+                        </div>
+                      ))}
+                      {build.items.length > 3 && (
+                        <p className="text-xs font-bold text-zinc-400 pl-10 pt-1">+{build.items.length - 3} more</p>
+                      )}
                     </div>
-                  </div>
 
-                  {/* Card Header */}
-                  <div className="px-5 pt-4 pb-3">
-                    <h3 className="text-base font-bold text-zinc-900 truncate">{build.title}</h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">{new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components</p>
-                  </div>
-
-                  {/* Items Preview */}
-                  <div className="px-5 pb-4 space-y-1.5">
-                    {build.items.slice(0, 4).map((item: BuildGuideItem) => (
-                      <div key={item.id} className="flex items-center gap-2 text-xs text-zinc-600">
-                        <span className="text-zinc-300 flex-shrink-0">{item.variant?.product ? CATEGORY_ICON[item.variant.product.category as Category] : null}</span>
-                        <span className="truncate flex-1">{item.variant?.product?.name}</span>
-                        {item.quantity > 1 && <span className="text-zinc-400 flex-shrink-0">×{item.quantity}</span>}
+                    {/* Card Footer */}
+                    <div className="mt-auto border-t border-zinc-100 pt-5 flex items-center justify-end">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => handleCopyDirect(e, build)}
+                          title="Copy shareable link"
+                          className={`h-10 px-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest rounded-xl transition-all
+                            ${isCopied
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-zinc-50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 border border-zinc-200'}`}
+                        >
+                          {isCopied ? <CheckCircle2 size={16} /> : <Link2 size={16} />}
+                          {isCopied ? 'Copied' : 'Share'}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleLoad(build.id); }}
+                          className="h-10 px-5 flex items-center gap-2 bg-zinc-950 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-colors"
+                        >
+                          <Upload size={16} /> Load
+                        </button>
                       </div>
-                    ))}
-                    {build.items.length > 4 && (
-                      <p className="text-[11px] text-zinc-400 pl-5">+{build.items.length - 4} more components</p>
-                    )}
-                  </div>
-
-                  {/* Card Footer */}
-                  <div className="px-5 py-4 border-t border-zinc-100 flex items-center justify-end">
-                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={(e) => handleCopyDirect(e, build)}
-                        title="Copy shareable link"
-                        className={`h-8 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-all
-                          ${isCopied
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100'}`}
-                      >
-                        {isCopied ? <CheckCircle2 size={12} /> : <Link2 size={12} />}
-                        {isCopied ? 'Copied' : 'Share'}
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleLoad(build.id); }}
-                        className="h-8 px-3 flex items-center gap-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg"
-                      >
-                        <Upload size={12} /> Load
-                      </button>
-                      {/* <button
-                        onClick={(e) => { e.stopPropagation(); deleteBuild(build.id); }}
-                        className="h-8 w-8 flex items-center justify-center text-zinc-300 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={15} />
-                      </button> */}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
         )}
-      </div>
+      </PageLayout.Content>
 
       {/* Detail Modal */}
       {activeBuild && (
@@ -368,7 +386,7 @@ function BuildsContent() {
           onLoad={() => { handleLoad(activeBuild.id); }}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }
 
@@ -377,7 +395,13 @@ function BuildsContent() {
 // -------------------------------------------------------------------
 export default function Builds() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center">Loading builds...</div>}>
+    <Suspense fallback={
+      <PageLayout bgClass="bg-zinc-50">
+        <PageLayout.Content className="flex items-center justify-center min-h-[50vh]">
+          <div className="w-12 h-12 rounded-full border-4 border-zinc-200 border-t-indigo-600 animate-spin" />
+        </PageLayout.Content>
+      </PageLayout>
+    }>
       <BuildsContent />
     </Suspense>
   );

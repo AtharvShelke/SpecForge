@@ -98,6 +98,15 @@ export async function GET(req: NextRequest) {
                     items: {
                         select: { id: true, name: true, category: true, price: true, quantity: true, image: true, sku: true },
                     },
+                    logs: {
+                        select: { id: true, status: true, timestamp: true, note: true },
+                        orderBy: { timestamp: 'asc' as const },
+                    },
+                    shippingStreet: true,
+                    shippingCity: true,
+                    shippingState: true,
+                    shippingZip: true,
+                    shippingCountry: true,
                 },
                 orderBy: { date: "desc" },
                 skip: (page - 1) * limit,

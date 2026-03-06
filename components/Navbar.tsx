@@ -153,6 +153,8 @@ const Navbar: React.FC = () => {
     </nav>
   );
 
+  if (pathname === '/') return null;
+
   return (
     <>
       {DesktopNavbar}

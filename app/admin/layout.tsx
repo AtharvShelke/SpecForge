@@ -19,16 +19,17 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     }
 
     const tabLabels: Record<string, string> = {
-        overview:    'Overview',
-        orders:      'Orders',
-        products:    'Products',
-        inventory:   'Inventory',
+        overview: 'Overview',
+        orders: 'Orders',
+        products: 'Products',
+        inventory: 'Inventory',
         procurement: 'Procurement',
-        categories:  'Categories',
-        brands:      'Brands',
-        billing:     'Billing & Invoices',
-        cms:         'CMS',
-        marketing:   'Marketing',
+        categories: 'Categories',
+        brands: 'Brands',
+        'saved-builds': 'Saved Builds',
+        billing: 'Billing & Invoices',
+        cms: 'CMS',
+        marketing: 'Marketing',
     };
 
     return (

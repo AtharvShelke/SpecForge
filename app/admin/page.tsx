@@ -3,16 +3,17 @@
 import React, { Suspense } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 
-import Overview           from '@/components/dashboard/Overview';
-import OrderManager        from '@/components/dashboard/OrderManager';
-import ProductManager      from '@/components/dashboard/ProductManager';
-import InventoryManager    from '@/components/dashboard/InventoryManager';
-import ProcurementManager  from '@/components/dashboard/ProcurementManager';
-import CategoryManager     from '@/components/dashboard/CategoryManager';
-import BrandManager        from '@/components/dashboard/BrandManager';
-import BillingInvoices     from '@/components/dashboard/BillingInvoices';
-import CMSManager          from '@/components/dashboard/CMSManager';
+import Overview from '@/components/dashboard/Overview';
+import OrderManager from '@/components/dashboard/OrderManager';
+import ProductManager from '@/components/dashboard/ProductManager';
+import InventoryManager from '@/components/dashboard/InventoryManager';
+import ProcurementManager from '@/components/dashboard/ProcurementManager';
+import CategoryManager from '@/components/dashboard/CategoryManager';
+import BrandManager from '@/components/dashboard/BrandManager';
+import BillingInvoices from '@/components/dashboard/BillingInvoices';
+import CMSManager from '@/components/dashboard/CMSManager';
 import { MarketingManager } from '@/components/dashboard/MarketingManager';
+import SavedBuildsManager from '@/components/dashboard/SavedBuildsManager';
 
 // ── Loading skeleton ──────────────────────────────────────────
 const TabSkeleton = () => (
@@ -36,16 +37,17 @@ const AdminDashboardContent: React.FC = () => {
 
     return (
         <div className="space-y-5">
-            {activeTab === 'overview'    && <Overview />}
-            {activeTab === 'orders'      && <OrderManager />}
-            {activeTab === 'products'    && <ProductManager />}
-            {activeTab === 'inventory'   && <InventoryManager />}
+            {activeTab === 'overview' && <Overview />}
+            {activeTab === 'orders' && <OrderManager />}
+            {activeTab === 'products' && <ProductManager />}
+            {activeTab === 'inventory' && <InventoryManager />}
             {activeTab === 'procurement' && <ProcurementManager />}
-            {activeTab === 'categories'  && <CategoryManager />}
-            {activeTab === 'brands'      && <BrandManager />}
-            {activeTab === 'billing'     && <BillingInvoices />}
-            {activeTab === 'cms'         && <CMSManager />}
-            {activeTab === 'marketing'   && <MarketingManager />}
+            {activeTab === 'categories' && <CategoryManager />}
+            {activeTab === 'brands' && <BrandManager />}
+            {activeTab === 'saved-builds' && <SavedBuildsManager />}
+            {activeTab === 'billing' && <BillingInvoices />}
+            {activeTab === 'cms' && <CMSManager />}
+            {activeTab === 'marketing' && <MarketingManager />}
         </div>
     );
 };

@@ -165,10 +165,12 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         ]);
 
         try {
-            const LZString = require('lz-string');
-            const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(minimalCart));
+            const jsonStr = JSON.stringify(minimalCart);
+            // Use native btoa with URL-safe base64
+            const encoded = btoa(encodeURIComponent(jsonStr))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
             const url = new URL(window.location.origin + '/builds');
-            url.searchParams.set('share', compressed);
+            url.searchParams.set('share', encoded);
             return url.toString();
         } catch (err) {
             console.error('Error generating share link:', err);
@@ -179,11 +181,12 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const loadBuildFromBase64 = useCallback(async (base64Str: string) => {
         try {
             setIsLoading(true);
-            const LZString = require('lz-string');
-            const decompressed = LZString.decompressFromEncodedURIComponent(base64Str);
-            if (!decompressed) throw new Error("Invalid base64 string");
+            // Decode URL-safe base64 back
+            const padded = base64Str.replace(/-/g, '+').replace(/_/g, '/');
+            const decoded = decodeURIComponent(atob(padded));
+            if (!decoded) throw new Error("Invalid share string");
 
-            const itemsToLoad: [string, number][] = JSON.parse(decompressed);
+            const itemsToLoad: [string, number][] = JSON.parse(decoded);
 
             // To ensure correct product hydrates, we hit a generic product search or rely on 'products' array
             // Assuming 'products' holds our active catalog

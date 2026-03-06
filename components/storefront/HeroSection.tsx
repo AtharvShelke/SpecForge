@@ -13,7 +13,7 @@ const HERO_SLIDES = [
         headline: 'Performance',
         highlight: 'Unleashed',
         sub: 'Next-generation RTX 40-series and latest architectures. Push your limits with hardware built for creators and enthusiasts.',
-        cta: '/builds/create',
+        cta: '/builds/new',
         ctaText: 'Start Building',
         image: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?q=80&w=2070&auto=format&fit=crop',
     },
@@ -73,7 +73,7 @@ export default function HeroSection() {
                 </AnimatePresence>
 
                 {/* Vignette & Gradient Overlays for Depth */}
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent" />
                 <div className="absolute inset-0 bg-black/20" />
             </div>

@@ -1,7 +1,13 @@
+'use client';
+
 import React from "react";
 import { Cpu } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 const Footer: React.FC = () => {
+    const pathname = usePathname();
+    if (pathname === '/') return null;
+
     return (
         <footer className="mt-auto border-t border-zinc-200 bg-white px-4 py-8 sm:px-6 lg:px-8 pb-24 md:pb-8">
             <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-4">

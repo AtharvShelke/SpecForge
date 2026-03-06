@@ -227,6 +227,7 @@ const clearanceRule: CompatibilityRule = {
 const RULES: CompatibilityRule[] = [
   socketRule,
   memoryRule,
+  coolerSocketRule,
   powerDrawRule,
   formFactorRule,
   clearanceRule,

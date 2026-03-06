@@ -30,6 +30,50 @@ export async function GET(
     }
 }
 
+// ── PUT /api/build-guides/[id] ────────────────────────────────
+export async function PUT(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const body = await req.json();
+
+        // Basic validation
+        if (!body.title) {
+            return NextResponse.json({ error: "Title is required" }, { status: 400 });
+        }
+
+        // We can update title, description, category, total
+        const updated = await prisma.buildGuide.update({
+            where: { id },
+            data: {
+                title: body.title,
+                description: body.description,
+                category: body.category,
+                total: body.total,
+            }
+        });
+
+        // if items are provided, replace them
+        if (body.items && Array.isArray(body.items)) {
+            await prisma.buildGuideItem.deleteMany({ where: { buildGuideId: id } });
+            await prisma.buildGuideItem.createMany({
+                data: body.items.map((i: any) => ({
+                    buildGuideId: id,
+                    variantId: i.variantId || i.id, // handle both formats
+                    quantity: i.quantity || 1,
+                }))
+            });
+        }
+
+        return NextResponse.json(updated);
+    } catch (error) {
+        console.error("PUT /api/builds/[id] error:", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
 // ── DELETE /api/build-guides/[id] ─────────────────────────────
 export async function DELETE(
     _req: NextRequest,
