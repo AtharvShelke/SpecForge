@@ -10,6 +10,7 @@ import {
   Store,
   User,
   Cpu,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -62,8 +63,8 @@ const Navbar: React.FC = () => {
             <div className="flex items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50/50 p-1 shadow-sm">
               {[
                 { to: "/products", label: "Products", icon: Store },
+                { to: "/builds/new", label: "PC Builder", icon: Wrench },
                 { to: "/builds", label: "Saved Builds", icon: Save },
-                // { to: "/build-guides", label: "Build Guides", icon: BookOpen },
                 { to: "/track-order", label: "Track Order", icon: MapPin },
               ].map(({ to, label, icon: Icon }) => (
                 <Link
@@ -115,8 +116,8 @@ const Navbar: React.FC = () => {
       <div className="flex h-16 items-center justify-around px-2">
         {[
           { to: "/products", label: "Shop", icon: Store },
-          { to: "/builds", label: "Builds", icon: Save },
-          { to: "/build-guides", label: "Guides", icon: BookOpen },
+          { to: "/builds/new", label: "Build", icon: Wrench },
+          { to: "/builds", label: "Saves", icon: Save },
           { to: "/track-order", label: "Track", icon: MapPin },
         ].map(({ to, label, icon: Icon }) => (
           <Link
