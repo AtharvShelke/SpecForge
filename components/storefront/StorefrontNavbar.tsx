@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
     { href: "/products", label: "Products" },
     { href: "/builds/new", label: "Build PC" },
-    { href: "/build-guides", label: "Prebuilt Builds" },
+    { href: "/builds", label: "Saved Builds" },
     { href: "/track-order", label: "Track Order" },
 ];
 

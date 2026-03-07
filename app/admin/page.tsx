@@ -41,7 +41,7 @@ const AdminDashboardContent: React.FC = () => {
             {activeTab === 'orders' && <OrderManager />}
             {activeTab === 'products' && <ProductManager />}
             {activeTab === 'inventory' && <InventoryManager />}
-            {activeTab === 'procurement' && <ProcurementManager />}
+            {/* {activeTab === 'procurement' && <ProcurementManager />} */}
             {activeTab === 'categories' && <CategoryManager />}
             {activeTab === 'brands' && <BrandManager />}
             {activeTab === 'saved-builds' && <SavedBuildsManager />}

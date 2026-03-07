@@ -23,7 +23,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         orders: 'Orders',
         products: 'Products',
         inventory: 'Inventory',
-        procurement: 'Procurement',
+        // procurement: 'Procurement',
         categories: 'Categories',
         brands: 'Brands',
         'saved-builds': 'Saved Builds',

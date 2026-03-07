@@ -1,22 +1,107 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useShop } from '@/context/ShopContext';
+
 import { useAdmin } from '@/context/AdminContext';
 import { Category } from '@/types';
-import { Trash, Plus, Tag, AlertCircle, Search, Hash, CheckCircle2 } from 'lucide-react';
+import {
+    Trash,
+    Plus,
+    Tag,
+    Search,
+    Hash,
+    CheckCircle2,
+    Layers,
+    AlertCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 
+// ─────────────────────────────────────────────────────────────
+// SHARED PRIMITIVES  (mirrors Overview / OrderManager system)
+// ─────────────────────────────────────────────────────────────
+
+const SectionLabel = ({
+    icon,
+    children,
+}: {
+    icon: React.ReactNode;
+    children: React.ReactNode;
+}) => (
+    <div className="flex items-center gap-1.5">
+        <span className="text-stone-400">{icon}</span>
+        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
+            {children}
+        </span>
+    </div>
+);
+
+type Stripe = 'indigo' | 'teal' | 'amber' | 'rose' | 'violet' | 'stone';
+
+const Panel = ({
+    children,
+    className,
+    stripe,
+}: {
+    children: React.ReactNode;
+    className?: string;
+    stripe?: Stripe;
+}) => {
+    const stripes: Record<Stripe, string> = {
+        indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
+        teal: 'from-teal-400 via-emerald-400 to-emerald-300',
+        amber: 'from-amber-400 via-amber-400 to-orange-300',
+        rose: 'from-rose-400 via-rose-400 to-rose-300',
+        violet: 'from-violet-400 via-violet-500 to-indigo-400',
+        stone: 'from-stone-300 via-stone-400 to-stone-300',
+    };
+    return (
+        <div
+            className={cn(
+                'rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden',
+                className
+            )}
+        >
+            {stripe && (
+                <div className={cn('h-0.5 w-full bg-gradient-to-r', stripes[stripe])} />
+            )}
+            {children}
+        </div>
+    );
+};
+
+const PanelHeader = ({
+    icon,
+    children,
+    right,
+}: {
+    icon: React.ReactNode;
+    children: React.ReactNode;
+    right?: React.ReactNode;
+}) => (
+    <div className="px-5 py-3.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+        <SectionLabel icon={icon}>{children}</SectionLabel>
+        {right}
+    </div>
+);
+
+// ─────────────────────────────────────────────────────────────
+// CATEGORY PILL
+// ─────────────────────────────────────────────────────────────
+const CategoryPill = ({ label }: { label: string }) => (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap bg-stone-100 text-stone-600 ring-1 ring-stone-200">
+        {label}
+    </span>
+);
+
+// ─────────────────────────────────────────────────────────────
+// BRAND MANAGER
+// ─────────────────────────────────────────────────────────────
 const BrandManager = () => {
-    const { brands } = useShop();
-    const { addBrand, deleteBrand } = useAdmin();
+    const { brands, addBrand, deleteBrand } = useAdmin();
 
     const [newBrandName, setNewBrandName] = useState('');
     const [selectedCats, setSelectedCats] = useState<Category[]>([]);
@@ -24,200 +109,213 @@ const BrandManager = () => {
 
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newBrandName.trim()) return;
-
-        if (selectedCats.length === 0) {
-            alert('Please select at least one category');
-            return;
-        }
+        if (!newBrandName.trim() || selectedCats.length === 0) return;
 
         addBrand({
             id: `brand-${Date.now()}`,
             name: newBrandName.trim(),
-            categories: selectedCats
+            categories: selectedCats,
         });
 
         setNewBrandName('');
         setSelectedCats([]);
     };
 
-    const toggleCat = (cat: Category) => {
-        if (selectedCats.includes(cat)) {
-            setSelectedCats(selectedCats.filter(c => c !== cat));
-        } else {
-            setSelectedCats([...selectedCats, cat]);
-        }
-    };
+    const toggleCat = (cat: Category) =>
+        setSelectedCats(prev =>
+            prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+        );
 
     const handleDelete = (brandId: string, brandName: string) => {
-        if (window.confirm(`Delete brand "${brandName}"? This cannot be undone.`)) {
+        if (window.confirm(`Delete brand "${brandName}"? This cannot be undone.`))
             deleteBrand(brandId);
-        }
     };
 
     const filteredBrands = brands.filter(b =>
         b.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const canSubmit = newBrandName.trim().length > 0 && selectedCats.length > 0;
+
     return (
-        <div className="space-y-5">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="space-y-4">
+
+            {/* ── PAGE HEADER ── */}
+            <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-lg font-semibold text-zinc-900">Brand Management</h2>
-                    <p className="text-sm text-zinc-500 mt-0.5">
+                    <h2 className="text-sm font-bold text-stone-800 tracking-tight">Brand Management</h2>
+                    <p className="text-[11px] text-stone-400 mt-0.5">
                         Manage brand portfolio and category associations
                     </p>
                 </div>
-                <Badge variant="outline" className="bg-white border-zinc-200 text-zinc-600 text-xs font-medium px-2.5 py-1 w-fit">
+                <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md shadow-sm">
                     {brands.length} brands
-                </Badge>
+                </span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* ── MAIN GRID ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-                {/* Form */}
-                <div className="lg:col-span-4 flex flex-col gap-5">
-                    <Card className="border-zinc-200 rounded-lg shadow-sm sticky top-6">
-                        <CardHeader className="px-5 py-4 border-b border-zinc-100">
-                            <CardTitle className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                                <Plus size={14} className="text-zinc-500" />
-                                Add Brand
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-5">
-                            <form onSubmit={handleAdd} className="space-y-4">
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium text-zinc-700">Brand Name</Label>
-                                    <Input
-                                        placeholder="e.g. ASUS"
-                                        className="h-9 text-sm border-zinc-200 focus:border-indigo-300 focus:ring-indigo-500/20 rounded-md"
-                                        value={newBrandName}
-                                        onChange={e => setNewBrandName(e.target.value)}
-                                        required
-                                    />
-                                </div>
+                {/* ── LEFT: ADD BRAND FORM ── */}
+                <div className="lg:col-span-4">
+                    <Panel stripe="indigo" className="sticky top-6">
+                        <PanelHeader icon={<Plus size={12} />}>New Brand</PanelHeader>
 
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium text-zinc-700 flex items-center justify-between">
-                                        Categories
-                                        <span className="text-zinc-400 text-xs font-normal">Required</span>
-                                    </Label>
-                                    <div className="border border-zinc-200 rounded-md overflow-hidden">
-                                        <ScrollArea className="h-[240px]">
-                                            <div className="p-1.5 space-y-0.5">
-                                                {Object.values(Category).map(cat => (
-                                                    <div
-                                                        key={cat}
-                                                        onClick={() => toggleCat(cat)}
-                                                        className={cn(
-                                                            "flex items-center gap-2.5 px-3 py-2 rounded-md cursor-pointer transition-colors duration-150 text-sm",
-                                                            selectedCats.includes(cat)
-                                                                ? "bg-indigo-50 text-indigo-700"
-                                                                : "text-zinc-600 hover:bg-zinc-50"
-                                                        )}
-                                                    >
-                                                        <div className={cn(
-                                                            "w-4 h-4 rounded border flex items-center justify-center shrink-0",
-                                                            selectedCats.includes(cat) ? "border-indigo-500 bg-indigo-500" : "border-zinc-300"
-                                                        )}>
-                                                            {selectedCats.includes(cat) && <CheckCircle2 size={10} className="text-white" />}
-                                                        </div>
-                                                        <span className="font-medium">{cat}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </ScrollArea>
-                                    </div>
+                        <form onSubmit={handleAdd} className="px-5 py-4 space-y-4">
+
+                            {/* Brand name */}
+                            <div className="space-y-1.5">
+                                <SectionLabel icon={<Tag size={11} />}>Brand Name</SectionLabel>
+                                <Input
+                                    placeholder="e.g. ASUS"
+                                    value={newBrandName}
+                                    onChange={e => setNewBrandName(e.target.value)}
+                                    className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-indigo-300 focus:ring-indigo-500/20 placeholder:text-stone-400 font-medium"
+                                    required
+                                />
+                            </div>
+
+                            {/* Category selector */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <SectionLabel icon={<Layers size={11} />}>Categories</SectionLabel>
                                     {selectedCats.length > 0 && (
-                                        <p className="text-xs text-zinc-500 text-right">
+                                        <span className="text-[10px] font-bold font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
                                             {selectedCats.length} selected
-                                        </p>
+                                        </span>
                                     )}
                                 </div>
 
-                                <Button
-                                    type="submit"
-                                    className="w-full h-9 bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium rounded-md transition-colors duration-150"
-                                    disabled={!newBrandName.trim() || selectedCats.length === 0}
-                                >
-                                    Save Brand
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
+                                <div className="rounded-lg border border-stone-200 overflow-hidden">
+                                    <ScrollArea className="h-[220px]">
+                                        <div className="p-1.5 space-y-0.5">
+                                            {Object.values(Category).map(cat => {
+                                                const active = selectedCats.includes(cat);
+                                                return (
+                                                    <button
+                                                        key={cat}
+                                                        type="button"
+                                                        onClick={() => toggleCat(cat)}
+                                                        className={cn(
+                                                            'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-left transition-colors duration-150',
+                                                            active
+                                                                ? 'bg-indigo-50 text-indigo-700'
+                                                                : 'text-stone-600 hover:bg-stone-50'
+                                                        )}
+                                                    >
+                                                        <div
+                                                            className={cn(
+                                                                'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors',
+                                                                active ? 'bg-indigo-500 border-indigo-500' : 'border-stone-300'
+                                                            )}
+                                                        >
+                                                            {active && <CheckCircle2 size={9} className="text-white" />}
+                                                        </div>
+                                                        <span className="text-[11px] font-semibold">{cat}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+                            </div>
+
+                            {/* Submit */}
+                            <button
+                                type="submit"
+                                disabled={!canSubmit}
+                                className={cn(
+                                    'w-full h-8 rounded-lg text-xs font-bold uppercase tracking-widest transition-all duration-150',
+                                    canSubmit
+                                        ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                        : 'bg-stone-100 text-stone-400 cursor-not-allowed'
+                                )}
+                            >
+                                Save Brand
+                            </button>
+                        </form>
+                    </Panel>
                 </div>
 
-                {/* Brand List */}
+                {/* ── RIGHT: BRAND LIST ── */}
                 <div className="lg:col-span-8 space-y-3">
-                    <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-zinc-600 transition-colors duration-150" />
-                        <Input
-                            placeholder="Search brands..."
-                            className="pl-9 h-9 border-zinc-200 bg-white text-sm rounded-md placeholder:text-zinc-400"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
 
-                    {filteredBrands.length === 0 ? (
-                        <div className="bg-white rounded-lg border border-dashed border-zinc-200 p-12 text-center">
-                            <Tag size={28} className="mx-auto text-zinc-200 mb-3" />
-                            <p className="text-sm text-zinc-400">No brands found</p>
+                    {/* Search bar */}
+                    <Panel>
+                        <div className="px-4 py-3">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
+                                <Input
+                                    placeholder="Search brands…"
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    className="pl-8 h-8 text-xs border-stone-200 bg-stone-50/50 rounded-lg placeholder:text-stone-400 font-medium"
+                                />
+                            </div>
                         </div>
+                    </Panel>
+
+                    {/* Empty state */}
+                    {filteredBrands.length === 0 ? (
+                        <Panel>
+                            <div className="py-16 flex flex-col items-center gap-2.5">
+                                <Tag size={24} className="text-stone-200" />
+                                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+                                    No brands found
+                                </p>
+                            </div>
+                        </Panel>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {filteredBrands.map(brand => (
-                                <div
-                                    key={brand.id}
-                                    className="bg-white border border-zinc-200 rounded-lg p-4 hover:border-zinc-300 transition-colors duration-150 group relative"
-                                >
-                                    <div className="flex justify-between items-start gap-3 mb-3">
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                                <Hash size={10} className="text-zinc-300" />
-                                                <span className="text-[11px] font-mono text-zinc-400">{brand.id.substring(0, 8).toUpperCase()}</span>
+                                <Panel key={brand.id} stripe="stone" className="group">
+                                    <div className="px-4 py-3.5 space-y-3">
+
+                                        {/* Top row: ID + name + delete */}
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-1 mb-0.5">
+                                                    <Hash size={9} className="text-stone-300" />
+                                                    <span className="text-[10px] font-mono font-bold text-stone-400">
+                                                        {brand.id.substring(0, 8).toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm font-bold text-stone-800 tracking-tight truncate">
+                                                    {brand.name}
+                                                </p>
                                             </div>
-                                            <h4 className="font-semibold text-zinc-900 text-sm truncate">
-                                                {brand.name}
-                                            </h4>
+                                            <button
+                                                onClick={() => handleDelete(brand.id, brand.name)}
+                                                className="opacity-0 group-hover:opacity-100 transition-all duration-150 h-6 w-6 rounded-md flex items-center justify-center text-stone-300 hover:text-rose-500 hover:bg-rose-50"
+                                            >
+                                                <Trash size={13} />
+                                            </button>
                                         </div>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            onClick={() => handleDelete(brand.id, brand.name)}
-                                            className="h-7 w-7 text-zinc-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-150 rounded-md"
-                                        >
-                                            <Trash size={14} />
-                                        </Button>
+
+                                        {/* Divider */}
+                                        <div className="h-px bg-stone-100" />
+
+                                        {/* Categories */}
+                                        {brand.categories.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {brand.categories.map(cat => (
+                                                    <CategoryPill key={cat} label={cat} />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg w-fit">
+                                                <AlertCircle size={11} className="text-amber-500 shrink-0" />
+                                                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">
+                                                    No categories
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
-
-                                    <Separator className="mb-3 bg-zinc-100" />
-
-                                    {brand.categories.length > 0 ? (
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {brand.categories.map(cat => (
-                                                <Badge
-                                                    key={cat}
-                                                    variant="secondary"
-                                                    className="bg-zinc-50 text-zinc-600 text-[11px] font-medium h-5 border border-zinc-200 rounded"
-                                                >
-                                                    {cat}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1.5 rounded-md w-fit">
-                                            <AlertCircle size={12} />
-                                            No categories assigned
-                                        </div>
-                                    )}
-                                </div>
+                                </Panel>
                             ))}
                         </div>
                     )}
                 </div>
-
             </div>
         </div>
     );

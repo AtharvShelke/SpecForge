@@ -29,11 +29,11 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Orders', icon: ShoppingBag, key: 'orders', group: 'primary' },
     { label: 'Products', icon: Package, key: 'products', group: 'primary' },
     { label: 'Inventory', icon: Layers, key: 'inventory', group: 'primary' },
-    { label: 'Procurement', icon: Truck, key: 'procurement', group: 'primary' },
+    // { label: 'Procurement', icon: Truck, key: 'procurement', group: 'primary' },
     { label: 'Categories', icon: Tag, key: 'categories', group: 'secondary' },
     { label: 'Brands', icon: Bookmark, key: 'brands', group: 'secondary' },
     { label: 'Saved Builds', icon: Layers, key: 'saved-builds', group: 'secondary' },
-    { label: 'Billing & Invoices', icon: CreditCard, key: 'billing', group: 'secondary' },
+    // { label: 'Billing & Invoices', icon: CreditCard, key: 'billing', group: 'secondary' },
     { label: 'CMS', icon: FileText, key: 'cms', group: 'secondary' },
     { label: 'Marketing', icon: Megaphone, key: 'marketing', group: 'secondary' },
 ];

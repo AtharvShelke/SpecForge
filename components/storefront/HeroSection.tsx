@@ -15,7 +15,7 @@ const HERO_SLIDES = [
         sub: 'Next-generation RTX 40-series and latest architectures. Push your limits with hardware built for creators and enthusiasts.',
         cta: '/builds/new',
         ctaText: 'Start Building',
-        image: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?q=80&w=2070&auto=format&fit=crop',
+        image: '/images/hero.jpg',
     },
     {
         badge: 'Enthusiast Grade',
@@ -24,7 +24,7 @@ const HERO_SLIDES = [
         sub: 'Curated premium components with guaranteed compatibility. Stop worrying about specs and start gaming.',
         cta: '/products',
         ctaText: 'Explore Hardware',
-        image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?q=80&w=2070&auto=format&fit=crop',
+        image: '/images/hero2.jpg',
     },
     {
         badge: 'Prebuilt Perfection',
@@ -33,7 +33,7 @@ const HERO_SLIDES = [
         sub: 'Expertly assembled, rigorously tested, and perfectly tuned. Your new battle station awaits.',
         cta: '/build-guides',
         ctaText: 'View Prebuilts',
-        image: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=2070&auto=format&fit=crop',
+        image: '/images/hero3.jpg',
     },
 ]
 

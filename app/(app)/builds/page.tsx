@@ -268,15 +268,7 @@ function BuildsContent() {
               <Save size={14} /> Your Saved Builds
             </div>
           }
-          actions={
-            <Link
-              href="/products?mode=build"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-950 hover:bg-indigo-600 
-                text-white text-sm font-bold uppercase tracking-wide rounded-full transition-all shadow-xl hover:shadow-indigo-600/20 hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <Plus size={18} /> New Build
-            </Link>
-          }
+
         />
       </PageLayout.Header>
 
