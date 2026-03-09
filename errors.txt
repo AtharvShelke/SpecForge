@@ -1,11 +1,11 @@
-
-
 pc buidler ui, saved builds ui, track order ui => rework
 
+change the navbar's current color to footer's color (i want same night blueish gradient)
 
+add a order delete functionality for the admin, first cancel -> delete
 
+in marketing tab, add a section which shows all of the phone numbers and emails collected till now, unique emails and phone numbers only
 
-
-
-
-
+in overview tab, add a breakdown to each card for verifying the numbers, and a link to that corresponding tab
+  
+a sync button in each of the admin tab

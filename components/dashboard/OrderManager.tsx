@@ -113,7 +113,7 @@ const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: Rea
 // MAIN ORDER MANAGER
 // ─────────────────────────────────────────────────────────────
 const OrderManager = () => {
-  const { orders, updateOrderStatus, inventory, adjustStock } = useAdmin();
+  const { orders, updateOrderStatus, inventory, adjustStock, refreshOrders, syncData, isLoading } = useAdmin();
 
   // Aggregate inventory by variantId across all warehouses
   const aggregatedInventory = useMemo(() => {
@@ -270,9 +270,18 @@ const OrderManager = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live
+              </div>
+              <button
+                onClick={() => syncData()}
+                disabled={isLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+              >
+                <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} /> Sync
+              </button>
             </div>
           </div>
         </div>

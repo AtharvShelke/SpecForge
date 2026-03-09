@@ -174,23 +174,26 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         });
 
         // MOCK EXTERNAL NOTIFICATIONS
+        const invoiceLink = `http://localhost:3000/api/orders/${order.id}/invoice`;
+        const trackingLink = `http://localhost:3000/track-order`;
+
         console.log(`\n========================================`);
         console.log(`[MOCK NOTIFICATION] ORDER ${order.id}`);
         console.log(`========================================`);
         console.log(`✅ Sent WhatsApp Confirmation to: ${data.phone}`);
+        console.log(`Message: Thank you for ordering... here's your invoice (a downloadable pdf) ${invoiceLink}`);
+        console.log(`and here's the link for your order ${trackingLink}`);
         console.log(`========================================\n`);
 
         try {
             await sendMail({
                 to: data.email,
                 subject: `Order Confirmation - ${order.id}`,
+                text: `thank you for ordering... here's your invoice (a downloadable pdf) ${invoiceLink} and here's the link for your order ${trackingLink}`,
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                        <h2 style="color: #0056b3;">Thank you for your order, ${data.customerName}!</h2>
-                        <p>Your order <strong>${order.id}</strong> has been successfully placed.</p>
-                        <p><strong>Total Amount:</strong> ₹${order.total.toFixed(2)}</p>
-                        
-                        <p style="margin-top: 20px; color: #666; font-size: 14px;">We will notify you once your order has been processed and shipped.</p>
+                        <p>thank you for ordering... here's your invoice (a downloadable pdf) <a href="${invoiceLink}">${invoiceLink}</a></p>
+                        <p>and here's the link for your order <a href="${trackingLink}">${trackingLink}</a></p>
                     </div>
                 `,
             });

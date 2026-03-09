@@ -19,6 +19,7 @@ import {
     AlertTriangle,
     CheckCircle2,
     FolderOpen,
+    RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -72,11 +73,11 @@ const Panel = ({
 }) => {
     const stripes: Record<Stripe, string> = {
         indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
-        teal:   'from-teal-400 via-emerald-400 to-emerald-300',
-        amber:  'from-amber-400 via-amber-400 to-orange-300',
-        rose:   'from-rose-400 via-rose-400 to-rose-300',
+        teal: 'from-teal-400 via-emerald-400 to-emerald-300',
+        amber: 'from-amber-400 via-amber-400 to-orange-300',
+        rose: 'from-rose-400 via-rose-400 to-rose-300',
         violet: 'from-violet-400 via-violet-500 to-indigo-400',
-        stone:  'from-stone-300 via-stone-400 to-stone-300',
+        stone: 'from-stone-300 via-stone-400 to-stone-300',
     };
     return (
         <div className={cn('rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden', className)}>
@@ -109,10 +110,10 @@ const PanelHeader = ({
 
 const Pill = ({ children, color = 'stone' }: { children: React.ReactNode; color?: 'stone' | 'indigo' | 'teal' | 'amber' | 'violet' }) => {
     const cls = {
-        stone:  'bg-stone-100 text-stone-600 ring-stone-200',
+        stone: 'bg-stone-100 text-stone-600 ring-stone-200',
         indigo: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-        teal:   'bg-teal-50 text-teal-700 ring-teal-200',
-        amber:  'bg-amber-50 text-amber-700 ring-amber-200',
+        teal: 'bg-teal-50 text-teal-700 ring-teal-200',
+        amber: 'bg-amber-50 text-amber-700 ring-amber-200',
         violet: 'bg-violet-50 text-violet-700 ring-violet-200',
     }[color];
     return (
@@ -226,7 +227,7 @@ const NodeForm = ({
 
 const CategoryManager = () => {
     const { categories, refreshCategories, refreshFilterConfigs: refreshShopFilterConfigs } = useShop();
-    const { updateCategories, filterConfigs, updateFilterConfig } = useAdmin();
+    const { updateCategories, filterConfigs, updateFilterConfig, syncData, isLoading } = useAdmin();
 
     useEffect(() => { refreshCategories(); }, [refreshCategories]);
 
@@ -457,24 +458,33 @@ const CategoryManager = () => {
                     </p>
                 </div>
 
-                {/* Mode toggle — styled like the stats tabs in OrderManager */}
-                <div className="flex items-center gap-px bg-stone-100 p-1 rounded-xl border border-stone-200 w-fit">
-                    {(['hierarchy', 'filters'] as const).map(mode => (
-                        <button
-                            key={mode}
-                            type="button"
-                            onClick={() => setConfigMode(mode)}
-                            className={cn(
-                                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-150',
-                                configMode === mode
-                                    ? 'bg-white text-stone-900 shadow-sm border border-stone-200'
-                                    : 'text-stone-400 hover:text-stone-700'
-                            )}
-                        >
-                            {mode === 'hierarchy' ? <Layers size={11} /> : <ListFilter size={11} />}
-                            {mode === 'hierarchy' ? 'Hierarchy' : 'Filters'}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => syncData()}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                    >
+                        <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} /> Sync
+                    </button>
+                    {/* Mode toggle — styled like the stats tabs in OrderManager */}
+                    <div className="flex items-center gap-px bg-stone-100 p-1 rounded-xl border border-stone-200 w-fit">
+                        {(['hierarchy', 'filters'] as const).map(mode => (
+                            <button
+                                key={mode}
+                                type="button"
+                                onClick={() => setConfigMode(mode)}
+                                className={cn(
+                                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-150',
+                                    configMode === mode
+                                        ? 'bg-white text-stone-900 shadow-sm border border-stone-200'
+                                        : 'text-stone-400 hover:text-stone-700'
+                                )}
+                            >
+                                {mode === 'hierarchy' ? <Layers size={11} /> : <ListFilter size={11} />}
+                                {mode === 'hierarchy' ? 'Hierarchy' : 'Filters'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 

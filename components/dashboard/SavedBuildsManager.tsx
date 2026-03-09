@@ -17,6 +17,7 @@ import {
     Layers,
     Clock,
 } from 'lucide-react';
+import { useAdmin } from '@/context/AdminContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
@@ -63,11 +64,11 @@ const Panel = ({
 }) => {
     const stripes: Record<Stripe, string> = {
         indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
-        teal:   'from-teal-400 via-emerald-400 to-emerald-300',
-        amber:  'from-amber-400 via-amber-400 to-orange-300',
-        rose:   'from-rose-400 via-rose-400 to-rose-300',
+        teal: 'from-teal-400 via-emerald-400 to-emerald-300',
+        amber: 'from-amber-400 via-amber-400 to-orange-300',
+        rose: 'from-rose-400 via-rose-400 to-rose-300',
         violet: 'from-violet-400 via-violet-500 to-indigo-400',
-        stone:  'from-stone-300 via-stone-400 to-stone-300',
+        stone: 'from-stone-300 via-stone-400 to-stone-300',
     };
     return (
         <div className={cn('rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden', className)}>
@@ -134,27 +135,13 @@ const CategoryPill = ({ label }: { label: string }) => (
 
 export default function SavedBuildsManager() {
     const { toast } = useToast();
-    const [builds, setBuilds] = useState<any[]>([]);
+    const { savedBuilds: builds, refreshSavedBuilds: fetchBuilds, syncData, isLoading } = useAdmin();
     const [searchQuery, setSearchQuery] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [editingBuild, setEditingBuild] = useState<any | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
-    const fetchBuilds = async () => {
-        setIsLoading(true);
-        try {
-            const res = await fetch('/api/build-guides');
-            const data = await res.json();
-            setBuilds(data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchBuilds(); }, []);
+    useEffect(() => { fetchBuilds(); }, [fetchBuilds]);
 
     const handleDelete = async (id: string) => {
         try {
@@ -208,7 +195,7 @@ export default function SavedBuildsManager() {
 
     // ── Derived KPIs ──
     const totalValue = builds.reduce((s, b) => s + (b.total || 0), 0);
-    const avgValue   = builds.length > 0 ? Math.round(totalValue / builds.length) : 0;
+    const avgValue = builds.length > 0 ? Math.round(totalValue / builds.length) : 0;
     const categories = [...new Set(builds.map(b => b.category).filter(Boolean))];
 
     return (
@@ -228,11 +215,11 @@ export default function SavedBuildsManager() {
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={fetchBuilds}
+                        onClick={() => syncData()}
                         disabled={isLoading}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-400 hover:text-stone-700 hover:bg-stone-50 transition-all shadow-sm"
+                        className="h-7 px-3 flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-all shadow-sm text-[10px] font-bold uppercase tracking-widest disabled:opacity-50"
                     >
-                        <RefreshCw size={12} className={cn(isLoading && 'animate-spin')} />
+                        <RefreshCw size={11} className={cn(isLoading && 'animate-spin')} /> Sync
                     </button>
                     <Link href="/builds/new">
                         <span className="flex items-center gap-1.5 h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm cursor-pointer">
@@ -320,9 +307,9 @@ export default function SavedBuildsManager() {
                     <div className="divide-y divide-stone-100">
                         {filteredBuilds.map(build => {
                             const isExpanded = expandedId === build.id;
-                            const itemCount  = build.items?.length || 0;
+                            const itemCount = build.items?.length || 0;
                             const visibleItems = build.items?.slice(0, 4) || [];
-                            const overflow    = Math.max(0, itemCount - 4);
+                            const overflow = Math.max(0, itemCount - 4);
 
                             return (
                                 <div key={build.id} className="group">

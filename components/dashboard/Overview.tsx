@@ -122,7 +122,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 // MAIN OVERVIEW
 // ─────────────────────────────────────────────────────────────
 const Overview = () => {
-  const { orders, inventory, products } = useAdmin();
+  const { orders, inventory, products, syncData, isLoading } = useAdmin();
 
   // ── Derived metrics ──
   const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
@@ -220,9 +220,18 @@ const Overview = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Live
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live
+          </div>
+          <button
+            onClick={() => syncData()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} /> Sync
+          </button>
         </div>
       </div>
 

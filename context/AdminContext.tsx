@@ -5,7 +5,7 @@ import {
     Product, Category, CategoryNode, Brand, CategorySchema, AttributeDefinition,
     CategoryFilterConfig, FilterDefinition, WarehouseInventory, StockMovement, StockMovementType,
     Order, OrderStatus, Invoice, Customer, BillingProfile,
-    Supplier, PurchaseOrder, CreditNote, Warehouse
+    Supplier, PurchaseOrder, CreditNote, Warehouse, BuildGuide
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -83,6 +83,10 @@ interface AdminContextType {
     refreshBillingProfile: () => Promise<void>;
     saveBillingProfile: (data: Partial<BillingProfile>) => Promise<void>;
 
+    // Saved Builds
+    savedBuilds: BuildGuide[];
+    refreshSavedBuilds: () => Promise<void>;
+
 
     // UI/Navigation State
     activeTab: string;
@@ -90,6 +94,15 @@ interface AdminContextType {
 
     isAdmin: boolean;
     isLoading: boolean;
+    syncData: () => Promise<void>;
+
+    // Marketing (Add if needed by components)
+    marketingStats: any;
+    marketingCampaigns: any[];
+    marketingLeads: { items: any[], total: number };
+    marketingContacts: any;
+    marketingLogs: any[];
+    refreshMarketing: (query?: string, activeView?: string) => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -139,6 +152,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+
+    // Marketing State
+    const [marketingStats, setMarketingStats] = useState<any>(null);
+    const [marketingCampaigns, setMarketingCampaigns] = useState<any[]>([]);
+    const [marketingLeads, setMarketingLeads] = useState<{ items: any[], total: number }>({ items: [], total: 0 });
+    const [marketingContacts, setMarketingContacts] = useState<any>(null);
+    const [marketingLogs, setMarketingLogs] = useState<any[]>([]);
 
     // --- FETCHERS ---
 
@@ -259,7 +279,103 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, []);
 
-    // --- LAZY LOAD TAB DATA ---
+    const refreshMarketing = useCallback(async (query: string = '', view: string = 'campaigns') => {
+        try {
+            const fetchPromises: Promise<any>[] = [
+                fetch('/api/marketing/stats'),
+                fetch('/api/marketing/campaigns'),
+                fetch('/api/marketing/logs?limit=15'),
+            ];
+
+            if (view === 'leads' || query) {
+                fetchPromises.push(fetch(`/api/marketing/leads?limit=50&q=${query}`));
+            } else {
+                fetchPromises.push(Promise.resolve({ ok: true, json: () => Promise.resolve(null) }));
+            }
+
+            if (view === 'contacts') {
+                fetchPromises.push(fetch('/api/marketing/all-contacts'));
+            } else {
+                fetchPromises.push(Promise.resolve({ ok: true, json: () => Promise.resolve(null) }));
+            }
+
+            const responses = await Promise.all(fetchPromises);
+
+            setMarketingStats(await responses[0].json());
+            setMarketingCampaigns(await responses[1].json());
+            setMarketingLogs(await responses[2].json());
+
+            const leadsRes = responses[3];
+            if (leadsRes.ok) {
+                const leads = await leadsRes.json();
+                if (leads) setMarketingLeads(leads);
+            }
+
+            const contactsRes = responses[4];
+            if (contactsRes.ok) {
+                const contacts = await contactsRes.json();
+                if (contacts) setMarketingContacts(contacts);
+            }
+        } catch (err) { console.error(err); }
+    }, []);
+
+    const [savedBuilds, setSavedBuilds] = useState<BuildGuide[]>([]);
+    const refreshSavedBuilds = useCallback(async () => {
+        try {
+            const res = await fetch('/api/build-guides');
+            const data = await res.json();
+            setSavedBuilds(data);
+        } catch (err) { console.error(err); }
+    }, []);
+
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Foundational data
+            const basePromises = [
+                refreshProducts(),
+                refreshCategories(),
+                refreshBrands()
+            ];
+
+            let specificPromises: Promise<void>[] = [];
+            switch (activeTab) {
+                case 'overview':
+                    specificPromises = [refreshOrders(), refreshInventory(), refreshInvoices(), refreshCustomers(), refreshStockMovements()];
+                    break;
+                case 'orders':
+                    specificPromises = [refreshOrders(), refreshInventory(), refreshCustomers()];
+                    break;
+                case 'categories':
+                    specificPromises = [refreshSchemas(), refreshFilterConfigs()];
+                    break;
+                case 'inventory':
+                    specificPromises = [refreshInventory(), refreshWarehouses(), refreshStockMovements()];
+                    break;
+                case 'procurement':
+                    specificPromises = [refreshSuppliers(), refreshPurchaseOrders(), refreshInventory()];
+                    break;
+                case 'billing':
+                    specificPromises = [refreshInvoices(), refreshCustomers(), refreshBillingProfile()];
+                    break;
+                case 'saved-builds':
+                    specificPromises = [refreshSavedBuilds()];
+                    break;
+                case 'marketing':
+                    specificPromises = [refreshMarketing()];
+                    break;
+            }
+
+            await Promise.all([...basePromises, ...specificPromises]);
+            toast({ title: "Data Synced", description: `Updated ${activeTab} data` });
+        } catch (error) {
+            console.error('Failed to sync data:', error);
+            toast({ title: "Sync Failed", description: "Could not refresh data", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeTab, refreshProducts, refreshCategories, refreshBrands, refreshOrders, refreshInventory, refreshInvoices, refreshCustomers, refreshStockMovements, refreshSchemas, refreshFilterConfigs, refreshWarehouses, refreshSuppliers, refreshPurchaseOrders, refreshBillingProfile, refreshSavedBuilds, toast]);
+
     useEffect(() => {
         const initTabData = async () => {
             setIsLoading(true);
@@ -296,6 +412,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                         break;
 
                     case 'marketing':
+                        specificPromises = [refreshMarketing()];
+                        break;
+                    case 'saved-builds':
+                        specificPromises = [refreshSavedBuilds()];
                         break;
                 }
 
@@ -313,7 +433,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         refreshFilterConfigs, refreshInvoices, refreshCustomers,
         refreshBillingProfile,
         refreshProducts, refreshCategories, refreshBrands,
-        refreshSuppliers, refreshPurchaseOrders, refreshWarehouses
+        refreshSuppliers, refreshPurchaseOrders, refreshWarehouses,
+        refreshMarketing, refreshSavedBuilds
     ]);
 
     // --- REAL-TIME SYNC (Polling) ---
@@ -719,10 +840,18 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         customers, refreshCustomers, createCustomer,
         billingProfile, refreshBillingProfile, saveBillingProfile,
         products, refreshProducts, categories, refreshCategories, brands, refreshBrands,
+        savedBuilds, refreshSavedBuilds,
         activeTab,
         setActiveTab,
-        isAdmin: true, // For demo purposes, true inside AdminContext
-        isLoading
+        isAdmin: true,
+        isLoading,
+        syncData,
+        marketingStats,
+        marketingCampaigns,
+        marketingLeads,
+        marketingContacts,
+        marketingLogs,
+        refreshMarketing
     }), [
         inventory, refreshInventory, warehouses, refreshWarehouses, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
         suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
@@ -736,9 +865,17 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         customers, refreshCustomers, createCustomer,
         billingProfile, refreshBillingProfile, saveBillingProfile,
         products, refreshProducts, categories, refreshCategories, brands, refreshBrands,
+        savedBuilds, refreshSavedBuilds,
         activeTab,
         setActiveTab,
-        isLoading
+        isLoading,
+        syncData,
+        marketingStats,
+        marketingCampaigns,
+        marketingLeads,
+        marketingContacts,
+        marketingLogs,
+        refreshMarketing
     ]);
 
     return (

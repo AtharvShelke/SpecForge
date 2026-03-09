@@ -1089,7 +1089,7 @@ const BillingInvoices: React.FC = () => {
     invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice,
     inventory, customers, refreshCustomers, createCustomer,
     billingProfile, refreshBillingProfile, saveBillingProfile,
-    isLoading
+    isLoading, syncData
   } = useAdmin();
 
   const [view, setView] = useState<PageView>('list');
@@ -1222,12 +1222,23 @@ const BillingInvoices: React.FC = () => {
                   {sortedInvoices.length} invoices
                 </p>
               </div>
-              <Button
-                onClick={() => setView('pos')}
-                className="h-9 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-md shadow-sm transition-all active:scale-95 gap-2"
-              >
-                <Zap size={15} /> New Sale
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 border-zinc-200 text-zinc-500 hover:text-zinc-900 transition-all shadow-sm"
+                  onClick={() => syncData()}
+                  disabled={isLoading}
+                >
+                  <RefreshCw size={15} className={cn(isLoading && "animate-spin")} />
+                </Button>
+                <Button
+                  onClick={() => setView('pos')}
+                  className="h-9 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-md shadow-sm transition-all active:scale-95 gap-2"
+                >
+                  <Zap size={15} /> New Sale
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-4">

@@ -2,11 +2,13 @@
 'use client';
 
 import React from 'react';
+import { useAdmin } from '@/context/AdminContext';
 import {
     Bell,
     Menu,
     LogOut,
     ChevronDown,
+    RefreshCw,
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -16,6 +18,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface AdminHeaderProps {
     onLogout: () => void;
@@ -24,10 +27,12 @@ interface AdminHeaderProps {
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onLogout, onMenuClick, title }) => {
+    const { syncData, isLoading } = useAdmin();
+
     return (
         <header className="h-[60px] bg-white border-b border-stone-100 sticky top-0 z-30 px-5 lg:px-6 flex items-center justify-between gap-4">
 
-            {/* Left: hamburger + live badge */}
+            {/* Left: hamburger + live badge + Sync */}
             <div className="flex items-center gap-3 min-w-0">
                 <button
                     onClick={onMenuClick}
@@ -46,6 +51,17 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onLogout, onMenuClick,
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="text-[11px] font-bold text-emerald-600 tracking-tight">Live</span>
                 </div>
+
+                {/* Sync Button */}
+                <button
+                    onClick={() => syncData()}
+                    disabled={isLoading}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-500 hover:text-stone-800 transition-all group"
+                    title="Sync Data"
+                >
+                    <RefreshCw size={13} className={cn("transition-transform duration-500", isLoading && "animate-spin")} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline group-hover:block transition-all">Sync</span>
+                </button>
             </div>
 
             {/* Right: bell + user */}

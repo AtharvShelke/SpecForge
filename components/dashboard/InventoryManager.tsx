@@ -101,7 +101,7 @@ const MovTypeBadge = ({ type }: { type: string }) => {
 // MAIN
 // ─────────────────────────────────────────────────────────────
 const InventoryManager = () => {
-    const { inventory, stockMovements, adjustStock, transferStock, refreshInventory } = useAdmin();
+    const { inventory, stockMovements, adjustStock, transferStock, refreshInventory, syncData, isLoading } = useAdmin();
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
         isOpen: boolean; sku: string; currentQty: number;
@@ -443,6 +443,13 @@ const InventoryManager = () => {
                             <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
                                 {totalItems}
                             </span>
+                            <button
+                                onClick={() => syncData()}
+                                disabled={isLoading}
+                                className="h-7 px-3 flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-all shadow-sm text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 ml-2"
+                            >
+                                <RefreshCw size={11} className={cn(isLoading && 'animate-spin')} /> Sync
+                            </button>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                             {/* Search */}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAdmin } from '@/context/AdminContext';
 import {
     PlusCircle,
     BarChart3,
@@ -179,13 +180,19 @@ const FieldLabel = ({ children }: { children: React.ReactNode }) => (
 
 export const MarketingManager = () => {
     const { toast } = useToast();
-    const [stats, setStats] = useState<any>(null);
-    const [campaigns, setCampaigns] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const {
+        marketingStats: stats,
+        marketingCampaigns: campaigns,
+        marketingLeads: leadsData,
+        marketingContacts: allContacts,
+        marketingLogs: logs,
+        refreshMarketing,
+        syncData,
+        isLoading
+    } = useAdmin();
+
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [activeView, setActiveView] = useState<'campaigns' | 'leads'>('campaigns');
-    const [leadsData, setLeadsData] = useState<{ items: any[], total: number }>({ items: [], total: 0 });
-    const [logs, setLogs] = useState<any[]>([]);
+    const [activeView, setActiveView] = useState<'campaigns' | 'leads' | 'contacts'>('campaigns');
     const [searchQuery, setSearchQuery] = useState('');
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
@@ -196,32 +203,12 @@ export const MarketingManager = () => {
         subject: '',
     });
 
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const [statsRes, campsRes, logsRes, leadsRes] = await Promise.all([
-                fetch('/api/marketing/stats'),
-                fetch('/api/marketing/campaigns'),
-                fetch('/api/marketing/logs?limit=15'),
-                fetch(`/api/marketing/leads?limit=50&q=${searchQuery}`),
-            ]);
-            setStats(await statsRes.json());
-            setCampaigns(await campsRes.json());
-            setLogs(await logsRes.json());
-            setLeadsData(await leadsRes.json());
-        } catch (e) {
-            console.error('Failed to fetch marketing data', e);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     useEffect(() => {
         const delaySearch = setTimeout(() => {
-            fetchData();
+            refreshMarketing(searchQuery, activeView);
         }, 300);
         return () => clearTimeout(delaySearch);
-    }, [searchQuery]);
+    }, [searchQuery, activeView, refreshMarketing]);
 
     const handleCreateCampaign = async () => {
         try {
@@ -242,7 +229,7 @@ export const MarketingManager = () => {
                 toast({ title: 'Campaign created', description: 'Your new campaign is now active.' });
                 setIsCreateOpen(false);
                 setForm({ name: '', triggerType: '', delayHours: '0', subject: '' });
-                fetchData();
+                refreshMarketing();
             } else {
                 toast({ title: 'Error', description: 'Failed to create campaign', variant: 'destructive' });
             }
@@ -260,7 +247,7 @@ export const MarketingManager = () => {
             });
             if (res.ok) {
                 toast({ title: currentStatus ? 'Campaign paused' : 'Campaign activated' });
-                fetchData();
+                refreshMarketing();
             }
         } catch (e) { console.error(e); }
     };
@@ -272,7 +259,7 @@ export const MarketingManager = () => {
             const res = await fetch(`/api/marketing/campaigns/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 toast({ title: 'Campaign deleted' });
-                fetchData();
+                refreshMarketing();
             }
         } catch (e) { console.error(e); }
         finally { setIsDeleting(null); }
@@ -336,15 +323,24 @@ export const MarketingManager = () => {
                         >
                             Leads
                         </button>
+                        <button
+                            onClick={() => setActiveView('contacts')}
+                            className={cn(
+                                "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all",
+                                activeView === 'contacts' ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                            )}
+                        >
+                            Contacts
+                        </button>
                     </div>
 
                     <button
                         type="button"
-                        onClick={fetchData}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-400 hover:text-stone-700 hover:bg-stone-50 transition-all shadow-sm"
-                        title="Refresh"
+                        onClick={() => syncData()}
+                        disabled={isLoading}
+                        className="h-7 px-3 flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-all shadow-sm text-[10px] font-bold uppercase tracking-widest disabled:opacity-50"
                     >
-                        <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
+                        <RefreshCw size={11} className={cn(isLoading && 'animate-spin')} /> Sync
                     </button>
                     <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -530,7 +526,7 @@ export const MarketingManager = () => {
                                 </div>
                             )}
                         </Panel>
-                    ) : (
+                    ) : activeView === 'leads' ? (
                         /* ── LEADS VIEW ── */
                         <Panel stripe="indigo">
                             <PanelHeader
@@ -596,6 +592,73 @@ export const MarketingManager = () => {
                                 </table>
                             </div>
                         </Panel>
+                    ) : (
+                        /* ── ALL CONTACTS VIEW ── */
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Panel stripe="stone">
+                                    <PanelHeader
+                                        icon={<Users size={12} />}
+                                        right={
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(allContacts?.emails.join('\n') || '');
+                                                    toast({ title: 'Emails copied', description: `${allContacts?.counts.emails} emails copied to clipboard.` });
+                                                }}
+                                                className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline px-2 py-0.5"
+                                            >
+                                                Copy All
+                                            </button>
+                                        }
+                                    >
+                                        Unique Emails ({allContacts?.counts.emails ?? 0})
+                                    </PanelHeader>
+                                    <div className="max-h-[500px] overflow-y-auto px-5 py-3 space-y-2">
+                                        {allContacts?.emails.length === 0 ? (
+                                            <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest text-center py-10">No emails collected</p>
+                                        ) : (
+                                            allContacts?.emails.map((email: string) => (
+                                                <div key={email} className="flex items-center justify-between py-1.5 border-b border-stone-50 last:border-0">
+                                                    <span className="text-xs font-medium text-stone-700 font-mono">{email}</span>
+                                                    <Mail size={12} className="text-stone-300" />
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </Panel>
+
+                                <Panel stripe="stone">
+                                    <PanelHeader
+                                        icon={<Hash size={12} />}
+                                        right={
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(allContacts?.phoneNumbers.join('\n') || '');
+                                                    toast({ title: 'Phone numbers copied', description: `${allContacts?.counts.phoneNumbers} phone numbers copied to clipboard.` });
+                                                }}
+                                                className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline px-2 py-0.5"
+                                            >
+                                                Copy All
+                                            </button>
+                                        }
+                                    >
+                                        Unique Phone Numbers ({allContacts?.counts.phoneNumbers ?? 0})
+                                    </PanelHeader>
+                                    <div className="max-h-[500px] overflow-y-auto px-5 py-3 space-y-2">
+                                        {allContacts?.phoneNumbers.length === 0 ? (
+                                            <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest text-center py-10">No phone numbers collected</p>
+                                        ) : (
+                                            allContacts?.phoneNumbers.map((phone: string) => (
+                                                <div key={phone} className="flex items-center justify-between py-1.5 border-b border-stone-50 last:border-0">
+                                                    <span className="text-xs font-medium text-stone-700 font-mono">{phone}</span>
+                                                    <Activity size={12} className="text-stone-300" />
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </Panel>
+                            </div>
+                        </div>
                     )}
 
                     {/* Funnel Health Mini (moved here for responsive sync) */}

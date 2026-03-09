@@ -13,6 +13,7 @@ import {
     CheckCircle2,
     Layers,
     AlertCircle,
+    RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -101,7 +102,7 @@ const CategoryPill = ({ label }: { label: string }) => (
 // BRAND MANAGER
 // ─────────────────────────────────────────────────────────────
 const BrandManager = () => {
-    const { brands, addBrand, deleteBrand } = useAdmin();
+    const { brands, addBrand, deleteBrand, syncData, isLoading } = useAdmin();
 
     const [newBrandName, setNewBrandName] = useState('');
     const [selectedCats, setSelectedCats] = useState<Category[]>([]);
@@ -148,9 +149,18 @@ const BrandManager = () => {
                         Manage brand portfolio and category associations
                     </p>
                 </div>
-                <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md shadow-sm">
-                    {brands.length} brands
-                </span>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => syncData()}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                    >
+                        <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} /> Sync
+                    </button>
+                    <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md shadow-sm">
+                        {brands.length} brands
+                    </span>
+                </div>
             </div>
 
             {/* ── MAIN GRID ── */}

@@ -26,6 +26,7 @@ import {
     BarChart3,
     Star,
     ShoppingCart,
+    RefreshCw,
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import ImageUploader from '../uploadthing/ImageUploader';
@@ -102,7 +103,7 @@ interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
 // MAIN
 // ─────────────────────────────────────────────────────────────
 const ProductManager = () => {
-    const { products, addProduct, updateProduct, deleteProduct, categories, brands, schemas } = useAdmin();
+    const { products, addProduct, updateProduct, deleteProduct, categories, brands, schemas, syncData, isLoading } = useAdmin();
 
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -738,12 +739,21 @@ const ProductManager = () => {
                         </p>
                     </div>
                 </div>
-                <button
-                    onClick={handleAddNew}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
-                >
-                    <Plus size={13} /> Add Product
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => syncData()}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                    >
+                        <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} /> Sync
+                    </button>
+                    <button
+                        onClick={handleAddNew}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
+                    >
+                        <Plus size={13} /> Add Product
+                    </button>
+                </div>
             </div>
 
             {/* ─── KPI CARDS ─── */}

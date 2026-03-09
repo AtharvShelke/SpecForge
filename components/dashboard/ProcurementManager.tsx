@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { PurchaseOrder, Supplier, PurchaseOrderStatus } from '@/types';
 import {
-    PackagePlus, Truck, Search, Plus, ExternalLink, Calendar, PlusCircle, CheckCircle, PackageOpen, LayoutGrid, List, MoreVertical, Building2, UserCircle2, ArrowRightLeft, FileText
+    PackagePlus, Truck, Search, Plus, ExternalLink, Calendar, PlusCircle, CheckCircle, PackageOpen, LayoutGrid, List, MoreVertical, Building2, UserCircle2, ArrowRightLeft, FileText, RefreshCw
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,8 @@ import { Trash } from 'lucide-react';
 const ProcurementManager = () => {
     const {
         suppliers, purchaseOrders, inventory, warehouses, products,
-        createPurchaseOrder, receivePurchaseOrder, createSupplier, updateSupplier
+        createPurchaseOrder, receivePurchaseOrder, createSupplier, updateSupplier,
+        syncData, isLoading
     } = useAdmin();
 
     const [activeTab, setActiveTab] = useState<'POs' | 'Suppliers'>('POs');
@@ -124,6 +125,14 @@ const ProcurementManager = () => {
                     >
                         <Building2 className="w-3.5 h-3.5" /> Vendors ({suppliers?.length || 0})
                     </Button>
+                    <div className="w-px h-4 bg-zinc-200 mx-0.5 hidden sm:block" />
+                    <button
+                        onClick={() => syncData()}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-50 text-zinc-600 border border-zinc-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                    >
+                        <RefreshCw size={12} className={cn(isLoading && "animate-spin")} /> Sync
+                    </button>
                 </div>
             </div>
 
