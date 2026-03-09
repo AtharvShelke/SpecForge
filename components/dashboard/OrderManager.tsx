@@ -72,20 +72,20 @@ import { cn } from '@/lib/utils';
 import { NEXT_STATUS_BUTTON, STATUS_CONFIG, STATUS_FLOW } from '@/data/constants';
 import { generateInvoiceHTML } from '@/lib/invoice';
 import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
-import { ConfirmStatusDialog, InvoicePreviewDialog } from '../helper-components/OrderManagerDialogs';
+import { ConfirmStatusDialog } from '../helper-components/OrderManagerDialogs';
 
 // ─────────────────────────────────────────────────────────────
 // STATUS PILL
 // ─────────────────────────────────────────────────────────────
 const StatusPill = ({ status }: { status: OrderStatus }) => {
   const map: Record<string, { label: string; cls: string }> = {
-    [OrderStatus.PENDING]:    { label: 'Pending',    cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
-    [OrderStatus.PAID]:       { label: 'Paid',       cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+    [OrderStatus.PENDING]: { label: 'Pending', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
+    [OrderStatus.PAID]: { label: 'Paid', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
     [OrderStatus.PROCESSING]: { label: 'Processing', cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' },
-    [OrderStatus.SHIPPED]:    { label: 'Shipped',    cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
-    [OrderStatus.DELIVERED]:  { label: 'Delivered',  cls: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200' },
-    [OrderStatus.CANCELLED]:  { label: 'Cancelled',  cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' },
-    [OrderStatus.RETURNED]:   { label: 'Returned',   cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' },
+    [OrderStatus.SHIPPED]: { label: 'Shipped', cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
+    [OrderStatus.DELIVERED]: { label: 'Delivered', cls: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200' },
+    [OrderStatus.CANCELLED]: { label: 'Cancelled', cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' },
+    [OrderStatus.RETURNED]: { label: 'Returned', cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' },
   };
   const cfg = map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' };
   return (
@@ -114,6 +114,36 @@ const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: Rea
 // ─────────────────────────────────────────────────────────────
 const OrderManager = () => {
   const { orders, updateOrderStatus, inventory, adjustStock } = useAdmin();
+
+  // Aggregate inventory by variantId across all warehouses
+  const aggregatedInventory = useMemo(() => {
+    const variantTotals = new Map<string, { quantity: number; reserved: number; reorderLevel: number; sku?: string }>();
+    const arr = Array.isArray(inventory) ? inventory : [];
+
+    arr.forEach(item => {
+      const existing = variantTotals.get(item.variantId);
+      if (existing) {
+        existing.quantity += item.quantity;
+        existing.reserved += (item.reserved || 0);
+        existing.reorderLevel = Math.max(existing.reorderLevel, item.reorderLevel || 0);
+      } else {
+        variantTotals.set(item.variantId, {
+          quantity: item.quantity,
+          reserved: item.reserved || 0,
+          reorderLevel: item.reorderLevel || 0,
+          sku: item.variant?.sku
+        });
+      }
+    });
+
+    const lookupMap = new Map<string, { quantity: number; reserved: number; reorderLevel: number }>();
+    variantTotals.forEach((data, vid) => {
+      lookupMap.set(vid, data);
+      if (data.sku) lookupMap.set(data.sku, data);
+    });
+    return lookupMap;
+  }, [inventory]);
+
   const inventoryArray = Array.isArray(inventory) ? inventory : [];
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -125,7 +155,6 @@ const OrderManager = () => {
     open: boolean; orderId: string; newStatus: OrderStatus; note: string;
   }>({ open: false, orderId: '', newStatus: OrderStatus.PENDING, note: '' });
 
-  const [invoiceDialog, setInvoiceDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const sortedOrders = useMemo(() => {
@@ -428,9 +457,6 @@ const OrderManager = () => {
                           <DropdownMenuContent align="end" className="w-44 bg-white border-stone-200 shadow-md text-stone-700">
                             <DropdownMenuLabel className="text-[10px] text-stone-400 uppercase tracking-widest">Invoice</DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-stone-100" />
-                            <DropdownMenuItem onClick={() => setInvoiceDialog(true)} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
-                              <FileText size={12} /> Preview
-                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={handlePrintInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
                               <Printer size={12} /> Print
                             </DropdownMenuItem>
@@ -513,7 +539,8 @@ const OrderManager = () => {
                             </thead>
                             <tbody className="divide-y divide-stone-50">
                               {selectedOrder.items.map(item => {
-                                const inv = inventoryArray.find(i => i.variantId === item.variantId);
+                                // Try lookup by variantId, fallback to SKU
+                                const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
                                 const isLow = inv && inv.quantity <= inv.reorderLevel;
                                 return (
                                   <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
@@ -638,7 +665,8 @@ const OrderManager = () => {
                       </div>
                       <div className="px-4 py-3.5 space-y-3">
                         {selectedOrder.items.map(item => {
-                          const inv = inventoryArray.find(i => i.variantId === item.variantId);
+                          // Try lookup by variantId, fallback to SKU
+                          const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
                           const available = inv?.quantity ?? 0;
                           const reserved = inv?.reserved ?? 0;
                           const isLow = available <= (inv?.reorderLevel ?? 5);
@@ -732,15 +760,6 @@ const OrderManager = () => {
         selectedOrder={selectedOrder}
         inventoryArray={inventoryArray}
         isUpdating={isUpdating}
-      />
-
-      <InvoicePreviewDialog
-        invoiceDialog={invoiceDialog}
-        setInvoiceDialog={setInvoiceDialog}
-        selectedOrder={selectedOrder}
-        handlePrintInvoice={handlePrintInvoice}
-        handleDownloadInvoice={handleDownloadInvoice}
-        calcFinancials={calcFinancials}
       />
     </TooltipProvider>
   );

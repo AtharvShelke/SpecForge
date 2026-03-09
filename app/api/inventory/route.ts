@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
         // Pagination parameters — default 50, max 200
         const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 200);
+        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 5000);
         const skip = (page - 1) * limit;
 
         let dbWhere: any = {};

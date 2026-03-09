@@ -144,7 +144,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const refreshInventory = useCallback(async () => {
         try {
-            const res = await fetch('/api/inventory?limit=200');
+            const res = await fetch('/api/inventory?limit=3000');
             const data = await res.json();
 
             // The API returns a pagination object { items, total, page, limit }
@@ -221,7 +221,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const refreshProducts = useCallback(async () => {
         try {
-            const res = await fetch('/api/products?fields=minimal');
+            const res = await fetch('/api/products?fields=minimal&limit=5000');
             const data = await res.json();
             setProducts(data.products ?? data);
         } catch (err) { console.error(err); }

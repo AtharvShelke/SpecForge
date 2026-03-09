@@ -122,8 +122,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 // MAIN OVERVIEW
 // ─────────────────────────────────────────────────────────────
 const Overview = () => {
-  const { products } = useShop();
-  const { orders, inventory } = useAdmin();
+  const { orders, inventory, products } = useAdmin();
 
   // ── Derived metrics ──
   const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
@@ -133,10 +132,14 @@ const Overview = () => {
   const deliveredOrders = orders.filter(o => o.status === OrderStatus.DELIVERED);
   const cancelledOrders = orders.filter(o => o.status === OrderStatus.CANCELLED);
 
-  const lowStockProducts = products.filter(
-    p => p.variants?.[0]?.status === 'LOW_STOCK' || p.variants?.[0]?.status === 'OUT_OF_STOCK'
-  );
-  const outOfStockProducts = products.filter(p => p.variants?.[0]?.status === 'OUT_OF_STOCK');
+  const lowStockProducts = products.filter(p => {
+    const stock = p.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+    return stock <= 5; // Use 5 as a standard threshold for "low" in overview
+  });
+  const outOfStockProducts = products.filter(p => {
+    const stock = p.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+    return stock <= 0;
+  });
 
   // ── Order fulfilment rate ──
   const fulfilmentRate = orders.length > 0
@@ -451,7 +454,7 @@ const Overview = () => {
 
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
-                  { label: 'Units', value: totalInventoryUnits.toLocaleString('en-IN'), color: 'text-stone-800' },
+                  { label: 'Available', value: totalInventoryUnits.toLocaleString('en-IN'), color: 'text-stone-800' },
                   { label: 'Low Stock', value: lowStockCount, color: lowStockCount > 0 ? 'text-amber-600' : 'text-stone-800' },
                   { label: 'Out', value: outOfStockCount, color: outOfStockCount > 0 ? 'text-rose-600' : 'text-stone-800' },
                 ].map(({ label, value, color }) => (
@@ -469,14 +472,19 @@ const Overview = () => {
                     <p className="text-xs font-semibold text-stone-700 truncate">{product.name}</p>
                     <p className="text-[10px] font-mono text-stone-400">{product.variants?.[0]?.sku || '—'}</p>
                   </div>
-                  <span className={cn(
-                    'text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ring-1',
-                    product.variants?.[0]?.status === 'OUT_OF_STOCK'
-                      ? 'bg-rose-50 text-rose-600 ring-rose-200'
-                      : 'bg-amber-50 text-amber-700 ring-amber-200'
-                  )}>
-                    {product.variants?.[0]?.status === 'OUT_OF_STOCK' ? 'Out' : 'Low'}
-                  </span>
+                  {(() => {
+                    const stock = product.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+                    return (
+                      <span className={cn(
+                        'text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ring-1',
+                        stock <= 0
+                          ? 'bg-rose-50 text-rose-600 ring-rose-200'
+                          : 'bg-amber-50 text-amber-700 ring-amber-200'
+                      )}>
+                        {stock <= 0 ? 'Out' : 'Low'}
+                      </span>
+                    );
+                  })()}
                 </div>
               ))}
               {lowStockProducts.length === 0 && (

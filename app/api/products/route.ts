@@ -38,7 +38,7 @@ export async function getProductsData(searchParams: URLSearchParams) {
         const minPrice = searchParams.get("minPrice");
         const maxPrice = searchParams.get("maxPrice");
         const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 1000);
+        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 5000);
 
         const sort = searchParams.get("sort") || "popularity";
 
@@ -200,6 +200,7 @@ export async function getProductsData(searchParams: URLSearchParams) {
                         sku: true,
                         price: true,
                         status: true,
+                        warehouseInventories: { select: { quantity: true } },
                     },
                     take: 1,
                 },

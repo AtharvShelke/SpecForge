@@ -4,6 +4,7 @@ import { z } from "zod";
 import { calculateOrderFinancials } from "@/lib/tax-engine";
 import { reserveInventory, InsufficientStockError } from "@/services/inventoryService";
 import { createPaymentTransaction } from "@/services/paymentService";
+import { sendMail } from "@/services/mailService";
 
 const CategoryEnum = z.enum([
     "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest) {
                     paymentStatus: true,
                     createdAt: true,
                     items: {
-                        select: { id: true, name: true, category: true, price: true, quantity: true, image: true, sku: true },
+                        select: { id: true, variantId: true, name: true, category: true, price: true, quantity: true, image: true, sku: true },
                     },
                     logs: {
                         select: { id: true, status: true, timestamp: true, note: true },
@@ -241,6 +242,35 @@ export async function POST(req: NextRequest) {
         }, {
             maxWait: 5000,
             timeout: 15000,
+        });
+
+        // Send order confirmation email asynchronously
+        sendMail({
+            to: order.email,
+            subject: `Order Confirmation - ${order.id}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                    <h2 style="color: #0056b3;">Thank you for your order, ${order.customerName}!</h2>
+                    <p>Your order <strong>${order.id}</strong> has been successfully placed.</p>
+                    <p><strong>Total Amount:</strong> ₹${order.total.toFixed(2)}</p>
+                    
+                    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 20px;">Order Summary</h3>
+                    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px;">
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            ${order.items.map((item: any) => `
+                                <li style="margin-bottom: 10px; border-bottom: 1px solid #eaeaea; padding-bottom: 10px;">
+                                    <strong>${item.name}</strong><br />
+                                    <span>Quantity: ${item.quantity}</span> | <span>Price: ₹${(item.price * item.quantity).toFixed(2)}</span>
+                                </li>
+                            `).join("")}
+                        </ul>
+                    </div>
+                    
+                    <p style="margin-top: 20px; color: #666; font-size: 14px;">We will notify you once your order has been processed and shipped.</p>
+                </div>
+            `,
+        }).catch((err) => {
+            console.error("Failed to send order confirmation email:", err);
         });
 
         return NextResponse.json(order, { status: 201 });

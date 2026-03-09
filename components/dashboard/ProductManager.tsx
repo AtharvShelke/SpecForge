@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ─────────────────────────────────────────────────────────────
 // SHARED PRIMITIVES
@@ -127,6 +128,8 @@ const ProductManager = () => {
     const currentStockStatus = searchParams.get("f_stock_status") || "all";
     const currentMinPrice = searchParams.get("minPrice") || "";
     const currentMaxPrice = searchParams.get("maxPrice") || "";
+
+    const [showDetail, setShowDetail] = useState(false);
 
     useEffect(() => {
         if (debouncedSearch !== currentSearchQuery) updateQueryParams({ q: debouncedSearch });
@@ -298,11 +301,16 @@ const ProductManager = () => {
         [products]
     );
     const outOfStockCount = useMemo(() =>
-        products.filter(p => (p.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + inv.quantity, 0) || 0) <= 0).length,
+        products.filter(p => {
+            const firstVar = p.variants?.[0];
+            if (!firstVar) return true;
+            const stock = firstVar.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+            return stock <= 0;
+        }).length,
         [products]
     );
-    const categoryCount = useMemo(() => new Set(products.map(p => p.category)).size, [products]);
-    const brandCount = useMemo(() => new Set(products.map(p => p.brand?.name || p.specs?.find((s: any) => s.key === 'brand')?.value || '')).size, [products]);
+    const categoryCount = useMemo(() => new Set(products.map(p => p.category).filter(Boolean)).size, [products]);
+    const brandCount = useMemo(() => new Set(products.map(p => p.brand?.name).filter(Boolean)).size, [products]);
 
     const categoryBreakdown = useMemo(() => {
         const map: Record<string, { count: number; value: number }> = {};
@@ -312,16 +320,26 @@ const ProductManager = () => {
             map[cat].count++;
             map[cat].value += p.variants?.[0]?.price || 0;
         });
-        return Object.entries(map).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+        return Object.entries(map).sort((a, b) => b[1].count - a[1].count);
+    }, [products]);
+
+    const brandBreakdown = useMemo(() => {
+        const map: Record<string, number> = {};
+        products.forEach(p => {
+            const b = p.brand?.name || 'Generic';
+            map[b] = (map[b] || 0) + 1;
+        });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]);
     }, [products]);
 
     const priceRange = useMemo(() => {
         if (!products.length) return { min: 0, max: 0, avg: 0 };
-        const prices = products.map(p => p.variants?.[0]?.price || 0).filter(Boolean);
+        const prices = products.map(p => p.variants?.[0]?.price || 0).filter(p => p > 0);
+        if (prices.length === 0) return { min: 0, max: 0, avg: 0 };
         return {
             min: Math.min(...prices),
             max: Math.max(...prices),
-            avg: Math.round(prices.reduce((a, b) => a + b, 0) / (prices.length || 1))
+            avg: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
         };
     }, [products]);
 
@@ -734,7 +752,15 @@ const ProductManager = () => {
                     {
                         label: 'Catalogue Size',
                         value: products.length,
-                        sub: `${categoryCount} categories · ${brandCount} brands`,
+                        sub: (
+                            <button
+                                onClick={() => setShowDetail(true)}
+                                className="hover:text-indigo-600 transition-colors flex items-center gap-0.5"
+                            >
+                                {categoryCount} categories · {brandCount} brands
+                                <ChevronRight size={10} />
+                            </button>
+                        ),
                         icon: <Package size={14} />,
                         accent: 'border-l-indigo-400',
                     },
@@ -772,7 +798,7 @@ const ProductManager = () => {
                             </span>
                         </div>
                         <p className="text-2xl font-extrabold text-stone-900 tabular-nums tracking-tight">{card.value}</p>
-                        <p className="text-[11px] text-stone-400 mt-0.5">{card.sub}</p>
+                        <div className="text-[11px] text-stone-400 mt-0.5">{card.sub}</div>
                     </div>
                 ))}
             </div>
@@ -783,67 +809,63 @@ const ProductManager = () => {
                 {/* Category Breakdown */}
                 <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
                     <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
-                    <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
-                        <SectionLabel icon={<Tag size={12} />}>Products by Category</SectionLabel>
+                    <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                        <SectionLabel icon={<Tag size={12} />}>SKUs by Category</SectionLabel>
+                        <button onClick={() => setShowDetail(true)} className="text-[10px] font-bold text-indigo-600 hover:underline px-2">View All</button>
                     </div>
-                    <div className="divide-y divide-stone-50">
-                        {categoryBreakdown.length === 0 ? (
-                            <div className="px-4 py-5 text-center text-xs text-stone-400">No data</div>
-                        ) : categoryBreakdown.map(([cat, data], idx) => {
-                            const pct = products.length > 0 ? Math.round((data.count / products.length) * 100) : 0;
-                            return (
-                                <div key={idx} className="px-4 py-2.5">
-                                    <div className="flex items-center justify-between gap-2 mb-1">
-                                        <span className="text-xs font-semibold text-stone-700 truncate">{cat}</span>
-                                        <span className="text-[10px] font-mono font-bold text-stone-400 tabular-nums shrink-0">
-                                            {data.count} SKU{data.count !== 1 ? 's' : ''} · {pct}%
-                                        </span>
+                    <ScrollArea className="h-[240px]">
+                        <div className="divide-y divide-stone-50 px-4">
+                            {categoryBreakdown.length === 0 ? (
+                                <div className="py-5 text-center text-xs text-stone-400">No data</div>
+                            ) : categoryBreakdown.map(([cat, data], idx) => {
+                                const pct = products.length > 0 ? Math.round((data.count / products.length) * 100) : 0;
+                                return (
+                                    <div key={idx} className="py-3">
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                            <span className="text-xs font-semibold text-stone-700 truncate">{cat}</span>
+                                            <span className="text-[10px] font-mono font-bold text-stone-400 tabular-nums shrink-0">
+                                                {data.count} SKU{data.count !== 1 ? 's' : ''} · {pct}%
+                                            </span>
+                                        </div>
+                                        <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
+                                            <div className="h-full rounded-full bg-indigo-400 transition-all" style={{ width: `${pct}%` }} />
+                                        </div>
                                     </div>
-                                    <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
-                                        <div className="h-full rounded-full bg-indigo-400 transition-all" style={{ width: `${pct}%` }} />
-                                    </div>
-                                    <p className="text-[10px] text-stone-400 mt-0.5">
-                                        Avg ₹{Math.round(data.value / data.count).toLocaleString('en-IN')} / product
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
+                    </ScrollArea>
                 </div>
 
-                {/* Price Distribution */}
+                {/* Brand Breakdown */}
                 <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
                     <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300" />
-                    <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
-                        <SectionLabel icon={<BarChart3 size={12} />}>Price & Margin Overview</SectionLabel>
+                    <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                        <SectionLabel icon={<Star size={12} />}>Top Brands</SectionLabel>
+                        <button onClick={() => setShowDetail(true)} className="text-[10px] font-bold text-teal-600 hover:underline px-2">View All</button>
                     </div>
-                    <div className="px-4 py-4 space-y-3">
-                        {[
-                            { label: 'Lowest Price', value: `₹${priceRange.min.toLocaleString('en-IN')}`, color: 'text-stone-600', bar: priceRange.max > 0 ? (priceRange.min / priceRange.max) * 100 : 0, barColor: 'bg-stone-300' },
-                            { label: 'Average Price', value: `₹${priceRange.avg.toLocaleString('en-IN')}`, color: 'text-indigo-600', bar: priceRange.max > 0 ? (priceRange.avg / priceRange.max) * 100 : 0, barColor: 'bg-indigo-400' },
-                            { label: 'Highest Price', value: `₹${priceRange.max.toLocaleString('en-IN')}`, color: 'text-teal-600', bar: 100, barColor: 'bg-teal-400' },
-                        ].map(({ label, value, color, bar, barColor }) => (
-                            <div key={label}>
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{label}</span>
-                                    <span className={cn('text-sm font-extrabold font-mono tabular-nums', color)}>{value}</span>
-                                </div>
-                                <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
-                                    <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${bar}%` }} />
-                                </div>
-                            </div>
-                        ))}
-                        <div className="pt-3 border-t border-stone-100 grid grid-cols-2 gap-3">
-                            <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Active Categories</p>
-                                <p className="text-lg font-extrabold text-stone-800 tabular-nums">{categoryCount}</p>
-                            </div>
-                            <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Active Brands</p>
-                                <p className="text-lg font-extrabold text-stone-800 tabular-nums">{brandCount}</p>
-                            </div>
+                    <ScrollArea className="h-[240px]">
+                        <div className="divide-y divide-stone-50 px-4">
+                            {brandBreakdown.length === 0 ? (
+                                <div className="py-5 text-center text-xs text-stone-400">No data</div>
+                            ) : brandBreakdown.slice(0, 10).map(([brand, count], idx) => {
+                                const pct = products.length > 0 ? Math.round((count / products.length) * 100) : 0;
+                                return (
+                                    <div key={idx} className="py-3">
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                            <span className="text-xs font-semibold text-stone-700 truncate">{brand}</span>
+                                            <span className="text-[10px] font-mono font-bold text-stone-400 tabular-nums shrink-0">
+                                                {count} SKU{count !== 1 ? 's' : ''} · {pct}%
+                                            </span>
+                                        </div>
+                                        <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
+                                            <div className="h-full rounded-full bg-teal-400 transition-all" style={{ width: `${pct}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </div>
+                    </ScrollArea>
                 </div>
             </div>
 
@@ -1072,6 +1094,134 @@ const ProductManager = () => {
                     </div>
                 )}
             </div>
+            {/* Breakdown Dialog */}
+            <AlertDialog open={showDetail} onOpenChange={setShowDetail}>
+                <AlertDialogContent className="bg-white border-stone-200 rounded-2xl shadow-2xl max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                    <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-teal-500" />
+
+                    <AlertDialogHeader className="px-6 py-5 border-b border-stone-100 bg-stone-50/30 flex-row items-center justify-between space-y-0">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                <BarChart3 size={20} />
+                            </div>
+                            <div>
+                                <AlertDialogTitle className="text-xl font-bold text-stone-900 tracking-tight">
+                                    Catalogue Intelligence
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-xs text-stone-400 mt-0.5 font-medium uppercase tracking-wider">
+                                    Full Analysis of {products.length} SKUs
+                                </AlertDialogDescription>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowDetail(false)} className="p-2 hover:bg-stone-100 rounded-full text-stone-400 transition-colors">
+                            <X size={20} />
+                        </button>
+                    </AlertDialogHeader>
+
+                    <div className="flex-1 overflow-auto">
+                        {/* Summary Header */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b border-stone-50 bg-white">
+                            <div className="p-4 rounded-xl border border-stone-100 bg-stone-50/20 text-center">
+                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Total SKUs</p>
+                                <p className="text-2xl font-black text-stone-800 tabular-nums">{products.length}</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-stone-100 bg-stone-50/20 text-center">
+                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Categories</p>
+                                <p className="text-2xl font-black text-indigo-600 tabular-nums">{categoryCount}</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-stone-100 bg-stone-50/20 text-center">
+                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Active Brands</p>
+                                <p className="text-2xl font-black text-teal-600 tabular-nums">{brandCount}</p>
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                {/* Categories Section */}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <SectionLabel icon={<Tag size={12} />}>SKU Distribution by Category</SectionLabel>
+                                        <Badge variant="outline" className="text-[10px] uppercase font-bold text-stone-400 border-stone-200">
+                                            {categoryCount} TOTAL
+                                        </Badge>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {categoryBreakdown.map(([cat, data], i) => (
+                                            <div key={i} className="group">
+                                                <div className="flex items-center justify-between mb-2 px-0.5">
+                                                    <span className="text-sm font-bold text-stone-700 tracking-tight group-hover:text-indigo-600 transition-colors">
+                                                        {cat}
+                                                    </span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[10px] font-bold text-stone-400">
+                                                            {Math.round((data.count / products.length) * 100)}%
+                                                        </span>
+                                                        <span className="text-xs font-mono font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg min-w-[2.5rem] text-center">
+                                                            {data.count}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="h-2 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700 rounded-full"
+                                                        style={{ width: `${(data.count / products.length) * 100}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Brands Section */}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <SectionLabel icon={<Star size={12} />}>SKU Distribution by Brand</SectionLabel>
+                                        <Badge variant="outline" className="text-[10px] uppercase font-bold text-stone-400 border-stone-200">
+                                            {brandCount} TOTAL
+                                        </Badge>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {brandBreakdown.map(([brand, count], i) => (
+                                            <div key={i} className="group">
+                                                <div className="flex items-center justify-between mb-2 px-0.5">
+                                                    <span className="text-sm font-bold text-stone-700 tracking-tight group-hover:text-teal-600 transition-colors">
+                                                        {brand}
+                                                    </span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[10px] font-bold text-stone-400">
+                                                            {Math.round((count / products.length) * 100)}%
+                                                        </span>
+                                                        <span className="text-xs font-mono font-extrabold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-lg min-w-[2.5rem] text-center">
+                                                            {count}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="h-2 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-700 rounded-full"
+                                                        style={{ width: `${(count / products.length) * 100}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-5 border-t border-stone-100 bg-stone-50/50 flex justify-end">
+                        <AlertDialogCancel asChild>
+                            <button
+                                onClick={() => setShowDetail(false)}
+                                className="px-6 py-2.5 rounded-xl bg-white border border-stone-200 text-sm font-black text-stone-600 hover:bg-stone-50 transition-all shadow-sm active:scale-95"
+                            >
+                                Close Breakdown
+                            </button>
+                        </AlertDialogCancel>
+                    </div>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

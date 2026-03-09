@@ -99,37 +99,62 @@ export const ConfirmStatusDialog = ({
                                     <Warehouse size={11} /> Inventory Changes
                                 </div>
                                 <div className="divide-y divide-slate-100">
-                                    {selectedOrder.items.map(item => {
-                                        const inv = inventoryArray.find(i => i.variantId === item.variantId);
-                                        const current = inv?.quantity ?? 0;
-                                        let after = current;
-                                        let changeLabel = '';
-                                        let changeColor = '';
-                                        if (confirmDialog.newStatus === OrderStatus.SHIPPED) {
-                                            after = current; // reserved → gone
-                                            changeLabel = `Reserved −${item.quantity}`;
-                                            changeColor = 'text-indigo-600';
-                                        } else if (confirmDialog.newStatus === OrderStatus.CANCELLED) {
-                                            after = current + item.quantity;
-                                            changeLabel = `+${item.quantity} released`;
-                                            changeColor = 'text-emerald-600';
-                                        } else if (confirmDialog.newStatus === OrderStatus.RETURNED) {
-                                            after = current + item.quantity;
-                                            changeLabel = `+${item.quantity} returned`;
-                                            changeColor = 'text-slate-600';
-                                        }
-                                        return (
-                                            <div key={item.id} className="px-3 py-2 flex items-center justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <p className="text-xs font-semibold text-slate-700 truncate">{item.name}</p>
-                                                    <p className="text-[10px] text-slate-400 font-mono">{item.sku}</p>
+                                    {(() => {
+                                        // Group by variantId first, then populate lookup map with both ID and SKU
+                                        const variantTotals = new Map<string, { quantity: number; reserved: number; sku?: string }>();
+                                        inventoryArray.forEach(i => {
+                                            const existing = variantTotals.get(i.variantId);
+                                            if (existing) {
+                                                existing.quantity += i.quantity;
+                                                existing.reserved += (i.reserved || 0);
+                                            } else {
+                                                variantTotals.set(i.variantId, {
+                                                    quantity: i.quantity,
+                                                    reserved: i.reserved || 0,
+                                                    sku: i.variant?.sku
+                                                });
+                                            }
+                                        });
+
+                                        const lookupMap = new Map<string, { quantity: number; reserved: number }>();
+                                        variantTotals.forEach((data, vid) => {
+                                            lookupMap.set(vid, data);
+                                            if (data.sku) lookupMap.set(data.sku, data);
+                                        });
+
+                                        return selectedOrder.items.map(item => {
+                                            const inv = lookupMap.get(item.variantId) || (item.sku ? lookupMap.get(item.sku) : undefined);
+                                            const current = inv?.quantity ?? 0;
+                                            // ... rest of logic
+                                            let after = current;
+                                            let changeLabel = '';
+                                            let changeColor = '';
+                                            if (confirmDialog.newStatus === OrderStatus.SHIPPED) {
+                                                after = current; // reserved → gone
+                                                changeLabel = `Reserved −${item.quantity}`;
+                                                changeColor = 'text-indigo-600';
+                                            } else if (confirmDialog.newStatus === OrderStatus.CANCELLED) {
+                                                after = current + item.quantity;
+                                                changeLabel = `+${item.quantity} released`;
+                                                changeColor = 'text-emerald-600';
+                                            } else if (confirmDialog.newStatus === OrderStatus.RETURNED) {
+                                                after = current + item.quantity;
+                                                changeLabel = `+${item.quantity} returned`;
+                                                changeColor = 'text-slate-600';
+                                            }
+                                            return (
+                                                <div key={item.id} className="px-3 py-2 flex items-center justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-semibold text-slate-700 truncate">{item.name}</p>
+                                                        <p className="text-[10px] text-slate-400 font-mono">{item.sku}</p>
+                                                    </div>
+                                                    <span className={cn('text-xs font-bold flex-shrink-0', changeColor)}>
+                                                        {changeLabel}
+                                                    </span>
                                                 </div>
-                                                <span className={cn('text-xs font-bold flex-shrink-0', changeColor)}>
-                                                    {changeLabel}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             </div>
                         )}
@@ -168,148 +193,3 @@ export const ConfirmStatusDialog = ({
     );
 };
 
-interface InvoicePreviewDialogProps {
-    invoiceDialog: boolean;
-    setInvoiceDialog: (open: boolean) => void;
-    selectedOrder: Order | null;
-    handlePrintInvoice: () => void;
-    handleDownloadInvoice: () => void;
-    calcFinancials: (order: Order) => { subtotal: number; tax: number; total: number };
-}
-
-export const InvoicePreviewDialog = ({
-    invoiceDialog,
-    setInvoiceDialog,
-    selectedOrder,
-    handlePrintInvoice,
-    handleDownloadInvoice,
-    calcFinancials
-}: InvoicePreviewDialogProps) => {
-    return (
-        <Dialog open={invoiceDialog} onOpenChange={setInvoiceDialog}>
-            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col bg-white">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <FileText size={16} className="text-blue-600" />
-                        Invoice — {selectedOrder?.id}
-                    </DialogTitle>
-                    <DialogDescription>
-                        Preview your invoice before printing or downloading.
-                    </DialogDescription>
-                </DialogHeader>
-
-                {selectedOrder && (
-                    <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
-                        {/* Invoice Preview */}
-                        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-                            {/* Header */}
-                            <div className="flex justify-between items-start p-6 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
-                                <div>
-                                    <h3 className="text-xl font-extrabold tracking-tight">Nexus Hardware</h3>
-                                    <p className="text-xs text-blue-200 mt-1">123, Tech Park, MG Road, Bengaluru<br />GSTIN: 29ABCDE1234F1Z5</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-black tracking-tight opacity-90">INVOICE</p>
-                                    <p className="text-xs text-blue-200 mt-1">INV-{selectedOrder.id}-{new Date().getFullYear()}</p>
-                                    <p className="text-xs text-blue-200">{new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
-                                </div>
-                            </div>
-
-                            {/* Bill To / Order Info */}
-                            <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 border-b border-slate-200">
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bill To</p>
-                                    <p className="font-bold text-slate-800">{selectedOrder.customerName}</p>
-                                    <p className="text-xs text-slate-500 mt-1">{selectedOrder.email}</p>
-                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                        {selectedOrder.shippingStreet}<br />
-                                        {selectedOrder.shippingCity}, {selectedOrder.shippingState} {selectedOrder.shippingZip}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Order Info</p>
-                                    <div className="space-y-1">
-                                        {[
-                                            { label: 'Order ID', value: selectedOrder.id },
-                                            { label: 'Date', value: new Date(selectedOrder.date).toLocaleDateString('en-IN') },
-                                            { label: 'Payment', value: selectedOrder.paymentMethod },
-                                            { label: 'Status', value: selectedOrder.paymentStatus },
-                                        ].map(row => (
-                                            <div key={row.label} className="flex items-center gap-2 text-xs">
-                                                <span className="text-slate-400 w-16 flex-shrink-0">{row.label}</span>
-                                                <span className="font-semibold text-slate-700">{row.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Line Items */}
-                            <div className="p-6">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b-2 border-slate-200">
-                                            <th className="text-left pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Item</th>
-                                            <th className="text-center pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Qty</th>
-                                            <th className="text-right pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Price</th>
-                                            <th className="text-right pb-2 text-xs font-bold text-slate-400 uppercase tracking-wide">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {selectedOrder.items.map(item => (
-                                            <tr key={item.id} className="border-b border-slate-100">
-                                                <td className="py-3">
-                                                    <p className="font-semibold text-slate-800">{item.name}</p>
-                                                    <p className="text-xs text-slate-400 font-mono">{item.sku}</p>
-                                                </td>
-                                                <td className="py-3 text-center text-slate-600">{item.quantity}</td>
-                                                <td className="py-3 text-right text-slate-600">₹{item.price.toLocaleString('en-IN')}</td>
-                                                <td className="py-3 text-right font-bold text-slate-900">₹{(item.price * item.quantity).toLocaleString('en-IN')}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-
-                                {/* Totals */}
-                                {(() => {
-                                    const { subtotal, tax, total } = calcFinancials(selectedOrder);
-                                    return (
-                                        <div className="mt-4 ml-auto max-w-xs space-y-1.5">
-                                            <div className="flex justify-between text-sm text-slate-500">
-                                                <span>Subtotal</span><span>₹{subtotal.toLocaleString('en-IN')}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm text-slate-500">
-                                                <span>Shipping</span><span className="text-emerald-600 font-semibold">Free</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm text-slate-500">
-                                                <span>GST (18%)</span><span>₹{tax.toLocaleString('en-IN')}</span>
-                                            </div>
-                                            <div className="flex justify-between font-extrabold text-slate-900 text-base pt-2 border-t-2 border-slate-900 mt-2">
-                                                <span>Total</span><span>₹{total.toLocaleString('en-IN')}</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-
-                            {/* Footer */}
-                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center">
-                                <p className="text-xs text-slate-400">Thank you for your purchase! For queries, contact billing@nexushardware.com</p>
-                            </div>
-                        </div>
-                    </ScrollArea>
-                )}
-
-                <DialogFooter className="gap-2 pt-4 border-t border-slate-100">
-                    <Button variant="ghost" size="sm" onClick={() => setInvoiceDialog(false)}>Close</Button>
-                    <Button size="sm" variant="outline" className="gap-1.5" onClick={handleDownloadInvoice}>
-                        <Download size={13} /> Download
-                    </Button>
-                    <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePrintInvoice}>
-                        <Printer size={13} /> Print Invoice
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};

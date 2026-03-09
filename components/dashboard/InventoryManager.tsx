@@ -216,8 +216,9 @@ const InventoryManager = () => {
     const lowStockCount = inventory.filter(i => i.quantity > 0 && i.quantity <= i.reorderLevel).length;
     const outOfStockCount = inventory.filter(i => i.quantity === 0).length;
     const totalStockValue = inventory.reduce((s, i) => s + i.quantity * i.costPrice, 0);
-    const totalUnits = inventory.reduce((s, i) => s + i.quantity, 0);
+    const totalAvailable = inventory.reduce((s, i) => s + i.quantity, 0);
     const totalReserved = inventory.reduce((s, i) => s + (i.reserved || 0), 0);
+    const totalOnHand = totalAvailable + totalReserved;
     const healthyCount = inventory.filter(i => i.quantity > i.reorderLevel).length;
     const healthPct = inventory.length > 0 ? Math.round((healthyCount / inventory.length) * 100) : 0;
 
@@ -411,10 +412,10 @@ const InventoryManager = () => {
                     </div>
                     <div className="px-4 py-4 space-y-3">
                         {[
-                            { label: 'Total Units on Hand', value: totalUnits.toLocaleString('en-IN'), sub: 'Gross available stock', icon: <Package size={12} />, color: 'text-stone-600' },
+                            { label: 'Total Units on Hand (Physical)', value: totalOnHand.toLocaleString('en-IN'), sub: 'Physical stock in warehouse', icon: <Package size={12} />, color: 'text-stone-600' },
                             { label: 'Reserved / Committed', value: totalReserved.toLocaleString('en-IN'), sub: 'Pending order fulfilment', icon: <Clock size={12} />, color: 'text-amber-600' },
-                            { label: 'Net Available', value: Math.max(0, totalUnits - totalReserved).toLocaleString('en-IN'), sub: 'Free to allocate', icon: <Zap size={12} />, color: 'text-emerald-600' },
-                            { label: 'Avg Cost / Unit', value: inventory.length > 0 ? `₹${Math.round(totalStockValue / Math.max(totalUnits, 1)).toLocaleString('en-IN')}` : '—', sub: 'Weighted average', icon: <DollarSign size={12} />, color: 'text-indigo-600' },
+                            { label: 'Net Available (to Sell)', value: totalAvailable.toLocaleString('en-IN'), sub: 'Free to allocate to new orders', icon: <Zap size={12} />, color: 'text-emerald-600' },
+                            { label: 'Avg Cost / Unit', value: inventory.length > 0 ? `₹${Math.round(totalStockValue / Math.max(totalOnHand, 1)).toLocaleString('en-IN')}` : '—', sub: 'Weighted average', icon: <DollarSign size={12} />, color: 'text-indigo-600' },
                         ].map(({ label, value, sub, icon, color }) => (
                             <div key={label} className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2 min-w-0">

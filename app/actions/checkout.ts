@@ -4,6 +4,7 @@ import { Category, OrderStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateOrderFinancials } from "@/lib/gst";
+import { sendMail } from "@/services/mailService";
 
 
 const CategoryEnum = z.nativeEnum(Category);
@@ -177,8 +178,26 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         console.log(`[MOCK NOTIFICATION] ORDER ${order.id}`);
         console.log(`========================================`);
         console.log(`✅ Sent WhatsApp Confirmation to: ${data.phone}`);
-        console.log(`✅ Sent Email Receipt to: ${data.email}`);
         console.log(`========================================\n`);
+
+        try {
+            await sendMail({
+                to: data.email,
+                subject: `Order Confirmation - ${order.id}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                        <h2 style="color: #0056b3;">Thank you for your order, ${data.customerName}!</h2>
+                        <p>Your order <strong>${order.id}</strong> has been successfully placed.</p>
+                        <p><strong>Total Amount:</strong> ₹${order.total.toFixed(2)}</p>
+                        
+                        <p style="margin-top: 20px; color: #666; font-size: 14px;">We will notify you once your order has been processed and shipped.</p>
+                    </div>
+                `,
+            });
+            console.log(`✅ Real Email Receipt Sent to: ${data.email}`);
+        } catch (mailError) {
+            console.error("Failed to send real email confirmation:", mailError);
+        }
 
         return { success: true, orderId: order.id, order };
     } catch (error: any) {
