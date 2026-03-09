@@ -88,16 +88,17 @@ const coolerSocketRule: CompatibilityRule = {
     const issues: CompatibilityIssue[] = [];
 
     if (ctx.cpu && ctx.cooler) {
-      const supportedSockets = ctx.coolerSpecs.supportedSockets as string | undefined;
+      const supportedSockets = ctx.coolerSpecs.socket;
 
       if (supportedSockets && ctx.cpuSpecs.socket) {
-        const sockets = supportedSockets.toLowerCase();
+        const supportedArr = Array.isArray(supportedSockets) ? supportedSockets : [supportedSockets];
+        const hasSupport = supportedArr.some((s: string) => s.toLowerCase() === String(ctx.cpuSpecs.socket).toLowerCase());
 
-        if (!sockets.includes(ctx.cpuSpecs.socket.toLowerCase())) {
+        if (!hasSupport) {
           issues.push({
             level: CompatibilityLevel.INCOMPATIBLE,
             message: `CPU Cooler does not support this CPU socket.`,
-            reason: `Cooler supports [${supportedSockets}] but CPU uses ${ctx.cpuSpecs.socket}.`,
+            reason: `Cooler supports [${supportedArr.join(', ')}] but CPU uses ${ctx.cpuSpecs.socket}.`,
             resolution: `Choose a cooler compatible with ${ctx.cpuSpecs.socket}.`,
             componentIds: [ctx.cooler.id, ctx.cpu.id]
           });
@@ -221,8 +222,32 @@ const clearanceRule: CompatibilityRule = {
     }
     return issues;
   }
-}
+};
 
+const psuFormFactorRule: CompatibilityRule = {
+  name: 'PSU Form Factor Compatibility',
+  evaluate: (ctx) => {
+    const issues: CompatibilityIssue[] = [];
+    if (ctx.cabinet && ctx.psu) {
+      const cabinetSupport = ctx.cabinetSpecs.psuFormFactorSupport;
+      const psuFactor = ctx.psuSpecs.formFactor as string;
+
+      if (cabinetSupport && psuFactor) {
+        const supportedArr = Array.isArray(cabinetSupport) ? cabinetSupport : [cabinetSupport];
+        if (!supportedArr.some((s: string) => s.toLowerCase() === psuFactor.toLowerCase())) {
+          issues.push({
+            level: CompatibilityLevel.INCOMPATIBLE,
+            message: `Power Supply form factor unsupported by Cabinet.`,
+            reason: `Cabinet supports [${supportedArr.join(', ')}] form factors, but PSU is ${psuFactor}.`,
+            resolution: `Choose a different cabinet or a compatible PSU form factor.`,
+            componentIds: [ctx.cabinet.id, ctx.psu.id]
+          });
+        }
+      }
+    }
+    return issues;
+  }
+};
 
 const RULES: CompatibilityRule[] = [
   socketRule,
@@ -231,6 +256,7 @@ const RULES: CompatibilityRule[] = [
   powerDrawRule,
   formFactorRule,
   clearanceRule,
+  psuFormFactorRule,
 ];
 
 export const validateBuild = (items: CartItem[]): CompatibilityReport => {

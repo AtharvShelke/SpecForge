@@ -4,8 +4,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import {
     Product, Category, CategoryNode, Brand, CategorySchema, AttributeDefinition,
     CategoryFilterConfig, FilterDefinition, WarehouseInventory, StockMovement, StockMovementType,
-    Order, OrderStatus, Invoice, Customer, BillingProfile, CMSVersion,
-    Review, ReviewStatus, Supplier, PurchaseOrder, CreditNote, Warehouse
+    Order, OrderStatus, Invoice, Customer, BillingProfile,
+    Supplier, PurchaseOrder, CreditNote, Warehouse
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -83,16 +83,6 @@ interface AdminContextType {
     refreshBillingProfile: () => Promise<void>;
     saveBillingProfile: (data: Partial<BillingProfile>) => Promise<void>;
 
-    // CMS Management
-    cmsVersions: CMSVersion[];
-    refreshCMSVersions: () => Promise<void>;
-    saveCMS: (data: any) => Promise<boolean>;
-    restoreCMSVersion: (versionId: string) => Promise<boolean>;
-
-    // Reviews
-    reviews: Review[];
-    refreshReviews: () => Promise<void>;
-    updateReviewStatus: (reviewId: string, status: ReviewStatus) => Promise<void>;
 
     // UI/Navigation State
     activeTab: string;
@@ -143,10 +133,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [billingProfile, setBillingProfile] = useState<BillingProfile | null>(null);
-    const [cmsVersions, setCmsVersions] = useState<CMSVersion[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
-    const [reviews, setReviews] = useState<Review[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -156,7 +144,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const refreshInventory = useCallback(async () => {
         try {
-            const res = await fetch('/api/inventory');
+            const res = await fetch('/api/inventory?limit=200');
             const data = await res.json();
 
             // The API returns a pagination object { items, total, page, limit }
@@ -230,13 +218,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, []);
 
-    const refreshCMSVersions = useCallback(async () => {
-        try {
-            const res = await fetch('/api/cms/versions');
-            const data = await res.json();
-            setCmsVersions(data.versions ?? data);
-        } catch (err) { console.error(err); }
-    }, []);
 
     const refreshProducts = useCallback(async () => {
         try {
@@ -259,14 +240,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const res = await fetch('/api/brands');
             const data = await res.json();
             setBrands(data);
-        } catch (err) { console.error(err); }
-    }, []);
-
-    const refreshReviews = useCallback(async () => {
-        try {
-            const res = await fetch('/api/reviews');
-            const data = await res.json();
-            setReviews(data.reviews ?? data);
         } catch (err) { console.error(err); }
     }, []);
 
@@ -321,11 +294,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     case 'billing':
                         specificPromises = [refreshInvoices(), refreshCustomers(), refreshBillingProfile()];
                         break;
-                    case 'cms':
-                        specificPromises = [refreshCMSVersions()];
-                        break;
+
                     case 'marketing':
-                        specificPromises = [refreshReviews()];
                         break;
                 }
 
@@ -341,10 +311,27 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         activeTab,
         refreshInventory, refreshStockMovements, refreshOrders, refreshSchemas,
         refreshFilterConfigs, refreshInvoices, refreshCustomers,
-        refreshBillingProfile, refreshCMSVersions,
+        refreshBillingProfile,
         refreshProducts, refreshCategories, refreshBrands,
-        refreshReviews, refreshSuppliers, refreshPurchaseOrders, refreshWarehouses
+        refreshSuppliers, refreshPurchaseOrders, refreshWarehouses
     ]);
+
+    // --- REAL-TIME SYNC (Polling) ---
+    useEffect(() => {
+        // Refresh critical dynamic data every 30 seconds
+        const interval = setInterval(() => {
+            if (!isLoading) {
+                if (activeTab === 'inventory' || activeTab === 'overview' || activeTab === 'orders' || activeTab === 'procurement') {
+                    refreshInventory();
+                }
+                if (activeTab === 'orders' || activeTab === 'overview') {
+                    refreshOrders();
+                }
+            }
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [activeTab, isLoading, refreshInventory, refreshOrders]);
 
     // --- ACTIONS ---
 
@@ -371,7 +358,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             });
             if (res.ok) {
                 toast({ title: "Order status updated" });
-                await Promise.all([refreshOrders(), refreshInvoices()]);
+                await Promise.all([refreshOrders(), refreshInvoices(), refreshInventory()]);
             } else {
                 const data = await res.json();
                 toast({ title: "Update Failed", description: data.error || "Could not update order status", variant: "destructive" });
@@ -606,57 +593,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshBillingProfile, toast]);
 
-    const saveCMS = useCallback(async (data: any) => {
-        try {
-            const res = await fetch('/api/cms', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (res.ok) {
-                toast({ title: "CMS saved" });
-                await refreshCMSVersions();
-                return true;
-            }
-            return false;
-        } catch (err) {
-            console.error(err);
-            return false;
-        }
-    }, [refreshCMSVersions, toast]);
-
-    const restoreCMSVersion = useCallback(async (versionId: string) => {
-        try {
-            const res = await fetch('/api/cms/versions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ versionId }),
-            });
-            if (res.ok) {
-                toast({ title: "CMS version restored" });
-                await refreshCMSVersions();
-                return true;
-            }
-            return false;
-        } catch (err) {
-            console.error(err);
-            return false;
-        }
-    }, [refreshCMSVersions, toast]);
-
-    const updateReviewStatus = useCallback(async (reviewId: string, status: ReviewStatus) => {
-        try {
-            const res = await fetch(`/api/reviews/${reviewId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status }),
-            });
-            if (res.ok) {
-                toast({ title: "Review status updated" });
-                await refreshReviews();
-            }
-        } catch (err) { console.error(err); }
-    }, [refreshReviews, toast]);
 
     // --- NEW INVENTORY PROCUREMENT ACTIONS ---
 
@@ -782,9 +718,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice, createCreditNote,
         customers, refreshCustomers, createCustomer,
         billingProfile, refreshBillingProfile, saveBillingProfile,
-        cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion,
         products, refreshProducts, categories, refreshCategories, brands, refreshBrands,
-        reviews, refreshReviews, updateReviewStatus,
         activeTab,
         setActiveTab,
         isAdmin: true, // For demo purposes, true inside AdminContext
@@ -801,9 +735,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice, createCreditNote,
         customers, refreshCustomers, createCustomer,
         billingProfile, refreshBillingProfile, saveBillingProfile,
-        cmsVersions, refreshCMSVersions, saveCMS, restoreCMSVersion,
         products, refreshProducts, categories, refreshCategories, brands, refreshBrands,
-        reviews, refreshReviews, updateReviewStatus,
         activeTab,
         setActiveTab,
         isLoading

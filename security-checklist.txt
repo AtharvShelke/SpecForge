@@ -1,0 +1,6 @@
+exposed api keys
+sanitize user inputs proofing xss and sql injections
+rate limiting
+audit authentication through security aspect
+secure uploads (size limits, file types etc)
+scan dependencies 

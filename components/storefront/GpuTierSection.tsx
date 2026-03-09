@@ -9,15 +9,15 @@ import { useShop } from '@/context/ShopContext'
 import { filterGpuTier } from '@/services/filterGpuTier'
 import { Product } from '@/types'
 
-function GpuPremiumCard({ product, getRating, addToCart }: {
+function GpuPremiumCard({ product,  addToCart }: {
     product: Product
-    getRating: (id: string) => { average: number; count: number }
+   
     addToCart: (p: Product) => void
 }) {
     const price = product.variants?.[0]?.price || 0
     const image = product.media?.[0]?.url
     const brand = product.brand?.name
-    const rating = getRating(product.id)
+    
 
     return (
         <div className="group relative w-[85vw] md:w-[360px] flex-shrink-0 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:bg-zinc-800/80 transition-all duration-500">
@@ -55,17 +55,7 @@ function GpuPremiumCard({ product, getRating, addToCart }: {
                     </h3>
                 </Link>
 
-                {rating.count > 0 && (
-                    <div className="flex items-center gap-1.5 mb-6">
-                        <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <Star key={i} size={12} className={i <= Math.round(rating.average) ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'} />
-                            ))}
-                        </div>
-                        <span className="text-[11px] font-medium text-zinc-400">({rating.count} reviews)</span>
-                    </div>
-                )}
-
+                
                 <div className="flex flex-col gap-4 mt-auto">
                     <div>
                         <span className="block text-[11px] font-medium text-zinc-400 uppercase tracking-widest mb-1">Starting At</span>
@@ -86,7 +76,7 @@ function GpuPremiumCard({ product, getRating, addToCart }: {
 }
 
 export default function GpuTierSection() {
-    const { products, addToCart, getProductRating } = useShop()
+    const { products, addToCart } = useShop()
     const containerRef = useRef(null)
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] })
     const yTransform = useTransform(scrollYProgress, [0, 1], [100, -100])
@@ -150,7 +140,7 @@ export default function GpuTierSection() {
                             >
                                 <GpuPremiumCard
                                     product={gpu}
-                                    getRating={getProductRating}
+                                   
                                     addToCart={addToCart}
                                 />
                             </motion.div>

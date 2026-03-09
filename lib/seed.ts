@@ -2,7 +2,7 @@
 
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Category, Currency, FilterType, InvoiceStatus, OrderStatus, ReviewStatus, PrismaClient } from "../generated/prisma/client";
+import { Category, Currency, FilterType, InvoiceStatus, OrderStatus, PrismaClient } from "../generated/prisma/client";
 
 const connectionString = `${process.env.DATABASE_URL}`;
 
@@ -795,6 +795,7 @@ const CATEGORY_SCHEMAS_DATA: { category: Category; attributes: SeedAttributeDef[
       { key: 'memoryType', label: 'Memory Type', type: 'select', required: true, options: ['DDR3', 'GDDR5', 'GDDR6', 'GDDR6X', 'GDDR7'], sortOrder: 3 },
       { key: 'pcie', label: 'PCI Express', type: 'select', required: false, options: ['2.0', '3.0', '4.0', '5.0'], sortOrder: 4 },
       { key: 'wattage', label: 'TDP (W)', type: 'number', required: true, unit: 'W', sortOrder: 5 },
+      { key: 'length', label: 'Length', type: 'number', required: false, unit: 'mm', sortOrder: 6 },
     ]
   },
   {
@@ -826,6 +827,7 @@ const CATEGORY_SCHEMAS_DATA: { category: Category; attributes: SeedAttributeDef[
       { key: 'pcie62', label: 'PCIe 6+2 Connectors', type: 'number', required: false, sortOrder: 4 },
       { key: 'sata', label: 'SATA Connectors', type: 'number', required: false, sortOrder: 5 },
       { key: 'peripheral4pin', label: 'Peripheral 4-Pin', type: 'number', required: false, sortOrder: 6 },
+      { key: 'formFactor', label: 'Form Factor', type: 'select', required: false, options: ['ATX', 'SFX', 'SFX-L', 'TFX'], sortOrder: 7 },
     ]
   },
   {
@@ -835,6 +837,9 @@ const CATEGORY_SCHEMAS_DATA: { category: Category; attributes: SeedAttributeDef[
       { key: 'motherboardSupport', label: 'Motherboard Size', type: 'select', required: true, options: ['ATX', 'E-ATX', 'ITX', 'M-ATX', 'M-ITX'], sortOrder: 1 },
       { key: 'radiatorSupport', label: 'Radiator Support', type: 'text', required: false, sortOrder: 2 },
       { key: 'color', label: 'Color', type: 'text', required: false, sortOrder: 3 },
+      { key: 'maxGpuLength', label: 'Max GPU Length', type: 'number', required: false, unit: 'mm', sortOrder: 4 },
+      { key: 'maxCoolerHeight', label: 'Max Cooler Height', type: 'number', required: false, unit: 'mm', sortOrder: 5 },
+      { key: 'psuFormFactorSupport', label: 'PSU Support', type: 'multi-select', required: false, options: ['ATX', 'SFX', 'SFX-L', 'TFX'], sortOrder: 6 },
     ]
   },
   {
@@ -845,6 +850,7 @@ const CATEGORY_SCHEMAS_DATA: { category: Category; attributes: SeedAttributeDef[
       { key: 'radiatorSize', label: 'Radiator Size', type: 'select', required: false, options: ['240mm', '280mm', '360mm', '420mm'], sortOrder: 2 },
       { key: 'fanSize', label: 'Fan Size', type: 'select', required: false, options: ['40mm', '60mm', '90mm', '92mm', '120mm', '140mm'], sortOrder: 3 },
       { key: 'pwm', label: 'PWM Controller', type: 'select', required: false, options: ['NA', 'YES'], sortOrder: 4 },
+      { key: 'height', label: 'Cooler Height', type: 'number', required: false, unit: 'mm', sortOrder: 5 },
     ]
   },
   {
@@ -1296,17 +1302,6 @@ const ORDERS_DATA = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REVIEWS
-// ─────────────────────────────────────────────────────────────────────────────
-
-const REVIEWS_DATA = [
-  { productId: 'cpu-1', customerName: 'Gamer123', rating: 5, comment: 'Absolute beast for gaming!', status: ReviewStatus.APPROVED, createdAt: new Date('2023-10-10') },
-  { productId: 'gpu-1', customerName: 'ProEditor', rating: 5, comment: 'Renders 4K video in seconds. Expensive but worth it.', status: ReviewStatus.APPROVED, createdAt: new Date('2023-10-12') },
-  { productId: 'mobo-3', customerName: 'BudgetBuilder', rating: 4, comment: 'Good value, but bios flashback was tricky.', status: ReviewStatus.APPROVED, createdAt: new Date('2023-10-15') },
-  { productId: 'cpu-1', customerName: 'Hater', rating: 1, comment: 'Overheats too much.', status: ReviewStatus.PENDING, createdAt: new Date('2023-10-28') },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
 // SAVED BUILDS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1360,69 +1355,6 @@ const SAVED_BUILDS_DATA = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CMS LANDING PAGE CONTENT
-// ─────────────────────────────────────────────────────────────────────────────
-
-const CMS_LANDING_PAGE_CONTENT = {
-  id: 'landing-v1',
-  version: 1,
-  lastUpdated: new Date().toISOString(),
-  publishedAt: new Date().toISOString(),
-  status: 'published',
-  sections: {
-    hero: {
-      badge: { icon: true, text: 'Premium PC Components' },
-      headline: { line1: 'Build Without', line2: 'Compromise', line2Gradient: true },
-      subheadline: 'Curated components from world-class manufacturers. Every part selected for performance, reliability, and value.',
-      primaryCTA: { text: 'Explore Catalog', link: '/catalog' },
-      secondaryCTA: { text: 'View Builds', link: '/saved-builds' },
-      stats: [
-        { value: '900+', label: 'Components' },
-        { value: '15k+', label: 'Builds' },
-        { value: '24/7', label: 'Support' }
-      ],
-      heroImage: {
-        url: 'https://bitkart.com/cdn/shop/files/H9Flowwhite_83af798d-a30c-4498-8756-40feba6935e3.png?v=1759604552',
-        alt: 'Featured Component'
-      },
-      floatingBadge: { title: 'Authorized Dealer', subtitle: 'Full warranty coverage' }
-    },
-    categories: {
-      sectionTitle: 'Shop by Category',
-      categories: [
-        { id: 'cat-1', name: 'Processors', icon: 'Cpu', categoryKey: 'Processor', order: 1 },
-        { id: 'cat-2', name: 'Graphics', icon: 'Monitor', categoryKey: 'Graphics Card', order: 2 },
-        { id: 'cat-3', name: 'Boards', icon: 'Cpu', categoryKey: 'Motherboard', order: 3 },
-        { id: 'cat-4', name: 'Memory', icon: 'Zap', categoryKey: 'RAM', order: 4 },
-        { id: 'cat-5', name: 'Storage', icon: 'Package', categoryKey: 'Storage', order: 5 },
-        { id: 'cat-6', name: 'Cooling', icon: 'Cpu', categoryKey: 'Cooler', order: 6 },
-      ]
-    },
-    featuredProducts: {
-      sectionTitle: 'Featured Products',
-      sectionSubtitle: 'Hand-selected components for exceptional performance',
-      productIds: ['cpu-1', 'gpu-1', 'gpu-2', 'ram-1', 'stg-1', 'mobo-1'],
-      ctaText: 'View All Products',
-      ctaLink: '/catalog'
-    },
-    trustIndicators: {
-      features: [
-        { id: 'trust-1', icon: 'Shield', title: 'Authentic Products', description: 'All components sourced directly from authorized distributors with genuine warranties', order: 1 },
-        { id: 'trust-2', icon: 'Zap', title: 'Fast Shipping', description: 'Same-day dispatch for orders before 2PM with real-time tracking', order: 2 },
-        { id: 'trust-3', icon: 'Headphones', title: 'Expert Support', description: 'Dedicated PC building specialists available 24/7 for consultation', order: 3 },
-        { id: 'trust-4', icon: 'TrendingUp', title: 'Best Value', description: 'Competitive pricing with exclusive bundle discounts and deals', order: 4 },
-      ]
-    },
-    finalCTA: {
-      headline: 'Ready to Build?',
-      subheadline: 'Start configuring your dream PC with our comprehensive catalog of premium components',
-      ctaText: 'Browse Catalog',
-      ctaLink: '/catalog',
-      backgroundStyle: 'gradient'
-    }
-  }
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BILLING PROFILE (store fixture)
@@ -2077,20 +2009,7 @@ async function main() {
     }
   }
 
-  // ── 9. Reviews ─────────────────────────────────────────────────────────────
-  console.log('  → Seeding reviews...');
-  for (const r of REVIEWS_DATA) {
-    await prisma.review.create({
-      data: {
-        productId: r.productId,
-        customerName: r.customerName,
-        rating: r.rating,
-        comment: r.comment,
-        status: r.status as ReviewStatus,
-        createdAt: r.createdAt,
-      },
-    }).catch(() => { /* idempotent — skip if already exists */ });
-  }
+
 
   // ── 10. Build Guides ───────────────────────────────────────────────────────
   console.log('  → Seeding build guides...');
@@ -2175,27 +2094,6 @@ async function main() {
     }
   }
 
-  // ── 14. CMS Landing Page ───────────────────────────────────────────────────
-  console.log('  → Seeding CMS landing page...');
-  const existingCMS = await prisma.cMSLandingPage.findFirst({ where: { isPublished: true } });
-  if (!existingCMS) {
-    const cmsPage = await prisma.cMSLandingPage.create({
-      data: {
-        content: CMS_LANDING_PAGE_CONTENT,
-        isPublished: true,
-        publishedAt: new Date(),
-      },
-    });
-    // Seed first version
-    await prisma.cMSLandingPageVersion.create({
-      data: {
-        pageId: cmsPage.id,
-        content: CMS_LANDING_PAGE_CONTENT,
-        label: 'v1 — Initial seed',
-        actor: 'System',
-      },
-    });
-  }
 
   console.log('✅ Seed complete.');
 }

@@ -16,6 +16,11 @@ import {
     ChevronRight,
     Hash,
     TrendingUp,
+    Search,
+    Trash2,
+    ToggleLeft,
+    ToggleRight,
+    UserPlus,
 } from 'lucide-react';
 import {
     Dialog,
@@ -66,13 +71,13 @@ const Panel = ({
     stripe?: Stripe;
 }) => {
     const stripes: Record<Stripe, string> = {
-        indigo:   'from-indigo-400 via-indigo-500 to-violet-400',
-        teal:     'from-teal-400 via-emerald-400 to-emerald-300',
-        amber:    'from-amber-400 via-amber-400 to-orange-300',
-        rose:     'from-rose-400 via-rose-400 to-rose-300',
-        violet:   'from-violet-400 via-violet-500 to-indigo-400',
-        stone:    'from-stone-300 via-stone-400 to-stone-300',
-        emerald:  'from-emerald-400 via-emerald-400 to-teal-300',
+        indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
+        teal: 'from-teal-400 via-emerald-400 to-emerald-300',
+        amber: 'from-amber-400 via-amber-400 to-orange-300',
+        rose: 'from-rose-400 via-rose-400 to-rose-300',
+        violet: 'from-violet-400 via-violet-500 to-indigo-400',
+        stone: 'from-stone-300 via-stone-400 to-stone-300',
+        emerald: 'from-emerald-400 via-emerald-400 to-teal-300',
     };
     return (
         <div className={cn('rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden', className)}>
@@ -141,7 +146,7 @@ const StatusPill = ({ active }: { active: boolean }) => (
 // Trigger pill
 const TriggerPill = ({ trigger }: { trigger: string }) => {
     const map: Record<string, string> = {
-        CART_ABANDONED:    'bg-amber-50 text-amber-700 ring-amber-200',
+        CART_ABANDONED: 'bg-amber-50 text-amber-700 ring-amber-200',
         NEWSLETTER_SIGNUP: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
     };
     const cls = map[trigger] ?? 'bg-stone-100 text-stone-600 ring-stone-200';
@@ -174,11 +179,15 @@ const FieldLabel = ({ children }: { children: React.ReactNode }) => (
 
 export const MarketingManager = () => {
     const { toast } = useToast();
-    const [stats, setStats]         = useState<any>(null);
+    const [stats, setStats] = useState<any>(null);
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [activeView, setActiveView] = useState<'campaigns' | 'leads'>('campaigns');
+    const [leadsData, setLeadsData] = useState<{ items: any[], total: number }>({ items: [], total: 0 });
+    const [logs, setLogs] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         name: '',
@@ -190,12 +199,16 @@ export const MarketingManager = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [statsRes, campsRes] = await Promise.all([
+            const [statsRes, campsRes, logsRes, leadsRes] = await Promise.all([
                 fetch('/api/marketing/stats'),
                 fetch('/api/marketing/campaigns'),
+                fetch('/api/marketing/logs?limit=15'),
+                fetch(`/api/marketing/leads?limit=50&q=${searchQuery}`),
             ]);
             setStats(await statsRes.json());
             setCampaigns(await campsRes.json());
+            setLogs(await logsRes.json());
+            setLeadsData(await leadsRes.json());
         } catch (e) {
             console.error('Failed to fetch marketing data', e);
         } finally {
@@ -203,7 +216,12 @@ export const MarketingManager = () => {
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        const delaySearch = setTimeout(() => {
+            fetchData();
+        }, 300);
+        return () => clearTimeout(delaySearch);
+    }, [searchQuery]);
 
     const handleCreateCampaign = async () => {
         try {
@@ -233,15 +251,44 @@ export const MarketingManager = () => {
         }
     };
 
+    const toggleCampaign = async (id: string, currentStatus: boolean) => {
+        try {
+            const res = await fetch(`/api/marketing/campaigns/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: !currentStatus }),
+            });
+            if (res.ok) {
+                toast({ title: currentStatus ? 'Campaign paused' : 'Campaign activated' });
+                fetchData();
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const deleteCampaign = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this campaign?')) return;
+        setIsDeleting(id);
+        try {
+            const res = await fetch(`/api/marketing/campaigns/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                toast({ title: 'Campaign deleted' });
+                fetchData();
+            }
+        } catch (e) { console.error(e); }
+        finally { setIsDeleting(null); }
+    };
+
     const activeCampaigns = campaigns.filter(c => c.isActive).length;
     const convRate = stats?.conversionRate ?? '0.0';
     const convColor =
         parseFloat(convRate) >= 10 ? 'text-emerald-600'
-        : parseFloat(convRate) >= 5  ? 'text-amber-600'
-        : 'text-stone-400';
+            : parseFloat(convRate) >= 5 ? 'text-amber-600'
+                : 'text-stone-400';
+
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     // ── Full-page loading skeleton ──
-    if (isLoading) {
+    if (isLoading && campaigns.length === 0) {
         return (
             <div className="flex h-64 items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
@@ -269,21 +316,40 @@ export const MarketingManager = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Refresh */}
+                    {/* View Switcher */}
+                    <div className="flex items-center bg-stone-100 p-0.5 rounded-lg mr-2">
+                        <button
+                            onClick={() => setActiveView('campaigns')}
+                            className={cn(
+                                "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all",
+                                activeView === 'campaigns' ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                            )}
+                        >
+                            Campaigns
+                        </button>
+                        <button
+                            onClick={() => setActiveView('leads')}
+                            className={cn(
+                                "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all",
+                                activeView === 'leads' ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                            )}
+                        >
+                            Leads
+                        </button>
+                    </div>
+
                     <button
                         type="button"
                         onClick={fetchData}
                         className="h-7 w-7 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-400 hover:text-stone-700 hover:bg-stone-50 transition-all shadow-sm"
                         title="Refresh"
                     >
-                        <RefreshCw size={12} />
+                        <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
                     </button>
-                    {/* Live badge — mirrors OrderManager */}
                     <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         Live
                     </div>
-                    {/* New Campaign CTA */}
                     <button
                         type="button"
                         onClick={() => setIsCreateOpen(true)}
@@ -325,8 +391,8 @@ export const MarketingManager = () => {
                     icon={<BarChart3 size={14} />}
                     accent={
                         parseFloat(convRate) >= 10 ? 'border-l-emerald-400'
-                        : parseFloat(convRate) >= 5  ? 'border-l-amber-400'
-                        : 'border-l-stone-300'
+                            : parseFloat(convRate) >= 5 ? 'border-l-amber-400'
+                                : 'border-l-stone-300'
                     }
                     subColor={convColor}
                 />
@@ -335,228 +401,284 @@ export const MarketingManager = () => {
             {/* ── MAIN CONTENT ROW ── */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
-                {/* ── CAMPAIGN LIST  (xl: 2 cols) ── */}
-                <Panel stripe="rose" className="xl:col-span-2">
-                    <PanelHeader
-                        icon={<Zap size={12} />}
-                        right={
-                            <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-                                {campaigns.length} campaign{campaigns.length !== 1 ? 's' : ''}
-                            </span>
-                        }
-                    >
-                        Campaign Overview
-                    </PanelHeader>
-
-                    {campaigns.length === 0 ? (
-                        <div className="py-20 flex flex-col items-center gap-3">
-                            <Zap size={24} className="text-stone-200" />
-                            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                                No campaigns yet
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() => setIsCreateOpen(true)}
-                                className="text-[10px] font-bold text-rose-600 uppercase tracking-widest hover:underline"
+                <div className="xl:col-span-2 space-y-4">
+                    {activeView === 'campaigns' ? (
+                        <Panel stripe="rose">
+                            <PanelHeader
+                                icon={<Zap size={12} />}
+                                right={
+                                    <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                                        {campaigns.length} campaign{campaigns.length !== 1 ? 's' : ''}
+                                    </span>
+                                }
                             >
-                                Build your first funnel →
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-stone-100">
-                            {campaigns.map(camp => {
-                                const isExpanded = expandedId === camp.id;
-                                const sends = camp._count?.emailLogs ?? 0;
+                                Campaign Overview
+                            </PanelHeader>
 
-                                return (
-                                    <div key={camp.id} className="group">
-                                        {/* ── Campaign row ── */}
-                                        <div
-                                            className="flex items-center gap-4 px-5 py-3.5 hover:bg-stone-50/70 transition-colors duration-150 cursor-pointer"
-                                            onClick={() => setExpandedId(isExpanded ? null : camp.id)}
-                                        >
-                                            {/* Expand chevron */}
-                                            <ChevronRight
-                                                size={13}
-                                                className={cn(
-                                                    'text-stone-300 shrink-0 transition-transform duration-200',
-                                                    isExpanded && 'rotate-90'
-                                                )}
-                                            />
+                            {campaigns.length === 0 ? (
+                                <div className="py-20 flex flex-col items-center gap-3">
+                                    <Zap size={24} className="text-stone-200" />
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">No campaigns yet</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="text-[10px] font-bold text-rose-600 uppercase tracking-widest hover:underline"
+                                    >
+                                        Build your first funnel →
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-stone-100">
+                                    {campaigns.map(camp => {
+                                        const isExpanded = expandedId === camp.id;
+                                        const sends = camp._count?.emailLogs ?? 0;
 
-                                            {/* Icon */}
-                                            <div className={cn(
-                                                'h-8 w-8 rounded-lg flex items-center justify-center shrink-0',
-                                                camp.isActive ? 'bg-rose-50 text-rose-500' : 'bg-stone-100 text-stone-400'
-                                            )}>
-                                                <Zap size={14} />
-                                            </div>
-
-                                            {/* Name + trigger */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                                    <p className="text-xs font-bold text-stone-800 tracking-tight truncate">
-                                                        {camp.name}
-                                                    </p>
-                                                    <StatusPill active={camp.isActive} />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <TriggerPill trigger={camp.triggerType} />
-                                                    <span className="flex items-center gap-1 text-[10px] text-stone-400">
-                                                        <Clock size={9} />
-                                                        {camp.rulesConfig?.delayHours ?? 0}h delay
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Sends count */}
-                                            <MetaChip label="Sends" value={sends.toLocaleString()} />
-                                        </div>
-
-                                        {/* ── Expanded detail ── */}
-                                        {isExpanded && (
-                                            <div className="px-5 pb-4 ml-[72px] pt-1 border-t border-stone-100 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <div className="space-y-3">
-
-                                                    {/* Stat mini-grid */}
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {[
-                                                            { label: 'Emails Sent', value: sends.toLocaleString(), color: 'text-stone-800' },
-                                                            { label: 'Delay', value: `${camp.rulesConfig?.delayHours ?? 0}h`, color: 'text-stone-800' },
-                                                            { label: 'Status', value: camp.isActive ? 'Active' : 'Paused', color: camp.isActive ? 'text-emerald-600' : 'text-stone-500' },
-                                                        ].map(({ label, value, color }) => (
-                                                            <div key={label} className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                                                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{label}</p>
-                                                                <p className={cn('text-sm font-extrabold tabular-nums font-mono mt-0.5', color)}>{value}</p>
-                                                            </div>
-                                                        ))}
+                                        return (
+                                            <div key={camp.id} className="group">
+                                                <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-stone-50/70 transition-colors duration-150 cursor-pointer">
+                                                    <ChevronRight
+                                                        size={13}
+                                                        onClick={() => setExpandedId(isExpanded ? null : camp.id)}
+                                                        className={cn(
+                                                            'text-stone-300 shrink-0 transition-transform duration-200',
+                                                            isExpanded && 'rotate-90'
+                                                        )}
+                                                    />
+                                                    <div className={cn(
+                                                        'h-8 w-8 rounded-lg flex items-center justify-center shrink-0',
+                                                        camp.isActive ? 'bg-rose-50 text-rose-500' : 'bg-stone-100 text-stone-400'
+                                                    )}>
+                                                        <Zap size={14} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0" onClick={() => setExpandedId(isExpanded ? null : camp.id)}>
+                                                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                                            <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{camp.name}</p>
+                                                            <StatusPill active={camp.isActive} />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <TriggerPill trigger={camp.triggerType} />
+                                                            <span className="flex items-center gap-1 text-[10px] text-stone-400">
+                                                                <Clock size={9} /> {camp.rulesConfig?.delayHours ?? 0}h delay
+                                                            </span>
+                                                        </div>
                                                     </div>
 
-                                                    {/* Subject line */}
-                                                    {camp.rulesConfig?.subject && (
-                                                        <div className="flex items-start gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                                                            <Mail size={12} className="text-stone-400 mt-0.5 shrink-0" />
-                                                            <div>
-                                                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Email Subject</p>
-                                                                <p className="text-xs font-semibold text-stone-700">{camp.rulesConfig.subject}</p>
+                                                    <div className="flex items-center gap-3">
+                                                        <MetaChip label="Sends" value={sends.toLocaleString()} />
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    toggleCampaign(camp.id, camp.isActive);
+                                                                }}
+                                                                className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+                                                                title={camp.isActive ? "Pause" : "Resume"}
+                                                            >
+                                                                {camp.isActive ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    deleteCampaign(camp.id);
+                                                                }}
+                                                                disabled={isDeleting === camp.id}
+                                                                className="p-1.5 rounded-md hover:bg-rose-50 text-stone-400 hover:text-rose-500 transition-colors"
+                                                                title="Delete"
+                                                            >
+                                                                {isDeleting === camp.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {isExpanded && (
+                                                    <div className="px-5 pb-4 ml-[72px] pt-1 border-stone-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                        <div className="space-y-3">
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                {[
+                                                                    { label: 'Emails Sent', value: sends.toLocaleString(), color: 'text-stone-800' },
+                                                                    { label: 'Delay', value: `${camp.rulesConfig?.delayHours ?? 0}h`, color: 'text-stone-800' },
+                                                                    { label: 'Status', value: camp.isActive ? 'Active' : 'Paused', color: camp.isActive ? 'text-emerald-600' : 'text-stone-500' },
+                                                                ].map(({ label, value, color }) => (
+                                                                    <div key={label} className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
+                                                                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{label}</p>
+                                                                        <p className={cn('text-sm font-extrabold tabular-nums font-mono mt-0.5', color)}>{value}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            {camp.rulesConfig?.subject && (
+                                                                <div className="flex items-start gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
+                                                                    <Mail size={12} className="text-stone-400 mt-0.5 shrink-0" />
+                                                                    <div>
+                                                                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Email Subject</p>
+                                                                        <p className="text-xs font-semibold text-stone-700">{camp.rulesConfig.subject}</p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Hash size={10} className="text-stone-300" />
+                                                                <span className="text-[10px] font-mono font-bold text-stone-400">
+                                                                    {String(camp.id).substring(0, 16).toUpperCase()}
+                                                                </span>
                                                             </div>
                                                         </div>
-                                                    )}
-
-                                                    {/* Campaign ID */}
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Hash size={10} className="text-stone-300" />
-                                                        <span className="text-[10px] font-mono font-bold text-stone-400">
-                                                            {String(camp.id).substring(0, 16).toUpperCase()}
-                                                        </span>
                                                     </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </Panel>
+                    ) : (
+                        /* ── LEADS VIEW ── */
+                        <Panel stripe="indigo">
+                            <PanelHeader
+                                icon={<Users size={12} />}
+                                right={
+                                    <div className="relative w-48">
+                                        <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search leads..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full bg-white border border-stone-200 rounded-lg pl-8 pr-3 py-1 text-[10px] font-bold tracking-tight focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                    </div>
+                                }
+                            >
+                                Registered Leads
+                            </PanelHeader>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-stone-50/50 border-b border-stone-100">
+                                        <tr>
+                                            <th className="px-5 py-2.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Contact</th>
+                                            <th className="px-5 py-2.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Source</th>
+                                            <th className="px-5 py-2.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Status</th>
+                                            <th className="px-5 py-2.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest text-right">Engagement</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-stone-50">
+                                        {leadsData.items.length === 0 && !isLoading && (
+                                            <tr>
+                                                <td colSpan={4} className="py-20 text-center text-[10px] font-bold text-stone-300 uppercase tracking-widest">No leads found</td>
+                                            </tr>
+                                        )}
+                                        {leadsData.items.map(lead => (
+                                            <tr key={lead.id} className="hover:bg-stone-50/50">
+                                                <td className="px-5 py-3">
+                                                    <p className="text-xs font-bold text-stone-800 tracking-tight">{lead.name || 'Anonymous'}</p>
+                                                    <p className="text-[10px] text-stone-400 font-mono">{lead.email}</p>
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-md uppercase">{lead.source || 'Direct'}</span>
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    {lead.customerId ? (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase">
+                                                            <CheckCircle2 size={10} /> Converted
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tight">Active Lead</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-5 py-3 text-right">
+                                                    <div className="flex flex-col items-end">
+                                                        <p className="text-xs font-extrabold text-stone-700 font-mono tracking-tighter">{lead._count.events} events</p>
+                                                        <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">{lead._count.logs} emails</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Panel>
+                    )}
+
+                    {/* Funnel Health Mini (moved here for responsive sync) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Panel stripe="emerald">
+                            <PanelHeader icon={<TrendingUp size={12} />}>Funnel Health</PanelHeader>
+                            <div className="px-4 py-3 space-y-2.5">
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Conversion Rate</span>
+                                        <span className={cn('text-sm font-extrabold font-mono tabular-nums', convColor)}>{convRate}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
+                                        <div className={cn('h-full rounded-full transition-all', parseFloat(convRate) >= 10 ? 'bg-emerald-400' : parseFloat(convRate) >= 5 ? 'bg-amber-400' : 'bg-stone-300')} style={{ width: `${Math.min(100, parseFloat(convRate) * 5)}%` }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </Panel>
+                        <Panel stripe="amber">
+                            <PanelHeader icon={<Activity size={12} />}>Trigger Distribution</PanelHeader>
+                            <div className="px-4 py-3 space-y-2">
+                                {campaigns.length === 0 ? <p className="py-2 text-center text-[10px] font-bold text-stone-300 uppercase tracking-widest">No data</p> : (
+                                    Object.entries(campaigns.reduce((acc: Record<string, number>, c: any) => {
+                                        const type = c.triggerType || 'UNKNOWN';
+                                        acc[type] = (acc[type] || 0) + 1;
+                                        return acc;
+                                    }, {})).map(([trigger, count]) => (
+                                        <div key={trigger} className="flex items-center justify-between gap-2">
+                                            <span className="text-[10px] font-bold text-stone-600 tracking-widest">{trigger.replace(/_/g, ' ')}</span>
+                                            <span className="text-xs font-bold text-stone-600 font-mono">{count as number}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </Panel>
+                    </div>
+                </div>
+
+                {/* ── RIGHT COLUMN: ACTIVITY LOG ── */}
+                <div className="flex flex-col gap-4">
+                    <Panel stripe="indigo" className="h-full">
+                        <PanelHeader
+                            icon={<Activity size={12} />}
+                            right={<Activity size={12} className="text-indigo-400 animate-pulse" />}
+                        >
+                            Recent Activity
+                        </PanelHeader>
+                        <div className="p-0 overflow-y-auto max-h-[600px]">
+                            {logs.length === 0 ? (
+                                <div className="py-20 flex flex-col items-center gap-3">
+                                    <Mail size={24} className="text-stone-100" />
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">No activity yet</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-stone-50">
+                                    {logs.map(log => (
+                                        <div key={log.id} className="px-4 py-3 hover:bg-stone-50/50 transition-colors">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <p className="text-[11px] font-bold text-stone-800 leading-tight">
+                                                        Sent to {log.lead.name || log.lead.email.split('@')[0]}
+                                                    </p>
+                                                    <p className="text-[10px] font-medium text-stone-400 truncate w-40">
+                                                        {log.subject}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-1 rounded">SENT</span>
+                                                    <p className="text-[9px] text-stone-400 font-mono mt-1">
+                                                        {new Date(log.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </Panel>
-
-                {/* ── RIGHT COLUMN ── */}
-                <div className="flex flex-col gap-4">
-
-                    {/* Funnel Health */}
-                    <Panel stripe="emerald">
-                        <PanelHeader icon={<TrendingUp size={12} />}>Funnel Health</PanelHeader>
-                        <div className="px-4 py-3 space-y-2.5">
-                            {/* Conversion rate bar */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Conversion Rate</span>
-                                    <span className={cn('text-sm font-extrabold font-mono tabular-nums', convColor)}>
-                                        {convRate}%
-                                    </span>
-                                </div>
-                                <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
-                                    <div
-                                        className={cn(
-                                            'h-full rounded-full transition-all',
-                                            parseFloat(convRate) >= 10 ? 'bg-emerald-400'
-                                            : parseFloat(convRate) >= 5  ? 'bg-amber-400'
-                                            : 'bg-stone-300'
-                                        )}
-                                        style={{ width: `${Math.min(100, parseFloat(convRate) * 5)}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Quick stat 2-up */}
-                            <div className="grid grid-cols-2 gap-2 pt-1">
-                                {[
-                                    { label: 'Total Leads',  value: stats?.totalLeads ?? 0,      color: 'text-stone-800' },
-                                    { label: 'Emails Sent', value: stats?.emailsSent ?? 0,       color: 'text-stone-800' },
-                                    { label: 'Active',      value: activeCampaigns,               color: activeCampaigns > 0 ? 'text-emerald-600' : 'text-stone-800' },
-                                    { label: 'Paused',      value: campaigns.length - activeCampaigns, color: 'text-stone-800' },
-                                ].map(({ label, value, color }) => (
-                                    <div key={label} className="px-2 py-2 bg-stone-50 border border-stone-100 rounded-lg text-center">
-                                        <p className={cn('text-base font-extrabold tabular-nums font-mono', color)}>{value}</p>
-                                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-0.5">{label}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Alert if no active campaigns */}
-                            {activeCampaigns === 0 && campaigns.length > 0 && (
-                                <div className="flex items-center gap-2 px-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg">
-                                    <AlertTriangle size={12} className="text-amber-500 shrink-0" />
-                                    <p className="text-[11px] font-semibold text-amber-700">All campaigns paused</p>
-                                </div>
-                            )}
-                            {activeCampaigns > 0 && (
-                                <div className="flex items-center gap-2 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg">
-                                    <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                                    <p className="text-[11px] font-semibold text-emerald-700">
-                                        {activeCampaigns} campaign{activeCampaigns !== 1 ? 's' : ''} running
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </Panel>
-
-                    {/* Trigger Breakdown */}
-                    <Panel stripe="amber">
-                        <PanelHeader icon={<Activity size={12} />}>Trigger Breakdown</PanelHeader>
-                        <div className="px-4 py-3 space-y-2">
-                            {campaigns.length === 0 ? (
-                                <p className="py-6 text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                                    No data yet
-                                </p>
-                            ) : (() => {
-                                const counts: Record<string, number> = {};
-                                campaigns.forEach(c => {
-                                    counts[c.triggerType] = (counts[c.triggerType] ?? 0) + 1;
-                                });
-                                const max = Math.max(...Object.values(counts));
-                                return Object.entries(counts).map(([trigger, count]) => {
-                                    const pct = max > 0 ? Math.round((count / max) * 100) : 0;
-                                    return (
-                                        <div key={trigger}>
-                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                <span className="text-[10px] font-bold text-stone-600 uppercase tracking-widest truncate">
-                                                    {trigger.replace(/_/g, ' ')}
+                                            <div className="mt-1.5 flex items-center gap-1">
+                                                <Zap size={9} className="text-rose-400" />
+                                                <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">
+                                                    {log.campaign?.name || 'Campaign Deleted'}
                                                 </span>
-                                                <span className="text-xs font-bold text-stone-600 font-mono tabular-nums shrink-0">
-                                                    {count}
-                                                </span>
-                                            </div>
-                                            <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full bg-amber-400 transition-all"
-                                                    style={{ width: `${pct}%` }}
-                                                />
                                             </div>
                                         </div>
-                                    );
-                                });
-                            })()}
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </Panel>
                 </div>
@@ -567,104 +689,49 @@ export const MarketingManager = () => {
             {/* ══════════════════════════════════════ */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent className="sm:max-w-md bg-white border-stone-200 rounded-2xl shadow-xl">
-                    {/* Gradient stripe header — same pattern as CategoryManager / SavedBuildsManager */}
                     <div className="h-0.5 w-full bg-gradient-to-r from-rose-400 via-rose-500 to-orange-400 -mt-6 mb-5 rounded-t-2xl" />
 
                     <DialogHeader className="pb-2">
-                        <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
-                            New Campaign
-                        </DialogTitle>
-                        <p className="text-[11px] text-stone-400 mt-0.5">
-                            Configure your event-driven email sequence.
-                        </p>
+                        <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">New Campaign</DialogTitle>
+                        <p className="text-[11px] text-stone-400 mt-0.5">Configure your event-driven email sequence.</p>
                     </DialogHeader>
 
                     <div className="space-y-3 py-1">
-                        {/* Campaign name */}
                         <div>
                             <FieldLabel>Campaign Name</FieldLabel>
-                            <Input
-                                placeholder="e.g. Abandoned Cart Recovery"
-                                value={form.name}
-                                onChange={e => setForm({ ...form, name: e.target.value })}
-                                className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-rose-300 focus:ring-rose-500/20 placeholder:text-stone-400 font-medium"
-                            />
+                            <Input placeholder="e.g. Abandoned Cart Recovery" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-8 text-xs bg-stone-50 rounded-lg focus:bg-white focus:border-rose-300" />
                         </div>
 
-                        {/* Trigger */}
                         <div>
                             <FieldLabel>Trigger Event</FieldLabel>
                             <Select value={form.triggerType} onValueChange={v => setForm({ ...form, triggerType: v })}>
-                                <SelectTrigger className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg">
+                                <SelectTrigger className="h-8 text-xs bg-stone-50 rounded-lg">
                                     <SelectValue placeholder="Select a trigger…" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="CART_ABANDONED" className="text-xs">Cart Abandoned</SelectItem>
                                     <SelectItem value="NEWSLETTER_SIGNUP" className="text-xs">Newsletter Signup</SelectItem>
+                                    <SelectItem value="CHECKOUT_STARTED" className="text-xs">Checkout Started</SelectItem>
+                                    <SelectItem value="PRODUCT_VIEWED" className="text-xs">Product Viewed</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* Delay + Subject in a 2-col grid */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <FieldLabel>Delay (Hours)</FieldLabel>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={form.delayHours}
-                                    onChange={e => setForm({ ...form, delayHours: e.target.value })}
-                                    className="h-8 text-xs font-mono border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-rose-300 focus:ring-rose-500/20 placeholder:text-stone-400"
-                                />
+                                <Input type="number" min="0" value={form.delayHours} onChange={e => setForm({ ...form, delayHours: e.target.value })} className="h-8 text-xs font-mono bg-stone-50 rounded-lg" />
                             </div>
                             <div>
                                 <FieldLabel>Subject Line</FieldLabel>
-                                <Input
-                                    placeholder="You left something…"
-                                    value={form.subject}
-                                    onChange={e => setForm({ ...form, subject: e.target.value })}
-                                    className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-rose-300 focus:ring-rose-500/20 placeholder:text-stone-400 font-medium"
-                                />
+                                <Input placeholder="You left something…" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} className="h-8 text-xs bg-stone-50 rounded-lg" />
                             </div>
                         </div>
-
-                        {/* Preview pill */}
-                        {form.triggerType && (
-                            <div className="flex items-center gap-2 px-3 py-2 bg-stone-50 border border-stone-100 rounded-lg">
-                                <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                                <p className="text-[11px] text-stone-500">
-                                    Will fire{' '}
-                                    <span className="font-bold text-stone-700">
-                                        {parseInt(form.delayHours) === 0 ? 'immediately' : `after ${form.delayHours}h`}
-                                    </span>
-                                    {' '}on{' '}
-                                    <TriggerPill trigger={form.triggerType} />
-                                </p>
-                            </div>
-                        )}
                     </div>
 
                     <DialogFooter className="gap-2 pt-3">
-                        <button
-                            type="button"
-                            onClick={() => setIsCreateOpen(false)}
-                            className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleCreateCampaign}
-                            disabled={!form.name || !form.triggerType}
-                            className={cn(
-                                'h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-sm flex items-center gap-1.5',
-                                form.name && form.triggerType
-                                    ? 'bg-rose-600 text-white hover:bg-rose-700'
-                                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'
-                            )}
-                        >
-                            <Zap size={11} /> Create & Activate
-                        </button>
+                        <button type="button" onClick={() => setIsCreateOpen(false)} className="h-8 px-4 text-[10px] font-bold uppercase border text-stone-500 rounded-lg hover:bg-stone-50">Cancel</button>
+                        <button type="button" onClick={handleCreateCampaign} disabled={!form.name || !form.triggerType} className={cn('h-8 px-4 text-[10px] font-bold uppercase rounded-lg shadow-sm flex items-center gap-1.5', form.name && form.triggerType ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-stone-100 text-stone-400')}>{isLoading ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />} Create & Activate</button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

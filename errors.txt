@@ -1,2 +1,17 @@
-track order invoice button generates wrong print
+
+
+pc buidler ui, saved builds ui, track order ui => rework
+
+generate a plan to integrate whatsapp in the whole application
+
+add smtp etc for mail services for now use atharvshelke964@gmail.com as sender mail
+
+the preview invoice in the ordermanager, is different than what i see in the print. keep the print one and remove the preview
+
+orders show wrong number of products in inventory in ordermanager, fix that and make sure correct numbers are reflected
+
+in products manager page, i see wrong numbers like catalogue size average selling price, out of stock, catalogue value. audit the whole product manager page and make sure everything reflected is corrrect 
+
+
+
 

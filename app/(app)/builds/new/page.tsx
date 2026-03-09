@@ -86,28 +86,28 @@ const CORE_CATEGORIES = [
 ];
 
 const CAT_ICONS: Record<string, React.FC<any>> = {
-    [Category.PROCESSOR]:   Cpu,
+    [Category.PROCESSOR]: Cpu,
     [Category.MOTHERBOARD]: Layers,
-    [Category.RAM]:         HardDrive,
-    [Category.GPU]:         Monitor,
-    [Category.STORAGE]:     HardDrive,
-    [Category.PSU]:         Zap,
-    [Category.CABINET]:     Box,
-    [Category.COOLER]:      Fan,
-    [Category.MONITOR]:     Monitor,
-    [Category.PERIPHERAL]:  Keyboard,
-    [Category.NETWORKING]:  Wifi,
+    [Category.RAM]: HardDrive,
+    [Category.GPU]: Monitor,
+    [Category.STORAGE]: HardDrive,
+    [Category.PSU]: Zap,
+    [Category.CABINET]: Box,
+    [Category.COOLER]: Fan,
+    [Category.MONITOR]: Monitor,
+    [Category.PERIPHERAL]: Keyboard,
+    [Category.NETWORKING]: Wifi,
 };
 
 const CAT_DESCRIPTIONS: Record<string, string> = {
-    [Category.PROCESSOR]:   'The brain of your build — AMD or Intel.',
+    [Category.PROCESSOR]: 'The brain of your build — AMD or Intel.',
     [Category.MOTHERBOARD]: 'Connects everything. Must match your CPU socket.',
-    [Category.RAM]:         'System memory. Must match your motherboard DDR type.',
-    [Category.GPU]:         'Graphics card for gaming and creative work.',
-    [Category.STORAGE]:     'NVMe SSDs and high-capacity HDDs.',
-    [Category.PSU]:         'Power supply — must handle your total wattage.',
-    [Category.CABINET]:     'The case. Must fit your motherboard and GPU.',
-    [Category.COOLER]:      'Keep your CPU cool under load.',
+    [Category.RAM]: 'System memory. Must match your motherboard DDR type.',
+    [Category.GPU]: 'Graphics card for gaming and creative work.',
+    [Category.STORAGE]: 'NVMe SSDs and high-capacity HDDs.',
+    [Category.PSU]: 'Power supply — must handle your total wattage.',
+    [Category.CABINET]: 'The case. Must fit your motherboard and GPU.',
+    [Category.COOLER]: 'Keep your CPU cool under load.',
 };
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -118,9 +118,9 @@ function estimateWattage(cart: CartItem[]): number {
         const n = Number(s.wattage);
         if (!isNaN(n) && n > 0) { w += n * item.quantity; continue; }
         if (item.category === Category.PROCESSOR) w += 65;
-        if (item.category === Category.GPU)        w += 150;
-        if (item.category === Category.RAM)        w += 5 * item.quantity;
-        if (item.category === Category.STORAGE)    w += 5 * item.quantity;
+        if (item.category === Category.GPU) w += 150;
+        if (item.category === Category.RAM) w += 5 * item.quantity;
+        if (item.category === Category.STORAGE) w += 5 * item.quantity;
     }
     return w;
 }
@@ -142,7 +142,7 @@ const AnimatedPrice: React.FC<{ value: number }> = ({ value }) => {
         const id = setInterval(() => {
             step++;
             const t = step / 20;
-            const e = t < .5 ? 2*t*t : -1+(4-2*t)*t;
+            const e = t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
             setDisplay(Math.round(from + (value - from) * e));
             if (step >= 20) { clearInterval(id); prev.current = value; }
         }, 16);
@@ -179,12 +179,12 @@ const ProductCard: React.FC<{
     onAdd: () => void;
     onRemove: () => void;
 }> = ({ product, isInCart, compatibility, compatMessage, onAdd, onRemove }) => {
-    const price        = product.variants?.[0]?.price || 0;
-    const compareAt    = product.variants?.[0]?.compareAtPrice;
-    const isOos        = product.variants?.[0]?.status === 'OUT_OF_STOCK';
-    const isIncompat   = compatibility === CompatibilityLevel.INCOMPATIBLE;
-    const specEntries  = Object.entries(specsToFlat(product.specs)).slice(0, 3);
-    const discount     = compareAt && compareAt > price ? Math.round((1 - price / compareAt) * 100) : null;
+    const price = product.variants?.[0]?.price || 0;
+    const compareAt = product.variants?.[0]?.compareAtPrice;
+    const isOos = product.variants?.[0]?.status === 'OUT_OF_STOCK';
+    const isIncompat = compatibility === CompatibilityLevel.INCOMPATIBLE;
+    const specEntries = Object.entries(specsToFlat(product.specs)).slice(0, 3);
+    const discount = compareAt && compareAt > price ? Math.round((1 - price / compareAt) * 100) : null;
 
     return (
         <article
@@ -254,17 +254,16 @@ const ProductCard: React.FC<{
                 {/* Specs — dot separated */}
                 {specEntries.length > 0 && (
                     <p className="text-[11px] text-zinc-400 font-medium truncate mb-2">
-                        {specEntries.map(([, v]) => (typeof v === 'object' ? JSON.stringify(v) : String(v))).join(' • ')}
+                        {specEntries.map(([, v]) => (Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : String(v))).join(' • ')}
                     </p>
                 )}
 
                 {/* Compat message */}
                 {compatMessage && !isInCart && (
-                    <p className={`text-[10px] leading-tight px-2 py-1 rounded-md mb-2 ${
-                        compatibility === CompatibilityLevel.WARNING
+                    <p className={`text-[10px] leading-tight px-2 py-1 rounded-md mb-2 ${compatibility === CompatibilityLevel.WARNING
                             ? 'bg-amber-50 text-amber-700 border border-amber-200'
                             : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
+                        }`}>
                         {compatMessage}
                     </p>
                 )}
@@ -285,11 +284,10 @@ const ProductCard: React.FC<{
                     <div className="flex items-center gap-2">
                         {/* Compat dot */}
                         {!isInCart && (
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                isIncompat ? 'bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]'
-                                : compatibility === CompatibilityLevel.WARNING ? 'bg-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.5)]'
-                                : 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)]'
-                            }`} title={isIncompat ? 'Incompatible' : compatibility === CompatibilityLevel.WARNING ? 'Warning' : 'Compatible'} />
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isIncompat ? 'bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]'
+                                    : compatibility === CompatibilityLevel.WARNING ? 'bg-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.5)]'
+                                        : 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)]'
+                                }`} title={isIncompat ? 'Incompatible' : compatibility === CompatibilityLevel.WARNING ? 'Warning' : 'Compatible'} />
                         )}
 
                         {/* Action button — standalone, never nested */}
@@ -297,15 +295,14 @@ const ProductCard: React.FC<{
                             type="button"
                             onClick={e => { e.stopPropagation(); isInCart ? onRemove() : (!isIncompat && !isOos && onAdd()); }}
                             disabled={(isIncompat && !isInCart) || (isOos && !isInCart)}
-                            className={`h-7 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center justify-center min-w-[56px] ${
-                                isInCart
+                            className={`h-7 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center justify-center min-w-[56px] ${isInCart
                                     ? 'bg-zinc-100 text-zinc-900 border border-zinc-200 hover:bg-zinc-200'
                                     : isOos
                                         ? 'bg-zinc-50 text-zinc-400 cursor-not-allowed border border-zinc-100'
                                         : isIncompat
                                             ? 'bg-zinc-50 text-zinc-400 cursor-not-allowed border border-zinc-100 opacity-60'
                                             : 'bg-zinc-900 text-white hover:bg-black hover:shadow-md hover:shadow-black/10 hover:-translate-y-0.5'
-                            }`}
+                                }`}
                         >
                             {isInCart ? 'Remove' : isOos ? 'Out' : 'Add'}
                         </button>
@@ -329,15 +326,15 @@ const BuildSummaryPanel: React.FC<{
     onShare: () => void;
     onCheckout: () => void;
 }> = ({ cart, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
-    const report         = useMemo(() => validateBuild(cart), [cart]);
-    const totalPrice     = useMemo(() => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0), [cart]);
-    const wattage        = useMemo(() => estimateWattage(cart), [cart]);
-    const psuCap         = useMemo(() => getPsuCap(cart), [cart]);
-    const wattPct        = psuCap ? Math.min((wattage / psuCap) * 100, 100) : Math.min((wattage / 800) * 100, 100);
+    const report = useMemo(() => validateBuild(cart), [cart]);
+    const totalPrice = useMemo(() => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0), [cart]);
+    const wattage = useMemo(() => estimateWattage(cart), [cart]);
+    const psuCap = useMemo(() => getPsuCap(cart), [cart]);
+    const wattPct = psuCap ? Math.min((wattage / psuCap) * 100, 100) : Math.min((wattage / 800) * 100, 100);
     const completedCount = CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length;
-    const progress       = (completedCount / CORE_CATEGORIES.length) * 100;
-    const isIncompat     = report.status === CompatibilityLevel.INCOMPATIBLE;
-    const wattColor      = wattPct > 90 ? '#ef4444' : wattPct > 70 ? '#f59e0b' : '#10b981';
+    const progress = (completedCount / CORE_CATEGORIES.length) * 100;
+    const isIncompat = report.status === CompatibilityLevel.INCOMPATIBLE;
+    const wattColor = wattPct > 90 ? '#ef4444' : wattPct > 70 ? '#f59e0b' : '#10b981';
 
     return (
         <div className="flex flex-col h-full bg-white">
@@ -373,8 +370,8 @@ const BuildSummaryPanel: React.FC<{
             {/* Component rows */}
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
                 {CORE_CATEGORIES.map(cat => {
-                    const item     = cart.find(i => i.category === cat);
-                    const CatIcon  = CAT_ICONS[cat] || Box;
+                    const item = cart.find(i => i.category === cat);
+                    const CatIcon = CAT_ICONS[cat] || Box;
                     const isActive = activeStep === cat;
 
                     return (
@@ -386,14 +383,12 @@ const BuildSummaryPanel: React.FC<{
                             aria-label={`Go to ${CATEGORY_LABELS[cat] || cat}`}
                             onClick={() => onStepClick(cat)}
                             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onStepClick(cat); }}
-                            className={`group/row flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer select-none outline-none transition-colors duration-150 focus-visible:ring-1 focus-visible:ring-zinc-400 ${
-                                isActive ? 'bg-zinc-50 border border-zinc-200' : 'border border-transparent hover:bg-zinc-50'
-                            }`}
+                            className={`group/row flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer select-none outline-none transition-colors duration-150 focus-visible:ring-1 focus-visible:ring-zinc-400 ${isActive ? 'bg-zinc-50 border border-zinc-200' : 'border border-transparent hover:bg-zinc-50'
+                                }`}
                         >
                             {/* Icon */}
-                            <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${
-                                item ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-400'
-                            }`}>
+                            <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${item ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-400'
+                                }`}>
                                 {item
                                     ? <Check size={12} strokeWidth={2.5} />
                                     : <CatIcon size={12} />
@@ -462,11 +457,10 @@ const BuildSummaryPanel: React.FC<{
                         className="px-4 py-3 space-y-1.5 flex-shrink-0 border-t border-zinc-100"
                     >
                         {report.issues.slice(0, 3).map((issue, i) => (
-                            <div key={i} className={`flex items-start gap-2 px-2.5 py-1.5 rounded-lg text-[10px] leading-snug ${
-                                issue.level === CompatibilityLevel.INCOMPATIBLE
+                            <div key={i} className={`flex items-start gap-2 px-2.5 py-1.5 rounded-lg text-[10px] leading-snug ${issue.level === CompatibilityLevel.INCOMPATIBLE
                                     ? 'bg-red-50 text-red-700 border border-red-100'
                                     : 'bg-amber-50 text-amber-700 border border-amber-100'
-                            }`}>
+                                }`}>
                                 <AlertTriangle size={10} className="mt-0.5 flex-shrink-0" />
                                 <span>{issue.message}</span>
                             </div>
@@ -492,11 +486,10 @@ const BuildSummaryPanel: React.FC<{
                     type="button"
                     onClick={onCheckout}
                     disabled={cart.length === 0 || isIncompat}
-                    className={`w-full h-10 text-[13px] font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-                        cart.length === 0 || isIncompat
+                    className={`w-full h-10 text-[13px] font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${cart.length === 0 || isIncompat
                             ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
                             : 'bg-zinc-900 text-white hover:bg-black hover:shadow-md hover:shadow-black/10 hover:-translate-y-0.5'
-                    }`}
+                        }`}
                 >
                     <ShoppingCart size={14} />
                     {cart.length === 0 ? 'Start Building' : 'Add Build to Cart'}
@@ -555,13 +548,12 @@ const StepTab: React.FC<{
         <button
             type="button"
             onClick={onClick}
-            className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150 flex-shrink-0 ${
-                isActive
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150 flex-shrink-0 ${isActive
                     ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-sm border border-zinc-200/60'
                     : isCompleted
                         ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 border border-transparent'
                         : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 border border-transparent'
-            }`}
+                }`}
         >
             {isActive && (
                 <motion.span
@@ -590,14 +582,14 @@ export default function PCBuilderPage() {
     const { isBuildMode, toggleBuildMode, saveCurrentBuild, generateShareLink, compatibilityReport } = useBuild();
     const { toast } = useToast();
 
-    const [activeStep,   setActiveStep]   = useState<Category>(Category.PROCESSOR);
-    const [products,     setProducts]     = useState<Product[]>([]);
-    const [isLoading,    setIsLoading]    = useState(false);
-    const [searchTerm,   setSearchTerm]   = useState('');
-    const [debounced,    setDebounced]    = useState('');
+    const [activeStep, setActiveStep] = useState<Category>(Category.PROCESSOR);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debounced, setDebounced] = useState('');
     const [showIncompat, setShowIncompat] = useState(false);
-    const [sortOption,   setSortOption]   = useState('popularity');
-    const [saveOpen,     setSaveOpen]     = useState(false);
+    const [sortOption, setSortOption] = useState('popularity');
+    const [saveOpen, setSaveOpen] = useState(false);
     const prevParams = useRef('');
 
     useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []);
@@ -616,13 +608,13 @@ export default function PCBuilderPage() {
                 p.set('page', '1');
                 if (debounced) p.set('q', debounced);
                 if (sortOption !== 'popularity') p.set('sort', sortOption);
-                const cpu      = cart.find(i => i.category === Category.PROCESSOR);
-                const mobo     = cart.find(i => i.category === Category.MOTHERBOARD);
-                const cpuSpecs = cpu  ? specsToFlat(cpu.specs)  : null;
-                const moboSp   = mobo ? specsToFlat(mobo.specs) : null;
+                const cpu = cart.find(i => i.category === Category.PROCESSOR);
+                const mobo = cart.find(i => i.category === Category.MOTHERBOARD);
+                const cpuSpecs = cpu ? specsToFlat(cpu.specs) : null;
+                const moboSp = mobo ? specsToFlat(mobo.specs) : null;
                 if (!showIncompat) {
-                    if (activeStep === Category.MOTHERBOARD && cpuSpecs?.socket)  p.set('f_specs.socket', String(cpuSpecs.socket));
-                    if (activeStep === Category.PROCESSOR   && moboSp?.socket)    p.set('f_specs.socket', String(moboSp.socket));
+                    if (activeStep === Category.MOTHERBOARD && cpuSpecs?.socket) p.set('f_specs.socket', String(cpuSpecs.socket));
+                    if (activeStep === Category.PROCESSOR && moboSp?.socket) p.set('f_specs.socket', String(moboSp.socket));
                     if (activeStep === Category.RAM && (cpuSpecs || moboSp)) {
                         const type = moboSp?.ramType || cpuSpecs?.ramType;
                         if (type) p.set('f_specs.ramType', String(type));
@@ -632,7 +624,7 @@ export default function PCBuilderPage() {
                 const qs = p.toString();
                 if (prevParams.current === qs) { setIsLoading(false); return; }
                 prevParams.current = qs;
-                const res  = await fetch(`/api/products?${qs}`);
+                const res = await fetch(`/api/products?${qs}`);
                 const data = await res.json();
                 if (data.products) setProducts(data.products);
             } catch (e) { console.error(e); }
@@ -648,7 +640,7 @@ export default function PCBuilderPage() {
         }, 100);
     }, [addToCart, cart]);
 
-    const handleRemove    = useCallback((id: string) => removeFromCart(id), [removeFromCart]);
+    const handleRemove = useCallback((id: string) => removeFromCart(id), [removeFromCart]);
     const handleStepClick = useCallback((cat: Category) => {
         setActiveStep(cat); setSearchTerm(''); prevParams.current = '';
     }, []);
@@ -656,9 +648,9 @@ export default function PCBuilderPage() {
     const checkCompat = useCallback((product: Product) => {
         if (cart.some(i => i.id === product.id)) return { level: CompatibilityLevel.COMPATIBLE, message: '' };
         const hypo = [...cart.filter(i => i.category !== product.category),
-            { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any }];
-        const rep  = validateBuild(hypo as CartItem[]);
-        const rel  = rep.issues.filter(iss => iss.componentIds.includes(product.id));
+        { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any }];
+        const rep = validateBuild(hypo as CartItem[]);
+        const rel = rep.issues.filter(iss => iss.componentIds.includes(product.id));
         return {
             level: rel.length > 0
                 ? rel.some(i => i.level === CompatibilityLevel.INCOMPATIBLE) ? CompatibilityLevel.INCOMPATIBLE : CompatibilityLevel.WARNING
@@ -667,7 +659,7 @@ export default function PCBuilderPage() {
         };
     }, [cart]);
 
-    const handleSave  = useCallback((t: string) => saveCurrentBuild(t), [saveCurrentBuild]);
+    const handleSave = useCallback((t: string) => saveCurrentBuild(t), [saveCurrentBuild]);
     const handleShare = useCallback(async () => {
         const link = generateShareLink();
         if (!link) { toast({ title: 'Nothing to share', description: 'Add components first.', variant: 'destructive' }); return; }
@@ -680,19 +672,19 @@ export default function PCBuilderPage() {
         toast({ title: 'Link copied!', description: 'Share this link to load your build.' });
     }, [generateShareLink, toast]);
 
-    const totalPrice   = cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0);
+    const totalPrice = cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0);
     const compatReport = useMemo(() => validateBuild(cart), [cart]);
     const completedCount = CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length;
 
     const compatStatusColor =
         compatReport.status === CompatibilityLevel.INCOMPATIBLE ? 'text-red-600' :
-        compatReport.issues.length > 0 ? 'text-amber-600' : 'text-emerald-600';
+            compatReport.issues.length > 0 ? 'text-amber-600' : 'text-emerald-600';
 
     const compatStatusText =
         cart.length === 0 ? 'No components yet' :
-        compatReport.status === CompatibilityLevel.INCOMPATIBLE ? `${compatReport.issues.length} incompatibility` :
-        compatReport.issues.length > 0 ? `${compatReport.issues.length} warning${compatReport.issues.length > 1 ? 's' : ''}` :
-        '✓ Compatible';
+            compatReport.status === CompatibilityLevel.INCOMPATIBLE ? `${compatReport.issues.length} incompatibility` :
+                compatReport.issues.length > 0 ? `${compatReport.issues.length} warning${compatReport.issues.length > 1 ? 's' : ''}` :
+                    '✓ Compatible';
 
     return (
         <div className="pcb-root flex flex-col bg-white" style={{ minHeight: 'calc(100vh - 64px)' }}>
@@ -856,11 +848,10 @@ export default function PCBuilderPage() {
                                         <button
                                             type="button"
                                             onClick={() => setShowIncompat(p => !p)}
-                                            className={`flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors ${
-                                                showIncompat
+                                            className={`flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors ${showIncompat
                                                     ? 'bg-zinc-100 border-zinc-300 text-zinc-900'
                                                     : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
-                                            }`}
+                                                }`}
                                         >
                                             {showIncompat ? <Eye size={13} /> : <EyeOff size={13} />}
                                             <span className="hidden sm:inline">{showIncompat ? 'All' : 'Compatible'}</span>
@@ -958,11 +949,10 @@ export default function PCBuilderPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     {compatReport.issues.length > 0 && (
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                            compatReport.status === CompatibilityLevel.INCOMPATIBLE
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${compatReport.status === CompatibilityLevel.INCOMPATIBLE
                                 ? 'bg-red-50 text-red-600 border border-red-200'
                                 : 'bg-amber-50 text-amber-600 border border-amber-200'
-                        }`}>
+                            }`}>
                             {compatReport.issues.length} issue{compatReport.issues.length > 1 ? 's' : ''}
                         </span>
                     )}

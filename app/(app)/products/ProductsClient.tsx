@@ -29,7 +29,6 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         compareItems,
         addToCompare,
         removeFromCompare,
-        getProductRating,
         categories
     } = useShop();
     const { isBuildMode, toggleBuildMode } = useBuild();

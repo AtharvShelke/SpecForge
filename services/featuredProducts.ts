@@ -2,26 +2,23 @@ import { Product } from '@/types'
 import { getProductScore } from './productScore'
 
 
-export function getFeaturedProducts(
-  products:Product[],
-  getRating:(id:string)=>any
-){
+export function getFeaturedProducts(products: Product[]) {
 
   return [...products]
 
-    .filter(p=>p.status === 'ACTIVE')
+    .filter(p => p.status === 'ACTIVE')
 
-    .map(p=>({
+    .map(p => ({
 
-      product:p,
-      score:getProductScore(p,getRating(p.id))
+      product: p,
+      score: getProductScore(p)
 
     }))
 
-    .sort((a,b)=>b.score - a.score)
+    .sort((a, b) => b.score - a.score)
 
-    .slice(0,8)
+    .slice(0, 8)
 
-    .map(p=>p.product)
+    .map(p => p.product)
 
 }

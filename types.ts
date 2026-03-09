@@ -49,12 +49,6 @@ export enum CompatibilityLevel {
   INCOMPATIBLE = 'INCOMPATIBLE',
 }
 
-export enum ReviewStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
-
 export type StockMovementType = 'PURCHASE' | 'INWARD' | 'OUTWARD' | 'SALE' | 'RETURN' | 'ADJUSTMENT' | 'RESERVE';
 
 export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled' | 'refunded' | 'voided';
@@ -469,23 +463,7 @@ export interface BuildGuide {
   items: BuildGuideItem[];
 }
 
-// ──────────────────────────────────────────────────────
-// REVIEWS
-// ──────────────────────────────────────────────────────
 
-export interface Review {
-  id: string;
-  productId: string;
-  customerName: string;
-  rating: number;
-  comment: string;
-  status: ReviewStatus;
-  createdAt: string; // ISO DateTime
-  product?: {
-    id: string;
-    name: string;
-  };
-}
 
 // ──────────────────────────────────────────────────────
 // COMPATIBILITY
@@ -593,80 +571,6 @@ export interface Invoice {
 
 export type InvoiceFilterStatus = 'all' | InvoiceStatus;
 
-// ──────────────────────────────────────────────────────
-// CMS — Landing Page
-// ──────────────────────────────────────────────────────
-
-// ================== HERO SECTION ==================
-export interface HeroContent {
-  badge: {
-    icon: boolean;
-    text: string;
-  };
-  headline: {
-    line1: string;
-    line2: string;
-    line2Gradient: boolean;
-  };
-  subheadline: string;
-  primaryCTA: {
-    text: string;
-    link: string;
-  };
-  secondaryCTA: {
-    text: string;
-    link: string;
-  };
-  stats: Array<{
-    value: string;
-    label: string;
-  }>;
-  heroImage: {
-    url: string;
-    alt: string;
-  };
-  floatingBadge: {
-    title: string;
-    subtitle: string;
-  };
-}
-
-// ================== CATEGORY SECTION ==================
-export interface CategoryItem {
-  id: string;
-  name: string;
-  icon: string;
-  categoryKey: string;
-  order: number;
-}
-
-export interface CategorySectionContent {
-  sectionTitle: string;
-  categories: CategoryItem[];
-}
-
-// ================== FEATURED PRODUCTS ==================
-export interface FeaturedProductsContent {
-  sectionTitle: string;
-  sectionSubtitle: string;
-  productIds: string[];
-  ctaText: string;
-  ctaLink: string;
-}
-
-// ================== TRUST INDICATORS ==================
-export interface TrustFeature {
-  id: string;
-  icon: string;
-  title: string;
-  description: string;
-  order: number;
-}
-
-export interface TrustSectionContent {
-  features: TrustFeature[];
-}
-
 // ================== FINAL CTA ==================
 export interface FinalCTAContent {
   headline: string;
@@ -674,48 +578,6 @@ export interface FinalCTAContent {
   ctaText: string;
   ctaLink: string;
   backgroundStyle: 'gradient' | 'solid' | 'pattern';
-}
-
-// ================== COMPLETE LANDING PAGE CMS ==================
-export interface CMSContent {
-  id: string;
-  version: number;
-  lastUpdated: string;
-  publishedAt?: string;
-  status: 'published' | 'draft' | 'archived';
-  sections: {
-    hero: HeroContent;
-    categories: CategorySectionContent;
-    featuredProducts: FeaturedProductsContent;
-    trustIndicators: TrustSectionContent;
-    finalCTA: FinalCTAContent;
-  };
-}
-
-export interface LandingPageCMS {
-  id: string;
-  isPublished: boolean;
-  publishedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  content: CMSContent;
-}
-
-// ================== CMS HISTORY & VERSIONING ==================
-export interface CMSVersion {
-  id: string;
-  version: number; // Added for convenience/usage in cmsData
-  pageId: string;
-  content: CMSContent; // Storing the content snapshot
-  label?: string;
-  createdAt: string;
-  createdBy?: string;
-  note?: string;
-}
-
-export interface CMSHistory {
-  versions: CMSVersion[];
-  current: string;
 }
 
 // ================== PAYMENT (frontend-only, for order form) ==================

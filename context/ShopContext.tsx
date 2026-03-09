@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import {
   CartItem, Product, CategoryNode, Brand, Category,
-  LandingPageCMS, Order, Review, CategoryFilterConfig,
+  Order, CategoryFilterConfig,
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,12 +38,7 @@ interface ShopContextType {
   orders: Order[];
   refreshOrders: (email?: string) => Promise<void>;
 
-  // Reviews
-  reviews: Review[];
-  refreshReviews: () => Promise<void>;
-  addReview: (review: { productId: string; customerName: string; rating: number; comment: string }) => void;
-  getProductReviews: (productId: string) => Review[];
-  getProductRating: (productId: string) => { average: number; count: number };
+
 
   // Filter Configs (for storefront sidebar)
   filterConfigs: CategoryFilterConfig[];
@@ -52,9 +47,6 @@ interface ShopContextType {
   // Checkout
   placeOrder: (customerName: string, email: string) => void;
 
-  // CMS
-  cmsContent: LandingPageCMS | null;
-  refreshCMS: () => Promise<void>;
 
   // Global Loading State
   isLoading: boolean;
@@ -74,8 +66,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [compareItems, setCompareItems] = useState<Product[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [cmsContent, setCmsContent] = useState<LandingPageCMS | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+
   const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
 
   // --- REFRESH FUNCTIONS ---
@@ -110,15 +101,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  const refreshCMS = useCallback(async () => {
-    try {
-      const res = await fetch('/api/cms?published=true');
-      const data = await res.json();
-      setCmsContent(data);
-    } catch (err) {
-      console.error('Failed to fetch CMS content:', err);
-    }
-  }, []);
 
   const refreshOrders = useCallback(async (email?: string) => {
     try {
@@ -128,16 +110,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (data.orders) setOrders(data.orders);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
-    }
-  }, []);
-
-  const refreshReviews = useCallback(async () => {
-    try {
-      const res = await fetch('/api/reviews');
-      const data = await res.json();
-      setReviews(Array.isArray(data) ? data : data.reviews ?? []);
-    } catch (err) {
-      console.error('Failed to fetch reviews:', err);
     }
   }, []);
 
@@ -172,8 +144,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           refreshProducts(),
           refreshCategories(),
           refreshBrands(),
-          refreshCMS(),
-          refreshReviews(),
           refreshFilterConfigs(),
         ]);
       } catch (err) {
@@ -289,27 +259,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCompareItems(prev => prev.filter(item => item.id !== productId));
   }, []);
 
-  // --- REVIEW HELPERS ---
-
-  const addReview = useCallback((review: { productId: string; customerName: string; rating: number; comment: string }) => {
-    fetch('/api/reviews', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(review),
-    }).then(() => refreshReviews()).catch(err => console.error('Failed to add review:', err));
-  }, [refreshReviews]);
-
-  const getProductReviews = useCallback((productId: string) => {
-    return reviews.filter(r => r.productId === productId);
-  }, [reviews]);
-
-  const getProductRating = useCallback((productId: string) => {
-    const productReviews = reviews.filter(r => r.productId === productId);
-    if (productReviews.length === 0) return { average: 0, count: 0 };
-    const sum = productReviews.reduce((a, r) => a + r.rating, 0);
-    return { average: sum / productReviews.length, count: productReviews.length };
-  }, [reviews]);
-
   // --- CHECKOUT ---
 
   const placeOrder = useCallback((customerName: string, email: string) => {
@@ -365,25 +314,16 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     refreshBrands,
     orders,
     refreshOrders,
-    reviews,
-    refreshReviews,
-    addReview,
-    getProductReviews,
-    getProductRating,
     filterConfigs,
     refreshFilterConfigs,
     placeOrder,
-    cmsContent,
-    refreshCMS,
     isLoading
   }), [
     cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
     isCartOpen, setCartOpen, compareItems, addToCompare, removeFromCompare,
     products, refreshProducts, categories, refreshCategories,
     brands, refreshBrands, orders, refreshOrders,
-    reviews, refreshReviews, addReview, getProductReviews, getProductRating,
-    filterConfigs, refreshFilterConfigs, placeOrder,
-    cmsContent, refreshCMS, isLoading
+    filterConfigs, refreshFilterConfigs, placeOrder, isLoading
   ]);
 
   return (

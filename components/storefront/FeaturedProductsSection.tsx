@@ -9,17 +9,14 @@ import { Product } from '@/types'
 interface Props {
     products: Product[]
     addToCart: (p: Product) => void
-    getRating: (id: string) => { average: number; count: number }
 }
 
 function ProductCardPremium({
     product,
-    rating,
     onAddToCart,
     index,
 }: {
     product: Product
-    rating: { average: number; count: number }
     onAddToCart: (p: Product) => void
     index: number
 }) {
@@ -94,16 +91,7 @@ function ProductCardPremium({
                 </Link>
 
                 <div className="mt-auto">
-                    {rating.count > 0 && (
-                        <div className="flex items-center gap-1.5 mb-4">
-                            <div className="flex gap-0.5">
-                                {[1, 2, 3, 4, 5].map(i => (
-                                    <Star key={i} size={12} className={i <= Math.round(rating.average) ? 'text-amber-400 fill-amber-400' : 'text-zinc-200'} />
-                                ))}
-                            </div>
-                            <span className="text-xs font-semibold text-zinc-400">({rating.count})</span>
-                        </div>
-                    )}
+
 
                     <div className="flex items-end gap-2">
                         <span className="text-xl font-black text-zinc-950 tracking-tight">
@@ -121,7 +109,7 @@ function ProductCardPremium({
     )
 }
 
-export default function FeaturedProductsSection({ products, addToCart, getRating }: Props) {
+export default function FeaturedProductsSection({ products, addToCart }: Props) {
     if (!products.length) return null
 
     return (
@@ -165,7 +153,6 @@ export default function FeaturedProductsSection({ products, addToCart, getRating
                         <ProductCardPremium
                             key={product.id}
                             product={product}
-                            rating={getRating(product.id)}
                             onAddToCart={addToCart}
                             index={i}
                         />

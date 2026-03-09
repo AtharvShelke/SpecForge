@@ -84,10 +84,10 @@ const StockBadge = ({ qty, reorderLevel }: { qty: number; reorderLevel: number }
 
 const MovTypeBadge = ({ type }: { type: string }) => {
     const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
-        INWARD:     { label: 'Inward',      cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: <ArrowDownRight size={10} /> },
-        OUTWARD:    { label: 'Outward',     cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200',         icon: <ArrowUpRight size={10} /> },
-        ADJUSTMENT: { label: 'Adjustment',  cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',   icon: <RefreshCw size={10} /> },
-        TRANSFER:   { label: 'Transfer',    cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200',   icon: <MoveHorizontal size={10} /> },
+        INWARD: { label: 'Inward', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: <ArrowDownRight size={10} /> },
+        OUTWARD: { label: 'Outward', cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200', icon: <ArrowUpRight size={10} /> },
+        ADJUSTMENT: { label: 'Adjustment', cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200', icon: <RefreshCw size={10} /> },
+        TRANSFER: { label: 'Transfer', cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200', icon: <MoveHorizontal size={10} /> },
     };
     const cfg = map[type] ?? { label: type, cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200', icon: null };
     return (
@@ -101,7 +101,7 @@ const MovTypeBadge = ({ type }: { type: string }) => {
 // MAIN
 // ─────────────────────────────────────────────────────────────
 const InventoryManager = () => {
-    const { inventory, stockMovements, adjustStock, transferStock } = useAdmin();
+    const { inventory, stockMovements, adjustStock, transferStock, refreshInventory } = useAdmin();
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
         isOpen: boolean; sku: string; currentQty: number;
@@ -174,6 +174,10 @@ const InventoryManager = () => {
             } finally { setIsLoadingInventory(false); }
         };
         fetchPaginatedInventory();
+
+        // Polling for paginated data every 30 seconds
+        const interval = setInterval(fetchPaginatedInventory, 30000);
+        return () => clearInterval(interval);
     }, [searchParams, refreshTrigger]);
 
     const updateQueryParams = (newParams: Record<string, string | null>) => {
@@ -209,13 +213,13 @@ const InventoryManager = () => {
     };
 
     // ── Computed KPIs ──
-    const lowStockCount    = inventory.filter(i => i.quantity > 0 && i.quantity <= i.reorderLevel).length;
-    const outOfStockCount  = inventory.filter(i => i.quantity === 0).length;
-    const totalStockValue  = inventory.reduce((s, i) => s + i.quantity * i.costPrice, 0);
-    const totalUnits       = inventory.reduce((s, i) => s + i.quantity, 0);
-    const totalReserved    = inventory.reduce((s, i) => s + (i.reserved || 0), 0);
-    const healthyCount     = inventory.filter(i => i.quantity > i.reorderLevel).length;
-    const healthPct        = inventory.length > 0 ? Math.round((healthyCount / inventory.length) * 100) : 0;
+    const lowStockCount = inventory.filter(i => i.quantity > 0 && i.quantity <= i.reorderLevel).length;
+    const outOfStockCount = inventory.filter(i => i.quantity === 0).length;
+    const totalStockValue = inventory.reduce((s, i) => s + i.quantity * i.costPrice, 0);
+    const totalUnits = inventory.reduce((s, i) => s + i.quantity, 0);
+    const totalReserved = inventory.reduce((s, i) => s + (i.reserved || 0), 0);
+    const healthyCount = inventory.filter(i => i.quantity > i.reorderLevel).length;
+    const healthPct = inventory.length > 0 ? Math.round((healthyCount / inventory.length) * 100) : 0;
 
     // ── Top 5 critical (lowest stock relative to reorder level) ──
     const criticalItems = useMemo(() => {
@@ -266,6 +270,10 @@ const InventoryManager = () => {
                         <History size={13} /> Audit Log
                     </button>
                     <button
+                        onClick={async () => {
+                            await refreshInventory();
+                            setRefreshTrigger(prev => !prev);
+                        }}
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
                     >
                         <RefreshCw size={13} /> Sync
@@ -403,10 +411,10 @@ const InventoryManager = () => {
                     </div>
                     <div className="px-4 py-4 space-y-3">
                         {[
-                            { label: 'Total Units on Hand',   value: totalUnits.toLocaleString('en-IN'),  sub: 'Gross available stock',       icon: <Package size={12} />, color: 'text-stone-600' },
-                            { label: 'Reserved / Committed',  value: totalReserved.toLocaleString('en-IN'), sub: 'Pending order fulfilment',   icon: <Clock size={12} />,   color: 'text-amber-600' },
-                            { label: 'Net Available',         value: Math.max(0, totalUnits - totalReserved).toLocaleString('en-IN'), sub: 'Free to allocate',     icon: <Zap size={12} />,    color: 'text-emerald-600' },
-                            { label: 'Avg Cost / Unit',       value: inventory.length > 0 ? `₹${Math.round(totalStockValue / Math.max(totalUnits, 1)).toLocaleString('en-IN')}` : '—', sub: 'Weighted average',    icon: <DollarSign size={12} />, color: 'text-indigo-600' },
+                            { label: 'Total Units on Hand', value: totalUnits.toLocaleString('en-IN'), sub: 'Gross available stock', icon: <Package size={12} />, color: 'text-stone-600' },
+                            { label: 'Reserved / Committed', value: totalReserved.toLocaleString('en-IN'), sub: 'Pending order fulfilment', icon: <Clock size={12} />, color: 'text-amber-600' },
+                            { label: 'Net Available', value: Math.max(0, totalUnits - totalReserved).toLocaleString('en-IN'), sub: 'Free to allocate', icon: <Zap size={12} />, color: 'text-emerald-600' },
+                            { label: 'Avg Cost / Unit', value: inventory.length > 0 ? `₹${Math.round(totalStockValue / Math.max(totalUnits, 1)).toLocaleString('en-IN')}` : '—', sub: 'Weighted average', icon: <DollarSign size={12} />, color: 'text-indigo-600' },
                         ].map(({ label, value, sub, icon, color }) => (
                             <div key={label} className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2 min-w-0">
@@ -465,7 +473,7 @@ const InventoryManager = () => {
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 text-stone-800 shadow-md">
                                     <SelectItem value="all" className="text-xs focus:bg-stone-50">Any Status</SelectItem>
-                                    <SelectItem value="in"  className="text-xs focus:bg-stone-50">In Stock</SelectItem>
+                                    <SelectItem value="in" className="text-xs focus:bg-stone-50">In Stock</SelectItem>
                                     <SelectItem value="low" className="text-xs focus:bg-stone-50">Low Stock</SelectItem>
                                     <SelectItem value="out" className="text-xs focus:bg-stone-50">Out of Stock</SelectItem>
                                 </SelectContent>
@@ -548,7 +556,7 @@ const InventoryManager = () => {
                                             <span className={cn(
                                                 'text-sm font-bold tabular-nums font-mono',
                                                 item.quantity === 0 ? 'text-rose-600' :
-                                                item.quantity <= item.reorderLevel ? 'text-amber-700' : 'text-stone-900'
+                                                    item.quantity <= item.reorderLevel ? 'text-amber-700' : 'text-stone-900'
                                             )}>
                                                 {item.quantity}
                                             </span>
@@ -702,9 +710,9 @@ const InventoryManager = () => {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-white border-stone-200 shadow-md">
-                                        <SelectItem value="INWARD"     className="text-xs focus:bg-stone-50">Inward (Replenishment)</SelectItem>
+                                        <SelectItem value="INWARD" className="text-xs focus:bg-stone-50">Inward (Replenishment)</SelectItem>
                                         <SelectItem value="ADJUSTMENT" className="text-xs focus:bg-stone-50">Manual Correction</SelectItem>
-                                        <SelectItem value="OUTWARD"    className="text-xs focus:bg-stone-50">Outward (Loss / Damage)</SelectItem>
+                                        <SelectItem value="OUTWARD" className="text-xs focus:bg-stone-50">Outward (Loss / Damage)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

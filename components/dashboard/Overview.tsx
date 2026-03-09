@@ -123,7 +123,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 // ─────────────────────────────────────────────────────────────
 const Overview = () => {
   const { products } = useShop();
-  const { reviews, orders, inventory } = useAdmin();
+  const { orders, inventory } = useAdmin();
 
   // ── Derived metrics ──
   const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
@@ -137,10 +137,6 @@ const Overview = () => {
     p => p.variants?.[0]?.status === 'LOW_STOCK' || p.variants?.[0]?.status === 'OUT_OF_STOCK'
   );
   const outOfStockProducts = products.filter(p => p.variants?.[0]?.status === 'OUT_OF_STOCK');
-  const pendingReviews = reviews.filter(r => r.status === 'PENDING');
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
-    : '—';
 
   // ── Order fulfilment rate ──
   const fulfilmentRate = orders.length > 0
@@ -427,7 +423,7 @@ const Overview = () => {
           </div>
         </Panel>
 
-        {/* Right column: Stock + Reviews stacked */}
+        {/* Right column: Stock alerts */}
         <div className="flex flex-col gap-3">
 
           {/* Inventory Health */}
@@ -492,47 +488,6 @@ const Overview = () => {
             </div>
           </Panel>
 
-          {/* Reviews Snapshot */}
-          <Panel stripe="stone">
-            <PanelHeader icon={<Star size={12} />} right={
-              <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-                {pendingReviews.length} pending
-              </span>
-            }>
-              Reviews
-            </PanelHeader>
-            <div className="px-4 py-3 space-y-2.5">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Avg Rating</p>
-                  <p className="text-lg font-extrabold text-stone-800 tabular-nums font-mono">{avgRating}</p>
-                </div>
-                <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total</p>
-                  <p className="text-lg font-extrabold text-stone-800 tabular-nums font-mono">{reviews.length}</p>
-                </div>
-              </div>
-              {pendingReviews.slice(0, 2).map(review => (
-                <div key={review.id} className="px-3 py-2 bg-amber-50/60 border border-amber-100 rounded-lg">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-semibold text-stone-700 truncate">{review.product?.name || 'Product'}</p>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <span key={i} className={cn('text-[10px]', i < (review.rating || 0) ? 'text-amber-400' : 'text-stone-200')}>★</span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-stone-400 mt-0.5 line-clamp-1">{review.comment || 'No comment'}</p>
-                </div>
-              ))}
-              {pendingReviews.length === 0 && (
-                <div className="flex items-center gap-2 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg">
-                  <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                  <p className="text-xs font-semibold text-emerald-700">No pending reviews</p>
-                </div>
-              )}
-            </div>
-          </Panel>
         </div>
       </div>
 

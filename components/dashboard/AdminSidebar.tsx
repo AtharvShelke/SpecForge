@@ -34,7 +34,6 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Brands', icon: Bookmark, key: 'brands', group: 'secondary' },
     { label: 'Saved Builds', icon: Layers, key: 'saved-builds', group: 'secondary' },
     // { label: 'Billing & Invoices', icon: CreditCard, key: 'billing', group: 'secondary' },
-    { label: 'CMS', icon: FileText, key: 'cms', group: 'secondary' },
     { label: 'Marketing', icon: Megaphone, key: 'marketing', group: 'secondary' },
 ];
 

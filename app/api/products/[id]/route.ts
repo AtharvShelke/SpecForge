@@ -35,7 +35,6 @@ export async function GET(
             include: {
                 specs: true,
                 brand: true,
-                reviews: { orderBy: { createdAt: "desc" } },
                 variants: { include: { warehouseInventories: true } },
                 media: true
             },

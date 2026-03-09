@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
                 where: dbWhere,
                 select: {
                     id: true,
+                    variantId: true,
                     quantity: true,
                     reserved: true,
                     reorderLevel: true,

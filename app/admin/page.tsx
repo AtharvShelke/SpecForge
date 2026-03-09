@@ -11,7 +11,6 @@ import ProcurementManager from '@/components/dashboard/ProcurementManager';
 import CategoryManager from '@/components/dashboard/CategoryManager';
 import BrandManager from '@/components/dashboard/BrandManager';
 import BillingInvoices from '@/components/dashboard/BillingInvoices';
-import CMSManager from '@/components/dashboard/CMSManager';
 import { MarketingManager } from '@/components/dashboard/MarketingManager';
 import SavedBuildsManager from '@/components/dashboard/SavedBuildsManager';
 
@@ -46,7 +45,6 @@ const AdminDashboardContent: React.FC = () => {
             {activeTab === 'brands' && <BrandManager />}
             {activeTab === 'saved-builds' && <SavedBuildsManager />}
             {activeTab === 'billing' && <BillingInvoices />}
-            {activeTab === 'cms' && <CMSManager />}
             {activeTab === 'marketing' && <MarketingManager />}
         </div>
     );

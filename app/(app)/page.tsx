@@ -21,7 +21,7 @@ import StorefrontNavbar from '@/components/storefront/StorefrontNavbar'
 import StorefrontFooter from '@/components/storefront/StorefrontFooter'
 
 export default function StorefrontPage() {
-  const { products, categories, brands, addToCart, getProductRating, isLoading } = useShop()
+  const { products, categories, brands, addToCart, isLoading } = useShop()
 
   const [builds, setBuilds] = useState([])
 
@@ -33,8 +33,8 @@ export default function StorefrontPage() {
   }, [])
 
   const featuredProducts = useMemo(() => {
-    return getFeaturedProducts(products, getProductRating)
-  }, [products, getProductRating])
+    return getFeaturedProducts(products)
+  }, [products])
 
   // Calculate product counts per category for category section
   const productCounts = useMemo(() => {
@@ -96,7 +96,6 @@ export default function StorefrontPage() {
         <FeaturedProductsSection
           products={featuredProducts}
           addToCart={addToCart}
-          getRating={getProductRating}
         />
 
         {/* 5. GPU Tier Selector */}

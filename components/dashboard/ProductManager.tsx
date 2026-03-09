@@ -286,6 +286,9 @@ const ProductManager = () => {
         setCurrentProduct({ ...currentProduct, specs: newSpecs });
     };
 
+    const activeSchemaSpecs = currentSchema.filter(attr => attr.required || currentProduct.specs?.[attr.key] !== undefined);
+    const suggestedSchemaSpecs = currentSchema.filter(attr => !attr.required && currentProduct.specs?.[attr.key] === undefined);
+
     const schemaKeys = currentSchema.map(attr => attr.key);
     const customSpecs = Object.entries(currentProduct.specs || {}).filter(([key]) => !schemaKeys.includes(key) && key !== 'brand');
 
@@ -431,13 +434,27 @@ const ProductManager = () => {
                                 <SectionLabel icon={<Settings2 size={12} />}>Specifications</SectionLabel>
                             </div>
                             <div className="p-5 space-y-5">
-                                {currentSchema.length > 0 && (
+                                {activeSchemaSpecs.length > 0 && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {currentSchema.map(attr => (
-                                            <div key={attr.key}>
-                                                <FieldLabel>
+                                        {activeSchemaSpecs.map(attr => (
+                                            <div key={attr.key} className="relative group">
+                                                <FieldLabel required={attr.required}>
                                                     {attr.label}{attr.unit && <span className="normal-case text-stone-300 ml-1">({attr.unit})</span>}
                                                 </FieldLabel>
+                                                {!attr.required && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newSpecs = { ...currentProduct.specs };
+                                                            delete newSpecs[attr.key];
+                                                            setCurrentProduct({ ...currentProduct, specs: newSpecs });
+                                                        }}
+                                                        className="absolute top-0 right-0 p-0.5 text-rose-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="Remove suggested spec"
+                                                    >
+                                                        <X size={11} />
+                                                    </button>
+                                                )}
                                                 {attr.type === 'multi-select' ? (
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {attr.options?.map(option => {
@@ -483,6 +500,26 @@ const ProductManager = () => {
                                     </div>
                                 )}
 
+                                {/* Suggested Specs */}
+                                {suggestedSchemaSpecs.length > 0 && (
+                                    <div className="pt-4 border-t border-stone-100 space-y-3">
+                                        <SectionLabel icon={<Plus size={11} />}>Suggested Specifications</SectionLabel>
+                                        <div className="flex flex-wrap gap-2">
+                                            {suggestedSchemaSpecs.map(attr => (
+                                                <button
+                                                    key={attr.key}
+                                                    type="button"
+                                                    onClick={() => handleSpecChange(attr.key, attr.type === 'number' ? 0 : attr.type === 'multi-select' ? [] : '')}
+                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-stone-300 text-stone-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 text-[11px] font-bold transition-colors"
+                                                >
+                                                    <Plus size={12} />
+                                                    {attr.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Custom Specs */}
                                 <div className="pt-4 border-t border-stone-100 space-y-3">
                                     <SectionLabel icon={<Plus size={11} />}>Custom Specifications</SectionLabel>
@@ -509,11 +546,27 @@ const ProductManager = () => {
                                     )}
                                     <div className="flex items-center gap-2 bg-stone-50 border border-stone-100 rounded-lg p-3 max-w-md">
                                         <Input
-                                            placeholder="Key (e.g. Material)"
+                                            list="custom-spec-suggestions"
+                                            placeholder="Key (e.g. Material, m2Slots)"
                                             className="h-8 text-xs border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none w-1/2"
                                             value={newSpecKey}
                                             onChange={e => setNewSpecKey(e.target.value)}
                                         />
+                                        <datalist id="custom-spec-suggestions">
+                                            <option value="length" />
+                                            <option value="width" />
+                                            <option value="height" />
+                                            <option value="weight" />
+                                            <option value="warranty" />
+                                            <option value="color" />
+                                            <option value="material" />
+                                            <option value="rgb" />
+                                            <option value="powerConnectors" />
+                                            <option value="ramSlots" />
+                                            <option value="m2Slots" />
+                                            <option value="sataPorts" />
+                                            <option value="driveBays" />
+                                        </datalist>
                                         <Input
                                             placeholder="Value (e.g. Aluminium)"
                                             className="h-8 text-xs border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none w-1/2"
@@ -766,9 +819,9 @@ const ProductManager = () => {
                     </div>
                     <div className="px-4 py-4 space-y-3">
                         {[
-                            { label: 'Lowest Price',   value: `₹${priceRange.min.toLocaleString('en-IN')}`,   color: 'text-stone-600', bar: priceRange.max > 0 ? (priceRange.min / priceRange.max) * 100 : 0, barColor: 'bg-stone-300' },
-                            { label: 'Average Price',  value: `₹${priceRange.avg.toLocaleString('en-IN')}`,   color: 'text-indigo-600', bar: priceRange.max > 0 ? (priceRange.avg / priceRange.max) * 100 : 0, barColor: 'bg-indigo-400' },
-                            { label: 'Highest Price',  value: `₹${priceRange.max.toLocaleString('en-IN')}`,   color: 'text-teal-600',  bar: 100, barColor: 'bg-teal-400' },
+                            { label: 'Lowest Price', value: `₹${priceRange.min.toLocaleString('en-IN')}`, color: 'text-stone-600', bar: priceRange.max > 0 ? (priceRange.min / priceRange.max) * 100 : 0, barColor: 'bg-stone-300' },
+                            { label: 'Average Price', value: `₹${priceRange.avg.toLocaleString('en-IN')}`, color: 'text-indigo-600', bar: priceRange.max > 0 ? (priceRange.avg / priceRange.max) * 100 : 0, barColor: 'bg-indigo-400' },
+                            { label: 'Highest Price', value: `₹${priceRange.max.toLocaleString('en-IN')}`, color: 'text-teal-600', bar: 100, barColor: 'bg-teal-400' },
                         ].map(({ label, value, color, bar, barColor }) => (
                             <div key={label}>
                                 <div className="flex items-center justify-between gap-2 mb-1">
@@ -833,8 +886,8 @@ const ProductManager = () => {
                                     <SelectValue placeholder="Availability" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 shadow-md">
-                                    <SelectItem value="all"          className="text-xs focus:bg-stone-50">Any Availability</SelectItem>
-                                    <SelectItem value="In Stock"     className="text-xs focus:bg-stone-50">In Stock</SelectItem>
+                                    <SelectItem value="all" className="text-xs focus:bg-stone-50">Any Availability</SelectItem>
+                                    <SelectItem value="In Stock" className="text-xs focus:bg-stone-50">In Stock</SelectItem>
                                     <SelectItem value="Out of Stock" className="text-xs focus:bg-stone-50">Out of Stock</SelectItem>
                                 </SelectContent>
                             </Select>

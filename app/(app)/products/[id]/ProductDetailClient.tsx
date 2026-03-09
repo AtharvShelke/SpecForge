@@ -13,7 +13,7 @@ import {
     XCircle,
     ArrowLeft,
 } from 'lucide-react';
-import { CompatibilityLevel, specsToFlat, Review, Product } from '@/types';
+import { CompatibilityLevel, specsToFlat, Product } from '@/types';
 import { validateBuild } from '@/services/compatibility';
 
 const CATEGORY_HIGHLIGHTS: Record<string, string[]> = {
@@ -40,15 +40,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
     const {
         cart,
         addToCart,
-        getProductReviews,
-        getProductRating,
-        addReview,
-        refreshReviews,
     } = useShop();
-
-    React.useEffect(() => {
-        refreshReviews();
-    }, [refreshReviews]);
 
     const flatSpecs = useMemo(() => product ? specsToFlat(product.specs) : {}, [product]);
 
@@ -58,12 +50,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
         return list;
     }, [product]);
 
-    const [showReviewForm, setShowReviewForm] = useState(false);
-    const [reviewForm, setReviewForm] = useState({
-        name: '',
-        rating: 5,
-        comment: '',
-    });
+
 
     if (!product) {
         return (
@@ -80,23 +67,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
     const hypotheticalCart = [...cart, { ...product, quantity: 1 } as any];
     const report = validateBuild(hypotheticalCart);
     const inCart = cart.find((c: any) => c.id === product.id);
-
-    const { average, count } = getProductRating(product.id);
-    const reviews = getProductReviews(product.id);
-
     const highlights = CATEGORY_HIGHLIGHTS[product.category] || [];
-
-    const handleReviewSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        addReview({
-            productId: product.id,
-            customerName: reviewForm.name,
-            rating: reviewForm.rating,
-            comment: reviewForm.comment,
-        });
-        setReviewForm({ name: '', rating: 5, comment: '' });
-        setShowReviewForm(false);
-    };
 
     return (
         <div className="min-h-screen bg-zinc-50 pb-12 pt-6">
@@ -166,24 +137,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 mt-3">
-                                    <div className="flex text-amber-400">
-                                        {[1, 2, 3, 4, 5].map(i => (
-                                            <Star
-                                                key={i}
-                                                size={18}
-                                                className={
-                                                    i <= Math.round(average)
-                                                        ? 'fill-current'
-                                                        : 'text-zinc-300'
-                                                }
-                                            />
-                                        ))}
-                                    </div>
-                                    <span className="text-sm text-zinc-500">
-                                        {average.toFixed(1)} ({count} reviews)
-                                    </span>
-                                </div>
+
                             </div>
 
                             <div className="text-3xl font-bold text-zinc-900">
@@ -287,71 +241,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
                     </div>
                 </section>
 
-                {/* REVIEWS */}
-                <section className="bg-white border border-zinc-200 rounded-2xl p-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold">Customer Reviews</h2>
-                        <button
-                            onClick={() => setShowReviewForm(!showReviewForm)}
-                            className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm"
-                        >
-                            Write a review
-                        </button>
-                    </div>
 
-                    {showReviewForm && (
-                        <form
-                            onSubmit={handleReviewSubmit}
-                            className="mb-8 bg-zinc-50 p-6 rounded-xl"
-                        >
-                            <input
-                                required
-                                placeholder="Your name"
-                                className="w-full mb-3 p-2 rounded border"
-                                value={reviewForm.name}
-                                onChange={e =>
-                                    setReviewForm({ ...reviewForm, name: e.target.value })
-                                }
-                            />
-                            <textarea
-                                required
-                                placeholder="Your review"
-                                className="w-full mb-3 p-2 rounded border"
-                                value={reviewForm.comment}
-                                onChange={e =>
-                                    setReviewForm({ ...reviewForm, comment: e.target.value })
-                                }
-                            />
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">
-                                Submit
-                            </button>
-                        </form>
-                    )}
-
-                    {reviews.length === 0 ? (
-                        <p className="text-zinc-500 italic">
-                            No reviews yet. Be the first.
-                        </p>
-                    ) : (
-                        reviews.map((r: Review) => (
-                            <div key={r.id} className="border-t py-4">
-                                <div className="font-semibold">{r.customerName}</div>
-                                <div className="flex text-amber-400">
-                                    {[1, 2, 3, 4, 5].map(i => (
-                                        <Star
-                                            key={i}
-                                            size={14}
-                                            className={
-                                                i <= r.rating ? 'fill-current' : 'text-zinc-300'
-                                            }
-                                        />
-                                    ))}
-                                </div>
-                                <p className="text-zinc-700 mt-2">{r.comment}</p>
-                            </div>
-                        ))
-                    )}
-                </section>
             </div>
         </div>
     );

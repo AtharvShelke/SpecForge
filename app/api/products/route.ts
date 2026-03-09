@@ -229,7 +229,6 @@ export async function getProductsData(searchParams: URLSearchParams) {
                     },
                 },
                 media: { select: { id: true, url: true, altText: true, sortOrder: true }, orderBy: { sortOrder: 'asc' as const }, take: 4 },
-                _count: { select: { reviews: true } },
             };
 
         const [products, total] = await Promise.all([
