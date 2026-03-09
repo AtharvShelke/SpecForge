@@ -72,9 +72,18 @@ const Panel = ({ children, className, stripe }: {
   );
 };
 
-const PanelHeader = ({ icon, children, right }: { icon: React.ReactNode; children: React.ReactNode; right?: React.ReactNode }) => (
-  <div className="px-5 py-3.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
-    <SectionLabel icon={icon}>{children}</SectionLabel>
+const PanelHeader = ({ icon, children, right, onClick }: { icon: React.ReactNode; children: React.ReactNode; right?: React.ReactNode; onClick?: () => void }) => (
+  <div
+    className={cn(
+      "px-5 py-3.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between",
+      onClick && "cursor-pointer hover:bg-stone-100/80 transition-colors group/header"
+    )}
+    onClick={onClick}
+  >
+    <div className="flex items-center gap-1.5">
+      <SectionLabel icon={icon}>{children}</SectionLabel>
+      {onClick && <ArrowUpRight size={10} className="ml-0.5 text-stone-400 opacity-0 group-hover/header:opacity-100 group-hover/header:translate-x-0.5 group-hover/header:-translate-y-0.5 transition-all" />}
+    </div>
     {right}
   </div>
 );
@@ -122,7 +131,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 // MAIN OVERVIEW
 // ─────────────────────────────────────────────────────────────
 const Overview = () => {
-  const { orders, inventory, products, syncData, isLoading } = useAdmin();
+  const { orders, inventory, products, syncData, isLoading, setActiveTab } = useAdmin();
 
   // ── Derived metrics ──
   const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
@@ -245,6 +254,11 @@ const Overview = () => {
             icon: <DollarSign size={14} />,
             accent: 'border-l-indigo-400',
             subColor: isRevUp ? 'text-emerald-600' : 'text-rose-500',
+            tab: 'orders',
+            breakdown: [
+              { label: 'Successful', val: `₹${orders.filter(o => o.paymentStatus === 'Success').reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}`, color: 'text-emerald-600' },
+              { label: 'Pending', val: `₹${orders.filter(o => o.paymentStatus === 'Pending' || !o.paymentStatus).reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}`, color: 'text-amber-600' }
+            ]
           },
           {
             label: 'Avg Order Value',
@@ -253,6 +267,11 @@ const Overview = () => {
             icon: <ShoppingCart size={14} />,
             accent: 'border-l-teal-400',
             subColor: 'text-stone-400',
+            tab: 'orders',
+            breakdown: [
+              { label: 'Total Orders', val: orders.length, color: 'text-stone-600' },
+              { label: 'Highest', val: `₹${Math.max(...orders.map(o => o.total), 0).toLocaleString('en-IN')}`, color: 'text-indigo-600' }
+            ]
           },
           {
             label: 'Pending Actions',
@@ -261,23 +280,58 @@ const Overview = () => {
             icon: <Zap size={14} />,
             accent: (pendingOrders.length + paidOrders.length) > 0 ? 'border-l-amber-400' : 'border-l-emerald-400',
             subColor: (pendingOrders.length + paidOrders.length) > 0 ? 'text-amber-600' : 'text-emerald-600',
+            tab: 'orders',
+            breakdown: [
+              { label: 'New Orders', val: pendingOrders.length, color: 'text-amber-600' },
+              { label: 'Ready to Process', val: paidOrders.length, color: 'text-indigo-600' }
+            ]
           },
           {
-            label: 'Fulfilment Rate',
-            value: `${fulfilmentRate}%`,
-            sub: `${deliveredOrders.length} of ${orders.length} delivered`,
-            icon: <CheckCircle2 size={14} />,
-            accent: fulfilmentRate >= 80 ? 'border-l-emerald-400' : fulfilmentRate >= 50 ? 'border-l-amber-400' : 'border-l-rose-400',
+            label: 'Inventory Status',
+            value: inventoryHealthPct + '%',
+            sub: `${lowStockCount} items low · ${outOfStockCount} out`,
+            icon: <Package size={14} />,
+            accent: inventoryHealthPct >= 80 ? 'border-l-emerald-400' : inventoryHealthPct >= 50 ? 'border-l-amber-400' : 'border-l-rose-400',
             subColor: 'text-stone-400',
+            tab: 'inventory',
+            breakdown: [
+              { label: 'Total Items', val: inventoryArray.length, color: 'text-stone-600' },
+              { label: 'Total Units', val: totalInventoryUnits.toLocaleString('en-IN'), color: 'text-indigo-600' }
+            ]
           },
         ].map((card, i) => (
-          <div key={i} className={cn('rounded-xl bg-white border border-stone-200 border-l-4 shadow-sm p-4', card.accent)}>
+          <div
+            key={i}
+            onClick={() => setActiveTab(card.tab)}
+            className={cn(
+              'group rounded-xl bg-white border border-stone-200 border-l-4 shadow-sm p-4 transition-all hover:border-indigo-300 hover:shadow-md cursor-pointer relative overflow-hidden',
+              card.accent
+            )}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{card.label}</span>
-              <span className="p-1 rounded-md text-stone-400 bg-stone-50">{card.icon}</span>
+              <span className="p-1 rounded-md text-stone-400 bg-stone-50 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">{card.icon}</span>
             </div>
-            <p className="text-2xl font-extrabold text-stone-900 tabular-nums tracking-tight">{card.value}</p>
-            <p className={cn('text-[11px] mt-0.5 font-medium', card.subColor)}>{card.sub}</p>
+
+            <p className="text-2xl font-extrabold text-stone-900 tabular-nums tracking-tight group-hover:text-indigo-600 transition-colors">
+              {card.value}
+            </p>
+            <p className={cn('text-[11px] mt-0.5 font-medium mb-3', card.subColor)}>{card.sub}</p>
+
+            {/* Breakdown Section */}
+            <div className="pt-3 border-t border-stone-100 grid grid-cols-2 gap-2">
+              {card.breakdown.map((b, idx) => (
+                <div key={idx}>
+                  <p className="text-[9px] text-stone-400 uppercase font-bold tracking-tight">{b.label}</p>
+                  <p className={cn('text-[11px] font-bold tabular-nums', b.color)}>{b.val}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Hover arrow indicator */}
+            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+              <ArrowUpRight size={14} className="text-indigo-400" />
+            </div>
           </div>
         ))}
       </div>
@@ -287,15 +341,18 @@ const Overview = () => {
 
         {/* Revenue + Orders Area Chart */}
         <Panel stripe="indigo" className="xl:col-span-2">
-          <PanelHeader icon={<TrendingUp size={12} />} right={
-            <span className={cn(
-              'flex items-center gap-1 text-[10px] font-bold',
-              isRevUp ? 'text-emerald-600' : 'text-rose-500'
-            )}>
-              {isRevUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-              {revTrendPct}% vs avg
-            </span>
-          }>
+          <PanelHeader
+            icon={<TrendingUp size={12} />}
+            onClick={() => setActiveTab('orders')}
+            right={
+              <span className={cn(
+                'flex items-center gap-1 text-[10px] font-bold',
+                isRevUp ? 'text-emerald-600' : 'text-rose-500'
+              )}>
+                {isRevUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                {revTrendPct}% vs avg
+              </span>
+            }>
             Revenue Trend
           </PanelHeader>
           <div className="px-5 pb-5 pt-4 h-[240px]">
@@ -335,11 +392,14 @@ const Overview = () => {
 
         {/* Order Pipeline */}
         <Panel stripe="violet">
-          <PanelHeader icon={<ClipboardList size={12} />} right={
-            <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-              {orders.length} total
-            </span>
-          }>
+          <PanelHeader
+            icon={<ClipboardList size={12} />}
+            onClick={() => setActiveTab('orders')}
+            right={
+              <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                {orders.length} total
+              </span>
+            }>
             Order Pipeline
           </PanelHeader>
           <div className="px-4 py-3 space-y-2">
@@ -386,11 +446,14 @@ const Overview = () => {
 
         {/* Recent Orders */}
         <Panel stripe="indigo" className="xl:col-span-2">
-          <PanelHeader icon={<ShoppingCart size={12} />} right={
-            <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-              Latest 6
-            </span>
-          }>
+          <PanelHeader
+            icon={<ShoppingCart size={12} />}
+            onClick={() => setActiveTab('orders')}
+            right={
+              <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                Latest 6
+              </span>
+            }>
             Recent Orders
           </PanelHeader>
           <div className="overflow-x-auto">
@@ -440,7 +503,12 @@ const Overview = () => {
 
           {/* Inventory Health */}
           <Panel stripe="teal">
-            <PanelHeader icon={<Package size={12} />}>Inventory Health</PanelHeader>
+            <PanelHeader
+              icon={<Package size={12} />}
+              onClick={() => setActiveTab('inventory')}
+            >
+              Inventory Health
+            </PanelHeader>
             <div className="px-4 py-3 space-y-2.5">
               {/* Health bar */}
               <div>
@@ -513,7 +581,12 @@ const Overview = () => {
 
         {/* Daily Order Volume */}
         <Panel stripe="violet">
-          <PanelHeader icon={<BarChart3 size={12} />}>Daily Order Volume</PanelHeader>
+          <PanelHeader
+            icon={<BarChart3 size={12} />}
+            onClick={() => setActiveTab('orders')}
+          >
+            Daily Order Volume
+          </PanelHeader>
           <div className="px-4 pb-4 pt-3 h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barSize={22}>
@@ -541,7 +614,12 @@ const Overview = () => {
 
         {/* Revenue by Category */}
         <Panel stripe="teal">
-          <PanelHeader icon={<Tag size={12} />}>Revenue by Category</PanelHeader>
+          <PanelHeader
+            icon={<Tag size={12} />}
+            onClick={() => setActiveTab('products')}
+          >
+            Revenue by Category
+          </PanelHeader>
           <div className="px-4 py-3 space-y-2">
             {categoryRevenue.length === 0 ? (
               <div className="py-6 text-center text-xs text-stone-400">No category data yet</div>

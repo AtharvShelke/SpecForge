@@ -179,3 +179,72 @@ export async function PATCH(
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+
+// ── DELETE /api/orders/[id] ─────────────────────────────
+export async function DELETE(
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+
+        const startTime = Date.now();
+
+        await prisma.$transaction(async (tx) => {
+            const existing = await tx.order.findUnique({
+                where: { id },
+                include: { items: true },
+            });
+
+            if (!existing) throw new Error("NOT_FOUND");
+
+            // 1. If not already cancelled, cancel it first to restore inventory
+            if (existing.status !== "CANCELLED") {
+                const oldStatus = existing.status;
+                const inventoryItems = existing.items
+                    .filter(i => !!i.variantId)
+                    .map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+
+                const isPreShip = ["PENDING", "PAID", "PROCESSING"].includes(oldStatus);
+
+                // Restore inventory if it was reserved/outwarded
+                await restoreInventory(
+                    tx, inventoryItems, id, isPreShip,
+                    `Order ${id} cancelled during deletion from ${oldStatus}`
+                );
+            }
+
+            // 2. Delete the order (relations will cascade delete if configured in prisma schema)
+            // Note: items, logs, shipments, payments will cascade delete.
+            // Invoices and stockMovements will keep a null orderId (onDelete: SetNull).
+            await tx.order.delete({
+                where: { id },
+            });
+
+            // 3. Log to unified audit
+            await tx.auditLog.create({
+                data: {
+                    entityType: 'Order',
+                    entityId: id,
+                    action: 'deleted',
+                    actor: 'Admin',
+                    before: { id: existing.id, status: existing.status, customerName: existing.customerName, total: existing.total },
+                },
+            });
+        }, {
+            maxWait: 5000,
+            timeout: 15000,
+        });
+
+        const duration = Date.now() - startTime;
+        console.log(`[Order Deletion] DELETE /api/orders/${id} completed in ${duration}ms`);
+
+        return NextResponse.json({ success: true, message: `Order ${id} deleted` });
+    } catch (error: any) {
+        if (error?.message === "NOT_FOUND") {
+            return NextResponse.json({ error: "Order not found" }, { status: 404 });
+        }
+        console.error(`[Order Deletion Error] DELETE /api/orders/[id] failed:`, error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}

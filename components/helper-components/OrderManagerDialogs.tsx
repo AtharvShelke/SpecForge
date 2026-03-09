@@ -12,7 +12,7 @@ import { StatusBadge } from './OrderManagerHelper';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle2, RefreshCw, Warehouse, FileText, Download, Printer } from 'lucide-react';
+import { CheckCircle2, RefreshCw, Warehouse, FileText, Download, Printer, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ConfirmStatusDialogProps {
@@ -193,3 +193,86 @@ export const ConfirmStatusDialog = ({
     );
 };
 
+
+interface DeleteOrderDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: () => Promise<void>;
+    orderId: string;
+    orderStatus: OrderStatus;
+    isDeleting: boolean;
+}
+
+export const DeleteOrderDialog = ({
+    open,
+    onOpenChange,
+    onConfirm,
+    orderId,
+    orderStatus,
+    isDeleting
+}: DeleteOrderDialogProps) => {
+    return (
+        <Dialog open={open} onOpenChange={(val) => !isDeleting && onOpenChange(val)}>
+            <DialogContent className="sm:max-w-md bg-white">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-rose-600">
+                        <Trash2 size={18} />
+                        Delete Order
+                    </DialogTitle>
+                    <DialogDescription className="text-sm">
+                        This action cannot be undone. This will permanently delete order <span className="font-mono font-bold text-slate-900">{orderId}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-4">
+                    {orderStatus !== OrderStatus.CANCELLED ? (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
+                            <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                                <p className="text-xs font-bold text-amber-800 uppercase tracking-tight">Order is not cancelled</p>
+                                <p className="text-xs text-amber-700 leading-relaxed">
+                                    Deleting an active order will <strong>automatically cancel</strong> it first to restore inventory and release reserved stock before removal.
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex gap-3">
+                            <Trash2 size={20} className="text-slate-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                                <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">Order is cancelled</p>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    This order is already cancelled. Deleting it will remove it from all records and the dashboard.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-0">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onOpenChange(false)}
+                        disabled={isDeleting}
+                    >
+                        Keep Order
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        className="gap-1.5"
+                        onClick={onConfirm}
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? (
+                            <RefreshCw size={14} className="animate-spin" />
+                        ) : (
+                            <Trash2 size={14} />
+                        )}
+                        {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};

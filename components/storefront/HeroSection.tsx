@@ -56,7 +56,7 @@ export default function HeroSection() {
     }
 
     return (
-        <section className="relative h-[90vh] min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
+        <section className="relative h-[100vh] min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
             {/* Cinematic Background Images */}
             <div className="absolute inset-0 z-0">
                 <AnimatePresence mode="wait">

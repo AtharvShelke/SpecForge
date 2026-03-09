@@ -33,37 +33,37 @@ export default function StorefrontNavbar() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-                "top-0 left-0 right-0 z-50 transition-colors duration-300",
+                "fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-hidden",
                 isScrolled
-                    ? "fixed bg-white/80 backdrop-blur-xl border-b border-zinc-200/80 shadow-sm"
-                    : "bg-zinc-950 backdrop-blur-md"
+                    ? "bg-zinc-950/90 backdrop-blur-xl border-b border-white/5 shadow-2xl py-0"
+                    : "bg-zinc-950/40 backdrop-blur-md py-2"
             )}
         >
+            {/* Footer-matching Night Blueish Gradient Blobs */}
+            <div className="absolute inset-0 pointer-events-none opacity-50">
+                <div className="absolute -top-[50%] -left-[10%] w-[120%] h-[200%] rounded-full bg-indigo-950/50 blur-[100px]" />
+                <div className="absolute top-[0%] -right-[20%] w-[80%] h-[150%] rounded-full bg-violet-950/40 blur-[100px]" />
+            </div>
+
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex h-20 items-center justify-between gap-8">
+                <div className="flex h-20 items-center justify-between gap-8 relative z-10">
 
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2.5 group shrink-0">
                         <div className={cn(
-                            "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105",
-                            isScrolled ? "bg-zinc-950 shadow-md" : "bg-white/10 border border-white/20 backdrop-blur-sm shadow-lg"
+                            "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110",
+                            "bg-white/10 border border-white/20 backdrop-blur-sm shadow-lg shadow-indigo-500/10"
                         )}>
-                            <Cpu className={cn("h-5 w-5 transition-colors", isScrolled ? "text-white" : "text-white/90")} />
+                            <Cpu className="h-5 w-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
                         </div>
-                        <span className={cn(
-                            "font-bold tracking-tight text-lg transition-colors duration-300",
-                            isScrolled ? "text-zinc-950" : "text-white"
-                        )}>
+                        <span className="font-bold tracking-tight text-lg text-white group-hover:text-indigo-100 transition-colors">
                             Nexus Hardware
                         </span>
                     </Link>
 
                     {/* Desktop Nav Links */}
                     <div className="hidden md:flex flex-1 items-center justify-center">
-                        <div className={cn(
-                            "flex items-center gap-1 rounded-full p-1.5 transition-colors duration-300",
-                            isScrolled ? "bg-zinc-50/80 border border-zinc-200/60" : "bg-black/20 border border-white/10"
-                        )}>
+                        <div className="flex items-center gap-1 rounded-full p-1.5 bg-white/5 border border-white/10 backdrop-blur-md">
                             {NAV_LINKS.map(({ href, label }) => {
                                 const active = pathname === href;
                                 return (
@@ -71,14 +71,10 @@ export default function StorefrontNavbar() {
                                         key={href}
                                         href={href}
                                         className={cn(
-                                            "relative px-5 py-2 text-sm font-semibold rounded-full transition-colors duration-300",
-                                            isScrolled
-                                                ? active
-                                                    ? "bg-white text-zinc-950 shadow-sm border border-zinc-200/50"
-                                                    : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50"
-                                                : active
-                                                    ? "bg-white/20 text-white shadow-sm border border-white/20"
-                                                    : "text-zinc-300 hover:text-white hover:bg-white/10"
+                                            "relative px-5 py-2 text-sm font-semibold rounded-full transition-all duration-300",
+                                            active
+                                                ? "bg-white/10 text-white shadow-sm ring-1 ring-white/20"
+                                                : "text-zinc-400 hover:text-white hover:bg-white/5"
                                         )}
                                     >
                                         {label}
@@ -93,12 +89,7 @@ export default function StorefrontNavbar() {
                         {/* Search Icon */}
                         <Link
                             href="/products"
-                            className={cn(
-                                "flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300",
-                                isScrolled
-                                    ? "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-                                    : "text-zinc-300 hover:text-white hover:bg-white/10"
-                            )}
+                            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-300"
                         >
                             <Search size={20} />
                         </Link>
@@ -106,20 +97,13 @@ export default function StorefrontNavbar() {
                         {/* Cart Icon */}
                         <button
                             onClick={() => setCartOpen(true)}
-                            className={cn(
-                                "relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300",
-                                isScrolled
-                                    ? "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-                                    : "text-zinc-300 hover:text-white hover:bg-white/10"
-                            )}
+                            className="relative flex h-10 w-10 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-300"
                         >
                             <ShoppingCart size={20} />
                             {cartItemCount > 0 && (
                                 <span className={cn(
                                     "absolute -top-1.5 -right-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none shadow-sm",
-                                    isScrolled
-                                        ? "bg-zinc-900 text-white ring-2 ring-white"
-                                        : "bg-indigo-500 text-white ring-2 ring-black/20"
+                                    "bg-indigo-500 text-white ring-2 ring-zinc-950"
                                 )}>
                                     {cartItemCount > 99 ? "99+" : cartItemCount}
                                 </span>
@@ -129,12 +113,7 @@ export default function StorefrontNavbar() {
                         {/* Profile Icon */}
                         <Link
                             href="/admin"
-                            className={cn(
-                                "hidden sm:flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300",
-                                isScrolled
-                                    ? "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-                                    : "text-zinc-300 hover:text-white hover:bg-white/10"
-                            )}
+                            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-300"
                         >
                             <User size={20} />
                         </Link>

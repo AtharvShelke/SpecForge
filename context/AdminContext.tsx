@@ -37,6 +37,7 @@ interface AdminContextType {
     orders: Order[];
     refreshOrders: () => Promise<void>;
     updateOrderStatus: (orderId: string, newStatus: OrderStatus, note?: string) => Promise<void>;
+    deleteOrder: (orderId: string) => Promise<void>;
 
     // Products (Admin Actions)
     addProduct: (product: Partial<Product>, initialStock: number, costPrice: number) => Promise<void>;
@@ -487,6 +488,21 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshOrders, refreshInvoices, toast]);
 
+    const deleteOrder = useCallback(async (orderId: string) => {
+        try {
+            const res = await fetch(`/api/orders/${orderId}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                toast({ title: "Order deleted" });
+                await Promise.all([refreshOrders(), refreshInventory()]);
+            } else {
+                const data = await res.json();
+                toast({ title: "Delete Failed", description: data.error || "Could not delete order", variant: "destructive" });
+            }
+        } catch (err) { console.error(err); }
+    }, [refreshOrders, refreshInventory, toast]);
+
     const addProduct = useCallback(async (product: Partial<Product>, initialStock: number, costPrice: number) => {
         try {
             const res = await fetch('/api/products', {
@@ -831,7 +847,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         inventory, refreshInventory, warehouses, refreshWarehouses, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
         suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
         purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
-        orders, refreshOrders, updateOrderStatus,
+        orders, refreshOrders, updateOrderStatus, deleteOrder,
         addProduct, updateProduct, deleteProduct,
         updateCategories, addBrand, updateBrand, deleteBrand,
         schemas, refreshSchemas, updateSchema,
@@ -856,7 +872,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         inventory, refreshInventory, warehouses, refreshWarehouses, stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
         suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
         purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
-        orders, refreshOrders, updateOrderStatus,
+        orders, refreshOrders, updateOrderStatus, deleteOrder,
         addProduct, updateProduct, deleteProduct,
         updateCategories, addBrand, updateBrand, deleteBrand,
         schemas, refreshSchemas, updateSchema,

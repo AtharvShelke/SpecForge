@@ -26,6 +26,7 @@ import {
   RotateCcw,
   ChevronDown,
   AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,7 +73,7 @@ import { cn } from '@/lib/utils';
 import { NEXT_STATUS_BUTTON, STATUS_CONFIG, STATUS_FLOW } from '@/data/constants';
 import { generateInvoiceHTML } from '@/lib/invoice';
 import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
-import { ConfirmStatusDialog } from '../helper-components/OrderManagerDialogs';
+import { ConfirmStatusDialog, DeleteOrderDialog } from '../helper-components/OrderManagerDialogs';
 
 // ─────────────────────────────────────────────────────────────
 // STATUS PILL
@@ -113,7 +114,7 @@ const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: Rea
 // MAIN ORDER MANAGER
 // ─────────────────────────────────────────────────────────────
 const OrderManager = () => {
-  const { orders, updateOrderStatus, inventory, adjustStock, refreshOrders, syncData, isLoading } = useAdmin();
+  const { orders, updateOrderStatus, deleteOrder, inventory, adjustStock, refreshOrders, syncData, isLoading } = useAdmin();
 
   // Aggregate inventory by variantId across all warehouses
   const aggregatedInventory = useMemo(() => {
@@ -156,6 +157,8 @@ const OrderManager = () => {
   }>({ open: false, orderId: '', newStatus: OrderStatus.PENDING, note: '' });
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -199,6 +202,20 @@ const OrderManager = () => {
       console.error('Failed to update order status', error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!selectedOrder) return;
+    setIsDeleting(true);
+    try {
+      await deleteOrder(selectedOrder.id);
+      setDeleteDialogOpen(false);
+      setSelectedId(null);
+    } catch (error) {
+      console.error('Failed to delete order', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -474,6 +491,13 @@ const OrderManager = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <button
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 text-xs font-semibold transition-colors"
+                          onClick={() => setDeleteDialogOpen(true)}
+                        >
+                          <Trash2 size={13} /> Delete
+                        </button>
                       </div>
                     </div>
 
@@ -770,6 +794,17 @@ const OrderManager = () => {
         inventoryArray={inventoryArray}
         isUpdating={isUpdating}
       />
+
+      {selectedOrder && (
+        <DeleteOrderDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handleDeleteOrder}
+          orderId={selectedOrder.id}
+          orderStatus={selectedOrder.status}
+          isDeleting={isDeleting}
+        />
+      )}
     </TooltipProvider>
   );
 };
