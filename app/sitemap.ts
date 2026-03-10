@@ -1,13 +1,20 @@
 import { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const products = await prisma.product.findMany({
-        select: {
-            id: true,
-            updatedAt: true,
-        }
-    })
+    let products: { id: string; updatedAt: Date }[] = [];
+    try {
+        products = await prisma.product.findMany({
+            select: {
+                id: true,
+                updatedAt: true,
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching products for sitemap:", error);
+    }
 
     const productEntries: MetadataRoute.Sitemap = products.map((product) => ({
         url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/products/${product.id}`,
