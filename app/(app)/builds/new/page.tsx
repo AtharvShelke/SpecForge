@@ -706,7 +706,7 @@ export default function PCBuilderPage() {
             <style>{PAGE_STYLES}</style>
 
             {/* ── Header ──────────────────────────────────────────────────── */}
-            <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 bg-white/80 backdrop-blur-md px-6 lg:px-12 py-3 z-50 shrink-0 sticky top-16">
+            <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 bg-white/80 backdrop-blur-md px-6 lg:px-12 py-3 z-50 shrink-0 sticky">
 
                 {/* Left: Back + title */}
                 <div className="flex items-center gap-6">

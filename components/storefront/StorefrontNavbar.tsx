@@ -36,7 +36,7 @@ export default function StorefrontNavbar() {
                 "fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-hidden",
                 isScrolled
                     ? "bg-zinc-950/90 backdrop-blur-xl border-b border-white/5 shadow-2xl py-0"
-                    : "bg-zinc-950/40 backdrop-blur-md py-2"
+                    : "bg-zinc-950 backdrop-blur-md py-2"
             )}
         >
             {/* Footer-matching Night Blueish Gradient Blobs */}
