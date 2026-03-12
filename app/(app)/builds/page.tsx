@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { motion } from 'framer-motion';
+import { getBaseUrl } from '@/lib/utils';
 
 // -------------------------------------------------------------------
 // Category Icon Map
@@ -90,7 +91,7 @@ const CompatChip: React.FC<{ build: BuildGuide }> = ({ build }) => {
 // Share helper
 // -------------------------------------------------------------------
 function buildShareUrl(build: BuildGuide): string {
-  return `${typeof window !== 'undefined' ? window.location.origin : ''}/builds/${build.id}`;
+  return `${getBaseUrl()}/builds/${build.id}`;
 }
 
 // -------------------------------------------------------------------

@@ -13,7 +13,8 @@ const CartDrawer: React.FC = () => {
     cart,
     removeFromCart,
     updateQuantity,
-    cartTotal
+    cartTotal,
+    clearCart
   } = useShop();
   const {
     compatibilityReport,
@@ -189,6 +190,17 @@ const CartDrawer: React.FC = () => {
                 )}
 
                 <div className="space-y-3">
+                  {/* Clear cart */}
+                  <button
+                    onClick={() => {
+                      if (confirm("Clear entire cart?")) {
+                        clearCart();
+                      }
+                    }}
+                    className="w-full flex justify-center items-center gap-2 px-6 py-3 border border-red-200 rounded-md text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100"
+                  >
+                    <Trash2 size={16} /> Clear Cart
+                  </button>
                   <Link
                     href="/checkout"
                     onClick={() => setCartOpen(false)}
@@ -198,7 +210,7 @@ const CartDrawer: React.FC = () => {
                   </Link>
 
                   <div className="grid grid-cols-2 gap-3">
-                     
+
                   </div>
                 </div>
 

@@ -374,7 +374,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const [totalCount, setTotalCount] = useState(initialData?.total || 0);
     const [availableFilters, setAvailableFilters] = useState<{ brands: string[], specs: Record<string, string[]> } | null>(initialData?.filterOptions || null);
 
-    const [sortOption, setSortOption] = useState(searchParams?.get('sort') || 'popularity');
+    const [sortOption, setSortOption] = useState(searchParams?.get('sort') || 'price-asc');
     const [viewMode, setViewMode] = useState(searchParams?.get('view') || 'grid');
 
     const categoryNavRef = useRef<HTMLDivElement | null>(null);
@@ -465,7 +465,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             [...selectedFilters[key]].sort().forEach(v => params.append(`f_${key}`, v));
         });
         if (currentPage > 1) params.set('page', currentPage.toString());
-        if (sortOption !== 'popularity') params.set('sort', sortOption);
+        if (sortOption !== 'price-asc') params.set('sort', sortOption);
         if (viewMode !== 'grid') params.set('view', viewMode);
         params.sort();
         const newUrlStr = params.toString();
@@ -857,10 +857,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                 value={sortOption}
                                                 onChange={(e) => setSortOption(e.target.value)}
                                             >
-                                                <option value="popularity">Popularity</option>
                                                 <option value="price-asc">Price: Low → High</option>
                                                 <option value="price-desc">Price: High → Low</option>
-                                                <option value="newest">Newest</option>
+                                                <option value="name-asc">Name: A → Z</option>
+                                                <option value="name-desc">Name: Z → A</option>
                                             </select>
                                         </div>
 

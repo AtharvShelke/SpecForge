@@ -142,11 +142,15 @@ export async function getProductsData(searchParams: URLSearchParams) {
             where.AND = andConditions;
         }
 
-        let orderBy: any = { createdAt: "desc" };
+        // Prisma doesn't support _min aggregate in orderBy for to-many relations,
+        // so for price sorting we use a two-step approach:
+        // 1. Fetch lightweight IDs + prices, sort & paginate in JS
+        // 2. Fetch full product data for the paginated IDs
+        const isPriceSort = sort === "price-asc" || sort === "price-desc";
 
-        if (sort === "newest") orderBy = { createdAt: "desc" };
-        else if (sort === "price-asc") orderBy = { variants: { _min: { price: "asc" } } };
-        else if (sort === "price-desc") orderBy = { variants: { _min: { price: "desc" } } };
+        let orderBy: any = { name: "asc" };
+        if (sort === "name-asc") orderBy = { name: "asc" };
+        else if (sort === "name-desc") orderBy = { name: "desc" };
 
         let filterOptions = undefined;
         if (searchParams.get("getFilters") === "true") {
@@ -232,16 +236,55 @@ export async function getProductsData(searchParams: URLSearchParams) {
                 media: { select: { id: true, url: true, altText: true, sortOrder: true }, orderBy: { sortOrder: 'asc' as const }, take: 4 },
             };
 
-        const [products, total] = await Promise.all([
-            prisma.product.findMany({
+        let products: any[];
+        let total: number;
+
+        if (isPriceSort) {
+            // Step 1: Fetch lightweight IDs + min price for all matching products
+            const allLightweight = await prisma.product.findMany({
                 where,
+                select: {
+                    id: true,
+                    variants: { select: { price: true }, orderBy: { price: 'asc' as const }, take: 1 },
+                },
+            });
+
+            // Sort by min variant price in JS
+            allLightweight.sort((a, b) => {
+                const priceA = a.variants[0]?.price ?? 0;
+                const priceB = b.variants[0]?.price ?? 0;
+                return sort === "price-asc" ? priceA - priceB : priceB - priceA;
+            });
+
+            total = allLightweight.length;
+
+            // Paginate
+            const paginatedIds = allLightweight
+                .slice((page - 1) * limit, page * limit)
+                .map(p => p.id);
+
+            // Step 2: Fetch full product data for the paginated IDs
+            products = await prisma.product.findMany({
+                where: { id: { in: paginatedIds } },
                 select: productSelect,
-                orderBy,
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
-            prisma.product.count({ where }),
-        ]);
+            });
+
+            // Re-sort to preserve the price order (Prisma `in` doesn't preserve order)
+            const idOrder = new Map(paginatedIds.map((id, i) => [id, i]));
+            products.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
+        } else {
+            // Name sorting — works natively with Prisma orderBy
+            [products, total] = await Promise.all([
+                prisma.product.findMany({
+                    where,
+                    select: productSelect,
+                    orderBy,
+                    skip: (page - 1) * limit,
+                    take: limit,
+                }),
+                prisma.product.count({ where }),
+            ]);
+        }
 
         return NextResponse.json({ products, total, page, limit, filterOptions });
     } catch (error) {

@@ -7,6 +7,7 @@ import { BuildGuide, CompatibilityReport, CompatibilityLevel, CartItem } from '.
 import { validateBuild } from '../services/compatibility';
 import { useShop } from './ShopContext';
 import { useToast } from '@/hooks/use-toast';
+import { getBaseUrl } from '@/lib/utils';
 
 interface BuildContextType {
     buildGuides: BuildGuide[];
@@ -169,7 +170,7 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             // Use native btoa with URL-safe base64
             const encoded = btoa(encodeURIComponent(jsonStr))
                 .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-            const url = new URL(window.location.origin + '/builds');
+            const url = new URL(getBaseUrl() + '/builds');
             url.searchParams.set('share', encoded);
             return url.toString();
         } catch (err) {

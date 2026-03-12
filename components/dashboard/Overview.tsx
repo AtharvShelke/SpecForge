@@ -160,20 +160,42 @@ const Overview = () => {
     ? Math.round(totalRevenue / orders.length)
     : 0;
 
-  // ── Revenue chart data (last 7 days — static demo, replace with real data) ──
-  const salesData = [
-    { name: 'Mon', revenue: 42000, orders: 14 },
-    { name: 'Tue', revenue: 35000, orders: 11 },
-    { name: 'Wed', revenue: 28000, orders: 9 },
-    { name: 'Thu', revenue: 31000, orders: 10 },
-    { name: 'Fri', revenue: 22000, orders: 7 },
-    { name: 'Sat', revenue: 29000, orders: 13 },
-    { name: 'Sun', revenue: 38000, orders: 16 },
-  ];
+  // ── Revenue chart data (derived from real orders) ──
+  const salesData = useMemo(() => {
+    if (orders.length === 0) return [];
 
-  const avgDailyRevenue = salesData.reduce((s, d) => s + d.revenue, 0) / salesData.length;
-  const todayRevenue = salesData[salesData.length - 1].revenue;
-  const revTrendPct = Math.abs(((todayRevenue - avgDailyRevenue) / avgDailyRevenue) * 100).toFixed(1);
+    // Group orders by date (YYYY-MM-DD)
+    const dailyMap: Record<string, { revenue: number; orders: number }> = {};
+    orders.forEach(o => {
+      const dateKey = new Date(o.date).toISOString().split('T')[0]; // YYYY-MM-DD
+      if (!dailyMap[dateKey]) dailyMap[dateKey] = { revenue: 0, orders: 0 };
+      dailyMap[dateKey].revenue += o.total;
+      dailyMap[dateKey].orders += 1;
+    });
+
+    // Sort by date and take most recent 7 days with data
+    const sorted = Object.entries(dailyMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-7);
+
+    return sorted.map(([dateStr, data]) => {
+      const d = new Date(dateStr);
+      const label = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      return {
+        name: label,
+        revenue: Math.round(data.revenue),
+        orders: data.orders,
+      };
+    });
+  }, [orders]);
+
+  const avgDailyRevenue = salesData.length > 0
+    ? salesData.reduce((s, d) => s + d.revenue, 0) / salesData.length
+    : 0;
+  const todayRevenue = salesData.length > 0 ? salesData[salesData.length - 1].revenue : 0;
+  const revTrendPct = avgDailyRevenue > 0
+    ? Math.abs(((todayRevenue - avgDailyRevenue) / avgDailyRevenue) * 100).toFixed(1)
+    : '0.0';
   const isRevUp = todayRevenue >= avgDailyRevenue;
 
   // ── Order status breakdown for donut-style bar ──

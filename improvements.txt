@@ -1,10 +1,9 @@
-[DONE] 404 page
-[DONE] toggle show password in admin login and register
+
 responsiveness
-check the graph from overview page
 updating product requires a loading state
-[DONE] remove download html for the invoice
-[DONE] pc builder ui misalignment + estimated total at 2 places + add to cart and checkout (purpose is same) + while scrolling the whole page is scrolled instead i want a behavior where the top is fixed or shrinks a little when scrolled, right side and left side bar scrolls according to their content and not with whole page, the products section scrolls according to inventory
-update the build share functionality, the production link is https://pc-ecommerce-demo.vercel.app/ and local is http://localhost:3000/ | in env i have NEXT_PUBLIC_APP_URL="http://localhost:3000" which in vercel is https://pc-ecommerce-demo.vercel.app
 in numeric fields there's a zero, it's a good thing that numbers start with 0, but while editing or adding, that 0 stays, which needs to be selected then backspace and then admin paste the number, this is unwanted friction
-product filters not working
+
+product page -> sort filter and view type can go up beside search bar, the build mode should redirect to build/new and remove from sidebar and keep it new catalog or top, tighter product cards like build page
+in products card, if a product is added in the cart, then there should be an option to add more or remove
+
+the featured products should show a cabinet, a graphics card, a processor, ram
