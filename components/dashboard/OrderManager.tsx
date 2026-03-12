@@ -486,9 +486,9 @@ const OrderManager = () => {
                             <DropdownMenuItem onClick={handlePrintInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
                               <Printer size={12} /> Print
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleDownloadInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
+                            {/* <DropdownMenuItem onClick={handleDownloadInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
                               <Download size={12} /> Download HTML
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                           </DropdownMenuContent>
                         </DropdownMenu>
 

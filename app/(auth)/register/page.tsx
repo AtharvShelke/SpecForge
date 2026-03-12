@@ -24,7 +24,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-
+import { Eye, EyeOff } from "lucide-react";
 const registerSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters" }),
     email: z.string().email({ message: "Invalid email address" }),
@@ -41,7 +41,8 @@ export default function RegisterPage() {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const form = useForm<RegisterFormValues>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
@@ -132,9 +133,32 @@ export default function RegisterPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Password</FormLabel>
+
                                         <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
+                                            <div className="relative">
+
+                                                <Input
+                                                    type={showPassword ? "text" : "password"}
+                                                    placeholder="••••••••"
+                                                    className="pr-10"
+                                                    {...field}
+                                                />
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword((p) => !p)}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                >
+                                                    {showPassword ? (
+                                                        <EyeOff className="w-4 h-4" />
+                                                    ) : (
+                                                        <Eye className="w-4 h-4" />
+                                                    )}
+                                                </button>
+
+                                            </div>
                                         </FormControl>
+
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -146,7 +170,20 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel>Confirm Password</FormLabel>
                                         <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
+                                            <div className="relative">
+                                                <Input type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" {...field} />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword((p) => !p)}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                >
+                                                    {showConfirmPassword ? (
+                                                        <EyeOff className="w-4 h-4" />
+                                                    ) : (
+                                                        <Eye className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

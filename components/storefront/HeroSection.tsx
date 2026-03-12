@@ -4,36 +4,77 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ArrowRight, Sparkles, ChevronDown } from 'lucide-react'
+import { Search, ArrowRight, Sparkles, ChevronDown, Gamepad2, Video, Cpu } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 
 const HERO_SLIDES = [
     {
-        badge: 'New Arrivals',
-        headline: 'Performance',
-        highlight: 'Unleashed',
-        sub: 'Next-generation RTX 40-series and latest architectures. Push your limits with hardware built for creators and enthusiasts.',
-        cta: '/builds/new',
-        ctaText: 'Start Building',
-        image: '/images/hero.jpg',
+        badge: 'Built for Gamers',
+        icon: Gamepad2,
+        headline: 'Win Every',
+        highlight: 'Match',
+        sub: 'High-refresh builds with RTX 40-series GPUs. 4K, 240Hz, zero compromises — made for long sessions.',
+        cta: '/builds/gaming',
+        ctaText: 'Build My Gaming PC',
+        image: '/images/red-pc.jpg',
+        accentColor: 'from-red-500 via-orange-400 to-red-600',
+        accentGlow: 'rgba(239,68,68,0.35)',
+        badgeBg: 'bg-red-500/20 border-red-500/30',
+        badgeText: 'text-red-300',
+        ctaClass: 'bg-white text-zinc-950 hover:bg-zinc-100',
+        sideLabel: 'Gaming',
+        sideLabelColor: 'text-red-400',
+        stats: [
+            { value: '240Hz', label: 'Max Refresh' },
+            { value: '4K', label: 'Ready' },
+            { value: '<1ms', label: 'Latency' },
+        ],
     },
+
     {
-        badge: 'Enthusiast Grade',
-        headline: 'Master Your',
-        highlight: 'Domain',
-        sub: 'Curated premium components with guaranteed compatibility. Stop worrying about specs and start gaming.',
-        cta: '/products',
-        ctaText: 'Explore Hardware',
-        image: '/images/hero2.jpg',
+        badge: 'Creator Ready',
+        icon: Video,
+        headline: 'Create Without',
+        highlight: 'Lag',
+        sub: 'Smooth timelines, fast renders, instant previews. Built for Premiere, After Effects, Blender and DaVinci.',
+        cta: '/builds/editing',
+        ctaText: 'Build My Creator PC',
+        image: '/images/white-pc.jpg',
+        accentColor: 'from-blue-400 via-cyan-300 to-indigo-500',
+        accentGlow: 'rgba(99,102,241,0.35)',
+        badgeBg: 'bg-indigo-500/20 border-indigo-500/30',
+        badgeText: 'text-indigo-300',
+        ctaClass: 'bg-white text-zinc-950 hover:bg-zinc-100',
+        sideLabel: 'Creator',
+        sideLabelColor: 'text-indigo-400',
+        stats: [
+            { value: '8K', label: 'Editing' },
+            { value: '192GB', label: 'Max RAM' },
+            { value: 'NVMe', label: 'Speed' },
+        ],
     },
+
     {
-        badge: 'Prebuilt Perfection',
-        headline: 'Ready to',
-        highlight: 'Dominate',
-        sub: 'Expertly assembled, rigorously tested, and perfectly tuned. Your new battle station awaits.',
-        cta: '/build-guides',
-        ctaText: 'View Prebuilts',
-        image: '/images/hero3.jpg',
+        badge: 'Workstation Grade',
+        icon: Cpu,
+        headline: 'Power Without',
+        highlight: 'Limits',
+        sub: 'Run simulations, AI workloads and heavy projects without slowdowns. Built for professionals.',
+        cta: '/builds/workstation',
+        ctaText: 'Build My Workstation',
+        image: '/images/green-pc.jpg',
+        accentColor: 'from-emerald-400 via-teal-300 to-green-500',
+        accentGlow: 'rgba(16,185,129,0.3)',
+        badgeBg: 'bg-emerald-500/20 border-emerald-500/30',
+        badgeText: 'text-emerald-300',
+        ctaClass: 'bg-white text-zinc-950 hover:bg-zinc-100',
+        sideLabel: 'Workstation',
+        sideLabelColor: 'text-emerald-400',
+        stats: [
+            { value: '128C', label: 'Threads' },
+            { value: 'ECC', label: 'Memory' },
+            { value: 'HEDT', label: 'Platform' },
+        ],
     },
 ]
 
@@ -41,13 +82,21 @@ export default function HeroSection() {
     const router = useRouter()
     const [query, setQuery] = useState('')
     const [slideIndex, setSlideIndex] = useState(0)
+    const [isTransitioning, setIsTransitioning] = useState(false)
 
     useEffect(() => {
-        const t = setInterval(() => setSlideIndex(p => (p + 1) % HERO_SLIDES.length), 7000)
+        const t = setInterval(() => {
+            setIsTransitioning(true)
+            setTimeout(() => {
+                setSlideIndex(p => (p + 1) % HERO_SLIDES.length)
+                setIsTransitioning(false)
+            }, 300)
+        }, 7000)
         return () => clearInterval(t)
     }, [])
 
     const slide = HERO_SLIDES[slideIndex]
+    const SlideIcon = slide.icon
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
@@ -55,98 +104,148 @@ export default function HeroSection() {
         router.push(`/products?q=${encodeURIComponent(query)}`)
     }
 
+    const goToSlide = (idx: number) => {
+        if (idx === slideIndex) return
+        setIsTransitioning(true)
+        setTimeout(() => {
+            setSlideIndex(idx)
+            setIsTransitioning(false)
+        }, 300)
+    }
+
     return (
         <section className="relative mt-[10vh] h-[90vh] min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
-            {/* Cinematic Background Images */}
+
+            {/* ── Ambient Glow from accent color ── */}
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={`glow-${slideIndex}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.2 }}
+                    className="absolute inset-0 z-0 pointer-events-none"
+                    style={{
+                        background: `radial-gradient(ellipse 60% 60% at 80% 50%, ${slide.accentGlow}, transparent 70%)`
+                    }}
+                />
+            </AnimatePresence>
+
+            {/* ── Split layout: right half is the image ── */}
             <div className="absolute inset-0 z-0">
                 <AnimatePresence mode="wait">
-                    <motion.img
-                        key={slideIndex}
-                        src={slide.image}
-                        alt="Background"
-                        initial={{ opacity: 0, scale: 1.05 }}
-                        animate={{ opacity: 0.5, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 1.5, ease: "easeInOut" }}
-                        className="object-cover w-full h-full"
-                    />
+                    <motion.div
+                        key={`img-${slideIndex}`}
+                        initial={{ opacity: 0, x: 40 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                        className="absolute right-0 top-0 w-full md:w-[55%] h-full"
+                    >
+                        <img
+                            src={slide.image}
+                            alt={slide.sideLabel}
+                            className="w-full h-full object-cover"
+                        />
+                        {/* Blend the image into the dark left side */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
+                    </motion.div>
                 </AnimatePresence>
 
-                {/* Vignette & Gradient Overlays for Depth */}
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent" />
-                <div className="absolute inset-0 bg-black/20" />
+                {/* Left-side solid bleed so text is always readable */}
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent w-[60%]" />
             </div>
+
+            {/* ── Subtle noise texture overlay ── */}
+            <div
+                className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
+                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }}
+            />
 
             <Container className="relative z-10 flex flex-col justify-between h-full py-12">
 
-                {/* Top Spacer */}
                 <div className="flex-1" />
 
-                {/* Main Content Area */}
-                <div className="w-full max-w-4xl mx-auto md:mx-0">
+                {/* ── Main Split Content ── */}
+                <div className="w-full max-w-2xl h-[420px] flex items-start">
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={slideIndex}
-                            initial={{ opacity: 0, y: 30 }}
+                            key={`content-${slideIndex}`}
+                            initial={{ opacity: 0, y: 28 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -30 }}
-                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                         >
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-6">
-                                <Sparkles size={14} className="text-white" />
-                                <span className="text-xs font-semibold tracking-widest uppercase text-white/90">{slide.badge}</span>
+                            {/* Badge */}
+                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border mb-5 ${slide.badgeBg}`}>
+                                <SlideIcon size={13} className={slide.badgeText} />
+                                <span className={`text-xs font-semibold tracking-widest uppercase ${slide.badgeText}`}>
+                                    {slide.badge}
+                                </span>
                             </div>
 
-                            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] mb-6 drop-shadow-2xl">
+                            {/* Headline */}
+                            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter leading-[0.88] mb-5 drop-shadow-2xl">
                                 {slide.headline}<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500">
+                                <span className={`text-transparent bg-clip-text bg-gradient-to-r ${slide.accentColor}`}>
                                     {slide.highlight}
                                 </span>
                             </h1>
 
-                            <p className="text-zinc-300 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-light drop-shadow-md">
+                            {/* Sub */}
+                            <p className="text-zinc-300 text-base md:text-lg max-w-xl mb-8 leading-relaxed font-light line-clamp-3">
                                 {slide.sub}
                             </p>
 
-                            <Link
-                                href={slide.cta}
-                                className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-zinc-950 font-bold uppercase tracking-wide
-                                overflow-hidden hover:scale-105 active:scale-95 transition-all duration-300"
-                            >
-                                <span className="relative z-10">{slide.ctaText}</span>
-                                <motion.div
-                                    className="relative z-10 w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors"
-                                >
-                                    <ArrowRight size={16} />
-                                </motion.div>
-                                {/* Button Hover Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-white via-zinc-200 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            </Link>
+                            {/* Stats row */}
+                            <div className="flex items-center gap-6 mb-9">
+                                {slide.stats.map((s, i) => (
+                                    <div key={i} className="flex flex-col">
+                                        <span className={`text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r ${slide.accentColor}`}>
+                                            {s.value}
+                                        </span>
+                                        <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
+                                            {s.label}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+
                         </motion.div>
                     </AnimatePresence>
                 </div>
 
                 <div className="flex-1" />
 
-                {/* Bottom Section: Search & Quick Links */}
+                {/* ── Bottom: Search + Slide Dots ── */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.4 }}
-                    className="w-full max-w-3xl mx-auto md:mx-0 mt-auto"
+                    className="w-full max-w-3xl mt-auto"
                 >
+                    {/* CTA moved here to prevent overlap */}
+                    <div className="mb-6">
+                        <Link
+                            href={slide.cta}
+                            className="inline-flex items-center gap-3 px-7 py-3 rounded-full bg-white text-zinc-950 font-bold uppercase tracking-wide hover:bg-zinc-200 transition"
+                        >
+                            {slide.ctaText}
+                            <ArrowRight size={16} />
+                        </Link>
+                    </div>
+                    {/* Search bar */}
                     <div className="backdrop-blur-xl bg-black/20 p-2 border border-white/10 rounded-2xl md:rounded-full shadow-2xl">
                         <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-center relative">
                             <div className="w-full flex items-center pl-6">
-                                <Search className="text-zinc-400 group-focus-within:text-white transition-colors" size={22} />
+                                <Search className="text-zinc-400" size={22} />
                                 <input
-                                    id="hero-search"
                                     value={query}
                                     onChange={e => setQuery(e.target.value)}
-                                    placeholder="Search for RTX 4090, i9-14900K, or prebuilt categories..."
-                                    className="w-full h-14 pl-4 pr-6 bg-transparent text-white placeholder:text-zinc-500 font-medium
-                                    focus:outline-none"
+                                    placeholder="Search RTX 4090, i9-14900K, prebuilt categories..."
+                                    className="w-full h-14 pl-4 pr-6 bg-transparent text-white placeholder:text-zinc-500 font-medium focus:outline-none"
                                 />
                             </div>
                             <button
@@ -158,21 +257,45 @@ export default function HeroSection() {
                         </form>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 mt-6 pl-2 hidden md:flex">
-                        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Trending:</span>
-                        {['GPUs', 'Processors', 'DDR5 RAM', 'Custom Builds'].map(cat => (
-                            <Link
-                                key={cat}
-                                href={`/products?category=${cat === 'GPUs' ? 'GPU' : cat}`}
-                                className="px-4 py-1.5 text-xs font-medium rounded-full border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/30 backdrop-blur-md transition-all duration-300"
-                            >
-                                {cat}
-                            </Link>
-                        ))}
+                    {/* Trending + Slide selector */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pl-2">
+                        <div className="hidden md:flex flex-wrap items-center gap-3">
+                            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Trending:</span>
+                            {['GPUs', 'Processors', 'DDR5 RAM', 'Custom Builds'].map(cat => (
+                                <Link
+                                    key={cat}
+                                    href={`/products?category=${cat === 'GPUs' ? 'GPU' : cat}`}
+                                    className="px-4 py-1.5 text-xs font-medium rounded-full border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/30 backdrop-blur-md transition-all duration-300"
+                                >
+                                    {cat}
+                                </Link>
+                            ))}
+                        </div>
+
+                        {/* Slide indicators with labels */}
+                        <div className="flex items-center gap-3">
+                            {HERO_SLIDES.map((s, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => goToSlide(i)}
+                                    className="flex items-center gap-2 group"
+                                    aria-label={s.sideLabel}
+                                >
+                                    <motion.div
+                                        className="h-[2px] rounded-full bg-white transition-all duration-500"
+                                        animate={{ width: i === slideIndex ? 32 : 12, opacity: i === slideIndex ? 1 : 0.3 }}
+                                    />
+                                    <span className={`text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hidden md:block ${i === slideIndex ? s.sideLabelColor : 'text-zinc-600 group-hover:text-zinc-400'
+                                        }`}>
+                                        {s.sideLabel}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </motion.div>
 
-                {/* Scroll Indicator */}
+                {/* Scroll indicator */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

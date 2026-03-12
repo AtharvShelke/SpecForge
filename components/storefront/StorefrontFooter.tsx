@@ -9,7 +9,7 @@ export default function StorefrontFooter() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="relative bg-zinc-950 text-white overflow-hidden mt-auto pb-16 md:pb-0">
+        <footer className="relative  text-white overflow-hidden mt-auto pb-16 md:pb-0">
             {/* Subtle Animated Background Gradient */}
             <div className="absolute inset-0 pointer-events-none opacity-40">
                 <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-900/40 blur-[120px]" />

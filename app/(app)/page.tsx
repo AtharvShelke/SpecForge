@@ -75,46 +75,24 @@ export default function StorefrontPage() {
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="/" />
       </Head>
-
-      <StorefrontNavbar />
-
-      <PageLayout bgClass="bg-zinc-50">
-
-        {/* 1. Immersive Hero with search + quick categories */}
+      <PageLayout bgClass="bg-zinc-950">
+        <StorefrontNavbar />
         <HeroSection />
-
-        {/* 2. Category Grid — visual, icon-driven */}
         <CategorySection
           categories={categories}
           productCounts={productCounts}
-        />
-
-        {/* 3. Brand Trust Strip */}
-        <BrandShowcase brands={brands} />
-
-        {/* 4. Featured Products — premium cards */}
+        /> 
+        <BrandShowcase brands={brands} />        
         <FeaturedProductsSection
           products={featuredProducts}
           addToCart={addToCart}
         />
-
-        {/* 5. GPU Tier Selector */}
         <GpuTierSection />
-
-        {/* 6. Featured Prebuilt PCs */}
         <FeaturedBuildsSection builds={builds} />
-
-        {/* 7. Custom PC Builder CTA */}
         <CustomBuilderSection />
-
-        {/* 8. Trust & Value Propositions */}
         <TrustSection />
-
-        {/* 9. Final CTA */}
         <CtaBanner />
-
         <StorefrontFooter />
-
       </PageLayout>
     </>
   )

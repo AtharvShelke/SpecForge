@@ -9,7 +9,7 @@ import { Form } from "@/components/ui/form";
 import { Loader2, AlertCircle, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-
+import { Eye, EyeOff } from "lucide-react";
 const loginSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -21,6 +21,7 @@ export default function LoginPage() {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -139,26 +140,50 @@ export default function LoginPage() {
 
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900">
+                                        <label
+                                            htmlFor="password"
+                                            className="text-sm font-medium leading-none text-zinc-900"
+                                        >
                                             Password
                                         </label>
-                                        <a href="#" className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors">
+
+                                        <a
+                                            href="#"
+                                            className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
+                                        >
                                             Forgot password?
                                         </a>
                                     </div>
-                                    <input
-                                        {...form.register("password")}
-                                        id="password"
-                                        type="password"
-                                        disabled={loading}
-                                        placeholder="••••••••"
-                                        className={cn(
-                                            "flex h-11 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
-                                            form.formState.errors.password
-                                                ? "border-red-500 focus-visible:ring-red-500"
-                                                : "border-zinc-200 focus-visible:ring-zinc-950"
-                                        )}
-                                    />
+
+                                    <div className="relative">
+                                        <input
+                                            {...form.register("password")}
+                                            id="password"
+                                            type={showPassword ? "text" : "password"}
+                                            disabled={loading}
+                                            placeholder="••••••••"
+                                            className={cn(
+                                                "flex h-11 w-full rounded-md border bg-transparent px-3 pr-10 py-1 text-sm shadow-sm transition-colors placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
+                                                form.formState.errors.password
+                                                    ? "border-red-500 focus-visible:ring-red-500"
+                                                    : "border-zinc-200 focus-visible:ring-zinc-950"
+                                            )}
+                                        />
+
+                                        {/* Toggle button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword((prev) => !prev)}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-900"
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="w-4 h-4" />
+                                            ) : (
+                                                <Eye className="w-4 h-4" />
+                                            )}
+                                        </button>
+                                    </div>
+
                                     {form.formState.errors.password && (
                                         <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1.5">
                                             <AlertCircle className="w-3.5 h-3.5" />
