@@ -1,9 +1,11 @@
 
 responsiveness
+
 updating product requires a loading state
+
 in numeric fields there's a zero, it's a good thing that numbers start with 0, but while editing or adding, that 0 stays, which needs to be selected then backspace and then admin paste the number, this is unwanted friction
 
 product page -> sort filter and view type can go up beside search bar, the build mode should redirect to build/new and remove from sidebar and keep it new catalog or top, tighter product cards like build page
-in products card, if a product is added in the cart, then there should be an option to add more or remove
+
 
 the featured products should show a cabinet, a graphics card, a processor, ram

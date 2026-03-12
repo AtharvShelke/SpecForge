@@ -7,7 +7,7 @@ import {
     Search, Plus, CheckCircle, AlertTriangle, XCircle, Filter,
     Grid2x2, ChevronLeft, ChevronRight, ChevronDown, List,
     BarChart2, ArrowUpDown, ArrowLeft, SlidersHorizontal, X, Zap,
-    Check
+    Check, Hammer
 } from 'lucide-react';
 import {
     HoverCard,
@@ -23,7 +23,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
 import Image from 'next/image';
 import BuildProgressSidebar from '@/components/build/BuildProgressSidebar';
-import { motion,AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_MAX_PRICE = 500000;
 
@@ -60,7 +60,7 @@ const SkeletonList = () => (
 
 /* ─────────────────────────────── Product Card ─────────────────────────────── */
 const ProductCard = ({
-    product, inCart, isIncompatible, isWarning, addToCart, handleCompareToggle, compareItems, viewMode, index
+    product, inCart, cartQuantity, isIncompatible, isWarning, addToCart, onRemove, onUpdateQty, handleCompareToggle, compareItems, viewMode, index
 }: any) => {
     const price = product.variants?.[0]?.price || 0;
     const compareAt = product.variants?.[0]?.compareAtPrice;
@@ -146,32 +146,42 @@ const ProductCard = ({
 
                             <button
                                 onClick={(e) => handleCompareToggle(e, product)}
-                                className={`h-7 px-3 text-[10px] font-bold rounded-xl border transition-all ${
-                                    isCompared
+                                className={`h-7 px-3 text-[10px] font-bold rounded-xl border transition-all ${isCompared
                                         ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                                         : 'border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-700'
-                                }`}
+                                    }`}
                             >
                                 {isCompared ? '✓ Compared' : 'Compare'}
                             </button>
 
-                            <button
-                                onClick={() => addToCart(product)}
-                                disabled={(isIncompatible && !inCart) || isOutOfStock}
-                                className={`h-7 px-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${
-                                    inCart
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : isOutOfStock || (isIncompatible && !inCart)
+                            {inCart ? (
+                                <div className="flex items-center gap-1 h-7 bg-emerald-50 border border-emerald-200 rounded-xl overflow-hidden">
+                                    <button
+                                        onClick={() => cartQuantity <= 1 ? onRemove(product.id) : onUpdateQty(product.id, cartQuantity - 1)}
+                                        className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
+                                    >
+                                        −
+                                    </button>
+                                    <span className="text-[11px] font-bold text-emerald-700 min-w-[16px] text-center">{cartQuantity}</span>
+                                    <button
+                                        onClick={() => addToCart(product)}
+                                        className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => addToCart(product)}
+                                    disabled={isOutOfStock || (isIncompatible && !inCart)}
+                                    className={`h-7 px-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${isOutOfStock || (isIncompatible && !inCart)
                                             ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
                                             : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50 active:scale-95'
-                                }`}
-                            >
-                                {inCart ? (
-                                    <><Check size={10} strokeWidth={3} /> In Build</>
-                                ) : isOutOfStock ? 'Sold Out' : (
-                                    <><Plus size={10} strokeWidth={3} /> Add</>
-                                )}
-                            </button>
+                                        }`}
+                                >
+                                    {isOutOfStock ? 'Sold Out' : <><Plus size={10} strokeWidth={3} /> Add</>}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -182,11 +192,10 @@ const ProductCard = ({
     /* ── GRID VIEW ── */
     return (
         <div
-            className={`group bg-white border rounded-2xl overflow-hidden flex flex-col h-full relative card-enter transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 ${
-                inCart
+            className={`group bg-white border rounded-2xl overflow-hidden flex flex-col h-full relative card-enter transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 ${inCart
                     ? 'border-indigo-200 shadow-[0_0_0_2px_#c7d2fe]'
                     : 'border-zinc-100 hover:border-zinc-200'
-            } ${isIncompatible && !inCart ? 'opacity-45' : ''}`}
+                } ${isIncompatible && !inCart ? 'opacity-45' : ''}`}
             style={{ animationDelay: `${index * 40}ms` }}
         >
             {/* Image Zone */}
@@ -242,11 +251,10 @@ const ProductCard = ({
                 {!inCart && (
                     <button
                         onClick={(e) => handleCompareToggle(e, product)}
-                        className={`absolute top-2.5 right-2.5 z-20 h-7 px-2.5 rounded-full text-[9px] font-bold uppercase tracking-wider border shadow-sm transition-all duration-200 ${
-                            isCompared
+                        className={`absolute top-2.5 right-2.5 z-20 h-7 px-2.5 rounded-full text-[9px] font-bold uppercase tracking-wider border shadow-sm transition-all duration-200 ${isCompared
                                 ? 'opacity-100 bg-indigo-600 text-white border-indigo-600'
                                 : 'opacity-0 group-hover:opacity-100 bg-white/95 text-zinc-500 border-zinc-200 hover:text-zinc-900 hover:border-zinc-300'
-                        }`}
+                            }`}
                     >
                         {isCompared ? '✓' : '⊕'} Compare
                     </button>
@@ -289,23 +297,34 @@ const ProductCard = ({
                         )}
                     </div>
 
-                    <button
-                        onClick={() => addToCart(product)}
-                        disabled={(isIncompatible && !inCart) || isOutOfStock}
-                        className={`h-7 px-3 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${
-                            inCart
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : isOutOfStock || (isIncompatible && !inCart)
+                    {inCart ? (
+                        <div className="flex items-center gap-0.5 h-7 bg-emerald-50 border border-emerald-200 rounded-xl overflow-hidden">
+                            <button
+                                onClick={() => cartQuantity <= 1 ? onRemove(product.id) : onUpdateQty(product.id, cartQuantity - 1)}
+                                className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
+                            >
+                                −
+                            </button>
+                            <span className="text-[11px] font-bold text-emerald-700 min-w-[16px] text-center">{cartQuantity}</span>
+                            <button
+                                onClick={() => addToCart(product)}
+                                className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
+                            >
+                                +
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => addToCart(product)}
+                            disabled={(isIncompatible && !inCart) || isOutOfStock}
+                            className={`h-7 px-3 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${isOutOfStock || (isIncompatible && !inCart)
                                     ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
                                     : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50 active:scale-95'
-                        }`}
-                    >
-                        {inCart ? (
-                            <><Check size={10} strokeWidth={3} /> In Build</>
-                        ) : isOutOfStock ? 'Sold Out' : (
-                            <><Plus size={10} strokeWidth={3} /> Add</>
-                        )}
-                    </button>
+                                }`}
+                        >
+                            {isOutOfStock ? 'Sold Out' : <><Plus size={10} strokeWidth={3} /> Add</>}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -316,6 +335,8 @@ const ProductCard = ({
 const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const {
         addToCart,
+        removeFromCart,
+        updateQuantity,
         cart,
         compareItems,
         addToCompare,
@@ -642,65 +663,109 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             <PageLayout.Header compact>
                 <div className="flex flex-col gap-0">
 
-                    {/* Row 1: Title + Search */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3">
-                        <div className="flex items-center gap-4">
-                            {isBuildMode && (
-                                <button
-                                    onClick={() => router.push('/builds/new')}
-                                    className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
-                                >
-                                    <ArrowLeft size={16} />
-                                    <span className="hidden sm:inline">Back to Builder</span>
+                    {/* Row 1: Category pills + Search + Controls */}
+                    <div className="flex items-center gap-2">
+
+                        {/* Category pills — scrollable, takes remaining space */}
+                        <div className="relative flex-1 min-w-0 group/nav">
+                            {canScrollLeft && (
+                                <button onClick={() => scrollCategories('left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 bg-white shadow-md border border-zinc-200 rounded-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 opacity-0 group-hover/nav:opacity-100 transition-opacity">
+                                    <ChevronLeft size={12} />
                                 </button>
                             )}
-                            <div>
-                                <h1 className="text-xl font-semibold text-zinc-900 tracking-tight">
-                                    {isBuildMode ? `Pick a ${initialCategoryParam || 'Component'}` : 'Component Catalog'}
-                                </h1>
-                                {isBuildMode && (
-                                    <p className="text-xs text-zinc-400 mt-0.5">Select the perfect part for your build</p>
-                                )}
-                            </div>
-                            {isBuildMode && (
-                                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-[11px] font-semibold">
-                                    <Zap size={12} />
-                                    Build Mode Active
-                                </span>
+                            <nav ref={categoryNavRef} onScroll={updateScrollButtons} className="flex overflow-x-auto scrollbar-hide gap-1 ">
+                                {categories.map((node) => {
+                                    const isActive = activeTab?.label === node.label;
+                                    const hasChildren = node.children && node.children.length > 0;
+
+                                    if (!hasChildren) {
+                                        return (
+                                            <button
+                                                key={node.label}
+                                                onClick={() => { setSearchTerm(''); setActiveTab(node); }}
+                                                className={`category-pill flex-shrink-0 whitespace-nowrap px-3.5 py-1.5 text-sm font-medium rounded-full transition-all ${isActive
+                                                    ? 'bg-zinc-900 text-white shadow-sm'
+                                                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-200'
+                                                    }`}
+                                            >
+                                                {node.label}
+                                            </button>
+                                        );
+                                    }
+
+                                    return (
+                                        <HoverCard key={node.label} openDelay={100} closeDelay={150}>
+                                            <HoverCardTrigger asChild>
+                                                <button
+                                                    onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(null); }}
+                                                    className={`category-pill flex-shrink-0 whitespace-nowrap flex items-center gap-1 px-3.5 py-1.5 text-sm font-medium rounded-full transition-all ${isActive
+                                                        ? 'bg-zinc-900 text-white shadow-sm'
+                                                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-200'
+                                                        }`}
+                                                >
+                                                    {node.label}
+                                                    <ChevronDown size={12} className="opacity-50" />
+                                                </button>
+                                            </HoverCardTrigger>
+                                            <HoverCardContent align="start" className="w-[180px] bg-white border border-zinc-100 shadow-xl rounded-2xl p-1.5 z-50 flex flex-col gap-0.5">
+                                                <button
+                                                    onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(null); }}
+                                                    className={`w-full text-left text-sm font-medium rounded-xl px-3 py-2 transition-colors ${!selectedNode && isActive ? 'bg-indigo-50 text-indigo-700' : 'text-zinc-700 hover:bg-zinc-50'}`}
+                                                >
+                                                    All {node.label}
+                                                </button>
+                                                {node.children?.map((subNode) => (
+                                                    <button
+                                                        key={subNode.label}
+                                                        onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(subNode); }}
+                                                        className={`w-full text-left text-sm rounded-xl px-3 py-2 transition-colors ${selectedNode?.label === subNode.label && isActive ? 'bg-indigo-50 text-indigo-700' : 'text-zinc-600 hover:bg-zinc-50'}`}
+                                                    >
+                                                        {subNode.label}
+                                                    </button>
+                                                ))}
+                                            </HoverCardContent>
+                                        </HoverCard>
+                                    );
+                                })}
+                            </nav>
+                            {canScrollRight && (
+                                <button onClick={() => scrollCategories('right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 bg-white shadow-md border border-zinc-200 rounded-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 opacity-0 group-hover/nav:opacity-100 transition-opacity">
+                                    <ChevronRight size={12} />
+                                </button>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2 w-full lg:w-auto">
-                            {/* Search Input */}
-                            <div className="relative flex-1 lg:w-72 group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" strokeWidth={2} />
+
+
+
+
+                        
+
+                            
+
+                        {/* Mobile: search + filter */}
+                        <div className="flex sm:hidden items-center gap-2">
+                            <div className="relative group">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" strokeWidth={2} />
                                 <input
                                     type="text"
-                                    className="w-full h-9 pl-10 pr-9 bg-white border border-zinc-200 rounded-xl text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all shadow-sm"
-                                    placeholder="Search products, brands, specs…"
+                                    className="w-36 h-8 pl-8 pr-7 bg-white border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all shadow-sm"
+                                    placeholder="Search…"
                                     value={searchTerm}
                                     onChange={(e) => {
                                         setSearchTerm(e.target.value);
-                                        if (e.target.value.length > 0 && activeTab) {
-                                            setActiveTab(null);
-                                            clearAllFilters();
-                                        }
+                                        if (e.target.value.length > 0 && activeTab) { setActiveTab(null); clearAllFilters(); }
                                     }}
                                 />
                                 {searchTerm && (
-                                    <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors">
-                                        <X size={14} />
-                                    </button>
+                                    <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400"><X size={11} /></button>
                                 )}
                             </div>
-
-                            {/* Mobile filter btn */}
                             <button
                                 onClick={() => setIsMobileFiltersOpen(true)}
-                                className="lg:hidden relative flex items-center gap-1.5 h-9 px-3 bg-white border border-zinc-200 rounded-xl text-zinc-700 font-medium text-sm hover:bg-zinc-50 transition-all shadow-sm"
+                                className="relative flex items-center gap-1 h-8 px-2.5 bg-white border border-zinc-200 rounded-xl text-zinc-700 text-xs font-medium hover:bg-zinc-50 transition-all shadow-sm"
                             >
-                                <SlidersHorizontal size={15} />
-                                Filters
+                                <SlidersHorizontal size={13} />
                                 {activeFilterCount > 0 && (
                                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                                         {activeFilterCount}
@@ -708,75 +773,20 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 )}
                             </button>
                         </div>
-                    </div>
 
-                    {/* Row 2: Category pills */}
-                    <div className="relative border-t border-zinc-100 group/nav">
-                        {canScrollLeft && (
-                            <button onClick={() => scrollCategories('left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white shadow-md border border-zinc-200 rounded-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 opacity-0 group-hover/nav:opacity-100 transition-opacity">
-                                <ChevronLeft size={14} />
-                            </button>
-                        )}
-                        <nav ref={categoryNavRef} onScroll={updateScrollButtons} className="flex overflow-x-auto scrollbar-hide px-1 py-2 gap-1">
-                            {categories.map((node) => {
-                                const isActive = activeTab?.label === node.label;
-                                const hasChildren = node.children && node.children.length > 0;
-
-                                if (!hasChildren) {
-                                    return (
-                                        <button
-                                            key={node.label}
-                                            onClick={() => { setSearchTerm(''); setActiveTab(node); }}
-                                            className={`category-pill whitespace-nowrap px-4 py-1.5 text-sm font-medium rounded-full transition-all ${isActive
-                                                ? 'bg-zinc-900 text-white shadow-sm'
-                                                : 'text-zinc-500 hover:text-zinc-900 hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-200'
-                                                }`}
-                                        >
-                                            {node.label}
-                                        </button>
-                                    );
-                                }
-
-                                return (
-                                    <HoverCard key={node.label} openDelay={100} closeDelay={150}>
-                                        <HoverCardTrigger asChild>
-                                            <button
-                                                onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(null); }}
-                                                className={`category-pill whitespace-nowrap flex items-center gap-1 px-4 py-1.5 text-sm font-medium rounded-full transition-all ${isActive
-                                                    ? 'bg-zinc-900 text-white shadow-sm'
-                                                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-200'
-                                                    }`}
-                                            >
-                                                {node.label}
-                                                <ChevronDown size={13} className="opacity-50" />
-                                            </button>
-                                        </HoverCardTrigger>
-                                        <HoverCardContent align="start" className="w-[180px] bg-white border border-zinc-100 shadow-xl rounded-2xl p-1.5 z-50 flex flex-col gap-0.5">
-                                            <button
-                                                onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(null); }}
-                                                className={`w-full text-left text-sm font-medium rounded-xl px-3 py-2 transition-colors ${!selectedNode && isActive ? 'bg-indigo-50 text-indigo-700' : 'text-zinc-700 hover:bg-zinc-50'}`}
-                                            >
-                                                All {node.label}
-                                            </button>
-                                            {node.children?.map((subNode) => (
-                                                <button
-                                                    key={subNode.label}
-                                                    onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(subNode); }}
-                                                    className={`w-full text-left text-sm rounded-xl px-3 py-2 transition-colors ${selectedNode?.label === subNode.label && isActive ? 'bg-indigo-50 text-indigo-700' : 'text-zinc-600 hover:bg-zinc-50'}`}
-                                                >
-                                                    {subNode.label}
-                                                </button>
-                                            ))}
-                                        </HoverCardContent>
-                                    </HoverCard>
-                                );
-                            })}
-                        </nav>
-                        {canScrollRight && (
-                            <button onClick={() => scrollCategories('right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white shadow-md border border-zinc-200 rounded-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 opacity-0 group-hover/nav:opacity-100 transition-opacity">
-                                <ChevronRight size={14} />
-                            </button>
-                        )}
+                        {/* Desktop mobile-filter btn (lg hidden) */}
+                        <button
+                            onClick={() => setIsMobileFiltersOpen(true)}
+                            className="lg:hidden sm:flex hidden relative items-center gap-1.5 h-8 px-2.5 bg-white border border-zinc-200 rounded-xl text-zinc-700 font-medium text-xs hover:bg-zinc-50 transition-all shadow-sm flex-shrink-0"
+                        >
+                            <SlidersHorizontal size={13} />
+                            Filters
+                            {activeFilterCount > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
                     </div>
                 </div>
             </PageLayout.Header>
@@ -849,6 +859,30 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                     </div>
 
                                     <div className="flex items-center gap-2">
+
+                                        {/* Search */}
+                                        <div className="relative w-52 flex-shrink-0 group hidden sm:block">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" strokeWidth={2} />
+                                            <input
+                                                type="text"
+                                                className="w-full h-8 pl-9 pr-8 bg-white border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all shadow-sm"
+                                                placeholder="Search…"
+                                                value={searchTerm}
+                                                onChange={(e) => {
+                                                    setSearchTerm(e.target.value);
+                                                    if (e.target.value.length > 0 && activeTab) {
+                                                        setActiveTab(null);
+                                                        clearAllFilters();
+                                                    }
+                                                }}
+                                            />
+                                            {searchTerm && (
+                                                <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors">
+                                                    <X size={12} />
+                                                </button>
+                                            )}
+                                        </div>
+
                                         {/* Sort */}
                                         <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-xl px-3 py-2 shadow-sm text-sm text-zinc-600">
                                             <ArrowUpDown size={14} className="text-zinc-400" />
@@ -881,6 +915,14 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                 <List size={15} />
                                             </button>
                                         </div>
+                                        {/* Start a Build */}
+                        <Link
+                            href="/builds/new"
+                            className="hidden lg:inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
+                        >
+                            <Hammer size={11} />
+                            Build
+                        </Link>
                                     </div>
                                 </div>
 
@@ -967,10 +1009,13 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                                 <ProductCard
                                                     key={product.id}
                                                     product={product}
-                                                    inCart={inCart}
+                                                    inCart={!!inCart}
+                                                    cartQuantity={inCart?.quantity ?? 0}
                                                     isIncompatible={isIncompatible}
                                                     isWarning={isWarning}
                                                     addToCart={addToCart}
+                                                    onRemove={removeFromCart}
+                                                    onUpdateQty={updateQuantity}
                                                     handleCompareToggle={handleCompareToggle}
                                                     compareItems={compareItems}
                                                     viewMode={viewMode}

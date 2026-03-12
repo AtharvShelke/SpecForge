@@ -222,12 +222,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* ── Mode toggle: Browse / Build ── */}
-      <div className="px-3 pt-3 pb-2.5 border-b border-border flex-shrink-0">
+      {/* <div className="px-3 pt-3 pb-2.5 border-b border-border flex-shrink-0">
         <div className={`
           relative flex p-1 rounded-lg border transition-colors
           ${isBuildMode ? 'bg-primary/5 border-primary/20' : 'bg-muted/50 border-border'}
         `}>
-          {/* Sliding pill background */}
+         
           <div
             className={`
               absolute inset-1 w-[calc(50%-2px)] rounded-md bg-background shadow-sm border border-border/50
@@ -255,7 +255,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             Build
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* ── Scrollable body ── */}
       <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll">

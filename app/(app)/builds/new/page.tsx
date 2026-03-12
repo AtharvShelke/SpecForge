@@ -464,7 +464,7 @@ const BuildSummaryPanel: React.FC<{
             </div>
 
             {/* Power meter */}
-            <div className="px-4 py-3 flex-shrink-0 border-t border-zinc-100">
+            {/* <div className="px-4 py-3 flex-shrink-0 border-t border-zinc-100">
                 <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Power Draw</span>
                     <span className="text-[11px] font-semibold tabular-nums" style={{ color: wattColor }}>
@@ -482,7 +482,7 @@ const BuildSummaryPanel: React.FC<{
                 {psuCap && wattPct > 85 && (
                     <p className="text-[10px] text-amber-600 mt-1">⚠ PSU near capacity</p>
                 )}
-            </div>
+            </div> */}
 
             {/* Compat issues */}
             <AnimatePresence>
