@@ -114,7 +114,7 @@ export default function HeroSection() {
     }
 
     return (
-        <section className="relative mt-[10vh] h-[90vh] min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
+        <section className="relative mt-[64px] sm:mt-[10vh] h-auto sm:h-[90vh] min-h-[520px] sm:min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
 
             {/* ── Ambient Glow from accent color ── */}
             <AnimatePresence mode="wait">
@@ -140,7 +140,7 @@ export default function HeroSection() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute right-0 top-0 w-full md:w-[55%] h-full"
+                        className="absolute right-0 top-0 w-full sm:w-[65%] md:w-[55%] h-full opacity-60 sm:opacity-100"
                     >
                         <img
                             src={slide.image}
@@ -163,12 +163,12 @@ export default function HeroSection() {
                 style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }}
             />
 
-            <Container className="relative z-10 flex flex-col justify-between h-full py-12">
+            <Container className="relative z-10 flex flex-col justify-between h-full py-8 sm:py-12 px-2.5 py-1 sm:px-3 sm:px-0">
 
                 <div className="flex-1" />
 
                 {/* ── Main Split Content ── */}
-                <div className="w-full max-w-2xl h-[420px] flex items-start">
+                <div className="w-full max-w-xl sm:max-w-2xl h-auto sm:h-[420px] flex items-start">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={`content-${slideIndex}`}
@@ -178,15 +178,15 @@ export default function HeroSection() {
                             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                         >
                             {/* Badge */}
-                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border mb-5 ${slide.badgeBg}`}>
-                                <SlideIcon size={13} className={slide.badgeText} />
+                            <div className={`inline-flex items-center gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full backdrop-blur-md border mb-3 sm:mb-5 ${slide.badgeBg}`}>
+                                <SlideIcon size={11} className={slide.badgeText} />
                                 <span className={`text-xs font-semibold tracking-widest uppercase ${slide.badgeText}`}>
                                     {slide.badge}
                                 </span>
                             </div>
 
                             {/* Headline */}
-                            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter leading-[0.88] mb-5 drop-shadow-2xl">
+                            <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight sm:tracking-tighter leading-[1] sm:leading-[0.9] mb-3 sm:mb-5 drop-shadow-2xl">
                                 {slide.headline}<br />
                                 <span className={`text-transparent bg-clip-text bg-gradient-to-r ${slide.accentColor}`}>
                                     {slide.highlight}
@@ -194,18 +194,18 @@ export default function HeroSection() {
                             </h1>
 
                             {/* Sub */}
-                            <p className="text-zinc-300 text-base md:text-lg max-w-xl mb-8 leading-relaxed font-light line-clamp-3">
+                            <p className="text-zinc-300 text-sm sm:text-base md:text-lg max-w-md sm:max-w-xl mb-5 sm:mb-8 leading-relaxed font-light line-clamp-3">
                                 {slide.sub}
                             </p>
 
                             {/* Stats row */}
-                            <div className="flex items-center gap-6 mb-9">
+                            <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-9">
                                 {slide.stats.map((s, i) => (
                                     <div key={i} className="flex flex-col">
-                                        <span className={`text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r ${slide.accentColor}`}>
+                                        <span className={`text-lg sm:text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r ${slide.accentColor}`}>
                                             {s.value}
                                         </span>
-                                        <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
+                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
                                             {s.label}
                                         </span>
                                     </div>
@@ -230,33 +230,60 @@ export default function HeroSection() {
                     <div className="mb-6">
                         <Link
                             href={slide.cta}
-                            className="inline-flex items-center gap-3 px-7 py-3 rounded-full bg-white text-zinc-950 font-bold uppercase tracking-wide hover:bg-zinc-200 transition"
+                            className="inline-flex items-center gap-3 px-5 py-2.5 sm:px-7 sm:py-3 rounded-full bg-white text-zinc-950 font-semibold uppercase tracking-wide text-xs sm:text-sm hover:bg-zinc-200 transition"
                         >
                             {slide.ctaText}
                             <ArrowRight size={16} />
                         </Link>
                     </div>
                     {/* Search bar */}
-                    <div className="backdrop-blur-xl bg-black/20 p-2 border border-white/10 rounded-2xl md:rounded-full shadow-2xl">
-                        <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-center relative">
-                            <div className="w-full flex items-center pl-6">
-                                <Search className="text-zinc-400" size={22} />
+                    <div className="backdrop-blur-xl bg-black/30 p-1.5 sm:p-2 border border-white/10 rounded-xl sm:rounded-2xl md:rounded-full shadow-2xl">
+                        <form
+                            onSubmit={handleSearch}
+                            className="flex flex-col sm:flex-row items-center gap-2 sm:gap-0 relative"
+                        >
+                            <div className="w-full flex items-center pl-3 sm:pl-5">
+                                <Search className="text-zinc-400 h-3.5 w-3.5 sm:h-5 sm:w-5" />
+
                                 <input
                                     value={query}
                                     onChange={e => setQuery(e.target.value)}
-                                    placeholder="Search RTX 4090, i9-14900K, prebuilt categories..."
-                                    className="w-full h-14 pl-4 pr-6 bg-transparent text-white placeholder:text-zinc-500 font-medium focus:outline-none"
+                                    placeholder="Search parts, builds..."
+                                    className="
+                    w-full
+                    h-9 sm:h-12
+                    pl-2 sm:pl-4
+                    pr-3 sm:pr-6
+                    bg-transparent
+                    text-sm sm:text-base
+                    text-white
+                    placeholder:text-zinc-500
+                    font-medium
+                    focus:outline-none
+                "
                                 />
                             </div>
+
                             <button
                                 type="submit"
-                                className="w-full md:w-auto mt-2 md:mt-0 px-8 h-12 rounded-xl md:rounded-full bg-indigo-600 text-white font-bold tracking-wide hover:bg-indigo-500 transition-colors"
+                                className="
+                w-full sm:w-auto
+                h-9 sm:h-12
+                px-4 sm:px-7
+                rounded-lg sm:rounded-full
+                bg-indigo-600
+                text-white
+                text-xs sm:text-sm
+                font-semibold
+                tracking-wide
+                hover:bg-indigo-500
+                transition-colors
+            "
                             >
                                 Search
                             </button>
                         </form>
                     </div>
-
                     {/* Trending + Slide selector */}
                     <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pl-2">
                         <div className="hidden md:flex flex-wrap items-center gap-3">
@@ -265,7 +292,7 @@ export default function HeroSection() {
                                 <Link
                                     key={cat}
                                     href={`/products?category=${cat === 'GPUs' ? 'GPU' : cat}`}
-                                    className="px-4 py-1.5 text-xs font-medium rounded-full border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/30 backdrop-blur-md transition-all duration-300"
+                                    className="px-4 sm:py-1.5 text-xs font-medium rounded-full border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/30 backdrop-blur-md transition-all duration-300"
                                 >
                                     {cat}
                                 </Link>
@@ -285,7 +312,7 @@ export default function HeroSection() {
                                         className="h-[2px] rounded-full bg-white transition-all duration-500"
                                         animate={{ width: i === slideIndex ? 32 : 12, opacity: i === slideIndex ? 1 : 0.3 }}
                                     />
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hidden md:block ${i === slideIndex ? s.sideLabelColor : 'text-zinc-600 group-hover:text-zinc-400'
+                                    <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hidden md:block ${i === slideIndex ? s.sideLabelColor : 'text-zinc-600 group-hover:text-zinc-400'
                                         }`}>
                                         {s.sideLabel}
                                     </span>
@@ -300,9 +327,9 @@ export default function HeroSection() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1, duration: 1 }}
-                    className="absolute bottom-8 right-8 hidden xl:flex flex-col items-center gap-2"
+                    className="absolute bottom-4 right-4 hidden xl:flex flex-col items-center gap-2"
                 >
-                    <span className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase rotate-90 mb-6">Scroll</span>
+                    <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-zinc-500 uppercase rotate-90 mb-6">Scroll</span>
                     <motion.div
                         animate={{ y: [0, 8, 0] }}
                         transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}

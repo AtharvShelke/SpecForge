@@ -42,10 +42,10 @@ export default function CategorySection({ categories, productCounts }: Props) {
     // A mixed layout mapping for grid spans
     const getGridStyles = (index: number) => {
         switch (index) {
-            case 0: return 'col-span-12 md:col-span-8 row-span-2' // Largest featured
+            case 0: return 'col-span-12 sm:col-span-12 md:col-span-8 row-span-1 md:row-span-2' // Largest featured
             case 1: return 'col-span-12 md:col-span-4 row-span-1'
             case 2: return 'col-span-12 md:col-span-4 row-span-1'
-            case 3: return 'col-span-12 md:col-span-4 row-span-1'
+            case 3: return 'col-span-6 md:col-span-4 row-span-1'
             case 4: return 'col-span-6 md:col-span-4 row-span-1'
             case 5: return 'col-span-6 md:col-span-4 row-span-1'
             default: return 'col-span-6 md:col-span-4'
@@ -53,7 +53,7 @@ export default function CategorySection({ categories, productCounts }: Props) {
     }
 
     return (
-        <section className="py-24 bg-white overflow-hidden" id="categories">
+        <section className="py-14 sm:py-20 md:py-24 bg-white overflow-hidden" id="categories">
             <Container>
                 {/* Header with reveal animation */}
                 <motion.div
@@ -61,13 +61,13 @@ export default function CategorySection({ categories, productCounts }: Props) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.6 }}
-                    className="flex flex-col md:flex-row md:items-end justify-between mb-12"
+                    className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 md:mb-12"
                 >
                     <div className="max-w-2xl">
-                        <h2 className="text-4xl md:text-5xl font-black text-zinc-950 tracking-tighter mb-4">
+                        <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-zinc-950 tracking-tight sm:tracking-tighter mb-3 sm:mb-4">
                             Explore the Ecosystem.
                         </h2>
-                        <p className="text-zinc-500 text-lg md:text-xl font-light">
+                        <p className="text-zinc-500 text-sm sm:text-base md:text-xl font-light">
                             Discover premium components for every build. High-performance hardware categorized for an uncompromising experience.
                         </p>
                     </div>
@@ -81,7 +81,7 @@ export default function CategorySection({ categories, productCounts }: Props) {
                 </motion.div>
 
                 {/* Mixed Asymmetric Grid */}
-                <div className="grid grid-cols-12 auto-rows-[240px] gap-4 md:gap-6">
+                <div className="grid grid-cols-12 auto-rows-[140px] sm:auto-rows-[180px] md:auto-rows-[240px] gap-3 sm:gap-4 md:gap-6">
                     {cats.slice(0, 6).map((cat, i) => {
                         const catKey = cat.category || ''
                         const bgImage = CATEGORY_IMAGES[catKey] || FALLBACK_IMAGE
@@ -94,7 +94,7 @@ export default function CategorySection({ categories, productCounts }: Props) {
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 viewport={{ once: true, margin: "-100px" }}
                                 transition={{ delay: i * 0.1, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                                className={`${getGridStyles(i)} group relative overflow-hidden rounded-3xl bg-zinc-100 flex flex-col justify-end p-6 cursor-pointer`}
+                                className={`${getGridStyles(i)} group relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl bg-zinc-100 flex flex-col justify-end p-3 sm:p-4 md:p-6 cursor-pointer`}
                             >
                                 <Link href={`/products?category=${catKey}`} className="absolute inset-0 z-20">
                                     <span className="sr-only">Shop {cat.label}</span>
@@ -108,12 +108,12 @@ export default function CategorySection({ categories, productCounts }: Props) {
                                 />
 
                                 {/* Gradient overlays for legibility */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 sm:from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500" />
                                 <div className="absolute inset-0 bg-indigo-900/40 mix-blend-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                                 {/* Content overlaid */}
-                                <div className="relative z-10 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 shadow-black/50 drop-shadow-lg">
+                                <div className="relative z-10 sm:transform sm:translate-y-4 sm:group-hover:translate-y-0 transition-transform duration-500">
+                                    <h3 className="text-lg sm:text-xl md:text-3xl font-bold text-white mb-1 shadow-black/50 drop-shadow-lg">
                                         {cat.label}
                                     </h3>
 
@@ -121,8 +121,8 @@ export default function CategorySection({ categories, productCounts }: Props) {
                                         <p className="text-sm font-medium text-zinc-300">
                                             {count !== undefined ? `${count} Premium Products` : 'Explore Hardware'}
                                         </p>
-                                        <div className="w-10 h-10 rounded-full bg-white text-zinc-950 flex items-center justify-center">
-                                            <ArrowUpRight size={18} />
+                                        <div className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-white text-zinc-950 flex items-center justify-center">
+                                            <ArrowUpRight size={14} />
                                         </div>
                                     </div>
                                 </div>

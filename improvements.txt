@@ -9,3 +9,7 @@ product page -> sort filter and view type can go up beside search bar, the build
 
 
 the featured products should show a cabinet, a graphics card, a processor, ram
+
+
+// prompt
+this is the category section just below the hero section make it mobile responsive, reduce size of the elements in it and keep it clean and aesthetic for the mobile screens. make sure design is preserved and ensure premiumness. give me updated code blocks

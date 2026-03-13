@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Search, User, Cpu } from "lucide-react";
+import { ShoppingCart, Search, User, Cpu, Menu, X } from "lucide-react";
 import { useShop } from "@/context/ShopContext";
 import { cn } from "@/lib/utils";
 
@@ -18,58 +18,63 @@ const NAV_LINKS = [
 export default function StorefrontNavbar() {
     const { cart, setCartOpen } = useShop();
     const pathname = usePathname();
+
     const [isScrolled, setIsScrolled] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+
     const { scrollY } = useScroll();
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         setIsScrolled(latest > 50);
     });
 
-    const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+    const cartItemCount = cart.reduce(
+        (acc, item) => acc + item.quantity,
+        0
+    );
 
     return (
         <motion.nav
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-hidden bg-zinc-950/90 backdrop-blur-xl border-b border-white/5 shadow-2xl py-0")}
+            transition={{ duration: 0.8 }}
+            className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-b border-white/5"
         >
-            {/* Footer-matching Night Blueish Gradient Blobs */}
+            {/* gradient */}
             <div className="absolute inset-0 pointer-events-none opacity-50">
                 <div className="absolute -top-[50%] -left-[10%] w-[120%] h-[200%] rounded-full bg-indigo-950/50 blur-[100px]" />
                 <div className="absolute top-[0%] -right-[20%] w-[80%] h-[150%] rounded-full bg-violet-950/40 blur-[100px]" />
             </div>
 
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex h-20 items-center justify-between gap-8 relative z-10">
+            <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+               <div className="flex h-14 sm:h-20 items-center justify-between gap-2 sm:gap-4 relative z-10">
 
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-                        <div className={cn(
-                            "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110",
-                            "bg-white/10 border border-white/20 backdrop-blur-sm shadow-lg shadow-indigo-500/10"
-                        )}>
-                            <Cpu className="h-5 w-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-                        </div>
-                        <span className="font-bold tracking-tight text-lg text-white group-hover:text-indigo-100 transition-colors">
+                    {/* LOGO */}
+                    <Link href="/" className="flex items-center gap-2 shrink-0">
+                        <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-white/10 border border-white/20">
+    <Cpu className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-400" />
+</div>
+
+                        <span className="font-semibold text-white text-xs sm:text-lg tracking-tight">
                             Nexus Hardware
                         </span>
                     </Link>
 
-                    {/* Desktop Nav Links */}
-                    <div className="hidden md:flex flex-1 items-center justify-center">
-                        <div className="flex items-center gap-1 rounded-full p-1.5 bg-white/5 border border-white/10 backdrop-blur-md">
+                    {/* DESKTOP NAV */}
+                    <div className="hidden md:flex flex-1 justify-center">
+                        <div className="flex gap-1 rounded-full p-1.5 bg-white/5 border border-white/10">
                             {NAV_LINKS.map(({ href, label }) => {
                                 const active = pathname === href;
+
                                 return (
                                     <Link
                                         key={href}
                                         href={href}
                                         className={cn(
-                                            "relative px-5 py-2 text-sm font-semibold rounded-full transition-all duration-300",
+                                            "px-5 py-2 text-sm rounded-full font-semibold",
                                             active
-                                                ? "bg-white/10 text-white shadow-sm ring-1 ring-white/20"
-                                                : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                                ? "bg-white/10 text-white"
+                                                : "text-zinc-400 hover:text-white"
                                         )}
                                     >
                                         {label}
@@ -79,42 +84,72 @@ export default function StorefrontNavbar() {
                         </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                        {/* Search Icon */}
+                    {/* ACTIONS */}
+                    <div className="flex items-center gap-1 sm:gap-3">
+
+                        {/* MOBILE MENU BUTTON */}
+                        <button
+                            onClick={() => setMobileOpen(!mobileOpen)}
+                            className="md:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center text-zinc-300"
+                        >
+                            {mobileOpen ? <X /> : <Menu />}
+                        </button>
+
+                        {/* SEARCH */}
                         <Link
                             href="/products"
-                            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-300"
+                            className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center text-zinc-400 hover:text-white"
                         >
-                            <Search size={20} />
+                            <Search className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Link>
 
-                        {/* Cart Icon */}
+                        {/* CART */}
                         <button
                             onClick={() => setCartOpen(true)}
-                            className="relative flex h-10 w-10 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-300"
+                            className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center text-zinc-400 hover:text-white"
                         >
-                            <ShoppingCart size={20} />
+                            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+
                             {cartItemCount > 0 && (
-                                <span className={cn(
-                                    "absolute -top-1.5 -right-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none shadow-sm",
-                                    "bg-indigo-500 text-white ring-2 ring-zinc-950"
-                                )}>
-                                    {cartItemCount > 99 ? "99+" : cartItemCount}
+                                <span className="absolute -top-1 -right-1 text-[10px] bg-indigo-500 text-white rounded-full px-1">
+                                    {cartItemCount}
                                 </span>
                             )}
                         </button>
 
-                        {/* Profile Icon */}
+                        {/* PROFILE */}
                         <Link
                             href="/admin"
-                            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-300"
+                            className="hidden sm:flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center text-zinc-400 hover:text-white"
                         >
-                            <User size={20} />
+                            <User className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Link>
+
                     </div>
                 </div>
             </div>
+
+            {/* MOBILE MENU */}
+            {mobileOpen && (
+                <div className="md:hidden border-t border-white/10 bg-zinc-950/95 backdrop-blur-xl">
+
+                    <div className="flex flex-col p-3 gap-2">
+
+                        {NAV_LINKS.map(({ href, label }) => (
+                            <Link
+                                key={href}
+                                href={href}
+                                onClick={() => setMobileOpen(false)}
+                                className="px-4 py-3 rounded-lg text-zinc-300 hover:bg-white/5"
+                            >
+                                {label}
+                            </Link>
+                        ))}
+
+                    </div>
+
+                </div>
+            )}
         </motion.nav>
     );
 }

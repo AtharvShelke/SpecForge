@@ -91,7 +91,7 @@ export default function StorefrontPage() {
         <FeaturedBuildsSection builds={builds} />
         <CustomBuilderSection />
         <TrustSection />
-        <CtaBanner />
+        {/* <CtaBanner /> */}
         <StorefrontFooter />
       </PageLayout>
     </>

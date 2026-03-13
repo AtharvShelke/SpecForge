@@ -9,29 +9,30 @@ import { useShop } from '@/context/ShopContext'
 import { filterGpuTier } from '@/services/filterGpuTier'
 import { Product } from '@/types'
 
-function GpuPremiumCard({ product,  addToCart }: {
+function GpuPremiumCard({ product, addToCart }: {
     product: Product
-   
+
     addToCart: (p: Product) => void
 }) {
     const price = product.variants?.[0]?.price || 0
     const image = product.media?.[0]?.url
     const brand = product.brand?.name
-    
+
 
     return (
-        <div className="group relative w-[85vw] md:w-[360px] flex-shrink-0 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:bg-zinc-800/80 transition-all duration-500">
+        <div className="group relative w-[72vw] sm:w-[280px] md:w-[360px]w-[85vw] md:w-[360px] flex-shrink-0 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden hover:bg-zinc-800/80 transition-all duration-500">
             {/* Glossy overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-            <Link href={`/products/${product.id}`} className="block relative aspect-[4/3] p-6 flex items-center justify-center overflow-hidden">
+            <Link href={`/products/${product.id}`} className="block relative aspect-[4/3] p-3 sm:p-4 md:p-6 flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent z-10 opacity-80" />
                 {image ? (
                     <motion.img
                         src={image}
                         alt={product.name}
                         className="w-full h-full object-contain filter drop-shadow-[0_20px_20px_rgba(0,0,0,0.5)] z-0"
-                        whileHover={{ scale: 1.1, rotate: 2 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.98 }}
                         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                         loading="lazy"
                     />
@@ -42,31 +43,31 @@ function GpuPremiumCard({ product,  addToCart }: {
                 )}
 
                 {brand && (
-                    <div className="absolute top-4 left-4 z-20 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-bold tracking-widest uppercase text-white border border-white/20">
+                    <div className="absolute top-4 left-4 z-20 px-2 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] bg-white/10 backdrop-blur-md rounded-full font-semibold tracking-widest uppercase text-white border border-white/20">
                         {brand}
                     </div>
                 )}
             </Link>
 
-            <div className="p-6 pt-0 relative z-20">
+            <div className="p-3 sm:p-4 md:p-6 pt-0 relative z-20">
                 <Link href={`/products/${product.id}`}>
-                    <h3 className="text-lg font-bold text-white line-clamp-2 leading-tight mb-3 group-hover:text-indigo-400 transition-colors">
+                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white line-clamp-2 leading-tight mb-3 group-hover:text-indigo-400 transition-colors">
                         {product.name}
                     </h3>
                 </Link>
 
-                
+
                 <div className="flex flex-col gap-4 mt-auto">
                     <div>
-                        <span className="block text-[11px] font-medium text-zinc-400 uppercase tracking-widest mb-1">Starting At</span>
-                        <span className="text-2xl font-black text-white">₹{price.toLocaleString('en-IN')}</span>
+                        <span className="block text-[9px] sm:text-[11px] font-medium text-zinc-400 uppercase tracking-widest mb-1">Starting At</span>
+                        <span className="text-xl sm:text-2xl font-black text-white">₹{price.toLocaleString('en-IN')}</span>
                     </div>
                     <button
                         onClick={() => addToCart(product)}
-                        className="w-full h-12 bg-white text-zinc-950 rounded-xl flex items-center justify-center gap-2 font-bold uppercase tracking-wide
+                        className="w-full h-9 sm:h-10 md:h-12 bg-white text-zinc-950 rounded-xl flex items-center justify-center gap-2 font-semibold uppercase tracking-wide
                        hover:bg-indigo-500 hover:text-white active:scale-[0.98] transition-all duration-300"
                     >
-                        <ShoppingBag size={18} />
+                        <ShoppingBag size={16} />
                         Add to Cart
                     </button>
                 </div>
@@ -86,13 +87,13 @@ export default function GpuTierSection() {
     if (!products.some(p => p.category === 'GPU')) return null
 
     return (
-        <section ref={containerRef} className="relative py-24 bg-zinc-950 overflow-hidden" id="gpu-showcase">
+        <section ref={containerRef} className="relative py-14 sm:py-20 md:py-24 bg-zinc-950 overflow-hidden" id="gpu-showcase">
             {/* Cinematic background elements */}
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-600/20 blur-[150px] rounded-full mix-blend-screen pointer-events-none translate-x-1/3 -translate-y-1/3" />
-            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-violet-600/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none -translate-x-1/3 translate-y-1/3" />
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] md:w-[800px] md:h-[800px] bg-indigo-600/20 blur-[150px] rounded-full mix-blend-screen pointer-events-none translate-x-1/3 -translate-y-1/3" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] sm:w-[450px] sm:h-[450px] md:w-[600px] md:h-[600px] bg-violet-600/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none -translate-x-1/3 translate-y-1/3" />
 
             <Container className="relative z-10">
-                <div className="flex flex-col lg:flex-row gap-12 lg:items-end justify-between mb-16">
+                <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 md:gap-12 lg:items-end justify-between mb-8 sm:mb-12 md:mb-16">
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -100,11 +101,11 @@ export default function GpuTierSection() {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="max-w-xl"
                     >
-                        <h2 className="text-sm font-bold tracking-[0.2em] text-indigo-500 uppercase mb-4">Ultimate Performance</h2>
-                        <h3 className="text-5xl md:text-6xl font-black text-white tracking-tighter leading-[1.1] mb-6">
+                        <h2 className="text-[9px] sm:text-[11px] sm:text-sm font-semibold tracking-[0.2em] text-indigo-500 uppercase mb-4">Ultimate Performance</h2>
+                        <h3 className="text-3xl sm:text-4xl md:text-6xl font-black text-white tracking-tighter leading-[1.1] mb-6">
                             Next-Gen <br /> Graphics.
                         </h3>
-                        <p className="text-zinc-400 text-lg leading-relaxed font-light">
+                        <p className="text-zinc-400 text-[9px] sm:text-[11px] sm:text-sm sm:text-base md:text-lg leading-relaxed font-light">
                             Experience photorealistic ray tracing and AI-powered frame generation.
                             The enthusiast tier features the pinnacle of consumer graphics architecture.
                         </p>
@@ -118,7 +119,7 @@ export default function GpuTierSection() {
                     >
                         <Link
                             href="/products?category=GPU"
-                            className="group inline-flex items-center gap-3 px-8 py-4 rounded-full border border-white/20 text-white font-bold tracking-wide hover:bg-white hover:text-zinc-950 transition-all duration-300"
+                            className="group inline-flex items-center gap-3 px-5 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-lg sm:rounded-full border border-white/20 text-white font-semibold tracking-wide hover:bg-white hover:text-zinc-950 transition-all duration-300"
                         >
                             View All GPUs
                             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -127,8 +128,8 @@ export default function GpuTierSection() {
                 </div>
 
                 {/* Horizontal scrollable carousel */}
-                <div className="relative -mx-4 md:-mx-8 px-4 md:px-8">
-                    <div className="flex gap-6 overflow-x-auto pb-8 pt-4 snap-x snap-mandatory hide-scrollbar hide-scrollbar-css relative z-20" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="relative -mx-3 sm:-mx-6 md:-mx-8 px-3 sm:px-6 md:px-8">
+                    <div className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto pb-8 pt-4 snap-x snap-mandatory hide-scrollbar hide-scrollbar-css relative z-20" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         {enthusiastGpus.map((gpu, i) => (
                             <motion.div
                                 key={gpu.id}
@@ -140,7 +141,7 @@ export default function GpuTierSection() {
                             >
                                 <GpuPremiumCard
                                     product={gpu}
-                                   
+
                                     addToCart={addToCart}
                                 />
                             </motion.div>
