@@ -114,7 +114,7 @@ export default function HeroSection() {
     }
 
     return (
-        <section className="relative mt-0 sm:mt-[10vh] h-[100vh] sm:h-[86vh] min-h-[520px] sm:min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
+        <section className="relative mt-0 sm:mt-[10vh] h-[90vh] sm:h-[86vh] min-h-[520px] sm:min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
 
             {/* ── Ambient Glow from accent color ── */}
             <AnimatePresence mode="wait">

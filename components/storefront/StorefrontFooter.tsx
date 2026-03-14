@@ -9,7 +9,7 @@ export default function StorefrontFooter() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="relative text-white overflow-hidden mt-auto -mb-16 md:mb-0">
+        <footer className="relative text-white overflow-hidden mt-auto">
             {/* Subtle Animated Background Gradient */}
             <div className="absolute inset-0 pointer-events-none opacity-40">
                 <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[40%] sm:w-[50%] sm:h-[50%] blur-[80px] sm:blur-[120px] rounded-full bg-indigo-900/40" />
@@ -27,7 +27,7 @@ export default function StorefrontFooter() {
                                 dream PC
                             </span>
                         </h2>
-                        <p className="text-zinc-400 text-xs sm:text-sm sm:text-base md:text-xl lg:text-2xl font-light leading-relaxed">
+                        <p className="text-zinc-400 text-sm md:text-xl lg:text-2xl font-light leading-relaxed">
                             High-performance components, flawless compatibility, and enthusiast-grade custom builds. Join the elite.
                         </p>
                     </div>
@@ -48,21 +48,21 @@ export default function StorefrontFooter() {
                 </div>
 
                 {/* Links & Brand Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-12 lg:gap-8 border-b border-white/10 pb-10 sm:pb-14 md:pb-16 mb-4 sm:mb-6 sm:mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 lg:gap-8 border-b border-white/10 pb-10 sm:pb-14 md:pb-16 mb-6 sm:mb-8">
 
-                    <div className="md:col-span-1 border-r-0 md:border-r border-white/10 pr-8">
+                    <div className="col-span-2 md:col-span-1 md:border-r border-white/10 md:pr-8">
                         <Link href="/" className="flex items-center gap-2.5 group mb-4 sm:mb-6">
-                            <div className="flex h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white/10 border border-white/20 shadow-sm transition-transform group-hover:scale-110">
+                            <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white/10 border border-white/20 shadow-sm transition-transform group-hover:scale-110">
                                 <Cpu className="h-5 w-5 text-indigo-400" />
                             </div>
-                            <span className="font-bold tracking-tight text-lg sm:text-xl text-white">
+                            <span className="font-bold tracking-tight text-xl text-white">
                                 Nexus
                             </span>
                         </Link>
-                        <p className="text-zinc-500 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                        <p className="text-zinc-500 text-sm mb-4 sm:mb-6 leading-relaxed">
                             We empower gamers and professionals with the best hardware choices on the planet. Built by enthusiasts, for enthusiasts.
                         </p>
-                        <div className="flex gap-2 sm:gap-4 text-zinc-400">
+                        <div className="flex gap-4 text-zinc-400">
                             <a href="#" className="hover:text-white transition-colors"><Twitter size={18} /></a>
                             <a href="#" className="hover:text-white transition-colors"><Github size={18} /></a>
                             <a href="#" className="hover:text-white transition-colors"><Youtube size={18} /></a>
@@ -71,10 +71,10 @@ export default function StorefrontFooter() {
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-white tracking-wider uppercase text-xs sm:text-sm mb-4 sm:mb-6 flex items-center gap-2">
+                        <h3 className="font-semibold text-white tracking-wider uppercase text-xs mb-4 sm:mb-6 flex items-center gap-2">
                             <LaptopMinimal size={16} className="text-zinc-600" /> Equipment
                         </h3>
-                        <ul className="space-y-2 sm:space-y-4 text-xs sm:text-sm text-zinc-400">
+                        <ul className="space-y-3 text-sm text-zinc-400">
                             <li><Link href="/products?category=GPU" className="hover:text-indigo-400 transition-colors">Graphics Cards</Link></li>
                             <li><Link href="/products?category=CPU" className="hover:text-indigo-400 transition-colors">Processors</Link></li>
                             <li><Link href="/products?category=MOTHERBOARD" className="hover:text-indigo-400 transition-colors">Motherboards</Link></li>
@@ -83,10 +83,10 @@ export default function StorefrontFooter() {
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-white tracking-wider uppercase text-xs sm:text-sm mb-4 sm:mb-6 flex items-center gap-2">
+                        <h3 className="font-semibold text-white tracking-wider uppercase text-xs mb-4 sm:mb-6 flex items-center gap-2">
                             <Zap size={16} className="text-zinc-600" /> Ecosystem
                         </h3>
-                        <ul className="space-y-2 sm:space-y-4 text-xs sm:text-sm text-zinc-400">
+                        <ul className="space-y-3 text-sm text-zinc-400">
                             <li><Link href="/builds/new" className="hover:text-indigo-400 transition-colors">Custom PC Builder</Link></li>
                             <li><Link href="/build-guides" className="hover:text-indigo-400 transition-colors">Prebuilt Systems</Link></li>
                             <li><Link href="/builds" className="hover:text-indigo-400 transition-colors">Community Builds</Link></li>
@@ -95,10 +95,10 @@ export default function StorefrontFooter() {
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-white tracking-wider uppercase text-xs sm:text-sm mb-4 sm:mb-6 flex items-center gap-2">
+                        <h3 className="font-semibold text-white tracking-wider uppercase text-xs mb-4 sm:mb-6 flex items-center gap-2">
                             <ShieldCheck size={16} className="text-zinc-600" /> Support
                         </h3>
-                        <ul className="space-y-2 sm:space-y-4 text-xs sm:text-sm text-zinc-400">
+                        <ul className="space-y-3 text-sm text-zinc-400">
                             <li><Link href="/track-order" className="hover:text-indigo-400 transition-colors">Track Order</Link></li>
                             <li><a href="#" className="hover:text-indigo-400 transition-colors">Warranty Info</a></li>
                             <li><a href="#" className="hover:text-indigo-400 transition-colors">Return Policy</a></li>
@@ -109,7 +109,7 @@ export default function StorefrontFooter() {
                 </div>
 
                 {/* Bottom Banner */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-2 sm:gap-4 text-[10px] sm:text-xs font-medium text-zinc-500">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-2 sm:gap-4 text-xs font-medium text-zinc-500">
                     <p>© {currentYear} Nexus Hardware. All rights reserved.</p>
                     <div className="flex items-center gap-1.5">
                         <span>Designed & Built by</span>

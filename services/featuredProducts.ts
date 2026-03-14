@@ -1,24 +1,20 @@
 import { Product } from '@/types'
-import { getProductScore } from './productScore'
-
 
 export function getFeaturedProducts(products: Product[]) {
+  const categories = ['GPU', 'PROCESSOR', 'MOTHERBOARD'];
 
-  return [...products]
+  const featuredProducts = categories
+    .map(category => {
+      return products
+        .filter(p => p.category === category)
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )[0]; // latest product
+    })
+    .filter(Boolean);
 
-    .filter(p => p.status === 'ACTIVE')
+  
 
-    .map(p => ({
-
-      product: p,
-      score: getProductScore(p)
-
-    }))
-
-    .sort((a, b) => b.score - a.score)
-
-    .slice(0, 8)
-
-    .map(p => p.product)
-
+  return featuredProducts;
 }
