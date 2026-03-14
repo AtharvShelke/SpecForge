@@ -27,6 +27,8 @@ import {
     Star,
     ShoppingCart,
     RefreshCw,
+    ChevronDown,
+    SlidersHorizontal,
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import ImageUploader from '../uploadthing/ImageUploader';
@@ -91,6 +93,39 @@ const StockPill = ({ product, variant }: { product: Product; variant: any }) => 
     );
 };
 
+// ─────────────────────────────────────────────────────────────
+// COLLAPSIBLE SECTION
+// ─────────────────────────────────────────────────────────────
+const CollapsibleSection = ({
+    icon,
+    title,
+    children,
+    defaultOpen = true,
+    accent,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    children: React.ReactNode;
+    defaultOpen?: boolean;
+    accent?: string;
+}) => {
+    const [open, setOpen] = useState(defaultOpen);
+    return (
+        <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+            {accent && <div className={cn('h-0.5 w-full', accent)} />}
+            <button
+                type="button"
+                className="w-full px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between"
+                onClick={() => setOpen(o => !o)}
+            >
+                <SectionLabel icon={icon}>{title}</SectionLabel>
+                <ChevronDown size={13} className={cn('text-stone-400 transition-transform duration-200', open && 'rotate-180')} />
+            </button>
+            {open && <div>{children}</div>}
+        </div>
+    );
+};
+
 interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
     specs: ProductSpecsFlat;
     price?: number;
@@ -110,6 +145,7 @@ const ProductManager = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [newSpecKey, setNewSpecKey] = useState('');
     const [newSpecValue, setNewSpecValue] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
 
     const router = useRouter();
     const pathname = usePathname();
@@ -350,72 +386,83 @@ const ProductManager = () => {
     if (isEditing) {
         return (
             <div
-                className="space-y-5"
-                style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
+                className="space-y-3 md:space-y-5 pb-20" // Extra padding for the sticky footer
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-                {/* Edit Header */}
-                <div className="flex items-center justify-between pb-1">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-1 h-5 rounded-full bg-indigo-500" />
-                        <div>
-                            <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                {/* ─── EDIT HEADER ─── */}
+                <div className="flex flex-row items-center justify-between gap-2 px-0.5 sticky top-0 z-20 bg-stone-50/80 backdrop-blur-md py-2 -mt-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-1 h-4 md:h-5 rounded-full bg-indigo-500 shrink-0" />
+                        <div className="min-w-0">
+                            <h2 className="text-sm md:text-base font-bold text-stone-900 tracking-tight truncate">
                                 {currentProduct.id ? 'Edit Product' : 'New Product'}
                             </h2>
-                            <p className="text-xs text-stone-400 mt-0.5">
-                                {currentProduct.id ? `Editing: ${currentProduct.name}` : 'Fill in the details below to add to your catalogue'}
+                            {/* Hidden on small screens to save vertical space */}
+                            <p className="hidden md:block text-[11px] text-stone-400 mt-0.5 truncate">
+                                {currentProduct.id ? `Editing: ${currentProduct.name}` : 'Add a new item to your catalogue'}
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleCancel}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors"
-                    >
-                        <ArrowLeft size={13} /> Back
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                            onClick={handleCancel}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-[11px] font-bold transition-all"
+                        >
+                            <ArrowLeft size={12} /> <span className="hidden xs:inline">Back</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 active:bg-indigo-700 text-white text-[11px] font-bold transition-all shadow-sm shadow-indigo-100"
+                        >
+                            <Save size={12} /> Save
+                        </button>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* ─── MAIN FORM GRID ─── */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-5">
 
                     {/* ── LEFT: General + Specs ── */}
-                    <div className="lg:col-span-2 space-y-4">
+                    <div className="lg:col-span-2 space-y-3 md:space-y-4">
 
-                        {/* General Info */}
-                        <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                            <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
-                            <div className="px-5 py-4 border-b border-stone-100 bg-stone-50/50">
-                                <SectionLabel icon={<LayoutGrid size={12} />}>General Information</SectionLabel>
-                            </div>
-                            <div className="p-5">
-                                <form onSubmit={handleSave} id="product-form" className="space-y-5">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
+                        {/* General Information */}
+                        <CollapsibleSection
+                            icon={<LayoutGrid size={12} />}
+                            title="General Details"
+                            accent="bg-gradient-to-r from-indigo-400 to-violet-400"
+                        >
+                            <div className="p-3 md:p-5">
+                                <form onSubmit={handleSave} id="product-form" className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                                        <div className="sm:col-span-2 md:col-span-1">
                                             <FieldLabel required>Product Name</FieldLabel>
                                             <Input
                                                 required
                                                 value={currentProduct.name}
                                                 onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })}
-                                                placeholder="Enter identifying name…"
-                                                className="h-9 text-sm border-stone-200 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 rounded-lg shadow-none"
+                                                placeholder="Identifying name..."
+                                                className="h-10 md:h-9 text-sm rounded-xl border-stone-200 shadow-none focus-visible:ring-indigo-400"
                                             />
                                         </div>
                                         <div>
-                                            <FieldLabel>SKU</FieldLabel>
+                                            <FieldLabel>SKU / Serial</FieldLabel>
                                             <Input
                                                 value={currentProduct.sku}
                                                 onChange={e => setCurrentProduct({ ...currentProduct, sku: e.target.value })}
-                                                placeholder="Leave empty for auto-generation"
-                                                className="h-9 text-sm font-mono border-stone-200 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 rounded-lg shadow-none"
+                                                placeholder="SKU-XXXXX"
+                                                className="h-10 md:h-9 text-sm font-mono rounded-xl border-stone-200 shadow-none"
                                             />
                                         </div>
                                         <div>
                                             <FieldLabel required>Category</FieldLabel>
                                             <Select value={currentProduct.category} onValueChange={handleCategoryChange}>
-                                                <SelectTrigger className="h-9 text-sm border-stone-200 focus:ring-indigo-400 rounded-lg shadow-none bg-white">
+                                                <SelectTrigger className="h-10 md:h-9 text-sm rounded-xl border-stone-200 bg-white">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-white border-stone-200 shadow-md">
+                                                <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
                                                     {Object.values(Category).map(cat => (
-                                                        <SelectItem key={cat} value={cat} className="text-xs focus:bg-stone-50">{cat}</SelectItem>
+                                                        <SelectItem key={cat} value={cat} className="text-xs py-2 focus:bg-stone-50">{cat}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -423,299 +470,236 @@ const ProductManager = () => {
                                         <div>
                                             <FieldLabel required>Brand</FieldLabel>
                                             <Select value={currentProduct.specs?.brand as string || ''} onValueChange={val => handleSpecChange('brand', val)}>
-                                                <SelectTrigger className="h-9 text-sm border-stone-200 focus:ring-indigo-400 rounded-lg shadow-none bg-white">
-                                                    <SelectValue placeholder="Select brand…" />
+                                                <SelectTrigger className="h-10 md:h-9 text-sm rounded-xl border-stone-200 bg-white">
+                                                    <SelectValue placeholder="Select brand..." />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-white border-stone-200 shadow-md">
+                                                <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
                                                     {availableBrands.map(brand => (
-                                                        <SelectItem key={brand.id} value={brand.name} className="text-xs focus:bg-stone-50">{brand.name}</SelectItem>
+                                                        <SelectItem key={brand.id} value={brand.name} className="text-xs py-2 focus:bg-stone-50">{brand.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="md:col-span-2">
+                                        <div className="sm:col-span-2">
                                             <FieldLabel>Description</FieldLabel>
                                             <Textarea
                                                 value={currentProduct.description}
                                                 onChange={e => setCurrentProduct({ ...currentProduct, description: e.target.value })}
-                                                placeholder="Technical details and overview…"
-                                                className="min-h-[90px] text-sm border-stone-200 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 rounded-lg shadow-none resize-none"
+                                                placeholder="Enter technical details and overview..."
+                                                className="min-h-[100px] text-sm border-stone-200 rounded-xl shadow-none resize-none"
                                             />
                                         </div>
                                     </div>
                                 </form>
                             </div>
-                        </div>
+                        </CollapsibleSection>
 
                         {/* Specifications */}
-                        <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                            <div className="px-5 py-4 border-b border-stone-100 bg-stone-50/50">
-                                <SectionLabel icon={<Settings2 size={12} />}>Specifications</SectionLabel>
-                            </div>
-                            <div className="p-5 space-y-5">
-                                {activeSchemaSpecs.length > 0 && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {activeSchemaSpecs.map(attr => (
-                                            <div key={attr.key} className="relative group">
-                                                <FieldLabel required={attr.required}>
-                                                    {attr.label}{attr.unit && <span className="normal-case text-stone-300 ml-1">({attr.unit})</span>}
-                                                </FieldLabel>
-                                                {!attr.required && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newSpecs = { ...currentProduct.specs };
-                                                            delete newSpecs[attr.key];
-                                                            setCurrentProduct({ ...currentProduct, specs: newSpecs });
-                                                        }}
-                                                        className="absolute top-0 right-0 p-0.5 text-rose-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        title="Remove suggested spec"
-                                                    >
-                                                        <X size={11} />
-                                                    </button>
-                                                )}
-                                                {attr.type === 'multi-select' ? (
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {attr.options?.map(option => {
-                                                            const isSelected = ((currentProduct.specs?.[attr.key] as string[]) || []).includes(option);
-                                                            return (
-                                                                <button
-                                                                    key={option}
-                                                                    type="button"
-                                                                    onClick={() => handleMultiSelectToggle(attr.key, option)}
-                                                                    className={cn(
-                                                                        'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors',
-                                                                        isSelected
-                                                                            ? 'bg-indigo-600 text-white ring-1 ring-indigo-600'
-                                                                            : 'bg-stone-50 text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100'
-                                                                    )}
-                                                                >
-                                                                    {option}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : attr.type === 'select' ? (
-                                                    <Select value={(currentProduct.specs?.[attr.key] as string) || ''} onValueChange={val => handleSpecChange(attr.key, val)}>
-                                                        <SelectTrigger className="h-9 text-xs border-stone-200 focus:ring-indigo-400 rounded-lg shadow-none bg-white">
-                                                            <SelectValue placeholder="Select…" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-white border-stone-200 shadow-md">
-                                                            {attr.options?.map(option => (
-                                                                <SelectItem key={option} value={option} className="text-xs focus:bg-stone-50">{option}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                ) : (
-                                                    <Input
-                                                        type={attr.type === 'number' ? 'number' : 'text'}
-                                                        className="h-9 text-sm border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                                        value={currentProduct.specs?.[attr.key] || ''}
-                                                        onChange={e => handleSpecChange(attr.key, attr.type === 'number' ? Number(e.target.value) : e.target.value)}
-                                                    />
-                                                )}
+                        <CollapsibleSection icon={<Settings2 size={12} />} title="Specifications">
+                            <div className="p-3 md:p-5 space-y-5">
+                                {/* Standard Spec Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                                    {activeSchemaSpecs.map(attr => (
+                                        <div key={attr.key} className="relative group">
+                                            <FieldLabel required={attr.required}>
+                                                {attr.label}{attr.unit && <span className="normal-case text-stone-400 ml-1">({attr.unit})</span>}
+                                            </FieldLabel>
+                                            {/* Input field logic for different types... */}
+                                            {attr.type === 'multi-select' ? (
+                                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                                    {attr.options?.map(option => (
+                                                        <button
+                                                            key={option} type="button"
+                                                            onClick={() => handleMultiSelectToggle(attr.key, option)}
+                                                            className={cn(
+                                                                'px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border',
+                                                                ((currentProduct.specs?.[attr.key] as string[]) || []).includes(option)
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                    : 'bg-white text-stone-500 border-stone-200 active:bg-stone-50'
+                                                            )}
+                                                        >
+                                                            {option}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <Input
+                                                    type={attr.type === 'number' ? 'number' : 'text'}
+                                                    className="h-10 md:h-9 text-sm rounded-xl border-stone-200"
+                                                    value={currentProduct.specs?.[attr.key] || ''}
+                                                    onChange={e => handleSpecChange(attr.key, attr.type === 'number' ? Number(e.target.value) : e.target.value)}
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Custom Specs Section */}
+                                <div className="pt-4 border-t border-stone-100 space-y-3">
+                                    <SectionLabel icon={<Plus size={11} />}>Custom Specifications</SectionLabel>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {customSpecs.map(([key, value]) => (
+                                            <div key={key} className="flex items-center gap-2 bg-stone-50/50 p-2 rounded-xl border border-stone-100">
+                                                <span className="text-[10px] text-stone-400 font-mono shrink-0 w-16 truncate">{key}</span>
+                                                <Input
+                                                    className="h-8 text-xs border-stone-200 rounded-lg bg-white flex-1"
+                                                    value={String(value)}
+                                                    onChange={e => handleSpecChange(key, e.target.value)}
+                                                />
+                                                <button onClick={() => removeCustomSpec(key)} className="p-1.5 text-rose-400 active:text-rose-600">
+                                                    <Trash size={14} />
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
-                                )}
-
-                                {/* Suggested Specs */}
-                                {suggestedSchemaSpecs.length > 0 && (
-                                    <div className="pt-4 border-t border-stone-100 space-y-3">
-                                        <SectionLabel icon={<Plus size={11} />}>Suggested Specifications</SectionLabel>
-                                        <div className="flex flex-wrap gap-2">
-                                            {suggestedSchemaSpecs.map(attr => (
-                                                <button
-                                                    key={attr.key}
-                                                    type="button"
-                                                    onClick={() => handleSpecChange(attr.key, attr.type === 'number' ? 0 : attr.type === 'multi-select' ? [] : '')}
-                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-stone-300 text-stone-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 text-[11px] font-bold transition-colors"
-                                                >
-                                                    <Plus size={12} />
-                                                    {attr.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Custom Specs */}
-                                <div className="pt-4 border-t border-stone-100 space-y-3">
-                                    <SectionLabel icon={<Plus size={11} />}>Custom Specifications</SectionLabel>
-                                    {customSpecs.length > 0 && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {customSpecs.map(([key, value]) => (
-                                                <div key={key} className="flex items-center gap-2">
-                                                    <span className="text-xs text-stone-400 truncate w-24 shrink-0 font-mono" title={key}>{key}</span>
-                                                    <Input
-                                                        className="h-8 text-xs border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none flex-1"
-                                                        value={String(value)}
-                                                        onChange={e => handleSpecChange(key, e.target.value)}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeCustomSpec(key)}
-                                                        className="h-8 w-8 flex items-center justify-center rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors shrink-0"
-                                                    >
-                                                        <Trash size={12} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-2 bg-stone-50 border border-stone-100 rounded-lg p-3 max-w-md">
+                                    {/* Adder: Stacks on mobile, inline on desktop */}
+                                    <div className="flex flex-col sm:flex-row gap-2 bg-stone-50 p-2.5 rounded-xl border border-stone-100">
                                         <Input
-                                            list="custom-spec-suggestions"
-                                            placeholder="Key (e.g. Material, m2Slots)"
-                                            className="h-8 text-xs border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none w-1/2"
+                                            placeholder="Spec Name (e.g. Weight)"
+                                            className="h-9 text-xs border-stone-200 rounded-lg flex-1"
                                             value={newSpecKey}
                                             onChange={e => setNewSpecKey(e.target.value)}
                                         />
-                                        <datalist id="custom-spec-suggestions">
-                                            <option value="length" />
-                                            <option value="width" />
-                                            <option value="height" />
-                                            <option value="weight" />
-                                            <option value="warranty" />
-                                            <option value="color" />
-                                            <option value="material" />
-                                            <option value="rgb" />
-                                            <option value="powerConnectors" />
-                                            <option value="ramSlots" />
-                                            <option value="m2Slots" />
-                                            <option value="sataPorts" />
-                                            <option value="driveBays" />
-                                        </datalist>
                                         <Input
-                                            placeholder="Value (e.g. Aluminium)"
-                                            className="h-8 text-xs border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none w-1/2"
+                                            placeholder="Value (e.g. 1.2kg)"
+                                            className="h-9 text-xs border-stone-200 rounded-lg flex-1"
                                             value={newSpecValue}
                                             onChange={e => setNewSpecValue(e.target.value)}
-                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomSpec(); } }}
                                         />
                                         <button
-                                            type="button"
                                             onClick={addCustomSpec}
-                                            className="h-8 px-3 rounded-lg bg-white border border-stone-200 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors shrink-0"
+                                            className="h-9 px-4 rounded-lg bg-white border border-stone-200 text-xs font-bold text-stone-600 active:bg-stone-100 transition-all"
                                         >
-                                            Add
+                                            Add Spec
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </CollapsibleSection>
                     </div>
 
-                    {/* ── RIGHT: Media + Pricing + Actions ── */}
-                    <div className="space-y-4">
+                    {/* ─── RIGHT: Media + Pricing + Inventory ─── */}
+                    <div className="space-y-3 md:space-y-4">
 
-                        {/* Media */}
-                        <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                            <div className="px-5 py-4 border-b border-stone-100 bg-stone-50/50">
-                                <SectionLabel icon={<ImageIcon size={12} />}>Product Images</SectionLabel>
-                            </div>
-                            <div className="p-4 space-y-3">
-                                <div className="grid grid-cols-2 gap-2">
-                                    {currentProduct.images.map((img, index) => (
-                                        <div key={index} className="relative group aspect-square bg-stone-50 rounded-lg border border-stone-200 overflow-hidden">
-                                            <img src={img} alt={`Product ${index + 1}`} className="w-full h-full object-contain p-2" />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const newImages = currentProduct.images.filter((_, i) => i !== index);
-                                                    setCurrentProduct({ ...currentProduct, images: newImages.length > 0 ? newImages : ['https://picsum.photos/300/300'] });
-                                                }}
-                                                className="absolute top-1.5 right-1.5 p-1 bg-white border border-rose-100 text-rose-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-rose-50"
-                                            >
-                                                <Trash size={11} />
-                                            </button>
-                                            {index === 0 && (
-                                                <span className="absolute bottom-1.5 left-1.5 text-[9px] font-bold uppercase tracking-widest bg-white/90 text-stone-600 border border-stone-200 px-1.5 py-0.5 rounded-full">
-                                                    Primary
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <div className="aspect-square border-2 border-dashed border-stone-200 hover:border-indigo-300 rounded-lg transition-colors flex items-center justify-center bg-stone-50/30">
-                                        <ImageUploader
-                                            onUploadComplete={handleUploadComplete}
-                                            onUploadError={(err: Error) => setUploadError(err.message)}
-                                            endpoint="imageUploader"
-                                        />
-                                    </div>
-                                </div>
-                                {uploadError && <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wide">{uploadError}</p>}
-                            </div>
+                      {/* ─── PRODUCT MEDIA SECTION ─── */}
+<CollapsibleSection icon={<ImageIcon size={14} />} title="Product Media">
+    <div className="p-4">
+        {/* Adjusted Grid: 2 cols on mobile (larger images), 3 on tablet, 2 on desktop sidebar */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
+            {currentProduct.images.map((img, index) => (
+                <div 
+                    key={index} 
+                    className={cn(
+                        "relative aspect-square rounded-2xl border-2 overflow-hidden bg-white group transition-all",
+                        index === 0 ? "border-indigo-200 shadow-md" : "border-stone-100 shadow-sm"
+                    )}
+                >
+                    <img 
+                        src={img} 
+                        className="w-full h-full object-contain p-2" 
+                        alt={`Product view ${index + 1}`} 
+                    />
+
+                    {/* High-Visibility Delete Button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const newImages = currentProduct.images.filter((_, i) => i !== index);
+                            setCurrentProduct({ ...currentProduct, images: newImages.length > 0 ? newImages : [] });
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-md border border-rose-100 text-rose-500 rounded-xl shadow-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all active:scale-90"
+                    >
+                        <Trash size={14} />
+                    </button>
+
+                    {/* Prominent Cover Badge */}
+                    {index === 0 && (
+                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-indigo-600 text-[9px] font-black uppercase tracking-widest text-white rounded-lg shadow-sm">
+                            Primary Cover
                         </div>
+                    )}
+                </div>
+            ))}
 
-                        {/* Pricing */}
-                        <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                            <div className="px-5 py-4 border-b border-stone-100 bg-stone-50/50">
-                                <SectionLabel icon={<DollarSign size={12} />}>Pricing & Stock</SectionLabel>
-                            </div>
-                            <div className="p-5 space-y-4">
-                                <div>
-                                    <FieldLabel required>Selling Price (₹)</FieldLabel>
-                                    <Input
-                                        type="number" step="0.01"
-                                        className="h-9 text-sm font-mono border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                        value={currentProduct.price}
-                                        onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })}
-                                    />
-                                </div>
-                                {!currentProduct.id && (
-                                    <>
-                                        <div>
-                                            <FieldLabel>Cost Price (₹)</FieldLabel>
+            {/* Enhanced Upload Trigger */}
+            <div className={cn(
+                "aspect-square border-2 border-dashed rounded-2xl flex items-center justify-center transition-all",
+                "border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50 hover:border-indigo-400 active:scale-[0.98]",
+                "relative overflow-hidden group/uploader"
+            )}>
+                <div className="flex flex-col items-center gap-2">
+                    <div className="p-3 bg-white rounded-full shadow-sm border border-indigo-100 group-hover/uploader:scale-110 transition-transform">
+                        <Plus size={20} className="text-indigo-600" />
+                    </div>
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">Add Media</span>
+                </div>
+                <ImageUploader 
+                    onUploadComplete={handleUploadComplete} 
+                    endpoint="imageUploader" 
+                />
+            </div>
+        </div>
+
+        <div className="mt-4 p-3 bg-stone-50 rounded-xl border border-stone-100">
+            <p className="text-[10px] text-stone-500 font-medium text-center leading-relaxed">
+                <span className="text-indigo-600 font-bold">Pro Tip:</span> The first image in the grid is automatically set as your primary thumbnail across the store.
+            </p>
+        </div>
+    </div>
+</CollapsibleSection>
+
+                        {/* Pricing & Stock Card */}
+                        <CollapsibleSection icon={<DollarSign size={12} />} title="Price & Inventory">
+                            <div className="p-4 space-y-4">
+                                {/* Responsive grid: side-by-side on tablet, stacked on mobile/desktop sidebar */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                                    {/* Selling Price */}
+                                    <div>
+                                        <FieldLabel required>Selling Price (₹)</FieldLabel>
+                                        <div className="relative mt-1">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-mono text-sm">₹</span>
                                             <Input
                                                 type="number" step="0.01"
-                                                className="h-9 text-sm font-mono border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                                value={newProductCost}
-                                                onChange={e => setNewProductCost(Number(e.target.value))}
+                                                // Using text-base on mobile prevents iOS auto-zoom
+                                                className="h-11 md:h-10 pl-7 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm focus-visible:ring-indigo-400"
+                                                value={currentProduct.price}
+                                                onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })}
                                             />
                                         </div>
-                                        {newProductCost > 0 && (currentProduct.price || 0) > 0 && (
-                                            <div className="px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center justify-between">
-                                                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Est. Margin</span>
-                                                <span className="text-sm font-extrabold text-emerald-700 font-mono">
-                                                    {Math.round((((currentProduct.price || 0) - newProductCost) / (currentProduct.price || 1)) * 100)}%
-                                                </span>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <FieldLabel>Initial Stock</FieldLabel>
+                                    </div>
+
+                                    {/* Current Inventory */}
+                                    <div>
+                                        <FieldLabel>Current Stock Units</FieldLabel>
+                                        <div className="relative mt-1">
+                                            <Package size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                             <Input
                                                 type="number"
-                                                className="h-9 text-sm font-mono border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
+                                                className="h-11 md:h-10 pl-9 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm focus-visible:ring-indigo-400"
                                                 value={currentProduct.stock}
                                                 onChange={e => setCurrentProduct({ ...currentProduct, stock: Number(e.target.value) })}
                                             />
                                         </div>
-                                    </>
+                                    </div>
+                                </div>
+
+                                {/* Dynamic Profit Margin - Re-designed as a distinct KPI card */}
+                                {newProductCost > 0 && (currentProduct.price || 0) > 0 && (
+                                    <div className="px-3 py-3 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <TrendingUp size={14} className="text-emerald-600" />
+                                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest leading-none">Est. Margin</span>
+                                        </div>
+                                        <span className="text-sm font-black text-emerald-700 font-mono leading-none">
+                                            {Math.round((((currentProduct.price || 0) - newProductCost) / (currentProduct.price || 1)) * 100)}%
+                                        </span>
+                                    </div>
                                 )}
                             </div>
-                        </div>
-
-                        {/* Save / Cancel */}
-                        <div className="space-y-2">
-                            <button
-                                type="submit"
-                                form="product-form"
-                                onClick={handleSave}
-                                className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
-                            >
-                                <Save size={13} /> Save Product
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleCancel}
-                                className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors"
-                            >
-                                <ArrowLeft size={13} /> Cancel
-                            </button>
-                        </div>
+                        </CollapsibleSection>
                     </div>
                 </div>
+
             </div>
         );
     }
@@ -725,16 +709,16 @@ const ProductManager = () => {
     // ─────────────────────────────────────────────────────────
     return (
         <div
-            className="space-y-5"
+            className="space-y-3"
             style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
         >
             {/* ─── HEADER ─── */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-1 h-5 rounded-full bg-indigo-500" />
-                    <div>
-                        <h2 className="text-base font-bold text-stone-900 tracking-tight">Products</h2>
-                        <p className="text-xs text-stone-400 mt-0.5 font-mono">
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-stone-900 tracking-tight">Products</h2>
+                        <p className="text-[11px] text-stone-400 font-mono hidden sm:block">
                             {totalProducts} SKUs in catalogue
                         </p>
                     </div>
@@ -743,72 +727,101 @@ const ProductManager = () => {
                     <button
                         onClick={() => syncData()}
                         disabled={isLoading}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
                     >
-                        <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} /> Sync
+                        <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
+                        <span className="hidden sm:inline">Sync</span>
                     </button>
                     <button
                         onClick={handleAddNew}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
                     >
-                        <Plus size={13} /> Add Product
+                        <Plus size={12} />
+                        <span>Add</span>
+                        <span className="hidden sm:inline"> Product</span>
                     </button>
                 </div>
             </div>
 
             {/* ─── KPI CARDS ─── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 px-0.5">
                 {[
                     {
-                        label: 'Catalogue Size',
+                        label: 'Catalogue',
                         value: products.length,
                         sub: (
                             <button
                                 onClick={() => setShowDetail(true)}
                                 className="hover:text-indigo-600 transition-colors flex items-center gap-0.5"
                             >
-                                {categoryCount} categories · {brandCount} brands
-                                <ChevronRight size={10} />
+                                {/* Condensed labels for mobile to prevent button wrap */}
+                                <span className="truncate">{categoryCount} cat · {brandCount} brands</span>
+                                <ChevronRight size={8} className="shrink-0" />
                             </button>
                         ),
-                        icon: <Package size={14} />,
+                        icon: <Package />,
                         accent: 'border-l-indigo-400',
                     },
                     {
-                        label: 'Avg Selling Price',
-                        value: `₹${priceRange.avg.toLocaleString('en-IN')}`,
-                        sub: `Range ₹${priceRange.min.toLocaleString('en-IN')} – ₹${priceRange.max.toLocaleString('en-IN')}`,
-                        icon: <DollarSign size={14} />,
+                        label: 'Avg Price',
+                        // Abbreviate very large numbers on mobile to prevent overflow
+                        value: priceRange.avg > 999999
+                            ? `₹${(priceRange.avg / 100000).toFixed(1)}L`
+                            : `₹${priceRange.avg.toLocaleString('en-IN')}`,
+                        sub: `Min ₹${priceRange.min.toLocaleString('en-IN')}`,
+                        icon: <DollarSign />,
                         accent: 'border-l-teal-400',
                     },
                     {
                         label: 'Out of Stock',
                         value: outOfStockCount,
-                        sub: 'Need immediate attention',
-                        icon: <AlertCircle size={14} />,
+                        sub: 'Need attention',
+                        icon: <AlertCircle />,
                         accent: 'border-l-rose-400',
                         alert: outOfStockCount > 0,
                     },
                     {
-                        label: 'Catalogue Value',
-                        value: `₹${totalCatalogValue.toLocaleString('en-IN')}`,
-                        sub: 'Sum of selling prices',
-                        icon: <TrendingUp size={14} />,
+                        label: 'Total Value',
+                        value: totalCatalogValue > 999999
+                            ? `₹${(totalCatalogValue / 100000).toFixed(1)}L`
+                            : `₹${totalCatalogValue.toLocaleString('en-IN')}`,
+                        sub: 'Catalogue Sum',
+                        icon: <TrendingUp />,
                         accent: 'border-l-violet-400',
                     },
                 ].map((card, idx) => (
                     <div
                         key={idx}
-                        className={cn('rounded-xl bg-white border border-stone-200 border-l-4 shadow-sm p-4', card.accent)}
+                        className={cn(
+                            'rounded-xl bg-white border border-stone-200 shadow-sm transition-all',
+                            // Tighter padding and border on mobile
+                            'p-2.5 sm:p-4 border-l-[3px] sm:border-l-4',
+                            card.accent
+                        )}
                     >
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{card.label}</span>
-                            <span className={cn('p-1 rounded-md', (card as any).alert ? 'text-rose-400 bg-rose-50' : 'text-stone-400 bg-stone-50')}>
-                                {card.icon}
+                        <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tighter sm:tracking-widest truncate mr-1">
+                                {card.label}
+                            </span>
+                            <span className={cn(
+                                'p-1 rounded-md shrink-0',
+                                (card as any).alert ? 'text-rose-500 bg-rose-50' : 'text-stone-400 bg-stone-50'
+                            )}>
+                                {/* TypeScript-safe icon cloning */}
+                                {React.isValidElement(card.icon)
+                                    ? React.cloneElement(card.icon as React.ReactElement<{ size?: number }>, { size: 12 })
+                                    : card.icon}
                             </span>
                         </div>
-                        <p className="text-2xl font-extrabold text-stone-900 tabular-nums tracking-tight">{card.value}</p>
-                        <div className="text-[11px] text-stone-400 mt-0.5">{card.sub}</div>
+
+                        {/* Value font scales: text-base on tiny screens, text-xl on desktop */}
+                        <p className="text-base sm:text-lg md:text-xl font-extrabold text-stone-900 tabular-nums tracking-tight leading-none">
+                            {card.value}
+                        </p>
+
+                        <div className="text-[9px] sm:text-[10px] text-stone-400 mt-1 truncate font-medium">
+                            {card.sub}
+                        </div>
                     </div>
                 ))}
             </div>
@@ -819,22 +832,22 @@ const ProductManager = () => {
                 {/* Category Breakdown */}
                 <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
                     <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
-                    <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                    <div className="px-4 py-2.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
                         <SectionLabel icon={<Tag size={12} />}>SKUs by Category</SectionLabel>
-                        <button onClick={() => setShowDetail(true)} className="text-[10px] font-bold text-indigo-600 hover:underline px-2">View All</button>
+                        <button onClick={() => setShowDetail(true)} className="text-[10px] font-bold text-indigo-600 hover:underline">View All</button>
                     </div>
-                    <ScrollArea className="h-[240px]">
+                    <ScrollArea className="h-[180px] sm:h-[220px]">
                         <div className="divide-y divide-stone-50 px-4">
                             {categoryBreakdown.length === 0 ? (
                                 <div className="py-5 text-center text-xs text-stone-400">No data</div>
                             ) : categoryBreakdown.map(([cat, data], idx) => {
                                 const pct = products.length > 0 ? Math.round((data.count / products.length) * 100) : 0;
                                 return (
-                                    <div key={idx} className="py-3">
+                                    <div key={idx} className="py-2.5">
                                         <div className="flex items-center justify-between gap-2 mb-1">
                                             <span className="text-xs font-semibold text-stone-700 truncate">{cat}</span>
                                             <span className="text-[10px] font-mono font-bold text-stone-400 tabular-nums shrink-0">
-                                                {data.count} SKU{data.count !== 1 ? 's' : ''} · {pct}%
+                                                {data.count} · {pct}%
                                             </span>
                                         </div>
                                         <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
@@ -850,22 +863,22 @@ const ProductManager = () => {
                 {/* Brand Breakdown */}
                 <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
                     <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300" />
-                    <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                    <div className="px-4 py-2.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
                         <SectionLabel icon={<Star size={12} />}>Top Brands</SectionLabel>
-                        <button onClick={() => setShowDetail(true)} className="text-[10px] font-bold text-teal-600 hover:underline px-2">View All</button>
+                        <button onClick={() => setShowDetail(true)} className="text-[10px] font-bold text-teal-600 hover:underline">View All</button>
                     </div>
-                    <ScrollArea className="h-[240px]">
+                    <ScrollArea className="h-[180px] sm:h-[220px]">
                         <div className="divide-y divide-stone-50 px-4">
                             {brandBreakdown.length === 0 ? (
                                 <div className="py-5 text-center text-xs text-stone-400">No data</div>
                             ) : brandBreakdown.slice(0, 10).map(([brand, count], idx) => {
                                 const pct = products.length > 0 ? Math.round((count / products.length) * 100) : 0;
                                 return (
-                                    <div key={idx} className="py-3">
+                                    <div key={idx} className="py-2.5">
                                         <div className="flex items-center justify-between gap-2 mb-1">
                                             <span className="text-xs font-semibold text-stone-700 truncate">{brand}</span>
                                             <span className="text-[10px] font-mono font-bold text-stone-400 tabular-nums shrink-0">
-                                                {count} SKU{count !== 1 ? 's' : ''} · {pct}%
+                                                {count} · {pct}%
                                             </span>
                                         </div>
                                         <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
@@ -884,26 +897,66 @@ const ProductManager = () => {
                 <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
 
                 {/* Filters */}
-                <div className="px-5 py-4 border-b border-stone-100 bg-stone-50/50">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                            <SectionLabel icon={<Package size={12} />}>Catalogue</SectionLabel>
-                            <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-                                {totalProducts}
-                            </span>
+                <div className="px-3 sm:px-4 py-3 border-b border-stone-100 bg-stone-50/50 space-y-2">
+                    {/* ─── SEARCH & FILTER HEADER ─── */}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between px-0.5">
+
+                        {/* Row 1: Label, Count, and Mobile Filter Toggle */}
+                        <div className="flex items-center justify-between sm:justify-start gap-3">
+                            <div className="flex items-center gap-2">
+                                <SectionLabel icon={<Package size={12} />}>Catalogue</SectionLabel>
+                                <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md shadow-sm">
+                                    {totalProducts}
+                                </span>
+                            </div>
+
+                            {/* Mobile-only Filter Toggle (Icon only for row-1 efficiency) */}
+                            <button
+                                onClick={() => setShowFilters(f => !f)}
+                                className={cn(
+                                    'sm:hidden flex items-center justify-center h-9 w-9 rounded-xl border transition-all active:scale-95 shadow-sm',
+                                    showFilters
+                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                                        : 'bg-white border-stone-200 text-stone-600'
+                                )}
+                            >
+                                <SlidersHorizontal size={16} />
+                            </button>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <div className="relative">
-                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+
+                        {/* Row 2: Search (Full width on mobile) + Desktop Filter Toggle */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:w-64 md:w-80">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                 <Input
-                                    placeholder="Search catalogue…"
-                                    className="pl-8 h-8 text-xs bg-white border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 shadow-none rounded-lg w-44 sm:w-56"
+                                    placeholder="Search catalogue..."
+                                    className="pl-9 h-10 sm:h-9 text-xs bg-white border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 rounded-xl w-full shadow-sm"
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
                                 />
                             </div>
+
+                            {/* Desktop Filter Toggle (Hidden on mobile row-2) */}
+                            <button
+                                onClick={() => setShowFilters(f => !f)}
+                                className={cn(
+                                    'hidden sm:flex items-center gap-2 h-9 px-3.5 rounded-xl border text-xs font-bold transition-all active:scale-95 shadow-sm',
+                                    showFilters
+                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                                        : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                                )}
+                            >
+                                <SlidersHorizontal size={14} />
+                                <span>Filters</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Expandable filter row */}
+                    {showFilters && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
                             <Select value={currentCategory} onValueChange={val => updateQueryParams({ category: val })}>
-                                <SelectTrigger className="h-8 text-xs w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
+                                <SelectTrigger className="h-8 text-xs w-32 sm:w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
                                     <SelectValue placeholder="Category" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 shadow-md">
@@ -914,7 +967,7 @@ const ProductManager = () => {
                                 </SelectContent>
                             </Select>
                             <Select value={currentStockStatus} onValueChange={val => updateQueryParams({ f_stock_status: val })}>
-                                <SelectTrigger className="h-8 text-xs w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
+                                <SelectTrigger className="h-8 text-xs w-32 sm:w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
                                     <SelectValue placeholder="Availability" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 shadow-md">
@@ -924,56 +977,53 @@ const ProductManager = () => {
                                 </SelectContent>
                             </Select>
                             {/* Price range */}
-                            <div className="flex items-center gap-1.5 h-8 px-3 bg-white border border-stone-200 rounded-lg">
-                                <DollarSign size={12} className="text-stone-400" />
+                            <div className="flex items-center gap-1 h-8 px-2.5 bg-white border border-stone-200 rounded-lg">
+                                <DollarSign size={11} className="text-stone-400" />
                                 <input
                                     type="number"
                                     placeholder="Min"
-                                    className="w-14 text-xs font-mono outline-none placeholder:text-stone-400 text-stone-700 bg-transparent"
+                                    className="w-12 text-xs font-mono outline-none placeholder:text-stone-400 text-stone-700 bg-transparent"
                                     value={currentMinPrice}
                                     onChange={e => updateQueryParams({ minPrice: e.target.value })}
                                 />
-                                <span className="text-stone-300 text-sm">—</span>
+                                <span className="text-stone-300">—</span>
                                 <input
                                     type="number"
                                     placeholder="Max"
-                                    className="w-14 text-xs font-mono outline-none placeholder:text-stone-400 text-stone-700 bg-transparent"
+                                    className="w-12 text-xs font-mono outline-none placeholder:text-stone-400 text-stone-700 bg-transparent"
                                     value={currentMaxPrice}
                                     onChange={e => updateQueryParams({ maxPrice: e.target.value })}
                                 />
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-stone-100 bg-stone-50/30">
-                                <th className="px-5 py-3 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
-                                <th className="px-4 py-3 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Category</th>
-                                <th className="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Brand</th>
-                                <th className="hidden lg:table-cell px-4 py-3 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Variants</th>
-                                <th className="px-4 py-3 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Price</th>
-                                <th className="px-4 py-3 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Stock</th>
-                                <th className="px-5 py-3 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Actions</th>
+                                <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
+                                <th className="px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Category</th>
+                                <th className="hidden md:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Brand</th>
+                                <th className="hidden lg:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Variants</th>
+                                <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Price</th>
+                                <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Stock</th>
+                                <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-50">
                             {isLoadingProducts ? (
                                 <tr>
-                                    <td colSpan={7} className="px-5 py-12 text-center text-xs text-stone-400">Loading products…</td>
+                                    <td colSpan={7} className="px-5 py-10 text-center text-xs text-stone-400">Loading products…</td>
                                 </tr>
                             ) : paginatedProducts.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-5 py-16 text-center">
-                                        <Package size={28} className="mx-auto text-stone-300 mb-3" />
-                                        <p className="text-xs text-stone-400 mb-2">No products found</p>
-                                        <button
-                                            onClick={() => router.push(pathname)}
-                                            className="text-xs text-indigo-600 font-semibold hover:underline"
-                                        >
+                                    <td colSpan={7} className="px-5 py-12 text-center">
+                                        <Package size={24} className="mx-auto text-stone-300 mb-2" />
+                                        <p className="text-xs text-stone-400 mb-1.5">No products found</p>
+                                        <button onClick={() => router.push(pathname)} className="text-xs text-indigo-600 font-semibold hover:underline">
                                             Clear filters
                                         </button>
                                     </td>
@@ -986,10 +1036,9 @@ const ProductManager = () => {
 
                                 return (
                                     <tr key={product.id} className="hover:bg-stone-50/60 transition-colors group">
-                                        {/* Product */}
-                                        <td className="px-5 py-3.5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 shrink-0 bg-stone-100 border border-stone-200 rounded-lg overflow-hidden">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="h-9 w-9 shrink-0 bg-stone-100 border border-stone-200 rounded-lg overflow-hidden">
                                                     <img
                                                         className="h-full w-full object-contain p-1"
                                                         src={product.media?.[0]?.url || '/placeholder.png'}
@@ -998,62 +1047,56 @@ const ProductManager = () => {
                                                     />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-semibold text-stone-800 truncate tracking-tight leading-tight" title={product.name}>
+                                                    <p className="text-xs font-semibold text-stone-800 truncate tracking-tight leading-tight" title={product.name}>
                                                         {product.name}
                                                     </p>
                                                     <p className="text-[10px] font-mono text-stone-400 mt-0.5">{firstVar?.sku || 'NO-SKU'}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        {/* Category */}
-                                        <td className="px-4 py-3.5 whitespace-nowrap">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-full">
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full">
                                                 {product.category}
                                             </span>
                                         </td>
-                                        {/* Brand */}
-                                        <td className="hidden md:table-cell px-4 py-3.5 whitespace-nowrap text-xs font-semibold text-stone-500">
+                                        <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap text-xs font-semibold text-stone-500">
                                             {brand}
                                         </td>
-                                        {/* Variants */}
-                                        <td className="hidden lg:table-cell px-4 py-3.5 whitespace-nowrap">
+                                        <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap">
                                             <span className="text-xs font-mono font-semibold text-stone-500 tabular-nums">
                                                 {variantCount} var{variantCount !== 1 ? 's' : ''}
                                             </span>
                                         </td>
-                                        {/* Price */}
-                                        <td className="px-4 py-3.5 whitespace-nowrap text-right">
-                                            <span className="text-sm font-bold text-stone-900 font-mono tabular-nums">
+                                        <td className="px-3 py-3 whitespace-nowrap text-right">
+                                            <span className="text-xs font-bold text-stone-900 font-mono tabular-nums">
                                                 ₹{(firstVar?.price || 0).toLocaleString('en-IN')}
                                             </span>
                                         </td>
-                                        {/* Stock status */}
-                                        <td className="px-4 py-3.5 whitespace-nowrap text-right">
+                                        <td className="px-3 py-3 whitespace-nowrap text-right">
                                             <div className="flex flex-col items-end gap-0.5">
                                                 <StockPill product={product} variant={firstVar} />
                                                 <span className="text-[10px] font-mono text-stone-400 tabular-nums">{totalStock} units</span>
                                             </div>
                                         </td>
-                                        {/* Actions */}
-                                        <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                                        <td className="px-4 py-3 whitespace-nowrap text-right">
                                             <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => handleEdit(product)}
-                                                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-stone-50 text-stone-500 transition-colors"
+                                                    className="h-7 w-7 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-stone-50 text-stone-500 transition-colors"
                                                 >
-                                                    <Edit size={13} />
+                                                    <Edit size={12} />
                                                 </button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-rose-50 hover:border-rose-200 text-stone-400 hover:text-rose-500 transition-colors">
-                                                            <Trash size={13} />
+                                                        <button className="h-7 w-7 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-rose-50 hover:border-rose-200 text-stone-400 hover:text-rose-500 transition-colors">
+                                                            <Trash size={12} />
                                                         </button>
                                                     </AlertDialogTrigger>
-                                                    <AlertDialogContent className="bg-white border-stone-200 rounded-xl shadow-xl">
+                                                    <AlertDialogContent className="bg-white border-stone-200 rounded-xl shadow-xl mx-4">
                                                         <AlertDialogHeader>
-                                                            <AlertDialogTitle className="text-base font-bold text-stone-900">Delete product?</AlertDialogTitle>
+                                                            <AlertDialogTitle className="text-sm font-bold text-stone-900">Delete product?</AlertDialogTitle>
                                                             <AlertDialogDescription className="text-xs text-stone-400">
-                                                                This action cannot be undone. <span className="font-semibold text-stone-700">{product.name}</span> will be permanently removed.
+                                                                This cannot be undone. <span className="font-semibold text-stone-700">{product.name}</span> will be permanently removed.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
@@ -1076,11 +1119,94 @@ const ProductManager = () => {
                     </table>
                 </div>
 
+                {/* Mobile Cards — shown below sm */}
+                <div className="sm:hidden divide-y divide-stone-100">
+                    {isLoadingProducts ? (
+                        <div className="p-8 text-center text-xs text-stone-400">Loading products…</div>
+                    ) : paginatedProducts.length === 0 ? (
+                        <div className="p-10 text-center">
+                            <Package size={24} className="mx-auto text-stone-300 mb-2" />
+                            <p className="text-xs text-stone-400 mb-1.5">No products found</p>
+                            <button onClick={() => router.push(pathname)} className="text-xs text-indigo-600 font-semibold hover:underline">Clear filters</button>
+                        </div>
+                    ) : paginatedProducts.map(product => {
+                        const firstVar = product.variants?.[0];
+                        const brand = product.brand?.name || product.specs?.find((s: any) => s.key === 'brand')?.value || 'Generic';
+                        const totalStock = firstVar?.warehouseInventories?.reduce((a: number, inv: any) => a + inv.quantity, 0) || 0;
+
+                        return (
+                            <div key={product.id} className="flex items-center gap-3 px-3 py-3">
+                                {/* Thumbnail */}
+                                <div className="h-12 w-12 shrink-0 bg-stone-100 border border-stone-200 rounded-lg overflow-hidden">
+                                    <img
+                                        className="h-full w-full object-contain p-1"
+                                        src={product.media?.[0]?.url || '/placeholder.png'}
+                                        alt={product.name}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
+                                    />
+                                </div>
+
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-stone-800 truncate tracking-tight">{product.name}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full">
+                                            {product.category}
+                                        </span>
+                                        <StockPill product={product} variant={firstVar} />
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-bold text-stone-900 font-mono tabular-nums">
+                                            ₹{(firstVar?.price || 0).toLocaleString('en-IN')}
+                                        </span>
+                                        <span className="text-[10px] text-stone-400 font-mono">{totalStock} units</span>
+                                    </div>
+                                </div>
+
+                                {/* Actions — always visible on mobile (no hover) */}
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <button
+                                        onClick={() => handleEdit(product)}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-stone-50 text-stone-500 transition-colors"
+                                    >
+                                        <Edit size={13} />
+                                    </button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-rose-50 hover:border-rose-200 text-stone-400 hover:text-rose-500 transition-colors">
+                                                <Trash size={13} />
+                                            </button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="bg-white border-stone-200 rounded-xl shadow-xl mx-4">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="text-sm font-bold text-stone-900">Delete product?</AlertDialogTitle>
+                                                <AlertDialogDescription className="text-xs text-stone-400">
+                                                    <span className="font-semibold text-stone-700">{product.name}</span> will be permanently removed.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel className="text-xs font-semibold border-stone-200 text-stone-600 hover:bg-stone-50 rounded-lg">Cancel</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg"
+                                                    onClick={() => handleDelete(product.id)}
+                                                >
+                                                    Delete
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
                 {/* Pagination */}
                 {!isLoadingProducts && totalProducts > 0 && (
-                    <div className="px-5 py-3.5 border-t border-stone-100 bg-stone-50/40 flex items-center justify-between">
+                    <div className="px-3 sm:px-5 py-3 border-t border-stone-100 bg-stone-50/40 flex items-center justify-between">
                         <p className="text-xs text-stone-400 font-mono tabular-nums">
-                            <span className="text-stone-600 font-semibold">{(currentPage - 1) * currentLimit + 1}</span>–<span className="text-stone-600 font-semibold">{Math.min(currentPage * currentLimit, totalProducts)}</span> of <span className="text-stone-600 font-semibold">{totalProducts}</span>
+                            <span className="text-stone-600 font-semibold">{(currentPage - 1) * currentLimit + 1}</span>–<span className="text-stone-600 font-semibold">{Math.min(currentPage * currentLimit, totalProducts)}</span>
+                            <span className="hidden sm:inline"> of <span className="text-stone-600 font-semibold">{totalProducts}</span></span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button
@@ -1088,7 +1214,7 @@ const ProductManager = () => {
                                 onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
                                 className="h-8 w-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
-                                <ChevronLeft size={14} />
+                                <ChevronLeft size={13} />
                             </button>
                             <span className="px-3 h-8 flex items-center text-xs font-mono font-bold text-stone-600 border border-stone-200 rounded-lg bg-white tabular-nums">
                                 {currentPage} / {Math.max(1, Math.ceil(totalProducts / currentLimit))}
@@ -1098,80 +1224,79 @@ const ProductManager = () => {
                                 onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
                                 className="h-8 w-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
-                                <ChevronRight size={14} />
+                                <ChevronRight size={13} />
                             </button>
                         </div>
                     </div>
                 )}
             </div>
-            {/* Breakdown Dialog */}
-            <AlertDialog open={showDetail} onOpenChange={setShowDetail}>
-                <AlertDialogContent className="bg-white border-stone-200 rounded-2xl shadow-2xl max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-                    <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-teal-500" />
 
-                    <AlertDialogHeader className="px-6 py-5 border-b border-stone-100 bg-stone-50/30 flex-row items-center justify-between space-y-0">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                                <BarChart3 size={20} />
+            {/* ─── Breakdown Dialog ─── */}
+            <AlertDialog open={showDetail} onOpenChange={setShowDetail}>
+                <AlertDialogContent className="bg-white border-stone-200 rounded-2xl shadow-2xl w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-hidden">
+                    <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-teal-500" />
+
+                    <AlertDialogHeader className="px-4 sm:px-6 py-4 border-b border-stone-100 bg-stone-50/30 flex-row items-center justify-between space-y-0">
+                        <div className="flex items-center gap-2.5">
+                            <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                <BarChart3 size={16} />
                             </div>
                             <div>
-                                <AlertDialogTitle className="text-xl font-bold text-stone-900 tracking-tight">
+                                <AlertDialogTitle className="text-base font-bold text-stone-900 tracking-tight">
                                     Catalogue Intelligence
                                 </AlertDialogTitle>
-                                <AlertDialogDescription className="text-xs text-stone-400 mt-0.5 font-medium uppercase tracking-wider">
-                                    Full Analysis of {products.length} SKUs
+                                <AlertDialogDescription className="text-[10px] text-stone-400 mt-0.5 font-medium uppercase tracking-wider">
+                                    {products.length} SKUs · {categoryCount} categories · {brandCount} brands
                                 </AlertDialogDescription>
                             </div>
                         </div>
-                        <button onClick={() => setShowDetail(false)} className="p-2 hover:bg-stone-100 rounded-full text-stone-400 transition-colors">
-                            <X size={20} />
+                        <button onClick={() => setShowDetail(false)} className="p-1.5 hover:bg-stone-100 rounded-full text-stone-400 transition-colors">
+                            <X size={16} />
                         </button>
                     </AlertDialogHeader>
 
                     <div className="flex-1 overflow-auto">
                         {/* Summary Header */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b border-stone-50 bg-white">
-                            <div className="p-4 rounded-xl border border-stone-100 bg-stone-50/20 text-center">
-                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Total SKUs</p>
-                                <p className="text-2xl font-black text-stone-800 tabular-nums">{products.length}</p>
-                            </div>
-                            <div className="p-4 rounded-xl border border-stone-100 bg-stone-50/20 text-center">
-                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Categories</p>
-                                <p className="text-2xl font-black text-indigo-600 tabular-nums">{categoryCount}</p>
-                            </div>
-                            <div className="p-4 rounded-xl border border-stone-100 bg-stone-50/20 text-center">
-                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Active Brands</p>
-                                <p className="text-2xl font-black text-teal-600 tabular-nums">{brandCount}</p>
-                            </div>
+                        <div className="grid grid-cols-3 gap-2 p-4 border-b border-stone-50 bg-white">
+                            {[
+                                { label: 'Total SKUs', value: products.length, cls: 'text-stone-800' },
+                                { label: 'Categories', value: categoryCount, cls: 'text-indigo-600' },
+                                { label: 'Brands', value: brandCount, cls: 'text-teal-600' },
+                            ].map(item => (
+                                <div key={item.label} className="p-3 rounded-xl border border-stone-100 bg-stone-50/20 text-center">
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{item.label}</p>
+                                    <p className={cn('text-xl font-black tabular-nums', item.cls)}>{item.value}</p>
+                                </div>
+                            ))}
                         </div>
 
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                {/* Categories Section */}
-                                <div className="space-y-6">
+                        <div className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Categories */}
+                                <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <SectionLabel icon={<Tag size={12} />}>SKU Distribution by Category</SectionLabel>
+                                        <SectionLabel icon={<Tag size={12} />}>By Category</SectionLabel>
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold text-stone-400 border-stone-200">
-                                            {categoryCount} TOTAL
+                                            {categoryCount} total
                                         </Badge>
                                     </div>
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         {categoryBreakdown.map(([cat, data], i) => (
                                             <div key={i} className="group">
-                                                <div className="flex items-center justify-between mb-2 px-0.5">
-                                                    <span className="text-sm font-bold text-stone-700 tracking-tight group-hover:text-indigo-600 transition-colors">
+                                                <div className="flex items-center justify-between mb-1.5 px-0.5">
+                                                    <span className="text-xs font-bold text-stone-700 tracking-tight group-hover:text-indigo-600 transition-colors">
                                                         {cat}
                                                     </span>
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-2">
                                                         <span className="text-[10px] font-bold text-stone-400">
                                                             {Math.round((data.count / products.length) * 100)}%
                                                         </span>
-                                                        <span className="text-xs font-mono font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg min-w-[2.5rem] text-center">
+                                                        <span className="text-xs font-mono font-extrabold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-lg min-w-[2rem] text-center">
                                                             {data.count}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="h-2 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
+                                                <div className="h-1.5 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
                                                     <div
                                                         className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700 rounded-full"
                                                         style={{ width: `${(data.count / products.length) * 100}%` }}
@@ -1182,31 +1307,31 @@ const ProductManager = () => {
                                     </div>
                                 </div>
 
-                                {/* Brands Section */}
-                                <div className="space-y-6">
+                                {/* Brands */}
+                                <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <SectionLabel icon={<Star size={12} />}>SKU Distribution by Brand</SectionLabel>
+                                        <SectionLabel icon={<Star size={12} />}>By Brand</SectionLabel>
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold text-stone-400 border-stone-200">
-                                            {brandCount} TOTAL
+                                            {brandCount} total
                                         </Badge>
                                     </div>
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         {brandBreakdown.map(([brand, count], i) => (
                                             <div key={i} className="group">
-                                                <div className="flex items-center justify-between mb-2 px-0.5">
-                                                    <span className="text-sm font-bold text-stone-700 tracking-tight group-hover:text-teal-600 transition-colors">
+                                                <div className="flex items-center justify-between mb-1.5 px-0.5">
+                                                    <span className="text-xs font-bold text-stone-700 tracking-tight group-hover:text-teal-600 transition-colors">
                                                         {brand}
                                                     </span>
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-2">
                                                         <span className="text-[10px] font-bold text-stone-400">
                                                             {Math.round((count / products.length) * 100)}%
                                                         </span>
-                                                        <span className="text-xs font-mono font-extrabold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-lg min-w-[2.5rem] text-center">
+                                                        <span className="text-xs font-mono font-extrabold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-lg min-w-[2rem] text-center">
                                                             {count}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="h-2 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
+                                                <div className="h-1.5 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
                                                     <div
                                                         className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-700 rounded-full"
                                                         style={{ width: `${(count / products.length) * 100}%` }}
@@ -1220,13 +1345,13 @@ const ProductManager = () => {
                         </div>
                     </div>
 
-                    <div className="p-5 border-t border-stone-100 bg-stone-50/50 flex justify-end">
+                    <div className="p-4 border-t border-stone-100 bg-stone-50/50 flex justify-end">
                         <AlertDialogCancel asChild>
                             <button
                                 onClick={() => setShowDetail(false)}
-                                className="px-6 py-2.5 rounded-xl bg-white border border-stone-200 text-sm font-black text-stone-600 hover:bg-stone-50 transition-all shadow-sm active:scale-95"
+                                className="px-5 py-2 rounded-xl bg-white border border-stone-200 text-xs font-black text-stone-600 hover:bg-stone-50 transition-all shadow-sm active:scale-95"
                             >
-                                Close Breakdown
+                                Close
                             </button>
                         </AlertDialogCancel>
                     </div>

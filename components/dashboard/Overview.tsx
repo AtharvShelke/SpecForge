@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ─────────────────────────────────────────────────────────────
-// SHARED PRIMITIVES (consistent with OrderManager system)
+// SHARED PRIMITIVES
 // ─────────────────────────────────────────────────────────────
 
 const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
@@ -72,17 +72,27 @@ const Panel = ({ children, className, stripe }: {
   );
 };
 
-const PanelHeader = ({ icon, children, right, onClick }: { icon: React.ReactNode; children: React.ReactNode; right?: React.ReactNode; onClick?: () => void }) => (
+const PanelHeader = ({ icon, children, right, onClick }: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+  onClick?: () => void;
+}) => (
   <div
     className={cn(
-      "px-5 py-3.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between",
-      onClick && "cursor-pointer hover:bg-stone-100/80 transition-colors group/header"
+      "px-3 py-2.5 sm:px-5 sm:py-3.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between",
+      onClick && "cursor-pointer hover:bg-stone-100/80 active:bg-stone-100 transition-colors group/header"
     )}
     onClick={onClick}
   >
     <div className="flex items-center gap-1.5">
       <SectionLabel icon={icon}>{children}</SectionLabel>
-      {onClick && <ArrowUpRight size={10} className="ml-0.5 text-stone-400 opacity-0 group-hover/header:opacity-100 group-hover/header:translate-x-0.5 group-hover/header:-translate-y-0.5 transition-all" />}
+      {onClick && (
+        <ArrowUpRight
+          size={10}
+          className="ml-0.5 text-stone-400 opacity-0 group-hover/header:opacity-100 group-hover/header:translate-x-0.5 group-hover/header:-translate-y-0.5 transition-all"
+        />
+      )}
     </div>
     {right}
   </div>
@@ -103,7 +113,10 @@ const StatusPill = ({ status }: { status: string }) => {
   };
   const cls = map[status] ?? 'bg-stone-100 text-stone-600 ring-1 ring-stone-200';
   return (
-    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap', cls)}>
+    <span className={cn(
+      'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest whitespace-nowrap',
+      cls
+    )}>
       <span className="w-1 h-1 rounded-full bg-current opacity-60" />
       {status}
     </span>
@@ -143,49 +156,37 @@ const Overview = () => {
 
   const lowStockProducts = products.filter(p => {
     const stock = p.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
-    return stock <= 5; // Use 5 as a standard threshold for "low" in overview
+    return stock <= 5;
   });
   const outOfStockProducts = products.filter(p => {
     const stock = p.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
     return stock <= 0;
   });
 
-  // ── Order fulfilment rate ──
   const fulfilmentRate = orders.length > 0
     ? Math.round((deliveredOrders.length / orders.length) * 100)
     : 0;
 
-  // ── Avg order value ──
   const avgOrderValue = orders.length > 0
     ? Math.round(totalRevenue / orders.length)
     : 0;
 
-  // ── Revenue chart data (derived from real orders) ──
   const salesData = useMemo(() => {
     if (orders.length === 0) return [];
-
-    // Group orders by date (YYYY-MM-DD)
     const dailyMap: Record<string, { revenue: number; orders: number }> = {};
     orders.forEach(o => {
-      const dateKey = new Date(o.date).toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateKey = new Date(o.date).toISOString().split('T')[0];
       if (!dailyMap[dateKey]) dailyMap[dateKey] = { revenue: 0, orders: 0 };
       dailyMap[dateKey].revenue += o.total;
       dailyMap[dateKey].orders += 1;
     });
-
-    // Sort by date and take most recent 7 days with data
     const sorted = Object.entries(dailyMap)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-7);
-
     return sorted.map(([dateStr, data]) => {
       const d = new Date(dateStr);
       const label = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-      return {
-        name: label,
-        revenue: Math.round(data.revenue),
-        orders: data.orders,
-      };
+      return { name: label, revenue: Math.round(data.revenue), orders: data.orders };
     });
   }, [orders]);
 
@@ -198,7 +199,6 @@ const Overview = () => {
     : '0.0';
   const isRevUp = todayRevenue >= avgDailyRevenue;
 
-  // ── Order status breakdown for donut-style bar ──
   const statusBreakdown = [
     { label: 'Delivered', count: deliveredOrders.length, color: 'bg-teal-400', textColor: 'text-teal-700' },
     { label: 'Shipped', count: shippedOrders.length, color: 'bg-violet-400', textColor: 'text-violet-700' },
@@ -207,7 +207,6 @@ const Overview = () => {
     { label: 'Cancelled', count: cancelledOrders.length, color: 'bg-rose-400', textColor: 'text-rose-600' },
   ];
 
-  // ── Category revenue distribution ──
   const categoryRevenue = useMemo(() => {
     const map: Record<string, number> = {};
     orders.forEach(o => {
@@ -219,13 +218,11 @@ const Overview = () => {
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [orders]);
 
-  // ── Recent orders (last 5) ──
   const recentOrders = useMemo(() =>
     [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6),
     [orders]
   );
 
-  // ── Inventory health ──
   const inventoryArray = Array.isArray(inventory) ? inventory : [];
   const totalInventoryUnits = inventoryArray.reduce((s, i) => s + i.quantity, 0);
   const lowStockCount = inventoryArray.filter(i => i.quantity > 0 && i.quantity <= i.reorderLevel).length;
@@ -236,89 +233,90 @@ const Overview = () => {
 
   return (
     <div
-      className="space-y-5"
+      className="space-y-3 sm:space-y-5 px-0"
       style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
     >
 
       {/* ─── HEADER ─── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-1">
-        <div className="flex items-center gap-2.5">
-          <div className="w-1 h-5 rounded-full bg-indigo-500" />
+      <div className="flex items-center justify-between gap-2 pb-0.5">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-4 sm:h-5 rounded-full bg-indigo-500 shrink-0" />
           <div>
-            <h1 className="text-base font-bold text-stone-900 tracking-tight">Overview</h1>
-            <p className="text-xs text-stone-400 mt-0.5">
-              {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            <h1 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight leading-tight">Overview</h1>
+            <p className="text-[10px] sm:text-xs text-stone-400 mt-0.5 leading-tight">
+              {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Live
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-emerald-600 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="hidden xs:inline">Live</span>
           </div>
           <button
             onClick={() => syncData()}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 active:bg-stone-100 text-stone-600 border border-stone-200 text-[11px] sm:text-xs font-semibold transition-colors shadow-sm disabled:opacity-50 touch-manipulation"
           >
-            <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} /> Sync
+            <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
+            <span>Sync</span>
           </button>
         </div>
       </div>
 
-      {/* ─── KPI CARDS ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ─── KPI CARDS — 2×2 on mobile, 4×1 on lg ─── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
           {
             label: 'Total Revenue',
             value: `₹${totalRevenue.toLocaleString('en-IN')}`,
-            sub: isRevUp ? `↑ ${revTrendPct}% vs daily avg` : `↓ ${revTrendPct}% vs daily avg`,
-            icon: <DollarSign size={14} />,
+            sub: isRevUp ? `↑ ${revTrendPct}% vs avg` : `↓ ${revTrendPct}% vs avg`,
+            icon: <DollarSign size={13} />,
             accent: 'border-l-indigo-400',
             subColor: isRevUp ? 'text-emerald-600' : 'text-rose-500',
             tab: 'orders',
             breakdown: [
-              { label: 'Successful', val: `₹${orders.filter(o => o.paymentStatus === 'Success').reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}`, color: 'text-emerald-600' },
+              { label: 'Success', val: `₹${orders.filter(o => o.paymentStatus === 'Success').reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}`, color: 'text-emerald-600' },
               { label: 'Pending', val: `₹${orders.filter(o => o.paymentStatus === 'Pending' || !o.paymentStatus).reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}`, color: 'text-amber-600' }
             ]
           },
           {
-            label: 'Avg Order Value',
+            label: 'Avg Order',
             value: `₹${avgOrderValue.toLocaleString('en-IN')}`,
-            sub: `Across ${orders.length} orders`,
-            icon: <ShoppingCart size={14} />,
+            sub: `${orders.length} orders`,
+            icon: <ShoppingCart size={13} />,
             accent: 'border-l-teal-400',
             subColor: 'text-stone-400',
             tab: 'orders',
             breakdown: [
-              { label: 'Total Orders', val: orders.length, color: 'text-stone-600' },
+              { label: 'Total', val: orders.length, color: 'text-stone-600' },
               { label: 'Highest', val: `₹${Math.max(...orders.map(o => o.total), 0).toLocaleString('en-IN')}`, color: 'text-indigo-600' }
             ]
           },
           {
-            label: 'Pending Actions',
+            label: 'Pending',
             value: pendingOrders.length + paidOrders.length,
-            sub: `${pendingOrders.length} pending · ${paidOrders.length} paid`,
-            icon: <Zap size={14} />,
+            sub: `${pendingOrders.length} new · ${paidOrders.length} paid`,
+            icon: <Zap size={13} />,
             accent: (pendingOrders.length + paidOrders.length) > 0 ? 'border-l-amber-400' : 'border-l-emerald-400',
             subColor: (pendingOrders.length + paidOrders.length) > 0 ? 'text-amber-600' : 'text-emerald-600',
             tab: 'orders',
             breakdown: [
-              { label: 'New Orders', val: pendingOrders.length, color: 'text-amber-600' },
-              { label: 'Ready to Process', val: paidOrders.length, color: 'text-indigo-600' }
+              { label: 'New', val: pendingOrders.length, color: 'text-amber-600' },
+              { label: 'Process', val: paidOrders.length, color: 'text-indigo-600' }
             ]
           },
           {
-            label: 'Inventory Status',
+            label: 'Inventory',
             value: inventoryHealthPct + '%',
-            sub: `${lowStockCount} items low · ${outOfStockCount} out`,
-            icon: <Package size={14} />,
+            sub: `${lowStockCount} low · ${outOfStockCount} out`,
+            icon: <Package size={13} />,
             accent: inventoryHealthPct >= 80 ? 'border-l-emerald-400' : inventoryHealthPct >= 50 ? 'border-l-amber-400' : 'border-l-rose-400',
             subColor: 'text-stone-400',
             tab: 'inventory',
             breakdown: [
-              { label: 'Total Items', val: inventoryArray.length, color: 'text-stone-600' },
-              { label: 'Total Units', val: totalInventoryUnits.toLocaleString('en-IN'), color: 'text-indigo-600' }
+              { label: 'Items', val: inventoryArray.length, color: 'text-stone-600' },
+              { label: 'Units', val: totalInventoryUnits.toLocaleString('en-IN'), color: 'text-indigo-600' }
             ]
           },
         ].map((card, i) => (
@@ -326,42 +324,44 @@ const Overview = () => {
             key={i}
             onClick={() => setActiveTab(card.tab)}
             className={cn(
-              'group rounded-xl bg-white border border-stone-200 border-l-4 shadow-sm p-4 transition-all hover:border-indigo-300 hover:shadow-md cursor-pointer relative overflow-hidden',
+              'group rounded-xl bg-white border border-stone-200 border-l-4 shadow-sm p-3 sm:p-4 transition-all hover:border-indigo-300 hover:shadow-md active:scale-[0.98] cursor-pointer relative overflow-hidden touch-manipulation',
               card.accent
             )}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{card.label}</span>
-              <span className="p-1 rounded-md text-stone-400 bg-stone-50 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">{card.icon}</span>
+            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+              <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-tight">{card.label}</span>
+              <span className="p-1 rounded-md text-stone-400 bg-stone-50 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors shrink-0">
+                {card.icon}
+              </span>
             </div>
 
-            <p className="text-2xl font-extrabold text-stone-900 tabular-nums tracking-tight group-hover:text-indigo-600 transition-colors">
+            {/* Value — shrinks on small screens to avoid overflow */}
+            <p className="text-lg sm:text-2xl font-extrabold text-stone-900 tabular-nums tracking-tight group-hover:text-indigo-600 transition-colors truncate">
               {card.value}
             </p>
-            <p className={cn('text-[11px] mt-0.5 font-medium mb-3', card.subColor)}>{card.sub}</p>
+            <p className={cn('text-[10px] mt-0.5 font-medium mb-2 sm:mb-3 truncate', card.subColor)}>{card.sub}</p>
 
-            {/* Breakdown Section */}
-            <div className="pt-3 border-t border-stone-100 grid grid-cols-2 gap-2">
+            <div className="pt-2 sm:pt-3 border-t border-stone-100 grid grid-cols-2 gap-1.5 sm:gap-2">
               {card.breakdown.map((b, idx) => (
-                <div key={idx}>
-                  <p className="text-[9px] text-stone-400 uppercase font-bold tracking-tight">{b.label}</p>
-                  <p className={cn('text-[11px] font-bold tabular-nums', b.color)}>{b.val}</p>
+                <div key={idx} className="min-w-0">
+                  <p className="text-[8px] sm:text-[9px] text-stone-400 uppercase font-bold tracking-tight truncate">{b.label}</p>
+                  <p className={cn('text-[10px] sm:text-[11px] font-bold tabular-nums truncate', b.color)}>{b.val}</p>
                 </div>
               ))}
             </div>
 
-            {/* Hover arrow indicator */}
             <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-              <ArrowUpRight size={14} className="text-indigo-400" />
+              <ArrowUpRight size={12} className="text-indigo-400" />
             </div>
           </div>
         ))}
       </div>
 
       {/* ─── SECOND ROW: Chart + Order Pipeline ─── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+      {/* On mobile: stacked. On xl: side-by-side 2/3 + 1/3 */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-2 sm:gap-3">
 
-        {/* Revenue + Orders Area Chart */}
+        {/* Revenue Area Chart */}
         <Panel stripe="indigo" className="xl:col-span-2">
           <PanelHeader
             icon={<TrendingUp size={12} />}
@@ -377,7 +377,8 @@ const Overview = () => {
             }>
             Revenue Trend
           </PanelHeader>
-          <div className="px-5 pb-5 pt-4 h-[240px]">
+          {/* Shorter chart on mobile */}
+          <div className="px-3 sm:px-5 pb-3 sm:pb-5 pt-3 sm:pt-4 h-[180px] sm:h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={salesData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <defs>
@@ -390,12 +391,12 @@ const Overview = () => {
                 <XAxis
                   dataKey="name"
                   axisLine={false} tickLine={false}
-                  tick={{ fontSize: 11, fill: '#a8a29e', fontWeight: 600 }}
+                  tick={{ fontSize: 10, fill: '#a8a29e', fontWeight: 600 }}
                 />
                 <YAxis
                   axisLine={false} tickLine={false}
                   tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`}
-                  tick={{ fontSize: 11, fill: '#a8a29e', fontWeight: 600 }}
+                  tick={{ fontSize: 10, fill: '#a8a29e', fontWeight: 600 }}
                 />
                 <Tooltip content={<ChartTooltip />} />
                 <Area
@@ -405,7 +406,7 @@ const Overview = () => {
                   strokeWidth={2}
                   fill="url(#revenueGrad)"
                   dot={false}
-                  activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 4, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -424,19 +425,19 @@ const Overview = () => {
             }>
             Order Pipeline
           </PanelHeader>
-          <div className="px-4 py-3 space-y-2">
+          <div className="px-3 sm:px-4 py-2.5 sm:py-3 space-y-1.5 sm:space-y-2">
             {statusBreakdown.map(({ label, count, color, textColor }) => {
               const pct = orders.length > 0 ? Math.round((count / orders.length) * 100) : 0;
               return (
                 <div key={label}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
-                      <span className={cn('w-1.5 h-1.5 rounded-full', color)} />
-                      <span className="text-xs font-semibold text-stone-700">{label}</span>
+                      <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', color)} />
+                      <span className="text-[11px] sm:text-xs font-semibold text-stone-700">{label}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className={cn('text-xs font-bold tabular-nums font-mono', textColor)}>{count}</span>
-                      <span className="text-[10px] text-stone-400 font-mono tabular-nums w-8 text-right">{pct}%</span>
+                      <span className={cn('text-[11px] sm:text-xs font-bold tabular-nums font-mono', textColor)}>{count}</span>
+                      <span className="text-[10px] text-stone-400 font-mono tabular-nums w-7 sm:w-8 text-right">{pct}%</span>
                     </div>
                   </div>
                   <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
@@ -447,15 +448,14 @@ const Overview = () => {
             })}
           </div>
 
-          {/* Quick stats footer */}
-          <div className="mx-4 mb-4 mt-1 grid grid-cols-2 gap-2">
-            <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Cancelled</p>
-              <p className="text-lg font-extrabold text-rose-600 tabular-nums font-mono">{cancelledOrders.length}</p>
+          <div className="mx-3 sm:mx-4 mb-3 sm:mb-4 mt-1 grid grid-cols-2 gap-2">
+            <div className="px-2.5 sm:px-3 py-2 sm:py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
+              <p className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-widest">Cancelled</p>
+              <p className="text-base sm:text-lg font-extrabold text-rose-600 tabular-nums font-mono">{cancelledOrders.length}</p>
             </div>
-            <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Returned</p>
-              <p className="text-lg font-extrabold text-stone-700 tabular-nums font-mono">
+            <div className="px-2.5 sm:px-3 py-2 sm:py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
+              <p className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-widest">Returned</p>
+              <p className="text-base sm:text-lg font-extrabold text-stone-700 tabular-nums font-mono">
                 {orders.filter(o => o.status === OrderStatus.RETURNED).length}
               </p>
             </div>
@@ -463,10 +463,10 @@ const Overview = () => {
         </Panel>
       </div>
 
-      {/* ─── THIRD ROW: Recent Orders + Stock Alerts + Reviews ─── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+      {/* ─── THIRD ROW: Recent Orders + Inventory ─── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-2 sm:gap-3">
 
-        {/* Recent Orders */}
+        {/* Recent Orders — mobile-first card list on small, table on sm+ */}
         <Panel stripe="indigo" className="xl:col-span-2">
           <PanelHeader
             icon={<ShoppingCart size={12} />}
@@ -478,14 +478,45 @@ const Overview = () => {
             }>
             Recent Orders
           </PanelHeader>
-          <div className="overflow-x-auto">
+
+          {/* Mobile card list (hidden on sm+) */}
+          <div className="sm:hidden divide-y divide-stone-50">
+            {recentOrders.length === 0 ? (
+              <div className="px-3 py-6 text-center text-xs text-stone-400">No orders yet</div>
+            ) : recentOrders.map(order => (
+              <div
+                key={order.id}
+                onClick={() => setActiveTab('orders')}
+                className="flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-stone-50/60 active:bg-stone-100 transition-colors touch-manipulation cursor-pointer"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <p className="text-[10px] font-mono font-bold text-indigo-600 truncate">{order.id}</p>
+                    <StatusPill status={order.status} />
+                  </div>
+                  <p className="text-xs font-semibold text-stone-700 truncate">{order.customerName}</p>
+                  <p className="text-[10px] text-stone-400 font-mono tabular-nums">
+                    {new Date(order.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-bold text-stone-900 font-mono tabular-nums">
+                    ₹{order.total.toLocaleString('en-IN')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Table (hidden on mobile, shown on sm+) */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-stone-100 bg-stone-50/30">
-                  <th className="px-5 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Order</th>
-                  <th className="hidden sm:table-cell px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Customer</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Order</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Customer</th>
                   <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Status</th>
-                  <th className="px-5 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Value</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50">
@@ -495,20 +526,20 @@ const Overview = () => {
                   </tr>
                 ) : recentOrders.map(order => (
                   <tr key={order.id} className="hover:bg-stone-50/60 transition-colors">
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <p className="text-[10px] font-mono font-bold text-indigo-600">{order.id}</p>
                       <p className="text-[10px] text-stone-400 font-mono tabular-nums mt-0.5">
                         {new Date(order.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                       </p>
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3">
+                    <td className="px-4 py-3">
                       <p className="text-xs font-semibold text-stone-700 truncate max-w-[120px]">{order.customerName}</p>
                       <p className="text-[10px] text-stone-400 truncate max-w-[120px]">{order.email}</p>
                     </td>
                     <td className="px-4 py-3">
                       <StatusPill status={order.status} />
                     </td>
-                    <td className="px-5 py-3 text-right">
+                    <td className="px-4 py-3 text-right">
                       <span className="text-sm font-bold text-stone-900 font-mono tabular-nums">
                         ₹{order.total.toLocaleString('en-IN')}
                       </span>
@@ -520,10 +551,8 @@ const Overview = () => {
           </div>
         </Panel>
 
-        {/* Right column: Stock alerts */}
-        <div className="flex flex-col gap-3">
-
-          {/* Inventory Health */}
+        {/* Inventory Health */}
+        <div className="flex flex-col gap-2 sm:gap-3">
           <Panel stripe="teal">
             <PanelHeader
               icon={<Package size={12} />}
@@ -531,13 +560,13 @@ const Overview = () => {
             >
               Inventory Health
             </PanelHeader>
-            <div className="px-4 py-3 space-y-2.5">
+            <div className="px-3 sm:px-4 py-3 space-y-2 sm:space-y-2.5">
               {/* Health bar */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Overall Health</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-widest">Overall Health</span>
                   <span className={cn(
-                    'text-sm font-extrabold font-mono tabular-nums',
+                    'text-sm sm:text-base font-extrabold font-mono tabular-nums',
                     inventoryHealthPct >= 80 ? 'text-emerald-600' : inventoryHealthPct >= 50 ? 'text-amber-600' : 'text-rose-600'
                   )}>
                     {inventoryHealthPct}%
@@ -551,31 +580,31 @@ const Overview = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-0.5">
                 {[
                   { label: 'Available', value: totalInventoryUnits.toLocaleString('en-IN'), color: 'text-stone-800' },
                   { label: 'Low Stock', value: lowStockCount, color: lowStockCount > 0 ? 'text-amber-600' : 'text-stone-800' },
                   { label: 'Out', value: outOfStockCount, color: outOfStockCount > 0 ? 'text-rose-600' : 'text-stone-800' },
                 ].map(({ label, value, color }) => (
-                  <div key={label} className="px-2 py-2 bg-stone-50 border border-stone-100 rounded-lg text-center">
-                    <p className={cn('text-base font-extrabold tabular-nums font-mono', color)}>{value}</p>
-                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-0.5">{label}</p>
+                  <div key={label} className="px-1.5 sm:px-2 py-2 bg-stone-50 border border-stone-100 rounded-lg text-center">
+                    <p className={cn('text-sm sm:text-base font-extrabold tabular-nums font-mono', color)}>{value}</p>
+                    <p className="text-[8px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-0.5 leading-tight">{label}</p>
                   </div>
                 ))}
               </div>
 
               {/* Top alerts */}
               {lowStockProducts.slice(0, 3).map(product => (
-                <div key={product.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-amber-50/60 border border-amber-100 rounded-lg">
+                <div key={product.id} className="flex items-center justify-between gap-2 px-2 py-2 bg-amber-50/60 border border-amber-100 rounded-lg">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-stone-700 truncate">{product.name}</p>
-                    <p className="text-[10px] font-mono text-stone-400">{product.variants?.[0]?.sku || '—'}</p>
+                    <p className="text-[11px] sm:text-xs font-semibold text-stone-700 truncate">{product.name}</p>
+                    <p className="text-[9px] sm:text-[10px] font-mono text-stone-400">{product.variants?.[0]?.sku || '—'}</p>
                   </div>
                   {(() => {
                     const stock = product.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
                     return (
                       <span className={cn(
-                        'text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ring-1',
+                        'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ring-1',
                         stock <= 0
                           ? 'bg-rose-50 text-rose-600 ring-rose-200'
                           : 'bg-amber-50 text-amber-700 ring-amber-200'
@@ -587,19 +616,18 @@ const Overview = () => {
                 </div>
               ))}
               {lowStockProducts.length === 0 && (
-                <div className="flex items-center gap-2 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg">
+                <div className="flex items-center gap-2 px-2 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
                   <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                  <p className="text-xs font-semibold text-emerald-700">All products healthy</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-emerald-700">All products healthy</p>
                 </div>
               )}
             </div>
           </Panel>
-
         </div>
       </div>
 
       {/* ─── FOURTH ROW: Daily Orders Bar + Category Revenue ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
 
         {/* Daily Order Volume */}
         <Panel stripe="violet">
@@ -609,26 +637,21 @@ const Overview = () => {
           >
             Daily Order Volume
           </PanelHeader>
-          <div className="px-4 pb-4 pt-3 h-[180px]">
+          <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-3 h-[160px] sm:h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barSize={22}>
+              <BarChart data={salesData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barSize={18}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f0ee" />
                 <XAxis
                   dataKey="name"
                   axisLine={false} tickLine={false}
-                  tick={{ fontSize: 11, fill: '#a8a29e', fontWeight: 600 }}
+                  tick={{ fontSize: 10, fill: '#a8a29e', fontWeight: 600 }}
                 />
                 <YAxis
                   axisLine={false} tickLine={false}
-                  tick={{ fontSize: 11, fill: '#a8a29e', fontWeight: 600 }}
+                  tick={{ fontSize: 10, fill: '#a8a29e', fontWeight: 600 }}
                 />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar
-                  dataKey="orders"
-                  fill="#6366f1"
-                  radius={[4, 4, 0, 0]}
-                  opacity={0.85}
-                />
+                <Bar dataKey="orders" fill="#6366f1" radius={[4, 4, 0, 0]} opacity={0.85} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -642,9 +665,9 @@ const Overview = () => {
           >
             Revenue by Category
           </PanelHeader>
-          <div className="px-4 py-3 space-y-2">
+          <div className="px-3 sm:px-4 py-2.5 sm:py-3 space-y-2">
             {categoryRevenue.length === 0 ? (
-              <div className="py-6 text-center text-xs text-stone-400">No category data yet</div>
+              <div className="py-5 text-center text-xs text-stone-400">No category data yet</div>
             ) : (() => {
               const max = Math.max(...categoryRevenue.map(([, v]) => v));
               return categoryRevenue.map(([cat, value]) => {
@@ -652,8 +675,8 @@ const Overview = () => {
                 return (
                   <div key={cat}>
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-semibold text-stone-700 truncate">{cat}</span>
-                      <span className="text-xs font-bold text-stone-600 font-mono tabular-nums shrink-0">
+                      <span className="text-[11px] sm:text-xs font-semibold text-stone-700 truncate">{cat}</span>
+                      <span className="text-[11px] sm:text-xs font-bold text-stone-600 font-mono tabular-nums shrink-0">
                         ₹{value.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -664,7 +687,6 @@ const Overview = () => {
                 );
               });
             })()}
-            {/* Fallback if no order items have category */}
             {categoryRevenue.length === 0 && orders.length > 0 && (
               <div className="py-4 text-center">
                 <p className="text-xs text-stone-400">Revenue data will appear once orders contain categorised items</p>

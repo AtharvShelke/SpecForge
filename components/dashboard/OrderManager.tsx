@@ -111,6 +111,43 @@ const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: Rea
 );
 
 // ─────────────────────────────────────────────────────────────
+// COLLAPSIBLE SECTION (mobile-friendly accordion)
+// ─────────────────────────────────────────────────────────────
+const CollapsibleSection = ({
+  icon,
+  title,
+  badge,
+  children,
+  defaultOpen = true,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+      <button
+        className="w-full px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between"
+        onClick={() => setOpen(o => !o)}
+      >
+        <div className="flex items-center gap-2">
+          <SectionLabel icon={icon}>{title}</SectionLabel>
+          {badge}
+        </div>
+        <ChevronDown
+          size={14}
+          className={cn('text-stone-400 transition-transform duration-200', open && 'rotate-180')}
+        />
+      </button>
+      {open && <div>{children}</div>}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
 // MAIN ORDER MANAGER
 // ─────────────────────────────────────────────────────────────
 const OrderManager = () => {
@@ -246,13 +283,13 @@ const OrderManager = () => {
   // ── Empty State ──
   if (sortedOrders.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[500px] bg-stone-50">
-        <div className="text-center p-16 bg-white border border-stone-200 rounded-2xl max-w-lg shadow-sm">
-          <div className="w-16 h-16 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center mx-auto mb-6">
-            <Package size={28} className="text-stone-300" />
+      <div className="flex items-center justify-center min-h-[400px] bg-stone-50 px-4">
+        <div className="text-center p-8 bg-white border border-stone-200 rounded-2xl w-full max-w-sm shadow-sm">
+          <div className="w-12 h-12 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Package size={22} className="text-stone-300" />
           </div>
-          <h3 className="text-base font-semibold text-stone-800 mb-1 tracking-tight">No Orders Yet</h3>
-          <p className="text-sm text-stone-400">Orders will appear here once customers start placing them</p>
+          <h3 className="text-sm font-semibold text-stone-800 mb-1 tracking-tight">No Orders Yet</h3>
+          <p className="text-xs text-stone-400">Orders will appear here once customers start placing them</p>
         </div>
       </div>
     );
@@ -261,25 +298,25 @@ const OrderManager = () => {
   return (
     <TooltipProvider>
       <div
-        className="flex flex-col h-[calc(100vh-12rem)] min-h-[700px] overflow-hidden rounded-xl bg-white border border-stone-200 shadow-sm"
+        className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden rounded-xl bg-white border border-stone-200 shadow-sm"
         style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
       >
 
         {/* ─── HEADER ─── */}
-        <div className="flex-shrink-0 border-b border-stone-100 px-6 py-4 bg-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-1 h-5 rounded-full bg-indigo-500" />
-                <h1 className="text-base font-bold text-stone-900 tracking-tight">Orders</h1>
+        <div className="flex-shrink-0 border-b border-stone-100 px-3 sm:px-6 py-3 bg-white">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
+                <h1 className="text-sm font-bold text-stone-900 tracking-tight">Orders</h1>
               </div>
-              <div className="hidden md:flex items-center gap-2.5 text-xs text-stone-400">
+              <div className="flex items-center gap-2 text-xs text-stone-400">
                 <span className="w-px h-3 bg-stone-200" />
-                <span className="tabular-nums">{sortedOrders.length} total</span>
+                <span className="tabular-nums">{sortedOrders.length}</span>
                 {sortedOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length > 0 && (
                   <>
-                    <span className="w-px h-3 bg-stone-200" />
-                    <span className="flex items-center gap-1 text-amber-600 font-medium">
+                    <span className="w-px h-3 bg-stone-200 hidden sm:block" />
+                    <span className="hidden sm:flex items-center gap-1 text-amber-600 font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                       {sortedOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length} need action
                     </span>
@@ -287,17 +324,18 @@ const OrderManager = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live
+                <span className="hidden sm:inline">Live</span>
               </div>
               <button
                 onClick={() => syncData()}
                 disabled={isLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
               >
-                <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} /> Sync
+                <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
+                <span className="hidden sm:inline">Sync</span>
               </button>
             </div>
           </div>
@@ -306,22 +344,22 @@ const OrderManager = () => {
         {/* ─── BODY ─── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
 
-          {/* ─── LEFT PANEL ─── */}
+          {/* ─── LEFT PANEL (order list) ─── */}
           <div className={cn(
             'flex flex-col bg-stone-50/60 border-r border-stone-100 flex-shrink-0',
-            'w-full lg:w-[320px] xl:w-[356px]',
+            'w-full lg:w-[300px] xl:w-[340px]',
             showMobileDetail ? 'hidden lg:flex' : 'flex'
           )}>
 
             {/* Search + Filter */}
-            <div className="px-3 py-3 space-y-2 border-b border-stone-100 bg-white">
+            <div className="px-3 py-2.5 space-y-2 border-b border-stone-100 bg-white">
               <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
                 <Input
-                  placeholder="Search by ID, name, email…"
+                  placeholder="Search ID, name, email…"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                  className="pl-8 h-8 text-xs bg-stone-50 border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 shadow-none rounded-lg"
+                  className="pl-7 h-8 text-xs bg-stone-50 border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 shadow-none rounded-lg"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -350,8 +388,8 @@ const OrderManager = () => {
             {/* Order List */}
             <ScrollArea className="flex-1">
               {filteredOrders.length === 0 ? (
-                <div className="p-10 text-center">
-                  <AlertCircle size={28} className="mx-auto text-stone-300 mb-2" />
+                <div className="p-8 text-center">
+                  <AlertCircle size={22} className="mx-auto text-stone-300 mb-2" />
                   <p className="text-xs text-stone-400">No orders match your filters</p>
                 </div>
               ) : (
@@ -364,18 +402,18 @@ const OrderManager = () => {
                         key={order.id}
                         onClick={() => { setSelectedId(order.id); setShowMobileDetail(true); }}
                         className={cn(
-                          'w-full text-left px-4 py-3.5 transition-all group relative',
+                          'w-full text-left px-3 py-3 transition-all group relative',
                           isSelected
                             ? 'bg-white border-l-2 border-l-indigo-500'
                             : 'hover:bg-white/70 border-l-2 border-l-transparent'
                         )}
                       >
                         {needsAction && !isSelected && (
-                          <span className="absolute top-3.5 right-3.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-amber-400" />
                         )}
-                        <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
                           <span className={cn(
-                            'text-[10px] font-mono font-bold tracking-tight',
+                            'text-[10px] font-mono font-bold tracking-tight truncate',
                             isSelected ? 'text-indigo-600' : 'text-stone-400'
                           )}>
                             {order.id}
@@ -383,13 +421,13 @@ const OrderManager = () => {
                           <StatusPill status={order.status} />
                         </div>
                         <p className={cn(
-                          'text-sm font-semibold truncate mb-1.5 tracking-tight',
+                          'text-sm font-semibold truncate mb-1 tracking-tight',
                           isSelected ? 'text-stone-900' : 'text-stone-700'
                         )}>
                           {order.customerName}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-stone-400 font-mono tabular-nums">
+                          <span className="text-[10px] text-stone-400 font-mono tabular-nums">
                             {new Date(order.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
                           <span className={cn(
@@ -407,17 +445,17 @@ const OrderManager = () => {
             </ScrollArea>
           </div>
 
-          {/* ─── RIGHT PANEL ─── */}
+          {/* ─── RIGHT PANEL (order detail) ─── */}
           {selectedOrder && (
             <div className={cn(
               'flex-1 overflow-y-auto bg-stone-50/40 min-w-0',
               !showMobileDetail && 'hidden lg:block'
             )}>
-              <div className="p-4 sm:p-5 max-w-5xl mx-auto space-y-4">
+              <div className="p-3 sm:p-5 max-w-5xl mx-auto space-y-3">
 
-                {/* Mobile back */}
+                {/* Mobile back button */}
                 <button
-                  className="lg:hidden flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-semibold mb-1"
+                  className="lg:hidden flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
                   onClick={() => setShowMobileDetail(false)}
                 >
                   <ArrowLeft size={13} /> Back to orders
@@ -425,91 +463,112 @@ const OrderManager = () => {
 
                 {/* ── ORDER HEADER CARD ── */}
                 <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                  {/* Indigo top stripe */}
                   <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
 
-                  <div className="p-5 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2.5 mb-1">
-                          <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight font-mono">
+                  <div className="p-3 sm:p-5">
+                    {/* Top row: ID + status + amount */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                          <h2 className="text-base sm:text-xl font-bold text-stone-900 tracking-tight font-mono truncate">
                             {selectedOrder.id}
                           </h2>
                           <StatusPill status={selectedOrder.status} />
                         </div>
-                        <p className="text-xs text-stone-400 font-mono tabular-nums">
+                        <p className="text-[10px] text-stone-400 font-mono tabular-nums">
                           {new Date(selectedOrder.date).toLocaleDateString('en-IN', {
-                            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
                           })}
                           {' · '}
                           {new Date(selectedOrder.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        {NEXT_STATUS_BUTTON[selectedOrder.status] && (
-                          <button
-                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
-                            onClick={() => openConfirmDialog(selectedOrder.id, STATUS_FLOW[selectedOrder.status][0])}
-                          >
-                            {NEXT_STATUS_BUTTON[selectedOrder.status]!.icon}
-                            {NEXT_STATUS_BUTTON[selectedOrder.status]!.label}
-                          </button>
-                        )}
-                        {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.CANCELLED) && (
-                          <button
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 text-xs font-semibold transition-colors"
-                            onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.CANCELLED)}
-                          >
-                            <XCircle size={13} /> Cancel
-                          </button>
-                        )}
-                        {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.RETURNED) &&
-                          !STATUS_FLOW[selectedOrder.status].includes(OrderStatus.DELIVERED) && (
-                            <button
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors"
-                              onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.RETURNED)}
-                            >
-                              <RotateCcw size={13} /> Return
-                            </button>
-                          )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors">
-                              <FileText size={13} /> Invoice <ChevronDown size={11} />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44 bg-white border-stone-200 shadow-md text-stone-700">
-                            <DropdownMenuLabel className="text-[10px] text-stone-400 uppercase tracking-widest">Invoice</DropdownMenuLabel>
-                            <DropdownMenuSeparator className="bg-stone-100" />
-                            <DropdownMenuItem onClick={handlePrintInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
-                              <Printer size={12} /> Print
-                            </DropdownMenuItem>
-                            {/* <DropdownMenuItem onClick={handleDownloadInvoice} className="gap-2 cursor-pointer text-xs focus:bg-stone-50">
-                              <Download size={12} /> Download HTML
-                            </DropdownMenuItem> */}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <button
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 text-xs font-semibold transition-colors"
-                          onClick={() => setDeleteDialogOpen(true)}
-                        >
-                          <Trash2 size={13} /> Delete
-                        </button>
+                      {/* Total amount — visible immediately on mobile */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">Total</p>
+                        <p className="text-base font-extrabold text-stone-900 font-mono tabular-nums">
+                          ₹{calcFinancials(selectedOrder).total.toLocaleString('en-IN')}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Customer Meta */}
-                    <div className="mt-5 pt-5 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-5">
+                    {/* Action Buttons — Mobile Optimized Layout */}
+<div className="flex flex-wrap items-center gap-2 mt-2">
+  
+  {/* Primary Action: Next Status (Full width on very small screens or auto-grow) */}
+  {NEXT_STATUS_BUTTON[selectedOrder.status] && (
+    <button
+      className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 active:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold transition-all shadow-sm shadow-indigo-100"
+      onClick={() => openConfirmDialog(selectedOrder.id, STATUS_FLOW[selectedOrder.status][0])}
+    >
+      {NEXT_STATUS_BUTTON[selectedOrder.status]!.icon}
+      <span>{NEXT_STATUS_BUTTON[selectedOrder.status]!.label}</span>
+    </button>
+  )}
+
+  {/* Utility Group: Invoice, Cancel, Return, Delete */}
+  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+    
+    {/* Invoice Dropdown */}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm">
+          <FileText size={14} /> 
+          <span>Invoice</span>
+          <ChevronDown size={12} className="opacity-50" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48 p-1 bg-white border-stone-200 shadow-xl rounded-xl">
+        <DropdownMenuLabel className="px-3 py-2 text-[10px] text-stone-400 uppercase tracking-widest">Documents</DropdownMenuLabel>
+        <DropdownMenuSeparator className="mx-1 bg-stone-100" />
+        <DropdownMenuItem onClick={handlePrintInvoice} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-xs rounded-lg focus:bg-stone-50 font-medium text-stone-700">
+          <Printer size={14} className="text-stone-400" /> Print Invoice
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+
+    {/* Return Button (Conditional) */}
+    {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.RETURNED) &&
+      !STATUS_FLOW[selectedOrder.status].includes(OrderStatus.DELIVERED) && (
+        <button
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm"
+          onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.RETURNED)}
+        >
+          <RotateCcw size={14} /> Return
+        </button>
+    )}
+
+    {/* Danger Zone: Cancel or Delete */}
+    <div className="flex gap-2 w-full sm:w-auto">
+      {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.CANCELLED) && (
+        <button
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-50/50 active:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold transition-all"
+          onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.CANCELLED)}
+        >
+          <XCircle size={14} /> Cancel
+        </button>
+      )}
+
+      <button
+        className="flex items-center justify-center p-2.5 rounded-xl bg-white active:bg-rose-50 text-rose-400 border border-stone-200 hover:border-rose-200 hover:text-rose-600 transition-all shadow-sm"
+        onClick={() => setDeleteDialogOpen(true)}
+        aria-label="Delete Order"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
+  </div>
+</div>
+
+                    {/* Customer Meta — 2-col grid on mobile, 4-col on sm+ */}
+                    <div className="mt-3 pt-3 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
-                        { icon: <User size={12} />, label: 'Customer', value: selectedOrder.customerName },
-                        { icon: <Mail size={12} />, label: 'Email', value: selectedOrder.email },
+                        { icon: <User size={11} />, label: 'Customer', value: selectedOrder.customerName },
+                        { icon: <Mail size={11} />, label: 'Email', value: selectedOrder.email },
                         {
-                          icon: <CreditCard size={12} />, label: 'Payment',
+                          icon: <CreditCard size={11} />, label: 'Payment',
                           value: (
-                            <span className="flex items-center gap-1.5 flex-wrap">
+                            <span className="flex items-center gap-1 flex-wrap">
                               <span>{selectedOrder.paymentMethod}</span>
                               <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide', {
                                 'bg-emerald-50 text-emerald-700': selectedOrder.paymentStatus === 'Success',
@@ -522,14 +581,14 @@ const OrderManager = () => {
                           )
                         },
                         {
-                          icon: <Hash size={12} />, label: 'Items',
+                          icon: <Hash size={11} />, label: 'Items',
                           value: `${selectedOrder.items.length} item${selectedOrder.items.length !== 1 ? 's' : ''}`
                         },
                       ].map(({ icon, label, value }) => (
                         <div key={label}>
-                          <div className="flex items-center gap-1 mb-1">
+                          <div className="flex items-center gap-1 mb-0.5">
                             <span className="text-stone-400">{icon}</span>
-                            <span className="text-[10px] uppercase tracking-widest font-bold text-stone-400">{label}</span>
+                            <span className="text-[9px] uppercase tracking-widest font-bold text-stone-400">{label}</span>
                           </div>
                           <div className="text-xs font-semibold text-stone-800 truncate">{value as React.ReactNode}</div>
                         </div>
@@ -537,253 +596,241 @@ const OrderManager = () => {
                     </div>
 
                     {selectedOrder.paymentTransactionId && (
-                      <div className="mt-4 flex items-center gap-2.5 px-3 py-2 bg-stone-50 border border-stone-100 rounded-lg">
-                        <span className="text-[10px] text-stone-400 font-mono uppercase tracking-wider font-bold">TXN</span>
-                        <span className="font-mono text-xs text-stone-600">{selectedOrder.paymentTransactionId}</span>
+                      <div className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-stone-50 border border-stone-100 rounded-lg overflow-hidden">
+                        <span className="text-[10px] text-stone-400 font-mono uppercase tracking-wider font-bold flex-shrink-0">TXN</span>
+                        <span className="font-mono text-xs text-stone-600 truncate">{selectedOrder.paymentTransactionId}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* ── MAIN CONTENT GRID ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-                  {/* ── ORDER ITEMS (2 cols) ── */}
-                  <div className="lg:col-span-2 rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
-                      <SectionLabel icon={<Package size={12} />}>Order Items</SectionLabel>
-                      <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-                        {selectedOrder.items.length}
-                      </span>
-                    </div>
-
-                    {selectedOrder.items.length > 0 ? (
-                      <>
-                        {/* Desktop table */}
-                        <div className="hidden sm:block overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="border-b border-stone-100 bg-stone-50/30">
-                                <th className="px-5 py-3 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
-                                <th className="px-4 py-3 text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">Qty</th>
-                                <th className="px-4 py-3 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Unit</th>
-                                <th className="px-5 py-3 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-stone-50">
-                              {selectedOrder.items.map(item => {
-                                // Try lookup by variantId, fallback to SKU
-                                const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
-                                const isLow = inv && inv.quantity <= inv.reorderLevel;
-                                return (
-                                  <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
-                                    <td className="px-5 py-3.5">
-                                      <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
-                                          <img
-                                            src={item.image}
-                                            alt={item.name}
-                                            className="h-full w-full object-contain"
-                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
-                                          />
-                                        </div>
-                                        <div className="min-w-0">
-                                          <p className="font-semibold text-stone-800 text-sm leading-tight line-clamp-1 tracking-tight">{item.name}</p>
-                                          <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
-                                          {isLow && (
-                                            <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 mt-0.5">
-                                              <AlertTriangle size={9} /> Low stock: {inv.quantity} left
-                                            </span>
-                                          )}
-                                        </div>
+                {/* ── ORDER ITEMS ── */}
+                <CollapsibleSection
+                  icon={<Package size={12} />}
+                  title="Order Items"
+                  badge={
+                    <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                      {selectedOrder.items.length}
+                    </span>
+                  }
+                >
+                  {selectedOrder.items.length > 0 ? (
+                    <>
+                      {/* Desktop table */}
+                      <div className="hidden sm:block overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-stone-100 bg-stone-50/30">
+                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">Qty</th>
+                              <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Unit</th>
+                              <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-50">
+                            {selectedOrder.items.map(item => {
+                              const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
+                              const isLow = inv && inv.quantity <= inv.reorderLevel;
+                              return (
+                                <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-3">
+                                      <div className="h-9 w-9 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
+                                        <img
+                                          src={item.image}
+                                          alt={item.name}
+                                          className="h-full w-full object-contain"
+                                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
+                                        />
                                       </div>
-                                    </td>
-                                    <td className="px-4 py-3.5 text-center">
-                                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-stone-100 text-stone-700 font-bold text-sm border border-stone-200">
-                                        {item.quantity}
-                                      </span>
-                                    </td>
-                                    <td className="px-4 py-3.5 text-right text-stone-500 text-sm font-mono tabular-nums">
-                                      ₹{item.price.toLocaleString('en-IN')}
-                                    </td>
-                                    <td className="px-5 py-3.5 text-right font-bold text-stone-900 font-mono tabular-nums">
-                                      ₹{(item.price * item.quantity).toLocaleString('en-IN')}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
+                                      <div className="min-w-0">
+                                        <p className="font-semibold text-stone-800 text-xs leading-tight line-clamp-1 tracking-tight">{item.name}</p>
+                                        <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                                        {isLow && (
+                                          <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 mt-0.5">
+                                            <AlertTriangle size={9} /> Low: {inv.quantity} left
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-3 text-center">
+                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-stone-100 text-stone-700 font-bold text-xs border border-stone-200">
+                                      {item.quantity}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-3 text-right text-stone-500 text-xs font-mono tabular-nums">
+                                    ₹{item.price.toLocaleString('en-IN')}
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-bold text-stone-900 text-xs font-mono tabular-nums">
+                                    ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
 
-                        {/* Mobile cards */}
-                        <div className="sm:hidden divide-y divide-stone-100">
-                          {selectedOrder.items.map(item => (
-                            <div key={item.id} className="p-4 flex gap-3">
-                              <div className="h-14 w-14 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
-                                <img src={item.image} alt={item.name} className="h-full w-full object-contain"
-                                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-stone-800 text-sm tracking-tight">{item.name}</p>
-                                <p className="text-[10px] text-stone-400 font-mono">{item.sku}</p>
-                                <div className="flex items-center justify-between mt-2">
-                                  <span className="text-xs text-stone-400">Qty: <strong className="text-stone-700">{item.quantity}</strong></span>
-                                  <span className="font-bold text-stone-900 text-sm font-mono">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
-                                </div>
+                      {/* Mobile cards */}
+                      <div className="sm:hidden divide-y divide-stone-100">
+                        {selectedOrder.items.map(item => (
+                          <div key={item.id} className="p-3 flex gap-3">
+                            <div className="h-12 w-12 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
+                              <img src={item.image} alt={item.name} className="h-full w-full object-contain"
+                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-stone-800 text-xs tracking-tight leading-tight">{item.name}</p>
+                              <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                              <div className="flex items-center justify-between mt-1.5">
+                                <span className="text-xs text-stone-400">×<strong className="text-stone-700">{item.quantity}</strong> · ₹{item.price.toLocaleString('en-IN')}</span>
+                                <span className="font-bold text-stone-900 text-sm font-mono">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                               </div>
                             </div>
-                          ))}
-                        </div>
-
-                        {/* Financials Footer */}
-                        <div className="px-5 py-4 border-t border-stone-100 bg-stone-50/50">
-                          {(() => {
-                            const { subtotal, tax, total } = calcFinancials(selectedOrder);
-                            return (
-                              <div className="ml-auto max-w-xs space-y-1.5">
-                                {[
-                                  { label: 'Subtotal', value: `₹${subtotal.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
-                                  { label: 'Shipping', value: 'Free', cls: 'text-emerald-600 font-semibold' },
-                                  { label: 'GST (18%)', value: `₹${tax.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
-                                ].map(row => (
-                                  <div key={row.label} className="flex justify-between text-xs font-mono tabular-nums">
-                                    <span className="text-stone-400">{row.label}</span>
-                                    <span className={row.cls}>{row.value}</span>
-                                  </div>
-                                ))}
-                                <div className="flex justify-between items-center pt-2.5 border-t border-stone-200 mt-1">
-                                  <span className="font-bold text-stone-700 text-sm">Total</span>
-                                  <span className="text-lg font-extrabold text-stone-900 font-mono tabular-nums">₹{total.toLocaleString('en-IN')}</span>
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="p-10 text-center">
-                        <Package size={28} className="mx-auto text-stone-300 mb-2" />
-                        <p className="text-xs text-stone-400">No items in this order</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ── RIGHT COLUMN ── */}
-                  <div className="flex flex-col gap-4">
-
-                    {/* Shipping Address */}
-                    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
-                        <SectionLabel icon={<MapPin size={12} />}>Shipping</SectionLabel>
-                      </div>
-                      <div className="px-4 py-3.5">
-                        {selectedOrder.shippingStreet ? (
-                          <div className="text-xs text-stone-500 leading-relaxed space-y-0.5">
-                            <p className="font-bold text-stone-800 text-sm tracking-tight">{selectedOrder.customerName}</p>
-                            <p>{selectedOrder.shippingStreet}</p>
-                            <p>{selectedOrder.shippingCity}, {selectedOrder.shippingState}</p>
-                            <p className="font-mono text-[10px] text-stone-400 pt-0.5">{selectedOrder.shippingZip} · {selectedOrder.shippingCountry}</p>
                           </div>
-                        ) : (
-                          <p className="text-xs text-stone-400 italic">No address provided</p>
-                        )}
+                        ))}
                       </div>
-                    </div>
 
-                    {/* Inventory Snapshot */}
-                    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
-                        <SectionLabel icon={<Warehouse size={12} />}>Inventory</SectionLabel>
-                      </div>
-                      <div className="px-4 py-3.5 space-y-3">
-                        {selectedOrder.items.map(item => {
-                          // Try lookup by variantId, fallback to SKU
-                          const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
-                          const available = inv?.quantity ?? 0;
-                          const reserved = inv?.reserved ?? 0;
-                          const isLow = available <= (inv?.reorderLevel ?? 5);
+                      {/* Financials Footer */}
+                      <div className="px-4 py-3 border-t border-stone-100 bg-stone-50/50">
+                        {(() => {
+                          const { subtotal, tax, total } = calcFinancials(selectedOrder);
                           return (
-                            <div key={item.id} className="flex items-center justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold text-stone-700 truncate tracking-tight">{item.name}</p>
-                                <p className="text-[10px] text-stone-400 font-mono">{item.sku}</p>
+                            <div className="ml-auto max-w-[200px] space-y-1">
+                              {[
+                                { label: 'Subtotal', value: `₹${subtotal.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
+                                { label: 'Shipping', value: 'Free', cls: 'text-emerald-600 font-semibold' },
+                                { label: 'GST (18%)', value: `₹${tax.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
+                              ].map(row => (
+                                <div key={row.label} className="flex justify-between text-xs font-mono tabular-nums">
+                                  <span className="text-stone-400">{row.label}</span>
+                                  <span className={row.cls}>{row.value}</span>
+                                </div>
+                              ))}
+                              <div className="flex justify-between items-center pt-2 border-t border-stone-200 mt-1">
+                                <span className="font-bold text-stone-700 text-xs">Total</span>
+                                <span className="text-sm font-extrabold text-stone-900 font-mono tabular-nums">₹{total.toLocaleString('en-IN')}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <span className={cn(
-                                      'text-xs font-bold px-2 py-0.5 rounded-md font-mono tabular-nums',
-                                      isLow
-                                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-                                        : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                                    )}>
-                                      {available}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="left" className="text-xs">
-                                    {available} available · {reserved} reserved
-                                  </TooltipContent>
-                                </Tooltip>
-                                {isLow && <AlertTriangle size={11} className="text-amber-500" />}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-8 text-center">
+                      <Package size={22} className="mx-auto text-stone-300 mb-2" />
+                      <p className="text-xs text-stone-400">No items in this order</p>
+                    </div>
+                  )}
+                </CollapsibleSection>
+
+                {/* ── BOTTOM GRID: Shipping, Inventory, Timeline ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+
+                  {/* Shipping Address */}
+                  <CollapsibleSection icon={<MapPin size={12} />} title="Shipping">
+                    <div className="px-4 py-3">
+                      {selectedOrder.shippingStreet ? (
+                        <div className="text-xs text-stone-500 leading-relaxed space-y-0.5">
+                          <p className="font-bold text-stone-800 text-sm tracking-tight">{selectedOrder.customerName}</p>
+                          <p>{selectedOrder.shippingStreet}</p>
+                          <p>{selectedOrder.shippingCity}, {selectedOrder.shippingState}</p>
+                          <p className="font-mono text-[10px] text-stone-400 pt-0.5">{selectedOrder.shippingZip} · {selectedOrder.shippingCountry}</p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-stone-400 italic">No address provided</p>
+                      )}
+                    </div>
+                  </CollapsibleSection>
+
+                  {/* Inventory Snapshot */}
+                  <CollapsibleSection icon={<Warehouse size={12} />} title="Inventory">
+                    <div className="px-4 py-3 space-y-2.5">
+                      {selectedOrder.items.map(item => {
+                        const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
+                        const available = inv?.quantity ?? 0;
+                        const reserved = inv?.reserved ?? 0;
+                        const isLow = available <= (inv?.reorderLevel ?? 5);
+                        return (
+                          <div key={item.id} className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-stone-700 truncate tracking-tight">{item.name}</p>
+                              <p className="text-[10px] text-stone-400 font-mono">{item.sku}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <span className={cn(
+                                    'text-xs font-bold px-1.5 py-0.5 rounded-md font-mono tabular-nums',
+                                    isLow
+                                      ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                                      : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                                  )}>
+                                    {available}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="text-xs">
+                                  {available} available · {reserved} reserved
+                                </TooltipContent>
+                              </Tooltip>
+                              {isLow && <AlertTriangle size={10} className="text-amber-500" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleSection>
+
+                  {/* Order Timeline */}
+                  <CollapsibleSection icon={<Clock size={12} />} title="Timeline" defaultOpen={false}>
+                    <div className="px-4 py-3">
+                      <div className="relative pl-4 border-l-2 border-stone-100 space-y-4">
+                        {(selectedOrder.logs || []).map((log, idx) => {
+                          const isLatest = idx === (selectedOrder.logs || []).length - 1;
+                          const cfg = STATUS_CONFIG[log.status];
+                          return (
+                            <div key={idx} className="relative">
+                              <div className={cn(
+                                'absolute -left-[21px] top-0.5 h-3 w-3 rounded-full border-2 border-white ring-2',
+                                isLatest ? `${cfg.dotClass} ring-indigo-100` : 'bg-stone-200 ring-stone-50'
+                              )} />
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <span className={cn(
+                                    'text-xs font-bold tracking-tight',
+                                    isLatest ? 'text-stone-900' : 'text-stone-500'
+                                  )}>
+                                    {cfg.label}
+                                  </span>
+                                  {isLatest && (
+                                    <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Now</span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-stone-400 font-mono tabular-nums">
+                                  {new Date(log.timestamp).toLocaleString('en-IN', {
+                                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                  })}
+                                </p>
+                                {log.note && (
+                                  <p className="text-[11px] text-stone-500 mt-1 bg-stone-50 px-2 py-1.5 rounded-lg border border-stone-100 leading-relaxed">
+                                    {log.note}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           );
                         })}
                       </div>
                     </div>
+                  </CollapsibleSection>
 
-                    {/* Order Timeline */}
-                    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden flex-1">
-                      <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
-                        <SectionLabel icon={<Clock size={12} />}>Timeline</SectionLabel>
-                      </div>
-                      <div className="px-4 py-4">
-                        <div className="relative pl-4 border-l-2 border-stone-100 space-y-5">
-                          {(selectedOrder.logs || []).map((log, idx) => {
-                            const isLatest = idx === (selectedOrder.logs || []).length - 1;
-                            const cfg = STATUS_CONFIG[log.status];
-                            return (
-                              <div key={idx} className="relative">
-                                <div className={cn(
-                                  'absolute -left-[21px] top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ring-2',
-                                  isLatest ? `${cfg.dotClass} ring-indigo-100` : 'bg-stone-200 ring-stone-50'
-                                )} />
-                                <div>
-                                  <div className="flex items-center gap-1.5 mb-0.5">
-                                    <span className={cn(
-                                      'text-xs font-bold tracking-tight',
-                                      isLatest ? 'text-stone-900' : 'text-stone-500'
-                                    )}>
-                                      {cfg.label}
-                                    </span>
-                                    {isLatest && (
-                                      <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Now</span>
-                                    )}
-                                  </div>
-                                  <p className="text-[10px] text-stone-400 font-mono tabular-nums">
-                                    {new Date(log.timestamp).toLocaleString('en-IN', {
-                                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                                    })}
-                                  </p>
-                                  {log.note && (
-                                    <p className="text-[11px] text-stone-500 mt-1 bg-stone-50 px-2.5 py-1.5 rounded-lg border border-stone-100 leading-relaxed">
-                                      {log.note}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
+
       </div>
 
       <ConfirmStatusDialog

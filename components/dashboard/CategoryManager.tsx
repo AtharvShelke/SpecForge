@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/dialog';
 
 // ─────────────────────────────────────────────────────────────
-// SHARED PRIMITIVES  (mirrors Overview / OrderManager system)
+// SHARED PRIMITIVES
 // ─────────────────────────────────────────────────────────────
 
 const SectionLabel = ({
@@ -89,6 +89,7 @@ const Panel = ({
     );
 };
 
+// PanelHeader — tightened padding for mobile
 const PanelHeader = ({
     icon,
     children,
@@ -98,7 +99,7 @@ const PanelHeader = ({
     children: React.ReactNode;
     right?: React.ReactNode;
 }) => (
-    <div className="px-5 py-3.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+    <div className="px-3 sm:px-5 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between gap-2">
         <SectionLabel icon={icon}>{children}</SectionLabel>
         {right}
     </div>
@@ -117,31 +118,36 @@ const Pill = ({ children, color = 'stone' }: { children: React.ReactNode; color?
         violet: 'bg-violet-50 text-violet-700 ring-violet-200',
     }[color];
     return (
-        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 whitespace-nowrap', cls)}>
+        <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 whitespace-nowrap', cls)}>
             {children}
         </span>
     );
 };
 
+// ActionBtn — bigger tap target on mobile
 const ActionBtn = ({
     onClick,
     danger,
     children,
     className,
+    alwaysVisible,
 }: {
     onClick: () => void;
     danger?: boolean;
     children: React.ReactNode;
     className?: string;
+    alwaysVisible?: boolean;
 }) => (
     <button
         type="button"
         onClick={onClick}
         className={cn(
-            'h-6 w-6 rounded-md flex items-center justify-center transition-all duration-150',
+            'h-7 w-7 rounded-md flex items-center justify-center transition-all duration-150',
             danger
-                ? 'text-stone-300 hover:text-rose-500 hover:bg-rose-50'
-                : 'text-stone-300 hover:text-stone-700 hover:bg-stone-100',
+                ? 'text-stone-300 hover:text-rose-500 hover:bg-rose-50 active:bg-rose-100'
+                : 'text-stone-300 hover:text-stone-700 hover:bg-stone-100 active:bg-stone-200',
+            // On mobile, always show actions; on desktop hide until hover
+            alwaysVisible ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100',
             className
         )}
     >
@@ -150,7 +156,7 @@ const ActionBtn = ({
 );
 
 // ─────────────────────────────────────────────────────────────
-// INLINE NODE FORM  (shared by add-root, add-sub, edit)
+// INLINE NODE FORM
 // ─────────────────────────────────────────────────────────────
 
 const NodeForm = ({
@@ -166,9 +172,10 @@ const NodeForm = ({
     onSave: () => void;
     onCancel: () => void;
 }) => (
-    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
         <SectionLabel icon={<Edit size={11} />}>{title}</SectionLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Always single-column on mobile, 2-col on sm+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {[
                 { label: 'Display Label', field: 'label', placeholder: 'e.g. Laptops' },
                 { label: 'Brand Filter', field: 'brand', placeholder: 'e.g. ASUS' },
@@ -202,18 +209,19 @@ const NodeForm = ({
                 </Select>
             </div>
         </div>
-        <div className="flex justify-end gap-2 pt-1">
+        {/* Buttons — full-width on mobile */}
+        <div className="flex gap-2 pt-0.5">
             <button
                 type="button"
                 onClick={onCancel}
-                className="h-7 px-3 text-[10px] font-bold uppercase tracking-widest text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+                className="flex-1 sm:flex-none h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
             >
                 Cancel
             </button>
             <button
                 type="button"
                 onClick={onSave}
-                className="h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-stone-900 text-white rounded-lg hover:bg-stone-700 transition-colors"
+                className="flex-1 sm:flex-none h-8 px-3 text-[10px] font-bold uppercase tracking-widest bg-stone-900 text-white rounded-lg hover:bg-stone-700 transition-colors"
             >
                 Save
             </button>
@@ -357,20 +365,20 @@ const CategoryManager = () => {
                 <div key={currentPath}>
                     {/* Node row */}
                     <div className={cn(
-                        'group flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all duration-150',
+                        'group flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all duration-150',
                         isEditing
                             ? 'border-indigo-200 bg-indigo-50/40'
                             : 'border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm'
                     )}>
-                        {/* Grip */}
-                        <GripVertical size={13} className="text-stone-200 cursor-grab shrink-0" />
+                        {/* Grip — hidden on mobile to save space */}
+                        <GripVertical size={12} className="text-stone-200 cursor-grab shrink-0 hidden sm:block" />
 
                         {/* Expand toggle */}
                         <button
                             type="button"
                             onClick={() => toggleExpand(currentPath)}
                             className={cn(
-                                'h-5 w-5 rounded flex items-center justify-center text-stone-400 hover:bg-stone-100 transition-colors shrink-0',
+                                'h-6 w-6 rounded flex items-center justify-center text-stone-400 hover:bg-stone-100 active:bg-stone-200 transition-colors shrink-0',
                                 !hasChildren && 'invisible'
                             )}
                         >
@@ -379,25 +387,25 @@ const CategoryManager = () => {
 
                         {/* Folder icon */}
                         <div className={cn(
-                            'h-7 w-7 rounded-lg flex items-center justify-center shrink-0',
+                            'h-6 w-6 rounded-lg flex items-center justify-center shrink-0',
                             depth === 0 ? 'bg-indigo-50 text-indigo-500' : 'bg-stone-100 text-stone-500'
                         )}>
-                            {isExpanded ? <FolderOpen size={14} /> : <Folder size={14} />}
+                            {isExpanded ? <FolderOpen size={13} /> : <Folder size={13} />}
                         </div>
 
                         {/* Label + meta */}
                         <div className="flex-1 min-w-0">
                             <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{node.label}</p>
                             {(node.category || node.brand) && (
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <div className="flex flex-wrap gap-1 mt-0.5">
                                     {node.category && <Pill color="indigo">{node.category}</Pill>}
                                     {node.brand && <Pill color="stone">{node.brand}</Pill>}
                                 </div>
                             )}
                         </div>
 
-                        {/* Actions — revealed on hover */}
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-150 shrink-0">
+                        {/* Actions — always visible on mobile, hover on desktop */}
+                        <div className="flex items-center gap-0.5 shrink-0">
                             <ActionBtn onClick={() => handleAddSubcategory(currentPath)}>
                                 <Plus size={12} />
                             </ActionBtn>
@@ -412,7 +420,7 @@ const CategoryManager = () => {
 
                     {/* Inline edit form */}
                     {isEditing && (
-                        <div className="mt-2 mb-2 ml-10">
+                        <div className="mt-2 mb-2 ml-6 sm:ml-10">
                             <NodeForm
                                 title="Edit Category"
                                 nodeForm={nodeForm}
@@ -425,7 +433,7 @@ const CategoryManager = () => {
 
                     {/* Inline add-sub form */}
                     {isAddingSub && (
-                        <div className="mt-2 mb-2 ml-10">
+                        <div className="mt-2 mb-2 ml-6 sm:ml-10">
                             <NodeForm
                                 title="Add Subcategory"
                                 nodeForm={nodeForm}
@@ -438,7 +446,7 @@ const CategoryManager = () => {
 
                     {/* Children */}
                     {hasChildren && isExpanded && (
-                        <div className="mt-1.5 mb-1.5 ml-9 pl-4 border-l-2 border-stone-100 space-y-1.5">
+                        <div className="mt-1.5 mb-1.5 ml-6 sm:ml-9 pl-3 sm:pl-4 border-l-2 border-stone-100 space-y-1.5">
                             {renderTree(node.children, `${currentPath}-`, depth + 1)}
                         </div>
                     )}
@@ -447,41 +455,55 @@ const CategoryManager = () => {
         });
 
     return (
-        <div className="space-y-4">
+        <div
+            className="space-y-3"
+            style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
+        >
 
             {/* ── PAGE HEADER ── */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h2 className="text-sm font-bold text-stone-800 tracking-tight">Categories & Filters</h2>
-                    <p className="text-[11px] text-stone-400 mt-0.5">
-                        Navigation hierarchy and per-category filter configuration
-                    </p>
+            <div className="flex items-center justify-between gap-2">
+                {/* Left: title */}
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-stone-800 tracking-tight">Categories & Filters</h2>
+                        <p className="text-[11px] text-stone-400 mt-0.5 hidden sm:block">
+                            Navigation hierarchy and filter configuration
+                        </p>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Right: sync + mode toggle */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Sync — icon only on mobile */}
                     <button
                         onClick={() => syncData()}
                         disabled={isLoading}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
                     >
-                        <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} /> Sync
+                        <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
+                        <span className="hidden sm:inline">Sync</span>
                     </button>
-                    {/* Mode toggle — styled like the stats tabs in OrderManager */}
-                    <div className="flex items-center gap-px bg-stone-100 p-1 rounded-xl border border-stone-200 w-fit">
+
+                    {/* Mode toggle — compact on mobile */}
+                    <div className="flex items-center gap-px bg-stone-100 p-1 rounded-xl border border-stone-200">
                         {(['hierarchy', 'filters'] as const).map(mode => (
                             <button
                                 key={mode}
                                 type="button"
                                 onClick={() => setConfigMode(mode)}
                                 className={cn(
-                                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-150',
+                                    'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-150',
                                     configMode === mode
                                         ? 'bg-white text-stone-900 shadow-sm border border-stone-200'
                                         : 'text-stone-400 hover:text-stone-700'
                                 )}
                             >
                                 {mode === 'hierarchy' ? <Layers size={11} /> : <ListFilter size={11} />}
-                                {mode === 'hierarchy' ? 'Hierarchy' : 'Filters'}
+                                {/* Show text labels on sm+, icons-only on mobile */}
+                                <span className="hidden sm:inline">
+                                    {mode === 'hierarchy' ? 'Hierarchy' : 'Filters'}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -499,20 +521,22 @@ const CategoryManager = () => {
                             <button
                                 type="button"
                                 onClick={() => { setIsAddingRoot(true); setNodeForm({}); setEditingNodePath(null); }}
-                                className="flex items-center gap-1.5 h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                                className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
                             >
-                                <Plus size={11} /> Add Root
+                                <Plus size={11} />
+                                <span className="hidden sm:inline">Add Root</span>
+                                <span className="sm:hidden">Add</span>
                             </button>
                         }
                     >
                         Category Hierarchy
                     </PanelHeader>
 
-                    <div className="px-5 py-4 space-y-1.5">
+                    <div className="px-3 sm:px-5 py-3 space-y-1.5">
 
                         {/* Add-root inline form */}
                         {isAddingRoot && (
-                            <div className="mb-4">
+                            <div className="mb-3">
                                 <NodeForm
                                     title="Add Root Category"
                                     nodeForm={nodeForm}
@@ -524,8 +548,8 @@ const CategoryManager = () => {
                         )}
 
                         {categories.length === 0 ? (
-                            <div className="py-16 flex flex-col items-center gap-3">
-                                <Folder size={28} className="text-stone-200" />
+                            <div className="py-12 flex flex-col items-center gap-3">
+                                <Folder size={24} className="text-stone-200" />
                                 <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
                                     No categories configured
                                 </p>
@@ -557,26 +581,28 @@ const CategoryManager = () => {
                             <button
                                 type="button"
                                 onClick={() => { setShowFilterModal(true); setEditingFilterIdx(null); setFilterForm({ key: '', label: '', type: 'checkbox', options: [] }); }}
-                                className="flex items-center gap-1.5 h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
+                                className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm flex-shrink-0"
                             >
-                                <Plus size={11} /> Add Filter
+                                <Plus size={11} />
+                                <span className="hidden sm:inline">Add Filter</span>
+                                <span className="sm:hidden">Add</span>
                             </button>
                         }
                     >
                         Filter Configuration
                     </PanelHeader>
 
-                    <div className="px-5 py-4 space-y-4">
+                    <div className="px-3 sm:px-5 py-3 space-y-3">
 
-                        {/* Category selector bar */}
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl">
+                        {/* Category selector bar — tighter on mobile */}
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-xl flex-wrap sm:flex-nowrap">
                             <SectionLabel icon={<Layers size={11} />}>Category</SectionLabel>
-                            <div className="flex-1 max-w-xs">
+                            <div className="flex-1 min-w-0">
                                 <Select
                                     value={selectedCatForFilters}
                                     onValueChange={val => setSelectedCatForFilters(val as Category)}
                                 >
-                                    <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg">
+                                    <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -586,15 +612,15 @@ const CategoryManager = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md ml-auto">
+                            <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md flex-shrink-0">
                                 {activeFilters.length} filter{activeFilters.length !== 1 ? 's' : ''}
                             </span>
                         </div>
 
                         {/* Filter cards */}
                         {activeFilters.length === 0 ? (
-                            <div className="py-16 flex flex-col items-center gap-3">
-                                <ListFilter size={28} className="text-stone-200" />
+                            <div className="py-12 flex flex-col items-center gap-3">
+                                <ListFilter size={24} className="text-stone-200" />
                                 <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
                                     No filters defined
                                 </p>
@@ -607,13 +633,14 @@ const CategoryManager = () => {
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            // Single column on mobile, 2-col on md+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                 {activeFilters.map((filter, idx) => (
                                     <div
                                         key={idx}
-                                        className="group flex items-start justify-between gap-3 px-4 py-3.5 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150"
+                                        className="group flex items-start justify-between gap-2 px-3 py-3 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150"
                                     >
-                                        <div className="min-w-0 space-y-2">
+                                        <div className="min-w-0 space-y-1.5 flex-1">
                                             <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{filter.label}</p>
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
@@ -629,7 +656,8 @@ const CategoryManager = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
+                                        {/* Actions — always visible on mobile, hover on desktop */}
+                                        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
                                             <ActionBtn onClick={() => { setEditingFilterIdx(idx); setFilterForm(filter); setShowFilterModal(true); }}>
                                                 <Edit size={12} />
                                             </ActionBtn>
@@ -649,9 +677,8 @@ const CategoryManager = () => {
             {/*  FILTER MODAL                          */}
             {/* ══════════════════════════════════════ */}
             <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
-                <DialogContent className="sm:max-w-lg bg-white border-stone-200 rounded-2xl shadow-xl">
-                    {/* Custom stripe header */}
-                    <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300 -mt-6 mb-5 rounded-t-2xl" />
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg bg-white border-stone-200 rounded-2xl shadow-xl">
+                    <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300 -mt-6 mb-4 rounded-t-2xl" />
                     <DialogHeader className="pb-2">
                         <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
                             {editingFilterIdx !== null ? 'Edit Filter' : 'New Filter'}
@@ -663,7 +690,8 @@ const CategoryManager = () => {
                     </DialogHeader>
 
                     <div className="space-y-3 py-1">
-                        <div className="grid grid-cols-2 gap-3">
+                        {/* Key + Label — side by side on sm+, stacked on mobile */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {[
                                 { label: 'Filter Key', field: 'key', placeholder: 'e.g. specs.brand', mono: true },
                                 { label: 'Display Label', field: 'label', placeholder: 'e.g. Manufacturer', mono: false },
@@ -710,24 +738,25 @@ const CategoryManager = () => {
                                         options: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
                                     })
                                 }
-                                className="min-h-[80px] text-xs font-medium border-stone-200 bg-stone-50 rounded-lg resize-none focus:bg-white focus:border-teal-300 focus:ring-teal-500/20 placeholder:text-stone-400"
+                                className="min-h-[72px] text-xs font-medium border-stone-200 bg-stone-50 rounded-lg resize-none focus:bg-white focus:border-teal-300 focus:ring-teal-500/20 placeholder:text-stone-400"
                             />
                             <p className="text-[10px] text-stone-400">Separate values with commas.</p>
                         </div>
                     </div>
 
-                    <DialogFooter className="gap-2 pt-2">
+                    {/* Full-width buttons on mobile */}
+                    <DialogFooter className="gap-2 pt-2 flex-row">
                         <button
                             type="button"
                             onClick={() => setShowFilterModal(false)}
-                            className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
                             onClick={handleSaveFilter}
-                            className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
                         >
                             Save Filter
                         </button>
@@ -739,11 +768,11 @@ const CategoryManager = () => {
             {/*  DELETE CONFIRM MODAL                  */}
             {/* ══════════════════════════════════════ */}
             <Dialog open={deleteConfirm !== null} onOpenChange={open => { if (!open) setDeleteConfirm(null); }}>
-                <DialogContent className="sm:max-w-md bg-white border-stone-200 rounded-2xl shadow-xl">
-                    <div className="h-0.5 w-full bg-gradient-to-r from-rose-400 via-rose-400 to-rose-300 -mt-6 mb-5 rounded-t-2xl" />
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md bg-white border-stone-200 rounded-2xl shadow-xl">
+                    <div className="h-0.5 w-full bg-gradient-to-r from-rose-400 via-rose-400 to-rose-300 -mt-6 mb-4 rounded-t-2xl" />
                     <DialogHeader className="pb-2">
                         <div className="flex items-center gap-2 mb-1">
-                            <div className="h-7 w-7 rounded-lg bg-rose-50 flex items-center justify-center">
+                            <div className="h-7 w-7 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0">
                                 <AlertTriangle size={14} className="text-rose-500" />
                             </div>
                             <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
@@ -762,18 +791,19 @@ const CategoryManager = () => {
                             )}
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="gap-2 pt-2">
+                    {/* Full-width buttons on mobile */}
+                    <DialogFooter className="gap-2 pt-2 flex-row">
                         <button
                             type="button"
                             onClick={() => setDeleteConfirm(null)}
-                            className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
                             onClick={handleConfirmDelete}
-                            className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm flex items-center gap-1.5"
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-1.5"
                         >
                             <Trash size={11} /> Delete
                         </button>
