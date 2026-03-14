@@ -9,14 +9,14 @@ export default function StorefrontFooter() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="relative  text-white overflow-hidden mt-auto pb-16 md:pb-0">
+        <footer className="relative text-white overflow-hidden mt-auto -mb-16 md:mb-0">
             {/* Subtle Animated Background Gradient */}
             <div className="absolute inset-0 pointer-events-none opacity-40">
                 <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[40%] sm:w-[50%] sm:h-[50%] blur-[80px] sm:blur-[120px] rounded-full bg-indigo-900/40" />
                 <div className="absolute top-[60%] -right-[10%] w-[60%] h-[40%] sm:w-[40%] sm:h-[60%] blur-[80px] sm:blur-[120px] rounded-full bg-violet-900/30" />
             </div>
 
-            <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 
                 {/* Top Section / Call to Action */}
                 <div className="mb-10 sm:mb-14 md:mb-20 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10 md:gap-12 items-center border-b border-white/10 pb-10 sm:pb-14 md:pb-16">

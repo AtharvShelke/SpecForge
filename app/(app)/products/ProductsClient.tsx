@@ -147,8 +147,8 @@ const ProductCard = ({
                             <button
                                 onClick={(e) => handleCompareToggle(e, product)}
                                 className={`h-7 px-3 text-[10px] font-bold rounded-xl border transition-all ${isCompared
-                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                                        : 'border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-700'
+                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                    : 'border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-700'
                                     }`}
                             >
                                 {isCompared ? '✓ Compared' : 'Compare'}
@@ -175,8 +175,8 @@ const ProductCard = ({
                                     onClick={() => addToCart(product)}
                                     disabled={isOutOfStock || (isIncompatible && !inCart)}
                                     className={`h-7 px-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${isOutOfStock || (isIncompatible && !inCart)
-                                            ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
-                                            : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50 active:scale-95'
+                                        ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
+                                        : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50 active:scale-95'
                                         }`}
                                 >
                                     {isOutOfStock ? 'Sold Out' : <><Plus size={10} strokeWidth={3} /> Add</>}
@@ -191,144 +191,90 @@ const ProductCard = ({
 
     /* ── GRID VIEW ── */
     return (
-        <div
-            className={`group bg-white border rounded-2xl overflow-hidden flex flex-col h-full relative card-enter transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 ${inCart
-                    ? 'border-indigo-200 shadow-[0_0_0_2px_#c7d2fe]'
-                    : 'border-zinc-100 hover:border-zinc-200'
-                } ${isIncompatible && !inCart ? 'opacity-45' : ''}`}
-            style={{ animationDelay: `${index * 40}ms` }}
-        >
-            {/* Image Zone */}
-            <div className="relative overflow-hidden bg-zinc-50 aspect-square flex items-center justify-center">
-                <Link href={`/products/${product.id}`} className="absolute inset-0 z-10">
-                    <span className="sr-only">View {product.name}</span>
-                </Link>
+  <div
+    className={`
+      group
+      bg-white
+      border
+      border-zinc-200
+      rounded-xl
+      overflow-hidden
+      flex flex-col
+      transition
+      hover:shadow-md
+      ${inCart ? "ring-2 ring-indigo-200" : ""}
+    `}
+  >
 
-                {image ? (
-                    <div className="w-full h-full relative transition-transform duration-400 group-hover:scale-[1.05]">
-                        <Image
-                            src={image}
-                            alt={product.name}
-                            fill
-                            sizes="(max-width: 768px) 50vw, 25vw"
-                            className="object-contain p-4 mix-blend-multiply"
-                            loading="lazy"
-                        />
-                    </div>
-                ) : (
-                    <div className="text-zinc-200 text-xs">No Image</div>
-                )}
+    <div className="aspect-square bg-zinc-50 flex items-center justify-center relative">
 
-                {/* Discount badge — top left */}
-                {discount && !isOutOfStock && (
-                    <span className="absolute top-2.5 left-2.5 z-20 bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
-                        -{discount}%
-                    </span>
-                )}
+      {image && (
+        <Image
+          src={image}
+          alt={product.name}
+          fill
+          sizes="50vw"
+          className="object-contain p-3"
+        />
+      )}
 
-                {/* Stock badge — top left */}
-                {(isOutOfStock || isLowStock) && (
-                    <span className={`absolute top-2.5 left-2.5 z-20 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${isOutOfStock ? 'bg-red-500' : 'bg-amber-500'}`}>
-                        {isOutOfStock ? 'Out of Stock' : 'Low Stock'}
-                    </span>
-                )}
+    </div>
 
-                {/* Selected checkmark — top right */}
-                <AnimatePresence>
-                    {inCart && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.7 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.7 }}
-                            className="absolute top-2.5 right-2.5 z-20 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/30"
-                        >
-                            <Check size={11} strokeWidth={3} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
 
-                {/* Compare button — top right, fades in on hover (hidden when in cart) */}
-                {!inCart && (
-                    <button
-                        onClick={(e) => handleCompareToggle(e, product)}
-                        className={`absolute top-2.5 right-2.5 z-20 h-7 px-2.5 rounded-full text-[9px] font-bold uppercase tracking-wider border shadow-sm transition-all duration-200 ${isCompared
-                                ? 'opacity-100 bg-indigo-600 text-white border-indigo-600'
-                                : 'opacity-0 group-hover:opacity-100 bg-white/95 text-zinc-500 border-zinc-200 hover:text-zinc-900 hover:border-zinc-300'
-                            }`}
-                    >
-                        {isCompared ? '✓' : '⊕'} Compare
-                    </button>
-                )}
+    <div className="p-2 flex flex-col gap-1">
 
-                {/* Compat dot — bottom right */}
-                <div
-                    className={`absolute bottom-2.5 right-2.5 z-20 w-2 h-2 rounded-full border-2 border-white ${compatDot}`}
-                    title={compatLabel}
-                />
-            </div>
+      <p className="text-[9px] text-zinc-400 uppercase font-semibold">
+        {product.category}
+      </p>
 
-            {/* Content */}
-            <div className="p-3.5 flex flex-col flex-1">
-                <p className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${inCart ? 'text-indigo-500' : 'text-zinc-400'}`}>
-                    {product.category}
-                </p>
+      <h3 className="text-[11px] font-semibold text-zinc-900 line-clamp-2">
+        {product.name}
+      </h3>
 
-                <Link href={`/products/${product.id}`}>
-                    <h3 className="font-semibold text-zinc-900 text-[12px] leading-snug line-clamp-2 min-h-[32px] hover:text-indigo-600 transition-colors">
-                        {product.name}
-                    </h3>
-                </Link>
+      <div className="flex items-center justify-between mt-1">
 
-                {specKeys.length > 0 && (
-                    <p className="text-[10px] text-zinc-400 mt-1.5 truncate">
-                        {specKeys.map(k => String(flatSpecs[k])).join(' · ')}
-                    </p>
-                )}
+        <span className="text-[12px] font-bold">
+          ₹{price.toLocaleString("en-IN")}
+        </span>
 
-                <div className="mt-auto pt-2.5 border-t border-zinc-50 flex items-center justify-between gap-1.5">
-                    <div>
-                        <span className="text-sm font-bold text-zinc-900 tracking-tight">
-                            ₹{price.toLocaleString('en-IN')}
-                        </span>
-                        {discount && (
-                            <span className="ml-1 text-[10px] text-zinc-400 line-through">
-                                ₹{compareAt!.toLocaleString('en-IN')}
-                            </span>
-                        )}
-                    </div>
+        {inCart ? (
+          <button
+            onClick={() => onRemove(product.id)}
+            className="
+              text-[10px]
+              px-2
+              h-5
+              rounded-md
+              bg-emerald-100
+              text-emerald-700
+              font-semibold
+            "
+          >
+            Added
+          </button>
+        ) : (
+          <button
+            onClick={() => addToCart(product)}
+            className="
+              text-[10px]
+              px-2.5
+              h-5
+              rounded-md
+              bg-zinc-900
+              text-white
+              font-semibold
+            "
+          >
+            Add
+          </button>
+        )}
 
-                    {inCart ? (
-                        <div className="flex items-center gap-0.5 h-7 bg-emerald-50 border border-emerald-200 rounded-xl overflow-hidden">
-                            <button
-                                onClick={() => cartQuantity <= 1 ? onRemove(product.id) : onUpdateQty(product.id, cartQuantity - 1)}
-                                className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
-                            >
-                                −
-                            </button>
-                            <span className="text-[11px] font-bold text-emerald-700 min-w-[16px] text-center">{cartQuantity}</span>
-                            <button
-                                onClick={() => addToCart(product)}
-                                className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
-                            >
-                                +
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => addToCart(product)}
-                            disabled={(isIncompatible && !inCart) || isOutOfStock}
-                            className={`h-7 px-3 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${isOutOfStock || (isIncompatible && !inCart)
-                                    ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
-                                    : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50 active:scale-95'
-                                }`}
-                        >
-                            {isOutOfStock ? 'Sold Out' : <><Plus size={10} strokeWidth={3} /> Add</>}
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
+      </div>
+
+    </div>
+
+  </div>
+)
 };
 
 /* ─────────────────────────────── Main Component ─────────────────────────────── */
@@ -621,182 +567,154 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     return (
         <PageLayout bgClass="bg-stone-50">
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap');
-
-                * { font-family: 'DM Sans', system-ui, sans-serif; }
-                .display-font { font-family: 'Instrument Serif', Georgia, serif; }
-
-                .scrollbar-hide::-webkit-scrollbar { display: none; }
-                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-                .scrollbar-thin::-webkit-scrollbar { width: 4px; }
-                .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-                .scrollbar-thin::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 4px; }
-
-                .card-enter {
-                    animation: cardFadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-                }
-                @keyframes cardFadeUp {
-                    from { opacity: 0; transform: translateY(12px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-
-                .category-pill {
-                    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-                }
-                .filter-chip {
-                    animation: chipIn 0.2s ease both;
-                }
-                @keyframes chipIn {
-                    from { opacity: 0; transform: scale(0.9); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-
-                /* Subtle dot grid pattern */
-                .dot-grid-bg {
-                    background-image: radial-gradient(circle, #d4d4d8 1px, transparent 1px);
-                    background-size: 24px 24px;
-                }
-            `}</style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap');
+    * { font-family: 'DM Sans', system-ui, sans-serif; }
+    .display-font { font-family: 'Instrument Serif', Georgia, serif; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 4px; }
+    .card-enter { animation: cardFadeUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    @keyframes cardFadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .category-pill { transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+    .filter-chip { animation: chipIn 0.2s ease both; }
+    @keyframes chipIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .dot-grid-bg {
+        background-image: radial-gradient(circle, #d4d4d8 1px, transparent 1px);
+        background-size: 24px 24px;
+    }
+`}</style>
 
             {/* ── TOP NAV BAR ── */}
             <PageLayout.Header compact>
-                <div className="flex flex-col gap-0">
+                <div className="w-full flex flex-col gap-2">
 
-                    {/* Row 1: Category pills + Search + Controls */}
+                    {/* SEARCH */}
                     <div className="flex items-center gap-2">
 
-                        {/* Category pills — scrollable, takes remaining space */}
-                        <div className="relative flex-1 min-w-0 group/nav">
-                            {canScrollLeft && (
-                                <button onClick={() => scrollCategories('left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 bg-white shadow-md border border-zinc-200 rounded-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 opacity-0 group-hover/nav:opacity-100 transition-opacity">
-                                    <ChevronLeft size={12} />
-                                </button>
-                            )}
-                            <nav ref={categoryNavRef} onScroll={updateScrollButtons} className="flex overflow-x-auto scrollbar-hide gap-1 ">
-                                {categories.map((node) => {
-                                    const isActive = activeTab?.label === node.label;
-                                    const hasChildren = node.children && node.children.length > 0;
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
 
-                                    if (!hasChildren) {
-                                        return (
-                                            <button
-                                                key={node.label}
-                                                onClick={() => { setSearchTerm(''); setActiveTab(node); }}
-                                                className={`category-pill flex-shrink-0 whitespace-nowrap px-3.5 py-1.5 text-sm font-medium rounded-full transition-all ${isActive
-                                                    ? 'bg-zinc-900 text-white shadow-sm'
-                                                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-200'
-                                                    }`}
-                                            >
-                                                {node.label}
-                                            </button>
-                                        );
+                            <input
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    if (e.target.value.length > 0 && activeTab) {
+                                        setActiveTab(null);
+                                        clearAllFilters();
                                     }
+                                }}
+                                placeholder="Search hardware"
+                                className="
+            w-full
+            h-8
+            pl-9
+            pr-8
+            rounded-full
+            bg-white/80
+            backdrop-blur
+            border border-zinc-200
+            text-[12px]
+            focus:outline-none
+            focus:ring-2
+            focus:ring-indigo-200
+          "
+                            />
 
-                                    return (
-                                        <HoverCard key={node.label} openDelay={100} closeDelay={150}>
-                                            <HoverCardTrigger asChild>
-                                                <button
-                                                    onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(null); }}
-                                                    className={`category-pill flex-shrink-0 whitespace-nowrap flex items-center gap-1 px-3.5 py-1.5 text-sm font-medium rounded-full transition-all ${isActive
-                                                        ? 'bg-zinc-900 text-white shadow-sm'
-                                                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-200'
-                                                        }`}
-                                                >
-                                                    {node.label}
-                                                    <ChevronDown size={12} className="opacity-50" />
-                                                </button>
-                                            </HoverCardTrigger>
-                                            <HoverCardContent align="start" className="w-[180px] bg-white border border-zinc-100 shadow-xl rounded-2xl p-1.5 z-50 flex flex-col gap-0.5">
-                                                <button
-                                                    onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(null); }}
-                                                    className={`w-full text-left text-sm font-medium rounded-xl px-3 py-2 transition-colors ${!selectedNode && isActive ? 'bg-indigo-50 text-indigo-700' : 'text-zinc-700 hover:bg-zinc-50'}`}
-                                                >
-                                                    All {node.label}
-                                                </button>
-                                                {node.children?.map((subNode) => (
-                                                    <button
-                                                        key={subNode.label}
-                                                        onClick={() => { setSearchTerm(''); setActiveTab(node); setSelectedNode(subNode); }}
-                                                        className={`w-full text-left text-sm rounded-xl px-3 py-2 transition-colors ${selectedNode?.label === subNode.label && isActive ? 'bg-indigo-50 text-indigo-700' : 'text-zinc-600 hover:bg-zinc-50'}`}
-                                                    >
-                                                        {subNode.label}
-                                                    </button>
-                                                ))}
-                                            </HoverCardContent>
-                                        </HoverCard>
-                                    );
-                                })}
-                            </nav>
-                            {canScrollRight && (
-                                <button onClick={() => scrollCategories('right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 bg-white shadow-md border border-zinc-200 rounded-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 opacity-0 group-hover/nav:opacity-100 transition-opacity">
-                                    <ChevronRight size={12} />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm("")}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400"
+                                >
+                                    <X size={12} />
                                 </button>
                             )}
+
                         </div>
 
-
-
-
-
-                        
-
-                            
-
-                        {/* Mobile: search + filter */}
-                        <div className="flex sm:hidden items-center gap-2">
-                            <div className="relative group">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" strokeWidth={2} />
-                                <input
-                                    type="text"
-                                    className="w-36 h-8 pl-8 pr-7 bg-white border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all shadow-sm"
-                                    placeholder="Search…"
-                                    value={searchTerm}
-                                    onChange={(e) => {
-                                        setSearchTerm(e.target.value);
-                                        if (e.target.value.length > 0 && activeTab) { setActiveTab(null); clearAllFilters(); }
-                                    }}
-                                />
-                                {searchTerm && (
-                                    <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400"><X size={11} /></button>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => setIsMobileFiltersOpen(true)}
-                                className="relative flex items-center gap-1 h-8 px-2.5 bg-white border border-zinc-200 rounded-xl text-zinc-700 text-xs font-medium hover:bg-zinc-50 transition-all shadow-sm"
-                            >
-                                <SlidersHorizontal size={13} />
-                                {activeFilterCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                                        {activeFilterCount}
-                                    </span>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* Desktop mobile-filter btn (lg hidden) */}
                         <button
                             onClick={() => setIsMobileFiltersOpen(true)}
-                            className="lg:hidden sm:flex hidden relative items-center gap-1.5 h-8 px-2.5 bg-white border border-zinc-200 rounded-xl text-zinc-700 font-medium text-xs hover:bg-zinc-50 transition-all shadow-sm flex-shrink-0"
+                            className="
+          h-8
+          px-3
+          rounded-full
+          border
+          border-zinc-200
+          bg-white
+          text-[11px]
+          font-semibold
+          flex items-center gap-1.5
+        "
                         >
-                            <SlidersHorizontal size={13} />
+                            <SlidersHorizontal size={12} />
                             Filters
-                            {activeFilterCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                                    {activeFilterCount}
-                                </span>
-                            )}
                         </button>
+
                     </div>
+
+
+                    {/* CATEGORY STRIP */}
+                    <div className="relative -mx-3">
+
+                        <div className="flex overflow-x-auto no-scrollbar px-3 gap-1.5">
+
+                            {categories.map(node => {
+
+                                const isActive = activeTab?.label === node.label
+
+                                return (
+                                    <button
+                                        key={node.label}
+                                        onClick={() => {
+                                            setSearchTerm("")
+                                            setActiveTab(node)
+                                        }}
+                                        className={`
+                whitespace-nowrap
+                px-3
+                py-1
+                text-[10px]
+                font-semibold
+                rounded-full
+                border
+                transition
+                ${isActive
+                                                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                                                : "bg-white border-zinc-200 text-zinc-600"}
+              `}
+                                    >
+                                        {node.label}
+                                    </button>
+                                )
+                            })}
+
+                        </div>
+
+                        <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+                        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+
+                    </div>
+
                 </div>
             </PageLayout.Header>
 
-            <PageLayout.Content className="flex-1 overflow-hidden" padding="sm" container={false}>
-                <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 lg:px-8 h-full">
-                    <div className="flex h-full gap-6">
+            <PageLayout.Content
+                className="flex-1 overflow-hidden"
+                padding="xs"
+                container={false}
+            >
+                <div className="max-w-[1440px] mx-auto w-full px-2 sm:px-4 lg:px-8 h-full">
+                    <div className="flex h-full gap-3 sm:gap-5 lg:gap-6">
 
                         {/* ── SIDEBAR ── */}
-                        <aside className="hidden lg:block w-72 flex-shrink-0 h-full">
+                        <aside className="hidden lg:block w-64 xl:w-72 flex-shrink-0 h-full">
                             {activeTab && (
                                 <Sidebar
                                     nodes={activeTab.children || []}
@@ -819,9 +737,9 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
                         {/* ── MOBILE SIDEBAR ── */}
                         {isMobileFiltersOpen && activeTab && (
-                            <div className="fixed inset-0 z-50 lg:hidden">
+                            <div className="fixed inset-0 z-50 lg:hidden flex">
                                 <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileFiltersOpen(false)} />
-                                <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-2xl h-full rounded-r-2xl overflow-hidden">
+                                <div className="relative w-full max-w-[280px] sm:max-w-sm bg-white shadow-2xl h-full rounded-r-3xl overflow-hidden">
                                     <Sidebar
                                         nodes={activeTab.children || []}
                                         onSelect={setSelectedNode}
@@ -844,113 +762,108 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                         )}
 
                         {/* ── MAIN CONTENT ── */}
-                        <main className="flex-1 min-h-0 min-w-0 flex flex-col">
+                        <main className="flex-1 min-h-0 min-w-0 flex flex-col px-0 sm:px-1">
 
                             {/* Toolbar */}
-                            <div className="flex-shrink-0 mb-5">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                                    <div className="flex items-baseline gap-3">
-                                        <h2 className="text-lg font-semibold text-zinc-900">
+                            <div className="flex-shrink-0 mb-4">
+                                <div className="flex items-center justify-between mb-2.5 gap-2">
+                                    <div className="flex items-baseline gap-2 min-w-0">
+                                        <h2 className="text-sm font-semibold text-zinc-900 truncate">
                                             {activeTab?.label || (searchTerm ? `"${searchTerm}"` : 'All Products')}
                                         </h2>
-                                        <span className="text-sm text-zinc-400 font-medium">
-                                            {totalCount.toLocaleString()} {totalCount === 1 ? 'product' : 'products'}
+                                        <span className="text-xs text-zinc-400 font-medium flex-shrink-0">
+                                            {totalCount.toLocaleString()}
                                         </span>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
-
-                                        {/* Search */}
-                                        <div className="relative w-52 flex-shrink-0 group hidden sm:block">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" strokeWidth={2} />
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        {/* Search — hidden on mobile, visible sm+ */}
+                                        <div className="relative w-40 hidden sm:block">
+                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" strokeWidth={2} />
                                             <input
                                                 type="text"
-                                                className="w-full h-8 pl-9 pr-8 bg-white border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all shadow-sm"
+                                                className="w-full h-7 pl-7 pr-7 bg-white border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all shadow-sm"
                                                 placeholder="Search…"
                                                 value={searchTerm}
                                                 onChange={(e) => {
                                                     setSearchTerm(e.target.value);
-                                                    if (e.target.value.length > 0 && activeTab) {
-                                                        setActiveTab(null);
-                                                        clearAllFilters();
-                                                    }
+                                                    if (e.target.value.length > 0 && activeTab) { setActiveTab(null); clearAllFilters(); }
                                                 }}
                                             />
                                             {searchTerm && (
-                                                <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors">
-                                                    <X size={12} />
+                                                <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
+                                                    <X size={10} />
                                                 </button>
                                             )}
                                         </div>
 
                                         {/* Sort */}
-                                        <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-xl px-3 py-2 shadow-sm text-sm text-zinc-600">
-                                            <ArrowUpDown size={14} className="text-zinc-400" />
+                                        <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-xl px-2 py-1 shadow-sm">
+                                            <ArrowUpDown size={11} className="text-zinc-400 flex-shrink-0" />
                                             <select
-                                                className="bg-transparent font-medium text-zinc-700 focus:outline-none cursor-pointer text-sm"
+                                                className="bg-transparent font-medium text-zinc-700 focus:outline-none cursor-pointer text-xs max-w-[90px] sm:max-w-none"
                                                 value={sortOption}
                                                 onChange={(e) => setSortOption(e.target.value)}
                                             >
-                                                <option value="price-asc">Price: Low → High</option>
-                                                <option value="price-desc">Price: High → Low</option>
-                                                <option value="name-asc">Name: A → Z</option>
-                                                <option value="name-desc">Name: Z → A</option>
+                                                <option value="price-asc">Low → High</option>
+                                                <option value="price-desc">High → Low</option>
+                                                <option value="name-asc">A → Z</option>
+                                                <option value="name-desc">Z → A</option>
                                             </select>
                                         </div>
 
-                                        {/* View Toggle */}
-                                        <div className="flex items-center bg-white border border-zinc-200 rounded-xl p-1 shadow-sm gap-0.5">
+                                        {/* View toggle */}
+                                        <div className="flex items-center bg-white border border-zinc-200 rounded-xl p-0.5 shadow-sm gap-0.5">
                                             <button
                                                 onClick={() => setViewMode("grid")}
-                                                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-700'}`}
-                                                title="Grid View"
+                                                className={`p-1 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-zinc-900 text-white' : 'text-zinc-400 hover:text-zinc-700'}`}
                                             >
-                                                <Grid2x2 size={15} />
+                                                <Grid2x2 size={13} />
                                             </button>
                                             <button
                                                 onClick={() => setViewMode("list")}
-                                                className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-700'}`}
-                                                title="List View"
+                                                className={`p-1 rounded-lg transition-all ${viewMode === 'list' ? 'bg-zinc-900 text-white' : 'text-zinc-400 hover:text-zinc-700'}`}
                                             >
-                                                <List size={15} />
+                                                <List size={13} />
                                             </button>
                                         </div>
-                                        {/* Start a Build */}
-                        <Link
-                            href="/builds/new"
-                            className="hidden lg:inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
-                        >
-                            <Hammer size={11} />
-                            Build
-                        </Link>
+
+                                        {/* Build CTA */}
+                                        <Link
+                                            href="/builds/new"
+                                            className="hidden lg:inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
+                                        >
+                                            <Hammer size={10} />
+                                            Build
+                                        </Link>
                                     </div>
                                 </div>
 
-                                {/* Active Filter chips */}
+                                {/* Active filter chips */}
                                 {hasActiveFilters && (
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Filters:</span>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Filters:</span>
                                         {selectedNode && (
-                                            <span className="filter-chip inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-900 text-white text-xs font-medium rounded-full">
+                                            <span className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-900 text-white text-[10px] font-medium rounded-full">
                                                 {selectedNode.label}
-                                                <button onClick={() => setSelectedNode(null)} className="hover:text-zinc-300 transition-colors"><X size={11} /></button>
+                                                <button onClick={() => setSelectedNode(null)} className="hover:text-zinc-300"><X size={9} /></button>
                                             </span>
                                         )}
                                         {Object.entries(selectedFilters).map(([key, values]) =>
                                             values.map(val => (
-                                                <span key={`${key}-${val}`} className="filter-chip inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-100 text-zinc-700 text-xs font-medium rounded-full border border-zinc-200">
+                                                <span key={`${key}-${val}`} className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-100 text-zinc-700 text-[10px] font-medium rounded-full border border-zinc-200">
                                                     {val}
-                                                    <button onClick={() => handleFilterChange(key, val)} className="text-zinc-400 hover:text-zinc-700"><X size={11} /></button>
+                                                    <button onClick={() => handleFilterChange(key, val)} className="text-zinc-400 hover:text-zinc-700"><X size={9} /></button>
                                                 </span>
                                             ))
                                         )}
                                         {(priceRange.min > 0 || priceRange.max < DEFAULT_MAX_PRICE) && (
-                                            <span className="filter-chip inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-100 text-zinc-700 text-xs font-medium rounded-full border border-zinc-200">
+                                            <span className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-100 text-zinc-700 text-[10px] font-medium rounded-full border border-zinc-200">
                                                 ₹{priceRange.min.toLocaleString()} – ₹{priceRange.max.toLocaleString()}
-                                                <button onClick={() => setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE })} className="text-zinc-400 hover:text-zinc-700"><X size={11} /></button>
+                                                <button onClick={() => setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE })} className="text-zinc-400 hover:text-zinc-700"><X size={9} /></button>
                                             </span>
                                         )}
-                                        <button onClick={clearAllFilters} className="text-xs font-medium text-zinc-400 hover:text-zinc-700 transition-colors underline underline-offset-2 ml-1">
+                                        <button onClick={clearAllFilters} className="text-[10px] font-medium text-zinc-400 hover:text-zinc-700 transition-colors underline underline-offset-2">
                                             Clear all
                                         </button>
                                     </div>
@@ -962,11 +875,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
                                 {/* Loading skeleton */}
                                 {isLoadingProducts && (
-                                    <div className={`grid gap-4 ${viewMode === 'list'
+                                    <div className={`grid gap-3 sm:gap-4 ${viewMode === 'list'
                                         ? 'grid-cols-1'
                                         : isBuildMode
                                             ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'
-                                            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                                            : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                                         }`}>
                                         {Array.from({ length: 8 }).map((_, i) =>
                                             viewMode === 'list' ? <SkeletonList key={i} /> : <SkeletonCard key={i} />
@@ -993,12 +906,19 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
                                 {/* Products */}
                                 {!isLoadingProducts && paginatedProducts.length > 0 && (
-                                    <div className={`grid gap-4 ${viewMode === 'list'
-                                        ? isBuildMode ? 'grid-cols-1' : 'grid-cols-1 2xl:grid-cols-2'
-                                        : isBuildMode
-                                            ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3'
-                                            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                                        }`}>
+                                    <div
+                                        className={`
+    grid
+    gap-2
+    sm:gap-3
+    ${viewMode === "list"
+                                                ? "grid-cols-1"
+                                                : isBuildMode
+                                                    ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3"
+                                                    : "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4"
+                                            }
+  `}
+                                    >
                                         {paginatedProducts.map((product, index) => {
                                             const compatReport = checkCompatibility(product);
                                             const isIncompatible = compatReport.status === CompatibilityLevel.INCOMPATIBLE;
@@ -1028,28 +948,28 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
                                 {/* Pagination */}
                                 {!isLoadingProducts && paginatedProducts.length > 0 && totalPages > 1 && (
-                                    <div className="mt-12 flex items-center justify-center gap-2">
+                                    <div className="mt-6 sm:mt-8 flex items-center justify-center gap-1.5">
                                         <button
                                             disabled={currentPage <= 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-zinc-200 rounded-xl text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                                            className="flex items-center gap-1 px-3 py-1.5 bg-white border border-zinc-200 rounded-xl text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                                         >
-                                            <ChevronLeft size={15} /> Prev
+                                            <ChevronLeft size={13} /> Prev
                                         </button>
 
                                         <div className="flex items-center gap-1">
-                                            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                                                 let page = i + 1;
-                                                if (totalPages > 7) {
-                                                    if (currentPage <= 4) page = i + 1;
-                                                    else if (currentPage >= totalPages - 3) page = totalPages - 6 + i;
-                                                    else page = currentPage - 3 + i;
+                                                if (totalPages > 5) {
+                                                    if (currentPage <= 3) page = i + 1;
+                                                    else if (currentPage >= totalPages - 2) page = totalPages - 4 + i;
+                                                    else page = currentPage - 2 + i;
                                                 }
                                                 return (
                                                     <button
                                                         key={page}
                                                         onClick={() => setCurrentPage(page)}
-                                                        className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${currentPage === page
+                                                        className={`w-8 h-8 rounded-xl text-xs font-medium transition-all ${currentPage === page
                                                             ? 'bg-zinc-900 text-white shadow-sm'
                                                             : 'text-zinc-500 hover:text-zinc-900 hover:bg-white hover:shadow-sm'
                                                             }`}
@@ -1063,9 +983,9 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         <button
                                             disabled={currentPage >= totalPages}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-zinc-200 rounded-xl text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                                            className="flex items-center gap-1 px-3 py-1.5 bg-white border border-zinc-200 rounded-xl text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                                         >
-                                            Next <ChevronRight size={15} />
+                                            Next <ChevronRight size={13} />
                                         </button>
                                     </div>
                                 )}
@@ -1081,9 +1001,9 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
                 {/* ── COMPARE BAR ── */}
                 {compareItems.length > 0 && (
-                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
-                        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <div className="flex items-center gap-4 w-full sm:w-auto overflow-x-auto scrollbar-hide">
+                    <div className="fixed bottom-3 left-2 right-2 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
+                        <div className="max-w-[1440px] mx-auto px-2 sm:px-4 lg:px-8 py-2.5 sm:py-3 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto overflow-x-auto scrollbar-hide">
                                 <div className="flex-shrink-0">
                                     <p className="font-semibold text-zinc-900 text-sm">Compare</p>
                                     <p className="text-[11px] text-zinc-400">{compareItems.length} selected</p>

@@ -87,13 +87,7 @@ export default function StorefrontNavbar() {
                     {/* ACTIONS */}
                     <div className="flex items-center gap-1 sm:gap-3">
 
-                        {/* MOBILE MENU BUTTON */}
-                        <button
-                            onClick={() => setMobileOpen(!mobileOpen)}
-                            className="md:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center text-zinc-300"
-                        >
-                            {mobileOpen ? <X /> : <Menu />}
-                        </button>
+                        
 
                         {/* SEARCH */}
                         <Link
@@ -116,7 +110,13 @@ export default function StorefrontNavbar() {
                                 </span>
                             )}
                         </button>
-
+{/* MOBILE MENU BUTTON */}
+                        <button
+                            onClick={() => setMobileOpen(!mobileOpen)}
+                            className="md:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center text-zinc-300"
+                        >
+                            {mobileOpen ? <X /> : <Menu />}
+                        </button>
                         {/* PROFILE */}
                         <Link
                             href="/admin"

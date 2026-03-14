@@ -67,7 +67,7 @@ const PageLayoutHeader: React.FC<{
 const PageLayoutContent: React.FC<{
     children: React.ReactNode;
     className?: string;
-    padding?: 'none' | 'sm' | 'md' | 'lg';
+    padding?: 'none' | 'xs' | 'sm' | 'md' | 'lg';
     container?: boolean;
 }> = ({ children, className = '', padding = 'md', container = true }) => {
     const padClass = {
