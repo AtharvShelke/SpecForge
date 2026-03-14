@@ -38,7 +38,7 @@ const TRUST_METRICS = [
 export default function TrustSection() {
     return (
         <section
-            className="py-14 sm:py-20 md:py-24 bg-zinc-950 border-t border-white/5 relative overflow-hidden"
+            className="py-10 sm:py-20 md:py-24 bg-zinc-950 border-t border-white/5 relative overflow-hidden"
             id="trust"
         >
             {/* Ambient Background Glows */}

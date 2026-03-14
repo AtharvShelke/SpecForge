@@ -5,13 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useShop } from '@/context/ShopContext';
 import {
-    ShoppingCart,
     CheckCircle,
     AlertTriangle,
     XCircle,
     ArrowLeft,
     ChevronRight,
     ChevronLeft,
+    Plus,
 } from 'lucide-react';
 import { CompatibilityLevel, specsToFlat, Product } from '@/types';
 import { validateBuild } from '@/services/compatibility';
@@ -75,6 +75,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
     const discountPct = hasDiscount ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) : 0;
     const status = product.variants?.[0]?.status;
     const sku = product.variants?.[0]?.sku;
+    const isOutOfStock = status === 'OUT_OF_STOCK';
 
     const statusConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
         IN_STOCK: { label: 'In Stock', color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
@@ -91,6 +92,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
             color: 'text-emerald-700',
             bg: 'bg-emerald-50',
             border: 'border-emerald-100',
+            dot: 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]',
         },
         [CompatibilityLevel.WARNING]: {
             label: 'Compatibility warning',
@@ -99,6 +101,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
             color: 'text-amber-700',
             bg: 'bg-amber-50',
             border: 'border-amber-100',
+            dot: 'bg-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.4)]',
         },
         [CompatibilityLevel.INCOMPATIBLE]: {
             label: 'Not compatible with your build',
@@ -107,6 +110,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
             color: 'text-red-600',
             bg: 'bg-red-50',
             border: 'border-red-100',
+            dot: 'bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]',
         },
     };
     const compat = compatConfig[report.status] ?? compatConfig[CompatibilityLevel.COMPATIBLE];
@@ -117,50 +121,35 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
                 *, body { font-family: 'DM Sans', system-ui, sans-serif; }
-
                 .img-fade { animation: imgFade 0.22s ease both; }
                 @keyframes imgFade {
                     from { opacity: 0; transform: scale(0.988); }
                     to   { opacity: 1; transform: scale(1); }
                 }
-                .thumb-btn { transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1); }
-
-                .tab-line { position: relative; padding-bottom: 10px; }
-                .tab-line::after {
-                    content: '';
-                    position: absolute;
-                    bottom: 0; left: 0; right: 0;
-                    height: 2px; background: #18181b; border-radius: 2px;
-                    transform: scaleX(0); transform-origin: left;
-                    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-                }
-                .tab-line.tab-active::after { transform: scaleX(1); }
-
-                .spec-row:hover { background: #f9f9f8 !important; }
                 .scrollbar-hide::-webkit-scrollbar { display: none; }
                 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
 
             {/* ── STICKY BREADCRUMB ── */}
             <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-zinc-100">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-10">
-                        <nav className="flex items-center gap-1 text-xs text-zinc-400 min-w-0">
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-9">
+                        <nav className="flex items-center gap-1 text-[10px] text-zinc-400 min-w-0">
                             <Link href="/" className="hover:text-zinc-700 transition-colors shrink-0">Home</Link>
-                            <ChevronRight size={11} className="shrink-0" />
+                            <ChevronRight size={10} className="shrink-0" />
                             <Link href="/products" className="hover:text-zinc-700 transition-colors shrink-0">Products</Link>
-                            <ChevronRight size={11} className="shrink-0" />
+                            <ChevronRight size={10} className="shrink-0" />
                             <Link href={`/products?category=${product.category}`} className="hover:text-zinc-700 transition-colors capitalize shrink-0">
                                 {product.category.toLowerCase()}
                             </Link>
-                            <ChevronRight size={11} className="shrink-0" />
-                            <span className="text-zinc-800 font-medium truncate">{product.name}</span>
+                            <ChevronRight size={10} className="shrink-0" />
+                            <span className="text-zinc-700 font-medium truncate">{product.name}</span>
                         </nav>
                         <Link
                             href="/products"
-                            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-900 transition-colors group shrink-0 ml-4"
+                            className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-900 transition-colors group shrink-0 ml-4"
                         >
-                            <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
+                            <ArrowLeft size={11} className="group-hover:-translate-x-0.5 transition-transform" />
                             <span className="hidden sm:inline">Back</span>
                         </Link>
                     </div>
@@ -168,376 +157,263 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
             </div>
 
             {/* ── MAIN CONTENT ── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4">
 
-                {/* Top grid: gallery + buy box */}
-                <div className="bg-zinc-50 py-6">
-                    <div className="max-w-6xl mx-auto px-4">
+                {/* ── TOP GRID: gallery + buy box ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 mb-3 lg:mb-4">
 
-                        {/* ================= GRID ================= */}
+                    {/* ── GALLERY ── */}
+                    <div className="flex flex-col gap-2">
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-
-                            {/* ================= GALLERY ================= */}
-
-                            <div className="flex flex-col gap-3">
-
-                                <div
-                                    className="relative rounded-3xl overflow-hidden
-bg-gradient-to-b from-zinc-50 to-white
-border border-zinc-200/70
-shadow-xl shadow-zinc-200/60
-group"
-                                    style={{ aspectRatio: "1 / 1" }}
-                                >
-
-                                    <div key={selectedImage} className="absolute inset-0">
-                                        <Image
-                                            src={media[selectedImage] || "/placeholder.png"}
-                                            alt={product.name}
-                                            fill
-                                            priority
-                                            className="object-contain p-10 transition-transform duration-500 group-hover:scale-[1.05]"
-                                        />
-                                    </div>
-
-
-                                    {/* category */}
-                                    <div className="absolute top-4 left-4 px-3 py-1
-bg-white/80 backdrop-blur
-border border-zinc-200
-rounded-full text-[11px] font-semibold text-zinc-600">
-
-                                        {product.category}
-
-                                    </div>
-
-
-                                    {/* discount */}
-                                    {hasDiscount && (
-
-                                        <div className="absolute top-4 right-4 px-3 py-1
-bg-red-500 text-white
-rounded-full text-[11px] font-semibold">
-
-                                            -{discountPct}%
-
-                                        </div>
-
-                                    )}
-
-
-                                    {/* arrows */}
-
-                                    {hasMultipleImages && (
-
-                                        <>
-
-                                            <button
-                                                onClick={prevImage}
-                                                className="absolute left-3 top-1/2 -translate-y-1/2
-w-9 h-9 rounded-full
-bg-white/90 backdrop-blur
-border border-zinc-200
-shadow-md
-flex items-center justify-center
-opacity-0 group-hover:opacity-100
-transition"
-                                            >
-
-                                                <ChevronLeft size={16} />
-
-                                            </button>
-
-
-                                            <button
-                                                onClick={nextImage}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2
-w-9 h-9 rounded-full
-bg-white/90 backdrop-blur
-border border-zinc-200
-shadow-md
-flex items-center justify-center
-opacity-0 group-hover:opacity-100
-transition"
-                                            >
-
-                                                <ChevronRight size={16} />
-
-                                            </button>
-
-                                        </>
-
-                                    )}
-
-                                </div>
-
-
-                                {/* thumbnails */}
-
-                                {hasMultipleImages && (
-
-                                    <div className="flex gap-2 overflow-x-auto pt-1">
-
-                                        {media.map((url, i) => (
-
-                                            <button
-                                                key={i}
-                                                onClick={() => setSelectedImage(i)}
-                                                className={`relative w-14 h-14 rounded-xl overflow-hidden border
-transition
-
-${selectedImage === i
-                                                        ? "border-zinc-900 shadow-md"
-                                                        : "border-zinc-200 opacity-60 hover:opacity-100"
-                                                    }`}
-
-                                            >
-
-                                                <Image
-                                                    src={url}
-                                                    alt=""
-                                                    fill
-                                                    className="object-contain p-1"
-                                                />
-
-                                            </button>
-
-                                        ))}
-
-                                    </div>
-
-                                )}
-
+                        {/* Main image */}
+                        <div
+                            className="group relative rounded-2xl overflow-hidden bg-white border border-zinc-100 shadow-sm"
+                            style={{ aspectRatio: '1 / 1' }}
+                        >
+                            <div key={selectedImage} className="absolute inset-0 img-fade">
+                                <Image
+                                    src={media[selectedImage] || '/placeholder.png'}
+                                    alt={product.name}
+                                    fill
+                                    priority
+                                    className="object-contain p-5 sm:p-7 transition-transform duration-500 group-hover:scale-[1.04]"
+                                />
                             </div>
 
-
-                            {/* ================= BUY BOX ================= */}
-
-                            <div
-                                className="
-bg-white/90 backdrop-blur
-rounded-3xl
-border border-zinc-200/70
-shadow-xl shadow-zinc-200/60
-p-6 flex flex-col
-"
-                            >
-
-
-                                <p className="text-xs font-semibold tracking-widest text-indigo-500 mb-1">
-                                    {(flatSpecs.brand as string) || product.category}
-                                </p>
-
-
-                                <h1 className="text-2xl font-bold text-zinc-900 mb-2">
-                                    {product.name}
-                                </h1>
-
-
-                                {sku && (
-                                    <p className="text-xs text-zinc-400 mb-4">
-                                        SKU {sku}
-                                    </p>
-                                )}
-
-
-                                {/* price */}
-
-                                <div className="flex items-end gap-3 mb-3">
-
-                                    <span className="text-4xl font-bold text-zinc-900">
-                                        ₹{price.toLocaleString("en-IN")}
-                                    </span>
-
-
-                                    {hasDiscount && (
-                                        <>
-                                            <span className="line-through text-zinc-400">
-                                                ₹{compareAtPrice!.toLocaleString("en-IN")}
-                                            </span>
-
-                                            <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-1 rounded-full">
-                                                Save {discountPct}%
-                                            </span>
-                                        </>
-                                    )}
-
-                                </div>
-
-
-                                {/* status */}
-
-                                <div
-                                    className={`inline-flex items-center gap-2 px-3 py-1.5
-rounded-full text-xs font-semibold mb-4
-${statusInfo.bg} ${statusInfo.color}`}
-                                >
-
-                                    <span className={`w-2 h-2 rounded-full ${statusInfo.dot}`} />
-
-                                    {statusInfo.label}
-
-                                </div>
-
-
-                                {/* specs */}
-
-                                {highlights.length > 0 && (
-
-                                    <div className="flex flex-wrap gap-2 mb-5">
-
-                                        {highlights.slice(0, 6).map(key =>
-
-                                            flatSpecs[key] && (
-
-                                                <div
-                                                    key={key}
-                                                    className="px-3 py-1.5
-bg-zinc-50
-border border-zinc-200
-rounded-xl
-text-xs font-medium"
-                                                >
-
-                                                    {formatKey(key)}: {String(flatSpecs[key])}
-
-                                                </div>
-
-                                            )
-
-                                        )}
-
-                                    </div>
-
-                                )}
-
-
-                                {/* CTA */}
-
-                                <button
-                                    onClick={() => addToCart(product as any)}
-                                    disabled={status === "OUT_OF_STOCK"}
-                                    className="
-w-full py-4 rounded-2xl
-font-semibold text-sm
-transition
-bg-zinc-900 text-white
-hover:bg-indigo-600
-shadow-lg shadow-indigo-200/40
-active:scale-[0.98]
-"
-                                >
-
-                                    Add to Build
-
-                                </button>
-
+                            {/* Category badge */}
+                            <div className="absolute top-3 left-3 px-2 py-0.5 bg-white/90 backdrop-blur border border-zinc-200 rounded-full text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                                {product.category}
                             </div>
 
+                            {/* Discount badge */}
+                            {hasDiscount && (
+                                <div className="absolute top-3 right-3 px-2 py-0.5 bg-red-500 text-white rounded-full text-[9px] font-bold">
+                                    -{discountPct}%
+                                </div>
+                            )}
+
+                            {/* Stock badge */}
+                            {(isOutOfStock || status === 'LOW_STOCK') && (
+                                <span className={`absolute bottom-3 left-3 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${isOutOfStock ? 'bg-red-500' : 'bg-amber-500'}`}>
+                                    {isOutOfStock ? 'Out of Stock' : 'Low Stock'}
+                                </span>
+                            )}
+
+                            {/* Nav arrows */}
+                            {hasMultipleImages && (
+                                <>
+                                    <button
+                                        onClick={prevImage}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 backdrop-blur border border-zinc-200 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-zinc-50"
+                                    >
+                                        <ChevronLeft size={13} />
+                                    </button>
+                                    <button
+                                        onClick={nextImage}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 backdrop-blur border border-zinc-200 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-zinc-50"
+                                    >
+                                        <ChevronRight size={13} />
+                                    </button>
+                                </>
+                            )}
                         </div>
 
-
-
-                        {/* ================= TABS ================= */}
-
-
-                        <div
-                            className="
-bg-white/90 backdrop-blur
-rounded-3xl
-border border-zinc-200/70
-shadow-xl shadow-zinc-200/60
-overflow-hidden
-"
-                        >
-
-
-                            <div className="flex gap-6 px-6 pt-4 border-b border-zinc-200">
-
-
-                                {([
-                                    { id: "about", label: "Overview" },
-                                    { id: "specs", label: "Specifications" },
-                                    { id: "compatibility", label: "Compatibility" },
-                                ] as const).map(tab => (
-
+                        {/* Thumbnails */}
+                        {hasMultipleImages && (
+                            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                                {media.map((url, i) => (
                                     <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`pb-3 text-sm font-medium transition
-${activeTab === tab.id
-                                                ? "text-zinc-900 border-b-2 border-zinc-900"
-                                                : "text-zinc-400 hover:text-zinc-700"
+                                        key={i}
+                                        onClick={() => setSelectedImage(i)}
+                                        className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden border flex-shrink-0 transition-all ${selectedImage === i
+                                            ? 'border-zinc-900 shadow-sm'
+                                            : 'border-zinc-200 opacity-50 hover:opacity-90'
                                             }`}
                                     >
-                                        {tab.label}
+                                        <Image src={url} alt="" fill className="object-contain p-1" />
                                     </button>
-
                                 ))}
-
                             </div>
+                        )}
+                    </div>
 
+                    {/* ── BUY BOX ── */}
+                    <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm p-3 sm:p-4 flex flex-col gap-3">
 
-                            <div className="p-6">
-
-
-                                {/* overview */}
-
-                                {activeTab === "about" && (
-
-                                    <p className="text-zinc-600 leading-relaxed">
-                                        {product.description}
-                                    </p>
-
-                                )}
-
-
-                                {/* specs */}
-
-                                {activeTab === "specs" && (
-
-                                    <div className="divide-y divide-zinc-200">
-
-                                        {Object.entries(flatSpecs).map(([k, v]) => (
-
-                                            <div key={k} className="py-3 flex justify-between text-sm">
-
-                                                <span className="text-zinc-500">
-                                                    {formatKey(k)}
-                                                </span>
-
-                                                <span className="font-medium text-zinc-900">
-                                                    {String(v)}
-                                                </span>
-
-                                            </div>
-
-                                        ))}
-
-                                    </div>
-
-                                )}
-
-
-                                {/* compat */}
-
-                                {activeTab === "compatibility" && (
-
-                                    <div className="text-sm text-zinc-600">
-                                        Compatibility info here
-                                    </div>
-
-                                )}
-
-                            </div>
-
+                        {/* Brand + name */}
+                        <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-indigo-500 mb-1">
+                                {(flatSpecs.brand as string) || product.category}
+                            </p>
+                            <h1 className="text-sm sm:text-base lg:text-lg font-bold text-zinc-900 leading-snug">
+                                {product.name}
+                            </h1>
+                            {sku && (
+                                <p className="text-[10px] text-zinc-400 mt-0.5">SKU {sku}</p>
+                            )}
                         </div>
 
+                       {/* Price + Discount */}
+<div className="flex items-center justify-between">
+    <div className="flex items-baseline gap-2">
+        <span className="text-2xl sm:text-3xl font-bold text-zinc-900 tracking-tight">
+            ₹{price.toLocaleString('en-IN')}
+        </span>
+
+        {hasDiscount && (
+            <>
+                <span className="text-sm text-zinc-400 line-through">
+                    ₹{compareAtPrice!.toLocaleString('en-IN')}
+                </span>
+
+                <span className="text-[10px] font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
+                    -{discountPct}%
+                </span>
+            </>
+        )}
+    </div>
+</div>
+
+{/* CTA */}
+<div className="mt-2">
+    {inCart ? (
+        <button
+            onClick={() => addToCart(product as any)}
+            className="w-full h-9 rounded-xl text-xs font-bold uppercase tracking-wide bg-emerald-50 border border-emerald-200 text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] flex items-center justify-center gap-1.5"
+        >
+            <CheckCircle size={13} strokeWidth={2.5} />
+            Added to Build
+        </button>
+    ) : (
+        <button
+            onClick={() => addToCart(product as any)}
+            disabled={isOutOfStock}
+            className={`w-full h-9 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.98] ${
+                isOutOfStock
+                    ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
+                    : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50'
+            }`}
+        >
+            {isOutOfStock ? (
+                'Sold Out'
+            ) : (
+                <>
+                    <Plus size={12} strokeWidth={3} />
+                    Add to Build
+                </>
+            )}
+        </button>
+    )}
+</div>
+
+                        {/* Status + compat row */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${statusInfo.bg} ${statusInfo.color}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
+                                {statusInfo.label}
+                            </span>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${compat.bg} ${compat.color} ${compat.border}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${compat.dot}`} />
+                                {compat.label}
+                            </span>
+                        </div>
+
+                        {/* Spec chips */}
+                        {highlights.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                                {highlights.slice(0, 6).map(key =>
+                                    flatSpecs[key] && (
+                                        <div
+                                            key={key}
+                                            className="px-2 py-1 bg-zinc-50 border border-zinc-200 rounded-xl text-[10px] font-medium text-zinc-600"
+                                        >
+                                            <span className="text-zinc-400">{formatKey(key)}: </span>{String(flatSpecs[key])}
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
+
+                        {/* Compat detail banner */}
+                        {report.status !== CompatibilityLevel.COMPATIBLE && (
+                            <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-[10px] ${compat.bg} ${compat.border}`}>
+                                <CompatIcon size={13} className={`${compat.color} mt-0.5 shrink-0`} />
+                                <p className={`${compat.color} leading-snug`}>{compat.desc}</p>
+                            </div>
+                        )}
+ {/* ── TABS ── */}
+                <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm overflow-hidden">
+
+                    {/* Tab bar */}
+                    <div className="flex gap-0 border-b border-zinc-100 px-1">
+                        {([
+                            { id: 'about', label: 'Overview' },
+                            { id: 'specs', label: 'Specifications' },
+                            { id: 'compatibility', label: 'Compatibility' },
+                        ] as const).map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-3 sm:px-4 py-2.5 text-[11px] sm:text-xs font-semibold transition-all border-b-2 -mb-px ${activeTab === tab.id
+                                    ? 'text-zinc-900 border-zinc-900'
+                                    : 'text-zinc-400 border-transparent hover:text-zinc-700'
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab content */}
+                    <div className="p-3 sm:p-4">
+
+                        {/* Overview */}
+                        {activeTab === 'about' && (
+                            <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+                                {product.description || 'No description available.'}
+                            </p>
+                        )}
+
+                        {/* Specs */}
+                        {activeTab === 'specs' && (
+                            <div className="divide-y divide-zinc-100">
+                                {Object.entries(flatSpecs).map(([k, v]) => (
+                                    <div key={k} className="py-2 flex items-center justify-between gap-4 spec-row rounded">
+                                        <span className="text-[11px] text-zinc-400 shrink-0">{formatKey(k)}</span>
+                                        <span className="text-[11px] font-medium text-zinc-900 text-right">{String(v)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Compatibility */}
+                        {activeTab === 'compatibility' && (
+                            <div className={`flex items-start gap-3 p-3 rounded-xl border ${compat.bg} ${compat.border}`}>
+                                <CompatIcon size={15} className={`${compat.color} mt-0.5 shrink-0`} />
+                                <div>
+                                    <p className={`text-xs font-semibold ${compat.color} mb-0.5`}>{compat.label}</p>
+                                    <p className="text-[11px] text-zinc-500 leading-snug">{compat.desc}</p>
+                                    {report.issues.length > 0 && (
+                                        <ul className="mt-2 space-y-1">
+                                            {report.issues.map((issue: any, i: number) => (
+                                                <li key={i} className="text-[10px] text-zinc-500 flex items-start gap-1.5">
+                                                    <span className="w-1 h-1 rounded-full bg-zinc-300 mt-1.5 shrink-0" />
+                                                    {issue.message}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                     </div>
                 </div>
+                        
+                    </div>
+                </div>
+
+                
 
             </div>
         </div>

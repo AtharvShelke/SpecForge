@@ -34,7 +34,7 @@ export default function CustomBuilderSection() {
     return (
         <section
             ref={containerRef}
-            className="relative py-16 sm:py-24 md:py-32 overflow-hidden bg-zinc-50"
+            className="relative py-10 sm:py-24 md:py-32 overflow-hidden bg-zinc-50"
             id="custom-builder"
         >
 

@@ -29,259 +29,191 @@ const createProductSchema = z.object({
     location: z.string().default(""),
 });
 
+// ── Shared helpers ───────────────────────────────────────────────────────────
+
+function buildTextOR(term: string, includeDescription = false, includeSKU = false) {
+    const conditions: any[] = [
+        { name: { contains: term, mode: "insensitive" } },
+        { specs: { some: { value: { contains: term, mode: "insensitive" } } } },
+    ];
+    if (includeSKU)
+        conditions.push({ variants: { some: { sku: { contains: term, mode: "insensitive" } } } });
+    if (includeDescription)
+        conditions.push({ description: { contains: term, mode: "insensitive" } });
+    return { OR: conditions };
+}
+
+// ── Select shapes ────────────────────────────────────────────────────────────
+
+const MINIMAL_SELECT = {
+    id: true, slug: true, name: true, category: true, status: true, createdAt: true,
+    brand: { select: { id: true, name: true } },
+    variants: {
+        select: { id: true, sku: true, price: true, status: true, warehouseInventories: { select: { quantity: true } } },
+        take: 1,
+    },
+    media: { select: { url: true }, take: 1, orderBy: { sortOrder: "asc" as const } },
+} as const;
+
+const FULL_SELECT = {
+    id: true, slug: true, name: true, category: true, description: true, status: true, createdAt: true,
+    specs: { select: { id: true, key: true, value: true } },
+    brand: { select: { id: true, name: true } },
+    variants: {
+        select: {
+            id: true, sku: true, price: true, compareAtPrice: true, status: true, attributes: true,
+            warehouseInventories: { select: { id: true, quantity: true, reserved: true, warehouseId: true } },
+        },
+    },
+    media: {
+        select: { id: true, url: true, altText: true, sortOrder: true },
+        orderBy: { sortOrder: "asc" as const },
+        take: 4,
+    },
+} as const;
+
+// ── Main handler ─────────────────────────────────────────────────────────────
+
 export async function getProductsData(searchParams: URLSearchParams) {
     try {
+        // ── Parse params ──────────────────────────────────────────────────────
+        const category    = searchParams.get("category");
+        const brandId     = searchParams.get("brandId");
+        const minPrice    = searchParams.get("minPrice");
+        const maxPrice    = searchParams.get("maxPrice");
+        const sort        = searchParams.get("sort") ?? "popularity";
+        const page        = parseInt(searchParams.get("page") ?? "1", 10);
+        const limit       = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 5000);
+        const fields      = searchParams.get("fields");
+        const globalSearch  = searchParams.get("q");
+        const sidebarSearch = searchParams.get("sq");
+        const nodeBrand   = searchParams.get("nodeBrand");
+        const nodeQuery   = searchParams.get("nodeQuery");
 
-        const category = searchParams.get("category");
-        const brandId = searchParams.get("brandId");
-        const search = searchParams.get("search");
-        const minPrice = searchParams.get("minPrice");
-        const maxPrice = searchParams.get("maxPrice");
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 5000);
-
-        const sort = searchParams.get("sort") || "popularity";
-
-        let nodeBrand = searchParams.get("nodeBrand");
-        let nodeQuery = searchParams.get("nodeQuery");
-        let globalSearch = searchParams.get("q");
-        let sidebarSearch = searchParams.get("sq");
-
+        // ── Base where ────────────────────────────────────────────────────────
         const where: any = {};
-
-        // 1. Initial category constraint logic
-        if (category && CategoryEnum.safeParse(category).success && !globalSearch) {
-            where.category = category;
+        if (!globalSearch) {
+            if (category && CategoryEnum.safeParse(category).success) where.category = category;
+            if (brandId) where.brandId = brandId;
         }
-        if (brandId && !globalSearch) where.brandId = brandId;
 
-        // 2. Add text search constraints
-        const searchConditions: any[] = [];
+        // ── AND conditions ────────────────────────────────────────────────────
+        const andConditions: any[] = [];
 
+        // Price range
         if (minPrice || maxPrice) {
-            const priceFilter: any = {};
-            if (minPrice) priceFilter.gte = parseFloat(minPrice);
-            if (maxPrice) priceFilter.lte = parseFloat(maxPrice);
-            searchConditions.push({ variants: { some: { price: priceFilter } } });
-        }
-
-        if (globalSearch) {
-            const term = globalSearch.toLowerCase();
-            // Global search overrides specific category if not in build mode, 
-            // but since we accept 'category' explicit parameter we leave it in the AND chain.
-            searchConditions.push({
-                OR: [
-                    { name: { contains: term, mode: "insensitive" } },
-                    { variants: { some: { sku: { contains: term, mode: "insensitive" } } } },
-                    { description: { contains: term, mode: "insensitive" } },
-                    { specs: { some: { value: { contains: term, mode: "insensitive" } } } }
-                ]
+            andConditions.push({
+                variants: {
+                    some: {
+                        price: {
+                            ...(minPrice && { gte: parseFloat(minPrice) }),
+                            ...(maxPrice && { lte: parseFloat(maxPrice) }),
+                        },
+                    },
+                },
             });
         }
 
-        if (sidebarSearch) {
-            const term = sidebarSearch.toLowerCase();
-            searchConditions.push({
-                OR: [
-                    { name: { contains: term, mode: "insensitive" } },
-                    { specs: { some: { value: { contains: term, mode: "insensitive" } } } }
-                ]
-            });
-        }
+        // Text searches
+        if (globalSearch)
+            andConditions.push(buildTextOR(globalSearch.toLowerCase(), true, true));
+        if (sidebarSearch)
+            andConditions.push(buildTextOR(sidebarSearch.toLowerCase()));
+        if (nodeQuery)
+            andConditions.push(buildTextOR(nodeQuery.toLowerCase()));
+        if (nodeBrand)
+            andConditions.push({ brand: { name: { equals: nodeBrand, mode: "insensitive" } } });
 
-        if (nodeBrand) {
-            // Need to match the actual Brand relations name. We can search brand string
-            searchConditions.push({ brand: { name: { equals: nodeBrand, mode: "insensitive" } } });
-        }
-
-        if (nodeQuery) {
-            const term = nodeQuery.toLowerCase();
-            searchConditions.push({
-                OR: [
-                    { name: { contains: term, mode: "insensitive" } },
-                    { specs: { some: { value: { contains: term, mode: "insensitive" } } } }
-                ]
-            });
-        }
-
-        // 3. Dynamic attributes from query string
-        const specsConditions: any[] = [];
-        Array.from(searchParams.keys()).forEach(key => {
-            if (key === 'f_stock_status') {
+        // Dynamic spec/brand/stock filters
+        for (const key of searchParams.keys()) {
+            if (key === "f_stock_status") {
                 const vals = searchParams.getAll(key);
-                if (vals.includes('In Stock') && !vals.includes('Out of Stock')) {
-                    specsConditions.push({ variants: { some: { warehouseInventories: { some: { quantity: { gt: 0 } } } } } });
-                } else if (!vals.includes('In Stock') && vals.includes('Out of Stock')) {
-                    specsConditions.push({ variants: { none: { warehouseInventories: { some: { quantity: { gt: 0 } } } } } });
-                }
-            } else if (key === 'f_brand') {
+                const inStock  = vals.includes("In Stock");
+                const outStock = vals.includes("Out of Stock");
+                if (inStock && !outStock)
+                    andConditions.push({ variants: { some: { warehouseInventories: { some: { quantity: { gt: 0 } } } } } });
+                else if (!inStock && outStock)
+                    andConditions.push({ variants: { none: { warehouseInventories: { some: { quantity: { gt: 0 } } } } } });
+            } else if (key === "f_brand") {
                 const vals = searchParams.getAll(key);
-                if (vals.length > 0) {
-                    specsConditions.push({ brand: { name: { in: vals, mode: "insensitive" } } });
-                }
-            } else if (key.startsWith('f_specs.')) {
-                const specKey = key.replace('f_specs.', '');
-                const specValues = searchParams.getAll(key);
-                if (specValues.length > 0) {
-                    // In Prisma, we want to match AT LEAST ONE of the selected values for this specific specKey
-                    specsConditions.push({
-                        specs: {
-                            some: {
-                                key: specKey,
-                                value: { in: specValues }
-                            }
-                        }
-                    });
-                }
+                if (vals.length)
+                    andConditions.push({ brand: { name: { in: vals, mode: "insensitive" } } });
+            } else if (key.startsWith("f_specs.")) {
+                const vals = searchParams.getAll(key);
+                if (vals.length)
+                    andConditions.push({ specs: { some: { key: key.slice(8), value: { in: vals } } } });
             }
-        });
-
-        // Combine constraints
-        const andConditions = [...searchConditions, ...specsConditions];
-        if (andConditions.length > 0) {
-            where.AND = andConditions;
         }
 
-        // Prisma doesn't support _min aggregate in orderBy for to-many relations,
-        // so for price sorting we use a two-step approach:
-        // 1. Fetch lightweight IDs + prices, sort & paginate in JS
-        // 2. Fetch full product data for the paginated IDs
-        const isPriceSort = sort === "price-asc" || sort === "price-desc";
+        if (andConditions.length) where.AND = andConditions;
 
-        let orderBy: any = { name: "asc" };
-        if (sort === "name-asc") orderBy = { name: "asc" };
-        else if (sort === "name-desc") orderBy = { name: "desc" };
-
-        let filterOptions = undefined;
+        // ── Filter options (optional) ─────────────────────────────────────────
+        let filterOptions: { brands: string[]; specs: Record<string, string[]> } | undefined;
         if (searchParams.get("getFilters") === "true") {
-            // Use two lightweight queries instead of loading all product data
             const [brandResults, specPairs] = await Promise.all([
                 prisma.product.findMany({
                     where,
                     select: { brand: { select: { name: true } } },
-                    distinct: ['brandId'],
+                    distinct: ["brandId"],
                 }),
                 prisma.productSpec.findMany({
                     where: { product: where },
                     select: { key: true, value: true },
-                    distinct: ['key', 'value'],
+                    distinct: ["key", "value"],
                 }),
             ]);
-            const brandsSet = new Set<string>();
-            for (const p of brandResults) {
-                if (p.brand?.name) brandsSet.add(p.brand.name);
-            }
+
             const specsMap: Record<string, Set<string>> = {};
             for (const s of specPairs) {
-                if (!specsMap[s.key]) specsMap[s.key] = new Set();
-                specsMap[s.key].add(s.value);
+                (specsMap[s.key] ??= new Set()).add(s.value);
             }
-            const specsObj: Record<string, string[]> = {};
-            for (const key in specsMap) {
-                specsObj[key] = Array.from(specsMap[key]).sort();
-            }
+
             filterOptions = {
-                brands: Array.from(brandsSet).sort(),
-                specs: specsObj
+                brands: brandResults.flatMap(p => p.brand?.name ? [p.brand.name] : []).sort(),
+                specs: Object.fromEntries(
+                    Object.entries(specsMap).map(([k, v]) => [k, [...v].sort()])
+                ),
             };
         }
 
-        const fields = searchParams.get("fields");
-
-        // Minimal mode for admin context — skip heavy nested queries
-        const productSelect = fields === "minimal"
-            ? {
-                id: true,
-                slug: true,
-                name: true,
-                category: true,
-                status: true,
-                createdAt: true,
-                brand: { select: { id: true, name: true } },
-                variants: {
-                    select: {
-                        id: true,
-                        sku: true,
-                        price: true,
-                        status: true,
-                        warehouseInventories: { select: { quantity: true } },
-                    },
-                    take: 1,
-                },
-                media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' as const } },
-            }
-            : {
-                id: true,
-                slug: true,
-                name: true,
-                category: true,
-                description: true,
-                status: true,
-                createdAt: true,
-                specs: { select: { id: true, key: true, value: true } },
-                brand: { select: { id: true, name: true } },
-                variants: {
-                    select: {
-                        id: true,
-                        sku: true,
-                        price: true,
-                        compareAtPrice: true,
-                        status: true,
-                        attributes: true,
-                        warehouseInventories: {
-                            select: { id: true, quantity: true, reserved: true, warehouseId: true },
-                        },
-                    },
-                },
-                media: { select: { id: true, url: true, altText: true, sortOrder: true }, orderBy: { sortOrder: 'asc' as const }, take: 4 },
-            };
+        // ── Sorting + pagination ──────────────────────────────────────────────
+        const isPriceSort = sort === "price-asc" || sort === "price-desc";
+        const productSelect = fields === "minimal" ? MINIMAL_SELECT : FULL_SELECT;
+        const orderBy = sort === "name-desc" ? { name: "desc" as const } : { name: "asc" as const };
 
         let products: any[];
         let total: number;
 
         if (isPriceSort) {
-            // Step 1: Fetch lightweight IDs + min price for all matching products
             const allLightweight = await prisma.product.findMany({
                 where,
                 select: {
                     id: true,
-                    variants: { select: { price: true }, orderBy: { price: 'asc' as const }, take: 1 },
+                    variants: { select: { price: true }, orderBy: { price: "asc" as const }, take: 1 },
                 },
-            });
-
-            // Sort by min variant price in JS
-            allLightweight.sort((a, b) => {
-                const priceA = a.variants[0]?.price ?? 0;
-                const priceB = b.variants[0]?.price ?? 0;
-                return sort === "price-asc" ? priceA - priceB : priceB - priceA;
             });
 
             total = allLightweight.length;
 
-            // Paginate
+            allLightweight.sort((a, b) => {
+                const diff = (a.variants[0]?.price ?? 0) - (b.variants[0]?.price ?? 0);
+                return sort === "price-asc" ? diff : -diff;
+            });
+
             const paginatedIds = allLightweight
                 .slice((page - 1) * limit, page * limit)
                 .map(p => p.id);
 
-            // Step 2: Fetch full product data for the paginated IDs
             products = await prisma.product.findMany({
                 where: { id: { in: paginatedIds } },
                 select: productSelect,
             });
 
-            // Re-sort to preserve the price order (Prisma `in` doesn't preserve order)
             const idOrder = new Map(paginatedIds.map((id, i) => [id, i]));
             products.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
         } else {
-            // Name sorting — works natively with Prisma orderBy
             [products, total] = await Promise.all([
-                prisma.product.findMany({
-                    where,
-                    select: productSelect,
-                    orderBy,
-                    skip: (page - 1) * limit,
-                    take: limit,
-                }),
+                prisma.product.findMany({ where, select: productSelect, orderBy, skip: (page - 1) * limit, take: limit }),
                 prisma.product.count({ where }),
             ]);
         }
@@ -293,12 +225,10 @@ export async function getProductsData(searchParams: URLSearchParams) {
     }
 }
 
-// ── GET /api/products ───────────────────────────────────
+// ── GET /api/products ────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    return getProductsData(searchParams);
+    return getProductsData(new URL(req.url).searchParams);
 }
-
 // ── POST /api/products ──────────────────────────────────
 export async function POST(req: NextRequest) {
     try {

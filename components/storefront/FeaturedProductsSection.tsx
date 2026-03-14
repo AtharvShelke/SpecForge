@@ -113,7 +113,7 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
     if (!products.length) return null
 
     return (
-        <section className="py-14 sm:py-20 md:py-24 bg-white" id="featured-products">
+        <section className="py-10 sm:py-20 md:py-24 bg-white" id="featured-products">
             <Container>
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 md:mb-12">

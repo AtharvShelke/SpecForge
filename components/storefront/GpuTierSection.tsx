@@ -87,7 +87,7 @@ export default function GpuTierSection() {
     if (!products.some(p => p.category === 'GPU')) return null
 
     return (
-        <section ref={containerRef} className="relative py-14 sm:py-20 md:py-24 bg-zinc-950 overflow-hidden" id="gpu-showcase">
+        <section ref={containerRef} className="relative py-10 sm:py-20 md:py-24 bg-zinc-950 overflow-hidden" id="gpu-showcase">
             {/* Cinematic background elements */}
             <div className="absolute top-0 right-0 w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] md:w-[800px] md:h-[800px] bg-indigo-600/20 blur-[150px] rounded-full mix-blend-screen pointer-events-none translate-x-1/3 -translate-y-1/3" />
             <div className="absolute bottom-0 left-0 w-[300px] h-[300px] sm:w-[450px] sm:h-[450px] md:w-[600px] md:h-[600px] bg-violet-600/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none -translate-x-1/3 translate-y-1/3" />

@@ -47,13 +47,13 @@ export default function StorefrontNavbar() {
             </div>
 
             <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-               <div className="flex h-14 sm:h-20 items-center justify-between gap-2 sm:gap-4 relative z-10">
+                <div className="flex h-14 sm:h-20 items-center justify-between gap-2 sm:gap-4 relative z-10">
 
                     {/* LOGO */}
                     <Link href="/" className="flex items-center gap-2 shrink-0">
                         <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-white/10 border border-white/20">
-    <Cpu className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-400" />
-</div>
+                            <Cpu className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-400" />
+                        </div>
 
                         <span className="font-semibold text-white text-xs sm:text-lg tracking-tight">
                             Nexus Hardware
@@ -87,7 +87,7 @@ export default function StorefrontNavbar() {
                     {/* ACTIONS */}
                     <div className="flex items-center gap-1 sm:gap-3">
 
-                        
+
 
                         {/* SEARCH */}
                         <Link
@@ -110,7 +110,7 @@ export default function StorefrontNavbar() {
                                 </span>
                             )}
                         </button>
-{/* MOBILE MENU BUTTON */}
+                        {/* MOBILE MENU BUTTON */}
                         <button
                             onClick={() => setMobileOpen(!mobileOpen)}
                             className="md:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center text-zinc-300"

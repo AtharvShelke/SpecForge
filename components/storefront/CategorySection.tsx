@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { CategoryNode, Category, CATEGORY_LABELS } from '@/types'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 // Use actual hardware images instead of icons for a premium feel
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -15,6 +16,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
     STORAGE: 'https://images.unsplash.com/photo-1531492746076-161ca9bcad58?q=80&w=1974&auto=format&fit=crop',
     CABINET: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?q=80&w=2070&auto=format&fit=crop',
     PSU: 'https://images.unsplash.com/photo-1517055745147-91a5efd24d9c?q=80&w=2070&auto=format&fit=crop',
+     MONITOR: 'https://9to5google.com/wp-content/uploads/sites/4/2022/08/samsung-odyssey-1.jpg?quality=82&strip=all&w=1333',
 }
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=2000&auto=format&fit=crop'
@@ -25,17 +27,26 @@ interface Props {
 }
 
 export default function CategorySection({ categories, productCounts }: Props) {
+    const isMobile = useIsMobile()
     // Show select categories for a mixed grid, or fallback
+     const base = ['GPU', 'PROCESSOR', 'MOTHERBOARD', 'RAM', 'STORAGE', 'CABINET']
+
+    const mobileExtra = ['MONITOR']
+
+    const allowed = isMobile
+        ? [...base, ...mobileExtra]
+        : base
     const cats: any[] = categories?.length
-        ? categories.filter(c => ['GPU', 'PROCESSOR', 'MOTHERBOARD', 'RAM', 'STORAGE', 'CABINET'].includes(c.category as string))
-        : Object.values(Category).slice(0, 6).map(c => ({
+    ? categories.filter(c =>
+        allowed.includes(c.category as string)
+    ): Object.values(Category).slice(0, 6).map(c => ({
             category: c,
             label: CATEGORY_LABELS[c as Category],
             children: [],
         }))
 
     // Pad to exactly 6 elements if missing
-    while (cats.length < 6 && cats.length > 0) {
+    while (cats.length < (isMobile ? 7 : 6) && cats.length > 0) {
         cats.push(cats[cats.length - 1])
     }
 
@@ -53,7 +64,7 @@ export default function CategorySection({ categories, productCounts }: Props) {
     }
 
     return (
-        <section className="py-14 sm:py-20 md:py-24 bg-white overflow-hidden" id="categories">
+        <section className="py-10 sm:py-20 md:py-24 bg-white overflow-hidden" id="categories">
             <Container>
                 {/* Header with reveal animation */}
                 <motion.div
@@ -82,7 +93,7 @@ export default function CategorySection({ categories, productCounts }: Props) {
 
                 {/* Mixed Asymmetric Grid */}
                 <div className="grid grid-cols-12 auto-rows-[140px] sm:auto-rows-[180px] md:auto-rows-[240px] gap-3 sm:gap-4 md:gap-6">
-                    {cats.slice(0, 6).map((cat, i) => {
+                    {cats.slice(0, isMobile ? 7 : 6).map((cat, i) => {
                         const catKey = cat.category || ''
                         const bgImage = CATEGORY_IMAGES[catKey] || FALLBACK_IMAGE
                         const count = productCounts?.[catKey]

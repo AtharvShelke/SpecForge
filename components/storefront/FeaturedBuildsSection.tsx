@@ -114,7 +114,7 @@ export default function FeaturedBuildsSection({ builds }: { builds: any[] }) {
     if (!builds?.length) return null
 
     return (
-       <section className="py-14 sm:py-20 md:py-24 bg-zinc-950 px-3 sm:px-4 md:px-0" id="featured-builds">
+       <section className="py-10 sm:py-20 md:py-24 bg-zinc-950 px-3 sm:px-4 md:px-0" id="featured-builds">
             <Container>
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-12 md:mb-16">

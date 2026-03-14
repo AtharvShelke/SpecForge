@@ -169,7 +169,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const { isBuildMode, toggleBuildMode } = useBuild();
 
   const categoryFilters = useMemo(() => {
-    if (!activeCategory) return [];
+    if (!activeCategory) {
+      return [
+        { label: 'Brand', key: 'brand', type: 'checkbox' },
+        { label: 'Availability', key: 'stock_status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] }
+      ] as FilterDefinition[];
+    }
     return filterConfigs.find((c: CategoryFilterConfig) => c.category === activeCategory)?.filters || [];
   }, [activeCategory, filterConfigs]);
 

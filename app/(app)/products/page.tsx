@@ -42,7 +42,7 @@ export default async function ProductsPage({
     const params = await searchParams;
     const urlParams = new URLSearchParams();
 
-    // Reconstruct URLSearchParams
+    // Reconstruct URLSearchParams with defaults matching client-side fetch
     Object.entries(params).forEach(([key, value]) => {
         if (value === undefined) return;
         if (Array.isArray(value)) {
@@ -52,13 +52,21 @@ export default async function ProductsPage({
         }
     });
 
-    // Fetch Initial Data directly using our unified server helper
+    // Ensure defaults match what ProductsClient will request
+    if (!urlParams.has('limit')) urlParams.set('limit', '12');
+    if (!urlParams.has('page')) urlParams.set('page', '1');
+    if (!urlParams.has('sort')) urlParams.set('sort', 'price-asc');
+    urlParams.set('getFilters', 'true');
+
+    // Only fetch server-side if we have a category (otherwise client will fetch after categories load)
     let initialData = null;
-    try {
-        const res = await getProductsData(urlParams);
-        initialData = await res.json();
-    } catch (e) {
-        console.error("Failed to fetch initial product data:", e);
+    if (urlParams.has('category')) {
+        try {
+            const res = await getProductsData(urlParams);
+            initialData = await res.json();
+        } catch (e) {
+            console.error("Failed to fetch initial product data:", e);
+        }
     }
 
     return (

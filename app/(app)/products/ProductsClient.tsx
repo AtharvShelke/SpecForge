@@ -27,6 +27,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_MAX_PRICE = 500000;
 
+const ALL_PRODUCTS_TAB: CategoryNode = { label: 'All' };
+
 /* ─────────────────────────────── Skeleton Card ─────────────────────────────── */
 const SkeletonCard = () => (
     <div className="bg-white rounded-2xl border border-zinc-100 overflow-hidden animate-pulse">
@@ -87,112 +89,115 @@ const ProductCard = ({
             <div
                 className="group bg-white border border-zinc-100 rounded-2xl overflow-hidden flex transition-all duration-200 hover:border-zinc-200 hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)] card-enter"
                 style={{ animationDelay: `${index * 30}ms` }}
-            >
-                {/* Image */}
-                <Link
-                    href={`/products/${product.id}`}
-                    className="relative w-36 flex-shrink-0 bg-zinc-50 flex items-center justify-center overflow-hidden"
-                >
-                    {image ? (
-                        <Image
-                            src={image}
-                            alt={product.name}
-                            fill
-                            sizes="144px"
-                            className="object-contain p-3 mix-blend-multiply transition-transform duration-500 group-hover:scale-[1.05]"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-zinc-200 text-xs">No Image</div>
-                    )}
-                    {(isOutOfStock || isLowStock) && (
-                        <span className={`absolute top-2 left-2 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide z-10 ${isOutOfStock ? 'bg-red-500' : 'bg-amber-500'}`}>
-                            {isOutOfStock ? 'Out of Stock' : 'Low Stock'}
-                        </span>
-                    )}
-                </Link>
 
-                {/* Content */}
-                <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
-                    <div>
-                        <p className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${inCart ? 'text-indigo-500' : 'text-zinc-400'}`}>
-                            {product.category}
-                        </p>
-                        <Link href={`/products/${product.id}`}>
-                            <h3 className="font-semibold text-zinc-900 text-sm leading-snug line-clamp-2 hover:text-indigo-600 transition-colors">
-                                {product.name}
-                            </h3>
-                        </Link>
-                        {specKeys.length > 0 && (
-                            <p className="text-[10px] text-zinc-400 mt-1 truncate">
-                                {specKeys.map(k => String(flatSpecs[k])).join(' · ')}
-                            </p>
+            >
+                <Link href={`/products/${product.id}`}>
+                    {/* Image */}
+                    <div
+
+                        className="relative w-36 flex-shrink-0 bg-zinc-50 flex items-center justify-center overflow-hidden"
+                    >
+                        {image ? (
+                            <Image
+                                src={image}
+                                alt={product.name}
+                                fill
+                                sizes="144px"
+                                className="object-contain p-3 mix-blend-multiply transition-transform duration-500 group-hover:scale-[1.05]"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zinc-200 text-xs">No Image</div>
+                        )}
+                        {(isOutOfStock || isLowStock) && (
+                            <span className={`absolute top-2 left-2 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide z-10 ${isOutOfStock ? 'bg-red-500' : 'bg-amber-500'}`}>
+                                {isOutOfStock ? 'Out of Stock' : 'Low Stock'}
+                            </span>
                         )}
                     </div>
 
-                    <div className="flex items-center justify-between mt-3 gap-2">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-base font-bold text-zinc-900 tracking-tight">
-                                ₹{price.toLocaleString('en-IN')}
-                            </span>
-                            {discount && (
-                                <span className="text-[10px] text-zinc-400 line-through">
-                                    ₹{compareAt!.toLocaleString('en-IN')}
-                                </span>
+                    {/* Content */}
+                    <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                        <div>
+                            <p className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${inCart ? 'text-indigo-500' : 'text-zinc-400'}`}>
+                                {product.category}
+                            </p>
+
+                            <h3 className="font-semibold text-zinc-900 text-sm leading-snug line-clamp-2 hover:text-indigo-600 transition-colors">
+                                {product.name}
+                            </h3>
+
+                            {specKeys.length > 0 && (
+                                <p className="text-[10px] text-zinc-400 mt-1 truncate">
+                                    {specKeys.map(k => String(flatSpecs[k])).join(' · ')}
+                                </p>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-1.5">
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${compatDot}`} title={compatLabel} />
+                        <div className="flex items-center justify-between mt-3 gap-2">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-base font-bold text-zinc-900 tracking-tight">
+                                    ₹{price.toLocaleString('en-IN')}
+                                </span>
+                                {discount && (
+                                    <span className="text-[10px] text-zinc-400 line-through">
+                                        ₹{compareAt!.toLocaleString('en-IN')}
+                                    </span>
+                                )}
+                            </div>
 
-                            <button
-                                onClick={(e) => handleCompareToggle(e, product)}
-                                className={`h-7 px-3 text-[10px] font-bold rounded-xl border transition-all ${isCompared
-                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                                    : 'border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-700'
-                                    }`}
-                            >
-                                {isCompared ? '✓ Compared' : 'Compare'}
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${compatDot}`} title={compatLabel} />
 
-                            {inCart ? (
-                                <div className="flex items-center gap-1 h-7 bg-emerald-50 border border-emerald-200 rounded-xl overflow-hidden">
-                                    <button
-                                        onClick={() => cartQuantity <= 1 ? onRemove(product.id) : onUpdateQty(product.id, cartQuantity - 1)}
-                                        className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
-                                    >
-                                        −
-                                    </button>
-                                    <span className="text-[11px] font-bold text-emerald-700 min-w-[16px] text-center">{cartQuantity}</span>
-                                    <button
-                                        onClick={() => addToCart(product)}
-                                        className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            ) : (
                                 <button
-                                    onClick={() => addToCart(product)}
-                                    disabled={isOutOfStock || (isIncompatible && !inCart)}
-                                    className={`h-7 px-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${isOutOfStock || (isIncompatible && !inCart)
-                                        ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
-                                        : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50 active:scale-95'
+                                    onClick={(e) => handleCompareToggle(e, product)}
+                                    className={`h-7 px-3 text-[10px] font-bold rounded-xl border transition-all ${isCompared
+                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                        : 'border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-700'
                                         }`}
                                 >
-                                    {isOutOfStock ? 'Sold Out' : <><Plus size={10} strokeWidth={3} /> Add</>}
+                                    {isCompared ? '✓ Compared' : 'Compare'}
                                 </button>
-                            )}
+
+                                {inCart ? (
+                                    <div className="flex items-center gap-1 h-7 bg-emerald-50 border border-emerald-200 rounded-xl overflow-hidden">
+                                        <button
+                                            onClick={() => cartQuantity <= 1 ? onRemove(product.id) : onUpdateQty(product.id, cartQuantity - 1)}
+                                            className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
+                                        >
+                                            −
+                                        </button>
+                                        <span className="text-[11px] font-bold text-emerald-700 min-w-[16px] text-center">{cartQuantity}</span>
+                                        <button
+                                            onClick={() => addToCart(product)}
+                                            className="w-7 h-7 flex items-center justify-center text-emerald-700 hover:bg-emerald-100 transition-colors font-bold text-sm"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => addToCart(product)}
+                                        disabled={isOutOfStock || (isIncompatible && !inCart)}
+                                        className={`h-7 px-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all duration-200 flex items-center gap-1 ${isOutOfStock || (isIncompatible && !inCart)
+                                            ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
+                                            : 'bg-zinc-900 text-white hover:bg-indigo-600 hover:shadow-md hover:shadow-indigo-200/50 active:scale-95'
+                                            }`}
+                                    >
+                                        {isOutOfStock ? 'Sold Out' : <><Plus size={10} strokeWidth={3} /> Add</>}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                </Link>
             </div>
         );
     }
 
     /* ── GRID VIEW ── */
     return (
-  <div
-    className={`
+        <div
+            className={`
       group
       bg-white
       border
@@ -204,43 +209,43 @@ const ProductCard = ({
       hover:shadow-md
       ${inCart ? "ring-2 ring-indigo-200" : ""}
     `}
-  >
+        >
+            <Link href={`/products/${product.id}`}>
+                <div className="aspect-square bg-zinc-50 flex items-center justify-center relative">
 
-    <div className="aspect-square bg-zinc-50 flex items-center justify-center relative">
+                    {image && (
+                        <Image
+                            src={image}
+                            alt={product.name}
+                            fill
+                            sizes="50vw"
+                            className="object-contain p-3"
+                        />
+                    )}
 
-      {image && (
-        <Image
-          src={image}
-          alt={product.name}
-          fill
-          sizes="50vw"
-          className="object-contain p-3"
-        />
-      )}
-
-    </div>
+                </div>
 
 
-    <div className="p-2 flex flex-col gap-1">
+                <div className="p-2 flex flex-col gap-1">
 
-      <p className="text-[9px] text-zinc-400 uppercase font-semibold">
-        {product.category}
-      </p>
+                    <p className="text-[9px] text-zinc-400 uppercase font-semibold">
+                        {product.category}
+                    </p>
 
-      <h3 className="text-[11px] font-semibold text-zinc-900 line-clamp-2">
-        {product.name}
-      </h3>
+                    <h3 className="text-[11px] font-semibold text-zinc-900 line-clamp-2">
+                        {product.name}
+                    </h3>
 
-      <div className="flex items-center justify-between mt-1">
+                    <div className="flex items-center justify-between mt-1">
 
-        <span className="text-[12px] font-bold">
-          ₹{price.toLocaleString("en-IN")}
-        </span>
+                        <span className="text-[12px] font-bold">
+                            ₹{price.toLocaleString("en-IN")}
+                        </span>
 
-        {inCart ? (
-          <button
-            onClick={() => onRemove(product.id)}
-            className="
+                        {inCart ? (
+                            <button
+                                onClick={() => onRemove(product.id)}
+                                className="
               text-[10px]
               px-2
               h-5
@@ -249,13 +254,13 @@ const ProductCard = ({
               text-emerald-700
               font-semibold
             "
-          >
-            Added
-          </button>
-        ) : (
-          <button
-            onClick={() => addToCart(product)}
-            className="
+                            >
+                                Added
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => addToCart(product)}
+                                className="
               text-[10px]
               px-2.5
               h-5
@@ -264,17 +269,17 @@ const ProductCard = ({
               text-white
               font-semibold
             "
-          >
-            Add
-          </button>
-        )}
+                            >
+                                Add
+                            </button>
+                        )}
 
-      </div>
+                    </div>
 
-    </div>
-
-  </div>
-)
+                </div>
+            </Link>
+        </div>
+    )
 };
 
 /* ─────────────────────────────── Main Component ─────────────────────────────── */
@@ -289,6 +294,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         removeFromCompare,
         categories
     } = useShop();
+
     const { isBuildMode, toggleBuildMode } = useBuild();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -303,7 +309,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
             if (found) return found;
         }
-        return categories.length > 0 ? categories[0] : null;
+        return categories.length > 0 ? ALL_PRODUCTS_TAB : null;
     }, [initialCategoryParam, categories, initialQueryParam]);
 
     const [searchTerm, setSearchTerm] = useState(searchParams?.get('q') || '');
@@ -373,13 +379,13 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                 const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
                 if (found) { setActiveTab(found); return; }
             }
-            setActiveTab(categories[0]);
+            setActiveTab(ALL_PRODUCTS_TAB);
         }
     }, [categories, initialCategoryParam, searchParams]);
 
     useEffect(() => {
         if (!activeTab && categories.length > 0 && !searchTerm && hasInitializedCategories.current) {
-            setActiveTab(categories[0]);
+            setActiveTab(ALL_PRODUCTS_TAB);
         }
     }, [activeTab, categories, searchTerm]);
 
@@ -485,13 +491,30 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         setSidebarSearchTerm('');
     };
 
-    const prevParamsRef = useRef<string>('');
+    const prevParamsRef = useRef<string>(
+        // If we have initial data from server, seed the ref so we don't re-fetch the same params
+        (() => {
+            if (initialData?.products?.length > 0 && initialCategoryParam) {
+                const params = new URLSearchParams();
+                params.set('category', initialCategoryParam);
+                params.set('sort', sortOption);
+                params.set('page', '1');
+                params.set('limit', ITEMS_PER_PAGE.toString());
+                params.sort();
+                return params.toString();
+            }
+            return '';
+        })()
+    );
     useEffect(() => {
+        // Don't fetch until we have a category selected or an active search query
+        if (!activeTab && !debouncedSearchTerm) return;
+
         const fetchProducts = async () => {
             setIsLoadingProducts(true);
             try {
                 const params = new URLSearchParams();
-                if (activeTab) params.set('category', String(activeTab.category));
+                if (activeTab?.category) params.set('category', String(activeTab.category));
                 if (selectedNode?.brand) params.set('nodeBrand', selectedNode.brand);
                 if (selectedNode?.query) params.set('nodeQuery', selectedNode.query);
                 if (isBuildMode) {
@@ -594,114 +617,131 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
             {/* ── TOP NAV BAR ── */}
             <PageLayout.Header compact>
-                <div className="w-full flex flex-col gap-2">
+                <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-zinc-100">
 
-                    {/* SEARCH */}
-                    <div className="flex items-center gap-2">
+                    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex flex-col gap-2 ">
 
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                        {/* ROW 1 — breadcrumb */}
+                        <div className="flex items-center justify-between h-8">
 
-                            <input
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    if (e.target.value.length > 0 && activeTab) {
-                                        setActiveTab(null);
-                                        clearAllFilters();
-                                    }
-                                }}
-                                placeholder="Search hardware"
-                                className="
-            w-full
-            h-8
-            pl-9
-            pr-8
-            rounded-full
-            bg-white/80
-            backdrop-blur
-            border border-zinc-200
-            text-[12px]
-            focus:outline-none
-            focus:ring-2
-            focus:ring-indigo-200
-          "
-                            />
+                            <nav className="flex items-center gap-1 text-[11px] text-zinc-400 min-w-0">
+                                <Link href="/" className="hover:text-zinc-700 shrink-0">
+                                    Home
+                                </Link>
 
-                            {searchTerm && (
-                                <button
-                                    onClick={() => setSearchTerm("")}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400"
-                                >
-                                    <X size={12} />
-                                </button>
-                            )}
+                                <ChevronRight size={10} />
+
+                                <Link href="/products" className="hover:text-zinc-700 shrink-0">
+                                    Products
+                                </Link>
+                            </nav>
+
+                            <Link
+                                href="/products"
+                                className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-900 ml-4"
+                            >
+                                <ArrowLeft size={12} />
+                                <span className="hidden sm:inline">Back</span>
+                            </Link>
 
                         </div>
 
-                        <button
-                            onClick={() => setIsMobileFiltersOpen(true)}
-                            className="
-          h-8
-          px-3
-          rounded-full
-          border
-          border-zinc-200
-          bg-white
-          text-[11px]
-          font-semibold
-          flex items-center gap-1.5
-        "
-                        >
-                            <SlidersHorizontal size={12} />
-                            Filters
-                        </button>
 
-                    </div>
+                        {/* ROW 2 — search */}
+                        <div className="flex items-center gap-2 lg:hidden">
 
+                            <div className="relative flex-1">
 
-                    {/* CATEGORY STRIP */}
-                    <div className="relative -mx-3">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
 
-                        <div className="flex overflow-x-auto no-scrollbar px-3 gap-1.5">
+                                <input
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Search hardware"
+                                    className="
+                            w-full h-9
+                            pl-9 pr-8
+                            rounded-full
+                            border border-zinc-200
+                            bg-white
+                            text-[12px]
+                            focus:outline-none
+                            focus:ring-2
+                            focus:ring-indigo-200
+                        "
+                                />
 
-                            {categories.map(node => {
-
-                                const isActive = activeTab?.label === node.label
-
-                                return (
+                                {searchTerm && (
                                     <button
-                                        key={node.label}
-                                        onClick={() => {
-                                            setSearchTerm("")
-                                            setActiveTab(node)
-                                        }}
-                                        className={`
-                whitespace-nowrap
-                px-3
-                py-1
-                text-[10px]
-                font-semibold
-                rounded-full
-                border
-                transition
-                ${isActive
-                                                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                                                : "bg-white border-zinc-200 text-zinc-600"}
-              `}
+                                        onClick={() => setSearchTerm("")}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400"
                                     >
-                                        {node.label}
+                                        <X size={12} />
                                     </button>
-                                )
-                            })}
+                                )}
+
+                            </div>
+
+
+                            <button
+                                onClick={() => setIsMobileFiltersOpen(true)}
+                                className="
+                        h-9 px-3
+                        rounded-full
+                        border border-zinc-200
+                        bg-white
+                        text-[11px]
+                        font-semibold
+                        flex items-center gap-1.5
+                    "
+                            >
+                                <SlidersHorizontal size={12} />
+                                Filters
+                            </button>
 
                         </div>
 
-                        <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none" />
-                        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+
+                        {/* ROW 3 — categories */}
+                        <div className="relative">
+
+                            <div className="flex overflow-x-auto no-scrollbar gap-2">
+
+                                {[ALL_PRODUCTS_TAB, ...categories].map(node => {
+
+                                    const isActive = activeTab?.label === node.label;
+
+                                    return (
+                                        <button
+                                            key={node.label}
+                                            onClick={() => {
+                                                setActiveTab(node);
+                                                setSelectedNode(null);
+                                            }}
+                                            className={`
+                                    whitespace-nowrap
+                                    px-3 py-1
+                                    text-[11px]
+                                    font-semibold
+                                    rounded-full
+                                    border
+                                    transition
+                                    ${isActive
+                                                    ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                                                    : "bg-white border-zinc-200 text-zinc-600"}
+                                `}
+                                        >
+                                            {node.label}
+                                        </button>
+                                    );
+
+                                })}
+
+                            </div>
+
+                        </div>
 
                     </div>
-
                 </div>
             </PageLayout.Header>
 

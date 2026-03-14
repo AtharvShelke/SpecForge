@@ -16,7 +16,7 @@ export default function BrandShowcase({ brands }: Props) {
     const loopedBrands = [...brands, ...brands, ...brands, ...brands].slice(0, 30)
 
     return (
-       <section className="py-12 sm:py-16 md:py-20 bg-zinc-950 border-t border-white/5 overflow-hidden flex flex-col items-center justify-center" id="brands">
+       <section className="py-10 sm:py-16 md:py-20 bg-zinc-950 border-t border-white/5 overflow-hidden flex flex-col items-center justify-center" id="brands">
             <Container className="mb-6 sm:mb-8 md:mb-12">
                 <div className="text-center">
                     <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] relative inline-block">

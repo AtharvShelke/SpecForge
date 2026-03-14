@@ -1,15 +1,14 @@
+optimization [PRIORITY]
+update products without images
+@ProductClient page's header contains two search bar for the larger desktop screens, remove bottom one and move the filters option besides the top one.
+add a hover to build build button to guide user to build page.
+in mobile devices stick the header which scrolling, shrink a little, to facilitate search.
+while search it first shows all of the products and then it shows the result. this causes disturbance in the flow.
+i think its best to strict the get api more.
+There's no onclick for the product card in the mobile device and no compare for the mobile deivce
+the filters in the sidebar needs to be configured again [PRORITIY]
+@Product detail page needs a complete redesign for both larger and smaller screens. 
+@pc builder page needs responsiveness upgrade
+@saved builds need responsive
+@footer 
 
-responsiveness
-
-updating product requires a loading state
-
-in numeric fields there's a zero, it's a good thing that numbers start with 0, but while editing or adding, that 0 stays, which needs to be selected then backspace and then admin paste the number, this is unwanted friction
-
-product page -> sort filter and view type can go up beside search bar, the build mode should redirect to build/new and remove from sidebar and keep it new catalog or top, tighter product cards like build page
-
-
-the featured products should show a cabinet, a graphics card, a processor, ram
-
-
-// prompt
-this is the category section just below the hero section make it mobile responsive, reduce size of the elements in it and keep it clean and aesthetic for the mobile screens. make sure design is preserved and ensure premiumness. give me updated code blocks
