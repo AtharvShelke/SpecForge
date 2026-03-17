@@ -114,7 +114,7 @@ export default function HeroSection() {
     }
 
     return (
-        <section className="relative mt-0 sm:mt-[10vh] h-[90vh] sm:h-[86vh] min-h-[520px] sm:min-h-[700px] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
+        <section className="relative mt-[5vh] sm:mt-[6vh] h-[95vh] sm:h-[95vh]  w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
 
             {/* ── Ambient Glow from accent color ── */}
             <AnimatePresence mode="wait">
@@ -163,9 +163,9 @@ export default function HeroSection() {
                 style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }}
             />
 
-            <Container className="relative z-10 flex flex-col justify-between h-full py-8 sm:py-12 px-2.5 py-1 sm:px-3 sm:px-0">
+            <Container className="relative z-10 flex flex-col justify-between h-[75vh] py-8 sm:py-12 px-2.5 py-1 sm:px-3 sm:px-0">
 
-                <div className="flex-1" />
+                <div className="flex-[0.2] sm:flex-1" />
 
                 {/* ── Main Split Content ── */}
                 <div className="w-full max-w-xl sm:max-w-2xl h-auto sm:h-[420px] flex items-start">
@@ -217,14 +217,14 @@ export default function HeroSection() {
                     </AnimatePresence>
                 </div>
 
-                <div className="flex-1" />
+                <div className="flex-[0.3] sm:flex-1" />
 
                 {/* ── Bottom: Search + Slide Dots ── */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.4 }}
-                    className="w-full max-w-3xl mt-auto"
+                    className="w-full max-w-3xl mt-4 sm:mt-auto"
                 >
                     {/* CTA moved here to prevent overlap */}
                     <div className="mb-6">
@@ -322,20 +322,27 @@ export default function HeroSection() {
                     </div>
                 </motion.div>
 
-                {/* Scroll indicator */}
+                {/* Scroll indicator (centered) */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 1, duration: 1 }}
-                    className="absolute bottom-4 right-4 hidden xl:flex flex-col items-center gap-2"
+                    transition={{ delay: 1.2 }}
+                    className="absolute bottom-0 sm:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20"
                 >
-                    <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-zinc-500 uppercase rotate-90 mb-6">Scroll</span>
+                    <span className="text-[10px] tracking-widest text-zinc-500 uppercase">
+                        Scroll
+                    </span>
+
                     <motion.div
-                        animate={{ y: [0, 8, 0] }}
-                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                        className="opacity-50"
+                        animate={{ y: [0, 10, 0] }}
+                        transition={{
+                            repeat: Infinity,
+                            duration: 1.8,
+                            ease: "easeInOut",
+                        }}
+                        className="text-zinc-400"
                     >
-                        <ChevronDown size={20} />
+                        <ChevronDown size={22} />
                     </motion.div>
                 </motion.div>
 

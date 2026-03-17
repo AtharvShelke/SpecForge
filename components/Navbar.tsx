@@ -1,174 +1,298 @@
 'use client';
 
-import React from "react";
+import React, { useState, useMemo } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ShoppingCart,
-  Save,
   MapPin,
   Store,
   User,
   Cpu,
   Wrench,
+  Home,
+  Search,
+  Disc
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useShop } from "@/context/ShopContext";
 import { cn } from "@/lib/utils";
 
-const Navbar: React.FC = () => {
+const NAV_LINKS = [
+  { href: "/products", label: "Products", icon: Store },
+  { href: "/builds/new", label: "Build PC", icon: Wrench },
+  { href: "/builds", label: "Saved", icon: Disc },
+  { href: "/track-order", label: "Track", icon: MapPin },
+];
+
+
+
+export default function Navbar() {
   const { cart, setCartOpen } = useShop();
   const pathname = usePathname();
+  const { scrollY } = useScroll();
 
-  const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const isActive = (path: string) => pathname === path;
+  const [isScrolled, setIsScrolled] = useState(false);
 
+  const isLanding = pathname === "/";
+  const cartItemCount = cart.reduce(
+    (acc, item) => acc + item.quantity,
+    0
+  );
 
-  /* ---------- Premium Count Badge ---------- */
-  const CountBadge = ({ count }: { count: number }) =>
-    count > 0 ? (
-      <span
-        className={cn(
-          "absolute -top-1 -right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none ring-2",
-          "bg-zinc-950 text-white ring-white"
-        )}
-      >
-        {count > 99 ? "99" : count}
-      </span>
-    ) : null;
-  if (pathname === '/') return null;
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setIsScrolled(latest > 20);
+  });
+
   return (
     <>
-      {/* ---------------- Top Header (Desktop & Mobile) ---------------- */}
-      <nav
+      {/* ---------------- TOP NAV ---------------- */}
+
+      <motion.nav
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
         className={cn(
-          "sticky top-0 z-50 w-full border-b backdrop-blur-md transition-all",
-          "border-zinc-200/50 bg-white/70"
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
+          isLanding
+            ? "bg-zinc-950/80 border-white/5 backdrop-blur-xl text-white"
+            : "bg-white/80 border-zinc-200/50 backdrop-blur-md text-zinc-950",
+          isScrolled &&
+          isLanding &&
+          "bg-zinc-950/95 border-white/10 shadow-2xl",
+          isScrolled &&
+          !isLanding &&
+          "bg-white/95 border-zinc-200 shadow-sm"
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Mobile height: h-12 | Desktop height: h-16 */}
-          <div className="flex h-12 md:h-16 items-center justify-between gap-4">
+          <div className="flex h-14 md:h-20 items-center justify-between gap-4">
+            {/* LOGO */}
 
-            {/* Brand - Scaled down for mobile */}
-            <Link href="/" className="flex items-center gap-2 group shrink-0">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 group shrink-0"
+            >
               <div
                 className={cn(
-                  "flex  h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl border transition-all duration-300 group-hover:rotate-6",
-                  "bg-zinc-950 border-transparent"
+                  "flex h-9 w-9 items-center justify-center rounded-xl border",
+                  isLanding
+                    ? "bg-white/10 border-white/20"
+                    : "bg-zinc-950"
                 )}
               >
-                <Cpu 
-                  className="h-4 w-4 sm:h-5 sm:w-5 text-white" 
+                <Cpu
+                  className={cn(
+                    "h-5 w-5",
+                    isLanding
+                      ? "text-indigo-400"
+                      : "text-white"
+                  )}
                 />
               </div>
-              <span
-                className={cn(
-                  "font-bold tracking-tight text-lg md:text-xl",
-                  "text-zinc-950"
-                )}
-              >
+
+              <span className="font-bold text-lg">
                 Nexus
+                <span className="text-indigo-400">
+                  Hardware
+                </span>
               </span>
             </Link>
 
-            {/* Desktop Center Navigation (Pill Style) */}
-            <div className="hidden md:flex flex-1 items-center justify-center">
-              <div className={cn(
-                "flex items-center gap-1 rounded-full border p-1",
-                "border-zinc-200/60 bg-zinc-50/50"
-              )}>
-                {[
-                  { to: "/products", label: "Products", icon: Store },
-                  { to: "/builds/new", label: "PC Builder", icon: Wrench },
-                  { to: "/builds", label: "Saved", icon: Save },
-                  { to: "/track-order", label: "Track", icon: MapPin },
-                ].map(({ to, label, icon: Icon }) => (
-                  <Link
-                    key={to}
-                    href={to}
-                    className={cn(
-                      "flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium transition-all",
-                      isActive(to)
-                        ? ("bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200")
-                        : ("text-zinc-500 hover:text-zinc-900")
-                    )}
-                  >
-                    <Icon size={14} />
-                    {label}
-                  </Link>
-                ))}
+            {/* Desktop Nav */}
+
+            <div className="hidden md:flex flex-1 justify-center">
+              <div className="flex gap-1 rounded-full bg-zinc-100/50 border p-1">
+                {NAV_LINKS.map((l) => {
+                  const active =
+                    pathname === l.href;
+
+                  return (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className={cn(
+                        "px-5 py-1.5 rounded-full text-sm font-semibold",
+                        active
+                          ? "bg-white shadow text-zinc-900"
+                          : "text-zinc-500"
+                      )}
+                    >
+                      {l.label}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-2 md:gap-3">
+            {/* Actions */}
+
+            <div className="flex gap-2">
               <button
                 onClick={() => setCartOpen(true)}
-                className={cn(
-                  "relative flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full transition-colors",
-                  "text-zinc-500 hover:text-zinc-900"
-                )}
+                className="relative flex h-10 w-10 items-center justify-center rounded-full"
               >
-                <ShoppingCart size={18} className="md:w-5 md:h-5" />
-                <CountBadge count={cartItemCount} />
+                <ShoppingCart size={20} />
+
+                <AnimatePresence>
+                  {cartItemCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -top-1 -right-1 text-[10px] px-1.5 rounded-full bg-black text-white"
+                    >
+                      {cartItemCount}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </button>
 
               <Link
                 href="/admin"
-                className={cn(
-                  "flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full transition-colors",
-                  "text-zinc-500 hover:text-zinc-900"
-                )}
+                className="flex h-10 w-10 items-center justify-center"
               >
-                <User size={18} className="md:w-5 md:h-5" />
+                <User size={20} />
               </Link>
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
-      {/* ---------------- Mobile Bottom Navbar ---------------- */}
-      <nav
-        className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-lg md:hidden",
-          "border-zinc-200/50 bg-white/80"
-        )}
-      >
-        {/* Safe area padding for iPhones with Home Indicator */}
-        <div className="flex h-14 items-center justify-around px-2 pb-safe">
-          {[
-            { to: "/products", label: "Store", icon: Store },
-            { to: "/builds/new", label: "Build", icon: Wrench },
-            { to: "/builds", label: "Saved", icon: Save },
-            { to: "/track-order", label: "Track", icon: MapPin },
-          ].map(({ to, label, icon: Icon }) => {
-            const active = isActive(to);
-            return (
-              <Link
-                key={to}
-                href={to}
-                className={cn(
-                  "relative flex flex-1 flex-col items-center justify-center gap-1 transition-all",
-                  active
-                    ? ("text-zinc-950")
-                    : "text-zinc-500"
-                )}
-              >
-                <Icon size={18} strokeWidth={active ? 2.5 : 2} />
-                <span className="text-[10px] font-semibold tracking-tight">{label}</span>
-                {active && (
-                  <span className={cn(
-                    "absolute -bottom-1 h-1 w-1 rounded-full",
-                    "bg-zinc-950"
-                  )} />
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+
+
+      {/* ---------------- DOCK ---------------- */}
+
+<div className="fixed bottom-5 left-0 right-0 z-50 flex justify-center md:hidden pointer-events-none">
+  <motion.div
+    initial={{ y: 60, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    transition={{ type: "spring", stiffness: 120, damping: 18 }}
+    className={cn(
+      "pointer-events-auto relative flex items-center gap-1 px-3 py-2 rounded-full",
+      "backdrop-blur-3xl border shadow-[0_10px_40px_rgba(0,0,0,0.25)]",
+
+      isLanding
+        ? "bg-zinc-900/80 border-white/10 text-white"
+        : "bg-white/90 border-zinc-200/70 text-zinc-900"
+    )}
+  >
+    {/* glow */}
+    <div className="absolute inset-0 rounded-full pointer-events-none overflow-hidden">
+      {isLanding ? (
+        <div className="absolute inset-0 bg-indigo-500/10 blur-xl opacity-40" />
+      ) : (
+        <div className="absolute inset-0 bg-black/5 blur-xl opacity-40" />
+      )}
+    </div>
+
+    <DockTab
+      href="/"
+      icon={Home}
+      active={pathname === "/"}
+      isLanding={isLanding}
+    />
+
+    {NAV_LINKS.map((link) => (
+      <DockTab
+        key={link.href}
+        href={link.href}
+        icon={link.icon}
+        active={pathname === link.href}
+        isLanding={isLanding}
+      />
+    ))}
+  </motion.div>
+</div>
     </>
   );
-};
+}
 
-export default Navbar;
+
+
+
+
+
+/* ---------------- Dock Tab ---------------- */
+function DockTab({
+  href,
+  icon: Icon,
+  active,
+  onClick,
+  badge,
+  isLanding,
+}: {
+  href?: string;
+  icon: any;
+  active?: boolean;
+  onClick?: () => void;
+  badge?: number;
+  isLanding: boolean;
+}) {
+  const content = (
+    <motion.div
+      layout
+      transition={{
+        type: "spring",
+        stiffness: 350,
+        damping: 25,
+      }}
+      whileTap={{ scale: 0.9 }}
+      className={cn(
+        "relative flex items-center justify-center",
+        "h-11 w-11 rounded-full transition-all",
+
+        active
+          ? isLanding
+            ? "bg-white text-zinc-900 shadow-lg"
+            : "bg-zinc-900 text-white shadow"
+          : isLanding
+          ? "text-zinc-300 hover:text-white"
+          : "text-zinc-600 hover:text-zinc-900"
+      )}
+    >
+      {/* active pill */}
+      {active && (
+        <motion.div
+          layoutId="active-pill"
+          className={cn(
+            "absolute inset-0 rounded-full",
+            isLanding
+              ? "bg-white/20"
+              : "bg-zinc-900/10"
+          )}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          }}
+        />
+      )}
+
+      <Icon
+        size={20}
+        strokeWidth={active ? 2.5 : 2}
+        className="relative z-10"
+      />
+
+      {badge && badge > 0 && (
+        <span className="absolute -top-1 -right-1 text-[10px] px-1.5 rounded-full bg-indigo-500 text-white">
+          {badge > 99 ? "99" : badge}
+        </span>
+      )}
+    </motion.div>
+  );
+
+  if (onClick) {
+    return (
+      <button className="px-1" onClick={onClick}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href!} className="px-1">
+      {content}
+    </Link>
+  );
+}

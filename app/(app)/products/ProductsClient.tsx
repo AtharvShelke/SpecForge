@@ -9,11 +9,7 @@ import {
     BarChart2, ArrowUpDown, ArrowLeft, SlidersHorizontal, X, Zap,
     Check, Hammer
 } from 'lucide-react';
-import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
-} from "@/components/ui/hover-card";
+
 import { validateBuild } from '@/services/compatibility';
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
@@ -114,7 +110,7 @@ const ProductCard = ({
                             </span>
                         )}
                     </div>
-
+                </Link>
                     {/* Content */}
                     <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
                         <div>
@@ -189,7 +185,7 @@ const ProductCard = ({
                             </div>
                         </div>
                     </div>
-                </Link>
+            
             </div>
         );
     }
@@ -224,7 +220,7 @@ const ProductCard = ({
                     )}
 
                 </div>
-
+</Link>
 
                 <div className="p-2 flex flex-col gap-1">
 
@@ -277,7 +273,7 @@ const ProductCard = ({
                     </div>
 
                 </div>
-            </Link>
+            
         </div>
     )
 };

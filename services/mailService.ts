@@ -22,6 +22,11 @@ export interface SendMailOptions {
     text?: string;
     html?: string;
     from?: string;
+    attachments?: {
+        filename: string;
+        content: Buffer | string;
+        contentType?: string;
+    }[];
 }
 
 /**
@@ -36,6 +41,7 @@ export const sendMail = async (options: SendMailOptions) => {
             subject: options.subject,
             text: options.text,
             html: options.html,
+            attachments: options.attachments,
         });
 
         console.log("Email sent: %s", info.messageId);

@@ -25,7 +25,6 @@ import {
 import { Order, OrderStatus, CompatibilityLevel, CartItem } from '@/types';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
-import { generateInvoiceHTML } from '@/lib/invoice';
 
 // ---------- Timeline helpers ----------
 
@@ -96,6 +95,7 @@ export default function TrackOrderPage() {
     const [contact, setContact] = useState('');
     const [searched, setSearched] = useState(false);
     const [foundOrder, setFoundOrder] = useState<Order | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,16 +120,26 @@ export default function TrackOrderPage() {
         setCartOpen(true);
     };
 
-    const handlePrintInvoice = () => {
-        if (!foundOrder) return;
-        const html = generateInvoiceHTML(foundOrder);
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const win = window.open(url, '_blank');
-        if (win) {
-            win.onload = () => {
-                win.print();
-            };
+    const handleDownloadInvoice = async () => {
+        if (!foundOrder || isDownloading) return;
+        try {
+            setIsDownloading(true);
+            const res = await fetch(`/api/orders/${foundOrder.id}/invoice/pdf`);
+            if (!res.ok) throw new Error('Failed to download invoice');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Invoice-${foundOrder.id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading invoice:', error);
+            alert('Failed to download invoice. Please try again later.');
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -411,11 +421,16 @@ export default function TrackOrderPage() {
                                 <MessageCircle size={18} /> WhatsApp Support
                             </a>
                             <button
-                                onClick={handlePrintInvoice}
-                                className="px-6 h-14 flex items-center gap-2 border border-zinc-200 bg-white hover:bg-zinc-50
-                  text-zinc-700 font-bold rounded-2xl text-sm transition-all shadow-sm uppercase tracking-widest"
+                                onClick={handleDownloadInvoice}
+                                disabled={isDownloading}
+                                className="px-6 h-14 flex items-center justify-center min-w-[140px] gap-2 border border-zinc-200 bg-white hover:bg-zinc-50
+                  text-zinc-700 font-bold rounded-2xl text-sm transition-all shadow-sm uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <FileDown size={18} /> Invoice
+                                {isDownloading ? (
+                                    <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-700 rounded-full animate-spin" />
+                                ) : (
+                                    <><FileDown size={18} /> Download</>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -449,10 +464,15 @@ export default function TrackOrderPage() {
                         <MessageCircle size={16} /> WhatsApp
                     </a>
                     <button
-                        onClick={handlePrintInvoice}
-                        className="h-12 w-12 flex-shrink-0 border border-zinc-200 bg-white rounded-xl flex items-center justify-center text-zinc-600"
+                        onClick={handleDownloadInvoice}
+                        disabled={isDownloading}
+                        className="h-12 w-12 flex-shrink-0 border border-zinc-200 bg-white rounded-xl flex items-center justify-center text-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <FileDown size={18} />
+                        {isDownloading ? (
+                            <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-700 rounded-full animate-spin" />
+                        ) : (
+                            <FileDown size={18} />
+                        )}
                     </button>
                 </div>
             )}

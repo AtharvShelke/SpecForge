@@ -123,9 +123,9 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     shippingState: data.shippingState,
                     shippingZip: data.shippingZip,
                     shippingCountry: data.shippingCountry,
-                    paymentMethod: data.isPosOverride ? "CASH" : data.paymentMethod,
-                    paymentTransactionId: data.isPosOverride ? `POS-${Date.now()}` : data.paymentTransactionId,
-                    paymentStatus: data.isPosOverride ? "COMPLETED" : data.paymentStatus,
+                    paymentMethod: data.isPosOverride ? "CASH" : (data.paymentMethod || "Razorpay Online"),
+                    paymentTransactionId: data.isPosOverride ? `POS-${Date.now()}` : (data.paymentTransactionId || `MOCK-RPY-${Date.now()}`),
+                    paymentStatus: data.isPosOverride ? "COMPLETED" : (data.paymentStatus || "SUCCESS"),
                     items: {
                         create: orderItemsData,
                     },
@@ -174,8 +174,8 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         });
 
         // MOCK EXTERNAL NOTIFICATIONS
-        const invoiceLink = `http://localhost:3000/api/orders/${order.id}/invoice`;
-        const trackingLink = `http://localhost:3000/track-order`;
+        const invoiceLink = `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/${order.id}/invoice`;
+        const trackingLink = `${process.env.NEXT_PUBLIC_BASE_URL}/track-order`;
 
         console.log(`\n========================================`);
         console.log(`[MOCK NOTIFICATION] ORDER ${order.id}`);

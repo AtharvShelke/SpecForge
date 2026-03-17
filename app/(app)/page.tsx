@@ -19,7 +19,7 @@ import TrustSection from '@/components/storefront/TrustSection'
 import CtaBanner from '@/components/storefront/CtaBanner'
 import StorefrontNavbar from '@/components/storefront/StorefrontNavbar'
 import StorefrontFooter from '@/components/storefront/StorefrontFooter'
-
+import ScrollTopButton from '@/components/ui/ScrollTopButton'
 export default function StorefrontPage() {
   const { products, categories, brands, addToCart, isLoading } = useShop()
 
@@ -76,13 +76,13 @@ export default function StorefrontPage() {
         <link rel="canonical" href="/" />
       </Head>
       <PageLayout bgClass="bg-zinc-950">
-        <StorefrontNavbar />
+        {/* <StorefrontNavbar /> */}
         <HeroSection />
         <CategorySection
           categories={categories}
           productCounts={productCounts}
-        /> 
-        <BrandShowcase brands={brands} />        
+        />
+        <BrandShowcase brands={brands} />
         <FeaturedProductsSection
           products={featuredProducts}
           addToCart={addToCart}
@@ -93,6 +93,7 @@ export default function StorefrontPage() {
         <TrustSection />
         {/* <CtaBanner /> */}
         <StorefrontFooter />
+        <ScrollTopButton />
       </PageLayout>
     </>
   )
