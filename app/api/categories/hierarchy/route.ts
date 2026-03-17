@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Category } from "@/generated/prisma";
+
 import { z } from "zod";
+import { Category } from "@/generated/prisma";
 
 // ── Category enum ────────────────────────────────────────
 // Defined once at module scope — no re-allocation per request
