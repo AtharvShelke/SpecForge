@@ -1,17 +1,42 @@
 'use client'
 
 import Link from 'next/link'
+import { memo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Eye, TrendingUp, Plus, ArrowRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { Product } from '@/types'
+
+// ── Animation variants (defined once outside component, never recreated) ──────
+
+const cardVariants = {
+    hidden:  { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0  },
+}
+
+const headerLeftVariants = {
+    hidden:  { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0   },
+}
+
+const headerRightVariants = {
+    hidden:  { opacity: 0, x: 20 },
+    visible: { opacity: 1, x: 0  },
+}
+
+const VIEWPORT = { once: true, margin: '-50px' } as const
+const HEADER_VIEWPORT = { once: true } as const
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Props {
     products: Product[]
     addToCart: (p: Product) => void
 }
 
-function ProductCardPremium({
+// ── ProductCardPremium ────────────────────────────────────────────────────────
+
+const ProductCardPremium = memo(function ProductCardPremium({
     product,
     onAddToCart,
     index,
@@ -20,20 +45,26 @@ function ProductCardPremium({
     onAddToCart: (p: Product) => void
     index: number
 }) {
-    const price = product.variants?.[0]?.price || 0
-    const compareAt = product.variants?.[0]?.compareAtPrice
-    const image = product.media?.[0]?.url
-    const brand = product.brand?.name
-    const hasDiscount = compareAt && compareAt > price
-    const discountPct = hasDiscount ? Math.round(((compareAt - price) / compareAt) * 100) : 0
-    const isInStock = product.variants?.[0]?.status !== 'OUT_OF_STOCK'
+    const price      = product.variants?.[0]?.price ?? 0
+    const compareAt  = product.variants?.[0]?.compareAtPrice
+    const image      = product.media?.[0]?.url
+    const brand      = product.brand?.name
+    const hasDiscount = !!(compareAt && compareAt > price)
+    const discountPct = hasDiscount ? Math.round(((compareAt! - price) / compareAt!) * 100) : 0
+    const isInStock   = product.variants?.[0]?.status !== 'OUT_OF_STOCK'
+
+    const handleAddToCart = useCallback(
+        (e: React.MouseEvent) => { e.preventDefault(); onAddToCart(product) },
+        [onAddToCart, product]
+    )
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ delay: index * 0.05, duration: 0.5, ease: "easeOut" }}
+            variants={cardVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={VIEWPORT}
+            transition={{ delay: index * 0.05, duration: 0.5, ease: 'easeOut' }}
             className="group relative flex flex-col bg-white rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden hover:shadow-[0_10px_25px_-10px_rgba(0,0,0,0.12)] sm:hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 border border-zinc-100"
         >
             {/* Top Badges */}
@@ -56,8 +87,12 @@ function ProductCardPremium({
                     <img
                         src={image}
                         alt={product.name}
+                        width={400}
+                        height={400}
+                        loading={index < 2 ? 'eager' : 'lazy'}
+                        fetchPriority={index === 0 ? 'high' : 'auto'}
+                        decoding="async"
                         className="w-full h-full object-contain filter drop-shadow-xl group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                        loading="lazy"
                     />
                 ) : (
                     <Eye size={32} className="text-zinc-300" />
@@ -66,9 +101,8 @@ function ProductCardPremium({
                 {/* Floating Action Button (Cart) */}
                 {isInStock && (
                     <button
-                        onClick={(e) => { e.preventDefault(); onAddToCart(product) }}
-                        className="absolute bottom-4 right-4 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-zinc-950 text-white rounded-2xl flex items-center justify-center shadow-xl 
-                        sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 transition-all duration-300 hover:bg-indigo-600 hover:scale-105 active:scale-95 z-30"
+                        onClick={handleAddToCart}
+                        className="absolute bottom-4 right-4 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-zinc-950 text-white rounded-2xl flex items-center justify-center shadow-xl sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 transition-all duration-300 hover:bg-indigo-600 hover:scale-105 active:scale-95 z-30"
                         aria-label="Add to cart"
                     >
                         <Plus size={16} strokeWidth={2} />
@@ -91,15 +125,13 @@ function ProductCardPremium({
                 </Link>
 
                 <div className="mt-auto">
-
-
                     <div className="flex items-end gap-2">
                         <span className="text-lg sm:text-xl font-black text-zinc-950 tracking-tight">
                             ₹{price.toLocaleString('en-IN')}
                         </span>
                         {hasDiscount && (
                             <span className="text-sm font-semibold text-zinc-400 line-through mb-0.5">
-                                ₹{compareAt.toLocaleString('en-IN')}
+                                ₹{compareAt!.toLocaleString('en-IN')}
                             </span>
                         )}
                     </div>
@@ -107,7 +139,9 @@ function ProductCardPremium({
             </div>
         </motion.div>
     )
-}
+})
+
+// ── FeaturedProductsSection ───────────────────────────────────────────────────
 
 export default function FeaturedProductsSection({ products, addToCart }: Props) {
     if (!products.length) return null
@@ -118,9 +152,10 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 md:mb-12">
                     <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
+                        variants={headerLeftVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={HEADER_VIEWPORT}
                         transition={{ duration: 0.5 }}
                     >
                         <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-zinc-950 tracking-tighter mb-4">
@@ -132,9 +167,10 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
+                        variants={headerRightVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={HEADER_VIEWPORT}
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
                         <Link

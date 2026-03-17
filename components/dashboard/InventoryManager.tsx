@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, FormEvent } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, FormEvent, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { StockMovementType } from '@/types';
 import {
@@ -10,7 +10,6 @@ import {
     DollarSign,
     Package,
     Search,
-    X,
     TrendingDown,
     TrendingUp,
     Filter,
@@ -18,7 +17,6 @@ import {
     ChevronRight,
     RefreshCw,
     MoveHorizontal,
-    MoreVertical,
     History,
     Warehouse,
     BarChart3,
@@ -32,9 +30,6 @@ import {
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { WarehouseInventory, Category } from '@/types';
 import { cn } from '@/lib/utils';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -43,7 +38,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Dialog,
@@ -55,18 +49,44 @@ import {
 } from "@/components/ui/dialog";
 import { useDebounce } from '@/hooks/useDebounce';
 
-// ─────────────────────────────────────────────────────────────
-// SHARED PRIMITIVES
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────
+   MODULE-LEVEL CONSTANTS — never reallocated on render
+───────────────────────────────────────────────────────────────*/
 
-const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
+// Was recreated inside MovTypeBadge on every render
+const MOV_TYPE_MAP: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
+    INWARD:     { label: 'In',       cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: <ArrowDownRight size={10} /> },
+    OUTWARD:    { label: 'Out',      cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200',          icon: <ArrowUpRight size={10} /> },
+    ADJUSTMENT: { label: 'Adj',      cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',    icon: <RefreshCw size={10} /> },
+    TRANSFER:   { label: 'Transfer', cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200',    icon: <MoveHorizontal size={10} /> },
+};
+const MOV_TYPE_FALLBACK = { label: '', cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200', icon: null };
+
+// Stable image fallback handler — was an inline arrow per <img> per render
+const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300';
+};
+
+// Static date format options — avoids object literals being passed to Intl on every render
+const DATE_OPTS_MOV: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+const DATE_OPTS_MOV_MOBILE: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+const DATE_OPTS_AUDIT: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+
+/* ─────────────────────────────────────────────────────────────
+   SHARED PRIMITIVES
+───────────────────────────────────────────────────────────────*/
+
+// memo: only re-renders if children or icon reference changes
+const SectionLabel = memo(({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
     <div className="flex items-center gap-1.5">
         <span className="text-stone-400">{icon}</span>
         <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">{children}</span>
     </div>
-);
+));
+SectionLabel.displayName = 'SectionLabel';
 
-const StockBadge = ({ qty, reorderLevel }: { qty: number; reorderLevel: number }) => {
+// memo: pure function of qty + reorderLevel — skips re-render if values unchanged
+const StockBadge = memo(({ qty, reorderLevel }: { qty: number; reorderLevel: number }) => {
     if (qty === 0) return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-rose-50 text-rose-600 ring-1 ring-rose-200 whitespace-nowrap">
             <span className="w-1 h-1 rounded-full bg-current opacity-60" /> Out
@@ -82,33 +102,26 @@ const StockBadge = ({ qty, reorderLevel }: { qty: number; reorderLevel: number }
             <span className="w-1 h-1 rounded-full bg-current opacity-60" /> OK
         </span>
     );
-};
+});
+StockBadge.displayName = 'StockBadge';
 
-const MovTypeBadge = ({ type }: { type: string }) => {
-    const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
-        INWARD: { label: 'In', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: <ArrowDownRight size={10} /> },
-        OUTWARD: { label: 'Out', cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200', icon: <ArrowUpRight size={10} /> },
-        ADJUSTMENT: { label: 'Adj', cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200', icon: <RefreshCw size={10} /> },
-        TRANSFER: { label: 'Transfer', cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200', icon: <MoveHorizontal size={10} /> },
-    };
-    const cfg = map[type] ?? { label: type, cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200', icon: null };
+// memo + module-level map lookup — no object literal allocation per render
+const MovTypeBadge = memo(({ type }: { type: string }) => {
+    const cfg = MOV_TYPE_MAP[type] ?? { ...MOV_TYPE_FALLBACK, label: type };
     return (
         <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap', cfg.cls)}>
             {cfg.icon} {cfg.label}
         </span>
     );
-};
+});
+MovTypeBadge.displayName = 'MovTypeBadge';
 
-// ─────────────────────────────────────────────────────────────
-// COLLAPSIBLE SECTION
-// ─────────────────────────────────────────────────────────────
-const CollapsibleSection = ({
-    icon,
-    title,
-    badge,
-    children,
-    defaultOpen = true,
-    accentClass,
+/* ─────────────────────────────────────────────────────────────
+   COLLAPSIBLE SECTION — memo: skips re-render when parent
+   re-renders for unrelated state (pagination, search, etc.)
+───────────────────────────────────────────────────────────────*/
+const CollapsibleSection = memo(({
+    icon, title, badge, children, defaultOpen = true, accentClass,
 }: {
     icon: React.ReactNode;
     title: string;
@@ -118,13 +131,15 @@ const CollapsibleSection = ({
     accentClass?: string;
 }) => {
     const [open, setOpen] = useState(defaultOpen);
+    const toggle = useCallback(() => setOpen(o => !o), []);
+
     return (
         <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
             {accentClass && <div className={cn('h-0.5 w-full', accentClass)} />}
             <button
                 type="button"
                 className="w-full px-4 py-2.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between"
-                onClick={() => setOpen(o => !o)}
+                onClick={toggle}
             >
                 <div className="flex items-center gap-2">
                     <SectionLabel icon={icon}>{title}</SectionLabel>
@@ -135,11 +150,12 @@ const CollapsibleSection = ({
             {open && <div>{children}</div>}
         </div>
     );
-};
+});
+CollapsibleSection.displayName = 'CollapsibleSection';
 
-// ─────────────────────────────────────────────────────────────
-// MAIN
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────
+   MAIN
+───────────────────────────────────────────────────────────────*/
 const InventoryManager = () => {
     const { inventory, stockMovements, adjustStock, transferStock, refreshInventory, syncData, isLoading } = useAdmin();
 
@@ -163,7 +179,8 @@ const InventoryManager = () => {
     const [isLoadingAudit, setIsLoadingAudit] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
 
-    const openAuditLog = async () => {
+    // Stable callback — was recreated every render, triggering button re-renders
+    const openAuditLog = useCallback(async () => {
         setAuditLogModal(true);
         setIsLoadingAudit(true);
         try {
@@ -171,7 +188,7 @@ const InventoryManager = () => {
             if (res.ok) setAuditLogs(await res.json());
         } catch (e) { console.error(e); }
         finally { setIsLoadingAudit(false); }
-    };
+    }, []);
 
     const router = useRouter();
     const pathname = usePathname();
@@ -192,34 +209,10 @@ const InventoryManager = () => {
     useEffect(() => { setSearchTerm(currentSearch); }, [currentSearch]);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
-    useEffect(() => {
-        if (debouncedSearch !== currentSearch) updateQueryParams({ q: debouncedSearch });
-    }, [debouncedSearch]);
 
-    useEffect(() => {
-        const fetchPaginatedInventory = async () => {
-            setIsLoadingInventory(true);
-            try {
-                const query = new URLSearchParams(searchParams.toString());
-                if (!query.has("limit")) query.set("limit", "10");
-                if (!query.has("page")) query.set("page", "1");
-                const res = await fetch(`/api/inventory?${query.toString()}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setPaginatedInventory(Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []));
-                    setTotalItems(data.total || 0);
-                } else { setPaginatedInventory([]); setTotalItems(0); }
-            } catch (err) {
-                console.error("Failed to fetch paginated inventory:", err);
-                setPaginatedInventory([]); setTotalItems(0);
-            } finally { setIsLoadingInventory(false); }
-        };
-        fetchPaginatedInventory();
-        const interval = setInterval(fetchPaginatedInventory, 30000);
-        return () => clearInterval(interval);
-    }, [searchParams, refreshTrigger]);
-
-    const updateQueryParams = (newParams: Record<string, string | null>) => {
+    // Stable — was recreated every render, causing all pagination/filter buttons
+    // to receive new onClick props and forcing their re-render
+    const updateQueryParams = useCallback((newParams: Record<string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString());
         if (!newParams.page && (newParams.category !== undefined || newParams.q !== undefined || newParams.f_stock_status !== undefined)) {
             params.set("page", "1");
@@ -229,18 +222,64 @@ const InventoryManager = () => {
             else params.set(key, value);
         });
         router.push(`${pathname}?${params.toString()}`);
-    };
+    }, [searchParams, router, pathname]);
 
-    const handleAdjustment = (e: FormEvent) => {
+    useEffect(() => {
+        if (debouncedSearch !== currentSearch) updateQueryParams({ q: debouncedSearch });
+    }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Use AbortController to cancel in-flight fetch when params change,
+    // preventing stale responses from updating state out of order
+    useEffect(() => {
+        const controller = new AbortController();
+        const { signal } = controller;
+
+        const fetchPaginatedInventory = async () => {
+            setIsLoadingInventory(true);
+            try {
+                const query = new URLSearchParams(searchParams.toString());
+                if (!query.has("limit")) query.set("limit", "10");
+                if (!query.has("page")) query.set("page", "1");
+                const res = await fetch(`/api/inventory?${query.toString()}`, { signal });
+                if (res.ok) {
+                    const data = await res.json();
+                    setPaginatedInventory(Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []));
+                    setTotalItems(data.total || 0);
+                } else {
+                    setPaginatedInventory([]); setTotalItems(0);
+                }
+            } catch (err: any) {
+                // Ignore aborted requests — not a real error
+                if (err.name !== 'AbortError') {
+                    console.error("Failed to fetch paginated inventory:", err);
+                    setPaginatedInventory([]); setTotalItems(0);
+                }
+            } finally {
+                if (!signal.aborted) setIsLoadingInventory(false);
+            }
+        };
+
+        fetchPaginatedInventory();
+
+        // Polling interval: only set after initial fetch, reuses AbortController scope
+        const interval = setInterval(fetchPaginatedInventory, 30000);
+
+        return () => {
+            controller.abort();       // cancel in-flight request on param change
+            clearInterval(interval);  // clear stale polling interval
+        };
+    }, [searchParams, refreshTrigger]);
+
+    const handleAdjustment = useCallback((e: FormEvent) => {
         e.preventDefault();
         if (adjustmentModal && adjQty > 0) {
             adjustStock(adjustmentModal.sku, adjQty, adjType, adjReason);
             setAdjustmentModal(null); setAdjQty(0); setAdjReason(''); setAdjType('INWARD');
             setRefreshTrigger(prev => !prev);
         }
-    };
+    }, [adjustmentModal, adjQty, adjType, adjReason, adjustStock]);
 
-    const handleTransfer = async (e: FormEvent) => {
+    const handleTransfer = useCallback(async (e: FormEvent) => {
         e.preventDefault();
         if (transferModal && transferQty > 0 && transferTarget) {
             try {
@@ -249,20 +288,66 @@ const InventoryManager = () => {
                 setRefreshTrigger(prev => !prev);
             } catch (err) { console.error("Transfer failed", err); }
         }
-    };
+    }, [transferModal, transferQty, transferTarget, transferReason, transferStock]);
 
-    // ── Computed KPIs ──
-    const lowStockCount = inventory.filter(i => i.quantity > 0 && i.quantity <= i.reorderLevel).length;
-    const outOfStockCount = inventory.filter(i => i.quantity === 0).length;
-    const totalStockValue = inventory.reduce((s, i) => s + i.quantity * i.costPrice, 0);
-    const totalAvailable = inventory.reduce((s, i) => s + i.quantity, 0);
-    const totalReserved = inventory.reduce((s, i) => s + (i.reserved || 0), 0);
-    const totalOnHand = totalAvailable + totalReserved;
-    const healthyCount = inventory.filter(i => i.quantity > i.reorderLevel).length;
-    const healthPct = inventory.length > 0 ? Math.round((healthyCount / inventory.length) * 100) : 0;
+    const handleCloseAdjustment = useCallback(() => setAdjustmentModal(null), []);
+    const handleCloseTransfer = useCallback(() => setTransferModal(null), []);
+    const handleToggleFilters = useCallback(() => setShowFilters(f => !f), []);
+
+    const handleRefreshSync = useCallback(async () => {
+        await refreshInventory();
+        setRefreshTrigger(prev => !prev);
+    }, [refreshInventory]);
+
+    // Pagination handlers — stable references prevent button re-renders
+    const handlePrevPage = useCallback(() => {
+        updateQueryParams({ page: String(currentPage - 1) });
+    }, [updateQueryParams, currentPage]);
+
+    const handleNextPage = useCallback(() => {
+        updateQueryParams({ page: String(currentPage + 1) });
+    }, [updateQueryParams, currentPage]);
+
+    const handleCategoryChange = useCallback((val: string) => {
+        updateQueryParams({ category: val });
+    }, [updateQueryParams]);
+
+    const handleStockStatusChange = useCallback((val: string) => {
+        updateQueryParams({ f_stock_status: val });
+    }, [updateQueryParams]);
+
+    /* ── KPIs — single combined pass instead of 6 separate .filter()/.reduce() calls ── */
+    const kpis = useMemo(() => {
+        let lowStockCount = 0;
+        let outOfStockCount = 0;
+        let totalStockValue = 0;
+        let totalAvailable = 0;
+        let totalReserved = 0;
+        let healthyCount = 0;
+
+        const arr = Array.isArray(inventory) ? inventory : [];
+        for (const i of arr) {
+            const qty = i.quantity;
+            const reserved = i.reserved || 0;
+            totalStockValue += qty * i.costPrice;
+            totalAvailable += qty;
+            totalReserved += reserved;
+            if (qty === 0) outOfStockCount++;
+            else if (qty <= i.reorderLevel) lowStockCount++;
+            else healthyCount++;
+        }
+
+        const totalOnHand = totalAvailable + totalReserved;
+        const healthPct = arr.length > 0 ? Math.round((healthyCount / arr.length) * 100) : 0;
+
+        return { lowStockCount, outOfStockCount, totalStockValue, totalAvailable, totalReserved, totalOnHand, healthyCount, healthPct };
+    }, [inventory]);
+
+    const { lowStockCount, outOfStockCount, totalStockValue, totalAvailable, totalReserved, totalOnHand, healthyCount, healthPct } = kpis;
 
     const criticalItems = useMemo(() => {
-        return [...inventory]
+        const arr = Array.isArray(inventory) ? inventory : [];
+        return [...arr]
             .filter(i => i.quantity <= i.reorderLevel)
             .sort((a, b) => (a.quantity / Math.max(a.reorderLevel, 1)) - (b.quantity / Math.max(b.reorderLevel, 1)))
             .slice(0, 5);
@@ -270,24 +355,76 @@ const InventoryManager = () => {
 
     const categoryBreakdown = useMemo(() => {
         const map: Record<string, { units: number; value: number; count: number }> = {};
-        inventory.forEach(i => {
+        const arr = Array.isArray(inventory) ? inventory : [];
+        for (const i of arr) {
             const cat = i.variant?.product?.category || 'Uncategorised';
             if (!map[cat]) map[cat] = { units: 0, value: 0, count: 0 };
             map[cat].units += i.quantity;
             map[cat].value += i.quantity * i.costPrice;
             map[cat].count += 1;
-        });
+        }
         return Object.entries(map).sort((a, b) => b[1].value - a[1].value).slice(0, 5);
     }, [inventory]);
 
-    const recentMovements = useMemo(() => stockMovements.slice(0, 5), [stockMovements]);
+    // KPI card definitions — memoized so the array isn't reconstructed every render
+    const kpiCards = useMemo(() => [
+        {
+            label: 'Valuation',
+            value: totalStockValue > 999999
+                ? `₹${(totalStockValue / 100000).toFixed(1)}L`
+                : `₹${totalStockValue.toLocaleString('en-IN')}`,
+            sub: `${Array.isArray(inventory) ? inventory.length : 0} SKUs`,
+            icon: <DollarSign size={12} />,
+            accent: 'border-l-indigo-400',
+            alert: false,
+        },
+        {
+            label: 'Low Stock',
+            value: lowStockCount,
+            sub: 'Action req.',
+            icon: <AlertTriangle size={12} />,
+            accent: 'border-l-amber-400',
+            alert: lowStockCount > 0,
+        },
+        {
+            label: 'Out of Stock',
+            value: outOfStockCount,
+            sub: 'Zero stock',
+            icon: <ShieldAlert size={12} />,
+            accent: 'border-l-rose-400',
+            alert: outOfStockCount > 0,
+        },
+        {
+            label: 'Health',
+            value: `${healthPct}%`,
+            sub: `${healthyCount} Optimal`,
+            icon: <BarChart3 size={12} />,
+            accent: healthPct >= 80 ? 'border-l-emerald-400' : healthPct >= 50 ? 'border-l-amber-400' : 'border-l-rose-400',
+            alert: false,
+        },
+    ], [totalStockValue, inventory, lowStockCount, outOfStockCount, healthPct, healthyCount]);
+
+    // Utilisation rows — memoized to prevent array construction on every render
+    const utilisationRows = useMemo(() => [
+        { label: 'On Hand',      value: totalOnHand.toLocaleString('en-IN'),   sub: 'Physical stock', icon: <Package size={12} />,    color: 'text-stone-600' },
+        { label: 'Reserved',     value: totalReserved.toLocaleString('en-IN'), sub: 'Pending orders', icon: <Clock size={12} />,       color: 'text-amber-600' },
+        { label: 'Available',    value: totalAvailable.toLocaleString('en-IN'),sub: 'Free to sell',   icon: <Zap size={12} />,         color: 'text-emerald-600' },
+        {
+            label: 'Avg Cost/Unit',
+            value: Array.isArray(inventory) && inventory.length > 0
+                ? `₹${Math.round(totalStockValue / Math.max(totalOnHand, 1)).toLocaleString('en-IN')}`
+                : '—',
+            sub: 'Weighted avg', icon: <DollarSign size={12} />, color: 'text-indigo-600',
+        },
+    ], [totalOnHand, totalReserved, totalAvailable, totalStockValue, inventory]);
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / currentLimit));
 
     return (
         <div
             className="space-y-3"
             style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
         >
-
             {/* ─── HEADER ─── */}
             <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -295,7 +432,7 @@ const InventoryManager = () => {
                     <div className="min-w-0">
                         <h2 className="text-sm font-bold text-stone-900 tracking-tight">Inventory</h2>
                         <p className="text-[11px] text-stone-400 font-mono hidden sm:block">
-                            {inventory.length} SKUs · Live
+                            {Array.isArray(inventory) ? inventory.length : 0} SKUs · Live
                         </p>
                     </div>
                 </div>
@@ -308,10 +445,7 @@ const InventoryManager = () => {
                         <span className="hidden sm:inline">Audit Log</span>
                     </button>
                     <button
-                        onClick={async () => {
-                            await refreshInventory();
-                            setRefreshTrigger(prev => !prev);
-                        }}
+                        onClick={handleRefreshSync}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
                     >
                         <RefreshCw size={12} />
@@ -321,72 +455,35 @@ const InventoryManager = () => {
             </div>
 
             {/* ─── KPI CARDS ─── */}
-<div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-  {[
-    {
-      label: 'Valuation',
-      // On very small screens, abbreviate large numbers to prevent overflow
-      value: totalStockValue > 999999 
-        ? `₹${(totalStockValue / 100000).toFixed(1)}L` 
-        : `₹${totalStockValue.toLocaleString('en-IN')}`,
-      sub: `${inventory.length} SKUs`,
-      icon: <DollarSign size={12} />,
-      accent: 'border-l-indigo-400',
-    },
-    {
-      label: 'Low Stock',
-      value: lowStockCount,
-      sub: 'Action req.',
-      icon: <AlertTriangle size={12} />,
-      accent: 'border-l-amber-400',
-      alert: lowStockCount > 0,
-    },
-    {
-      label: 'Out of Stock',
-      value: outOfStockCount,
-      sub: 'Zero stock',
-      icon: <ShieldAlert size={12} />,
-      accent: 'border-l-rose-400',
-      alert: outOfStockCount > 0,
-    },
-    {
-      label: 'Health',
-      value: `${healthPct}%`,
-      sub: `${healthyCount} Optimal`,
-      icon: <BarChart3 size={12} />,
-      accent: healthPct >= 80 ? 'border-l-emerald-400' : healthPct >= 50 ? 'border-l-amber-400' : 'border-l-rose-400',
-    },
-  ].map((card, idx) => (
-    <div
-      key={idx}
-      className={cn(
-        'rounded-xl bg-white border border-stone-200 border-l-[3px] sm:border-l-4 shadow-sm p-2.5 sm:p-4 active:scale-[0.98] transition-transform',
-        card.accent
-      )}
-    >
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[8px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tighter sm:tracking-widest truncate mr-1">
-          {card.label}
-        </span>
-        <span className={cn(
-          'p-1 rounded-md shrink-0', 
-          (card as any).alert ? 'text-rose-500 bg-rose-50' : 'text-stone-400 bg-stone-50'
-        )}>
-          {card.icon}
-        </span>
-      </div>
-      
-      {/* Responsive font size: smaller on mobile, larger on desktop */}
-      <p className="text-base sm:text-lg md:text-xl font-black text-stone-900 tabular-nums tracking-tight leading-none">
-        {card.value}
-      </p>
-      
-      <p className="text-[9px] sm:text-[10px] text-stone-400 mt-1 truncate font-medium">
-        {card.sub}
-      </p>
-    </div>
-  ))}
-</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+                {kpiCards.map((card, idx) => (
+                    <div
+                        key={idx}
+                        className={cn(
+                            'rounded-xl bg-white border border-stone-200 border-l-[3px] sm:border-l-4 shadow-sm p-2.5 sm:p-4 active:scale-[0.98] transition-transform',
+                            card.accent
+                        )}
+                    >
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tighter sm:tracking-widest truncate mr-1">
+                                {card.label}
+                            </span>
+                            <span className={cn(
+                                'p-1 rounded-md shrink-0',
+                                card.alert ? 'text-rose-500 bg-rose-50' : 'text-stone-400 bg-stone-50'
+                            )}>
+                                {card.icon}
+                            </span>
+                        </div>
+                        <p className="text-base sm:text-lg md:text-xl font-black text-stone-900 tabular-nums tracking-tight leading-none">
+                            {card.value}
+                        </p>
+                        <p className="text-[9px] sm:text-[10px] text-stone-400 mt-1 truncate font-medium">
+                            {card.sub}
+                        </p>
+                    </div>
+                ))}
+            </div>
 
             {/* ─── SECONDARY STATS ROW ─── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -460,12 +557,7 @@ const InventoryManager = () => {
                     accentClass="bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300"
                 >
                     <div className="px-4 py-3 space-y-2.5">
-                        {[
-                            { label: 'On Hand', value: totalOnHand.toLocaleString('en-IN'), sub: 'Physical stock', icon: <Package size={12} />, color: 'text-stone-600' },
-                            { label: 'Reserved', value: totalReserved.toLocaleString('en-IN'), sub: 'Pending orders', icon: <Clock size={12} />, color: 'text-amber-600' },
-                            { label: 'Available', value: totalAvailable.toLocaleString('en-IN'), sub: 'Free to sell', icon: <Zap size={12} />, color: 'text-emerald-600' },
-                            { label: 'Avg Cost/Unit', value: inventory.length > 0 ? `₹${Math.round(totalStockValue / Math.max(totalOnHand, 1)).toLocaleString('en-IN')}` : '—', sub: 'Weighted avg', icon: <DollarSign size={12} />, color: 'text-indigo-600' },
-                        ].map(({ label, value, sub, icon, color }) => (
+                        {utilisationRows.map(({ label, value, sub, icon, color }) => (
                             <div key={label} className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <span className={cn('shrink-0', color)}>{icon}</span>
@@ -487,22 +579,19 @@ const InventoryManager = () => {
 
                 {/* Filters header */}
                 <div className="px-3 sm:px-4 py-2.5 border-b border-stone-100 bg-stone-50/50 space-y-2">
-                    {/* Row 1: label + count + search + filter toggle */}
                     <div className="flex items-center gap-2">
                         <SectionLabel icon={<Package size={12} />}>Stock Levels</SectionLabel>
                         <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
                             {totalItems}
                         </span>
-                        {/* Inline sync - icon only on mobile */}
                         <button
-                            onClick={() => syncData()}
+                            onClick={syncData}
                             disabled={isLoading}
                             className="h-7 w-7 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 transition-colors disabled:opacity-50"
                         >
                             <RefreshCw size={11} className={cn(isLoading && 'animate-spin')} />
                         </button>
                         <div className="flex-1" />
-                        {/* Search */}
                         <div className="relative flex-1 max-w-[160px] sm:max-w-xs">
                             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
                             <Input
@@ -512,9 +601,8 @@ const InventoryManager = () => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        {/* Filter toggle */}
                         <button
-                            onClick={() => setShowFilters(f => !f)}
+                            onClick={handleToggleFilters}
                             className={cn(
                                 'flex items-center gap-1 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-colors flex-shrink-0',
                                 showFilters
@@ -527,10 +615,9 @@ const InventoryManager = () => {
                         </button>
                     </div>
 
-                    {/* Row 2: expanded filters */}
                     {showFilters && (
                         <div className="flex flex-wrap items-center gap-2 pt-1">
-                            <Select value={currentCategory} onValueChange={(val) => updateQueryParams({ category: val })}>
+                            <Select value={currentCategory} onValueChange={handleCategoryChange}>
                                 <SelectTrigger className="h-8 text-xs w-32 sm:w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
                                     <SelectValue placeholder="Category" />
                                 </SelectTrigger>
@@ -541,7 +628,7 @@ const InventoryManager = () => {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Select value={currentStockStatus} onValueChange={(val) => updateQueryParams({ f_stock_status: val })}>
+                            <Select value={currentStockStatus} onValueChange={handleStockStatusChange}>
                                 <SelectTrigger className="h-8 text-xs w-32 sm:w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
@@ -556,7 +643,7 @@ const InventoryManager = () => {
                     )}
                 </div>
 
-                {/* Desktop Table — hidden on mobile */}
+                {/* Desktop Table */}
                 <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
@@ -600,7 +687,7 @@ const InventoryManager = () => {
                                                         className="h-full w-full object-contain"
                                                         src={product?.media?.[0]?.url || '/placeholder.png'}
                                                         alt={product?.name || variant?.sku}
-                                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
+                                                        onError={handleImgError}
                                                     />
                                                 </div>
                                                 <div className="min-w-0">
@@ -671,7 +758,7 @@ const InventoryManager = () => {
                     </table>
                 </div>
 
-                {/* Mobile Cards — shown only below sm */}
+                {/* Mobile Cards */}
                 <div className="sm:hidden divide-y divide-stone-100">
                     {isLoadingInventory ? (
                         <div className="p-8 text-center text-xs text-stone-400">Loading inventory…</div>
@@ -690,14 +777,13 @@ const InventoryManager = () => {
                         const isOut = item.quantity === 0;
                         return (
                             <div key={item.id} className="px-3 py-3">
-                                {/* Top row: image + name + status + qty */}
                                 <div className="flex items-center gap-3">
                                     <div className="h-11 w-11 shrink-0 bg-stone-100 border border-stone-200 rounded-lg overflow-hidden">
                                         <img
                                             className="h-full w-full object-contain"
                                             src={product?.media?.[0]?.url || '/placeholder.png'}
                                             alt={product?.name || variant?.sku}
-                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
+                                            onError={handleImgError}
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -707,7 +793,6 @@ const InventoryManager = () => {
                                             <StockBadge qty={item.quantity} reorderLevel={item.reorderLevel} />
                                         </div>
                                     </div>
-                                    {/* Stock count — prominently shown */}
                                     <div className="text-right flex-shrink-0">
                                         <span className={cn(
                                             'text-lg font-extrabold tabular-nums font-mono leading-none',
@@ -718,7 +803,6 @@ const InventoryManager = () => {
                                         <p className="text-[10px] text-stone-400 font-mono text-right">/{item.reorderLevel}</p>
                                     </div>
                                 </div>
-                                {/* Bottom row: actions — always visible on mobile */}
                                 <div className="flex items-center gap-2 mt-2.5">
                                     <button
                                         className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white text-stone-600 border border-stone-200 text-xs font-semibold transition-colors active:bg-stone-50"
@@ -752,23 +836,25 @@ const InventoryManager = () => {
                 {!isLoadingInventory && totalItems > 0 && (
                     <div className="px-3 sm:px-5 py-3 border-t border-stone-100 bg-stone-50/40 flex items-center justify-between">
                         <p className="text-xs text-stone-400 font-mono tabular-nums">
-                            <span className="text-stone-600 font-semibold">{(currentPage - 1) * currentLimit + 1}</span>–<span className="text-stone-600 font-semibold">{Math.min(currentPage * currentLimit, totalItems)}</span>
+                            <span className="text-stone-600 font-semibold">{(currentPage - 1) * currentLimit + 1}</span>
+                            –
+                            <span className="text-stone-600 font-semibold">{Math.min(currentPage * currentLimit, totalItems)}</span>
                             <span className="hidden sm:inline"> of <span className="text-stone-600 font-semibold">{totalItems}</span></span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button
                                 disabled={currentPage <= 1}
-                                onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
+                                onClick={handlePrevPage}
                                 className="h-8 w-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                                 <ChevronLeft size={13} />
                             </button>
                             <span className="px-3 h-8 flex items-center text-xs font-mono font-bold text-stone-600 border border-stone-200 rounded-lg bg-white tabular-nums">
-                                {currentPage} / {Math.max(1, Math.ceil(totalItems / currentLimit))}
+                                {currentPage} / {totalPages}
                             </span>
                             <button
-                                disabled={currentPage >= Math.ceil(totalItems / currentLimit)}
-                                onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
+                                disabled={currentPage >= totalPages}
+                                onClick={handleNextPage}
                                 className="h-8 w-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                                 <ChevronRight size={13} />
@@ -809,7 +895,7 @@ const InventoryManager = () => {
                             ) : stockMovements.slice(0, 20).map(mov => (
                                 <tr key={mov.id} className="hover:bg-stone-50/60 transition-colors">
                                     <td className="px-4 py-2.5 whitespace-nowrap text-[11px] font-mono text-stone-400 tabular-nums">
-                                        {new Date(mov.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        {new Date(mov.date).toLocaleDateString('en-IN', DATE_OPTS_MOV)}
                                     </td>
                                     <td className="px-3 py-2.5 whitespace-nowrap text-xs font-mono font-semibold text-stone-700">{mov.sku}</td>
                                     <td className="px-3 py-2.5 whitespace-nowrap"><MovTypeBadge type={mov.type} /></td>
@@ -833,7 +919,7 @@ const InventoryManager = () => {
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs font-mono font-semibold text-stone-700 truncate">{mov.sku}</p>
                                 <p className="text-[10px] text-stone-400 font-mono">
-                                    {new Date(mov.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                                    {new Date(mov.date).toLocaleDateString('en-IN', DATE_OPTS_MOV_MOBILE)}
                                     {mov.reason && <span> · {mov.reason}</span>}
                                 </p>
                             </div>
@@ -844,7 +930,7 @@ const InventoryManager = () => {
             </CollapsibleSection>
 
             {/* ─── ADJUSTMENT DIALOG ─── */}
-            <Dialog open={!!adjustmentModal} onOpenChange={() => setAdjustmentModal(null)}>
+            <Dialog open={!!adjustmentModal} onOpenChange={handleCloseAdjustment}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md bg-white border-stone-200 shadow-xl rounded-xl">
                     <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 to-violet-400 -mt-6 mb-4 rounded-t-xl" />
                     <DialogHeader>
@@ -893,7 +979,7 @@ const InventoryManager = () => {
                         </div>
                     )}
                     <DialogFooter className="gap-2 pt-1 flex-row">
-                        <button onClick={() => setAdjustmentModal(null)}
+                        <button onClick={handleCloseAdjustment}
                             className="flex-1 h-10 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
                             Cancel
                         </button>
@@ -906,7 +992,7 @@ const InventoryManager = () => {
             </Dialog>
 
             {/* ─── TRANSFER DIALOG ─── */}
-            <Dialog open={!!transferModal} onOpenChange={() => setTransferModal(null)}>
+            <Dialog open={!!transferModal} onOpenChange={handleCloseTransfer}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md bg-white border-stone-200 shadow-xl rounded-xl">
                     <div className="h-0.5 w-full bg-gradient-to-r from-violet-400 to-indigo-400 -mt-6 mb-4 rounded-t-xl" />
                     <DialogHeader>
@@ -944,7 +1030,7 @@ const InventoryManager = () => {
                         </div>
                     )}
                     <DialogFooter className="gap-2 pt-1 flex-row">
-                        <button onClick={() => setTransferModal(null)}
+                        <button onClick={handleCloseTransfer}
                             className="flex-1 h-10 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
                             Cancel
                         </button>
@@ -976,7 +1062,7 @@ const InventoryManager = () => {
                                         <div className="flex items-start justify-between gap-2 mb-0.5">
                                             <span className="text-xs font-bold text-stone-800">{log.action || 'Action'}</span>
                                             <span className="text-[10px] font-mono text-stone-400 tabular-nums flex-shrink-0">
-                                                {new Date(log.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                                                {new Date(log.createdAt).toLocaleDateString('en-IN', DATE_OPTS_AUDIT)}
                                             </span>
                                         </div>
                                         <p className="text-[11px] text-stone-500">by <span className="font-semibold text-stone-700">{log.actor}</span> · {log.entityType} <span className="font-mono text-stone-400 text-[10px]">({log.entityId})</span></p>

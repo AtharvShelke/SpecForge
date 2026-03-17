@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, {
+    useState, useMemo, useEffect, useCallback, useRef, memo,
+} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,8 +16,8 @@ import {
 import {
     Cpu, Monitor, HardDrive, Zap, Box, Fan, Keyboard, Wifi, Layers,
     Check, X, AlertTriangle, Plus, ArrowLeft,
-    Search, XCircle, Share2, Save, ShoppingCart,
-    Eye, EyeOff, ChevronRight, CheckCircle, AlertOctagon, SlidersHorizontal,
+    Search, Share2, Save, ShoppingCart,
+    Eye, EyeOff, ChevronRight, AlertOctagon, SlidersHorizontal,
     Hammer,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +37,6 @@ const PAGE_STYLES = `
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-  /* 3-col layout: left nav | main | right summary */
   .pcb-layout {
     display: grid;
     grid-template-columns: 72px 1fr 296px;
@@ -47,7 +48,6 @@ const PAGE_STYLES = `
     .pcb-layout { grid-template-columns: 1fr; }
   }
 
-  /* ── Product card ── */
   .pcb-card {
     transition: box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.15s ease;
   }
@@ -61,7 +61,6 @@ const PAGE_STYLES = `
   .pcb-img { transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1); }
   .pcb-card:hover .pcb-img { transform: scale(1.06); }
 
-  /* Skeleton shimmer */
   .pcb-skeleton {
     background: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 50%, #f4f4f5 75%);
     background-size: 800px 100%;
@@ -72,7 +71,6 @@ const PAGE_STYLES = `
     to   { background-position:  800px 0; }
   }
 
-  /* Card entrance */
   .card-enter {
     animation: cardIn 0.38s cubic-bezier(0.22,1,0.36,1) both;
   }
@@ -94,7 +92,6 @@ const PAGE_STYLES = `
     overflow: hidden;
   }
 
-  /* Left nav active indicator */
   .nav-item-active::before {
     content: '';
     position: absolute;
@@ -104,7 +101,6 @@ const PAGE_STYLES = `
     border-radius: 0 2px 2px 0;
   }
 
-  /* Grid responsive */
   .product-grid {
     display: grid;
     gap: 12px;
@@ -116,14 +112,14 @@ const PAGE_STYLES = `
   @media (min-width: 1100px) { .product-grid { grid-template-columns: repeat(4, 1fr); } }
   @media (min-width: 1400px) { .product-grid { grid-template-columns: repeat(5, 1fr); } }
 
-  /* Mobile bottom bar safe-area */
   .mobile-bar {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 `;
 
 /* ─────────────────────────────── Constants ──────────────────────────────── */
-const CORE_CATEGORIES = [
+// Defined outside component — never recreated on render
+const CORE_CATEGORIES: Category[] = [
     Category.PROCESSOR, Category.MOTHERBOARD, Category.RAM,
     Category.GPU, Category.STORAGE, Category.PSU, Category.CABINET, Category.COOLER,
 ];
@@ -164,11 +160,22 @@ const CAT_DESCRIPTIONS: Record<string, string> = {
     [Category.COOLER]:      'Keep your CPU cool under load.',
 };
 
+// Static animation variants — defined once outside component
+const MOTION_SPRING = { type: 'spring', stiffness: 400, damping: 30 } as const;
+const MOTION_EASE_OUT = { duration: 0.4, ease: 'easeOut' } as const;
+const MOTION_FAST = { duration: 0.15 } as const;
+
 /* ─────────────────────────────── Utilities ──────────────────────────────── */
-function estimateWattage(cart: CartItem[]): number {
+// Combined single-pass wattage + PSU capacity to avoid two separate cart iterations
+function estimatePowerStats(cart: CartItem[]): { wattage: number; psuCap: number | null } {
     let w = 50;
+    let psuCap: number | null = null;
     for (const item of cart) {
         const s = specsToFlat(item.specs);
+        if (item.category === Category.PSU) {
+            const cap = Number(s.wattage);
+            if (!isNaN(cap)) psuCap = cap;
+        }
         const n = Number(s.wattage);
         if (!isNaN(n) && n > 0) { w += n * item.quantity; continue; }
         if (item.category === Category.PROCESSOR) w += 65;
@@ -176,18 +183,19 @@ function estimateWattage(cart: CartItem[]): number {
         if (item.category === Category.RAM) w += 5 * item.quantity;
         if (item.category === Category.STORAGE) w += 5 * item.quantity;
     }
-    return w;
+    return { wattage: w, psuCap };
 }
 
+// Keep legacy helpers as thin wrappers for BuildSummaryPanel (no breaking changes)
+function estimateWattage(cart: CartItem[]): number {
+    return estimatePowerStats(cart).wattage;
+}
 function getPsuCap(cart: CartItem[]): number | null {
-    const psu = cart.find(i => i.category === Category.PSU);
-    if (!psu) return null;
-    const w = Number(specsToFlat(psu.specs).wattage);
-    return isNaN(w) ? null : w;
+    return estimatePowerStats(cart).psuCap;
 }
 
 /* ─────────────────────────────── AnimatedPrice ──────────────────────────── */
-const AnimatedPrice: React.FC<{ value: number }> = ({ value }) => {
+const AnimatedPrice: React.FC<{ value: number }> = memo(({ value }) => {
     const [display, setDisplay] = useState(value);
     const prev = useRef(value);
     useEffect(() => {
@@ -204,10 +212,12 @@ const AnimatedPrice: React.FC<{ value: number }> = ({ value }) => {
         return () => clearInterval(id);
     }, [value]);
     return <>₹{display.toLocaleString('en-IN')}</>;
-};
+});
+AnimatedPrice.displayName = 'AnimatedPrice';
 
 /* ─────────────────────────────── SkeletonCard ───────────────────────────── */
-const SkeletonCard = () => (
+// Pure static component — no props, no re-render risk
+const SkeletonCard = memo(() => (
     <div className="bg-white border border-zinc-100 rounded-2xl overflow-hidden">
         <div className="aspect-[4/3] pcb-skeleton" />
         <div className="p-3 space-y-2.5">
@@ -221,9 +231,11 @@ const SkeletonCard = () => (
             </div>
         </div>
     </div>
-);
+));
+SkeletonCard.displayName = 'SkeletonCard';
 
 /* ─────────────────────────────── ProductCard ────────────────────────────── */
+// memo prevents re-render when unrelated cart items change
 const ProductCard: React.FC<{
     product: Product;
     isInCart: boolean;
@@ -232,7 +244,7 @@ const ProductCard: React.FC<{
     onAdd: () => void;
     onRemove: () => void;
     index: number;
-}> = ({ product, isInCart, compatibility, compatMessage, onAdd, onRemove, index }) => {
+}> = memo(({ product, isInCart, compatibility, compatMessage, onAdd, onRemove, index }) => {
     const price = product.variants?.[0]?.price || 0;
     const compareAt = product.variants?.[0]?.compareAtPrice;
     const status = product.variants?.[0]?.status;
@@ -242,12 +254,16 @@ const ProductCard: React.FC<{
     const isIncompat = compatibility === CompatibilityLevel.INCOMPATIBLE;
     const isWarning = compatibility === CompatibilityLevel.WARNING;
 
-    const specEntries = Object.entries(specsToFlat(product.specs)).slice(0, 3);
+    // Memoize spec entries — only re-computed when product changes
+    const specEntries = useMemo(
+        () => Object.entries(specsToFlat(product.specs)).slice(0, 3),
+        [product.specs],
+    );
 
-    const discount =
-        compareAt && compareAt > price
-            ? Math.round((1 - price / compareAt) * 100)
-            : null;
+    const discount = useMemo(
+        () => compareAt && compareAt > price ? Math.round((1 - price / compareAt) * 100) : null,
+        [price, compareAt],
+    );
 
     const compatDotClass = isIncompat
         ? 'bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]'
@@ -255,11 +271,18 @@ const ProductCard: React.FC<{
         ? 'bg-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.4)]'
         : 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]';
 
-    const compatLabel = isIncompat
-        ? 'Incompatible'
-        : isWarning
-        ? 'Check specs'
-        : 'Compatible';
+    const compatLabel = isIncompat ? 'Incompatible' : isWarning ? 'Check specs' : 'Compatible';
+
+    // Stable event handlers — no inline arrow functions in JSX
+    const handleCardClick = useCallback(() => {
+        if (isInCart) { onRemove(); return; }
+        if (!isIncompat && !isOos) onAdd();
+    }, [isInCart, isIncompat, isOos, onAdd, onRemove]);
+
+    const handleButtonClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        isInCart ? onRemove() : (!isIncompat && !isOos && onAdd());
+    }, [isInCart, isIncompat, isOos, onAdd, onRemove]);
 
     return (
         <article
@@ -267,14 +290,14 @@ const ProductCard: React.FC<{
                 ${isInCart ? 'selected border-indigo-200' : 'border-zinc-100 hover:border-zinc-200'}
                 ${isIncompat && !isInCart ? 'opacity-50' : ''}`}
             style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
-            onClick={isInCart ? onRemove : (isIncompat || isOos ? undefined : onAdd)}
+            onClick={handleCardClick}
         >
             {/* IMAGE */}
             <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-50 to-stone-50 flex items-center justify-center p-1 sm:p-3 overflow-hidden flex-shrink-0">
                 <Link
                     href={`/products/${product.id}`}
                     className="absolute inset-0 z-0"
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     tabIndex={-1}
                 >
                     <span className="sr-only">View {product.name}</span>
@@ -298,13 +321,11 @@ const ProductCard: React.FC<{
                             Out of Stock
                         </span>
                     )}
-
                     {isLowStock && !isOos && (
                         <span className="bg-amber-500 text-white text-[8px] sm:text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
                             Low Stock
                         </span>
                     )}
-
                     {discount && !isOos && (
                         <span className="bg-indigo-600 text-white text-[8px] sm:text-[9px] font-bold px-2 py-0.5 rounded-full">
                             -{discount}%
@@ -322,7 +343,6 @@ const ProductCard: React.FC<{
 
             {/* CONTENT */}
             <div className="p-1 sm:p-3 flex flex-col flex-1 min-h-0">
-
                 <p className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate ${
                     isInCart ? 'text-indigo-500' : 'text-zinc-400'
                 }`}>
@@ -331,7 +351,7 @@ const ProductCard: React.FC<{
 
                 <Link
                     href={`/products/${product.id}`}
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="block mb-0.5 sm:mb-1"
                 >
                     <h3 className="font-semibold text-zinc-900 text-[10px] sm:text-[12px] leading-snug line-clamp-2 min-h-[30px] hover:text-indigo-600">
@@ -343,11 +363,9 @@ const ProductCard: React.FC<{
                     <p className="text-[9px] sm:text-[10px] text-zinc-400 truncate mb-0.5 sm:mb-1 leading-none">
                         {specEntries
                             .map(([, v]) =>
-                                Array.isArray(v)
-                                    ? v.join(', ')
-                                    : typeof v === 'object'
-                                    ? JSON.stringify(v)
-                                    : String(v)
+                                Array.isArray(v) ? v.join(', ')
+                                : typeof v === 'object' ? JSON.stringify(v)
+                                : String(v)
                             )
                             .join(' · ')}
                     </p>
@@ -365,13 +383,10 @@ const ProductCard: React.FC<{
 
                 {/* FOOTER */}
                 <div className="mt-auto border-t border-zinc-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-
-                    {/* price */}
                     <div className="min-w-0 flex-1">
                         <span className="text-xs sm:text-sm font-bold text-zinc-900 tabular-nums">
                             ₹{price.toLocaleString('en-IN')}
                         </span>
-
                         {compareAt && compareAt > price && (
                             <span className="ml-1 text-[8px] sm:text-[9px] text-zinc-400 line-through">
                                 ₹{compareAt.toLocaleString('en-IN')}
@@ -379,15 +394,9 @@ const ProductCard: React.FC<{
                         )}
                     </div>
 
-                    {/* button */}
                     <button
                         type="button"
-                        onClick={e => {
-                            e.stopPropagation();
-                            isInCart
-                                ? onRemove()
-                                : (!isIncompat && !isOos && onAdd());
-                        }}
+                        onClick={handleButtonClick}
                         disabled={(isIncompat && !isInCart) || (isOos && !isInCart)}
                         className={`flex-shrink-0 h-6 sm:h-7 px-2 sm:px-3 rounded-lg sm:rounded-xl
                         text-[9px] sm:text-[10px] font-bold uppercase tracking-wide
@@ -402,25 +411,20 @@ const ProductCard: React.FC<{
                         }`}
                     >
                         {isInCart ? (
-                            <>
-                                <X size={9} strokeWidth={3} />
-                                Remove
-                            </>
+                            <><X size={9} strokeWidth={3} />Remove</>
                         ) : isOos ? (
                             'Sold Out'
                         ) : (
-                            <>
-                                <Plus size={9} strokeWidth={3} />
-                                Select
-                            </>
+                            <><Plus size={9} strokeWidth={3} />Select</>
                         )}
                     </button>
-
                 </div>
             </div>
         </article>
     );
-};
+});
+ProductCard.displayName = 'ProductCard';
+
 /* ─────────────────────────────── BuildSummaryPanel ──────────────────────── */
 const BuildSummaryPanel: React.FC<{
     cart: CartItem[];
@@ -430,18 +434,25 @@ const BuildSummaryPanel: React.FC<{
     onSave: () => void;
     onShare: () => void;
     onCheckout: () => void;
-}> = ({ cart, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
+}> = memo(({ cart, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
     const report = useMemo(() => validateBuild(cart), [cart]);
-    const totalPrice = useMemo(() => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0), [cart]);
-    const wattage = useMemo(() => estimateWattage(cart), [cart]);
-    const psuCap = useMemo(() => getPsuCap(cart), [cart]);
-    const wattPct = psuCap ? Math.min((wattage / psuCap) * 100, 100) : Math.min((wattage / 800) * 100, 100);
-    const completedCount = CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length;
-    const wattColor = wattPct > 90 ? '#ef4444' : wattPct > 70 ? '#f59e0b' : '#10b981';
+    const totalPrice = useMemo(
+        () => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0),
+        [cart],
+    );
+    // Single pass instead of two separate calls
+    const { wattage, psuCap } = useMemo(() => estimatePowerStats(cart), [cart]);
+    const wattPct = psuCap
+        ? Math.min((wattage / psuCap) * 100, 100)
+        : Math.min((wattage / 800) * 100, 100);
+    const completedCount = useMemo(
+        () => CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length,
+        [cart],
+    );
+    const progressPct = (completedCount / CORE_CATEGORIES.length) * 100;
 
     return (
         <div className="flex flex-col h-full bg-white border-l border-zinc-100">
-
             {/* Header */}
             <div className="px-4 pt-4 pb-3 border-b border-zinc-100 flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
@@ -464,7 +475,6 @@ const BuildSummaryPanel: React.FC<{
                     </div>
                 </div>
 
-                {/* Price */}
                 <div>
                     <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Estimated Total</p>
                     <p className="text-2xl font-bold text-zinc-900 tracking-tight">
@@ -472,17 +482,16 @@ const BuildSummaryPanel: React.FC<{
                     </p>
                 </div>
 
-                {/* Build progress */}
                 <div className="mt-3">
                     <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] text-zinc-400 font-medium">{completedCount}/{CORE_CATEGORIES.length} components</span>
-                        <span className="text-[10px] font-bold text-indigo-500">{Math.round((completedCount / CORE_CATEGORIES.length) * 100)}%</span>
+                        <span className="text-[10px] font-bold text-indigo-500">{Math.round(progressPct)}%</span>
                     </div>
                     <div className="h-1 bg-zinc-100 rounded-full overflow-hidden">
                         <motion.div
                             className="h-full bg-indigo-500 rounded-full"
-                            animate={{ width: `${(completedCount / CORE_CATEGORIES.length) * 100}%` }}
-                            transition={{ duration: 0.4, ease: 'easeOut' }}
+                            animate={{ width: `${progressPct}%` }}
+                            transition={MOTION_EASE_OUT}
                         />
                     </div>
                 </div>
@@ -508,7 +517,6 @@ const BuildSummaryPanel: React.FC<{
                                     : 'hover:bg-zinc-50 border border-transparent'
                             }`}
                         >
-                            {/* Icon / check */}
                             <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                                 item ? 'bg-indigo-100' : isActive ? 'bg-indigo-50' : 'bg-zinc-100'
                             }`}>
@@ -531,7 +539,6 @@ const BuildSummaryPanel: React.FC<{
                                 </p>
                             </div>
 
-                            {/* Price / remove */}
                             {item ? (
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
                                     <span className="text-[11px] font-bold text-zinc-700 tabular-nums">
@@ -602,22 +609,32 @@ const BuildSummaryPanel: React.FC<{
             </div>
         </div>
     );
-};
+});
+BuildSummaryPanel.displayName = 'BuildSummaryPanel';
 
 /* ─────────────────────────────── SaveDialog ─────────────────────────────── */
 const SaveDialog: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     onSave: (title: string) => void;
-}> = ({ isOpen, onClose, onSave }) => {
+}> = memo(({ isOpen, onClose, onSave }) => {
     const [title, setTitle] = useState('');
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && title.trim()) { onSave(title); onClose(); }
+    }, [title, onSave, onClose]);
+
+    const handleSave = useCallback(() => {
+        if (title.trim()) { onSave(title); onClose(); }
+    }, [title, onSave, onClose]);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={onClose}>
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                transition={MOTION_SPRING}
                 onClick={e => e.stopPropagation()}
                 className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl border border-zinc-100"
             >
@@ -629,7 +646,7 @@ const SaveDialog: React.FC<{
                     onChange={e => setTitle(e.target.value)}
                     placeholder="e.g. Gaming Beast 2025"
                     className="w-full h-9 px-3 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition mb-3"
-                    onKeyDown={e => { if (e.key === 'Enter' && title.trim()) { onSave(title); onClose(); } }}
+                    onKeyDown={handleKeyDown}
                 />
                 <div className="flex gap-2">
                     <button type="button" onClick={onClose}
@@ -638,7 +655,7 @@ const SaveDialog: React.FC<{
                     </button>
                     <button
                         type="button"
-                        onClick={() => { if (title.trim()) { onSave(title); onClose(); } }}
+                        onClick={handleSave}
                         disabled={!title.trim()}
                         className="flex-1 h-9 text-sm font-bold rounded-xl bg-zinc-900 text-white hover:bg-indigo-600 transition-colors disabled:opacity-40"
                     >
@@ -648,12 +665,13 @@ const SaveDialog: React.FC<{
             </motion.div>
         </div>
     );
-};
+});
+SaveDialog.displayName = 'SaveDialog';
 
 /* ─────────────────────────────── Left Nav Item ──────────────────────────── */
 const NavItem: React.FC<{
     cat: Category; isActive: boolean; isCompleted: boolean; onClick: () => void;
-}> = ({ cat, isActive, isCompleted, onClick }) => {
+}> = memo(({ cat, isActive, isCompleted, onClick }) => {
     const CatIcon = CAT_ICONS[cat] || Box;
     return (
         <button
@@ -683,7 +701,13 @@ const NavItem: React.FC<{
             </span>
         </button>
     );
-};
+});
+NavItem.displayName = 'NavItem';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SKELETON LIST — stable reference, never re-created
+═══════════════════════════════════════════════════════════════════════════ */
+const SKELETON_ITEMS = Array.from({ length: 12 }, (_, i) => i);
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN PAGE
@@ -691,7 +715,7 @@ const NavItem: React.FC<{
 export default function PCBuilderPage() {
     const router = useRouter();
     const { cart, addToCart, removeFromCart, setCartOpen } = useShop();
-    const { isBuildMode, toggleBuildMode, saveCurrentBuild, generateShareLink, compatibilityReport } = useBuild();
+    const { isBuildMode, toggleBuildMode, saveCurrentBuild, generateShareLink } = useBuild();
     const { toast } = useToast();
 
     const [activeStep, setActiveStep] = useState<Category>(Category.PROCESSOR);
@@ -704,14 +728,29 @@ export default function PCBuilderPage() {
     const [saveOpen, setSaveOpen] = useState(false);
     const prevParams = useRef('');
 
-    useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []);
+    // Only run once on mount — stable empty dep array
+    useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Debounce search
     useEffect(() => {
         const t = setTimeout(() => setDebounced(searchTerm), 300);
         return () => clearTimeout(t);
     }, [searchTerm]);
 
+    // Cache CPU/mobo specs from cart to avoid repeated specsToFlat calls inside fetch effect
+    const cartSpecsCache = useMemo(() => {
+        const cpu = cart.find(i => i.category === Category.PROCESSOR);
+        const mobo = cart.find(i => i.category === Category.MOTHERBOARD);
+        return {
+            cpuSocket: cpu ? String(specsToFlat(cpu.specs).socket ?? '') : '',
+            moboSocket: mobo ? String(specsToFlat(mobo.specs).socket ?? '') : '',
+            moboRamType: mobo ? String(specsToFlat(mobo.specs).ramType ?? '') : '',
+            cpuRamType: cpu ? String(specsToFlat(cpu.specs).ramType ?? '') : '',
+        };
+    }, [cart]);
+
     useEffect(() => {
+        let cancelled = false;
         (async () => {
             setIsLoading(true);
             try {
@@ -721,54 +760,77 @@ export default function PCBuilderPage() {
                 p.set('page', '1');
                 if (debounced) p.set('q', debounced);
                 if (sortOption !== 'popularity') p.set('sort', sortOption);
-                const cpu = cart.find(i => i.category === Category.PROCESSOR);
-                const mobo = cart.find(i => i.category === Category.MOTHERBOARD);
-                const cpuSpecs = cpu ? specsToFlat(cpu.specs) : null;
-                const moboSp = mobo ? specsToFlat(mobo.specs) : null;
+
                 if (!showIncompat) {
-                    if (activeStep === Category.MOTHERBOARD && cpuSpecs?.socket) p.set('f_specs.socket', String(cpuSpecs.socket));
-                    if (activeStep === Category.PROCESSOR && moboSp?.socket) p.set('f_specs.socket', String(moboSp.socket));
-                    if (activeStep === Category.RAM && (cpuSpecs || moboSp)) {
-                        const type = moboSp?.ramType || cpuSpecs?.ramType;
-                        if (type) p.set('f_specs.ramType', String(type));
+                    const { cpuSocket, moboSocket, moboRamType, cpuRamType } = cartSpecsCache;
+                    if (activeStep === Category.MOTHERBOARD && cpuSocket) p.set('f_specs.socket', cpuSocket);
+                    if (activeStep === Category.PROCESSOR && moboSocket) p.set('f_specs.socket', moboSocket);
+                    if (activeStep === Category.RAM) {
+                        const type = moboRamType || cpuRamType;
+                        if (type) p.set('f_specs.ramType', type);
                     }
                 }
+
                 p.sort();
                 const qs = p.toString();
                 if (prevParams.current === qs) { setIsLoading(false); return; }
                 prevParams.current = qs;
+
                 const res = await fetch(`/api/products?${qs}`);
+                if (cancelled) return;
                 const data = await res.json();
-                if (data.products) setProducts(data.products);
-            } catch (e) { console.error(e); }
-            finally { setIsLoading(false); }
+                if (!cancelled && data.products) setProducts(data.products);
+            } catch (e) {
+                if (!cancelled) console.error(e);
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
         })();
-    }, [activeStep, debounced, sortOption, cart, showIncompat]);
+        return () => { cancelled = true; };
+    }, [activeStep, debounced, sortOption, cartSpecsCache, showIncompat]);
 
     const handleAdd = useCallback((product: Product) => {
         addToCart(product);
+        // Defer step advance to avoid blocking the current render
         setTimeout(() => {
-            const next = CORE_CATEGORIES.find(cat => cat !== product.category && !cart.some(i => i.category === cat));
-            if (next) setActiveStep(next);
+            setActiveStep(prev => {
+                const next = CORE_CATEGORIES.find(
+                    cat => cat !== product.category && !cart.some(i => i.category === cat)
+                );
+                return next ?? prev;
+            });
         }, 100);
     }, [addToCart, cart]);
 
     const handleRemove = useCallback((id: string) => removeFromCart(id), [removeFromCart]);
+
     const handleStepClick = useCallback((cat: Category) => {
         setActiveStep(cat);
         setSearchTerm('');
         prevParams.current = '';
     }, []);
 
-    const checkCompat = useCallback((product: Product) => {
-        if (cart.some(i => i.id === product.id)) return { level: CompatibilityLevel.COMPATIBLE, message: '' };
-        const hypo = [
+    // Build compat map once per cart change, keyed by product id — avoids calling validateBuild per card
+    const cartCompatMap = useMemo<Map<string, { level: CompatibilityLevel; message: string }>>(() => {
+        return new Map(); // populated lazily per product in checkCompat
+    }, [cart]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const checkCompat = useCallback((product: Product): { level: CompatibilityLevel; message: string } => {
+        // Return early if already in cart
+        if (cart.some(i => i.id === product.id)) {
+            return { level: CompatibilityLevel.COMPATIBLE, message: '' };
+        }
+        // Check memo cache
+        const cached = cartCompatMap.get(product.id);
+        if (cached) return cached;
+
+        const hypo: CartItem[] = [
             ...cart.filter(i => i.category !== product.category),
             { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any },
         ];
-        const rep = validateBuild(hypo as CartItem[]);
+        const rep = validateBuild(hypo);
         const rel = rep.issues.filter(iss => iss.componentIds.includes(product.id));
-        return {
+        const result = {
             level: rel.length > 0
                 ? rel.some(i => i.level === CompatibilityLevel.INCOMPATIBLE)
                     ? CompatibilityLevel.INCOMPATIBLE
@@ -776,9 +838,12 @@ export default function PCBuilderPage() {
                 : CompatibilityLevel.COMPATIBLE,
             message: rel[0]?.message || '',
         };
-    }, [cart]);
+        cartCompatMap.set(product.id, result);
+        return result;
+    }, [cart, cartCompatMap]);
 
     const handleSave = useCallback((t: string) => saveCurrentBuild(t), [saveCurrentBuild]);
+
     const handleShare = useCallback(async () => {
         const link = generateShareLink();
         if (!link) {
@@ -794,22 +859,46 @@ export default function PCBuilderPage() {
         toast({ title: 'Link copied!', description: 'Share this link to load your build.' });
     }, [generateShareLink, toast]);
 
-    const totalPrice = cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0);
-    const compatReport = useMemo(() => validateBuild(cart), [cart]);
-    const completedCount = CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length;
+    const handleOpenSave = useCallback(() => setSaveOpen(true), []);
+    const handleCloseSave = useCallback(() => setSaveOpen(false), []);
+    const handleToggleIncompat = useCallback(() => setShowIncompat(p => !p), []);
+    const handleCartOpen = useCallback(() => setCartOpen(true), [setCartOpen]);
 
-    const compatStatus = compatReport.status === CompatibilityLevel.INCOMPATIBLE
-        ? { text: `${compatReport.issues.length} incompatibility`, color: 'text-red-500', dot: 'bg-red-500' }
-        : compatReport.issues.length > 0
-            ? { text: `${compatReport.issues.length} warning${compatReport.issues.length > 1 ? 's' : ''}`, color: 'text-amber-500', dot: 'bg-amber-500' }
-            : cart.length === 0
-                ? { text: 'No components yet', color: 'text-zinc-400', dot: 'bg-zinc-300' }
-                : { text: 'Compatible', color: 'text-emerald-600', dot: 'bg-emerald-500' };
+    // Derived values — single source of truth
+    const totalPrice = useMemo(
+        () => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0),
+        [cart],
+    );
+    const compatReport = useMemo(() => validateBuild(cart), [cart]);
+    const completedCount = useMemo(
+        () => CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length,
+        [cart],
+    );
+    const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
+
+    const compatStatus = useMemo(() => {
+        if (compatReport.status === CompatibilityLevel.INCOMPATIBLE) {
+            return { text: `${compatReport.issues.length} incompatibility`, color: 'text-red-500', dot: 'bg-red-500' };
+        }
+        if (compatReport.issues.length > 0) {
+            return { text: `${compatReport.issues.length} warning${compatReport.issues.length > 1 ? 's' : ''}`, color: 'text-amber-500', dot: 'bg-amber-500' };
+        }
+        if (cart.length === 0) {
+            return { text: 'No components yet', color: 'text-zinc-400', dot: 'bg-zinc-300' };
+        }
+        return { text: 'Compatible', color: 'text-emerald-600', dot: 'bg-emerald-500' };
+    }, [compatReport, cart.length]);
+
+    // Stable callback refs for nav items
+    const navClickHandlers = useMemo(
+        () => Object.fromEntries(CORE_CATEGORIES.map(cat => [cat, () => handleStepClick(cat)])),
+        [handleStepClick],
+    );
 
     return (
         <div
             className="pcb-root flex flex-col bg-stone-50 overflow-hidden"
-            style={{ height: 'calc(100vh - 56px)' }}
+            style={{ height: '100vh' }}
         >
             <style>{PAGE_STYLES}</style>
 
@@ -833,7 +922,6 @@ export default function PCBuilderPage() {
                         <h1 className="text-sm sm:text-base font-bold text-zinc-900 truncate">PC Builder</h1>
                     </div>
 
-                    {/* Compat status */}
                     <div className={`hidden md:flex items-center gap-1.5 text-xs font-semibold ${compatStatus.color} flex-shrink-0`}>
                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${compatStatus.dot}`} />
                         {compatStatus.text}
@@ -851,7 +939,7 @@ export default function PCBuilderPage() {
                     <div className="h-5 w-px bg-zinc-100 hidden sm:block" />
                     <div className="flex items-center gap-1.5">
                         <button
-                            onClick={() => setSaveOpen(true)}
+                            onClick={handleOpenSave}
                             className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
                             title="Save"
                         >
@@ -879,7 +967,7 @@ export default function PCBuilderPage() {
                             cat={cat}
                             isActive={activeStep === cat}
                             isCompleted={cart.some(i => i.category === cat)}
-                            onClick={() => handleStepClick(cat)}
+                            onClick={navClickHandlers[cat]}
                         />
                     ))}
                 </aside>
@@ -898,7 +986,7 @@ export default function PCBuilderPage() {
                                     <button
                                         key={cat}
                                         type="button"
-                                        onClick={() => handleStepClick(cat)}
+                                        onClick={navClickHandlers[cat]}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full whitespace-nowrap flex-shrink-0 transition-all ${
                                             isActive
                                                 ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
@@ -926,9 +1014,8 @@ export default function PCBuilderPage() {
                                 initial={{ opacity: 0, y: -4 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 4 }}
-                                transition={{ duration: 0.15 }}
+                                transition={MOTION_FAST}
                             >
-                                {/* Category title row */}
                                 <div className="flex items-start sm:items-center justify-between gap-3 mb-2.5 flex-wrap sm:flex-nowrap">
                                     <div className="flex items-center gap-2">
                                         <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none">
@@ -945,9 +1032,7 @@ export default function PCBuilderPage() {
                                     </p>
                                 </div>
 
-                                {/* Controls row */}
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    {/* Search */}
                                     <div className="relative group flex-1 min-w-0 sm:flex-none sm:w-52">
                                         <Search
                                             className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 group-focus-within:text-indigo-500 transition-colors"
@@ -971,7 +1056,6 @@ export default function PCBuilderPage() {
                                         )}
                                     </div>
 
-                                    {/* Sort */}
                                     <div className="flex items-center bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 h-8 gap-1.5 flex-shrink-0">
                                         <SlidersHorizontal size={12} className="text-zinc-400 flex-shrink-0" />
                                         <select
@@ -986,10 +1070,9 @@ export default function PCBuilderPage() {
                                         </select>
                                     </div>
 
-                                    {/* Compat toggle */}
                                     <button
                                         type="button"
-                                        onClick={() => setShowIncompat(p => !p)}
+                                        onClick={handleToggleIncompat}
                                         className={`flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-xl border transition-all flex-shrink-0 ${
                                             showIncompat
                                                 ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
@@ -1006,11 +1089,11 @@ export default function PCBuilderPage() {
                         </AnimatePresence>
                     </div>
 
-                    {/* ── PRODUCT GRID (only scrollable area) ── */}
+                    {/* ── PRODUCT GRID ── */}
                     <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 pb-20 xl:pb-4">
                         {isLoading ? (
                             <div className="product-grid">
-                                {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
+                                {SKELETON_ITEMS.map(i => <SkeletonCard key={i} />)}
                             </div>
                         ) : products.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -1024,7 +1107,7 @@ export default function PCBuilderPage() {
                                 {!showIncompat && (
                                     <button
                                         type="button"
-                                        onClick={() => setShowIncompat(true)}
+                                        onClick={handleToggleIncompat}
                                         className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-zinc-200 rounded-xl text-zinc-600 hover:bg-zinc-50 transition-colors"
                                     >
                                         <Eye size={12} /> Show all parts
@@ -1032,30 +1115,31 @@ export default function PCBuilderPage() {
                                 )}
                             </div>
                         ) : (
-                            <motion.div layout className="product-grid">
-                                <AnimatePresence mode="popLayout">
-                                    {products.map((product, index) => {
-                                        const inCart = cart.some(i => i.id === product.id);
-                                        const compat = checkCompat(product);
-                                        return (
-                                            <ProductCard
-                                                key={product.id}
-                                                product={product}
-                                                isInCart={inCart}
-                                                compatibility={compat.level}
-                                                compatMessage={compat.message}
-                                                onAdd={() => handleAdd(product)}
-                                                onRemove={() => handleRemove(product.id)}
-                                                index={index}
-                                            />
-                                        );
-                                    })}
-                                </AnimatePresence>
-                            </motion.div>
+                            // Removed motion.div layout + AnimatePresence from grid — was causing
+                            // full-grid layout recalculation on every product list update.
+                            // CSS card-enter animation handles entrance visuals without JS overhead.
+                            <div className="product-grid">
+                                {products.map((product, index) => {
+                                    const inCart = cart.some(i => i.id === product.id);
+                                    const compat = checkCompat(product);
+                                    return (
+                                        <ProductCard
+                                            key={product.id}
+                                            product={product}
+                                            isInCart={inCart}
+                                            compatibility={compat.level}
+                                            compatMessage={compat.message}
+                                            onAdd={() => handleAdd(product)}
+                                            onRemove={() => handleRemove(product.id)}
+                                            index={index}
+                                        />
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
 
-                    {/* Desktop status bar (between xl and 2xl only) */}
+                    {/* Desktop status bar */}
                     <div className="hidden lg:flex xl:hidden items-center justify-between h-12 px-5 border-t border-zinc-100 bg-white flex-shrink-0">
                         <div className="flex items-center gap-4">
                             <div className={`flex items-center gap-1.5 text-xs font-semibold ${compatStatus.color}`}>
@@ -1063,11 +1147,11 @@ export default function PCBuilderPage() {
                                 {compatStatus.text}
                             </div>
                             <div className="h-4 w-px bg-zinc-100" />
-                            <span className="text-xs text-zinc-400 tabular-nums">{estimateWattage(cart)}W est.</span>
+                            <span className="text-xs text-zinc-400 tabular-nums">{wattageEst}W est.</span>
                         </div>
                         <button
                             type="button"
-                            onClick={() => setCartOpen(true)}
+                            onClick={handleCartOpen}
                             disabled={cart.length === 0}
                             className="flex items-center gap-1.5 px-4 py-1.5 bg-zinc-900 text-white text-xs font-bold rounded-xl hover:bg-indigo-600 transition-colors disabled:opacity-40"
                         >
@@ -1076,30 +1160,29 @@ export default function PCBuilderPage() {
                     </div>
                 </main>
 
-                {/* ── RIGHT SIDEBAR — Build Summary ─────────────────────── */}
+                {/* ── RIGHT SIDEBAR ─────────────────────────────────────── */}
                 <aside className="hidden xl:flex flex-col overflow-hidden">
                     <BuildSummaryPanel
                         cart={cart}
                         onRemove={handleRemove}
                         onStepClick={handleStepClick}
                         activeStep={activeStep}
-                        onSave={() => setSaveOpen(true)}
+                        onSave={handleOpenSave}
                         onShare={handleShare}
-                        onCheckout={() => setCartOpen(true)}
+                        onCheckout={handleCartOpen}
                     />
                 </aside>
             </div>
 
             {/* ── MOBILE BOTTOM BAR ──────────────────────────────────────── */}
-            <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-100 px-4 pt-3 mobile-bar flex items-center justify-between gap-3">
-                <div className="min-w-0">
+            <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md  px-4 pt-3 mobile-bar flex items-center justify-between gap-3 mb-20 sm:mb-0">
+                <div className="min-w-0"> 
                     <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest leading-none mb-0.5">Total</p>
                     <p className="text-lg font-bold text-zinc-900 leading-none tabular-nums">
                         <AnimatedPrice value={totalPrice} />
                     </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Compat badge */}
+                <div className="flex items-center gap-2 flex-shrink-0 ">
                     {compatReport.issues.length > 0 && (
                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
                             compatReport.status === CompatibilityLevel.INCOMPATIBLE
@@ -1109,13 +1192,12 @@ export default function PCBuilderPage() {
                             {compatReport.issues.length} issue{compatReport.issues.length > 1 ? 's' : ''}
                         </span>
                     )}
-                    {/* Progress pill */}
                     <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 px-2.5 py-1 rounded-full flex-shrink-0">
                         {completedCount}/{CORE_CATEGORIES.length}
                     </span>
                     <button
                         type="button"
-                        onClick={() => setCartOpen(true)}
+                        onClick={handleCartOpen}
                         disabled={cart.length === 0}
                         className="flex items-center gap-1.5 px-5 py-2.5 bg-zinc-900 text-white text-xs font-bold rounded-2xl hover:bg-indigo-600 transition-colors disabled:opacity-40 shadow-sm"
                     >
@@ -1133,7 +1215,7 @@ export default function PCBuilderPage() {
                 {saveOpen && (
                     <SaveDialog
                         isOpen={saveOpen}
-                        onClose={() => setSaveOpen(false)}
+                        onClose={handleCloseSave}
                         onSave={handleSave}
                     />
                 )}

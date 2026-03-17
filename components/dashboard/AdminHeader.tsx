@@ -1,7 +1,7 @@
 // components/dashboard/AdminHeader.tsx
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import {
     Bell,
@@ -26,7 +26,8 @@ interface AdminHeaderProps {
     title: string;
 }
 
-export const AdminHeader: React.FC<AdminHeaderProps> = ({ onLogout, onMenuClick, title }) => {
+export const AdminHeader = memo<AdminHeaderProps>(({ onLogout, onMenuClick, title }) => {
+    // Destructure only what's needed — avoids re-render if other context values change
     const { syncData, isLoading } = useAdmin();
 
     return (
@@ -52,9 +53,9 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onLogout, onMenuClick,
                     <span className="text-[11px] font-bold text-emerald-600 tracking-tight">Live</span>
                 </div>
 
-                {/* Sync Button */}
+                {/* Sync Button — passes syncData directly, no wrapping arrow */}
                 <button
-                    onClick={() => syncData()}
+                    onClick={syncData}
                     disabled={isLoading}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-500 hover:text-stone-800 transition-all group"
                     title="Sync Data"
@@ -110,4 +111,5 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onLogout, onMenuClick,
             </div>
         </header>
     );
-};
+});
+AdminHeader.displayName = 'AdminHeader';

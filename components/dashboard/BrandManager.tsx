@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 
 import { useAdmin } from '@/context/AdminContext';
 import { Category } from '@/types';
@@ -23,10 +23,10 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ─────────────────────────────────────────────────────────────
-// SHARED PRIMITIVES
+// SHARED PRIMITIVES — memoized
 // ─────────────────────────────────────────────────────────────
 
-const SectionLabel = ({
+const SectionLabel = memo(({
     icon,
     children,
 }: {
@@ -39,11 +39,22 @@ const SectionLabel = ({
             {children}
         </span>
     </div>
-);
+));
+SectionLabel.displayName = 'SectionLabel';
 
 type Stripe = 'indigo' | 'teal' | 'amber' | 'rose' | 'violet' | 'stone';
 
-const Panel = ({
+// Hoisted outside component — never recreated
+const STRIPE_CLASSES: Record<Stripe, string> = {
+    indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
+    teal: 'from-teal-400 via-emerald-400 to-emerald-300',
+    amber: 'from-amber-400 via-amber-400 to-orange-300',
+    rose: 'from-rose-400 via-rose-400 to-rose-300',
+    violet: 'from-violet-400 via-violet-500 to-indigo-400',
+    stone: 'from-stone-300 via-stone-400 to-stone-300',
+};
+
+const Panel = memo(({
     children,
     className,
     stripe,
@@ -51,31 +62,22 @@ const Panel = ({
     children: React.ReactNode;
     className?: string;
     stripe?: Stripe;
-}) => {
-    const stripes: Record<Stripe, string> = {
-        indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
-        teal: 'from-teal-400 via-emerald-400 to-emerald-300',
-        amber: 'from-amber-400 via-amber-400 to-orange-300',
-        rose: 'from-rose-400 via-rose-400 to-rose-300',
-        violet: 'from-violet-400 via-violet-500 to-indigo-400',
-        stone: 'from-stone-300 via-stone-400 to-stone-300',
-    };
-    return (
-        <div
-            className={cn(
-                'rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden',
-                className
-            )}
-        >
-            {stripe && (
-                <div className={cn('h-0.5 w-full bg-gradient-to-r', stripes[stripe])} />
-            )}
-            {children}
-        </div>
-    );
-};
+}) => (
+    <div
+        className={cn(
+            'rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden',
+            className
+        )}
+    >
+        {stripe && (
+            <div className={cn('h-0.5 w-full bg-gradient-to-r', STRIPE_CLASSES[stripe])} />
+        )}
+        {children}
+    </div>
+));
+Panel.displayName = 'Panel';
 
-const PanelHeader = ({
+const PanelHeader = memo(({
     icon,
     children,
     right,
@@ -108,16 +110,135 @@ const PanelHeader = ({
             )}
         </div>
     </div>
-);
+));
+PanelHeader.displayName = 'PanelHeader';
 
 // ─────────────────────────────────────────────────────────────
-// CATEGORY PILL
+// CATEGORY PILL — memoized
 // ─────────────────────────────────────────────────────────────
-const CategoryPill = ({ label }: { label: string }) => (
+const CategoryPill = memo(({ label }: { label: string }) => (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap bg-stone-100 text-stone-600 ring-1 ring-stone-200">
         {label}
     </span>
-);
+));
+CategoryPill.displayName = 'CategoryPill';
+
+// ─────────────────────────────────────────────────────────────
+// BRAND CARD — memoized to prevent re-renders on list changes
+// ─────────────────────────────────────────────────────────────
+const BrandCard = memo(({ brand, onDelete }: {
+    brand: { id: string; name: string; categories: Category[] };
+    onDelete: (id: string, name: string) => void;
+}) => {
+    const handleDelete = useCallback(() => onDelete(brand.id, brand.name), [onDelete, brand.id, brand.name]);
+    const shortId = brand.id.substring(0, 8).toUpperCase();
+
+    return (
+        <Panel stripe="stone" className="group">
+            <div className="px-3 py-3 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1 mb-0.5">
+                            <Hash size={9} className="text-stone-300" />
+                            <span className="text-[10px] font-mono font-bold text-stone-400">
+                                {shortId}
+                            </span>
+                        </div>
+                        <p className="text-sm font-bold text-stone-800 tracking-tight truncate">
+                            {brand.name}
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleDelete}
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 h-7 w-7 rounded-md flex items-center justify-center text-stone-300 hover:text-rose-500 hover:bg-rose-50 active:bg-rose-100 flex-shrink-0"
+                    >
+                        <Trash size={13} />
+                    </button>
+                </div>
+
+                <div className="h-px bg-stone-100" />
+
+                {brand.categories.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                        {brand.categories.map(cat => (
+                            <CategoryPill key={cat} label={cat} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg w-fit">
+                        <AlertCircle size={11} className="text-amber-500 shrink-0" />
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">
+                            No categories
+                        </span>
+                    </div>
+                )}
+            </div>
+        </Panel>
+    );
+});
+BrandCard.displayName = 'BrandCard';
+
+// Precompute category values once at module level — never recreated
+const ALL_CATEGORIES = Object.values(Category);
+
+// ─────────────────────────────────────────────────────────────
+// CATEGORY CHIP — memoized toggle chip for the mobile selector
+// ─────────────────────────────────────────────────────────────
+const CategoryChip = memo(({ cat, active, onToggle }: {
+    cat: Category;
+    active: boolean;
+    onToggle: (cat: Category) => void;
+}) => {
+    const handleClick = useCallback(() => onToggle(cat), [onToggle, cat]);
+    return (
+        <button
+            type="button"
+            onClick={handleClick}
+            className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors duration-150 ring-1',
+                active
+                    ? 'bg-indigo-600 text-white ring-indigo-600'
+                    : 'bg-white text-stone-500 ring-stone-200 hover:ring-stone-300'
+            )}
+        >
+            {active && <CheckCircle2 size={9} />}
+            {cat}
+        </button>
+    );
+});
+CategoryChip.displayName = 'CategoryChip';
+
+// ─────────────────────────────────────────────────────────────
+// DESKTOP CATEGORY ROW — memoized list item
+// ─────────────────────────────────────────────────────────────
+const DesktopCategoryRow = memo(({ cat, active, onToggle }: {
+    cat: Category;
+    active: boolean;
+    onToggle: (cat: Category) => void;
+}) => {
+    const handleClick = useCallback(() => onToggle(cat), [onToggle, cat]);
+    return (
+        <button
+            type="button"
+            onClick={handleClick}
+            className={cn(
+                'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-left transition-colors duration-150',
+                active ? 'bg-indigo-50 text-indigo-700' : 'text-stone-600 hover:bg-stone-50'
+            )}
+        >
+            <div
+                className={cn(
+                    'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors',
+                    active ? 'bg-indigo-500 border-indigo-500' : 'border-stone-300'
+                )}
+            >
+                {active && <CheckCircle2 size={9} className="text-white" />}
+            </div>
+            <span className="text-[11px] font-semibold">{cat}</span>
+        </button>
+    );
+});
+DesktopCategoryRow.displayName = 'DesktopCategoryRow';
 
 // ─────────────────────────────────────────────────────────────
 // BRAND MANAGER
@@ -128,10 +249,9 @@ const BrandManager = () => {
     const [newBrandName, setNewBrandName] = useState('');
     const [selectedCats, setSelectedCats] = useState<Category[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-    // On mobile the "Add Brand" form collapses so the list is visible immediately
     const [formOpen, setFormOpen] = useState(true);
 
-    const handleAdd = (e: React.FormEvent) => {
+    const handleAdd = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         if (!newBrandName.trim() || selectedCats.length === 0) return;
 
@@ -143,25 +263,37 @@ const BrandManager = () => {
 
         setNewBrandName('');
         setSelectedCats([]);
-        // Collapse the form on mobile after saving so the user can see the updated list
         if (window.innerWidth < 1024) setFormOpen(false);
-    };
+    }, [newBrandName, selectedCats, addBrand]);
 
-    const toggleCat = (cat: Category) =>
+    const toggleCat = useCallback((cat: Category) =>
         setSelectedCats(prev =>
             prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-        );
+        ), []);
 
-    const handleDelete = (brandId: string, brandName: string) => {
+    const handleDelete = useCallback((brandId: string, brandName: string) => {
         if (window.confirm(`Delete brand "${brandName}"? This cannot be undone.`))
             deleteBrand(brandId);
-    };
+    }, [deleteBrand]);
 
-    const filteredBrands = brands.filter(b =>
-        b.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleSyncData = useCallback(() => syncData(), [syncData]);
+    const toggleForm = useCallback(() => setFormOpen(o => !o), []);
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value), []);
+    const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setNewBrandName(e.target.value), []);
+    const handleOpenForm = useCallback(() => setFormOpen(true), []);
+
+    const filteredBrands = useMemo(() => {
+        if (!searchQuery.trim()) return brands;
+        const lower = searchQuery.toLowerCase();
+        return brands.filter(b => b.name.toLowerCase().includes(lower));
+    }, [brands, searchQuery]);
 
     const canSubmit = newBrandName.trim().length > 0 && selectedCats.length > 0;
+
+    // Pre-build a Set for O(1) active lookups instead of Array.includes O(n)
+    const selectedCatSet = useMemo(() => new Set(selectedCats), [selectedCats]);
+
+    const brandsCount = brands.length;
 
     return (
         <div
@@ -181,12 +313,11 @@ const BrandManager = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Brand count pill */}
                     <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md shadow-sm hidden sm:inline">
-                        {brands.length} brands
+                        {brandsCount} brands
                     </span>
                     <button
-                        onClick={() => syncData()}
+                        onClick={handleSyncData}
                         disabled={isLoading}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
                     >
@@ -197,40 +328,26 @@ const BrandManager = () => {
             </div>
 
             {/* ── MAIN LAYOUT ── */}
-            {/*
-                On mobile: stacked — collapsible form on top, list below.
-                On lg+: side-by-side 4/8 grid with sticky form.
-            */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
 
                 {/* ── LEFT: ADD BRAND FORM ── */}
                 <div className="lg:col-span-4">
-                    {/*
-                        On mobile the panel header acts as a collapse toggle.
-                        On lg+ it's always open (sticky).
-                    */}
                     <Panel stripe="indigo" className="lg:sticky lg:top-6">
-                        {/* Header — tappable on mobile to collapse/expand */}
                         <PanelHeader
                             icon={<Plus size={12} />}
                             collapsible
                             open={formOpen}
-                            onClick={() => setFormOpen(o => !o)}
+                            onClick={toggleForm}
                             right={
-                                /* Brand count shown inside form header on mobile */
                                 <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md sm:hidden">
-                                    {brands.length}
+                                    {brandsCount}
                                 </span>
                             }
                         >
                             Add Brand
                         </PanelHeader>
 
-                        {/* Collapsible body — always open on lg */}
-                        <div className={cn(
-                            'lg:block',
-                            formOpen ? 'block' : 'hidden'
-                        )}>
+                        <div className={cn('lg:block', formOpen ? 'block' : 'hidden')}>
                             <form onSubmit={handleAdd} className="px-3 sm:px-5 py-3 space-y-3">
 
                                 {/* Brand name */}
@@ -239,7 +356,7 @@ const BrandManager = () => {
                                     <Input
                                         placeholder="e.g. ASUS"
                                         value={newBrandName}
-                                        onChange={e => setNewBrandName(e.target.value)}
+                                        onChange={handleNameChange}
                                         className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-indigo-300 focus:ring-indigo-500/20 placeholder:text-stone-400 font-medium"
                                         required
                                     />
@@ -256,70 +373,36 @@ const BrandManager = () => {
                                         )}
                                     </div>
 
-                                    {/*
-                                        On mobile: wrap-grid of toggle chips — no scrollable box.
-                                        On lg: scrollable list (bounded height).
-                                    */}
-
-                                    {/* Mobile chip grid — shown below lg */}
+                                    {/* Mobile chip grid */}
                                     <div className="lg:hidden flex flex-wrap gap-1.5 p-2 rounded-lg border border-stone-200 bg-stone-50/50">
-                                        {Object.values(Category).map(cat => {
-                                            const active = selectedCats.includes(cat);
-                                            return (
-                                                <button
-                                                    key={cat}
-                                                    type="button"
-                                                    onClick={() => toggleCat(cat)}
-                                                    className={cn(
-                                                        'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors duration-150 ring-1',
-                                                        active
-                                                            ? 'bg-indigo-600 text-white ring-indigo-600'
-                                                            : 'bg-white text-stone-500 ring-stone-200 hover:ring-stone-300'
-                                                    )}
-                                                >
-                                                    {active && <CheckCircle2 size={9} />}
-                                                    {cat}
-                                                </button>
-                                            );
-                                        })}
+                                        {ALL_CATEGORIES.map(cat => (
+                                            <CategoryChip
+                                                key={cat}
+                                                cat={cat}
+                                                active={selectedCatSet.has(cat)}
+                                                onToggle={toggleCat}
+                                            />
+                                        ))}
                                     </div>
 
-                                    {/* Desktop scrollable list — shown on lg+ */}
+                                    {/* Desktop scrollable list */}
                                     <div className="hidden lg:block rounded-lg border border-stone-200 overflow-hidden">
                                         <ScrollArea className="h-[200px]">
                                             <div className="p-1.5 space-y-0.5">
-                                                {Object.values(Category).map(cat => {
-                                                    const active = selectedCats.includes(cat);
-                                                    return (
-                                                        <button
-                                                            key={cat}
-                                                            type="button"
-                                                            onClick={() => toggleCat(cat)}
-                                                            className={cn(
-                                                                'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-left transition-colors duration-150',
-                                                                active
-                                                                    ? 'bg-indigo-50 text-indigo-700'
-                                                                    : 'text-stone-600 hover:bg-stone-50'
-                                                            )}
-                                                        >
-                                                            <div
-                                                                className={cn(
-                                                                    'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors',
-                                                                    active ? 'bg-indigo-500 border-indigo-500' : 'border-stone-300'
-                                                                )}
-                                                            >
-                                                                {active && <CheckCircle2 size={9} className="text-white" />}
-                                                            </div>
-                                                            <span className="text-[11px] font-semibold">{cat}</span>
-                                                        </button>
-                                                    );
-                                                })}
+                                                {ALL_CATEGORIES.map(cat => (
+                                                    <DesktopCategoryRow
+                                                        key={cat}
+                                                        cat={cat}
+                                                        active={selectedCatSet.has(cat)}
+                                                        onToggle={toggleCat}
+                                                    />
+                                                ))}
                                             </div>
                                         </ScrollArea>
                                     </div>
                                 </div>
 
-                                {/* Submit — taller tap target on mobile */}
+                                {/* Submit */}
                                 <button
                                     type="submit"
                                     disabled={!canSubmit}
@@ -348,7 +431,7 @@ const BrandManager = () => {
                                 <Input
                                     placeholder="Search brands…"
                                     value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
+                                    onChange={handleSearchChange}
                                     className="pl-8 h-8 text-xs border-stone-200 bg-stone-50/50 rounded-lg placeholder:text-stone-400 font-medium"
                                 />
                             </div>
@@ -366,7 +449,7 @@ const BrandManager = () => {
                                 {!searchQuery && (
                                     <button
                                         type="button"
-                                        onClick={() => setFormOpen(true)}
+                                        onClick={handleOpenForm}
                                         className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline"
                                     >
                                         Add your first brand →
@@ -377,54 +460,7 @@ const BrandManager = () => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {filteredBrands.map(brand => (
-                                <Panel key={brand.id} stripe="stone" className="group">
-                                    <div className="px-3 py-3 space-y-2.5">
-
-                                        {/* Top row: ID + name + delete */}
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-1 mb-0.5">
-                                                    <Hash size={9} className="text-stone-300" />
-                                                    <span className="text-[10px] font-mono font-bold text-stone-400">
-                                                        {brand.id.substring(0, 8).toUpperCase()}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm font-bold text-stone-800 tracking-tight truncate">
-                                                    {brand.name}
-                                                </p>
-                                            </div>
-                                            {/*
-                                                Delete: always visible on mobile (touch can't hover),
-                                                opacity-0 + group-hover on desktop.
-                                            */}
-                                            <button
-                                                onClick={() => handleDelete(brand.id, brand.name)}
-                                                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 h-7 w-7 rounded-md flex items-center justify-center text-stone-300 hover:text-rose-500 hover:bg-rose-50 active:bg-rose-100 flex-shrink-0"
-                                            >
-                                                <Trash size={13} />
-                                            </button>
-                                        </div>
-
-                                        {/* Divider */}
-                                        <div className="h-px bg-stone-100" />
-
-                                        {/* Categories */}
-                                        {brand.categories.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1">
-                                                {brand.categories.map(cat => (
-                                                    <CategoryPill key={cat} label={cat} />
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg w-fit">
-                                                <AlertCircle size={11} className="text-amber-500 shrink-0" />
-                                                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">
-                                                    No categories
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Panel>
+                                <BrandCard key={brand.id} brand={brand} onDelete={handleDelete} />
                             ))}
                         </div>
                     )}

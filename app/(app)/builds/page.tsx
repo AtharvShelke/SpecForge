@@ -1,25 +1,11 @@
 'use client';
 
-import React, { useState, useMemo, ReactNode, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, Suspense } from 'react';
 import { useBuild } from '@/context/BuildContext';
 import { validateBuild } from '@/services/compatibility';
 import {
-  Save,
-  Upload,
-  Share2,
-  Cpu,
-  Monitor,
-  HardDrive,
-  Zap,
-  Box,
-  X,
-  CheckCircle2,
-  AlertTriangle,
-  AlertOctagon,
-  Link2,
-  ArrowRight,
-  Calendar,
-  Layers,
+  Save, Upload, Share2, Cpu, Monitor, HardDrive, Zap, Box, X,
+  CheckCircle2, AlertTriangle, AlertOctagon, Link2, ArrowRight, Calendar, Layers,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Category, CompatibilityLevel, BuildGuide, CartItem } from '@/types';
@@ -29,95 +15,129 @@ import { PageTitle } from '@/components/layout/PageTitle';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getBaseUrl } from '@/lib/utils';
 
-// --- Category Icon Map ---
-const CATEGORY_ICON: Record<Category, ReactNode> = {
-  [Category.PROCESSOR]: <Cpu size={12} />,
-  [Category.GPU]: <Monitor size={12} />,
-  [Category.RAM]: <Layers size={12} />,
-  [Category.MOTHERBOARD]: <Cpu size={12} />,
-  [Category.STORAGE]: <HardDrive size={12} />,
-  [Category.PSU]: <Zap size={12} />,
-  [Category.CABINET]: <Box size={12} />,
-  [Category.COOLER]: <Zap size={12} />,
-  [Category.MONITOR]: <Monitor size={12} />,
-  [Category.PERIPHERAL]: <Monitor size={12} />,
-  [Category.NETWORKING]: <HardDrive size={12} />,
-  [Category.LAPTOP]: <Monitor size={12} />,
+// ── Constants (module scope — never recreated) ────────────────────────────────
+
+// JSX elements as icon values force React to re-create them on every render.
+// Store component references instead and render them at use-site.
+const CATEGORY_ICON_COMPONENTS: Record<Category, React.ElementType> = {
+  [Category.PROCESSOR]:  Cpu,
+  [Category.GPU]:        Monitor,
+  [Category.RAM]:        Layers,
+  [Category.MOTHERBOARD]:Cpu,
+  [Category.STORAGE]:    HardDrive,
+  [Category.PSU]:        Zap,
+  [Category.CABINET]:    Box,
+  [Category.COOLER]:     Zap,
+  [Category.MONITOR]:    Monitor,
+  [Category.PERIPHERAL]: Monitor,
+  [Category.NETWORKING]: HardDrive,
+  [Category.LAPTOP]:     Monitor,
 };
+
+// Compat display config — plain object, never recreated
+const COMPAT_CHIP_CONFIG = {
+  [CompatibilityLevel.INCOMPATIBLE]: { color: 'bg-red-500',    Icon: AlertOctagon,  label: 'Incompatible' },
+  [CompatibilityLevel.WARNING]:      { color: 'bg-amber-500',  Icon: AlertTriangle, label: 'Warning'      },
+  [CompatibilityLevel.COMPATIBLE]:   { color: 'bg-emerald-500',Icon: CheckCircle2,  label: 'Compatible'   },
+} as const;
+
+const COMPAT_MODAL_CONFIG = {
+  [CompatibilityLevel.INCOMPATIBLE]: { bg: 'bg-red-50 border-red-100 text-red-700',       Icon: AlertOctagon,  label: 'Incompatible'     },
+  [CompatibilityLevel.WARNING]:      { bg: 'bg-amber-50 border-amber-100 text-amber-700', Icon: AlertTriangle, label: 'Minor Issues'     },
+  [CompatibilityLevel.COMPATIBLE]:   { bg: 'bg-emerald-50 border-emerald-100 text-emerald-700', Icon: CheckCircle2, label: 'Fully Compatible' },
+} as const;
+
+// Framer Motion transition objects — module scope, stable references
+const MODAL_BACKDROP_ANIM = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as const;
+const MODAL_SHEET_ANIM    = { initial: { y: '100%' }, animate: { y: 0 }, exit: { y: '100%' } } as const;
+const MODAL_SHEET_TRANS   = { type: 'spring', damping: 25, stiffness: 300 } as const;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getCoverImage(build: BuildGuide): string | null {
-  const gpu = build.items.find((i) => i.variant?.product?.category === Category.GPU);
-  if (gpu?.variant?.product) return gpu.variant.product.media?.[0]?.url || null;
-  const cpu = build.items.find((i) => i.variant?.product?.category === Category.PROCESSOR);
-  if (cpu?.variant?.product) return cpu.variant.product.media?.[0]?.url || null;
+  const gpu = build.items.find(i => i.variant?.product?.category === Category.GPU);
+  if (gpu?.variant?.product) return gpu.variant.product.media?.[0]?.url ?? null;
+  const cpu = build.items.find(i => i.variant?.product?.category === Category.PROCESSOR);
+  if (cpu?.variant?.product) return cpu.variant.product.media?.[0]?.url ?? null;
   return build.items[0]?.variant?.product?.media?.[0]?.url ?? null;
 }
-
-const CompatChip: React.FC<{ build: BuildGuide }> = ({ build }) => {
-  const cartItems = useMemo(() => build.items.map(i => i.variant?.product ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant }) : null).filter(Boolean) as CartItem[], [build]);
-  const report = useMemo(() => validateBuild(cartItems), [cartItems]);
-
-  const configs = {
-    [CompatibilityLevel.INCOMPATIBLE]: { color: 'bg-red-500', icon: <AlertOctagon size={10} />, label: 'Incompatible' },
-    [CompatibilityLevel.WARNING]: { color: 'bg-amber-500', icon: <AlertTriangle size={10} />, label: 'Warning' },
-    [CompatibilityLevel.COMPATIBLE]: { color: 'bg-emerald-500', icon: <CheckCircle2 size={10} />, label: 'Compatible' },
-  };
-
-  const current = configs[report.status as keyof typeof configs] || configs[CompatibilityLevel.COMPATIBLE];
-
-  return (
-    <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-tight uppercase ${current.color} text-white px-2 py-0.5 rounded-md shadow-sm`}>
-      {current.icon} {current.label}
-    </span>
-  );
-};
 
 function buildShareUrl(build: BuildGuide): string {
   return `${getBaseUrl()}/builds/${build.id}`;
 }
 
-const BuildModal: React.FC<{
-  build: BuildGuide;
-  onClose: () => void;
-  onLoad: () => void;
-}> = ({ build, onClose, onLoad }) => {
-  const cartItems = useMemo(() => build.items.map(i => i.variant?.product ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant }) : null).filter(Boolean) as CartItem[], [build]);
-  const report = useMemo(() => validateBuild(cartItems), [cartItems]);
+// Converts build items to CartItem[] — extracted so both CompatChip and
+// BuildModal can share the same transformation without duplicating it.
+function buildToCartItems(build: BuildGuide): CartItem[] {
+  return build.items
+    .map(i => i.variant?.product
+      ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant })
+      : null)
+    .filter(Boolean) as CartItem[];
+}
+
+// ── CompatChip ────────────────────────────────────────────────────────────────
+
+const CompatChip = memo(function CompatChip({ build }: { build: BuildGuide }) {
+  const report  = useMemo(() => validateBuild(buildToCartItems(build)), [build]);
+  const cfg     = COMPAT_CHIP_CONFIG[report.status] ?? COMPAT_CHIP_CONFIG[CompatibilityLevel.COMPATIBLE];
+  const { Icon } = cfg;
+
+  return (
+    <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-tight uppercase ${cfg.color} text-white px-2 py-0.5 rounded-md shadow-sm`}>
+      <Icon size={10} /> {cfg.label}
+    </span>
+  );
+});
+
+// ── BuildModal ────────────────────────────────────────────────────────────────
+
+const BuildModal = memo(function BuildModal({
+  build,
+  onClose,
+  onLoad,
+}: {
+  build:   BuildGuide
+  onClose: () => void
+  onLoad:  () => void
+}) {
+  const report     = useMemo(() => validateBuild(buildToCartItems(build)), [build]);
   const [copied, setCopied] = useState(false);
 
-  const totalPrice = build.items.reduce((sum, item) => sum + (item.variant?.price || 0) * item.quantity, 0);
+  const totalPrice = useMemo(
+    () => build.items.reduce((sum, item) => sum + (item.variant?.price ?? 0) * item.quantity, 0),
+    [build.items]
+  );
 
-  const handleCopyLink = async () => {
+  const handleCopyLink = useCallback(async () => {
     await navigator.clipboard.writeText(buildShareUrl(build));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  }, [build]);
 
-  const compatCfg = report.status === CompatibilityLevel.INCOMPATIBLE
-    ? { bg: 'bg-red-50 border-red-100 text-red-700', label: 'Incompatible', Icon: AlertOctagon }
-    : report.status === CompatibilityLevel.WARNING
-      ? { bg: 'bg-amber-50 border-amber-100 text-amber-700', label: 'Minor Issues', Icon: AlertTriangle }
-      : { bg: 'bg-emerald-50 border-emerald-100 text-emerald-700', label: 'Fully Compatible', Icon: CheckCircle2 };
+  const compatCfg = COMPAT_MODAL_CONFIG[report.status] ?? COMPAT_MODAL_CONFIG[CompatibilityLevel.COMPATIBLE];
+  const { Icon: CompatIcon } = compatCfg;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-zinc-950/40 backdrop-blur-md" onClick={onClose} 
+      <motion.div
+        {...MODAL_BACKDROP_ANIM}
+        className="absolute inset-0 bg-zinc-950/40 backdrop-blur-md"
+        onClick={onClose}
       />
 
       <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        {...MODAL_SHEET_ANIM}
+        transition={MODAL_SHEET_TRANS}
         className="relative bg-white rounded-t-2xl sm:rounded-xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
       >
         <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-zinc-900 truncate pr-4">{build.title}</h2>
             <div className="flex items-center gap-2 mt-0.5 text-zinc-400 font-bold text-[9px] uppercase tracking-widest">
-                <span className="flex items-center gap-1"><Calendar size={10}/> {new Date(build.createdAt).toLocaleDateString()}</span>
-                <span>•</span>
-                <span>{build.items.length} Parts</span>
+              <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(build.createdAt).toLocaleDateString()}</span>
+              <span>•</span>
+              <span>{build.items.length} Parts</span>
             </div>
           </div>
           <button onClick={onClose} className="shrink-0 p-1.5 hover:bg-zinc-100 rounded-lg transition-colors">
@@ -127,12 +147,12 @@ const BuildModal: React.FC<{
 
         <div className="overflow-y-auto flex-1 p-4 space-y-4">
           <div className={`flex items-start gap-3 p-3 rounded-lg border ${compatCfg.bg}`}>
-            <compatCfg.Icon size={16} className="mt-0.5 shrink-0" />
+            <CompatIcon size={16} className="mt-0.5 shrink-0" />
             <div className="flex-1">
-                <p className="font-bold text-xs">{compatCfg.label}</p>
-                <p className="text-[11px] opacity-80 leading-relaxed">
-                  {report.issues.length > 0 ? report.issues[0].message : "System is validated and ready."}
-                </p>
+              <p className="font-bold text-xs">{compatCfg.label}</p>
+              <p className="text-[11px] opacity-80 leading-relaxed">
+                {report.issues.length > 0 ? report.issues[0].message : 'System is validated and ready.'}
+              </p>
             </div>
           </div>
 
@@ -141,7 +161,13 @@ const BuildModal: React.FC<{
             {build.items.map((item) => (
               <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-all">
                 <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center p-1 border border-zinc-100 shrink-0">
-                  <img src={item.variant?.product?.media?.[0]?.url || '/placeholder.png'} alt="" className="w-full h-full object-contain" />
+                  <img
+                    src={item.variant?.product?.media?.[0]?.url ?? '/placeholder.png'}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-zinc-900 text-[13px] truncate">{item.variant?.product?.name}</p>
@@ -150,7 +176,7 @@ const BuildModal: React.FC<{
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-[13px] text-zinc-900">₹{(item.variant?.price || 0).toLocaleString('en-IN')}</p>
+                  <p className="font-bold text-[13px] text-zinc-900">₹{(item.variant?.price ?? 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))}
@@ -166,7 +192,10 @@ const BuildModal: React.FC<{
             <button onClick={onLoad} className="h-10 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all">
               <Upload size={14} /> Load Build
             </button>
-            <button onClick={handleCopyLink} className={`h-10 text-xs font-bold rounded-lg border flex items-center justify-center gap-2 transition-all ${copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-100'}`}>
+            <button
+              onClick={handleCopyLink}
+              className={`h-10 text-xs font-bold rounded-lg border flex items-center justify-center gap-2 transition-all ${copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-100'}`}
+            >
               {copied ? <CheckCircle2 size={14} /> : <Share2 size={14} />}
               {copied ? 'Copied' : 'Share'}
             </button>
@@ -175,23 +204,147 @@ const BuildModal: React.FC<{
       </motion.div>
     </div>
   );
-};
+});
+
+// ── BuildCard ─────────────────────────────────────────────────────────────────
+
+const CARD_ANIM = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } } as const;
+
+const BuildCard = memo(function BuildCard({
+  build,
+  index,
+  copiedId,
+  onOpen,
+  onCopyDirect,
+  onLoad,
+}: {
+  build:         BuildGuide
+  index:         number
+  copiedId:      string | null
+  onOpen:        (b: BuildGuide) => void
+  onCopyDirect:  (e: React.MouseEvent, b: BuildGuide) => void
+  onLoad:        (e: React.MouseEvent, id: string) => void
+}) {
+  const coverImg   = useMemo(() => getCoverImage(build), [build]);
+  const totalItems = build.items.length;
+  const isCopied   = copiedId === build.id;
+
+  const handleOpen      = useCallback(() => onOpen(build),                              [onOpen, build]);
+  const handleCopy      = useCallback((e: React.MouseEvent) => onCopyDirect(e, build), [onCopyDirect, build]);
+  const handleLoadClick = useCallback((e: React.MouseEvent) => onLoad(e, build.id),    [onLoad, build.id]);
+
+  return (
+    <motion.div
+      {...CARD_ANIM}
+      transition={{ delay: index * 0.03 }}
+      onClick={handleOpen}
+      className="group bg-white rounded-xl border border-zinc-200/60 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden flex flex-col"
+    >
+      <div className="relative h-36 bg-zinc-50/50 flex items-center justify-center p-6 border-b border-zinc-100">
+        <div className="absolute top-2 left-2 z-10 scale-90 origin-top-left">
+          <CompatChip build={build} />
+        </div>
+        {coverImg ? (
+          <img
+            src={coverImg}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-auto object-contain filter drop-shadow-lg group-hover:scale-105 transition-transform"
+          />
+        ) : (
+          <Box className="h-8 w-8 text-zinc-200" />
+        )}
+      </div>
+
+      <div className="p-4 flex flex-col flex-1">
+        <div className="mb-3">
+          <h3 className="text-[13px] font-bold text-zinc-900 truncate">{build.title}</h3>
+          <p className="text-[9px] font-bold text-zinc-400 flex items-center gap-1 mt-0.5 uppercase">
+            <Calendar size={10} /> {new Date(build.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+
+        <div className="space-y-1 mb-4">
+          {build.items.slice(0, 2).map((item) => {
+            const IconComp = item.variant?.product
+              ? CATEGORY_ICON_COMPONENTS[item.variant.product.category as Category]
+              : null;
+            return (
+              <div key={item.id} className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 bg-zinc-50 px-2 py-1 rounded-md">
+                <span className="shrink-0 opacity-60">{IconComp && <IconComp size={12} />}</span>
+                <span className="truncate">{item.variant?.product?.name}</span>
+              </div>
+            );
+          })}
+          {totalItems > 2 && (
+            <p className="text-[8px] font-black text-zinc-300 pl-1 uppercase">+ {totalItems - 2} more</p>
+          )}
+        </div>
+
+        <div className="mt-auto pt-3 border-t border-zinc-50 flex items-center justify-between">
+          <div className="flex -space-x-1.5">
+            {build.items.slice(0, 3).map((item, idx) => (
+              <div key={idx} className="w-6 h-6 rounded-full border-2 border-white bg-white shadow-sm overflow-hidden ring-1 ring-zinc-100">
+                <img
+                  src={item.variant?.product?.media?.[0]?.url ?? '/placeholder.png'}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={handleCopy}
+              className={`w-8 h-8 flex items-center justify-center rounded-md transition-all border ${isCopied ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-white text-zinc-400 hover:text-zinc-900 border-zinc-200'}`}
+            >
+              {isCopied ? <CheckCircle2 size={14} /> : <Link2 size={14} />}
+            </button>
+            <button
+              onClick={handleLoadClick}
+              className="px-3 h-8 bg-zinc-900 text-white text-[9px] font-bold uppercase tracking-widest rounded-md hover:bg-indigo-600 transition-colors"
+            >
+              Load
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+// ── BuildsContent ─────────────────────────────────────────────────────────────
 
 function BuildsContent() {
   const { buildGuides, loadBuild, refreshBuildGuides } = useBuild();
   const [activeBuild, setActiveBuild] = useState<BuildGuide | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedId,    setCopiedId]    = useState<string | null>(null);
   const { toast } = useToast();
 
-  React.useEffect(() => { refreshBuildGuides(); }, [refreshBuildGuides]);
+  // Refresh build guides on mount
+  useEffect(() => { refreshBuildGuides(); }, [refreshBuildGuides]);
 
-  const handleCopyDirect = async (e: React.MouseEvent, build: BuildGuide) => {
+  const handleCopyDirect = useCallback(async (e: React.MouseEvent, build: BuildGuide) => {
     e.stopPropagation();
     await navigator.clipboard.writeText(buildShareUrl(build));
     setCopiedId(build.id);
     toast({ title: 'Link copied!', description: 'Ready to share.' });
     setTimeout(() => setCopiedId(null), 2000);
-  };
+  }, [toast]);
+
+  const handleLoad = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    loadBuild(id);
+  }, [loadBuild]);
+
+  const handleModalLoad = useCallback(() => {
+    if (activeBuild) { loadBuild(activeBuild.id); setActiveBuild(null); }
+  }, [activeBuild, loadBuild]);
+
+  const handleModalClose = useCallback(() => setActiveBuild(null), []);
 
   return (
     <PageLayout bgClass="bg-[#fcfcfd]">
@@ -219,81 +372,17 @@ function BuildsContent() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {buildGuides.map((build, i) => {
-              const coverImg = getCoverImage(build);
-              const totalItems = build.items.length;
-              return (
-                <motion.div
-                  key={build.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  onClick={() => setActiveBuild(build)}
-                  className="group bg-white rounded-xl border border-zinc-200/60 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden flex flex-col"
-                >
-                  <div className="relative h-36 bg-zinc-50/50 flex items-center justify-center p-6 border-b border-zinc-100">
-                    <div className="absolute top-2 left-2 z-10 scale-90 origin-top-left">
-                      <CompatChip build={build} />
-                    </div>
-                    {coverImg ? (
-                      <img src={coverImg} alt="" className="h-full w-auto object-contain filter drop-shadow-lg group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <Box className="h-8 w-8 text-zinc-200" />
-                    )}
-                  </div>
-
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="mb-3">
-                      <h3 className="text-[13px] font-bold text-zinc-900 truncate">{build.title}</h3>
-                      <p className="text-[9px] font-bold text-zinc-400 flex items-center gap-1 mt-0.5 uppercase">
-                         <Calendar size={10}/> {new Date(build.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    <div className="space-y-1 mb-4">
-                      {build.items.slice(0, 2).map((item) => (
-                        <div key={item.id} className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 bg-zinc-50 px-2 py-1 rounded-md">
-                          <span className="shrink-0 opacity-60">
-                            {item.variant?.product ? CATEGORY_ICON[item.variant.product.category as Category] : null}
-                          </span>
-                          <span className="truncate">{item.variant?.product?.name}</span>
-                        </div>
-                      ))}
-                      {totalItems > 2 && (
-                        <p className="text-[8px] font-black text-zinc-300 pl-1 uppercase">
-                          + {totalItems - 2} more
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="mt-auto pt-3 border-t border-zinc-50 flex items-center justify-between">
-                       <div className="flex -space-x-1.5">
-                          {build.items.slice(0,3).map((item, idx) => (
-                             <div key={idx} className="w-6 h-6 rounded-full border-2 border-white bg-white shadow-sm overflow-hidden ring-1 ring-zinc-100">
-                                <img src={item.variant?.product?.media?.[0]?.url || '/placeholder.png'} className="w-full h-full object-contain" />
-                             </div>
-                          ))}
-                       </div>
-                       
-                       <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
-                          <button 
-                            onClick={(e) => handleCopyDirect(e, build)} 
-                            className={`w-8 h-8 flex items-center justify-center rounded-md transition-all border ${copiedId === build.id ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-white text-zinc-400 hover:text-zinc-900 border-zinc-200'}`}
-                          >
-                             {copiedId === build.id ? <CheckCircle2 size={14} /> : <Link2 size={14} />}
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); loadBuild(build.id); }} 
-                            className="px-3 h-8 bg-zinc-900 text-white text-[9px] font-bold uppercase tracking-widest rounded-md hover:bg-indigo-600 transition-colors"
-                          >
-                             Load
-                          </button>
-                       </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+            {buildGuides.map((build, i) => (
+              <BuildCard
+                key={build.id}
+                build={build}
+                index={i}
+                copiedId={copiedId}
+                onOpen={setActiveBuild}
+                onCopyDirect={handleCopyDirect}
+                onLoad={handleLoad}
+              />
+            ))}
           </div>
         )}
       </PageLayout.Content>
@@ -302,14 +391,16 @@ function BuildsContent() {
         {activeBuild && (
           <BuildModal
             build={activeBuild}
-            onClose={() => setActiveBuild(null)}
-            onLoad={() => { loadBuild(activeBuild.id); setActiveBuild(null); }}
+            onClose={handleModalClose}
+            onLoad={handleModalLoad}
           />
         )}
       </AnimatePresence>
     </PageLayout>
   );
 }
+
+// ── Builds (public export) ────────────────────────────────────────────────────
 
 export default function Builds() {
   return (

@@ -1,37 +1,53 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { getProductsData } from '@/app/api/products/route';
 import ProductsClient from './ProductsClient';
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 type SearchParams = { [key: string]: string | string[] | undefined };
+
+// ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata(
     { searchParams }: { searchParams: Promise<SearchParams> }
 ): Promise<Metadata> {
     const params = await searchParams;
     const category = Array.isArray(params.category) ? params.category[0] : params.category;
-    const q = Array.isArray(params.q) ? params.q[0] : params.q;
+    const q        = Array.isArray(params.q)        ? params.q[0]        : params.q;
 
-    let title = 'PC Components & Accessories - MD Computers';
-    let description = 'Shop the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices.';
+    const title = category
+        ? `${category} | MD Computers`
+        : q
+            ? `Search Results for "${q}" | MD Computers`
+            : 'PC Components & Accessories - MD Computers';
 
-    if (category) {
-        title = `Buy ${category} | MD Computers`;
-        description = `Browse our extensive collection of ${category}. Find the best prices and top brands.`;
-    } else if (q) {
-        title = `Search Results for "${q}" | MD Computers`;
-        description = `Find the best PC components matching "${q}".`;
-    }
+    const description = category
+        ? `Browse our extensive collection of ${category}. Find the best prices and top brands.`
+        : q
+            ? `Find the best PC components matching "${q}".`
+            : 'Shop the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices.';
 
     return {
         title,
         description,
-        openGraph: {
-            title,
-            description,
-            type: 'website',
-        },
+        openGraph: { title, description, type: 'website' },
     };
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+// Static fallback — rendered on both server and client for the Suspense boundary.
+// Kept as a plain div (no extra components) for minimum TTFB.
+function PageFallback() {
+    return (
+        <div className="h-screen flex items-center justify-center bg-stone-50">
+            <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-zinc-200 border-t-zinc-800 rounded-full animate-spin" />
+                <p className="text-sm text-zinc-400 font-medium">Loading catalog…</p>
+            </div>
+        </div>
+    );
 }
 
 export default async function ProductsPage({
@@ -40,37 +56,38 @@ export default async function ProductsPage({
     searchParams: Promise<SearchParams>;
 }) {
     const params = await searchParams;
+
+    // Build URLSearchParams in one pass — avoid forEach on entries + redundant has() checks
     const urlParams = new URLSearchParams();
 
-    // Reconstruct URLSearchParams with defaults matching client-side fetch
-    Object.entries(params).forEach(([key, value]) => {
-        if (value === undefined) return;
+    for (const [key, value] of Object.entries(params)) {
+        if (value === undefined) continue;
         if (Array.isArray(value)) {
-            value.forEach((v) => urlParams.append(key, v));
+            for (const v of value) urlParams.append(key, v);
         } else {
-            urlParams.set(key, value as string);
+            urlParams.set(key, value);
         }
-    });
+    }
 
-    // Ensure defaults match what ProductsClient will request
-    if (!urlParams.has('limit')) urlParams.set('limit', '12');
-    if (!urlParams.has('page')) urlParams.set('page', '1');
-    if (!urlParams.has('sort')) urlParams.set('sort', 'price-asc');
+    // Apply defaults only when missing
+    if (!urlParams.has('limit'))  urlParams.set('limit',  '12');
+    if (!urlParams.has('page'))   urlParams.set('page',   '1');
+    if (!urlParams.has('sort'))   urlParams.set('sort',   'price-asc');
     urlParams.set('getFilters', 'true');
 
-    // Only fetch server-side if we have a category (otherwise client will fetch after categories load)
+    // Only SSR-fetch when a category is present; client handles the rest
     let initialData = null;
     if (urlParams.has('category')) {
         try {
-            const res = await getProductsData(urlParams);
+            const res  = await getProductsData(urlParams);
             initialData = await res.json();
-        } catch (e) {
-            console.error("Failed to fetch initial product data:", e);
+        } catch {
+            // Non-fatal — client will re-fetch
         }
     }
 
     return (
-        <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
+        <Suspense fallback={<PageFallback />}>
             <ProductsClient initialData={initialData} />
         </Suspense>
     );

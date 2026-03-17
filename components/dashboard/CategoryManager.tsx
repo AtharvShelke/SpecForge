@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, memo } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
 import { Category, CategoryNode, FilterDefinition } from '@/types';
@@ -45,7 +45,7 @@ import {
 // SHARED PRIMITIVES
 // ─────────────────────────────────────────────────────────────
 
-const SectionLabel = ({
+const SectionLabel = memo(({
     icon,
     children,
 }: {
@@ -58,11 +58,22 @@ const SectionLabel = ({
             {children}
         </span>
     </div>
-);
+));
+SectionLabel.displayName = 'SectionLabel';
 
 type Stripe = 'indigo' | 'teal' | 'amber' | 'rose' | 'violet' | 'stone';
 
-const Panel = ({
+// Stripe classes extracted outside component to avoid re-creation on every render
+const STRIPE_CLASSES: Record<Stripe, string> = {
+    indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
+    teal: 'from-teal-400 via-emerald-400 to-emerald-300',
+    amber: 'from-amber-400 via-amber-400 to-orange-300',
+    rose: 'from-rose-400 via-rose-400 to-rose-300',
+    violet: 'from-violet-400 via-violet-500 to-indigo-400',
+    stone: 'from-stone-300 via-stone-400 to-stone-300',
+};
+
+const Panel = memo(({
     children,
     className,
     stripe,
@@ -70,27 +81,17 @@ const Panel = ({
     children: React.ReactNode;
     className?: string;
     stripe?: Stripe;
-}) => {
-    const stripes: Record<Stripe, string> = {
-        indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
-        teal: 'from-teal-400 via-emerald-400 to-emerald-300',
-        amber: 'from-amber-400 via-amber-400 to-orange-300',
-        rose: 'from-rose-400 via-rose-400 to-rose-300',
-        violet: 'from-violet-400 via-violet-500 to-indigo-400',
-        stone: 'from-stone-300 via-stone-400 to-stone-300',
-    };
-    return (
-        <div className={cn('rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden', className)}>
-            {stripe && (
-                <div className={cn('h-0.5 w-full bg-gradient-to-r', stripes[stripe])} />
-            )}
-            {children}
-        </div>
-    );
-};
+}) => (
+    <div className={cn('rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden', className)}>
+        {stripe && (
+            <div className={cn('h-0.5 w-full bg-gradient-to-r', STRIPE_CLASSES[stripe])} />
+        )}
+        {children}
+    </div>
+));
+Panel.displayName = 'Panel';
 
-// PanelHeader — tightened padding for mobile
-const PanelHeader = ({
+const PanelHeader = memo(({
     icon,
     children,
     right,
@@ -103,29 +104,29 @@ const PanelHeader = ({
         <SectionLabel icon={icon}>{children}</SectionLabel>
         {right}
     </div>
-);
+));
+PanelHeader.displayName = 'PanelHeader';
 
 // ─────────────────────────────────────────────────────────────
 // SMALL REUSABLES
 // ─────────────────────────────────────────────────────────────
 
-const Pill = ({ children, color = 'stone' }: { children: React.ReactNode; color?: 'stone' | 'indigo' | 'teal' | 'amber' | 'violet' }) => {
-    const cls = {
-        stone: 'bg-stone-100 text-stone-600 ring-stone-200',
-        indigo: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-        teal: 'bg-teal-50 text-teal-700 ring-teal-200',
-        amber: 'bg-amber-50 text-amber-700 ring-amber-200',
-        violet: 'bg-violet-50 text-violet-700 ring-violet-200',
-    }[color];
-    return (
-        <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 whitespace-nowrap', cls)}>
-            {children}
-        </span>
-    );
+const PILL_CLASSES: Record<string, string> = {
+    stone: 'bg-stone-100 text-stone-600 ring-stone-200',
+    indigo: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+    teal: 'bg-teal-50 text-teal-700 ring-teal-200',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-200',
+    violet: 'bg-violet-50 text-violet-700 ring-violet-200',
 };
 
-// ActionBtn — bigger tap target on mobile
-const ActionBtn = ({
+const Pill = memo(({ children, color = 'stone' }: { children: React.ReactNode; color?: 'stone' | 'indigo' | 'teal' | 'amber' | 'violet' }) => (
+    <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 whitespace-nowrap', PILL_CLASSES[color])}>
+        {children}
+    </span>
+));
+Pill.displayName = 'Pill';
+
+const ActionBtn = memo(({
     onClick,
     danger,
     children,
@@ -146,20 +147,27 @@ const ActionBtn = ({
             danger
                 ? 'text-stone-300 hover:text-rose-500 hover:bg-rose-50 active:bg-rose-100'
                 : 'text-stone-300 hover:text-stone-700 hover:bg-stone-100 active:bg-stone-200',
-            // On mobile, always show actions; on desktop hide until hover
             alwaysVisible ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100',
             className
         )}
     >
         {children}
     </button>
-);
+));
+ActionBtn.displayName = 'ActionBtn';
 
 // ─────────────────────────────────────────────────────────────
 // INLINE NODE FORM
 // ─────────────────────────────────────────────────────────────
 
-const NodeForm = ({
+// Stable field config outside component — no re-creation per render
+const NODE_FORM_FIELDS = [
+    { label: 'Display Label', field: 'label', placeholder: 'e.g. Laptops' },
+    { label: 'Brand Filter', field: 'brand', placeholder: 'e.g. ASUS' },
+    { label: 'Query Constraint', field: 'query', placeholder: 'Search query' },
+] as const;
+
+const NodeForm = memo(({
     title,
     nodeForm,
     setNodeForm,
@@ -174,13 +182,8 @@ const NodeForm = ({
 }) => (
     <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
         <SectionLabel icon={<Edit size={11} />}>{title}</SectionLabel>
-        {/* Always single-column on mobile, 2-col on sm+ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {[
-                { label: 'Display Label', field: 'label', placeholder: 'e.g. Laptops' },
-                { label: 'Brand Filter', field: 'brand', placeholder: 'e.g. ASUS' },
-                { label: 'Query Constraint', field: 'query', placeholder: 'Search query' },
-            ].map(({ label, field, placeholder }) => (
+            {NODE_FORM_FIELDS.map(({ label, field, placeholder }) => (
                 <div key={field} className="space-y-1">
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">{label}</span>
                     <Input
@@ -209,7 +212,6 @@ const NodeForm = ({
                 </Select>
             </div>
         </div>
-        {/* Buttons — full-width on mobile */}
         <div className="flex gap-2 pt-0.5">
             <button
                 type="button"
@@ -227,7 +229,183 @@ const NodeForm = ({
             </button>
         </div>
     </div>
-);
+));
+NodeForm.displayName = 'NodeForm';
+
+// ─────────────────────────────────────────────────────────────
+// TREE NODE — isolated memo component to prevent full-tree re-renders
+// ─────────────────────────────────────────────────────────────
+
+// Stable empty children array reference
+const EMPTY_CHILDREN: any[] = [];
+
+const CATEGORY_VALUES = Object.values(Category);
+
+interface TreeNodeProps {
+    node: any;
+    currentPath: string;
+    depth: number;
+    isExpanded: boolean;
+    isEditing: boolean;
+    isAddingSub: boolean;
+    nodeForm: Partial<CategoryNode>;
+    setNodeForm: (v: Partial<CategoryNode>) => void;
+    onToggle: (path: string) => void;
+    onEdit: (node: any, path: string) => void;
+    onAddSub: (path: string) => void;
+    onDelete: (path: string, label: string) => void;
+    onSave: () => void;
+    onCancel: () => void;
+    children?: React.ReactNode;
+}
+
+const TreeNode = memo(({
+    node,
+    currentPath,
+    depth,
+    isExpanded,
+    isEditing,
+    isAddingSub,
+    nodeForm,
+    setNodeForm,
+    onToggle,
+    onEdit,
+    onAddSub,
+    onDelete,
+    onSave,
+    onCancel,
+    children,
+}: TreeNodeProps) => {
+    const hasChildren = node.children && node.children.length > 0;
+
+    const handleToggle = useCallback(() => onToggle(currentPath), [onToggle, currentPath]);
+    const handleEdit = useCallback(() => onEdit(node, currentPath), [onEdit, node, currentPath]);
+    const handleAddSub = useCallback(() => onAddSub(currentPath), [onAddSub, currentPath]);
+    const handleDelete = useCallback(() => onDelete(currentPath, node.label), [onDelete, currentPath, node.label]);
+
+    return (
+        <div>
+            <div className={cn(
+                'group flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all duration-150',
+                isEditing
+                    ? 'border-indigo-200 bg-indigo-50/40'
+                    : 'border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm'
+            )}>
+                <GripVertical size={12} className="text-stone-200 cursor-grab shrink-0 hidden sm:block" />
+                <button
+                    type="button"
+                    onClick={handleToggle}
+                    className={cn(
+                        'h-6 w-6 rounded flex items-center justify-center text-stone-400 hover:bg-stone-100 active:bg-stone-200 transition-colors shrink-0',
+                        !hasChildren && 'invisible'
+                    )}
+                >
+                    {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </button>
+                <div className={cn(
+                    'h-6 w-6 rounded-lg flex items-center justify-center shrink-0',
+                    depth === 0 ? 'bg-indigo-50 text-indigo-500' : 'bg-stone-100 text-stone-500'
+                )}>
+                    {isExpanded ? <FolderOpen size={13} /> : <Folder size={13} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{node.label}</p>
+                    {(node.category || node.brand) && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                            {node.category && <Pill color="indigo">{node.category}</Pill>}
+                            {node.brand && <Pill color="stone">{node.brand}</Pill>}
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
+                    <ActionBtn onClick={handleAddSub}><Plus size={12} /></ActionBtn>
+                    <ActionBtn onClick={handleEdit}><Edit size={12} /></ActionBtn>
+                    <ActionBtn danger onClick={handleDelete}><Trash size={12} /></ActionBtn>
+                </div>
+            </div>
+
+            {isEditing && (
+                <div className="mt-2 mb-2 ml-6 sm:ml-10">
+                    <NodeForm
+                        title="Edit Category"
+                        nodeForm={nodeForm}
+                        setNodeForm={setNodeForm}
+                        onSave={onSave}
+                        onCancel={onCancel}
+                    />
+                </div>
+            )}
+
+            {isAddingSub && (
+                <div className="mt-2 mb-2 ml-6 sm:ml-10">
+                    <NodeForm
+                        title="Add Subcategory"
+                        nodeForm={nodeForm}
+                        setNodeForm={setNodeForm}
+                        onSave={onSave}
+                        onCancel={onCancel}
+                    />
+                </div>
+            )}
+
+            {hasChildren && isExpanded && (
+                <div className="mt-1.5 mb-1.5 ml-6 sm:ml-9 pl-3 sm:pl-4 border-l-2 border-stone-100 space-y-1.5">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+});
+TreeNode.displayName = 'TreeNode';
+
+// ─────────────────────────────────────────────────────────────
+// FILTER CARD — isolated memo to prevent grid re-renders
+// ─────────────────────────────────────────────────────────────
+
+interface FilterCardProps {
+    filter: FilterDefinition;
+    idx: number;
+    onEdit: (idx: number, filter: FilterDefinition) => void;
+    onDelete: (idx: number) => void;
+}
+
+const FilterCard = memo(({ filter, idx, onEdit, onDelete }: FilterCardProps) => {
+    const handleEdit = useCallback(() => onEdit(idx, filter), [onEdit, idx, filter]);
+    const handleDelete = useCallback(() => onDelete(idx), [onDelete, idx]);
+
+    return (
+        <div className="group flex items-start justify-between gap-2 px-3 py-3 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150">
+            <div className="min-w-0 space-y-1.5 flex-1">
+                <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{filter.label}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
+                        {filter.key}
+                    </span>
+                    <Pill color={filter.type === 'range' ? 'amber' : 'teal'}>
+                        {filter.type}
+                    </Pill>
+                    {filter.options && filter.options.length > 0 && (
+                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                            {filter.options.length} opts
+                        </span>
+                    )}
+                </div>
+            </div>
+            <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
+                <ActionBtn onClick={handleEdit}><Edit size={12} /></ActionBtn>
+                <ActionBtn danger onClick={handleDelete}><Trash size={12} /></ActionBtn>
+            </div>
+        </div>
+    );
+});
+FilterCard.displayName = 'FilterCard';
+
+// ─────────────────────────────────────────────────────────────
+// STABLE INITIAL FORM VALUES — defined outside to avoid GC churn
+// ─────────────────────────────────────────────────────────────
+
+const EMPTY_NODE_FORM: Partial<CategoryNode> = { label: '', category: undefined, brand: '', query: '' };
+const EMPTY_FILTER_FORM: Partial<FilterDefinition> = { key: '', label: '', type: 'checkbox', options: [] };
 
 // ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT
@@ -242,14 +420,14 @@ const CategoryManager = () => {
     // ── Hierarchy state ──
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const [editingNodePath, setEditingNodePath] = useState<string | null>(null);
-    const [nodeForm, setNodeForm] = useState<Partial<CategoryNode>>({ label: '', category: undefined, brand: '', query: '' });
+    const [nodeForm, setNodeForm] = useState<Partial<CategoryNode>>(EMPTY_NODE_FORM);
     const [isAddingRoot, setIsAddingRoot] = useState(false);
 
     // ── Filter config state ──
     const [configMode, setConfigMode] = useState<'hierarchy' | 'filters'>('hierarchy');
     const [selectedCatForFilters, setSelectedCatForFilters] = useState<Category>(Category.PROCESSOR);
     const [editingFilterIdx, setEditingFilterIdx] = useState<number | null>(null);
-    const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>({ key: '', label: '', type: 'checkbox', options: [] });
+    const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
     const [showFilterModal, setShowFilterModal] = useState(false);
 
     // ── Delete confirm state ──
@@ -260,23 +438,28 @@ const CategoryManager = () => {
         label: string;
     } | null>(null);
 
-    // ─── Hierarchy helpers ───
-    const toggleExpand = (path: string) =>
-        setExpanded(prev => ({ ...prev, [path]: !prev[path] }));
+    // ─── Memoized callbacks — prevent child re-renders ───
 
-    const handleEditNode = (node: CategoryNode, path: string) => {
+    const toggleExpand = useCallback((path: string) =>
+        setExpanded(prev => ({ ...prev, [path]: !prev[path] })),
+    []);
+
+    const handleEditNode = useCallback((node: CategoryNode, path: string) => {
         setEditingNodePath(path);
         setNodeForm({ ...node });
         setIsAddingRoot(false);
-    };
+    }, []);
 
-    const handleAddSubcategory = (path: string) => {
+    const handleAddSubcategory = useCallback((path: string) => {
         setEditingNodePath(path + '-new');
         setNodeForm({ label: '' });
         setIsAddingRoot(false);
-    };
+    }, []);
 
-    const saveNode = () => {
+    const cancelNodeEdit = useCallback(() => setEditingNodePath(null), []);
+    const cancelAddRoot = useCallback(() => setIsAddingRoot(false), []);
+
+    const saveNode = useCallback(() => {
         if (!editingNodePath && !isAddingRoot) return;
         const newTree = JSON.parse(JSON.stringify(categories));
         if (isAddingRoot) {
@@ -296,13 +479,14 @@ const CategoryManager = () => {
         updateCategories(newTree).then(() => refreshCategories());
         setEditingNodePath(null);
         setIsAddingRoot(false);
-        setNodeForm({ label: '', category: undefined, brand: '', query: '' });
-    };
+        setNodeForm(EMPTY_NODE_FORM);
+    }, [editingNodePath, isAddingRoot, categories, nodeForm, updateCategories, refreshCategories]);
 
-    const deleteNode = (pathStr: string, nodeLabel: string) =>
-        setDeleteConfirm({ type: 'node', nodePath: pathStr, label: nodeLabel });
+    const deleteNode = useCallback((pathStr: string, nodeLabel: string) =>
+        setDeleteConfirm({ type: 'node', nodePath: pathStr, label: nodeLabel }),
+    []);
 
-    const confirmDeleteNode = (pathStr: string) => {
+    const confirmDeleteNode = useCallback((pathStr: string) => {
         const newTree = JSON.parse(JSON.stringify(categories));
         const path = pathStr.split('-').map(Number);
         if (path.length === 1) {
@@ -313,14 +497,14 @@ const CategoryManager = () => {
             parent.children!.splice(path[path.length - 1], 1);
         }
         updateCategories(newTree).then(() => refreshCategories());
-    };
+    }, [categories, updateCategories, refreshCategories]);
 
     const activeFilters = useMemo(() =>
-        filterConfigs.find(c => c.category === selectedCatForFilters)?.filters || [],
+        filterConfigs.find(c => c.category === selectedCatForFilters)?.filters || EMPTY_CHILDREN,
         [filterConfigs, selectedCatForFilters]
     );
 
-    const handleSaveFilter = () => {
+    const handleSaveFilter = useCallback(() => {
         if (!filterForm.key || !filterForm.label) return;
         const newFilters = [...activeFilters];
         const filterData = filterForm as FilterDefinition;
@@ -328,131 +512,117 @@ const CategoryManager = () => {
         else newFilters.push(filterData);
         updateFilterConfig(selectedCatForFilters, newFilters);
         setShowFilterModal(false);
-        setFilterForm({ key: '', label: '', type: 'checkbox', options: [], dependency: undefined });
+        setFilterForm(EMPTY_FILTER_FORM);
         setEditingFilterIdx(null);
-    };
+    }, [filterForm, activeFilters, editingFilterIdx, updateFilterConfig, selectedCatForFilters]);
 
-    const handleDeleteFilter = (idx: number) => {
+    const handleDeleteFilter = useCallback((idx: number) => {
         const filter = activeFilters[idx];
         setDeleteConfirm({ type: 'filter', filterIdx: idx, label: filter?.label || 'this filter' });
-    };
+    }, [activeFilters]);
 
-    const confirmDeleteFilter = (idx: number) => {
+    const handleEditFilter = useCallback((idx: number, filter: FilterDefinition) => {
+        setEditingFilterIdx(idx);
+        setFilterForm(filter);
+        setShowFilterModal(true);
+    }, []);
+
+    const confirmDeleteFilter = useCallback((idx: number) => {
         const newFilters = [...activeFilters];
         newFilters.splice(idx, 1);
         updateFilterConfig(selectedCatForFilters, newFilters).then(() => refreshShopFilterConfigs());
-    };
+    }, [activeFilters, updateFilterConfig, selectedCatForFilters, refreshShopFilterConfigs]);
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = useCallback(() => {
         if (!deleteConfirm) return;
         if (deleteConfirm.type === 'filter' && deleteConfirm.filterIdx !== undefined)
             confirmDeleteFilter(deleteConfirm.filterIdx);
         else if (deleteConfirm.type === 'node' && deleteConfirm.nodePath)
             confirmDeleteNode(deleteConfirm.nodePath);
         setDeleteConfirm(null);
-    };
+    }, [deleteConfirm, confirmDeleteFilter, confirmDeleteNode]);
 
-    // ─── Tree renderer ───
-    const renderTree = (nodes: any[], pathPrefix = '', depth = 0): React.ReactNode =>
+    const closeDeleteConfirm = useCallback((open: boolean) => {
+        if (!open) setDeleteConfirm(null);
+    }, []);
+
+    const closeFilterModal = useCallback((open: boolean) => {
+        setShowFilterModal(open);
+    }, []);
+
+    const openAddRoot = useCallback(() => {
+        setIsAddingRoot(true);
+        setNodeForm(EMPTY_NODE_FORM);
+        setEditingNodePath(null);
+    }, []);
+
+    const openAddFilter = useCallback(() => {
+        setShowFilterModal(true);
+        setEditingFilterIdx(null);
+        setFilterForm(EMPTY_FILTER_FORM);
+    }, []);
+
+    const handleSyncData = useCallback(() => syncData(), [syncData]);
+
+    const handleCatForFiltersChange = useCallback((val: string) =>
+        setSelectedCatForFilters(val as Category),
+    []);
+
+    // ─── Tree renderer — memoized with useCallback, stable deps ───
+    const renderTree = useCallback((nodes: any[], pathPrefix = '', depth = 0): React.ReactNode =>
         nodes.map((node, index) => {
             const currentPath = `${pathPrefix}${index}`;
-            const isExpanded = expanded[currentPath];
+            const isExpanded = expanded[currentPath] ?? false;
             const hasChildren = node.children && node.children.length > 0;
             const isEditing = editingNodePath === currentPath;
             const isAddingSub = editingNodePath === `${currentPath}-new`;
 
             return (
-                <div key={currentPath}>
-                    {/* Node row */}
-                    <div className={cn(
-                        'group flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all duration-150',
-                        isEditing
-                            ? 'border-indigo-200 bg-indigo-50/40'
-                            : 'border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm'
-                    )}>
-                        {/* Grip — hidden on mobile to save space */}
-                        <GripVertical size={12} className="text-stone-200 cursor-grab shrink-0 hidden sm:block" />
-
-                        {/* Expand toggle */}
-                        <button
-                            type="button"
-                            onClick={() => toggleExpand(currentPath)}
-                            className={cn(
-                                'h-6 w-6 rounded flex items-center justify-center text-stone-400 hover:bg-stone-100 active:bg-stone-200 transition-colors shrink-0',
-                                !hasChildren && 'invisible'
-                            )}
-                        >
-                            {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        </button>
-
-                        {/* Folder icon */}
-                        <div className={cn(
-                            'h-6 w-6 rounded-lg flex items-center justify-center shrink-0',
-                            depth === 0 ? 'bg-indigo-50 text-indigo-500' : 'bg-stone-100 text-stone-500'
-                        )}>
-                            {isExpanded ? <FolderOpen size={13} /> : <Folder size={13} />}
-                        </div>
-
-                        {/* Label + meta */}
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{node.label}</p>
-                            {(node.category || node.brand) && (
-                                <div className="flex flex-wrap gap-1 mt-0.5">
-                                    {node.category && <Pill color="indigo">{node.category}</Pill>}
-                                    {node.brand && <Pill color="stone">{node.brand}</Pill>}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Actions — always visible on mobile, hover on desktop */}
-                        <div className="flex items-center gap-0.5 shrink-0">
-                            <ActionBtn onClick={() => handleAddSubcategory(currentPath)}>
-                                <Plus size={12} />
-                            </ActionBtn>
-                            <ActionBtn onClick={() => handleEditNode(node, currentPath)}>
-                                <Edit size={12} />
-                            </ActionBtn>
-                            <ActionBtn danger onClick={() => deleteNode(currentPath, node.label)}>
-                                <Trash size={12} />
-                            </ActionBtn>
-                        </div>
-                    </div>
-
-                    {/* Inline edit form */}
-                    {isEditing && (
-                        <div className="mt-2 mb-2 ml-6 sm:ml-10">
-                            <NodeForm
-                                title="Edit Category"
-                                nodeForm={nodeForm}
-                                setNodeForm={setNodeForm}
-                                onSave={saveNode}
-                                onCancel={() => setEditingNodePath(null)}
-                            />
-                        </div>
-                    )}
-
-                    {/* Inline add-sub form */}
-                    {isAddingSub && (
-                        <div className="mt-2 mb-2 ml-6 sm:ml-10">
-                            <NodeForm
-                                title="Add Subcategory"
-                                nodeForm={nodeForm}
-                                setNodeForm={setNodeForm}
-                                onSave={saveNode}
-                                onCancel={() => setEditingNodePath(null)}
-                            />
-                        </div>
-                    )}
-
-                    {/* Children */}
-                    {hasChildren && isExpanded && (
-                        <div className="mt-1.5 mb-1.5 ml-6 sm:ml-9 pl-3 sm:pl-4 border-l-2 border-stone-100 space-y-1.5">
-                            {renderTree(node.children, `${currentPath}-`, depth + 1)}
-                        </div>
-                    )}
-                </div>
+                <TreeNode
+                    key={currentPath}
+                    node={node}
+                    currentPath={currentPath}
+                    depth={depth}
+                    isExpanded={isExpanded}
+                    isEditing={isEditing}
+                    isAddingSub={isAddingSub}
+                    nodeForm={nodeForm}
+                    setNodeForm={setNodeForm}
+                    onToggle={toggleExpand}
+                    onEdit={handleEditNode}
+                    onAddSub={handleAddSubcategory}
+                    onDelete={deleteNode}
+                    onSave={saveNode}
+                    onCancel={cancelNodeEdit}
+                >
+                    {hasChildren && isExpanded
+                        ? renderTree(node.children, `${currentPath}-`, depth + 1)
+                        : null}
+                </TreeNode>
             );
-        });
+        }),
+    [expanded, editingNodePath, nodeForm, toggleExpand, handleEditNode, handleAddSubcategory, deleteNode, saveNode, cancelNodeEdit]);
+
+    // Memoize the filter options textarea value to avoid recalc on every keystroke elsewhere
+    const filterOptionsValue = useMemo(() =>
+        filterForm.options?.join(', ') || '',
+    [filterForm.options]);
+
+    const handleFilterOptionsChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) =>
+        setFilterForm(prev => ({
+            ...prev,
+            options: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
+        })),
+    []);
+
+    const handleFilterFieldChange = useCallback((field: string) =>
+        (e: React.ChangeEvent<HTMLInputElement>) =>
+            setFilterForm(prev => ({ ...prev, [field]: e.target.value })),
+    []);
+
+    const handleFilterTypeChange = useCallback((val: string) =>
+        setFilterForm(prev => ({ ...prev, type: val as 'checkbox' | 'range' })),
+    []);
 
     return (
         <div
@@ -462,7 +632,6 @@ const CategoryManager = () => {
 
             {/* ── PAGE HEADER ── */}
             <div className="flex items-center justify-between gap-2">
-                {/* Left: title */}
                 <div className="flex items-center gap-2 min-w-0">
                     <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
                     <div className="min-w-0">
@@ -472,20 +641,15 @@ const CategoryManager = () => {
                         </p>
                     </div>
                 </div>
-
-                {/* Right: sync + mode toggle */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Sync — icon only on mobile */}
                     <button
-                        onClick={() => syncData()}
+                        onClick={handleSyncData}
                         disabled={isLoading}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
                     >
                         <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
                         <span className="hidden sm:inline">Sync</span>
                     </button>
-
-                    {/* Mode toggle — compact on mobile */}
                     <div className="flex items-center gap-px bg-stone-100 p-1 rounded-xl border border-stone-200">
                         {(['hierarchy', 'filters'] as const).map(mode => (
                             <button
@@ -500,7 +664,6 @@ const CategoryManager = () => {
                                 )}
                             >
                                 {mode === 'hierarchy' ? <Layers size={11} /> : <ListFilter size={11} />}
-                                {/* Show text labels on sm+, icons-only on mobile */}
                                 <span className="hidden sm:inline">
                                     {mode === 'hierarchy' ? 'Hierarchy' : 'Filters'}
                                 </span>
@@ -520,7 +683,7 @@ const CategoryManager = () => {
                         right={
                             <button
                                 type="button"
-                                onClick={() => { setIsAddingRoot(true); setNodeForm({}); setEditingNodePath(null); }}
+                                onClick={openAddRoot}
                                 className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
                             >
                                 <Plus size={11} />
@@ -533,8 +696,6 @@ const CategoryManager = () => {
                     </PanelHeader>
 
                     <div className="px-3 sm:px-5 py-3 space-y-1.5">
-
-                        {/* Add-root inline form */}
                         {isAddingRoot && (
                             <div className="mb-3">
                                 <NodeForm
@@ -542,7 +703,7 @@ const CategoryManager = () => {
                                     nodeForm={nodeForm}
                                     setNodeForm={setNodeForm}
                                     onSave={saveNode}
-                                    onCancel={() => setIsAddingRoot(false)}
+                                    onCancel={cancelAddRoot}
                                 />
                             </div>
                         )}
@@ -555,7 +716,7 @@ const CategoryManager = () => {
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={() => { setIsAddingRoot(true); setNodeForm({}); }}
+                                    onClick={openAddRoot}
                                     className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline"
                                 >
                                     Add first category →
@@ -580,7 +741,7 @@ const CategoryManager = () => {
                         right={
                             <button
                                 type="button"
-                                onClick={() => { setShowFilterModal(true); setEditingFilterIdx(null); setFilterForm({ key: '', label: '', type: 'checkbox', options: [] }); }}
+                                onClick={openAddFilter}
                                 className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm flex-shrink-0"
                             >
                                 <Plus size={11} />
@@ -593,20 +754,18 @@ const CategoryManager = () => {
                     </PanelHeader>
 
                     <div className="px-3 sm:px-5 py-3 space-y-3">
-
-                        {/* Category selector bar — tighter on mobile */}
                         <div className="flex items-center gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-xl flex-wrap sm:flex-nowrap">
                             <SectionLabel icon={<Layers size={11} />}>Category</SectionLabel>
                             <div className="flex-1 min-w-0">
                                 <Select
                                     value={selectedCatForFilters}
-                                    onValueChange={val => setSelectedCatForFilters(val as Category)}
+                                    onValueChange={handleCatForFiltersChange}
                                 >
                                     <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.values(Category).map(c => (
+                                        {CATEGORY_VALUES.map(c => (
                                             <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -617,7 +776,6 @@ const CategoryManager = () => {
                             </span>
                         </div>
 
-                        {/* Filter cards */}
                         {activeFilters.length === 0 ? (
                             <div className="py-12 flex flex-col items-center gap-3">
                                 <ListFilter size={24} className="text-stone-200" />
@@ -626,46 +784,22 @@ const CategoryManager = () => {
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={() => { setShowFilterModal(true); setFilterForm({ key: '', label: '', type: 'checkbox', options: [] }); }}
+                                    onClick={openAddFilter}
                                     className="text-[10px] font-bold text-teal-600 uppercase tracking-widest hover:underline"
                                 >
                                     Add first filter →
                                 </button>
                             </div>
                         ) : (
-                            // Single column on mobile, 2-col on md+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                 {activeFilters.map((filter, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="group flex items-start justify-between gap-2 px-3 py-3 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150"
-                                    >
-                                        <div className="min-w-0 space-y-1.5 flex-1">
-                                            <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{filter.label}</p>
-                                            <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
-                                                    {filter.key}
-                                                </span>
-                                                <Pill color={filter.type === 'range' ? 'amber' : 'teal'}>
-                                                    {filter.type}
-                                                </Pill>
-                                                {filter.options && filter.options.length > 0 && (
-                                                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                                                        {filter.options.length} opts
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {/* Actions — always visible on mobile, hover on desktop */}
-                                        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
-                                            <ActionBtn onClick={() => { setEditingFilterIdx(idx); setFilterForm(filter); setShowFilterModal(true); }}>
-                                                <Edit size={12} />
-                                            </ActionBtn>
-                                            <ActionBtn danger onClick={() => handleDeleteFilter(idx)}>
-                                                <Trash size={12} />
-                                            </ActionBtn>
-                                        </div>
-                                    </div>
+                                    <FilterCard
+                                        key={`${filter.key}-${idx}`}
+                                        filter={filter}
+                                        idx={idx}
+                                        onEdit={handleEditFilter}
+                                        onDelete={handleDeleteFilter}
+                                    />
                                 ))}
                             </div>
                         )}
@@ -676,7 +810,7 @@ const CategoryManager = () => {
             {/* ══════════════════════════════════════ */}
             {/*  FILTER MODAL                          */}
             {/* ══════════════════════════════════════ */}
-            <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
+            <Dialog open={showFilterModal} onOpenChange={closeFilterModal}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg bg-white border-stone-200 rounded-2xl shadow-xl">
                     <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300 -mt-6 mb-4 rounded-t-2xl" />
                     <DialogHeader className="pb-2">
@@ -690,7 +824,6 @@ const CategoryManager = () => {
                     </DialogHeader>
 
                     <div className="space-y-3 py-1">
-                        {/* Key + Label — side by side on sm+, stacked on mobile */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {[
                                 { label: 'Filter Key', field: 'key', placeholder: 'e.g. specs.brand', mono: true },
@@ -701,7 +834,7 @@ const CategoryManager = () => {
                                     <Input
                                         placeholder={placeholder}
                                         value={(filterForm as any)[field] ?? ''}
-                                        onChange={e => setFilterForm({ ...filterForm, [field]: e.target.value })}
+                                        onChange={handleFilterFieldChange(field)}
                                         className={cn(
                                             'h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-teal-300 focus:ring-teal-500/20 placeholder:text-stone-400',
                                             mono && 'font-mono'
@@ -715,7 +848,7 @@ const CategoryManager = () => {
                             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Filter Type</span>
                             <Select
                                 value={filterForm.type}
-                                onValueChange={val => setFilterForm({ ...filterForm, type: val as 'checkbox' | 'range' })}
+                                onValueChange={handleFilterTypeChange}
                             >
                                 <SelectTrigger className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg">
                                     <SelectValue />
@@ -731,20 +864,14 @@ const CategoryManager = () => {
                             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Options</span>
                             <Textarea
                                 placeholder="AMD, Intel, NVIDIA  (comma-separated)"
-                                value={filterForm.options?.join(', ') || ''}
-                                onChange={e =>
-                                    setFilterForm({
-                                        ...filterForm,
-                                        options: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                                    })
-                                }
+                                value={filterOptionsValue}
+                                onChange={handleFilterOptionsChange}
                                 className="min-h-[72px] text-xs font-medium border-stone-200 bg-stone-50 rounded-lg resize-none focus:bg-white focus:border-teal-300 focus:ring-teal-500/20 placeholder:text-stone-400"
                             />
                             <p className="text-[10px] text-stone-400">Separate values with commas.</p>
                         </div>
                     </div>
 
-                    {/* Full-width buttons on mobile */}
                     <DialogFooter className="gap-2 pt-2 flex-row">
                         <button
                             type="button"
@@ -767,7 +894,7 @@ const CategoryManager = () => {
             {/* ══════════════════════════════════════ */}
             {/*  DELETE CONFIRM MODAL                  */}
             {/* ══════════════════════════════════════ */}
-            <Dialog open={deleteConfirm !== null} onOpenChange={open => { if (!open) setDeleteConfirm(null); }}>
+            <Dialog open={deleteConfirm !== null} onOpenChange={closeDeleteConfirm}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md bg-white border-stone-200 rounded-2xl shadow-xl">
                     <div className="h-0.5 w-full bg-gradient-to-r from-rose-400 via-rose-400 to-rose-300 -mt-6 mb-4 rounded-t-2xl" />
                     <DialogHeader className="pb-2">
@@ -791,7 +918,6 @@ const CategoryManager = () => {
                             )}
                         </DialogDescription>
                     </DialogHeader>
-                    {/* Full-width buttons on mobile */}
                     <DialogFooter className="gap-2 pt-2 flex-row">
                         <button
                             type="button"

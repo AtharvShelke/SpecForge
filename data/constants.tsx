@@ -1,5 +1,5 @@
 import {  OrderStatus, StatusConfig } from "@/types"
-import { Banknote, Box, CheckCheck, Clock, RotateCcw, Send, Truck, XCircle } from "lucide-react";
+import { Banknote, Box, CheckCheck, Clock, Cpu, Gamepad2, RotateCcw, Send, Truck, Video, XCircle } from "lucide-react";
 
 export const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   [OrderStatus.PENDING]: {
@@ -72,3 +72,69 @@ export const NEXT_STATUS_BUTTON: Record<OrderStatus, { label: string; icon: Reac
   [OrderStatus.CANCELLED]: null,
   [OrderStatus.RETURNED]: null,
 };
+
+export const HERO_SLIDES = [
+    {
+        badge: 'Built for Gamers',
+        icon: Gamepad2,
+        headline: 'Win Every',
+        highlight: 'Match',
+        sub: 'High-refresh builds with RTX 40-series GPUs. 4K, 240Hz, zero compromises — made for long sessions.',
+        cta: '/builds/gaming',
+        ctaText: 'Build My Gaming PC',
+        image: '/images/red-pc.jpg',
+        accentColor: 'from-red-500 via-orange-400 to-red-600',
+        accentGlow: 'rgba(239,68,68,0.35)',
+        badgeBg: 'bg-red-500/20 border-red-500/30',
+        badgeText: 'text-red-300',
+        sideLabel: 'Gaming',
+        sideLabelColor: 'text-red-400',
+        stats: [
+            { value: '240Hz', label: 'Max Refresh' },
+            { value: '4K',    label: 'Ready'       },
+            { value: '<1ms',  label: 'Latency'     },
+        ],
+    },
+    {
+        badge: 'Creator Ready',
+        icon: Video,
+        headline: 'Create Without',
+        highlight: 'Lag',
+        sub: 'Smooth timelines, fast renders, instant previews. Built for Premiere, After Effects, Blender and DaVinci.',
+        cta: '/builds/editing',
+        ctaText: 'Build My Creator PC',
+        image: '/images/white-pc.jpg',
+        accentColor: 'from-blue-400 via-cyan-300 to-indigo-500',
+        accentGlow: 'rgba(99,102,241,0.35)',
+        badgeBg: 'bg-indigo-500/20 border-indigo-500/30',
+        badgeText: 'text-indigo-300',
+        sideLabel: 'Creator',
+        sideLabelColor: 'text-indigo-400',
+        stats: [
+            { value: '8K',    label: 'Editing'  },
+            { value: '192GB', label: 'Max RAM'  },
+            { value: 'NVMe',  label: 'Speed'    },
+        ],
+    },
+    {
+        badge: 'Workstation Grade',
+        icon: Cpu,
+        headline: 'Power Without',
+        highlight: 'Limits',
+        sub: 'Run simulations, AI workloads and heavy projects without slowdowns. Built for professionals.',
+        cta: '/builds/workstation',
+        ctaText: 'Build My Workstation',
+        image: '/images/green-pc.jpg',
+        accentColor: 'from-emerald-400 via-teal-300 to-green-500',
+        accentGlow: 'rgba(16,185,129,0.3)',
+        badgeBg: 'bg-emerald-500/20 border-emerald-500/30',
+        badgeText: 'text-emerald-300',
+        sideLabel: 'Workstation',
+        sideLabelColor: 'text-emerald-400',
+        stats: [
+            { value: '128C', label: 'Threads'  },
+            { value: 'ECC',  label: 'Memory'   },
+            { value: 'HEDT', label: 'Platform' },
+        ],
+    },
+] as const

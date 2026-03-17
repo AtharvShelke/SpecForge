@@ -1,23 +1,13 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { Order, OrderStatus } from '@/types';
 import {
   ArrowLeft,
-  Calendar,
-  CheckCircle2,
-  CreditCard,
-  Mail,
-  MapPin,
-  Package,
-  User,
-  AlertCircle,
   Clock,
-  ChevronRight,
   FileText,
   Printer,
-  Download,
   RefreshCw,
   Search,
   Hash,
@@ -27,9 +17,13 @@ import {
   ChevronDown,
   AlertTriangle,
   Trash2,
+  Package,
+  MapPin,
+  User,
+  Mail,
+  CreditCard,
+  AlertCircle,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -37,20 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,8 +40,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -75,20 +53,55 @@ import { generateInvoiceHTML } from '@/lib/invoice';
 import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
 import { ConfirmStatusDialog, DeleteOrderDialog } from '../helper-components/OrderManagerDialogs';
 
-// ─────────────────────────────────────────────────────────────
-// STATUS PILL
-// ─────────────────────────────────────────────────────────────
-const StatusPill = ({ status }: { status: OrderStatus }) => {
-  const map: Record<string, { label: string; cls: string }> = {
-    [OrderStatus.PENDING]: { label: 'Pending', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
-    [OrderStatus.PAID]: { label: 'Paid', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
-    [OrderStatus.PROCESSING]: { label: 'Processing', cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' },
-    [OrderStatus.SHIPPED]: { label: 'Shipped', cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
-    [OrderStatus.DELIVERED]: { label: 'Delivered', cls: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200' },
-    [OrderStatus.CANCELLED]: { label: 'Cancelled', cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' },
-    [OrderStatus.RETURNED]: { label: 'Returned', cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' },
-  };
-  const cfg = map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' };
+/* ─────────────────────────────────────────────────────────────
+   MODULE-LEVEL CONSTANTS — never reallocated on render
+───────────────────────────────────────────────────────────────*/
+
+// Defined once at module scope — StatusPill was recreating this object on every render
+const STATUS_PILL_MAP: Record<string, { label: string; cls: string }> = {
+  [OrderStatus.PENDING]:    { label: 'Pending',    cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
+  [OrderStatus.PAID]:       { label: 'Paid',       cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+  [OrderStatus.PROCESSING]: { label: 'Processing', cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' },
+  [OrderStatus.SHIPPED]:    { label: 'Shipped',    cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
+  [OrderStatus.DELIVERED]:  { label: 'Delivered',  cls: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200' },
+  [OrderStatus.CANCELLED]:  { label: 'Cancelled',  cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' },
+  [OrderStatus.RETURNED]:   { label: 'Returned',   cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' },
+};
+
+const FALLBACK_IMG = 'https://picsum.photos/300/300';
+
+// Stable onError handler — was an inline arrow per <img> per render
+const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  (e.target as HTMLImageElement).src = FALLBACK_IMG;
+};
+
+// Pure function at module scope — called inside useMemo, never re-declared
+function computeFinancials(order: Order) {
+  const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const tax = Math.round(subtotal * 0.18);
+  return { subtotal, tax, total: subtotal + tax };
+}
+
+// Date formatting helpers — avoid repeated option objects in hot render paths
+const DATE_OPTS_SHORT: Intl.DateTimeFormatOptions = {
+  day: 'numeric', month: 'short', year: 'numeric',
+};
+const DATE_OPTS_LONG: Intl.DateTimeFormatOptions = {
+  weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+};
+const TIME_OPTS: Intl.DateTimeFormatOptions = {
+  hour: '2-digit', minute: '2-digit',
+};
+const TIMELINE_DATE_OPTS: Intl.DateTimeFormatOptions = {
+  day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+};
+
+/* ─────────────────────────────────────────────────────────────
+   STATUS PILL — memo prevents re-render when parent re-renders
+   but status hasn't changed
+───────────────────────────────────────────────────────────────*/
+const StatusPill = memo(({ status }: { status: OrderStatus }) => {
+  const cfg = STATUS_PILL_MAP[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' };
   return (
     <span className={cn(
       'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap',
@@ -98,27 +111,26 @@ const StatusPill = ({ status }: { status: OrderStatus }) => {
       {cfg.label}
     </span>
   );
-};
+});
+StatusPill.displayName = 'StatusPill';
 
-// ─────────────────────────────────────────────────────────────
-// SECTION LABEL
-// ─────────────────────────────────────────────────────────────
-const SectionLabel = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
+/* ─────────────────────────────────────────────────────────────
+   SECTION LABEL — pure presentational, memo for safety
+───────────────────────────────────────────────────────────────*/
+const SectionLabel = memo(({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
   <div className="flex items-center gap-1.5">
     <span className="text-stone-400">{icon}</span>
     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">{children}</span>
   </div>
-);
+));
+SectionLabel.displayName = 'SectionLabel';
 
-// ─────────────────────────────────────────────────────────────
-// COLLAPSIBLE SECTION (mobile-friendly accordion)
-// ─────────────────────────────────────────────────────────────
-const CollapsibleSection = ({
-  icon,
-  title,
-  badge,
-  children,
-  defaultOpen = true,
+/* ─────────────────────────────────────────────────────────────
+   COLLAPSIBLE SECTION — memo: only re-renders when children /
+   title / badge change, not on parent order selection changes
+───────────────────────────────────────────────────────────────*/
+const CollapsibleSection = memo(({
+  icon, title, badge, children, defaultOpen = true,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -127,11 +139,13 @@ const CollapsibleSection = ({
   defaultOpen?: boolean;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
+  const toggle = useCallback(() => setOpen(o => !o), []);
+
   return (
     <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
       <button
         className="w-full px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between"
-        onClick={() => setOpen(o => !o)}
+        onClick={toggle}
       >
         <div className="flex items-center gap-2">
           <SectionLabel icon={icon}>{title}</SectionLabel>
@@ -145,20 +159,88 @@ const CollapsibleSection = ({
       {open && <div>{children}</div>}
     </div>
   );
-};
+});
+CollapsibleSection.displayName = 'CollapsibleSection';
 
-// ─────────────────────────────────────────────────────────────
-// MAIN ORDER MANAGER
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────
+   ORDER LIST ROW — memo: skips re-render unless this specific
+   order's data or selection state changes
+───────────────────────────────────────────────────────────────*/
+interface OrderRowProps {
+  order: Order;
+  isSelected: boolean;
+  onClick: (id: string) => void;
+}
+
+const OrderRow = memo(({ order, isSelected, onClick }: OrderRowProps) => {
+  const needsAction = order.status === OrderStatus.PENDING || order.status === OrderStatus.PAID;
+  const handleClick = useCallback(() => onClick(order.id), [order.id, onClick]);
+
+  // Memoize formatted date per row — avoids re-formatting on every parent render
+  const formattedDate = useMemo(
+    () => new Date(order.date).toLocaleDateString('en-IN', DATE_OPTS_SHORT),
+    [order.date],
+  );
+
+  return (
+    <button
+      onClick={handleClick}
+      className={cn(
+        'w-full text-left px-3 py-3 transition-all group relative',
+        isSelected
+          ? 'bg-white border-l-2 border-l-indigo-500'
+          : 'hover:bg-white/70 border-l-2 border-l-transparent'
+      )}
+    >
+      {needsAction && !isSelected && (
+        <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-amber-400" />
+      )}
+      <div className="flex items-center justify-between gap-2 mb-0.5">
+        <span className={cn(
+          'text-[10px] font-mono font-bold tracking-tight truncate',
+          isSelected ? 'text-indigo-600' : 'text-stone-400'
+        )}>
+          {order.id}
+        </span>
+        <StatusPill status={order.status} />
+      </div>
+      <p className={cn(
+        'text-sm font-semibold truncate mb-1 tracking-tight',
+        isSelected ? 'text-stone-900' : 'text-stone-700'
+      )}>
+        {order.customerName}
+      </p>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-stone-400 font-mono tabular-nums">
+          {formattedDate}
+        </span>
+        <span className={cn(
+          'text-sm font-bold tabular-nums font-mono',
+          isSelected ? 'text-stone-900' : 'text-stone-700'
+        )}>
+          ₹{order.total.toLocaleString('en-IN')}
+        </span>
+      </div>
+    </button>
+  );
+});
+OrderRow.displayName = 'OrderRow';
+
+/* ─────────────────────────────────────────────────────────────
+   MAIN ORDER MANAGER
+───────────────────────────────────────────────────────────────*/
 const OrderManager = () => {
-  const { orders, updateOrderStatus, deleteOrder, inventory, adjustStock, refreshOrders, syncData, isLoading } = useAdmin();
+  const {
+    orders, updateOrderStatus, deleteOrder,
+    inventory, syncData, isLoading,
+  } = useAdmin();
 
   // Aggregate inventory by variantId across all warehouses
   const aggregatedInventory = useMemo(() => {
     const variantTotals = new Map<string, { quantity: number; reserved: number; reorderLevel: number; sku?: string }>();
     const arr = Array.isArray(inventory) ? inventory : [];
 
-    arr.forEach(item => {
+    for (const item of arr) {
       const existing = variantTotals.get(item.variantId);
       if (existing) {
         existing.quantity += item.quantity;
@@ -169,10 +251,10 @@ const OrderManager = () => {
           quantity: item.quantity,
           reserved: item.reserved || 0,
           reorderLevel: item.reorderLevel || 0,
-          sku: item.variant?.sku
+          sku: item.variant?.sku,
         });
       }
-    });
+    }
 
     const lookupMap = new Map<string, { quantity: number; reserved: number; reorderLevel: number }>();
     variantTotals.forEach((data, vid) => {
@@ -182,7 +264,11 @@ const OrderManager = () => {
     return lookupMap;
   }, [inventory]);
 
-  const inventoryArray = Array.isArray(inventory) ? inventory : [];
+  // Stable reference — avoids Array.isArray check on every render
+  const inventoryArray = useMemo(
+    () => Array.isArray(inventory) ? inventory : [],
+    [inventory],
+  );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
@@ -197,18 +283,19 @@ const OrderManager = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const sortedOrders = useMemo(() => {
-    return [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [orders]);
+  const sortedOrders = useMemo(
+    () => [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [orders],
+  );
 
   useEffect(() => {
     if (!selectedId && sortedOrders.length > 0) setSelectedId(sortedOrders[0].id);
   }, [sortedOrders, selectedId]);
 
   const filteredOrders = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return sortedOrders.filter(o => {
       const matchStatus = filterStatus === 'All' || o.status === filterStatus;
-      const q = searchQuery.toLowerCase().trim();
       const matchSearch = !q ||
         o.id.toLowerCase().includes(q) ||
         o.customerName.toLowerCase().includes(q) ||
@@ -217,32 +304,55 @@ const OrderManager = () => {
     });
   }, [sortedOrders, filterStatus, searchQuery]);
 
-  const selectedOrder = useMemo(() => {
-    return orders.find(o => o.id === selectedId) ?? sortedOrders[0] ?? null;
-  }, [orders, selectedId, sortedOrders]);
+  const selectedOrder = useMemo(
+    () => orders.find(o => o.id === selectedId) ?? sortedOrders[0] ?? null,
+    [orders, selectedId, sortedOrders],
+  );
 
-  const openConfirmDialog = (orderId: string, newStatus: OrderStatus) => {
+  // Computed once per selected order — was called twice (header + footer) per render
+  const selectedFinancials = useMemo(
+    () => selectedOrder ? computeFinancials(selectedOrder) : null,
+    [selectedOrder],
+  );
+
+  // Count orders needing action once — was two separate inline .filter() calls in JSX
+  const needsActionCount = useMemo(
+    () => sortedOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length,
+    [sortedOrders],
+  );
+
+  // Memoized date strings for selected order detail panel
+  const selectedDateLong = useMemo(
+    () => selectedOrder ? new Date(selectedOrder.date).toLocaleDateString('en-IN', DATE_OPTS_LONG) : '',
+    [selectedOrder],
+  );
+  const selectedTime = useMemo(
+    () => selectedOrder ? new Date(selectedOrder.date).toLocaleTimeString('en-IN', TIME_OPTS) : '',
+    [selectedOrder],
+  );
+
+  /* ── Stable callbacks — none of these are recreated unless deps change ── */
+
+  const openConfirmDialog = useCallback((orderId: string, newStatus: OrderStatus) => {
     setConfirmDialog({ open: true, orderId, newStatus, note: '' });
-  };
+  }, []);
 
-  const confirmStatusUpdate = async () => {
+  const confirmStatusUpdate = useCallback(async () => {
     const { orderId, newStatus } = confirmDialog;
     setIsUpdating(true);
     try {
-      if (updateOrderStatus.constructor.name === 'AsyncFunction') {
-        await updateOrderStatus(orderId, newStatus);
-      } else {
-        updateOrderStatus(orderId, newStatus);
-      }
+      // Removed the pointless constructor.name async check — updateOrderStatus is
+      // always async (it's defined with async in AdminContext); just await it directly
+      await updateOrderStatus(orderId, newStatus);
       setConfirmDialog(d => ({ ...d, open: false }));
     } catch (error) {
       console.error('Failed to update order status', error);
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [confirmDialog, updateOrderStatus]);
 
-  const handleDeleteOrder = async () => {
+  const handleDeleteOrder = useCallback(async () => {
     if (!selectedOrder) return;
     setIsDeleting(true);
     try {
@@ -254,16 +364,16 @@ const OrderManager = () => {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [selectedOrder, deleteOrder]);
 
-  const handlePrintInvoice = () => {
+  const handlePrintInvoice = useCallback(() => {
     if (!selectedOrder) return;
     const html = generateInvoiceHTML(selectedOrder);
     const win = window.open('', '_blank', 'width=900,height=700');
     if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 500); }
-  };
+  }, [selectedOrder]);
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = useCallback(() => {
     if (!selectedOrder) return;
     const html = generateInvoiceHTML(selectedOrder);
     const blob = new Blob([html], { type: 'text/html' });
@@ -271,14 +381,27 @@ const OrderManager = () => {
     const a = document.createElement('a');
     a.href = url; a.download = `Invoice-${selectedOrder.id}.html`; a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [selectedOrder]);
 
-  const calcFinancials = (order: Order) => {
-    const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
-    const tax = Math.round(subtotal * 0.18);
-    const total = subtotal + tax;
-    return { subtotal, tax, total };
-  };
+  const handleRowClick = useCallback((id: string) => {
+    setSelectedId(id);
+    setShowMobileDetail(true);
+  }, []);
+
+  const handleBackClick = useCallback(() => setShowMobileDetail(false), []);
+  const handleOpenDeleteDialog = useCallback(() => setDeleteDialogOpen(true), []);
+
+  const handleOpenConfirmNext = useCallback(() => {
+    if (selectedOrder) openConfirmDialog(selectedOrder.id, STATUS_FLOW[selectedOrder.status][0]);
+  }, [selectedOrder, openConfirmDialog]);
+
+  const handleOpenConfirmReturn = useCallback(() => {
+    if (selectedOrder) openConfirmDialog(selectedOrder.id, OrderStatus.RETURNED);
+  }, [selectedOrder, openConfirmDialog]);
+
+  const handleOpenConfirmCancel = useCallback(() => {
+    if (selectedOrder) openConfirmDialog(selectedOrder.id, OrderStatus.CANCELLED);
+  }, [selectedOrder, openConfirmDialog]);
 
   // ── Empty State ──
   if (sortedOrders.length === 0) {
@@ -313,12 +436,12 @@ const OrderManager = () => {
               <div className="flex items-center gap-2 text-xs text-stone-400">
                 <span className="w-px h-3 bg-stone-200" />
                 <span className="tabular-nums">{sortedOrders.length}</span>
-                {sortedOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length > 0 && (
+                {needsActionCount > 0 && (
                   <>
                     <span className="w-px h-3 bg-stone-200 hidden sm:block" />
                     <span className="hidden sm:flex items-center gap-1 text-amber-600 font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      {sortedOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PAID).length} need action
+                      {needsActionCount} need action
                     </span>
                   </>
                 )}
@@ -330,11 +453,11 @@ const OrderManager = () => {
                 <span className="hidden sm:inline">Live</span>
               </div>
               <button
-                onClick={() => syncData()}
+                onClick={syncData}
                 disabled={isLoading}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
               >
-                <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
+                <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
                 <span className="hidden sm:inline">Sync</span>
               </button>
             </div>
@@ -394,52 +517,14 @@ const OrderManager = () => {
                 </div>
               ) : (
                 <div className="divide-y divide-stone-100">
-                  {filteredOrders.map(order => {
-                    const isSelected = selectedId === order.id;
-                    const needsAction = order.status === OrderStatus.PENDING || order.status === OrderStatus.PAID;
-                    return (
-                      <button
-                        key={order.id}
-                        onClick={() => { setSelectedId(order.id); setShowMobileDetail(true); }}
-                        className={cn(
-                          'w-full text-left px-3 py-3 transition-all group relative',
-                          isSelected
-                            ? 'bg-white border-l-2 border-l-indigo-500'
-                            : 'hover:bg-white/70 border-l-2 border-l-transparent'
-                        )}
-                      >
-                        {needsAction && !isSelected && (
-                          <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-amber-400" />
-                        )}
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span className={cn(
-                            'text-[10px] font-mono font-bold tracking-tight truncate',
-                            isSelected ? 'text-indigo-600' : 'text-stone-400'
-                          )}>
-                            {order.id}
-                          </span>
-                          <StatusPill status={order.status} />
-                        </div>
-                        <p className={cn(
-                          'text-sm font-semibold truncate mb-1 tracking-tight',
-                          isSelected ? 'text-stone-900' : 'text-stone-700'
-                        )}>
-                          {order.customerName}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-stone-400 font-mono tabular-nums">
-                            {new Date(order.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </span>
-                          <span className={cn(
-                            'text-sm font-bold tabular-nums font-mono',
-                            isSelected ? 'text-stone-900' : 'text-stone-700'
-                          )}>
-                            ₹{order.total.toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {filteredOrders.map(order => (
+                    <OrderRow
+                      key={order.id}
+                      order={order}
+                      isSelected={selectedId === order.id}
+                      onClick={handleRowClick}
+                    />
+                  ))}
                 </div>
               )}
             </ScrollArea>
@@ -456,7 +541,7 @@ const OrderManager = () => {
                 {/* Mobile back button */}
                 <button
                   className="lg:hidden flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
-                  onClick={() => setShowMobileDetail(false)}
+                  onClick={handleBackClick}
                 >
                   <ArrowLeft size={13} /> Back to orders
                 </button>
@@ -476,89 +561,86 @@ const OrderManager = () => {
                           <StatusPill status={selectedOrder.status} />
                         </div>
                         <p className="text-[10px] text-stone-400 font-mono tabular-nums">
-                          {new Date(selectedOrder.date).toLocaleDateString('en-IN', {
-                            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-                          })}
+                          {selectedDateLong}
                           {' · '}
-                          {new Date(selectedOrder.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          {selectedTime}
                         </p>
                       </div>
-                      {/* Total amount — visible immediately on mobile */}
+                      {/* Total amount */}
                       <div className="text-right flex-shrink-0">
                         <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">Total</p>
                         <p className="text-base font-extrabold text-stone-900 font-mono tabular-nums">
-                          ₹{calcFinancials(selectedOrder).total.toLocaleString('en-IN')}
+                          ₹{selectedFinancials?.total.toLocaleString('en-IN')}
                         </p>
                       </div>
                     </div>
 
-                    {/* Action Buttons — Mobile Optimized Layout */}
-<div className="flex flex-wrap items-center gap-2 mt-2">
-  
-  {/* Primary Action: Next Status (Full width on very small screens or auto-grow) */}
-  {NEXT_STATUS_BUTTON[selectedOrder.status] && (
-    <button
-      className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 active:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold transition-all shadow-sm shadow-indigo-100"
-      onClick={() => openConfirmDialog(selectedOrder.id, STATUS_FLOW[selectedOrder.status][0])}
-    >
-      {NEXT_STATUS_BUTTON[selectedOrder.status]!.icon}
-      <span>{NEXT_STATUS_BUTTON[selectedOrder.status]!.label}</span>
-    </button>
-  )}
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
 
-  {/* Utility Group: Invoice, Cancel, Return, Delete */}
-  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-    
-    {/* Invoice Dropdown */}
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm">
-          <FileText size={14} /> 
-          <span>Invoice</span>
-          <ChevronDown size={12} className="opacity-50" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48 p-1 bg-white border-stone-200 shadow-xl rounded-xl">
-        <DropdownMenuLabel className="px-3 py-2 text-[10px] text-stone-400 uppercase tracking-widest">Documents</DropdownMenuLabel>
-        <DropdownMenuSeparator className="mx-1 bg-stone-100" />
-        <DropdownMenuItem onClick={handlePrintInvoice} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-xs rounded-lg focus:bg-stone-50 font-medium text-stone-700">
-          <Printer size={14} className="text-stone-400" /> Print Invoice
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+                      {/* Primary Action: Next Status */}
+                      {NEXT_STATUS_BUTTON[selectedOrder.status] && (
+                        <button
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 active:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold transition-all shadow-sm shadow-indigo-100"
+                          onClick={handleOpenConfirmNext}
+                        >
+                          {NEXT_STATUS_BUTTON[selectedOrder.status]!.icon}
+                          <span>{NEXT_STATUS_BUTTON[selectedOrder.status]!.label}</span>
+                        </button>
+                      )}
 
-    {/* Return Button (Conditional) */}
-    {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.RETURNED) &&
-      !STATUS_FLOW[selectedOrder.status].includes(OrderStatus.DELIVERED) && (
-        <button
-          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm"
-          onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.RETURNED)}
-        >
-          <RotateCcw size={14} /> Return
-        </button>
-    )}
+                      {/* Utility Group */}
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
 
-    {/* Danger Zone: Cancel or Delete */}
-    <div className="flex gap-2 w-full sm:w-auto">
-      {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.CANCELLED) && (
-        <button
-          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-50/50 active:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold transition-all"
-          onClick={() => openConfirmDialog(selectedOrder.id, OrderStatus.CANCELLED)}
-        >
-          <XCircle size={14} /> Cancel
-        </button>
-      )}
+                        {/* Invoice Dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm">
+                              <FileText size={14} />
+                              <span>Invoice</span>
+                              <ChevronDown size={12} className="opacity-50" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 p-1 bg-white border-stone-200 shadow-xl rounded-xl">
+                            <DropdownMenuLabel className="px-3 py-2 text-[10px] text-stone-400 uppercase tracking-widest">Documents</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="mx-1 bg-stone-100" />
+                            <DropdownMenuItem onClick={handlePrintInvoice} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-xs rounded-lg focus:bg-stone-50 font-medium text-stone-700">
+                              <Printer size={14} className="text-stone-400" /> Print Invoice
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
 
-      <button
-        className="flex items-center justify-center p-2.5 rounded-xl bg-white active:bg-rose-50 text-rose-400 border border-stone-200 hover:border-rose-200 hover:text-rose-600 transition-all shadow-sm"
-        onClick={() => setDeleteDialogOpen(true)}
-        aria-label="Delete Order"
-      >
-        <Trash2 size={16} />
-      </button>
-    </div>
-  </div>
-</div>
+                        {/* Return Button (Conditional) */}
+                        {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.RETURNED) &&
+                          !STATUS_FLOW[selectedOrder.status].includes(OrderStatus.DELIVERED) && (
+                            <button
+                              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm"
+                              onClick={handleOpenConfirmReturn}
+                            >
+                              <RotateCcw size={14} /> Return
+                            </button>
+                          )}
+
+                        {/* Danger Zone */}
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          {STATUS_FLOW[selectedOrder.status].includes(OrderStatus.CANCELLED) && (
+                            <button
+                              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-50/50 active:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold transition-all"
+                              onClick={handleOpenConfirmCancel}
+                            >
+                              <XCircle size={14} /> Cancel
+                            </button>
+                          )}
+                          <button
+                            className="flex items-center justify-center p-2.5 rounded-xl bg-white active:bg-rose-50 text-rose-400 border border-stone-200 hover:border-rose-200 hover:text-rose-600 transition-all shadow-sm"
+                            onClick={handleOpenDeleteDialog}
+                            aria-label="Delete Order"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Customer Meta — 2-col grid on mobile, 4-col on sm+ */}
                     <div className="mt-3 pt-3 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -578,11 +660,11 @@ const OrderManager = () => {
                                 {selectedOrder.paymentStatus}
                               </span>
                             </span>
-                          )
+                          ),
                         },
                         {
                           icon: <Hash size={11} />, label: 'Items',
-                          value: `${selectedOrder.items.length} item${selectedOrder.items.length !== 1 ? 's' : ''}`
+                          value: `${selectedOrder.items.length} item${selectedOrder.items.length !== 1 ? 's' : ''}`,
                         },
                       ].map(({ icon, label, value }) => (
                         <div key={label}>
@@ -640,7 +722,7 @@ const OrderManager = () => {
                                           src={item.image}
                                           alt={item.name}
                                           className="h-full w-full object-contain"
-                                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }}
+                                          onError={handleImgError}
                                         />
                                       </div>
                                       <div className="min-w-0">
@@ -677,8 +759,12 @@ const OrderManager = () => {
                         {selectedOrder.items.map(item => (
                           <div key={item.id} className="p-3 flex gap-3">
                             <div className="h-12 w-12 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
-                              <img src={item.image} alt={item.name} className="h-full w-full object-contain"
-                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/300/300'; }} />
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-full w-full object-contain"
+                                onError={handleImgError}
+                              />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-stone-800 text-xs tracking-tight leading-tight">{item.name}</p>
@@ -692,30 +778,29 @@ const OrderManager = () => {
                         ))}
                       </div>
 
-                      {/* Financials Footer */}
-                      <div className="px-4 py-3 border-t border-stone-100 bg-stone-50/50">
-                        {(() => {
-                          const { subtotal, tax, total } = calcFinancials(selectedOrder);
-                          return (
-                            <div className="ml-auto max-w-[200px] space-y-1">
-                              {[
-                                { label: 'Subtotal', value: `₹${subtotal.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
-                                { label: 'Shipping', value: 'Free', cls: 'text-emerald-600 font-semibold' },
-                                { label: 'GST (18%)', value: `₹${tax.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
-                              ].map(row => (
-                                <div key={row.label} className="flex justify-between text-xs font-mono tabular-nums">
-                                  <span className="text-stone-400">{row.label}</span>
-                                  <span className={row.cls}>{row.value}</span>
-                                </div>
-                              ))}
-                              <div className="flex justify-between items-center pt-2 border-t border-stone-200 mt-1">
-                                <span className="font-bold text-stone-700 text-xs">Total</span>
-                                <span className="text-sm font-extrabold text-stone-900 font-mono tabular-nums">₹{total.toLocaleString('en-IN')}</span>
+                      {/* Financials Footer — uses memoized selectedFinancials */}
+                      {selectedFinancials && (
+                        <div className="px-4 py-3 border-t border-stone-100 bg-stone-50/50">
+                          <div className="ml-auto max-w-[200px] space-y-1">
+                            {[
+                              { label: 'Subtotal', value: `₹${selectedFinancials.subtotal.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
+                              { label: 'Shipping', value: 'Free', cls: 'text-emerald-600 font-semibold' },
+                              { label: 'GST (18%)', value: `₹${selectedFinancials.tax.toLocaleString('en-IN')}`, cls: 'text-stone-600' },
+                            ].map(row => (
+                              <div key={row.label} className="flex justify-between text-xs font-mono tabular-nums">
+                                <span className="text-stone-400">{row.label}</span>
+                                <span className={row.cls}>{row.value}</span>
                               </div>
+                            ))}
+                            <div className="flex justify-between items-center pt-2 border-t border-stone-200 mt-1">
+                              <span className="font-bold text-stone-700 text-xs">Total</span>
+                              <span className="text-sm font-extrabold text-stone-900 font-mono tabular-nums">
+                                ₹{selectedFinancials.total.toLocaleString('en-IN')}
+                              </span>
                             </div>
-                          );
-                        })()}
-                      </div>
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="p-8 text-center">
@@ -808,9 +893,7 @@ const OrderManager = () => {
                                   )}
                                 </div>
                                 <p className="text-[10px] text-stone-400 font-mono tabular-nums">
-                                  {new Date(log.timestamp).toLocaleString('en-IN', {
-                                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                                  })}
+                                  {new Date(log.timestamp).toLocaleString('en-IN', TIMELINE_DATE_OPTS)}
                                 </p>
                                 {log.note && (
                                   <p className="text-[11px] text-stone-500 mt-1 bg-stone-50 px-2 py-1.5 rounded-lg border border-stone-100 leading-relaxed">

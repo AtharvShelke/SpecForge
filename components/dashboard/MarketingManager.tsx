@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import {
     PlusCircle,
@@ -42,10 +42,10 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 // ─────────────────────────────────────────────────────────────
-// DESIGN-SYSTEM PRIMITIVES  (mirrors Overview / OrderManager)
+// DESIGN-SYSTEM PRIMITIVES — memoized
 // ─────────────────────────────────────────────────────────────
 
-const SectionLabel = ({
+const SectionLabel = memo(({
     icon,
     children,
 }: {
@@ -58,11 +58,23 @@ const SectionLabel = ({
             {children}
         </span>
     </div>
-);
+));
+SectionLabel.displayName = 'SectionLabel';
 
 type Stripe = 'indigo' | 'teal' | 'amber' | 'rose' | 'violet' | 'stone' | 'emerald';
 
-const Panel = ({
+// Hoisted outside component — never recreated on render
+const STRIPE_CLASSES: Record<Stripe, string> = {
+    indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
+    teal: 'from-teal-400 via-emerald-400 to-emerald-300',
+    amber: 'from-amber-400 via-amber-400 to-orange-300',
+    rose: 'from-rose-400 via-rose-400 to-rose-300',
+    violet: 'from-violet-400 via-violet-500 to-indigo-400',
+    stone: 'from-stone-300 via-stone-400 to-stone-300',
+    emerald: 'from-emerald-400 via-emerald-400 to-teal-300',
+};
+
+const Panel = memo(({
     children,
     className,
     stripe,
@@ -70,27 +82,17 @@ const Panel = ({
     children: React.ReactNode;
     className?: string;
     stripe?: Stripe;
-}) => {
-    const stripes: Record<Stripe, string> = {
-        indigo: 'from-indigo-400 via-indigo-500 to-violet-400',
-        teal: 'from-teal-400 via-emerald-400 to-emerald-300',
-        amber: 'from-amber-400 via-amber-400 to-orange-300',
-        rose: 'from-rose-400 via-rose-400 to-rose-300',
-        violet: 'from-violet-400 via-violet-500 to-indigo-400',
-        stone: 'from-stone-300 via-stone-400 to-stone-300',
-        emerald: 'from-emerald-400 via-emerald-400 to-teal-300',
-    };
-    return (
-        <div className={cn('rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden', className)}>
-            {stripe && (
-                <div className={cn('h-0.5 w-full bg-gradient-to-r', stripes[stripe])} />
-            )}
-            {children}
-        </div>
-    );
-};
+}) => (
+    <div className={cn('rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden', className)}>
+        {stripe && (
+            <div className={cn('h-0.5 w-full bg-gradient-to-r', STRIPE_CLASSES[stripe])} />
+        )}
+        {children}
+    </div>
+));
+Panel.displayName = 'Panel';
 
-const PanelHeader = ({
+const PanelHeader = memo(({
     icon,
     children,
     right,
@@ -103,10 +105,10 @@ const PanelHeader = ({
         <SectionLabel icon={icon}>{children}</SectionLabel>
         {right}
     </div>
-);
+));
+PanelHeader.displayName = 'PanelHeader';
 
-// KPI card — exact border-l-4 accent pattern from Overview
-const KpiCard = ({
+const KpiCard = memo(({
     label,
     value,
     sub,
@@ -129,10 +131,10 @@ const KpiCard = ({
         <p className="text-2xl font-extrabold text-stone-900 tabular-nums tracking-tight font-mono">{value}</p>
         <p className={cn('text-[11px] mt-0.5 font-medium', subColor)}>{sub}</p>
     </div>
-);
+));
+KpiCard.displayName = 'KpiCard';
 
-// Status pill — mirrors StatusPill from OrderManager / Overview
-const StatusPill = ({ active }: { active: boolean }) => (
+const StatusPill = memo(({ active }: { active: boolean }) => (
     <span className={cn(
         'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ring-1',
         active
@@ -142,43 +144,232 @@ const StatusPill = ({ active }: { active: boolean }) => (
         <span className={cn('w-1 h-1 rounded-full bg-current', active && 'animate-pulse')} />
         {active ? 'Active' : 'Paused'}
     </span>
-);
+));
+StatusPill.displayName = 'StatusPill';
 
-// Trigger pill
-const TriggerPill = ({ trigger }: { trigger: string }) => {
-    const map: Record<string, string> = {
-        CART_ABANDONED: 'bg-amber-50 text-amber-700 ring-amber-200',
-        NEWSLETTER_SIGNUP: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-    };
-    const cls = map[trigger] ?? 'bg-stone-100 text-stone-600 ring-stone-200';
+// Precompute trigger pill class map outside component
+const TRIGGER_PILL_MAP: Record<string, string> = {
+    CART_ABANDONED: 'bg-amber-50 text-amber-700 ring-amber-200',
+    NEWSLETTER_SIGNUP: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+};
+
+const TriggerPill = memo(({ trigger }: { trigger: string }) => {
+    const cls = TRIGGER_PILL_MAP[trigger] ?? 'bg-stone-100 text-stone-600 ring-stone-200';
     const label = trigger.replace(/_/g, ' ');
     return (
         <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 whitespace-nowrap', cls)}>
             {label}
         </span>
     );
-};
+});
+TriggerPill.displayName = 'TriggerPill';
 
-// Funnel metric mini-cell (used inside campaign rows)
-const MetaChip = ({ label, value }: { label: string; value: React.ReactNode }) => (
+const MetaChip = memo(({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="flex flex-col items-end">
         <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{label}</span>
         <span className="text-sm font-extrabold text-stone-900 font-mono tabular-nums leading-tight">{value}</span>
     </div>
-);
+));
+MetaChip.displayName = 'MetaChip';
 
-// Inline form field label
-const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+const FieldLabel = memo(({ children }: { children: React.ReactNode }) => (
     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em] block mb-1">
         {children}
     </span>
-);
+));
+FieldLabel.displayName = 'FieldLabel';
+
+// ─────────────────────────────────────────────────────────────
+// CAMPAIGN ROW — memoized to prevent full list re-renders
+// ─────────────────────────────────────────────────────────────
+const CampaignRow = memo(({
+    camp,
+    isExpanded,
+    isDeleting,
+    onToggleExpand,
+    onToggle,
+    onDelete,
+}: {
+    camp: any;
+    isExpanded: boolean;
+    isDeleting: boolean;
+    onToggleExpand: (id: string) => void;
+    onToggle: (id: string, isActive: boolean) => void;
+    onDelete: (id: string) => void;
+}) => {
+    const sends = camp._count?.emailLogs ?? 0;
+    const sendsFormatted = sends.toLocaleString();
+    const shortId = String(camp.id).substring(0, 16).toUpperCase();
+
+    const handleExpandClick = useCallback(() => onToggleExpand(camp.id), [onToggleExpand, camp.id]);
+    const handleToggle = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggle(camp.id, camp.isActive);
+    }, [onToggle, camp.id, camp.isActive]);
+    const handleDelete = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDelete(camp.id);
+    }, [onDelete, camp.id]);
+
+    return (
+        <div className="group">
+            <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-stone-50/70 transition-colors duration-150 cursor-pointer">
+                <ChevronRight
+                    size={13}
+                    onClick={handleExpandClick}
+                    className={cn(
+                        'text-stone-300 shrink-0 transition-transform duration-200',
+                        isExpanded && 'rotate-90'
+                    )}
+                />
+                <div className={cn(
+                    'h-8 w-8 rounded-lg flex items-center justify-center shrink-0',
+                    camp.isActive ? 'bg-rose-50 text-rose-500' : 'bg-stone-100 text-stone-400'
+                )}>
+                    <Zap size={14} />
+                </div>
+                <div className="flex-1 min-w-0" onClick={handleExpandClick}>
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{camp.name}</p>
+                        <StatusPill active={camp.isActive} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <TriggerPill trigger={camp.triggerType} />
+                        <span className="flex items-center gap-1 text-[10px] text-stone-400">
+                            <Clock size={9} /> {camp.rulesConfig?.delayHours ?? 0}h delay
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <MetaChip label="Sends" value={sendsFormatted} />
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={handleToggle}
+                            className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+                            title={camp.isActive ? "Pause" : "Resume"}
+                        >
+                            {camp.isActive ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} />}
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="p-1.5 rounded-md hover:bg-rose-50 text-stone-400 hover:text-rose-500 transition-colors"
+                            title="Delete"
+                        >
+                            {isDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {isExpanded && (
+                <div className="px-5 pb-4 ml-[72px] pt-1 border-stone-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                { label: 'Emails Sent', value: sendsFormatted, color: 'text-stone-800' },
+                                { label: 'Delay', value: `${camp.rulesConfig?.delayHours ?? 0}h`, color: 'text-stone-800' },
+                                { label: 'Status', value: camp.isActive ? 'Active' : 'Paused', color: camp.isActive ? 'text-emerald-600' : 'text-stone-500' },
+                            ].map(({ label, value, color }) => (
+                                <div key={label} className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{label}</p>
+                                    <p className={cn('text-sm font-extrabold tabular-nums font-mono mt-0.5', color)}>{value}</p>
+                                </div>
+                            ))}
+                        </div>
+                        {camp.rulesConfig?.subject && (
+                            <div className="flex items-start gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
+                                <Mail size={12} className="text-stone-400 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Email Subject</p>
+                                    <p className="text-xs font-semibold text-stone-700">{camp.rulesConfig.subject}</p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                            <Hash size={10} className="text-stone-300" />
+                            <span className="text-[10px] font-mono font-bold text-stone-400">{shortId}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+});
+CampaignRow.displayName = 'CampaignRow';
+
+// ─────────────────────────────────────────────────────────────
+// ACTIVITY LOG ROW — memoized
+// ─────────────────────────────────────────────────────────────
+const LogRow = memo(({ log }: { log: any }) => {
+    const displayName = log.lead.name || log.lead.email.split('@')[0];
+    const timeStr = new Date(log.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const campaignName = log.campaign?.name || 'Campaign Deleted';
+
+    return (
+        <div className="px-4 py-3 hover:bg-stone-50/50 transition-colors">
+            <div className="flex items-start justify-between gap-2">
+                <div>
+                    <p className="text-[11px] font-bold text-stone-800 leading-tight">
+                        Sent to {displayName}
+                    </p>
+                    <p className="text-[10px] font-medium text-stone-400 truncate w-40">
+                        {log.subject}
+                    </p>
+                </div>
+                <div className="text-right shrink-0">
+                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-1 rounded">SENT</span>
+                    <p className="text-[9px] text-stone-400 font-mono mt-1">{timeStr}</p>
+                </div>
+            </div>
+            <div className="mt-1.5 flex items-center gap-1">
+                <Zap size={9} className="text-rose-400" />
+                <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">
+                    {campaignName}
+                </span>
+            </div>
+        </div>
+    );
+});
+LogRow.displayName = 'LogRow';
+
+// ─────────────────────────────────────────────────────────────
+// LEAD ROW — memoized
+// ─────────────────────────────────────────────────────────────
+const LeadRow = memo(({ lead }: { lead: any }) => (
+    <tr className="hover:bg-stone-50/50">
+        <td className="px-5 py-3">
+            <p className="text-xs font-bold text-stone-800 tracking-tight">{lead.name || 'Anonymous'}</p>
+            <p className="text-[10px] text-stone-400 font-mono">{lead.email}</p>
+        </td>
+        <td className="px-5 py-3">
+            <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-md uppercase">{lead.source || 'Direct'}</span>
+        </td>
+        <td className="px-5 py-3">
+            {lead.customerId ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase">
+                    <CheckCircle2 size={10} /> Converted
+                </span>
+            ) : (
+                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tight">Active Lead</span>
+            )}
+        </td>
+        <td className="px-5 py-3 text-right">
+            <div className="flex flex-col items-end">
+                <p className="text-xs font-extrabold text-stone-700 font-mono tracking-tighter">{lead._count.events} events</p>
+                <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">{lead._count.logs} emails</p>
+            </div>
+        </td>
+    </tr>
+));
+LeadRow.displayName = 'LeadRow';
 
 // ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 
-export const MarketingManager = () => {
+const MarketingManager = () => {
     const { toast } = useToast();
     const {
         marketingStats: stats,
@@ -195,6 +386,7 @@ export const MarketingManager = () => {
     const [activeView, setActiveView] = useState<'campaigns' | 'leads' | 'contacts'>('campaigns');
     const [searchQuery, setSearchQuery] = useState('');
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         name: '',
@@ -210,7 +402,7 @@ export const MarketingManager = () => {
         return () => clearTimeout(delaySearch);
     }, [searchQuery, activeView, refreshMarketing]);
 
-    const handleCreateCampaign = async () => {
+    const handleCreateCampaign = useCallback(async () => {
         try {
             const res = await fetch('/api/marketing/campaigns', {
                 method: 'POST',
@@ -236,9 +428,9 @@ export const MarketingManager = () => {
         } catch {
             toast({ title: 'Error', description: 'Error creating campaign', variant: 'destructive' });
         }
-    };
+    }, [form, toast, refreshMarketing]);
 
-    const toggleCampaign = async (id: string, currentStatus: boolean) => {
+    const toggleCampaign = useCallback(async (id: string, currentStatus: boolean) => {
         try {
             const res = await fetch(`/api/marketing/campaigns/${id}`, {
                 method: 'PATCH',
@@ -250,9 +442,9 @@ export const MarketingManager = () => {
                 refreshMarketing();
             }
         } catch (e) { console.error(e); }
-    };
+    }, [toast, refreshMarketing]);
 
-    const deleteCampaign = async (id: string) => {
+    const deleteCampaign = useCallback(async (id: string) => {
         if (!confirm('Are you sure you want to delete this campaign?')) return;
         setIsDeleting(id);
         try {
@@ -263,16 +455,61 @@ export const MarketingManager = () => {
             }
         } catch (e) { console.error(e); }
         finally { setIsDeleting(null); }
-    };
+    }, [toast, refreshMarketing]);
 
-    const activeCampaigns = campaigns.filter(c => c.isActive).length;
+    const handleToggleExpand = useCallback((id: string) => {
+        setExpandedId(prev => prev === id ? null : id);
+    }, []);
+
+    // Stable view switchers
+    const setViewCampaigns = useCallback(() => setActiveView('campaigns'), []);
+    const setViewLeads = useCallback(() => setActiveView('leads'), []);
+    const setViewContacts = useCallback(() => setActiveView('contacts'), []);
+
+    const handleSyncData = useCallback(() => syncData(), [syncData]);
+    const handleOpenCreate = useCallback(() => setIsCreateOpen(true), []);
+    const handleCloseCreate = useCallback(() => setIsCreateOpen(false), []);
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value), []);
+
+    // Stable form field handlers — avoids new object per keystroke
+    const handleFormName = useCallback((e: React.ChangeEvent<HTMLInputElement>) =>
+        setForm(prev => ({ ...prev, name: e.target.value })), []);
+    const handleFormTrigger = useCallback((v: string) =>
+        setForm(prev => ({ ...prev, triggerType: v })), []);
+    const handleFormDelay = useCallback((e: React.ChangeEvent<HTMLInputElement>) =>
+        setForm(prev => ({ ...prev, delayHours: e.target.value })), []);
+    const handleFormSubject = useCallback((e: React.ChangeEvent<HTMLInputElement>) =>
+        setForm(prev => ({ ...prev, subject: e.target.value })), []);
+
+    // Copy handlers
+    const handleCopyEmails = useCallback(() => {
+        navigator.clipboard.writeText(allContacts?.emails.join('\n') || '');
+        toast({ title: 'Emails copied', description: `${allContacts?.counts.emails} emails copied to clipboard.` });
+    }, [allContacts, toast]);
+    const handleCopyPhones = useCallback(() => {
+        navigator.clipboard.writeText(allContacts?.phoneNumbers.join('\n') || '');
+        toast({ title: 'Phone numbers copied', description: `${allContacts?.counts.phoneNumbers} phone numbers copied to clipboard.` });
+    }, [allContacts, toast]);
+
+    // Derived values — computed once per relevant change
+    const activeCampaigns = useMemo(() => campaigns.filter(c => c.isActive).length, [campaigns]);
     const convRate = stats?.conversionRate ?? '0.0';
-    const convColor =
-        parseFloat(convRate) >= 10 ? 'text-emerald-600'
-            : parseFloat(convRate) >= 5 ? 'text-amber-600'
-                : 'text-stone-400';
+    const convRateFloat = parseFloat(convRate as string);
+    const convColor = convRateFloat >= 10 ? 'text-emerald-600' : convRateFloat >= 5 ? 'text-amber-600' : 'text-stone-400';
+    const totalEmailsSent = useMemo(() =>
+        campaigns.reduce((s: number, c: any) => s + (c._count?.emailLogs ?? 0), 0),
+        [campaigns]
+    );
+    const triggerDistribution = useMemo(() => {
+        const acc: Record<string, number> = {};
+        for (const c of campaigns) {
+            const type = c.triggerType || 'UNKNOWN';
+            acc[type] = (acc[type] || 0) + 1;
+        }
+        return Object.entries(acc);
+    }, [campaigns]);
 
-    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const canSubmitForm = form.name && form.triggerType;
 
     // ── Full-page loading skeleton ──
     if (isLoading && campaigns.length === 0) {
@@ -306,7 +543,7 @@ export const MarketingManager = () => {
                     {/* View Switcher */}
                     <div className="flex items-center bg-stone-100 p-0.5 rounded-lg mr-2">
                         <button
-                            onClick={() => setActiveView('campaigns')}
+                            onClick={setViewCampaigns}
                             className={cn(
                                 "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all",
                                 activeView === 'campaigns' ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
@@ -315,7 +552,7 @@ export const MarketingManager = () => {
                             Campaigns
                         </button>
                         <button
-                            onClick={() => setActiveView('leads')}
+                            onClick={setViewLeads}
                             className={cn(
                                 "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all",
                                 activeView === 'leads' ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
@@ -324,7 +561,7 @@ export const MarketingManager = () => {
                             Leads
                         </button>
                         <button
-                            onClick={() => setActiveView('contacts')}
+                            onClick={setViewContacts}
                             className={cn(
                                 "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all",
                                 activeView === 'contacts' ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
@@ -336,7 +573,7 @@ export const MarketingManager = () => {
 
                     <button
                         type="button"
-                        onClick={() => syncData()}
+                        onClick={handleSyncData}
                         disabled={isLoading}
                         className="h-7 px-3 flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-all shadow-sm text-[10px] font-bold uppercase tracking-widest disabled:opacity-50"
                     >
@@ -348,7 +585,7 @@ export const MarketingManager = () => {
                     </div>
                     <button
                         type="button"
-                        onClick={() => setIsCreateOpen(true)}
+                        onClick={handleOpenCreate}
                         className="flex items-center gap-1.5 h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
                     >
                         <PlusCircle size={11} /> New Campaign
@@ -376,7 +613,7 @@ export const MarketingManager = () => {
                 <KpiCard
                     label="Emails Sent"
                     value={(stats?.emailsSent ?? 0).toLocaleString()}
-                    sub={`${campaigns.reduce((s: number, c: any) => s + (c._count?.emailLogs ?? 0), 0)} logged actions`}
+                    sub={`${totalEmailsSent} logged actions`}
                     icon={<Mail size={14} />}
                     accent="border-l-indigo-400"
                 />
@@ -386,8 +623,8 @@ export const MarketingManager = () => {
                     sub="Leads → customers"
                     icon={<BarChart3 size={14} />}
                     accent={
-                        parseFloat(convRate) >= 10 ? 'border-l-emerald-400'
-                            : parseFloat(convRate) >= 5 ? 'border-l-amber-400'
+                        convRateFloat >= 10 ? 'border-l-emerald-400'
+                            : convRateFloat >= 5 ? 'border-l-amber-400'
                                 : 'border-l-stone-300'
                     }
                     subColor={convColor}
@@ -417,7 +654,7 @@ export const MarketingManager = () => {
                                     <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">No campaigns yet</p>
                                     <button
                                         type="button"
-                                        onClick={() => setIsCreateOpen(true)}
+                                        onClick={handleOpenCreate}
                                         className="text-[10px] font-bold text-rose-600 uppercase tracking-widest hover:underline"
                                     >
                                         Build your first funnel →
@@ -425,109 +662,21 @@ export const MarketingManager = () => {
                                 </div>
                             ) : (
                                 <div className="divide-y divide-stone-100">
-                                    {campaigns.map(camp => {
-                                        const isExpanded = expandedId === camp.id;
-                                        const sends = camp._count?.emailLogs ?? 0;
-
-                                        return (
-                                            <div key={camp.id} className="group">
-                                                <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-stone-50/70 transition-colors duration-150 cursor-pointer">
-                                                    <ChevronRight
-                                                        size={13}
-                                                        onClick={() => setExpandedId(isExpanded ? null : camp.id)}
-                                                        className={cn(
-                                                            'text-stone-300 shrink-0 transition-transform duration-200',
-                                                            isExpanded && 'rotate-90'
-                                                        )}
-                                                    />
-                                                    <div className={cn(
-                                                        'h-8 w-8 rounded-lg flex items-center justify-center shrink-0',
-                                                        camp.isActive ? 'bg-rose-50 text-rose-500' : 'bg-stone-100 text-stone-400'
-                                                    )}>
-                                                        <Zap size={14} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0" onClick={() => setExpandedId(isExpanded ? null : camp.id)}>
-                                                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                                            <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{camp.name}</p>
-                                                            <StatusPill active={camp.isActive} />
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <TriggerPill trigger={camp.triggerType} />
-                                                            <span className="flex items-center gap-1 text-[10px] text-stone-400">
-                                                                <Clock size={9} /> {camp.rulesConfig?.delayHours ?? 0}h delay
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-3">
-                                                        <MetaChip label="Sends" value={sends.toLocaleString()} />
-                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    toggleCampaign(camp.id, camp.isActive);
-                                                                }}
-                                                                className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
-                                                                title={camp.isActive ? "Pause" : "Resume"}
-                                                            >
-                                                                {camp.isActive ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} />}
-                                                            </button>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    deleteCampaign(camp.id);
-                                                                }}
-                                                                disabled={isDeleting === camp.id}
-                                                                className="p-1.5 rounded-md hover:bg-rose-50 text-stone-400 hover:text-rose-500 transition-colors"
-                                                                title="Delete"
-                                                            >
-                                                                {isDeleting === camp.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {isExpanded && (
-                                                    <div className="px-5 pb-4 ml-[72px] pt-1 border-stone-100 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                        <div className="space-y-3">
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                {[
-                                                                    { label: 'Emails Sent', value: sends.toLocaleString(), color: 'text-stone-800' },
-                                                                    { label: 'Delay', value: `${camp.rulesConfig?.delayHours ?? 0}h`, color: 'text-stone-800' },
-                                                                    { label: 'Status', value: camp.isActive ? 'Active' : 'Paused', color: camp.isActive ? 'text-emerald-600' : 'text-stone-500' },
-                                                                ].map(({ label, value, color }) => (
-                                                                    <div key={label} className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                                                                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{label}</p>
-                                                                        <p className={cn('text-sm font-extrabold tabular-nums font-mono mt-0.5', color)}>{value}</p>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                            {camp.rulesConfig?.subject && (
-                                                                <div className="flex items-start gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg">
-                                                                    <Mail size={12} className="text-stone-400 mt-0.5 shrink-0" />
-                                                                    <div>
-                                                                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Email Subject</p>
-                                                                        <p className="text-xs font-semibold text-stone-700">{camp.rulesConfig.subject}</p>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Hash size={10} className="text-stone-300" />
-                                                                <span className="text-[10px] font-mono font-bold text-stone-400">
-                                                                    {String(camp.id).substring(0, 16).toUpperCase()}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                    {campaigns.map(camp => (
+                                        <CampaignRow
+                                            key={camp.id}
+                                            camp={camp}
+                                            isExpanded={expandedId === camp.id}
+                                            isDeleting={isDeleting === camp.id}
+                                            onToggleExpand={handleToggleExpand}
+                                            onToggle={toggleCampaign}
+                                            onDelete={deleteCampaign}
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </Panel>
                     ) : activeView === 'leads' ? (
-                        /* ── LEADS VIEW ── */
                         <Panel stripe="indigo">
                             <PanelHeader
                                 icon={<Users size={12} />}
@@ -538,7 +687,7 @@ export const MarketingManager = () => {
                                             type="text"
                                             placeholder="Search leads..."
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onChange={handleSearchChange}
                                             className="w-full bg-white border border-stone-200 rounded-lg pl-8 pr-3 py-1 text-[10px] font-bold tracking-tight focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                         />
                                     </div>
@@ -563,37 +712,13 @@ export const MarketingManager = () => {
                                             </tr>
                                         )}
                                         {leadsData.items.map(lead => (
-                                            <tr key={lead.id} className="hover:bg-stone-50/50">
-                                                <td className="px-5 py-3">
-                                                    <p className="text-xs font-bold text-stone-800 tracking-tight">{lead.name || 'Anonymous'}</p>
-                                                    <p className="text-[10px] text-stone-400 font-mono">{lead.email}</p>
-                                                </td>
-                                                <td className="px-5 py-3">
-                                                    <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-md uppercase">{lead.source || 'Direct'}</span>
-                                                </td>
-                                                <td className="px-5 py-3">
-                                                    {lead.customerId ? (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase">
-                                                            <CheckCircle2 size={10} /> Converted
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tight">Active Lead</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-5 py-3 text-right">
-                                                    <div className="flex flex-col items-end">
-                                                        <p className="text-xs font-extrabold text-stone-700 font-mono tracking-tighter">{lead._count.events} events</p>
-                                                        <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">{lead._count.logs} emails</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                            <LeadRow key={lead.id} lead={lead} />
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
                         </Panel>
                     ) : (
-                        /* ── ALL CONTACTS VIEW ── */
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Panel stripe="stone">
@@ -601,10 +726,7 @@ export const MarketingManager = () => {
                                         icon={<Users size={12} />}
                                         right={
                                             <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(allContacts?.emails.join('\n') || '');
-                                                    toast({ title: 'Emails copied', description: `${allContacts?.counts.emails} emails copied to clipboard.` });
-                                                }}
+                                                onClick={handleCopyEmails}
                                                 className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline px-2 py-0.5"
                                             >
                                                 Copy All
@@ -632,10 +754,7 @@ export const MarketingManager = () => {
                                         icon={<Hash size={12} />}
                                         right={
                                             <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(allContacts?.phoneNumbers.join('\n') || '');
-                                                    toast({ title: 'Phone numbers copied', description: `${allContacts?.counts.phoneNumbers} phone numbers copied to clipboard.` });
-                                                }}
+                                                onClick={handleCopyPhones}
                                                 className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline px-2 py-0.5"
                                             >
                                                 Copy All
@@ -661,7 +780,7 @@ export const MarketingManager = () => {
                         </div>
                     )}
 
-                    {/* Funnel Health Mini (moved here for responsive sync) */}
+                    {/* Funnel Health Mini */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Panel stripe="emerald">
                             <PanelHeader icon={<TrendingUp size={12} />}>Funnel Health</PanelHeader>
@@ -672,7 +791,10 @@ export const MarketingManager = () => {
                                         <span className={cn('text-sm font-extrabold font-mono tabular-nums', convColor)}>{convRate}%</span>
                                     </div>
                                     <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
-                                        <div className={cn('h-full rounded-full transition-all', parseFloat(convRate) >= 10 ? 'bg-emerald-400' : parseFloat(convRate) >= 5 ? 'bg-amber-400' : 'bg-stone-300')} style={{ width: `${Math.min(100, parseFloat(convRate) * 5)}%` }} />
+                                        <div
+                                            className={cn('h-full rounded-full transition-all', convRateFloat >= 10 ? 'bg-emerald-400' : convRateFloat >= 5 ? 'bg-amber-400' : 'bg-stone-300')}
+                                            style={{ width: `${Math.min(100, convRateFloat * 5)}%` }}
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -680,12 +802,10 @@ export const MarketingManager = () => {
                         <Panel stripe="amber">
                             <PanelHeader icon={<Activity size={12} />}>Trigger Distribution</PanelHeader>
                             <div className="px-4 py-3 space-y-2">
-                                {campaigns.length === 0 ? <p className="py-2 text-center text-[10px] font-bold text-stone-300 uppercase tracking-widest">No data</p> : (
-                                    Object.entries(campaigns.reduce((acc: Record<string, number>, c: any) => {
-                                        const type = c.triggerType || 'UNKNOWN';
-                                        acc[type] = (acc[type] || 0) + 1;
-                                        return acc;
-                                    }, {})).map(([trigger, count]) => (
+                                {campaigns.length === 0 ? (
+                                    <p className="py-2 text-center text-[10px] font-bold text-stone-300 uppercase tracking-widest">No data</p>
+                                ) : (
+                                    triggerDistribution.map(([trigger, count]) => (
                                         <div key={trigger} className="flex items-center justify-between gap-2">
                                             <span className="text-[10px] font-bold text-stone-600 tracking-widest">{trigger.replace(/_/g, ' ')}</span>
                                             <span className="text-xs font-bold text-stone-600 font-mono">{count as number}</span>
@@ -715,30 +835,7 @@ export const MarketingManager = () => {
                             ) : (
                                 <div className="divide-y divide-stone-50">
                                     {logs.map(log => (
-                                        <div key={log.id} className="px-4 py-3 hover:bg-stone-50/50 transition-colors">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <p className="text-[11px] font-bold text-stone-800 leading-tight">
-                                                        Sent to {log.lead.name || log.lead.email.split('@')[0]}
-                                                    </p>
-                                                    <p className="text-[10px] font-medium text-stone-400 truncate w-40">
-                                                        {log.subject}
-                                                    </p>
-                                                </div>
-                                                <div className="text-right shrink-0">
-                                                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-1 rounded">SENT</span>
-                                                    <p className="text-[9px] text-stone-400 font-mono mt-1">
-                                                        {new Date(log.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-1.5 flex items-center gap-1">
-                                                <Zap size={9} className="text-rose-400" />
-                                                <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">
-                                                    {log.campaign?.name || 'Campaign Deleted'}
-                                                </span>
-                                            </div>
-                                        </div>
+                                        <LogRow key={log.id} log={log} />
                                     ))}
                                 </div>
                             )}
@@ -747,9 +844,7 @@ export const MarketingManager = () => {
                 </div>
             </div>
 
-            {/* ══════════════════════════════════════ */}
-            {/*  CREATE CAMPAIGN MODAL                 */}
-            {/* ══════════════════════════════════════ */}
+            {/* ── CREATE CAMPAIGN MODAL ── */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent className="sm:max-w-md bg-white border-stone-200 rounded-2xl shadow-xl">
                     <div className="h-0.5 w-full bg-gradient-to-r from-rose-400 via-rose-500 to-orange-400 -mt-6 mb-5 rounded-t-2xl" />
@@ -762,12 +857,17 @@ export const MarketingManager = () => {
                     <div className="space-y-3 py-1">
                         <div>
                             <FieldLabel>Campaign Name</FieldLabel>
-                            <Input placeholder="e.g. Abandoned Cart Recovery" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-8 text-xs bg-stone-50 rounded-lg focus:bg-white focus:border-rose-300" />
+                            <Input
+                                placeholder="e.g. Abandoned Cart Recovery"
+                                value={form.name}
+                                onChange={handleFormName}
+                                className="h-8 text-xs bg-stone-50 rounded-lg focus:bg-white focus:border-rose-300"
+                            />
                         </div>
 
                         <div>
                             <FieldLabel>Trigger Event</FieldLabel>
-                            <Select value={form.triggerType} onValueChange={v => setForm({ ...form, triggerType: v })}>
+                            <Select value={form.triggerType} onValueChange={handleFormTrigger}>
                                 <SelectTrigger className="h-8 text-xs bg-stone-50 rounded-lg">
                                     <SelectValue placeholder="Select a trigger…" />
                                 </SelectTrigger>
@@ -783,21 +883,50 @@ export const MarketingManager = () => {
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <FieldLabel>Delay (Hours)</FieldLabel>
-                                <Input type="number" min="0" value={form.delayHours} onChange={e => setForm({ ...form, delayHours: e.target.value })} className="h-8 text-xs font-mono bg-stone-50 rounded-lg" />
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    value={form.delayHours}
+                                    onChange={handleFormDelay}
+                                    className="h-8 text-xs font-mono bg-stone-50 rounded-lg"
+                                />
                             </div>
                             <div>
                                 <FieldLabel>Subject Line</FieldLabel>
-                                <Input placeholder="You left something…" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} className="h-8 text-xs bg-stone-50 rounded-lg" />
+                                <Input
+                                    placeholder="You left something…"
+                                    value={form.subject}
+                                    onChange={handleFormSubject}
+                                    className="h-8 text-xs bg-stone-50 rounded-lg"
+                                />
                             </div>
                         </div>
                     </div>
 
                     <DialogFooter className="gap-2 pt-3">
-                        <button type="button" onClick={() => setIsCreateOpen(false)} className="h-8 px-4 text-[10px] font-bold uppercase border text-stone-500 rounded-lg hover:bg-stone-50">Cancel</button>
-                        <button type="button" onClick={handleCreateCampaign} disabled={!form.name || !form.triggerType} className={cn('h-8 px-4 text-[10px] font-bold uppercase rounded-lg shadow-sm flex items-center gap-1.5', form.name && form.triggerType ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-stone-100 text-stone-400')}>{isLoading ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />} Create & Activate</button>
+                        <button
+                            type="button"
+                            onClick={handleCloseCreate}
+                            className="h-8 px-4 text-[10px] font-bold uppercase border text-stone-500 rounded-lg hover:bg-stone-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCreateCampaign}
+                            disabled={!canSubmitForm}
+                            className={cn(
+                                'h-8 px-4 text-[10px] font-bold uppercase rounded-lg shadow-sm flex items-center gap-1.5',
+                                canSubmitForm ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-stone-100 text-stone-400'
+                            )}
+                        >
+                            {isLoading ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />} Create & Activate
+                        </button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
     );
 };
+
+export default MarketingManager;

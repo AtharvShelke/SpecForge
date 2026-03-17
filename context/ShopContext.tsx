@@ -1,342 +1,338 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import {
-  CartItem, Product, CategoryNode, Brand, Category,
-  Order, CategoryFilterConfig,
+    createContext, useContext, useState, useEffect,
+    useRef, useCallback, useMemo, type ReactNode,
+} from 'react';
+import {
+    CartItem, Product, CategoryNode, Brand,
+    Order, CategoryFilterConfig,
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 interface ShopContextType {
-  // Cart
-  cart: CartItem[];
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
-  loadCart: (items: CartItem[]) => void;
-  cartTotal: number;
-  isCartOpen: boolean;
-  setCartOpen: (isOpen: boolean) => void;
-
-  // Compare
-  compareItems: Product[];
-  addToCompare: (product: Product) => void;
-  removeFromCompare: (productId: string) => void;
-
-  // Catalog
-  products: Product[];
-  refreshProducts: () => Promise<void>;
-  categories: CategoryNode[];
-  refreshCategories: () => Promise<void>;
-  brands: Brand[];
-  refreshBrands: () => Promise<void>;
-
-  // Orders (User-facing)
-  orders: Order[];
-  refreshOrders: (email?: string) => Promise<void>;
-
-
-
-  // Filter Configs (for storefront sidebar)
-  filterConfigs: CategoryFilterConfig[];
-  refreshFilterConfigs: () => Promise<void>;
-
-  // Checkout
-  placeOrder: (customerName: string, email: string) => void;
-
-
-  // Global Loading State
-  isLoading: boolean;
+    cart:                 CartItem[];
+    addToCart:            (product: Product) => void;
+    removeFromCart:       (productId: string) => void;
+    updateQuantity:       (productId: string, quantity: number) => void;
+    clearCart:            () => void;
+    loadCart:             (items: CartItem[]) => void;
+    cartTotal:            number;
+    isCartOpen:           boolean;
+    setCartOpen:          (isOpen: boolean) => void;
+    compareItems:         Product[];
+    addToCompare:         (product: Product) => void;
+    removeFromCompare:    (productId: string) => void;
+    products:             Product[];
+    refreshProducts:      () => Promise<void>;
+    categories:           CategoryNode[];
+    refreshCategories:    () => Promise<void>;
+    brands:               Brand[];
+    refreshBrands:        () => Promise<void>;
+    orders:               Order[];
+    refreshOrders:        (email?: string) => Promise<void>;
+    filterConfigs:        CategoryFilterConfig[];
+    refreshFilterConfigs: () => Promise<void>;
+    placeOrder:           (customerName: string, email: string) => void;
+    isLoading:            boolean;
 }
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const CART_KEY    = 'nexus_cart';
+const COMPARE_KEY = 'nexus_compare';
+
+// Reads from localStorage safely — returns null on SSR or parse failure
+function readStorage<T>(key: string): T | null {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? (JSON.parse(raw) as T) : null;
+    } catch {
+        return null;
+    }
+}
+
+// ── Context ───────────────────────────────────────────────────────────────────
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
+// ── ShopProvider ──────────────────────────────────────────────────────────────
+
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+    const { toast }  = useToast();
+    const pathname   = usePathname();
 
-  // --- STATE ---
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<CategoryNode[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [compareItems, setCompareItems] = useState<Product[]>([]);
-  const [isCartOpen, setCartOpen] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
+    const [isLoading,    setIsLoading]    = useState(true);
+    const [products,     setProducts]     = useState<Product[]>([]);
+    const [categories,   setCategories]   = useState<CategoryNode[]>([]);
+    const [brands,       setBrands]       = useState<Brand[]>([]);
+    const [cart,         setCart]         = useState<CartItem[]>([]);
+    const [compareItems, setCompareItems] = useState<Product[]>([]);
+    const [isCartOpen,   setCartOpen]     = useState(false);
+    const [orders,       setOrders]       = useState<Order[]>([]);
+    const [filterConfigs,setFilterConfigs]= useState<CategoryFilterConfig[]>([]);
 
-  const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
+    // ── Refresh functions ─────────────────────────────────────────────────────
+    // Each has an empty dep array — they only call stable setter functions.
 
-  // --- REFRESH FUNCTIONS ---
-
-  const refreshProducts = useCallback(async () => {
-    try {
-      const res = await fetch('/api/products?limit=1000');
-      const data = await res.json();
-      if (data.products) setProducts(data.products);
-    } catch (err) {
-      console.error('Failed to fetch products:', err);
-    }
-  }, []);
-
-  const refreshCategories = useCallback(async () => {
-    try {
-      const res = await fetch('/api/categories/hierarchy');
-      const data = await res.json();
-      setCategories(data);
-    } catch (err) {
-      console.error('Failed to fetch categories:', err);
-    }
-  }, []);
-
-  const refreshBrands = useCallback(async () => {
-    try {
-      const res = await fetch('/api/brands');
-      const data = await res.json();
-      setBrands(data);
-    } catch (err) {
-      console.error('Failed to fetch brands:', err);
-    }
-  }, []);
-
-
-  const refreshOrders = useCallback(async (email?: string) => {
-    try {
-      const url = email ? `/api/orders?email=${encodeURIComponent(email)}` : '/api/orders';
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.orders) setOrders(data.orders);
-    } catch (err) {
-      console.error('Failed to fetch orders:', err);
-    }
-  }, []);
-
-  const refreshFilterConfigs = useCallback(async () => {
-    try {
-      const res = await fetch('/api/categories/filters');
-      const data = await res.json();
-      setFilterConfigs(data);
-    } catch (err) {
-      console.error('Failed to fetch filter configs:', err);
-    }
-  }, []);
-
-  const pathname = usePathname();
-  const hasInitialized = React.useRef(false);
-
-  // --- INITIAL FETCH (Once on mount, skipped for admin) ---
-  useEffect(() => {
-    if (pathname?.startsWith('/admin')) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Only fetch once — not on every navigation
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    const init = async () => {
-      setIsLoading(true);
-      try {
-        await Promise.all([
-          refreshProducts(),
-          refreshCategories(),
-          refreshBrands(),
-          refreshFilterConfigs(),
-        ]);
-      } catch (err) {
-        console.error('Failed to initialize shop data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    init();
-
-    // Load persisted state
-    try {
-      const savedCart = localStorage.getItem('nexus_cart');
-      if (savedCart) setCart(JSON.parse(savedCart));
-
-      const savedCompare = localStorage.getItem('nexus_compare');
-      if (savedCompare) setCompareItems(JSON.parse(savedCompare));
-    } catch (err) {
-      console.error('Failed to load persisted state:', err);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // --- PERSIST STATE ---
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('nexus_cart', JSON.stringify(cart));
-    }
-  }, [cart, isLoading]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('nexus_compare', JSON.stringify(compareItems));
-    }
-  }, [compareItems, isLoading]);
-
-  // --- CART ACTIONS ---
-
-  const addToCart = useCallback((product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      const isOut = product.variants?.[0]?.status === 'OUT_OF_STOCK';
-
-      if (existing) {
-        if (isOut) {
-          setTimeout(() => toast({
-            title: "Out of stock",
-            description: `This product is no longer available.`,
-            variant: "destructive",
-          }), 0);
-          return prev;
+    const refreshProducts = useCallback(async () => {
+        try {
+            const res  = await fetch('/api/products?limit=1000');
+            const data = await res.json();
+            if (data.products) setProducts(data.products);
+        } catch (err) {
+            console.error('Failed to fetch products:', err);
         }
-        setTimeout(() => toast({ title: "Added to cart", description: `${product.name} quantity updated.` }), 0);
-        return prev.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
+    }, []);
 
-      if (isOut) {
-        setTimeout(() => toast({ title: "Out of stock", variant: "destructive" }), 0);
-        return prev;
-      }
-
-      setTimeout(() => toast({ title: "Added to cart", description: `${product.name} added successfully.` }), 0);
-      return [...prev, { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any }];
-    });
-  }, [toast]);
-
-  const removeFromCart = useCallback((productId: string) => {
-    setCart(prev => prev.filter(item => item.id !== productId));
-  }, []);
-
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.id === productId) {
-        if (item.selectedVariant?.status === 'OUT_OF_STOCK') {
-          setTimeout(() => toast({ title: "Insufficient stock", variant: "destructive" }), 0);
-          return item;
+    const refreshCategories = useCallback(async () => {
+        try {
+            const res  = await fetch('/api/categories/hierarchy');
+            const data = await res.json();
+            setCategories(data);
+        } catch (err) {
+            console.error('Failed to fetch categories:', err);
         }
-        return { ...item, quantity: Math.max(1, quantity) };
-      }
-      return item;
-    }));
-  }, [toast]);
+    }, []);
 
-  const clearCart = useCallback(() => setCart([]), []);
+    const refreshBrands = useCallback(async () => {
+        try {
+            const res  = await fetch('/api/brands');
+            const data = await res.json();
+            setBrands(data);
+        } catch (err) {
+            console.error('Failed to fetch brands:', err);
+        }
+    }, []);
 
-  const loadCart = useCallback((items: CartItem[]) => setCart(items), []);
+    const refreshOrders = useCallback(async (email?: string) => {
+        try {
+            const url  = email ? `/api/orders?email=${encodeURIComponent(email)}` : '/api/orders';
+            const res  = await fetch(url);
+            const data = await res.json();
+            if (data.orders) setOrders(data.orders);
+        } catch (err) {
+            console.error('Failed to fetch orders:', err);
+        }
+    }, []);
 
-  const cartTotal = useMemo(() =>
-    cart.reduce((sum, item) => sum + ((item.selectedVariant?.price || 0) * item.quantity), 0),
-    [cart]);
+    const refreshFilterConfigs = useCallback(async () => {
+        try {
+            const res  = await fetch('/api/categories/filters');
+            const data = await res.json();
+            setFilterConfigs(data);
+        } catch (err) {
+            console.error('Failed to fetch filter configs:', err);
+        }
+    }, []);
 
-  // --- COMPARE ACTIONS ---
+    // ── Initialisation — runs once, skipped on admin routes ──────────────────
 
-  const addToCompare = useCallback((product: Product) => {
-    setCompareItems(prev => {
-      if (prev.find(item => item.id === product.id)) return prev;
-      if (prev.length >= 4) {
-        setTimeout(() => toast({ title: "Compare limit reached", description: "You can compare up to 4 items max.", variant: "destructive" }), 0);
-        return prev;
-      }
-      if (prev.length > 0 && prev[0].category !== product.category) {
-        setTimeout(() => toast({ title: "Different category", description: "You can only compare items from the same category.", variant: "destructive" }), 0);
-        return prev;
-      }
-      setTimeout(() => toast({ title: "Added to compare", description: `${product.name} added to comparison.` }), 0);
-      return [...prev, product];
-    });
-  }, [toast]);
+    const hasInitialized = useRef(false);
 
-  const removeFromCompare = useCallback((productId: string) => {
-    setCompareItems(prev => prev.filter(item => item.id !== productId));
-  }, []);
+    useEffect(() => {
+        if (pathname?.startsWith('/admin')) {
+            setIsLoading(false);
+            return;
+        }
+        if (hasInitialized.current) return;
+        hasInitialized.current = true;
 
-  // --- CHECKOUT ---
+        // Restore persisted cart/compare before fetching remote data
+        // so the cart is available immediately on first render.
+        const savedCart    = readStorage<CartItem[]>(CART_KEY);
+        const savedCompare = readStorage<Product[]>(COMPARE_KEY);
+        if (savedCart)    setCart(savedCart);
+        if (savedCompare) setCompareItems(savedCompare);
 
-  const placeOrder = useCallback((customerName: string, email: string) => {
-    if (cart.length === 0) return;
-    fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-        customerName,
-        email,
-        items: cart.map(item => ({
-          productId: item.id,
-          variantId: item.selectedVariant?.id || '',
-          name: item.name,
-          category: item.category,
-          price: item.selectedVariant?.price || 0,
-          quantity: item.quantity,
-          image: item.media?.[0]?.url || '',
-          sku: item.selectedVariant?.sku || '',
-        })),
-        total: cartTotal,
-      }),
-    }).then(res => {
-      if (res.ok) {
-        toast({ title: 'Order placed successfully!' });
-        setCart([]);
-        setCartOpen(false);
-      }
-    }).catch(err => console.error('Failed to place order:', err));
-  }, [cart, cartTotal, toast]);
+        // Kick off all remote fetches in parallel
+        setIsLoading(true);
+        Promise.all([
+            refreshProducts(),
+            refreshCategories(),
+            refreshBrands(),
+            refreshFilterConfigs(),
+        ])
+            .catch(err => console.error('Failed to initialize shop data:', err))
+            .finally(() => setIsLoading(false));
+    }, [refreshProducts, refreshCategories, refreshBrands, refreshFilterConfigs, pathname]);
+    // pathname is stable across the session (provider mounts once) but listed
+    // to satisfy the linter. The hasInitialized guard ensures single execution.
 
-  // --- CONTEXT VALUE ---
+    // ── Persist cart / compare (skip during initial load to avoid flash) ──────
 
-  const value = useMemo(() => ({
-    cart,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
-    loadCart,
-    cartTotal,
-    isCartOpen,
-    setCartOpen,
-    compareItems,
-    addToCompare,
-    removeFromCompare,
-    products,
-    refreshProducts,
-    categories,
-    refreshCategories,
-    brands,
-    refreshBrands,
-    orders,
-    refreshOrders,
-    filterConfigs,
-    refreshFilterConfigs,
-    placeOrder,
-    isLoading
-  }), [
-    cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
-    isCartOpen, setCartOpen, compareItems, addToCompare, removeFromCompare,
-    products, refreshProducts, categories, refreshCategories,
-    brands, refreshBrands, orders, refreshOrders,
-    filterConfigs, refreshFilterConfigs, placeOrder, isLoading
-  ]);
+    useEffect(() => {
+        if (isLoading) return;
+        try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch {}
+    }, [cart, isLoading]);
 
-  return (
-    <ShopContext.Provider value={value}>
-      {children}
-    </ShopContext.Provider>
-  );
+    useEffect(() => {
+        if (isLoading) return;
+        try { localStorage.setItem(COMPARE_KEY, JSON.stringify(compareItems)); } catch {}
+    }, [compareItems, isLoading]);
+
+    // ── Cart actions ──────────────────────────────────────────────────────────
+
+    const addToCart = useCallback((product: Product) => {
+        setCart(prev => {
+            const existing = prev.find(item => item.id === product.id);
+            const isOut    = product.variants?.[0]?.status === 'OUT_OF_STOCK';
+
+            if (isOut) {
+                // Fire toast outside the setState callback to avoid state update during render
+                queueMicrotask(() => toast({
+                    title:   'Out of stock',
+                    description: existing ? 'This product is no longer available.' : undefined,
+                    variant: 'destructive',
+                }));
+                return prev;
+            }
+
+            if (existing) {
+                queueMicrotask(() => toast({ title: 'Added to cart', description: `${product.name} quantity updated.` }));
+                return prev.map(item =>
+                    item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                );
+            }
+
+            queueMicrotask(() => toast({ title: 'Added to cart', description: `${product.name} added successfully.` }));
+            return [...prev, { ...product, quantity: 1, selectedVariant: product.variants?.[0] ?? ({} as any) }];
+        });
+    }, [toast]);
+
+    const removeFromCart = useCallback((productId: string) => {
+        setCart(prev => prev.filter(item => item.id !== productId));
+    }, []);
+
+    const updateQuantity = useCallback((productId: string, quantity: number) => {
+        setCart(prev => prev.map(item => {
+            if (item.id !== productId) return item;
+            if (item.selectedVariant?.status === 'OUT_OF_STOCK') {
+                queueMicrotask(() => toast({ title: 'Insufficient stock', variant: 'destructive' }));
+                return item;
+            }
+            return { ...item, quantity: Math.max(1, quantity) };
+        }));
+    }, [toast]);
+
+    const clearCart = useCallback(() => setCart([]), []);
+
+    const loadCart  = useCallback((items: CartItem[]) => setCart(items), []);
+
+    const cartTotal = useMemo(
+        () => cart.reduce((sum, item) => sum + ((item.selectedVariant?.price ?? 0) * item.quantity), 0),
+        [cart]
+    );
+
+    // ── Compare actions ───────────────────────────────────────────────────────
+
+    const addToCompare = useCallback((product: Product) => {
+        setCompareItems(prev => {
+            if (prev.find(item => item.id === product.id)) return prev;
+
+            if (prev.length >= 4) {
+                queueMicrotask(() => toast({ title: 'Compare limit reached', description: 'You can compare up to 4 items max.', variant: 'destructive' }));
+                return prev;
+            }
+            if (prev.length > 0 && prev[0].category !== product.category) {
+                queueMicrotask(() => toast({ title: 'Different category', description: 'You can only compare items from the same category.', variant: 'destructive' }));
+                return prev;
+            }
+
+            queueMicrotask(() => toast({ title: 'Added to compare', description: `${product.name} added to comparison.` }));
+            return [...prev, product];
+        });
+    }, [toast]);
+
+    const removeFromCompare = useCallback((productId: string) => {
+        setCompareItems(prev => prev.filter(item => item.id !== productId));
+    }, []);
+
+    // ── Checkout ──────────────────────────────────────────────────────────────
+
+    const placeOrder = useCallback((customerName: string, email: string) => {
+        if (cart.length === 0) return;
+        fetch('/api/orders', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id:           `ORD-${Math.random().toString(36).substring(2, 11).toUpperCase()}`,
+                customerName,
+                email,
+                items: cart.map(item => ({
+                    productId: item.id,
+                    variantId: item.selectedVariant?.id ?? '',
+                    name:      item.name,
+                    category:  item.category,
+                    price:     item.selectedVariant?.price ?? 0,
+                    quantity:  item.quantity,
+                    image:     item.media?.[0]?.url ?? '',
+                    sku:       item.selectedVariant?.sku ?? '',
+                })),
+                total: cartTotal,
+            }),
+        })
+            .then(res => {
+                if (res.ok) {
+                    toast({ title: 'Order placed successfully!' });
+                    setCart([]);
+                    setCartOpen(false);
+                }
+            })
+            .catch(err => console.error('Failed to place order:', err));
+    }, [cart, cartTotal, toast]);
+
+    // ── Context value ─────────────────────────────────────────────────────────
+
+    const value = useMemo<ShopContextType>(() => ({
+        cart,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        loadCart,
+        cartTotal,
+        isCartOpen,
+        setCartOpen,
+        compareItems,
+        addToCompare,
+        removeFromCompare,
+        products,
+        refreshProducts,
+        categories,
+        refreshCategories,
+        brands,
+        refreshBrands,
+        orders,
+        refreshOrders,
+        filterConfigs,
+        refreshFilterConfigs,
+        placeOrder,
+        isLoading,
+    }), [
+        cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
+        isCartOpen, compareItems, addToCompare, removeFromCompare,
+        products, refreshProducts, categories, refreshCategories,
+        brands, refreshBrands, orders, refreshOrders,
+        filterConfigs, refreshFilterConfigs, placeOrder, isLoading,
+    ]);
+
+    return (
+        <ShopContext.Provider value={value}>
+            {children}
+        </ShopContext.Provider>
+    );
 };
 
-export const useShop = () => {
-  const context = useContext(ShopContext);
-  if (context === undefined) {
-    throw new Error('useShop must be used within a ShopProvider');
-  }
-  return context;
+// ── useShop ───────────────────────────────────────────────────────────────────
+
+export const useShop = (): ShopContextType => {
+    const context = useContext(ShopContext);
+    if (context === undefined) {
+        throw new Error('useShop must be used within a ShopProvider');
+    }
+    return context;
 };

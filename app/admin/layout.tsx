@@ -1,41 +1,50 @@
 // app/admin/layout.tsx
 'use client';
 
-import React, { useState } from 'react';
+import { useState, useCallback, memo, type ReactNode } from 'react';
 import { AdminProvider, useAdmin } from "@/context/AdminContext";
 import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { AdminHeader } from "@/components/dashboard/AdminHeader";
 import { useRouter } from "next/navigation";
 
-function AdminShell({ children }: { children: React.ReactNode }) {
+// ── Constants (module scope — never recreated) ────────────────────────────────
+
+const TAB_LABELS: Record<string, string> = {
+    overview:       'Overview',
+    orders:         'Orders',
+    products:       'Products',
+    inventory:      'Inventory',
+    categories:     'Categories',
+    brands:         'Brands',
+    'saved-builds': 'Saved Builds',
+    billing:        'Billing & Invoices',
+    cms:            'CMS',
+    marketing:      'Marketing',
+} as const;
+
+const SHELL_STYLE = {
+    fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif",
+} as const;
+
+// ── AdminShell ────────────────────────────────────────────────────────────────
+
+const AdminShell = memo(function AdminShell({ children }: { children: ReactNode }) {
     const { activeTab, setActiveTab } = useAdmin();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const router = useRouter();
 
-    async function handleLogout() {
+    const handleLogout = useCallback(async () => {
         await fetch("/api/logout", { method: "POST" });
         router.push("/login");
         router.refresh();
-    }
+    }, [router]);
 
-    const tabLabels: Record<string, string> = {
-        overview: 'Overview',
-        orders: 'Orders',
-        products: 'Products',
-        inventory: 'Inventory',
-        // procurement: 'Procurement',
-        categories: 'Categories',
-        brands: 'Brands',
-        'saved-builds': 'Saved Builds',
-        billing: 'Billing & Invoices',
-        cms: 'CMS',
-        marketing: 'Marketing',
-    };
+    const handleMenuClick = useCallback(() => setIsSidebarOpen(true), []);
 
     return (
         <div
             className="flex h-screen bg-stone-50 overflow-hidden antialiased"
-            style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
+            style={SHELL_STYLE}
         >
             <AdminSidebar
                 activeTab={activeTab}
@@ -48,8 +57,8 @@ function AdminShell({ children }: { children: React.ReactNode }) {
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <AdminHeader
                     onLogout={handleLogout}
-                    onMenuClick={() => setIsSidebarOpen(true)}
-                    title={tabLabels[activeTab] || 'Admin'}
+                    onMenuClick={handleMenuClick}
+                    title={TAB_LABELS[activeTab] ?? 'Admin'}
                 />
 
                 <main className="flex-1 overflow-y-auto overflow-x-hidden bg-stone-50">
@@ -60,9 +69,11 @@ function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
         </div>
     );
-}
+});
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+// ── AdminLayout ───────────────────────────────────────────────────────────────
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
     return (
         <AdminProvider>
             <AdminShell>

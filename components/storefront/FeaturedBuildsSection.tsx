@@ -1,57 +1,99 @@
 'use client'
 
 import Link from 'next/link'
+import { memo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Cpu, MonitorSpeaker, MemoryStick, HardDrive, ArrowRight, Zap, ArrowUpRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { calculateBuildPrice } from '@/services/buildPrice'
 
+// ── Constants (module scope — never recreated) ────────────────────────────────
+
 const COMPONENT_ICONS: Record<string, React.ElementType> = {
     PROCESSOR: Cpu,
-    GPU: MonitorSpeaker,
-    RAM: MemoryStick,
-    STORAGE: HardDrive,
+    GPU:       MonitorSpeaker,
+    RAM:       MemoryStick,
+    STORAGE:   HardDrive,
 }
 
-// Random luxury abstract backgrounds for build cards
 const BUILD_BGS = [
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop',
-]
+] as const
 
-function BuildCardCinematic({ build, index }: { build: any; index: number }) {
-    const total = calculateBuildPrice(build.items)
+const COMPONENTS = ['PROCESSOR', 'GPU', 'RAM', 'STORAGE'] as const
 
-    const getComponent = (cat: string) =>
-        build.items.find((i: any) => i.variant.product.category === cat)
+// ── Animation variants (module scope — stable references, never recreated) ────
 
-    const components = ['PROCESSOR', 'GPU', 'RAM', 'STORAGE']
+const cardVariants = {
+    hidden:  { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0  },
+}
+
+const headerVariants = {
+    hidden:  { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0  },
+}
+
+const fadeVariants = {
+    hidden:  { opacity: 0 },
+    visible: { opacity: 1 },
+}
+
+const VIEWPORT_ONCE        = { once: true } as const
+const VIEWPORT_ONCE_MARGIN = { once: true, margin: '-50px' } as const
+
+const cardEase = [0.22, 1, 0.36, 1] as const
+
+// ── BuildCardCinematic ────────────────────────────────────────────────────────
+
+const BuildCardCinematic = memo(function BuildCardCinematic({
+    build,
+    index,
+}: {
+    build:  any
+    index:  number
+}) {
+    const total   = calculateBuildPrice(build.items)
     const bgImage = BUILD_BGS[index % BUILD_BGS.length]
+
+    const getComponent = useCallback(
+        (cat: string) => build.items.find((i: any) => i.variant.product.category === cat),
+        [build.items]
+    )
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ delay: index * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            variants={cardVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={VIEWPORT_ONCE_MARGIN}
+            transition={{ delay: index * 0.1, duration: 0.6, ease: cardEase }}
             className="group relative flex flex-col h-[360px] sm:h-[420px] md:h-[500px] rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden cursor-pointer"
         >
-            <Link href={`/builds/${build.id}`} className="absolute inset-0 z-20"><span className="sr-only">View {build.title}</span></Link>
+            <Link href={`/builds/${build.id}`} className="absolute inset-0 z-20">
+                <span className="sr-only">View {build.title}</span>
+            </Link>
 
-            {/* Background Image with Parallax Hover */}
+            {/* Background Image */}
             <div className="absolute inset-0 z-0">
                 <img
                     src={bgImage}
                     alt="Build Background"
+                    width={800}
+                    height={500}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : 'auto'}
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-zinc-950/20 transition-opacity duration-500 group-hover:opacity-90" />
                 <div className="absolute inset-0 bg-indigo-900/20 mix-blend-overlay" />
             </div>
 
-            {/* Glowing borders on hover */}
+            {/* Glowing border */}
             <div className="absolute inset-0 z-10 border border-white/10 rounded-xl sm:rounded-2xl md:rounded-3xl group-hover:border-indigo-500/50 transition-colors duration-500 pointer-events-none" />
 
             <div className="relative z-10 flex flex-col h-full p-3 sm:p-4 md:p-6 lg:p-8">
@@ -77,13 +119,12 @@ function BuildCardCinematic({ build, index }: { build: any; index: number }) {
                         </p>
                     )}
 
-                    {/* Compact Specs list */}
+                    {/* Specs list */}
                     <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 opacity-80 group-hover:opacity-100 transition-opacity">
-                        {components.map(cat => {
+                        {COMPONENTS.map(cat => {
                             const comp = getComponent(cat)
-                            const Icon = COMPONENT_ICONS[cat] || Cpu
-                            if (!comp) return null;
-
+                            const Icon = COMPONENT_ICONS[cat] ?? Cpu
+                            if (!comp) return null
                             return (
                                 <div key={cat} className="flex items-center gap-2">
                                     <Icon size={14} className="text-zinc-500 group-hover:text-indigo-400 transition-colors" />
@@ -108,20 +149,23 @@ function BuildCardCinematic({ build, index }: { build: any; index: number }) {
             </div>
         </motion.div>
     )
-}
+})
+
+// ── FeaturedBuildsSection ─────────────────────────────────────────────────────
 
 export default function FeaturedBuildsSection({ builds }: { builds: any[] }) {
     if (!builds?.length) return null
 
     return (
-       <section className="py-10 sm:py-20 md:py-24 bg-zinc-950 px-3 sm:px-4 md:px-0" id="featured-builds">
+        <section className="py-10 sm:py-20 md:py-24 bg-zinc-950 px-3 sm:px-4 md:px-0" id="featured-builds">
             <Container>
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-12 md:mb-16">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        variants={headerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={VIEWPORT_ONCE}
                         transition={{ duration: 0.6 }}
                         className="max-w-2xl"
                     >
@@ -134,14 +178,15 @@ export default function FeaturedBuildsSection({ builds }: { builds: any[] }) {
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
+                        variants={fadeVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={VIEWPORT_ONCE}
                         transition={{ delay: 0.2 }}
                     >
                         <Link
                             href="/build-guides"
-                            className="group mt-6 md:mt-0 inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 rounded-lg sm:rounded-full font-semibold border border-white/20 text-sm  text-white uppercase tracking-wider hover:bg-white hover:text-zinc-950 transition-all duration-300"
+                            className="group mt-6 md:mt-0 inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 rounded-lg sm:rounded-full font-semibold border border-white/20 text-sm text-white uppercase tracking-wider hover:bg-white hover:text-zinc-950 transition-all duration-300"
                         >
                             View All Builds
                             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -149,13 +194,12 @@ export default function FeaturedBuildsSection({ builds }: { builds: any[] }) {
                     </motion.div>
                 </div>
 
-                {/* Build grid - Staggered layout */}
+                {/* Build grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                     {builds.map((build: any, i: number) => {
-                        // Make the first card larger on desktop
                         const isLarge = i === 0
                         return (
-                            <div key={build.id} className={isLarge ? "md:col-span-2 lg:col-span-2" : "col-span-1"}>
+                            <div key={build.id} className={isLarge ? 'md:col-span-2 lg:col-span-2' : 'col-span-1'}>
                                 <BuildCardCinematic build={build} index={i} />
                             </div>
                         )
