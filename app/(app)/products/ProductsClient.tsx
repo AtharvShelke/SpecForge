@@ -234,7 +234,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const [priceRange,          setPriceRange]          = useState({ min: Number(searchParams.get('minPrice')) || 0, max: Number(searchParams.get('maxPrice')) || DEFAULT_MAX_PRICE });
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [currentPage,         setCurrentPage]         = useState(Number(searchParams.get('page')) || 1);
-    const [isLoadingProducts,   setIsLoadingProducts]   = useState(false);
+    const [isLoadingProducts,   setIsLoadingProducts]   = useState(true);
     const [fetchedProducts,     setFetchedProducts]     = useState<Product[]>(initialData?.products ?? []);
     const [totalCount,          setTotalCount]          = useState(initialData?.total ?? 0);
     const [availableFilters,    setAvailableFilters]    = useState<{ brands: string[], specs: Record<string, string[]> } | null>(initialData?.filterOptions ?? null);
@@ -305,6 +305,8 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             setSelectedFilters({});
             setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
             setCurrentPage(1);
+            // Reset fetch dedup so the new category always triggers a fresh fetch
+            prevParamsRef.current = '';
         }
     }, [activeTab]);
 
@@ -561,9 +563,9 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 </button>
                             </div>
 
-                            {/* ROW 3 — main categories */}
+                            {/* ROW 3 — top-level categories only (nodes without a parentId) */}
                             <div className="flex overflow-x-auto no-scrollbar gap-1.5 py-2">
-                                {[ALL_PRODUCTS_TAB, ...categories].map((node) => {
+                                {[ALL_PRODUCTS_TAB, ...categories.filter(n => !n.parentId)].map((node) => {
                                     const isActive = activeTab?.label === node.label;
                                     return (
                                         <button
@@ -577,9 +579,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 })}
                             </div>
 
-                            {/* ROW 4 — subcategories */}
+                            {/* ROW 4 — direct children of the active top-level tab */}
                             {activeTab?.children && activeTab.children.length > 0 && (
                                 <div className="flex overflow-x-auto no-scrollbar gap-1.5 pb-2.5 pt-0.5 border-t border-zinc-100">
+                                    {/* "All X" reset pill */}
                                     <button
                                         onClick={() => { setSelectedNode(null); setExpandedSubcategory(null); }}
                                         className={`px-3.5 h-7 text-[12px] font-semibold rounded-full border whitespace-nowrap shrink-0 transition-all duration-200 mt-2 ${!selectedNode ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-transparent border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50'}`}
@@ -587,25 +590,33 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         All {activeTab.label}
                                     </button>
 
+                                    {/* Only direct children of the active tab — not grandchildren */}
                                     {activeTab.children.map((child) => {
-                                        const isSelected  = selectedNode?.label === child.label;
-                                        const hasNested   = !!child.children?.length;
-                                        const isExpanded  = expandedSubcategory === child.label;
+                                        const isSelected = selectedNode?.label === child.label;
+                                        const hasNested  = !!child.children?.length;
+                                        const isExpanded = expandedSubcategory === child.label;
                                         return (
                                             <div key={child.label} className="relative mt-2 shrink-0">
                                                 <button
                                                     onClick={() => {
-                                                        if (hasNested) setExpandedSubcategory(isExpanded ? null : child.label);
-                                                        else { setSelectedNode(child); setExpandedSubcategory(null); }
+                                                        if (hasNested) {
+                                                            setExpandedSubcategory(isExpanded ? null : child.label);
+                                                        } else {
+                                                            setSelectedNode(child);
+                                                            setExpandedSubcategory(null);
+                                                        }
                                                     }}
                                                     className={`px-3.5 h-7 flex items-center gap-1 text-[12px] font-semibold rounded-full border whitespace-nowrap transition-all duration-200 ${isSelected ? 'bg-zinc-900 text-white border-zinc-900' : isExpanded ? 'bg-zinc-100 border-zinc-300 text-zinc-700' : 'bg-transparent border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50'}`}
                                                 >
                                                     {child.label}
-                                                    {hasNested && <ChevronDown size={11} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />}
+                                                    {hasNested && (
+                                                        <ChevronDown size={11} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                    )}
                                                 </button>
 
+                                                {/* Dropdown for grandchildren */}
                                                 {hasNested && isExpanded && (
-                                                    <div className="absolute top-full left-0 mt-2 z-50 min-w-[200px] bg-white border border-zinc-900/[0.08] rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] py-1.5 overflow-hidden">
+                                                    <div className="absolute top-full left-0 mt-2 z-50 min-w-[200px] bg-white border border-zinc-900/[0.08] rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] py-1.5 overflow-hidden subcategory-dropdown">
                                                         {child.children?.map((nested) => {
                                                             const isNestedActive = selectedNode?.label === nested.label;
                                                             return (
