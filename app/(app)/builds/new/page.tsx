@@ -773,7 +773,7 @@ export default function PCBuilderPage() {
 
                 p.sort();
                 const qs = p.toString();
-                if (prevParams.current === qs) { setIsLoading(false); return; }
+                if (prevParams.current === qs && products.length > 0) { setIsLoading(false); return; }
                 prevParams.current = qs;
 
                 const res = await fetch(`/api/products?${qs}`);
