@@ -1,200 +1,282 @@
 'use client'
 
 import Link from 'next/link'
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Star, Eye, TrendingUp, Plus, ArrowRight } from 'lucide-react'
+import { TrendingUp, Plus, ArrowRight, Package } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
-import { Product } from '@/types'
+import { Product, Category, CATEGORY_LABELS } from '@/types'
 
-// ── Animation variants (defined once outside component, never recreated) ──────
+// ── Animation variants ────────────────────────────────────────────────────────
 
 const cardVariants = {
-    hidden:  { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0  },
+  hidden:  { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0  },
 }
 
-const headerLeftVariants = {
-    hidden:  { opacity: 0, x: -20 },
-    visible: { opacity: 1, x: 0   },
-}
-
-const headerRightVariants = {
-    hidden:  { opacity: 0, x: 20 },
-    visible: { opacity: 1, x: 0  },
-}
-
-const VIEWPORT = { once: true, margin: '-50px' } as const
-const HEADER_VIEWPORT = { once: true } as const
+const VIEWPORT = { once: true, margin: '-40px' } as const
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Props {
-    products: Product[]
-    addToCart: (p: Product) => void
+  products:  Product[]
+  addToCart: (p: Product) => void
 }
 
-// ── ProductCardPremium ────────────────────────────────────────────────────────
+// ── Category order ────────────────────────────────────────────────────────────
 
-const ProductCardPremium = memo(function ProductCardPremium({
-    product,
-    onAddToCart,
-    index,
+const CATEGORY_ORDER: Category[] = [
+  Category.GPU,
+  Category.PROCESSOR,
+  Category.MOTHERBOARD,
+  Category.RAM,
+  Category.STORAGE,
+  Category.PSU,
+  Category.CABINET,
+  Category.COOLER,
+  Category.MONITOR,
+  Category.PERIPHERAL,
+  Category.NETWORKING,
+  Category.LAPTOP,
+]
+
+// ── ProductCard ───────────────────────────────────────────────────────────────
+
+const ProductCard = memo(function ProductCard({
+  product,
+  onAddToCart,
+  index,
 }: {
-    product: Product
-    onAddToCart: (p: Product) => void
-    index: number
+  product:     Product
+  onAddToCart: (p: Product) => void
+  index:       number
 }) {
-    const price      = product.variants?.[0]?.price ?? 0
-    const compareAt  = product.variants?.[0]?.compareAtPrice
-    const image      = product.media?.[0]?.url
-    const brand      = product.brand?.name
-    const hasDiscount = !!(compareAt && compareAt > price)
-    const discountPct = hasDiscount ? Math.round(((compareAt! - price) / compareAt!) * 100) : 0
-    const isInStock   = product.variants?.[0]?.status !== 'OUT_OF_STOCK'
+  const price        = product.variants?.[0]?.price ?? 0
+ 
+  const image        = product.media?.[0]?.url
+  const brand        = product.brand?.name
+  const isOutOfStock = product.variants?.[0]?.status === 'OUT_OF_STOCK'
+ 
 
-    const handleAddToCart = useCallback(
-        (e: React.MouseEvent) => { e.preventDefault(); onAddToCart(product) },
-        [onAddToCart, product]
-    )
+  const handleAddToCart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      onAddToCart(product)
+    },
+    [onAddToCart, product]
+  )
 
-    return (
-        <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={VIEWPORT}
-            transition={{ delay: index * 0.05, duration: 0.5, ease: 'easeOut' }}
-            className="group relative flex flex-col bg-white rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden hover:shadow-[0_10px_25px_-10px_rgba(0,0,0,0.12)] sm:hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 border border-zinc-100"
-        >
-            {/* Top Badges */}
-            <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-                {hasDiscount && (
-                    <div className="px-2 py-0.5 sm:px-3 sm:py-1 bg-red-500 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
-                        Save {discountPct}%
-                    </div>
-                )}
-                {index < 3 && (
-                    <div className="px-2 py-0.5 sm:px-3 sm:py-1 bg-zinc-950 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg flex items-center gap-1">
-                        <TrendingUp size={10} /> Bestseller
-                    </div>
-                )}
-            </div>
+  return (
+    <motion.div
+      variants={cardVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={VIEWPORT}
+      transition={{ delay: Math.min(index % 8, 7) * 0.05, duration: 0.45, ease: 'easeOut' }}
+      className="group relative flex flex-col bg-white rounded-2xl overflow-hidden hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.12)] transition-all duration-300 border border-zinc-100 hover:border-zinc-200"
+    >
+      {/* Badges */}
+      <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
+        
+        {index < 4 && (
+          <span className="px-2 py-0.5 bg-zinc-950 text-white text-[9px] font-black tracking-widest uppercase rounded-full flex items-center gap-1">
+            <TrendingUp size={9} /> Hot
+          </span>
+        )}
+      </div>
 
-            {/* Immersive Image Container */}
-            <Link href={`/products/${product.id}`} className="relative bg-zinc-50 aspect-square w-full overflow-hidden flex items-center justify-center p-4 sm:p-6 md:p-8">
-                {image ? (
-                    <img
-                        src={image}
-                        alt={product.name}
-                        width={400}
-                        height={400}
-                        loading={index < 2 ? 'eager' : 'lazy'}
-                        fetchPriority={index === 0 ? 'high' : 'auto'}
-                        decoding="async"
-                        className="w-full h-full object-contain filter drop-shadow-xl group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                    />
-                ) : (
-                    <Eye size={32} className="text-zinc-300" />
-                )}
+      {/* Out of stock overlay */}
+      {isOutOfStock && (
+        <div className="absolute inset-0 z-20 bg-white/70 flex items-center justify-center rounded-2xl">
+          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Out of Stock</span>
+        </div>
+      )}
 
-                {/* Floating Action Button (Cart) */}
-                {isInStock && (
-                    <button
-                        onClick={handleAddToCart}
-                        className="absolute bottom-4 right-4 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-zinc-950 text-white rounded-2xl flex items-center justify-center shadow-xl sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 transition-all duration-300 hover:bg-indigo-600 hover:scale-105 active:scale-95 z-30"
-                        aria-label="Add to cart"
-                    >
-                        <Plus size={16} strokeWidth={2} />
-                    </button>
-                )}
-            </Link>
+      {/* Image */}
+      <Link
+        href={`/products/${product.id}`}
+        className="relative bg-zinc-50 aspect-square overflow-hidden flex items-center justify-center p-4 sm:p-6"
+      >
+        {image ? (
+          <img
+            src={image}
+            alt={product.name}
+            width={300}
+            height={300}
+            loading={index < 6 ? 'eager' : 'lazy'}
+            fetchPriority={index < 2 ? 'high' : 'auto'}
+            decoding="async"
+            className="w-full h-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          />
+        ) : (
+          <Package size={28} className="text-zinc-300" />
+        )}
 
-            {/* Content Area */}
-            <div className="p-3 sm:p-4 md:p-6 flex flex-col flex-1">
-                {brand && (
-                    <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                        {brand}
-                    </p>
-                )}
+        {/* Floating add to cart */}
+        {!isOutOfStock && (
+          <button
+            onClick={handleAddToCart}
+            className="absolute bottom-3 right-3 w-9 h-9 bg-zinc-950 text-white rounded-xl flex items-center justify-center shadow-lg
+                       sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100
+                       hover:bg-indigo-600 active:scale-95 transition-all duration-200 z-30"
+            aria-label="Add to cart"
+          >
+            <Plus size={15} strokeWidth={2.5} />
+          </button>
+        )}
+      </Link>
 
-                <Link href={`/products/${product.id}`}>
-                    <h3 className="text-sm sm:text-base font-bold text-zinc-950 line-clamp-2 leading-tight mb-3 group-hover:text-indigo-600 transition-colors">
-                        {product.name}
-                    </h3>
-                </Link>
-
-                <div className="mt-auto">
-                    <div className="flex items-end gap-2">
-                        <span className="text-lg sm:text-xl font-black text-zinc-950 tracking-tight">
-                            ₹{price.toLocaleString('en-IN')}
-                        </span>
-                        {hasDiscount && (
-                            <span className="text-sm font-semibold text-zinc-400 line-through mb-0.5">
-                                ₹{compareAt!.toLocaleString('en-IN')}
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    )
+      {/* Info */}
+      <div className="p-3 sm:p-4 flex flex-col flex-1">
+        {brand && (
+          <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">{brand}</p>
+        )}
+        <Link href={`/products/${product.id}`}>
+          <h3 className="text-xs sm:text-sm font-semibold text-zinc-900 line-clamp-2 leading-snug mb-3 group-hover:text-indigo-600 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
+        <div className="mt-auto flex items-end gap-2">
+          <span className="text-sm sm:text-base font-black text-zinc-950 tracking-tight">
+            ₹{price.toLocaleString('en-IN')}
+          </span>
+         
+        </div>
+      </div>
+    </motion.div>
+  )
 })
+
+// ── Tab pill ──────────────────────────────────────────────────────────────────
+
+function TabPill({
+  label, count, active, onClick,
+}: {
+  label: string; count: number; active: boolean; onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`shrink-0 flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border transition-all duration-200 ${
+        active
+          ? 'bg-zinc-950 text-white border-zinc-950'
+          : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900'
+      }`}
+    >
+      {label}
+      <span className="text-[10px] font-bold opacity-60">{count}</span>
+    </button>
+  )
+}
 
 // ── FeaturedProductsSection ───────────────────────────────────────────────────
 
 export default function FeaturedProductsSection({ products, addToCart }: Props) {
-    if (!products.length) return null
+  // Filter to only ACTIVE products
+  
 
-    return (
-        <section className="py-10 sm:py-20 md:py-24 bg-white" id="featured-products">
-            <Container>
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 md:mb-12">
-                    <motion.div
-                        variants={headerLeftVariants}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={HEADER_VIEWPORT}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-zinc-950 tracking-tighter mb-4">
-                            Exceptional <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Hardware.</span>
-                        </h2>
-                        <p className="text-zinc-500 text-sm sm:text-sm sm:text-base md:text-xl font-light">
-                            Top-rated components sought after by enthusiasts and professionals.
-                        </p>
-                    </motion.div>
+  // Build category map in fixed order — only cats with products
+  const categoryMap = CATEGORY_ORDER.reduce<Record<string, Product[]>>((acc, cat) => {
+    const items = products.filter(p => p.category === cat)
+    if (items.length > 0) acc[cat] = items
+    return acc
+  }, {})
 
-                    <motion.div
-                        variants={headerRightVariants}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={HEADER_VIEWPORT}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                    >
-                        <Link
-                            href="/products"
-                            className="group mt-6 md:mt-0 inline-flex items-center gap-2 text-xs sm:text-sm font-bold uppercase tracking-widest text-zinc-900 border-b-2 border-zinc-900 pb-1 hover:text-red-500 hover:border-red-500 transition-colors"
-                        >
-                            View Entire Catalog
-                            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                    </motion.div>
-                </div>
+  const availableCats = Object.keys(categoryMap) as Category[]
 
-                {/* Product grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                    {products.map((product, i) => (
-                        <ProductCardPremium
-                            key={product.id}
-                            product={product}
-                            onAddToCart={addToCart}
-                            index={i}
-                        />
-                    ))}
-                </div>
-            </Container>
-        </section>
-    )
+  const [activeTab, setActiveTab] = useState<'ALL' | Category>('ALL')
+
+  const shownProducts =
+    activeTab === 'ALL'
+      ? products.slice(0, 24)
+      : categoryMap[activeTab] ?? []
+
+  if (products.length === 0) return null
+
+  return (
+    <section className="py-10 sm:py-16 md:py-20 bg-white" id="featured-products">
+      <Container>
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
+          <div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-zinc-950 tracking-tighter">
+              Shop by Category
+            </h2>
+            <p className="text-zinc-500 text-sm mt-1">
+              {products.length} products available
+            </p>
+          </div>
+          <Link
+            href="/products"
+            className="group inline-flex items-center gap-2 text-sm font-bold text-zinc-900 border-b-2 border-zinc-900 pb-0.5 hover:text-indigo-600 hover:border-indigo-600 transition-colors shrink-0"
+          >
+            Browse full catalog
+            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
+
+        {/* Category tabs */}
+        <div
+          className="flex gap-2 overflow-x-auto pb-3 mb-6 sm:mb-8"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          <TabPill
+            label="All"
+            count={products.length}
+            active={activeTab === 'ALL'}
+            onClick={() => setActiveTab('ALL')}
+          />
+          {availableCats.map(cat => (
+            <TabPill
+              key={cat}
+              label={CATEGORY_LABELS[cat as Category]}
+              count={categoryMap[cat].length}
+              active={activeTab === cat}
+              onClick={() => setActiveTab(cat as Category)}
+            />
+          ))}
+        </div>
+
+        {/* Product grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+          {shownProducts.map((product, i) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onAddToCart={addToCart}
+              index={i}
+            />
+          ))}
+        </div>
+
+        {/* See all CTA */}
+        {activeTab !== 'ALL' && (categoryMap[activeTab]?.length ?? 0) > 0 && (
+          <div className="mt-8 text-center">
+            <Link
+              href={`/products?category=${activeTab}`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
+            >
+              See all {CATEGORY_LABELS[activeTab as Category]} ({categoryMap[activeTab]?.length})
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
+
+        {activeTab === 'ALL' && products.length > 24 && (
+          <div className="mt-8 text-center">
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
+            >
+              View all {products.length} products
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
+
+      </Container>
+    </section>
+  )
 }

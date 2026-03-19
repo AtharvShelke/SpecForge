@@ -136,16 +136,16 @@ function sanitizeCategoryNodes(nodes: CategoryNode[]): CategoryNode[] {
 
 // Tab → fetch groups mapping — static, never changes
 const TAB_FETCHES: Record<string, string[]> = {
-    overview:     ['orders', 'inventory', 'invoices', 'customers', 'stockMovements'],
-    orders:       ['orders', 'inventory', 'customers'],
-    categories:   ['schemas', 'filterConfigs'],
-    inventory:    ['inventory', 'warehouses', 'stockMovements'],
-    procurement:  ['suppliers', 'purchaseOrders', 'inventory'],
-    billing:      ['invoices', 'customers', 'billingProfile'],
+    overview:       ['orders', 'inventory', 'invoices', 'customers', 'stockMovements', 'products', 'brands'],
+    orders:         ['orders', 'inventory', 'customers', 'products'],
+    categories:     ['schemas', 'filterConfigs', 'categories'],
+    inventory:      ['inventory', 'warehouses', 'stockMovements', 'products'],
+    procurement:    ['suppliers', 'purchaseOrders', 'inventory', 'products'],
+    billing:        ['invoices', 'customers', 'billingProfile'],
     'saved-builds': ['savedBuilds'],
-    marketing:    ['marketing'],
-    products:     [],
-    brands:       [],
+    marketing:      ['marketing'],
+    products:       ['products', 'brands', 'categories'],
+    brands:         ['brands', 'categories'],
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -386,19 +386,22 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         billingProfile: refreshBillingProfile,
         savedBuilds:    refreshSavedBuilds,
         marketing:      refreshMarketing,
+        products:       refreshProducts,
+        categories:     refreshCategories,
+        brands:         refreshBrands,
     }), [
         refreshOrders, refreshInventory, refreshInvoices, refreshCustomers,
         refreshStockMovements, refreshSchemas, refreshFilterConfigs, refreshWarehouses,
         refreshSuppliers, refreshPurchaseOrders, refreshBillingProfile,
         refreshSavedBuilds, refreshMarketing,
+        refreshProducts, refreshCategories, refreshBrands,
     ]);
 
-    // Shared loader — replaces both duplicate switch blocks
+    // Shared loader — runs only what each tab declares in TAB_FETCHES
     const loadTabData = useCallback(async (tab: string) => {
-        const base = [refreshProducts(), refreshCategories(), refreshBrands()];
-        const specific = (TAB_FETCHES[tab] ?? []).map(key => fetcherMap[key]?.());
-        await Promise.all([...base, ...specific]);
-    }, [refreshProducts, refreshCategories, refreshBrands, fetcherMap]);
+        const fetches = (TAB_FETCHES[tab] ?? []).map(key => fetcherMap[key]?.()).filter(Boolean);
+        await Promise.all(fetches);
+    }, [fetcherMap]);
 
     /* ─────────────────────────────────────────────────────────────────────────
        TAB-CHANGE DATA LOADER

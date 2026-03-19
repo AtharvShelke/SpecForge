@@ -4,21 +4,21 @@ import { useMemo, useEffect, useState, lazy, Suspense } from 'react'
 
 import { PageLayout } from '@/components/layout/PageLayout'
 import { useShop } from '@/context/ShopContext'
-import { getFeaturedProducts } from '@/services/featuredProducts'
 
 // Above-fold sections — eagerly imported (critical path)
 import HeroSection from '@/components/storefront/HeroSection'
 import CategorySection from '@/components/storefront/CategorySection'
 import BrandShowcase from '@/components/storefront/BrandShowcase'
+import { useBuild } from '@/context/BuildContext'
 
 // Below-fold sections — lazily imported (deferred bundle chunks)
 const FeaturedProductsSection = lazy(() => import('@/components/storefront/FeaturedProductsSection'))
-const GpuTierSection           = lazy(() => import('@/components/storefront/GpuTierSection'))
-const FeaturedBuildsSection    = lazy(() => import('@/components/storefront/FeaturedBuildsSection'))
-const CustomBuilderSection     = lazy(() => import('@/components/storefront/CustomBuilderSection'))
-const TrustSection             = lazy(() => import('@/components/storefront/TrustSection'))
-const StorefrontFooter         = lazy(() => import('@/components/storefront/StorefrontFooter'))
-const ScrollTopButton          = lazy(() => import('@/components/ui/ScrollTopButton'))
+const GpuTierSection = lazy(() => import('@/components/storefront/GpuTierSection'))
+const FeaturedBuildsSection = lazy(() => import('@/components/storefront/FeaturedBuildsSection'))
+const CustomBuilderSection = lazy(() => import('@/components/storefront/CustomBuilderSection'))
+const TrustSection = lazy(() => import('@/components/storefront/TrustSection'))
+const StorefrontFooter = lazy(() => import('@/components/storefront/StorefrontFooter'))
+const ScrollTopButton = lazy(() => import('@/components/ui/ScrollTopButton'))
 
 // ── Shared loading skeleton ───────────────────────────────────────────────────
 
@@ -50,21 +50,12 @@ function StoreLoadingScreen() {
 export default function StorefrontPage() {
   const { products, categories, brands, addToCart, isLoading } = useShop()
 
-  const [builds, setBuilds] = useState<any[]>([])
 
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch('/api/build-guides', { signal: controller.signal })
-      .then(res => res.json())
-      .then(data => setBuilds(data?.slice(0, 4) ?? []))
-      .catch(() => {})
-    return () => controller.abort()
-  }, [])
 
-  const featuredProducts = useMemo(
-    () => getFeaturedProducts(products),
-    [products]
-  )
+  const { buildGuides } = useBuild()
+  const builds = buildGuides.slice(0, 4)
+
+ 
 
   const productCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -92,7 +83,7 @@ export default function StorefrontPage() {
           so one slow section never blocks the others */}
       <Suspense fallback={<SectionSkeleton />}>
         <FeaturedProductsSection
-          products={featuredProducts}
+          products={products}
           addToCart={addToCart}
         />
       </Suspense>

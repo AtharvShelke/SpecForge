@@ -14,35 +14,36 @@ import { useToast } from '@/hooks/use-toast';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ShopContextType {
-    cart:                 CartItem[];
-    addToCart:            (product: Product) => void;
-    removeFromCart:       (productId: string) => void;
-    updateQuantity:       (productId: string, quantity: number) => void;
-    clearCart:            () => void;
-    loadCart:             (items: CartItem[]) => void;
-    cartTotal:            number;
-    isCartOpen:           boolean;
-    setCartOpen:          (isOpen: boolean) => void;
-    compareItems:         Product[];
-    addToCompare:         (product: Product) => void;
-    removeFromCompare:    (productId: string) => void;
-    products:             Product[];
-    refreshProducts:      () => Promise<void>;
-    categories:           CategoryNode[];
-    refreshCategories:    () => Promise<void>;
-    brands:               Brand[];
-    refreshBrands:        () => Promise<void>;
-    orders:               Order[];
-    refreshOrders:        (email?: string) => Promise<void>;
-    filterConfigs:        CategoryFilterConfig[];
+    cart: CartItem[];
+    addToCart: (product: Product) => void;
+    removeFromCart: (productId: string) => void;
+    updateQuantity: (productId: string, quantity: number) => void;
+    clearCart: () => void;
+    loadCart: (items: CartItem[]) => void;
+    cartTotal: number;
+    isCartOpen: boolean;
+    setCartOpen: (isOpen: boolean) => void;
+    compareItems: Product[];
+    addToCompare: (product: Product) => void;
+    removeFromCompare: (productId: string) => void;
+    products: Product[];
+    refreshProducts: () => Promise<void>;
+    categories: CategoryNode[];
+    refreshCategories: () => Promise<void>;
+    brands: Brand[];
+    refreshBrands: () => Promise<void>;
+    orders: Order[];
+    refreshOrders: (email?: string) => Promise<void>;
+    filterConfigs: CategoryFilterConfig[];
     refreshFilterConfigs: () => Promise<void>;
-    placeOrder:           (customerName: string, email: string) => void;
-    isLoading:            boolean;
+    placeOrder: (customerName: string, email: string) => void;
+    isLoading: boolean;
+    initBuildGuides: any[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const CART_KEY    = 'nexus_cart';
+const CART_KEY = 'nexus_cart';
 const COMPARE_KEY = 'nexus_compare';
 
 // Reads from localStorage safely — returns null on SSR or parse failure
@@ -62,25 +63,25 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 // ── ShopProvider ──────────────────────────────────────────────────────────────
 
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { toast }  = useToast();
-    const pathname   = usePathname();
+    const { toast } = useToast();
+    const pathname = usePathname();
 
-    const [isLoading,    setIsLoading]    = useState(true);
-    const [products,     setProducts]     = useState<Product[]>([]);
-    const [categories,   setCategories]   = useState<CategoryNode[]>([]);
-    const [brands,       setBrands]       = useState<Brand[]>([]);
-    const [cart,         setCart]         = useState<CartItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<CategoryNode[]>([]);
+    const [brands, setBrands] = useState<Brand[]>([]);
+    const [cart, setCart] = useState<CartItem[]>([]);
     const [compareItems, setCompareItems] = useState<Product[]>([]);
-    const [isCartOpen,   setCartOpen]     = useState(false);
-    const [orders,       setOrders]       = useState<Order[]>([]);
-    const [filterConfigs,setFilterConfigs]= useState<CategoryFilterConfig[]>([]);
-
+    const [isCartOpen, setCartOpen] = useState(false);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
+    const [initBuildGuides, setInitBuildGuides] = useState<any[]>([]);
     // ── Refresh functions ─────────────────────────────────────────────────────
     // Each has an empty dep array — they only call stable setter functions.
 
     const refreshProducts = useCallback(async () => {
         try {
-            const res  = await fetch('/api/products?limit=1000');
+            const res = await fetch('/api/products?limit=1000');
             const data = await res.json();
             if (data.products) setProducts(data.products);
         } catch (err) {
@@ -90,7 +91,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const refreshCategories = useCallback(async () => {
         try {
-            const res  = await fetch('/api/categories/hierarchy');
+            const res = await fetch('/api/categories/hierarchy');
             const data = await res.json();
             setCategories(data);
         } catch (err) {
@@ -100,7 +101,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const refreshBrands = useCallback(async () => {
         try {
-            const res  = await fetch('/api/brands');
+            const res = await fetch('/api/brands');
             const data = await res.json();
             setBrands(data);
         } catch (err) {
@@ -110,8 +111,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const refreshOrders = useCallback(async (email?: string) => {
         try {
-            const url  = email ? `/api/orders?email=${encodeURIComponent(email)}` : '/api/orders';
-            const res  = await fetch(url);
+            const url = email ? `/api/orders?email=${encodeURIComponent(email)}` : '/api/orders';
+            const res = await fetch(url);
             const data = await res.json();
             if (data.orders) setOrders(data.orders);
         } catch (err) {
@@ -121,7 +122,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const refreshFilterConfigs = useCallback(async () => {
         try {
-            const res  = await fetch('/api/categories/filters');
+            const res = await fetch('/api/categories/filters');
             const data = await res.json();
             setFilterConfigs(data);
         } catch (err) {
@@ -130,6 +131,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     // ── Initialisation — runs once, skipped on admin routes ──────────────────
+
+    // In ShopContext.tsx — replace the init useEffect block
 
     const hasInitialized = useRef(false);
 
@@ -141,24 +144,25 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (hasInitialized.current) return;
         hasInitialized.current = true;
 
-        // Restore persisted cart/compare before fetching remote data
-        // so the cart is available immediately on first render.
-        const savedCart    = readStorage<CartItem[]>(CART_KEY);
+        const savedCart = readStorage<CartItem[]>(CART_KEY);
         const savedCompare = readStorage<Product[]>(COMPARE_KEY);
-        if (savedCart)    setCart(savedCart);
+        if (savedCart) setCart(savedCart);
         if (savedCompare) setCompareItems(savedCompare);
 
-        // Kick off all remote fetches in parallel
         setIsLoading(true);
-        Promise.all([
-            refreshProducts(),
-            refreshCategories(),
-            refreshBrands(),
-            refreshFilterConfigs(),
-        ])
+        fetch('/api/init')
+            .then(res => res.json())
+            .then(({ products, categories, brands, filterConfigs, buildGuides }) => {
+                if (products) setProducts(products);
+                if (categories) setCategories(categories);
+                if (brands) setBrands(brands);
+                if (filterConfigs) setFilterConfigs(filterConfigs);
+                if (buildGuides) setInitBuildGuides(buildGuides);
+            })
             .catch(err => console.error('Failed to initialize shop data:', err))
             .finally(() => setIsLoading(false));
-    }, [refreshProducts, refreshCategories, refreshBrands, refreshFilterConfigs, pathname]);
+    }, [pathname]);
+
     // pathname is stable across the session (provider mounts once) but listed
     // to satisfy the linter. The hasInitialized guard ensures single execution.
 
@@ -166,12 +170,12 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         if (isLoading) return;
-        try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch {}
+        try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { }
     }, [cart, isLoading]);
 
     useEffect(() => {
         if (isLoading) return;
-        try { localStorage.setItem(COMPARE_KEY, JSON.stringify(compareItems)); } catch {}
+        try { localStorage.setItem(COMPARE_KEY, JSON.stringify(compareItems)); } catch { }
     }, [compareItems, isLoading]);
 
     // ── Cart actions ──────────────────────────────────────────────────────────
@@ -179,12 +183,12 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addToCart = useCallback((product: Product) => {
         setCart(prev => {
             const existing = prev.find(item => item.id === product.id);
-            const isOut    = product.variants?.[0]?.status === 'OUT_OF_STOCK';
+            const isOut = product.variants?.[0]?.status === 'OUT_OF_STOCK';
 
             if (isOut) {
                 // Fire toast outside the setState callback to avoid state update during render
                 queueMicrotask(() => toast({
-                    title:   'Out of stock',
+                    title: 'Out of stock',
                     description: existing ? 'This product is no longer available.' : undefined,
                     variant: 'destructive',
                 }));
@@ -220,7 +224,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const clearCart = useCallback(() => setCart([]), []);
 
-    const loadCart  = useCallback((items: CartItem[]) => setCart(items), []);
+    const loadCart = useCallback((items: CartItem[]) => setCart(items), []);
 
     const cartTotal = useMemo(
         () => cart.reduce((sum, item) => sum + ((item.selectedVariant?.price ?? 0) * item.quantity), 0),
@@ -256,21 +260,21 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const placeOrder = useCallback((customerName: string, email: string) => {
         if (cart.length === 0) return;
         fetch('/api/orders', {
-            method:  'POST',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                id:           `ORD-${Math.random().toString(36).substring(2, 11).toUpperCase()}`,
+                id: `ORD-${Math.random().toString(36).substring(2, 11).toUpperCase()}`,
                 customerName,
                 email,
                 items: cart.map(item => ({
                     productId: item.id,
                     variantId: item.selectedVariant?.id ?? '',
-                    name:      item.name,
-                    category:  item.category,
-                    price:     item.selectedVariant?.price ?? 0,
-                    quantity:  item.quantity,
-                    image:     item.media?.[0]?.url ?? '',
-                    sku:       item.selectedVariant?.sku ?? '',
+                    name: item.name,
+                    category: item.category,
+                    price: item.selectedVariant?.price ?? 0,
+                    quantity: item.quantity,
+                    image: item.media?.[0]?.url ?? '',
+                    sku: item.selectedVariant?.sku ?? '',
                 })),
                 total: cartTotal,
             }),
@@ -312,12 +316,14 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         refreshFilterConfigs,
         placeOrder,
         isLoading,
+        initBuildGuides,
     }), [
         cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
         isCartOpen, compareItems, addToCompare, removeFromCompare,
         products, refreshProducts, categories, refreshCategories,
         brands, refreshBrands, orders, refreshOrders,
         filterConfigs, refreshFilterConfigs, placeOrder, isLoading,
+        initBuildGuides,
     ]);
 
     return (

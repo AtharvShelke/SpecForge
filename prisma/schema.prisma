@@ -173,6 +173,8 @@ model CategoryHierarchy {
   children  CategoryHierarchy[] @relation("CategoryTree")
 
   @@index([parentId])
+  @@index([sortOrder])
+  @@index([category])
 }
 
 model CategorySchema {
@@ -223,6 +225,8 @@ model FilterDefinition {
   categoryFilterConfig   CategoryFilterConfig @relation(fields: [categoryFilterConfigId], references: [id], onDelete: Cascade)
 
   @@unique([categoryFilterConfigId, key])
+  @@index([categoryFilterConfigId])
+  @@index([categoryFilterConfigId, sortOrder])
 }
 
 // ─────────────────────────────────────────────────
@@ -245,6 +249,7 @@ model ProductMedia {
 
   @@index([productId])
   @@index([sortOrder])
+  @@index([productId, sortOrder])
 }
 
 model Product {
@@ -255,7 +260,7 @@ model Product {
   metaDescription String?
   category        Category
   description     String?
-  status          ProductStatus @default(DRAFT)
+  status          ProductStatus @default(ACTIVE)
   deletedAt       DateTime?
   version         Int           @default(1)
 
@@ -270,9 +275,13 @@ model Product {
   media    ProductMedia[]
   tags     Tag[]
 
+  @@index([status])
   @@index([category])
   @@index([brandId])
   @@index([slug])
+  @@index([name])
+  @@index([status, category])
+  @@index([status, name])
 }
 
 model ProductVariant {
@@ -297,6 +306,8 @@ model ProductVariant {
   @@index([productId])
   @@index([sku])
   @@index([price])
+  @@index([status])
+  @@index([productId, status])
 }
 
 model ProductSpec {
@@ -570,6 +581,8 @@ model BuildGuide {
   updatedAt   DateTime @updatedAt
 
   items BuildGuideItem[]
+
+  @@index([createdAt])
 }
 
 model BuildGuideItem {

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { memo, useRef } from 'react'
+import { memo } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { Settings2, CheckCircle2, ZapIcon, Shield, ArrowRight, Layers } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
@@ -112,12 +112,7 @@ const AppMockup = memo(function AppMockup() {
 // ── CustomBuilderSection ──────────────────────────────────────────────────────
 
 export default function CustomBuilderSection() {
-    const containerRef = useRef<HTMLElement>(null)
-
-    const { scrollYProgress } = useScroll({
-        target:  containerRef,
-        offset:  ['start end', 'end start'],
-    })
+    const { scrollYProgress } = useScroll()
 
     // useTransform is memoised internally by framer-motion
     const y1 = useTransform(scrollYProgress, [0, 1], [100, -100])
@@ -125,7 +120,6 @@ export default function CustomBuilderSection() {
 
     return (
         <section
-            ref={containerRef}
             className="relative py-10 sm:py-24 md:py-32 overflow-hidden bg-zinc-50"
             id="custom-builder"
         >

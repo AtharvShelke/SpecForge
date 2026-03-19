@@ -1,12 +1,11 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import {
     createContext, useContext, useState, useEffect,
-    useRef, useCallback, useMemo,
+    useCallback, useMemo,
     type ReactNode,
 } from 'react';
-import { BuildGuide, CompatibilityReport, CompatibilityLevel, CartItem } from '../types';
+import { BuildGuide, CompatibilityReport, CartItem } from '../types';
 import { validateBuild } from '../services/compatibility';
 import { useShop } from './ShopContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,25 +14,18 @@ import { getBaseUrl } from '@/lib/utils';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface BuildContextType {
-    buildGuides:         BuildGuide[];
-    refreshBuildGuides:  () => Promise<void>;
-    saveCurrentBuild:    (title: string, description?: string) => Promise<void>;
-    loadBuild:           (buildId: string) => Promise<void>;
-    deleteBuild:         (buildId: string) => Promise<void>;
-    generateShareLink:   () => string;
+    buildGuides: BuildGuide[];
+    refreshBuildGuides: () => Promise<void>;
+    saveCurrentBuild: (title: string, description?: string) => Promise<void>;
+    loadBuild: (buildId: string) => Promise<void>;
+    deleteBuild: (buildId: string) => Promise<void>;
+    generateShareLink: () => string;
     loadBuildFromBase64: (base64Str: string) => Promise<void>;
     compatibilityReport: CompatibilityReport;
-    isBuildMode:         boolean;
-    toggleBuildMode:     () => void;
-    isLoading:           boolean;
+    isBuildMode: boolean;
+    toggleBuildMode: () => void;
+    isLoading: boolean;
 }
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const INITIAL_COMPAT: CompatibilityReport = {
-    status: CompatibilityLevel.COMPATIBLE,
-    issues: [],
-};
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -43,31 +35,26 @@ const BuildContext = createContext<BuildContextType | undefined>(undefined);
 
 export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { cart, cartTotal, products, setCartOpen, loadCart } = useShop();
-    const { toast }  = useToast();
-    const pathname   = usePathname();
+    const { toast } = useToast();
 
-    const [buildGuides,         setBuildGuides]         = useState<BuildGuide[]>([]);
-    const [isBuildMode,         setIsBuildMode]         = useState(false);
-    const [isLoading,           setIsLoading]           = useState(false);
-    const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport>(INITIAL_COMPAT);
+    const [buildGuides, setBuildGuides] = useState<BuildGuide[]>([]);
+    const [isBuildMode, setIsBuildMode] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // ── Compatibility — derive directly instead of storing in state ───────────
-    // Using useEffect + setState for a pure derivation adds an extra render cycle.
-    // useMemo computes synchronously and avoids the stale-state risk.
+    // ── Compatibility — derived synchronously, no extra render cycle ──────────
     const liveCompatReport = useMemo(() => validateBuild(cart), [cart]);
 
-    // Keep setState for consumers that need the context value to trigger re-renders,
-    // but sync it without the extra effect cycle by deriving during render.
-    // We replace the useEffect approach entirely: just expose the memoised value.
+    // ── Seed build guides from the /api/init payload (no extra fetch) ─────────
+    const { initBuildGuides } = useShop();
+    useEffect(() => {
+        if (initBuildGuides.length > 0) setBuildGuides(initBuildGuides);
+    }, [initBuildGuides]);
 
-    // ── Build guides fetch ────────────────────────────────────────────────────
-
-    const hasFetchedGuides = useRef(false);
-
+    // ── Manual refresh — used after save / delete actions only ───────────────
     const refreshBuildGuides = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res  = await fetch(`${getBaseUrl()}/api/build-guides`);
+            const res = await fetch(`${getBaseUrl()}/api/build-guides`);
             const data = await res.json();
             setBuildGuides(data);
         } catch (err) {
@@ -75,15 +62,7 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } finally {
             setIsLoading(false);
         }
-    }, []); // no deps — only touches stable setters
-
-    // Fetch once on mount, skip admin routes
-    useEffect(() => {
-        if (pathname?.startsWith('/admin')) return;
-        if (hasFetchedGuides.current) return;
-        hasFetchedGuides.current = true;
-        refreshBuildGuides();
-    }, [refreshBuildGuides]);
+    }, []);
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -91,15 +70,15 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (cart.length === 0) return;
         try {
             const res = await fetch(`${getBaseUrl()}/api/build-guides`, {
-                method:  'POST',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name:  title,
+                    name: title,
                     total: cartTotal,
                     items: cart.map(i => ({
                         productId: i.id,
                         variantId: i.selectedVariant?.id ?? i.variants?.[0]?.id ?? '',
-                        quantity:  i.quantity,
+                        quantity: i.quantity,
                     })),
                 }),
             });
@@ -111,9 +90,9 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 const errData = await res.json();
                 console.error('Failed to save build guide API:', errData);
                 toast({
-                    title:       'Failed to save build guide',
+                    title: 'Failed to save build guide',
                     description: JSON.stringify(errData.error ?? errData),
-                    variant:     'destructive',
+                    variant: 'destructive',
                 });
             }
         } catch (err) {
@@ -197,7 +176,7 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const loadBuildFromBase64 = useCallback(async (base64Str: string) => {
         setIsLoading(true);
         try {
-            const padded  = base64Str.replace(/-/g, '+').replace(/_/g, '/');
+            const padded = base64Str.replace(/-/g, '+').replace(/_/g, '/');
             const decoded = decodeURIComponent(atob(padded));
             if (!decoded) throw new Error('Invalid share string');
 
