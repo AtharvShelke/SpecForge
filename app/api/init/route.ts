@@ -31,6 +31,7 @@ function buildTree(records: HierarchyRecord[]) {
   return roots;
 }
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 60 // ISR: re-fetch at most once per minute
 
 export async function GET() {

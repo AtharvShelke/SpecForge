@@ -93,6 +93,11 @@ export type WarehouseInventory = Prisma.WarehouseInventoryModel
  */
 export type StockMovement = Prisma.StockMovementModel
 /**
+ * Model InventoryUnit
+ * 
+ */
+export type InventoryUnit = Prisma.InventoryUnitModel
+/**
  * Model Supplier
  * 
  */

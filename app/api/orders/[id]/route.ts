@@ -11,6 +11,10 @@ const OrderStatusEnum = z.enum([
 const updateOrderSchema = z.object({
     status: OrderStatusEnum,
     note: z.string().optional(),
+    assignedUnits: z.array(z.object({
+        orderItemId: z.string(),
+        inventoryUnitId: z.string()
+    })).optional()
 });
 
 // Valid order state transitions
@@ -90,7 +94,15 @@ export async function PATCH(
 
             const inventoryItems = existing.items
                 .filter(i => !!i.variantId)
-                .map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+                .map(i => {
+                    const assignedForThisItem = data.assignedUnits?.filter(au => au.orderItemId === i.id) || [];
+                    return {
+                        variantId: i.variantId as string,
+                        quantity: i.quantity,
+                        orderItemId: i.id,
+                        assignedUnitIds: assignedForThisItem.map(au => au.inventoryUnitId),
+                    };
+                });
 
             // Handle inventory based on transition
             if (newStatus === "SHIPPED") {

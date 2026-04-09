@@ -158,6 +158,14 @@ export async function POST(req: NextRequest) {
                 });
             }
 
+            // Fetch variants to populate variantSnapshot
+            const variantIds = data.items.map(i => i.variantId);
+            const variants = await tx.productVariant.findMany({
+                where: { id: { in: variantIds } },
+                include: { product: true }
+            });
+            const variantMap = new Map(variants.map(v => [v.id, v]));
+
             // Create the order
             const o = await tx.order.create({
                 data: {
@@ -184,15 +192,29 @@ export async function POST(req: NextRequest) {
                     idempotencyKey: data.idempotencyKey,
                     source: data.source,
                     items: {
-                        create: data.items.map((item) => ({
-                            variantId: item.variantId,
-                            name: item.name,
-                            category: item.category,
-                            price: item.price,
-                            quantity: item.quantity,
-                            image: item.image,
-                            sku: item.sku,
-                        })),
+                        create: data.items.map((item) => {
+                            const variant = variantMap.get(item.variantId);
+                            // Only store essential serializable data
+                            const variantSnapshot = variant ? {
+                                id: variant.id,
+                                sku: variant.sku,
+                                price: variant.price,
+                                productName: variant.product.name,
+                                category: item.category,
+                                attributes: variant.attributes
+                            } : null;
+
+                            return {
+                                variantId: item.variantId,
+                                name: item.name,
+                                category: item.category,
+                                price: item.price,
+                                quantity: item.quantity,
+                                image: item.image,
+                                sku: item.sku,
+                                variantSnapshot: variantSnapshot as any,
+                            };
+                        }),
                     },
                     logs: {
                         create: {
@@ -205,9 +227,10 @@ export async function POST(req: NextRequest) {
             });
 
             // Reserve inventory using centralized service
-            const inventoryItems = data.items.map(i => ({
+            const inventoryItems = o.items.map(i => ({
                 variantId: i.variantId,
                 quantity: i.quantity,
+                orderItemId: i.id,
             }));
             await reserveInventory(tx, inventoryItems, data.id);
 

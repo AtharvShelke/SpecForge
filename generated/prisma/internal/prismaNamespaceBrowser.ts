@@ -66,6 +66,7 @@ export const ModelName = {
   Warehouse: 'Warehouse',
   WarehouseInventory: 'WarehouseInventory',
   StockMovement: 'StockMovement',
+  InventoryUnit: 'InventoryUnit',
   Supplier: 'Supplier',
   PurchaseOrder: 'PurchaseOrder',
   PurchaseOrderItem: 'PurchaseOrderItem',
@@ -303,10 +304,30 @@ export const StockMovementScalarFieldEnum = {
   orderId: 'orderId',
   purchaseOrderId: 'purchaseOrderId',
   vendorId: 'vendorId',
+  inventoryUnitId: 'inventoryUnitId',
+  serialNumberSnapshot: 'serialNumberSnapshot',
   createdAt: 'createdAt'
 } as const
 
 export type StockMovementScalarFieldEnum = (typeof StockMovementScalarFieldEnum)[keyof typeof StockMovementScalarFieldEnum]
+
+
+export const InventoryUnitScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  warehouseId: 'warehouseId',
+  sn: 'sn',
+  imei: 'imei',
+  status: 'status',
+  orderItemId: 'orderItemId',
+  purchaseOrderItemId: 'purchaseOrderItemId',
+  warehouseInventoryId: 'warehouseInventoryId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  soldAt: 'soldAt'
+} as const
+
+export type InventoryUnitScalarFieldEnum = (typeof InventoryUnitScalarFieldEnum)[keyof typeof InventoryUnitScalarFieldEnum]
 
 
 export const SupplierScalarFieldEnum = {
@@ -408,6 +429,8 @@ export const OrderItemScalarFieldEnum = {
   quantity: 'quantity',
   image: 'image',
   sku: 'sku',
+  serialNumberSnapshot: 'serialNumberSnapshot',
+  partNumberSnapshot: 'partNumberSnapshot',
   variantSnapshot: 'variantSnapshot'
 } as const
 

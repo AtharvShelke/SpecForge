@@ -15,6 +15,8 @@ type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
 export interface InventoryReserveItem {
     variantId: string;
     quantity: number;
+    orderItemId?: string;
+    assignedUnitIds?: string[];
 }
 
 export class InsufficientStockError extends Error {
@@ -84,6 +86,51 @@ export async function reserveInventory(
                 data: { status: 'OUT_OF_STOCK' }
             });
         }
+
+        // Trace physical inventory units
+        if (item.orderItemId) {
+            const units = await tx.inventoryUnit.findMany({
+                where: {
+                    variantId: item.variantId,
+                    warehouseId: inv.warehouseId,
+                    status: 'AVAILABLE'
+                },
+                take: item.quantity,
+            });
+
+            if (units.length > 0) {
+                await tx.inventoryUnit.updateMany({
+                    where: { id: { in: units.map(u => u.id) } },
+                    data: {
+                        status: 'RESERVED',
+                        orderItemId: item.orderItemId,
+                        updatedAt: new Date(),
+                    }
+                });
+            }
+
+            // Fallback: If warehouse inventory unit count misaligned
+            if (units.length < item.quantity) {
+                const remaining = item.quantity - units.length;
+                const extraUnits = await tx.inventoryUnit.findMany({
+                    where: {
+                        variantId: item.variantId,
+                        status: 'AVAILABLE'
+                    },
+                    take: remaining,
+                });
+                if (extraUnits.length > 0) {
+                    await tx.inventoryUnit.updateMany({
+                        where: { id: { in: extraUnits.map(u => u.id) } },
+                        data: {
+                            status: 'RESERVED',
+                            orderItemId: item.orderItemId,
+                            updatedAt: new Date(),
+                        }
+                    });
+                }
+            }
+        }
     }
 }
 
@@ -111,19 +158,67 @@ export async function confirmInventory(
             },
         });
 
-        await tx.stockMovement.create({
-            data: {
-                warehouseInventoryId: inv.id,
-                warehouseId: inv.warehouseId,
-                type: 'SALE',
-                quantity: item.quantity,
-                previousQuantity: inv.quantity,
-                newQuantity: inv.quantity,
-                orderId,
-                reason: `Order ${orderId} shipped — reserved stock confirmed`,
-                performedBy,
-            },
-        });
+        const assignedCount = item.assignedUnitIds?.length || 0;
+        const unassignedQty = item.quantity - assignedCount;
+
+        if (unassignedQty > 0) {
+            await tx.stockMovement.create({
+                data: {
+                    warehouseInventoryId: inv.id,
+                    warehouseId: inv.warehouseId,
+                    type: 'SALE',
+                    quantity: unassignedQty,
+                    previousQuantity: inv.quantity,
+                    newQuantity: inv.quantity,
+                    orderId,
+                    reason: `Order ${orderId} shipped — reserved stock confirmed`,
+                    performedBy,
+                },
+            });
+        }
+
+        if (item.orderItemId) {
+            if (item.assignedUnitIds && item.assignedUnitIds.length > 0) {
+                // Return any auto-reserved units to available
+                await tx.inventoryUnit.updateMany({
+                    where: { orderItemId: item.orderItemId, status: 'RESERVED' },
+                    data: { status: 'AVAILABLE', orderItemId: null, updatedAt: new Date() }
+                });
+
+                // Mark specific assigned units as SOLD
+                await tx.inventoryUnit.updateMany({
+                    where: { id: { in: item.assignedUnitIds } },
+                    data: { status: 'SOLD', orderItemId: item.orderItemId, soldAt: new Date(), updatedAt: new Date() }
+                });
+
+                // Detailed stock movement for mapped units
+                for (const uId of item.assignedUnitIds) {
+                    const u = await tx.inventoryUnit.findUnique({ where: { id: uId } });
+                    if (u && u.warehouseInventoryId) {
+                        await tx.stockMovement.create({
+                            data: {
+                                warehouseInventoryId: u.warehouseInventoryId,
+                                warehouseId: u.warehouseId,
+                                inventoryUnitId: u.id,
+                                serialNumberSnapshot: u.sn || null,
+                                type: "SALE",
+                                quantity: 1,
+                                previousQuantity: 1,
+                                newQuantity: 0,
+                                orderId: orderId,
+                                reason: `Unit manually mapped for order ${orderId}`,
+                                performedBy: performedBy || "Admin",
+                            }
+                        });
+                    }
+                }
+            } else {
+                await tx.inventoryUnit.updateMany({
+                    where: { orderItemId: item.orderItemId, status: 'RESERVED' },
+                    data: { status: 'SOLD', soldAt: new Date(), updatedAt: new Date() }
+                });
+            }
+        }
     }
 }
 
@@ -168,19 +263,86 @@ export async function restoreInventory(
             });
         }
 
-        await tx.stockMovement.create({
-            data: {
-                warehouseInventoryId: inv.id,
-                warehouseId: inv.warehouseId,
-                type: 'RETURN',
-                quantity: item.quantity,
-                previousQuantity: inv.quantity,
-                newQuantity,
-                orderId,
-                reason,
-                performedBy,
-            },
-        });
+        let assignedCount = 0;
+        if (item.orderItemId) {
+            if (isPreShip) {
+                // Return to available
+                const unitsToRestore = await tx.inventoryUnit.findMany({
+                    where: { orderItemId: item.orderItemId, status: 'RESERVED' },
+                });
+                assignedCount = unitsToRestore.length;
+
+                await tx.inventoryUnit.updateMany({
+                    where: { orderItemId: item.orderItemId, status: 'RESERVED' },
+                    data: { status: 'AVAILABLE', orderItemId: null, updatedAt: new Date() }
+                });
+
+                for (const u of unitsToRestore) {
+                    await tx.stockMovement.create({
+                        data: {
+                            warehouseInventoryId: u.warehouseInventoryId!,
+                            warehouseId: u.warehouseId,
+                            inventoryUnitId: u.id,
+                            serialNumberSnapshot: u.sn || null,
+                            type: 'RETURN',
+                            quantity: 1,
+                            previousQuantity: 0,
+                            newQuantity: 1,
+                            orderId: orderId,
+                            reason: `${reason} (Pre-ship unit unassigned)`,
+                            performedBy,
+                        }
+                    });
+                }
+            } else {
+                // Post-ship return -> RETURNED status for inspection
+                const unitsToReturn = await tx.inventoryUnit.findMany({
+                    where: { orderItemId: item.orderItemId, status: 'SOLD' },
+                });
+                assignedCount = unitsToReturn.length;
+
+                await tx.inventoryUnit.updateMany({
+                    where: { orderItemId: item.orderItemId, status: 'SOLD' },
+                    data: { status: 'RETURNED', updatedAt: new Date() }
+                });
+
+                for (const u of unitsToReturn) {
+                    await tx.stockMovement.create({
+                        data: {
+                            warehouseInventoryId: u.warehouseInventoryId!,
+                            warehouseId: u.warehouseId,
+                            inventoryUnitId: u.id,
+                            serialNumberSnapshot: u.sn || null,
+                            type: 'RETURN',
+                            quantity: 1,
+                            previousQuantity: 0,
+                            newQuantity: 1,
+                            orderId: orderId,
+                            reason: `${reason} (Unit returned)`,
+                            performedBy,
+                        }
+                    });
+                }
+            }
+        }
+
+        const unassignedQty = item.quantity - assignedCount;
+
+        if (unassignedQty > 0) {
+            await tx.stockMovement.create({
+                data: {
+                    warehouseInventoryId: inv.id,
+                    warehouseId: inv.warehouseId,
+                    type: 'RETURN',
+                    quantity: unassignedQty,
+                    previousQuantity: inv.quantity,
+                    newQuantity,
+                    orderId,
+                    reason,
+                    performedBy,
+                },
+            });
+        }
 
         // If returned item makes stock > 0, make sure status is ACTIVE
         const variant = await tx.productVariant.findUnique({

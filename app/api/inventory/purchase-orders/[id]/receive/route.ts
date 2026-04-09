@@ -6,6 +6,10 @@ import { PurchaseOrderStatus } from "@/generated/prisma/client";
 const receiveItemSchema = z.object({
     itemId: z.string().uuid(),
     quantityReceiving: z.number().int().min(0),
+    units: z.array(z.object({
+        sn: z.string().optional().nullable(),
+        imei: z.string().optional().nullable(),
+    })).optional(),
 });
 
 const receivePoSchema = z.object({
@@ -129,8 +133,8 @@ export async function PATCH(
                     invId = newInv.id;
                 }
 
-                // Append Stock Movement
-                await tx.stockMovement.create({
+                // Append Bulk Stock Movement for the overall quantity change
+                const bulkMovement = await tx.stockMovement.create({
                     data: {
                         warehouseInventoryId: invId,
                         warehouseId: po.warehouseId,
@@ -142,6 +146,40 @@ export async function PATCH(
                         performedBy: "Admin",
                     },
                 });
+
+                // Create InventoryUnits if any are provided (SN/IMEI)
+                if (incomingItem.units && incomingItem.units.length > 0) {
+                    for (const unit of incomingItem.units) {
+                        // Create the physical unit
+                        const createdUnit = await tx.inventoryUnit.create({
+                            data: {
+                                variantId: poItem.variantId,
+                                warehouseId: po.warehouseId,
+                                sn: unit.sn || null,
+                                imei: unit.imei || null,
+                                status: "AVAILABLE",
+                                purchaseOrderItemId: poItem.id,
+                                warehouseInventoryId: invId,
+                            }
+                        });
+
+                        // Link a specific stock movement to this exact unit
+                        await tx.stockMovement.create({
+                            data: {
+                                warehouseInventoryId: invId,
+                                warehouseId: po.warehouseId,
+                                inventoryUnitId: createdUnit.id,
+                                serialNumberSnapshot: unit.sn || null,
+                                type: "PURCHASE",
+                                quantity: 1, // Represents 1 specific item
+                                previousQuantity: previousInvQuantity, // Contextual
+                                newQuantity: newInvQuantity,
+                                reason: `Received Unit for PO: ${po.id}`,
+                                performedBy: "Admin",
+                            }
+                        });
+                    }
+                }
 
                 // Update Product status metadata
                 await tx.productVariant.update({

@@ -263,6 +263,7 @@ export type WarehouseInventoryWhereInput = {
   variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
   warehouse?: Prisma.XOR<Prisma.WarehouseScalarRelationFilter, Prisma.WarehouseWhereInput>
   stockMovements?: Prisma.StockMovementListRelationFilter
+  inventoryUnits?: Prisma.InventoryUnitListRelationFilter
 }
 
 export type WarehouseInventoryOrderByWithRelationInput = {
@@ -278,6 +279,7 @@ export type WarehouseInventoryOrderByWithRelationInput = {
   variant?: Prisma.ProductVariantOrderByWithRelationInput
   warehouse?: Prisma.WarehouseOrderByWithRelationInput
   stockMovements?: Prisma.StockMovementOrderByRelationAggregateInput
+  inventoryUnits?: Prisma.InventoryUnitOrderByRelationAggregateInput
 }
 
 export type WarehouseInventoryWhereUniqueInput = Prisma.AtLeast<{
@@ -297,6 +299,7 @@ export type WarehouseInventoryWhereUniqueInput = Prisma.AtLeast<{
   variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
   warehouse?: Prisma.XOR<Prisma.WarehouseScalarRelationFilter, Prisma.WarehouseWhereInput>
   stockMovements?: Prisma.StockMovementListRelationFilter
+  inventoryUnits?: Prisma.InventoryUnitListRelationFilter
 }, "id" | "variantId_warehouseId">
 
 export type WarehouseInventoryOrderByWithAggregationInput = {
@@ -342,6 +345,7 @@ export type WarehouseInventoryCreateInput = {
   variant: Prisma.ProductVariantCreateNestedOneWithoutWarehouseInventoriesInput
   warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoriesInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutWarehouseInventoryInput
+  inventoryUnits?: Prisma.InventoryUnitCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryUncheckedCreateInput = {
@@ -355,6 +359,7 @@ export type WarehouseInventoryUncheckedCreateInput = {
   location?: string
   lastUpdated?: Date | string | null
   stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutWarehouseInventoryInput
+  inventoryUnits?: Prisma.InventoryUnitUncheckedCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryUpdateInput = {
@@ -368,6 +373,7 @@ export type WarehouseInventoryUpdateInput = {
   variant?: Prisma.ProductVariantUpdateOneRequiredWithoutWarehouseInventoriesNestedInput
   warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoriesNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutWarehouseInventoryNestedInput
+  inventoryUnits?: Prisma.InventoryUnitUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryUncheckedUpdateInput = {
@@ -381,6 +387,7 @@ export type WarehouseInventoryUncheckedUpdateInput = {
   location?: Prisma.StringFieldUpdateOperationsInput | string
   lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
+  inventoryUnits?: Prisma.InventoryUnitUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryCreateManyInput = {
@@ -487,6 +494,11 @@ export type WarehouseInventoryScalarRelationFilter = {
   isNot?: Prisma.WarehouseInventoryWhereInput
 }
 
+export type WarehouseInventoryNullableScalarRelationFilter = {
+  is?: Prisma.WarehouseInventoryWhereInput | null
+  isNot?: Prisma.WarehouseInventoryWhereInput | null
+}
+
 export type WarehouseInventoryCreateNestedManyWithoutVariantInput = {
   create?: Prisma.XOR<Prisma.WarehouseInventoryCreateWithoutVariantInput, Prisma.WarehouseInventoryUncheckedCreateWithoutVariantInput> | Prisma.WarehouseInventoryCreateWithoutVariantInput[] | Prisma.WarehouseInventoryUncheckedCreateWithoutVariantInput[]
   connectOrCreate?: Prisma.WarehouseInventoryCreateOrConnectWithoutVariantInput | Prisma.WarehouseInventoryCreateOrConnectWithoutVariantInput[]
@@ -585,6 +597,22 @@ export type WarehouseInventoryUpdateOneRequiredWithoutStockMovementsNestedInput 
   update?: Prisma.XOR<Prisma.XOR<Prisma.WarehouseInventoryUpdateToOneWithWhereWithoutStockMovementsInput, Prisma.WarehouseInventoryUpdateWithoutStockMovementsInput>, Prisma.WarehouseInventoryUncheckedUpdateWithoutStockMovementsInput>
 }
 
+export type WarehouseInventoryCreateNestedOneWithoutInventoryUnitsInput = {
+  create?: Prisma.XOR<Prisma.WarehouseInventoryCreateWithoutInventoryUnitsInput, Prisma.WarehouseInventoryUncheckedCreateWithoutInventoryUnitsInput>
+  connectOrCreate?: Prisma.WarehouseInventoryCreateOrConnectWithoutInventoryUnitsInput
+  connect?: Prisma.WarehouseInventoryWhereUniqueInput
+}
+
+export type WarehouseInventoryUpdateOneWithoutInventoryUnitsNestedInput = {
+  create?: Prisma.XOR<Prisma.WarehouseInventoryCreateWithoutInventoryUnitsInput, Prisma.WarehouseInventoryUncheckedCreateWithoutInventoryUnitsInput>
+  connectOrCreate?: Prisma.WarehouseInventoryCreateOrConnectWithoutInventoryUnitsInput
+  upsert?: Prisma.WarehouseInventoryUpsertWithoutInventoryUnitsInput
+  disconnect?: Prisma.WarehouseInventoryWhereInput | boolean
+  delete?: Prisma.WarehouseInventoryWhereInput | boolean
+  connect?: Prisma.WarehouseInventoryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WarehouseInventoryUpdateToOneWithWhereWithoutInventoryUnitsInput, Prisma.WarehouseInventoryUpdateWithoutInventoryUnitsInput>, Prisma.WarehouseInventoryUncheckedUpdateWithoutInventoryUnitsInput>
+}
+
 export type WarehouseInventoryCreateWithoutVariantInput = {
   id?: string
   quantity?: number
@@ -595,6 +623,7 @@ export type WarehouseInventoryCreateWithoutVariantInput = {
   lastUpdated?: Date | string | null
   warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoriesInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutWarehouseInventoryInput
+  inventoryUnits?: Prisma.InventoryUnitCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryUncheckedCreateWithoutVariantInput = {
@@ -607,6 +636,7 @@ export type WarehouseInventoryUncheckedCreateWithoutVariantInput = {
   location?: string
   lastUpdated?: Date | string | null
   stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutWarehouseInventoryInput
+  inventoryUnits?: Prisma.InventoryUnitUncheckedCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryCreateOrConnectWithoutVariantInput = {
@@ -660,6 +690,7 @@ export type WarehouseInventoryCreateWithoutWarehouseInput = {
   lastUpdated?: Date | string | null
   variant: Prisma.ProductVariantCreateNestedOneWithoutWarehouseInventoriesInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutWarehouseInventoryInput
+  inventoryUnits?: Prisma.InventoryUnitCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryUncheckedCreateWithoutWarehouseInput = {
@@ -672,6 +703,7 @@ export type WarehouseInventoryUncheckedCreateWithoutWarehouseInput = {
   location?: string
   lastUpdated?: Date | string | null
   stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutWarehouseInventoryInput
+  inventoryUnits?: Prisma.InventoryUnitUncheckedCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryCreateOrConnectWithoutWarehouseInput = {
@@ -710,6 +742,7 @@ export type WarehouseInventoryCreateWithoutStockMovementsInput = {
   lastUpdated?: Date | string | null
   variant: Prisma.ProductVariantCreateNestedOneWithoutWarehouseInventoriesInput
   warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoriesInput
+  inventoryUnits?: Prisma.InventoryUnitCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryUncheckedCreateWithoutStockMovementsInput = {
@@ -722,6 +755,7 @@ export type WarehouseInventoryUncheckedCreateWithoutStockMovementsInput = {
   costPrice?: number
   location?: string
   lastUpdated?: Date | string | null
+  inventoryUnits?: Prisma.InventoryUnitUncheckedCreateNestedManyWithoutWarehouseInventoryInput
 }
 
 export type WarehouseInventoryCreateOrConnectWithoutStockMovementsInput = {
@@ -750,6 +784,7 @@ export type WarehouseInventoryUpdateWithoutStockMovementsInput = {
   lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   variant?: Prisma.ProductVariantUpdateOneRequiredWithoutWarehouseInventoriesNestedInput
   warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoriesNestedInput
+  inventoryUnits?: Prisma.InventoryUnitUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryUncheckedUpdateWithoutStockMovementsInput = {
@@ -762,6 +797,75 @@ export type WarehouseInventoryUncheckedUpdateWithoutStockMovementsInput = {
   costPrice?: Prisma.FloatFieldUpdateOperationsInput | number
   location?: Prisma.StringFieldUpdateOperationsInput | string
   lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  inventoryUnits?: Prisma.InventoryUnitUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
+}
+
+export type WarehouseInventoryCreateWithoutInventoryUnitsInput = {
+  id?: string
+  quantity?: number
+  reserved?: number
+  reorderLevel?: number
+  costPrice?: number
+  location?: string
+  lastUpdated?: Date | string | null
+  variant: Prisma.ProductVariantCreateNestedOneWithoutWarehouseInventoriesInput
+  warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoriesInput
+  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutWarehouseInventoryInput
+}
+
+export type WarehouseInventoryUncheckedCreateWithoutInventoryUnitsInput = {
+  id?: string
+  variantId: string
+  warehouseId: string
+  quantity?: number
+  reserved?: number
+  reorderLevel?: number
+  costPrice?: number
+  location?: string
+  lastUpdated?: Date | string | null
+  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutWarehouseInventoryInput
+}
+
+export type WarehouseInventoryCreateOrConnectWithoutInventoryUnitsInput = {
+  where: Prisma.WarehouseInventoryWhereUniqueInput
+  create: Prisma.XOR<Prisma.WarehouseInventoryCreateWithoutInventoryUnitsInput, Prisma.WarehouseInventoryUncheckedCreateWithoutInventoryUnitsInput>
+}
+
+export type WarehouseInventoryUpsertWithoutInventoryUnitsInput = {
+  update: Prisma.XOR<Prisma.WarehouseInventoryUpdateWithoutInventoryUnitsInput, Prisma.WarehouseInventoryUncheckedUpdateWithoutInventoryUnitsInput>
+  create: Prisma.XOR<Prisma.WarehouseInventoryCreateWithoutInventoryUnitsInput, Prisma.WarehouseInventoryUncheckedCreateWithoutInventoryUnitsInput>
+  where?: Prisma.WarehouseInventoryWhereInput
+}
+
+export type WarehouseInventoryUpdateToOneWithWhereWithoutInventoryUnitsInput = {
+  where?: Prisma.WarehouseInventoryWhereInput
+  data: Prisma.XOR<Prisma.WarehouseInventoryUpdateWithoutInventoryUnitsInput, Prisma.WarehouseInventoryUncheckedUpdateWithoutInventoryUnitsInput>
+}
+
+export type WarehouseInventoryUpdateWithoutInventoryUnitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  reserved?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderLevel?: Prisma.IntFieldUpdateOperationsInput | number
+  costPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  location?: Prisma.StringFieldUpdateOperationsInput | string
+  lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutWarehouseInventoriesNestedInput
+  warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoriesNestedInput
+  stockMovements?: Prisma.StockMovementUpdateManyWithoutWarehouseInventoryNestedInput
+}
+
+export type WarehouseInventoryUncheckedUpdateWithoutInventoryUnitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  reserved?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderLevel?: Prisma.IntFieldUpdateOperationsInput | number
+  costPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  location?: Prisma.StringFieldUpdateOperationsInput | string
+  lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryCreateManyVariantInput = {
@@ -785,6 +889,7 @@ export type WarehouseInventoryUpdateWithoutVariantInput = {
   lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoriesNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutWarehouseInventoryNestedInput
+  inventoryUnits?: Prisma.InventoryUnitUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryUncheckedUpdateWithoutVariantInput = {
@@ -797,6 +902,7 @@ export type WarehouseInventoryUncheckedUpdateWithoutVariantInput = {
   location?: Prisma.StringFieldUpdateOperationsInput | string
   lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
+  inventoryUnits?: Prisma.InventoryUnitUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryUncheckedUpdateManyWithoutVariantInput = {
@@ -831,6 +937,7 @@ export type WarehouseInventoryUpdateWithoutWarehouseInput = {
   lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   variant?: Prisma.ProductVariantUpdateOneRequiredWithoutWarehouseInventoriesNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutWarehouseInventoryNestedInput
+  inventoryUnits?: Prisma.InventoryUnitUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryUncheckedUpdateWithoutWarehouseInput = {
@@ -843,6 +950,7 @@ export type WarehouseInventoryUncheckedUpdateWithoutWarehouseInput = {
   location?: Prisma.StringFieldUpdateOperationsInput | string
   lastUpdated?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
+  inventoryUnits?: Prisma.InventoryUnitUncheckedUpdateManyWithoutWarehouseInventoryNestedInput
 }
 
 export type WarehouseInventoryUncheckedUpdateManyWithoutWarehouseInput = {
@@ -863,10 +971,12 @@ export type WarehouseInventoryUncheckedUpdateManyWithoutWarehouseInput = {
 
 export type WarehouseInventoryCountOutputType = {
   stockMovements: number
+  inventoryUnits: number
 }
 
 export type WarehouseInventoryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   stockMovements?: boolean | WarehouseInventoryCountOutputTypeCountStockMovementsArgs
+  inventoryUnits?: boolean | WarehouseInventoryCountOutputTypeCountInventoryUnitsArgs
 }
 
 /**
@@ -886,6 +996,13 @@ export type WarehouseInventoryCountOutputTypeCountStockMovementsArgs<ExtArgs ext
   where?: Prisma.StockMovementWhereInput
 }
 
+/**
+ * WarehouseInventoryCountOutputType without action
+ */
+export type WarehouseInventoryCountOutputTypeCountInventoryUnitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InventoryUnitWhereInput
+}
+
 
 export type WarehouseInventorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -900,6 +1017,7 @@ export type WarehouseInventorySelect<ExtArgs extends runtime.Types.Extensions.In
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
   stockMovements?: boolean | Prisma.WarehouseInventory$stockMovementsArgs<ExtArgs>
+  inventoryUnits?: boolean | Prisma.WarehouseInventory$inventoryUnitsArgs<ExtArgs>
   _count?: boolean | Prisma.WarehouseInventoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["warehouseInventory"]>
 
@@ -948,6 +1066,7 @@ export type WarehouseInventoryInclude<ExtArgs extends runtime.Types.Extensions.I
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
   stockMovements?: boolean | Prisma.WarehouseInventory$stockMovementsArgs<ExtArgs>
+  inventoryUnits?: boolean | Prisma.WarehouseInventory$inventoryUnitsArgs<ExtArgs>
   _count?: boolean | Prisma.WarehouseInventoryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WarehouseInventoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -965,6 +1084,7 @@ export type $WarehouseInventoryPayload<ExtArgs extends runtime.Types.Extensions.
     variant: Prisma.$ProductVariantPayload<ExtArgs>
     warehouse: Prisma.$WarehousePayload<ExtArgs>
     stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
+    inventoryUnits: Prisma.$InventoryUnitPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1373,6 +1493,7 @@ export interface Prisma__WarehouseInventoryClient<T, Null = never, ExtArgs exten
   variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   warehouse<T extends Prisma.WarehouseDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WarehouseDefaultArgs<ExtArgs>>): Prisma.Prisma__WarehouseClient<runtime.Types.Result.GetResult<Prisma.$WarehousePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   stockMovements<T extends Prisma.WarehouseInventory$stockMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WarehouseInventory$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inventoryUnits<T extends Prisma.WarehouseInventory$inventoryUnitsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WarehouseInventory$inventoryUnitsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryUnitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1828,6 +1949,30 @@ export type WarehouseInventory$stockMovementsArgs<ExtArgs extends runtime.Types.
   take?: number
   skip?: number
   distinct?: Prisma.StockMovementScalarFieldEnum | Prisma.StockMovementScalarFieldEnum[]
+}
+
+/**
+ * WarehouseInventory.inventoryUnits
+ */
+export type WarehouseInventory$inventoryUnitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InventoryUnit
+   */
+  select?: Prisma.InventoryUnitSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InventoryUnit
+   */
+  omit?: Prisma.InventoryUnitOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InventoryUnitInclude<ExtArgs> | null
+  where?: Prisma.InventoryUnitWhereInput
+  orderBy?: Prisma.InventoryUnitOrderByWithRelationInput | Prisma.InventoryUnitOrderByWithRelationInput[]
+  cursor?: Prisma.InventoryUnitWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InventoryUnitScalarFieldEnum | Prisma.InventoryUnitScalarFieldEnum[]
 }
 
 /**

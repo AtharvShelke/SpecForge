@@ -11,4 +11,3 @@ the filters in the sidebar needs to be configured again [PRORITIY]
 @pc builder page needs responsiveness upgrade
 @saved builds need responsive
 @footer 
-

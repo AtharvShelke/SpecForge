@@ -127,6 +127,18 @@ export const PurchaseOrderStatus = {
 export type PurchaseOrderStatus = (typeof PurchaseOrderStatus)[keyof typeof PurchaseOrderStatus]
 
 
+export const InventoryUnitStatus = {
+  AVAILABLE: 'AVAILABLE',
+  RESERVED: 'RESERVED',
+  SOLD: 'SOLD',
+  RETURNED: 'RETURNED',
+  LOST: 'LOST',
+  DAMAGED: 'DAMAGED'
+} as const
+
+export type InventoryUnitStatus = (typeof InventoryUnitStatus)[keyof typeof InventoryUnitStatus]
+
+
 export const Currency = {
   INR: 'INR',
   USD: 'USD',
