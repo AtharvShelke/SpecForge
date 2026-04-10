@@ -1,3 +1,5 @@
+// e:\web-dev\pc-system\md_client\prisma\schema.prisma
+
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -34,22 +36,6 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   RETURNED
-}
-
-enum CompatibilityLevel {
-  COMPATIBLE
-  WARNING
-  INCOMPATIBLE
-}
-
-enum StockMovementType {
-  PURCHASE
-  INWARD
-  OUTWARD
-  SALE
-  RETURN
-  ADJUSTMENT
-  RESERVE
 }
 
 enum InvoiceStatus {
@@ -103,9 +89,6 @@ enum InventoryUnitStatus {
   AVAILABLE
   RESERVED
   SOLD
-  RETURNED
-  LOST
-  DAMAGED
 }
 
 enum Currency {
@@ -113,14 +96,6 @@ enum Currency {
   USD
   EUR
   GBP
-}
-
-enum FilterType {
-  checkbox
-  range
-  boolean
-  search
-  dropdown
 }
 
 enum ProductStatus {
@@ -135,6 +110,29 @@ enum Role {
   WAREHOUSE_STAFF
   FINANCE
   USER
+}
+
+enum SpecValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+}
+
+enum CompatibilityOperator {
+  EQUAL
+  NOT_EQUAL
+  LESS_THAN
+  LESS_OR_EQUAL
+  GREATER_THAN
+  GREATER_OR_EQUAL
+  IN_LIST
+  CONTAINS
+}
+
+enum CompatibilitySeverity {
+  ERROR
+  WARNING
+  INFO
 }
 
 // ─────────────────────────────────────────────────
@@ -165,75 +163,122 @@ model Brand {
 }
 
 // ─────────────────────────────────────────────────
-// CATALOG — Category Hierarchy & Schema
+// SPECS & FILTERING (From Project B)
 // ─────────────────────────────────────────────────
 
-model CategoryHierarchy {
-  id        String              @id @default(uuid())
-  label     String
-  category  Category?
-  query     String?
-  brand     String?
-  parentId  String?
-  sortOrder Int                 @default(0)
-  parent    CategoryHierarchy?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children  CategoryHierarchy[] @relation("CategoryTree")
+model SpecDefinition {
+  id String @id @default(uuid())
 
-  @@index([parentId])
-  @@index([sortOrder])
-  @@index([category])
+  category Category
+
+  name      String
+  label     String?
+  valueType SpecValueType
+
+  isRequired   Boolean @default(false)
+  isFilterable Boolean @default(true)
+  isRange      Boolean @default(false)
+  isMulti      Boolean @default(false)
+
+  filterGroup String?
+  filterOrder Int?
+
+  options SpecOption[]
+
+  variantSpecs VariantSpec[]
+
+  parentOptionDeps SpecOptionDependency[] @relation("SOD_ParentSpec")
+  childOptionDeps  SpecOptionDependency[] @relation("SOD_ChildSpec")
+
+  sourceRules CompatibilityRule[] @relation("ruleSource")
+  targetRules CompatibilityRule[] @relation("ruleTarget")
+
+  @@unique([category, name])
 }
 
-model CategorySchema {
-  id         String                @id @default(uuid())
-  category   Category              @unique
-  attributes AttributeDefinition[]
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
+model SpecOption {
+  id String @id @default(uuid())
+
+  specId String
+  spec   SpecDefinition @relation(fields: [specId], references: [id], onDelete: Cascade)
+
+  value String
+  label String?
+
+  order Int?
+
+  parentOptionId String?
+  parentOption   SpecOption?  @relation("OptionTree", fields: [parentOptionId], references: [id])
+  children       SpecOption[] @relation("OptionTree")
+
+  variantSpecs VariantSpec[]
+
+  parentOptionDeps SpecOptionDependency[] @relation("SOD_ParentOption")
+  childOptionDeps  SpecOptionDependency[] @relation("SOD_ChildOption")
 }
 
-model AttributeDefinition {
-  id               String         @id @default(uuid())
-  key              String
-  label            String
-  type             String
-  required         Boolean        @default(false)
-  options          String[]
-  unit             String?
-  categorySchemaId String
-  dependencyKey    String?
-  dependencyValue  String?
-  sortOrder        Int            @default(0)
-  categorySchema   CategorySchema @relation(fields: [categorySchemaId], references: [id], onDelete: Cascade)
+model SpecOptionDependency {
+  id String @id @default(uuid())
 
-  @@unique([categorySchemaId, key])
+  parentSpecId   String
+  parentOptionId String
+
+  childSpecId   String
+  childOptionId String?
+
+  parentSpec   SpecDefinition @relation("SOD_ParentSpec", fields: [parentSpecId], references: [id], onDelete: Cascade)
+  parentOption SpecOption     @relation("SOD_ParentOption", fields: [parentOptionId], references: [id], onDelete: Cascade)
+
+  childSpec   SpecDefinition @relation("SOD_ChildSpec", fields: [childSpecId], references: [id], onDelete: Cascade)
+  childOption SpecOption?    @relation("SOD_ChildOption", fields: [childOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([parentSpecId, parentOptionId, childSpecId, childOptionId])
+  @@index([parentSpecId, parentOptionId])
 }
 
-model CategoryFilterConfig {
-  id        String             @id @default(uuid())
-  category  Category           @unique
-  filters   FilterDefinition[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+model VariantSpec {
+  id String @id @default(uuid())
+
+  variantId String
+  specId    String
+
+  optionId String?
+
+  valueString String?
+  valueNumber Float?
+  valueBool   Boolean?
+
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  spec    SpecDefinition @relation(fields: [specId], references: [id], onDelete: Cascade)
+  option  SpecOption?    @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, specId])
+  @@index([variantId])
+  @@index([specId, optionId])
 }
 
-model FilterDefinition {
-  id                     String               @id @default(uuid())
-  key                    String
-  label                  String
-  type                   FilterType
-  options                String[]
-  min                    Float?
-  max                    Float?
-  dependencyKey          String?
-  dependencyValue        String?
-  sortOrder              Int                  @default(0)
-  categoryFilterConfigId String
-  categoryFilterConfig   CategoryFilterConfig @relation(fields: [categoryFilterConfigId], references: [id], onDelete: Cascade)
+// ─────────────────────────────────────────────────
+// COMPATIBILITY ENGINE (Minimal)
+// ─────────────────────────────────────────────────
 
-  @@unique([categoryFilterConfigId, key])
-  @@index([categoryFilterConfigId])
-  @@index([categoryFilterConfigId, sortOrder])
+model CompatibilityRule {
+  id String @id @default(uuid())
+
+  name String
+
+  sourceCategory Category
+  targetCategory Category
+
+  sourceSpecId String
+  targetSpecId String
+
+  operator CompatibilityOperator
+
+  message  String
+  severity CompatibilitySeverity
+
+  sourceSpec SpecDefinition @relation("ruleSource", fields: [sourceSpecId], references: [id], onDelete: Cascade)
+  targetSpec SpecDefinition @relation("ruleTarget", fields: [targetSpecId], references: [id], onDelete: Cascade)
 }
 
 // ─────────────────────────────────────────────────
@@ -277,7 +322,6 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  specs    ProductSpec[]
   variants ProductVariant[]
   media    ProductMedia[]
   tags     Tag[]
@@ -297,19 +341,18 @@ model ProductVariant {
   sku            String    @unique
   price          Float
   compareAtPrice Float?
-  attributes     Json?
   status         String    @default("IN_STOCK")
   deletedAt      DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  product              Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
-  warehouseInventories WarehouseInventory[]
-  orderItems           OrderItem[]
-  buildGuideItems      BuildGuideItem[]
-  purchaseOrderItems   PurchaseOrderItem[]
-  inventoryUnits       InventoryUnit[]
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems         OrderItem[]
+  buildGuideItems    BuildGuideItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  inventoryUnits     InventoryUnit[]
+  specs              VariantSpec[]
 
   @@index([productId])
   @@index([sku])
@@ -319,122 +362,39 @@ model ProductVariant {
   @@index([productId, price])
 }
 
-model ProductSpec {
-  id        String  @id @default(uuid())
-  productId String
-  key       String
-  value     String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-  @@index([key, value])
-  @@index([productId, key])
-}
-
 // ─────────────────────────────────────────────────
-// WAREHOUSING & INVENTORY
+// WAREHOUSING & INVENTORY (Minimal)
 // ─────────────────────────────────────────────────
 
-model Warehouse {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  code      String   @unique
-  address   String?
-  isActive  Boolean  @default(true)
+model InventoryUnit {
+  id           String              @id @default(uuid())
+  variantId    String
+  serialNumber String?             @unique
+  status       InventoryUnitStatus @default(AVAILABLE)
+
+  orderItemId         String?
+  purchaseOrderItemId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  inventories    WarehouseInventory[]
-  stockMovements StockMovement[]
-  purchaseOrders PurchaseOrder[]
-  inventoryUnits InventoryUnit[]
-}
-
-model WarehouseInventory {
-  id           String    @id @default(uuid())
-  variantId    String
-  warehouseId  String
-  quantity     Int       @default(0)
-  reserved     Int       @default(0)
-  reorderLevel Int       @default(5)
-  costPrice    Float     @default(0)
-  location     String    @default("")
-  lastUpdated  DateTime?
-
-  variant        ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  warehouse      Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  stockMovements StockMovement[]
-  inventoryUnits InventoryUnit[]
-
-  @@unique([variantId, warehouseId])
-  @@index([quantity])
-  @@index([warehouseId])
-  @@index([variantId])
-  @@index([lastUpdated])
-}
-
-model StockMovement {
-  id                   String            @id @default(uuid())
-  warehouseInventoryId String
-  warehouseId          String
-  type                 StockMovementType
-  quantity             Int
-  previousQuantity     Int               @default(0)
-  newQuantity          Int               @default(0)
-  reason               String?
-  performedBy          String            @default("System")
-  orderId              String?
-  purchaseOrderId      String?
-  vendorId             String?
-  inventoryUnitId      String?
-  serialNumberSnapshot String?
-  createdAt            DateTime          @default(now())
-
-  warehouseInventory WarehouseInventory @relation(fields: [warehouseInventoryId], references: [id], onDelete: Cascade)
-  warehouse          Warehouse          @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  order              Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  purchaseOrder      PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
-  vendor             Supplier?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  inventoryUnit      InventoryUnit?     @relation(fields: [inventoryUnitId], references: [id], onDelete: SetNull)
-
-  @@index([warehouseInventoryId, createdAt])
-  @@index([warehouseId])
-  @@index([type])
-  @@index([orderId])
-  @@index([purchaseOrderId])
-  @@index([vendorId])
-  @@index([inventoryUnitId])
-  @@index([createdAt])
-}
-
-model InventoryUnit {
-  id                   String              @id @default(uuid())
-  variantId            String
-  warehouseId          String
-  sn                   String?             @unique
-  imei                 String?             @unique
-  status               InventoryUnitStatus @default(AVAILABLE)
-  orderItemId          String?
-  purchaseOrderItemId  String?
-  warehouseInventoryId String?
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  soldAt    DateTime?
-
-  variant            ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Restrict)
-  warehouse          Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  warehouseInventory WarehouseInventory? @relation(fields: [warehouseInventoryId], references: [id], onDelete: Cascade)
-  orderItem          OrderItem?          @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
-  purchaseOrderItem  PurchaseOrderItem?  @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull)
-  stockMovements     StockMovement[]
+  variant           ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  orderItem         OrderItem?         @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull)
+  reservation       Reservation?
 
   @@index([variantId])
-  @@index([warehouseId])
   @@index([status])
   @@index([orderItemId])
   @@index([purchaseOrderItemId])
-  @@index([warehouseInventoryId])
+}
+
+model Reservation {
+  id              String   @id @default(uuid())
+  inventoryUnitId String   @unique
+  expiresAt       DateTime
+
+  inventoryUnit InventoryUnit @relation(fields: [inventoryUnitId], references: [id], onDelete: Cascade)
 }
 
 // ─────────────────────────────────────────────────
@@ -451,25 +411,20 @@ model Supplier {
   updatedAt DateTime @updatedAt
 
   purchaseOrders PurchaseOrder[]
-  stockMovements StockMovement[]
 }
 
 model PurchaseOrder {
   id               String              @id @default(uuid())
   supplierId       String
-  warehouseId      String
   status           PurchaseOrderStatus @default(PENDING)
   expectedDelivery DateTime?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  supplier       Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  warehouse      Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  items          PurchaseOrderItem[]
-  stockMovements StockMovement[]
+  supplier Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  items    PurchaseOrderItem[]
 
   @@index([supplierId])
-  @@index([warehouseId])
 }
 
 model PurchaseOrderItem {
@@ -553,12 +508,11 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items      OrderItem[]
-  logs       OrderLog[]
-  invoices   Invoice[]
-  shipments  ShipmentTracking[]
-  payments   PaymentTransaction[]
-  stockMoves StockMovement[]
+  items     OrderItem[]
+  logs      OrderLog[]
+  invoices  Invoice[]
+  shipments ShipmentTracking[]
+  payments  PaymentTransaction[]
 
   @@index([email])
   @@index([status])
@@ -580,7 +534,7 @@ model OrderItem {
   sku                  String?
   serialNumberSnapshot String?
   partNumberSnapshot   String?
-  variantSnapshot      Json? // Immutable record of variant traits at time of purchase
+  variantSnapshot      Json?
 
   order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   variant        ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Restrict)
@@ -829,14 +783,12 @@ model AuditLog {
 // MARKETING & LEADS
 // ─────────────────────────────────────────────────
 
-// Represents a potential or existing customer entering a funnel
 model Lead {
   id     String  @id @default(uuid())
   email  String  @unique
   name   String?
   source String? // e.g., "Footer Newsletter", "Exit Popup"
 
-  // Link to a full Customer if they eventually convert/create an account
   customerId String?   @unique
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
@@ -860,7 +812,6 @@ enum MarketingEventType {
   NEWSLETTER_SIGNUP
 }
 
-// Immutable ledger of actions taken by a Lead
 model MarketingEvent {
   id        String             @id @default(uuid())
   leadId    String
@@ -874,7 +825,6 @@ model MarketingEvent {
   @@index([type, createdAt])
 }
 
-// Defines an automated sequence of rules
 model MarketingCampaign {
   id          String             @id @default(uuid())
   name        String             @unique
@@ -882,8 +832,6 @@ model MarketingCampaign {
   isActive    Boolean            @default(false)
   triggerType MarketingEventType // What starts the campaign
 
-  // JSON defining the logic, e.g., 
-  // { delayHours: 2, condition: "cart_value > 50", templateId: "abandoned_cart_1" }
   rulesConfig Json
 
   createdAt DateTime @default(now())
@@ -892,7 +840,6 @@ model MarketingCampaign {
   emailLogs EmailLog[]
 }
 
-// Record of emails sent to prevent duplicates and track delivery
 model EmailLog {
   id         String  @id @default(uuid())
   leadId     String

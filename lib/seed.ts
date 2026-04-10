@@ -1,24 +1,22 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
-  
-  
-  
-  
- 
+  Category,
+  Currency,
+  FilterType,
+  InvoiceStatus,
+  InvoiceType,
   InventoryUnitStatus,
+  MarketingEventType,
+  OrderStatus,
+  PaymentMethodType,
+  PaymentStatus,
   PrismaClient,
   PurchaseOrderStatus,
   Role,
   SalesChannel,
   StockMovementType,
 } from "../generated/prisma/client";
-import { Currency, FilterType, Category,InvoiceStatus,InvoiceType, 
-  MarketingEventType,
-  OrderStatus,
-  PaymentMethodType,
-  PaymentStatus,
-   } from "@/generated/prisma";
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const adapter = new PrismaPg({ connectionString });

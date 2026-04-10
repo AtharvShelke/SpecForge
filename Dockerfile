@@ -5,7 +5,8 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+COPY prisma ./prisma
+RUN npm ci --prefer-offline --no-audit --progress=false --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 
 # Stage 2: Rebuild the source code
 FROM node:20-alpine AS builder
@@ -18,6 +19,8 @@ RUN npx prisma generate
 
 # Build the app
 ENV NEXT_TELEMETRY_DISABLED 1
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
 RUN npm run build
 
 # Stage 3: Production image, copy all the files and run next
