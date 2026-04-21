@@ -57,7 +57,6 @@ export async function GET(
         customer: true,
         lineItems: true,
         audit: { orderBy: { createdAt: "asc" } },
-        creditNotes: { include: { lineItems: true } },
       },
     });
 
@@ -126,7 +125,6 @@ export async function PUT(
             customer: true,
             lineItems: true,
             audit: true,
-            creditNotes: true,
           },
         });
 
@@ -196,7 +194,6 @@ export async function PUT(
           customer: true,
           lineItems: true,
           audit: true,
-          creditNotes: true,
         },
       });
 

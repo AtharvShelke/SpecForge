@@ -1,34 +1,24 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { Category } from "@/generated/prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-// ── Computed once at module load time (not per-request) ──────────────
-// Object.values on a const enum is a pure JS operation with zero I/O.
-// There is no reason to recompute it on every request.
-const CATEGORY_VALUES: string[] = Object.values(Category);
-
-// ── Pre-serialized JSON string ────────────────────────────────────────
-// NextResponse.json() calls JSON.stringify internally on every request.
-// Since the payload is static, stringify it once and reuse the string.
-const CATEGORY_JSON = JSON.stringify(CATEGORY_VALUES);
-
-// ── Shared response headers ───────────────────────────────────────────
-// - no-store is intentionally NOT used: this data is static and safe to cache.
-// - s-maxage=3600: CDN/edge caches the response for 1 hour.
-// - stale-while-revalidate=86400: serves stale instantly while refreshing
-//   in the background. Enum values only change on a redeploy anyway.
-const RESPONSE_HEADERS = {
-  "Content-Type": "application/json",
-  "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+const CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
 };
 
 export async function GET(_req: NextRequest) {
-  return new Response(CATEGORY_JSON, {
-    status: 200,
-    headers: RESPONSE_HEADERS,
-  });
-}
+  try {
+    const categories = await prisma.category.findMany({
+      include: {
+        subCategories: true,
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
 
-// Tell Next.js to render this route statically at build time.
-// The handler will not spin up a serverless function at all for cached hits.
-export const dynamic = "force-static";
-export const revalidate = 3600; // ISR: regenerate at most once per hour
+    return NextResponse.json(categories, { headers: CACHE_HEADERS });
+  } catch (error) {
+    console.error("GET /api/categories error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

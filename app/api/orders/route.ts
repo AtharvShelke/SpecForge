@@ -6,23 +6,17 @@ import { reserveInventory, InsufficientStockError } from "@/services/inventorySe
 import { createPaymentTransaction } from "@/services/paymentService";
 import { sendMail } from "@/services/mailService";
 
-const CategoryEnum = z.enum([
-    "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
-]);
-
 const OrderStatusEnum = z.enum([
     "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED",
 ]);
 
-const SalesChannelEnum = z.enum(["ONLINE", "POS", "MANUAL", "API", "PHONE"]);
-const PaymentMethodEnum = z.enum(["CARD", "UPI", "BANK_TRANSFER", "CASH", "WALLET"]);
+const PaymentMethodEnum = z.enum(["RAZORPAY", "UPI", "BANK_TRANSFER"]);
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
     variantId: z.string().min(1),
     name: z.string().min(1),
-    category: CategoryEnum,
+    category: z.string().min(1),
     price: z.number().positive(),
     quantity: z.number().int().positive(),
     image: z.string().optional(),
@@ -31,7 +25,6 @@ const orderItemSchema = z.object({
 
 const createOrderSchema = z.object({
     id: z.string().min(1),
-    channel: SalesChannelEnum.default("ONLINE"),
     customerName: z.string().min(1),
     email: z.string().email(),
     phone: z.string().optional(),
@@ -54,7 +47,6 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status");
-        const channel = searchParams.get("channel");
         const email = searchParams.get("email");
         const search = searchParams.get("search");
         const page = parseInt(searchParams.get("page") || "1", 10);
@@ -63,9 +55,6 @@ export async function GET(req: NextRequest) {
         const where: any = {};
         if (status && OrderStatusEnum.safeParse(status).success) {
             where.status = status;
-        }
-        if (channel && SalesChannelEnum.safeParse(channel).success) {
-            where.channel = channel;
         }
         if (email) where.email = email;
         if (search) {
@@ -81,7 +70,6 @@ export async function GET(req: NextRequest) {
                 where,
                 select: {
                     id: true,
-                    channel: true,
                     customerName: true,
                     email: true,
                     phone: true,
@@ -162,7 +150,6 @@ export async function POST(req: NextRequest) {
             const o = await tx.order.create({
                 data: {
                     id: data.id,
-                    channel: data.channel,
                     customerName: data.customerName,
                     email: data.email,
                     phone: data.phone,
@@ -180,7 +167,7 @@ export async function POST(req: NextRequest) {
                     shippingCountry: data.shippingCountry,
                     paymentMethod: data.paymentMethod,
                     paymentTransactionId: data.paymentTransactionId,
-                    paymentStatus: data.paymentStatus,
+                    paymentStatus: data.paymentStatus as any,
                     idempotencyKey: data.idempotencyKey,
                     source: data.source,
                     items: {
@@ -197,7 +184,7 @@ export async function POST(req: NextRequest) {
                     logs: {
                         create: {
                             status: "PENDING",
-                            note: `Order placed via ${data.channel} channel.`,
+                            note: `Order placed.`,
                         },
                     },
                 },
@@ -210,33 +197,6 @@ export async function POST(req: NextRequest) {
                 quantity: i.quantity,
             }));
             await reserveInventory(tx, inventoryItems, data.id);
-
-            // For POS/CASH orders, create payment transaction and auto-mark as PAID
-            if (data.channel === "POS" && data.paymentMethod) {
-                await createPaymentTransaction(tx, {
-                    orderId: data.id,
-                    method: data.paymentMethod as any,
-                    amount: total,
-                    idempotencyKey: `pay-${data.id}-${Date.now()}`,
-                    status: 'COMPLETED',
-                    metadata: { channel: data.channel },
-                });
-
-                // Auto-transition POS orders to PAID
-                await tx.order.update({
-                    where: { id: data.id },
-                    data: {
-                        status: "PAID",
-                        paymentStatus: "COMPLETED",
-                        logs: {
-                            create: {
-                                status: "PAID",
-                                note: "POS payment — auto-confirmed.",
-                            },
-                        },
-                    },
-                });
-            }
 
             return o;
         }, {
@@ -265,8 +225,6 @@ export async function POST(req: NextRequest) {
                             `).join("")}
                         </ul>
                     </div>
-                    
-                    <p style="margin-top: 20px; color: #666; font-size: 14px;">We will notify you once your order has been processed and shipped.</p>
                 </div>
             `,
         }).catch((err) => {
@@ -278,10 +236,7 @@ export async function POST(req: NextRequest) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 });
         }
-        if (error instanceof InsufficientStockError) {
-            return NextResponse.json({ error: error.message }, { status: 409 });
-        }
-        if (error?.message?.includes("Insufficient stock")) {
+        if (error instanceof InsufficientStockError || error?.message?.includes("Insufficient stock")) {
             return NextResponse.json({ error: error.message }, { status: 409 });
         }
         console.error("POST /api/orders error:", error);

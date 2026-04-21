@@ -24,42 +24,41 @@ export async function GET(req: NextRequest) {
             ];
         }
 
-        // 2. Category Filter
+        // 2. Category Filter natively mapped via subCategoryId over to legacy format handling
         if (category && category !== "all") {
             dbWhere.variant = {
                 ...(dbWhere.variant || {}),
-                product: { category }
+                product: { subCategoryId: category }
             };
         }
 
         // 3. Stock Status Filter
         if (fStockStatus === "out") {
-            dbWhere.quantity = 0;
-        } else if (fStockStatus === "low") {
-            // Use raw SQL to efficiently find items where quantity > 0 AND quantity <= reorderLevel
-            const lowStockIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
-                `SELECT id FROM "WarehouseInventory" WHERE quantity > 0 AND quantity <= "reorderLevel"`
-            );
-            dbWhere.id = { in: lowStockIds.map(r => r.id) };
+            dbWhere.quantityOnHand = 0;
         } else if (fStockStatus === "in") {
-            dbWhere.quantity = { gt: 0 };
+            dbWhere.quantityOnHand = { gt: 0 };
         }
 
         // Execute count + paginated query in parallel
         const [total, items] = await Promise.all([
-            prisma.warehouseInventory.count({ where: dbWhere }),
-            prisma.warehouseInventory.findMany({
+            prisma.inventoryItem.count({ where: dbWhere }),
+            prisma.inventoryItem.findMany({
                 where: dbWhere,
                 select: {
                     id: true,
                     variantId: true,
-                    quantity: true,
-                    reserved: true,
-                    reorderLevel: true,
+                    trackingType: true,
+                    serialNumber: true,
+                    partNumber: true,
+                    quantityOnHand: true,
+                    quantityReserved: true,
+                    status: true,
                     costPrice: true,
-                    location: true,
-                    lastUpdated: true,
-                    warehouseId: true,
+                    batchNumber: true,
+                    receivedAt: true,
+                    notes: true,
+                    createdAt: true,
+                    updatedAt: true,
                     variant: {
                         select: {
                             id: true,
@@ -70,7 +69,7 @@ export async function GET(req: NextRequest) {
                                 select: {
                                     id: true,
                                     name: true,
-                                    category: true,
+                                    subCategoryId: true,
                                     brand: { select: { id: true, name: true } },
                                     media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
                                 },
@@ -78,7 +77,7 @@ export async function GET(req: NextRequest) {
                         },
                     },
                 },
-                orderBy: { lastUpdated: "desc" },
+                orderBy: { updatedAt: "desc" },
                 skip,
                 take: limit,
             }),

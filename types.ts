@@ -1,37 +1,6 @@
-// ──────────────────────────────────────────────────────
-// ENUMS — Must match schema.prisma exactly
-// ──────────────────────────────────────────────────────
-
-export enum Category {
-  PROCESSOR = 'PROCESSOR',
-  GPU = 'GPU',
-  MOTHERBOARD = 'MOTHERBOARD',
-  RAM = 'RAM',
-  STORAGE = 'STORAGE',
-  PSU = 'PSU',
-  CABINET = 'CABINET',
-  COOLER = 'COOLER',
-  MONITOR = 'MONITOR',
-  PERIPHERAL = 'PERIPHERAL',
-  NETWORKING = 'NETWORKING',
-  LAPTOP = 'LAPTOP',
-}
-
-/** Display labels for categories (frontend-only) */
-export const CATEGORY_LABELS: Record<Category, string> = {
-  [Category.PROCESSOR]: 'Processor',
-  [Category.GPU]: 'Graphics Card',
-  [Category.MOTHERBOARD]: 'Motherboard',
-  [Category.RAM]: 'RAM',
-  [Category.STORAGE]: 'Storage',
-  [Category.PSU]: 'Power Supply',
-  [Category.CABINET]: 'Cabinet',
-  [Category.COOLER]: 'Cooler',
-  [Category.MONITOR]: 'Monitor',
-  [Category.PERIPHERAL]: 'Peripheral',
-  [Category.NETWORKING]: 'Networking',
-  [Category.LAPTOP]: 'Laptop',
-};
+// =====================================================
+// ENUMS (STRICT MATCH WITH PRISMA)
+// =====================================================
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -49,618 +18,453 @@ export enum CompatibilityLevel {
   INCOMPATIBLE = 'INCOMPATIBLE',
 }
 
-export type StockMovementType = 'PURCHASE' | 'INWARD' | 'OUTWARD' | 'SALE' | 'RETURN' | 'ADJUSTMENT' | 'RESERVE';
-
-export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled' | 'refunded' | 'voided';
-
-export type InvoiceType = 'STANDARD' | 'CREDIT_NOTE';
-
-export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP';
-
-export type FilterType = 'checkbox' | 'range' | 'boolean' | 'search' | 'dropdown';
-
-export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
-
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'WAREHOUSE_STAFF' | 'FINANCE' | 'USER';
-
-export type SalesChannel = 'ONLINE' | 'POS' | 'MANUAL' | 'API' | 'PHONE';
-
-export type PaymentMethodEnum = 'CARD' | 'UPI' | 'BANK_TRANSFER' | 'CASH' | 'WALLET';
-
-export type PaymentStatusType = 'INITIATED' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
-
-// ──────────────────────────────────────────────────────
-// CATALOG — Product
-// ──────────────────────────────────────────────────────
-
-export interface ProductSpec {
-  id: string;
-  productId: string;
-  key: string;
-  value: string;
+export enum StockMovementType {
+  PURCHASE = 'PURCHASE',
+  INWARD = 'INWARD',
+  OUTWARD = 'OUTWARD',
+  SALE = 'SALE',
+  RETURN = 'RETURN',
+  ADJUSTMENT = 'ADJUSTMENT',
+  RESERVE = 'RESERVE',
 }
 
-export interface Tag {
-  id: string;
-  name: string;
+export enum InvoiceStatus {
+  DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  OVERDUE = 'OVERDUE',
+  CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED',
+  VOIDED = 'VOIDED',
+}
+
+export enum InvoiceType {
+  STANDARD = 'STANDARD',
+  CREDIT_NOTE = 'CREDIT_NOTE',
+}
+
+export enum PaymentMethodType {
+  RAZORPAY = 'RAZORPAY',
+  UPI = 'UPI',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+}
+
+export enum PaymentStatus {
+  INITIATED = 'INITIATED',
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+  PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED',
+}
+
+export enum FilterType {
+  checkbox = 'checkbox',
+  range = 'range',
+  boolean = 'boolean',
+  search = 'search',
+  dropdown = 'dropdown',
+}
+
+export enum ProductStatus {
+  DRAFT = 'DRAFT',
+  ACTIVE = 'ACTIVE',
+  ARCHIVED = 'ARCHIVED',
+}
+
+export enum VariantStatus {
+  IN_STOCK = 'IN_STOCK',
+  OUT_OF_STOCK = 'OUT_OF_STOCK',
+  DISCONTINUED = 'DISCONTINUED',
+  PREORDER = 'PREORDER',
+}
+
+export enum Role {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+}
+
+export enum SpecValueType {
+  STRING = 'STRING',
+  NUMBER = 'NUMBER',
+  BOOLEAN = 'BOOLEAN',
+}
+
+export enum CompatibilityOperator {
+  EQUAL = 'EQUAL',
+  NOT_EQUAL = 'NOT_EQUAL',
+  LESS_THAN = 'LESS_THAN',
+  LESS_OR_EQUAL = 'LESS_OR_EQUAL',
+  GREATER_THAN = 'GREATER_THAN',
+  GREATER_OR_EQUAL = 'GREATER_OR_EQUAL',
+  IN_LIST = 'IN_LIST',
+  CONTAINS = 'CONTAINS',
+}
+
+export enum CompatibilitySeverity {
+  ERROR = 'ERROR',
+  WARNING = 'WARNING',
+  INFO = 'INFO',
+}
+
+export enum InventoryStatus {
+  IN_STOCK = 'IN_STOCK',
+  RESERVED = 'RESERVED',
+  SOLD = 'SOLD',
+  DAMAGED = 'DAMAGED',
+  RMA = 'RMA',
+  IN_TRANSIT = 'IN_TRANSIT',
+  RETURNED = 'RETURNED',
+}
+
+export enum InventoryTrackingType {
+  SERIALIZED = 'SERIALIZED',
+  BULK = 'BULK',
+}
+
+export enum ReservationStatus {
+  ACTIVE = 'ACTIVE',
+  RELEASED = 'RELEASED',
+  CONVERTED = 'CONVERTED',
+  EXPIRED = 'EXPIRED',
+}
+
+// =====================================================
+// CORE ENTITIES
+// =====================================================
+
+export interface User {
+  id: string
+  email: string
+  name: string
+  role: Role
+  createdAt: string
+  updatedAt: string
+}
+
+// =====================================================
+// CATEGORY SYSTEM
+// =====================================================
+
+export interface Category {
+  id: string
+  name: string
+  description?: string | null
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string | null
+
+  subCategories?: SubCategory[]
+}
+
+export interface SubCategory {
+  id: string
+  name: string
+  description?: string | null
+
+  categoryId: string
+  category?: Category
+
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string | null
+
+  specDefinitions?: SpecDefinition[]
+}
+
+export interface CategoryHierarchy {
+  id: string
+  label: string
+  categoryId?: string | null
+  parentId?: string | null
+  query?: string | null
+  brand?: string | null
+  sortOrder: number
+
+  children?: CategoryHierarchy[]
+}
+
+// =====================================================
+// SPECS SYSTEM
+// =====================================================
+
+export interface SpecDefinition {
+  id: string
+  subCategoryId: string
+
+  name: string
+  valueType: SpecValueType
+
+  isFilterable: boolean
+  isRange: boolean
+  isMulti: boolean
+
+  filterGroup?: string | null
+  filterOrder?: number | null
+
+  options?: SpecOption[]
+}
+
+export interface SpecOption {
+  id: string
+  specId: string
+  value: string
+  label?: string | null
+  order?: number | null
+
+  parentOptionId?: string | null
+}
+
+export interface VariantSpec {
+  id: string
+  variantId: string
+  specId: string
+  optionId?: string | null
+
+  valueString?: string | null
+  valueNumber?: number | null
+  valueBool?: boolean | null
+}
+
+// =====================================================
+// PRODUCT SYSTEM
+// =====================================================
+
+export interface Brand {
+  id: string
+  name: string
+  slug: string
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string | null
 }
 
 export interface ProductMedia {
-  id: string;
-  productId: string;
-  url: string;
-  altText?: string;
-  sortOrder: number;
+  id: string
+  productId: string
+  url: string
+  altText?: string | null
+  sortOrder: number
 }
 
 export interface ProductVariant {
-  id: string;
-  productId: string;
-  sku: string;
-  price: number;
-  compareAtPrice?: number;
-  attributes?: Record<string, string>;
-  status: string;
-  deletedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  product?: Product; // parent relation
-  warehouseInventories?: WarehouseInventory[];
+  id: string
+  productId: string
+  sku: string
+
+  price: number
+  compareAtPrice?: number | null
+
+  attributes?: Record<string, any> | null
+
+  status: VariantStatus
+  deletedAt?: string | null
+
+  createdAt: string
+  updatedAt: string
+
+  variantSpecs?: VariantSpec[]
 }
 
 export interface Product {
-  id: string;
-  slug: string;
-  name: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  category: Category;
-  description?: string;
-  status: ProductStatus;
-  deletedAt?: string;
-  version: number;
+  id: string
+  slug: string
+  name: string
 
-  brandId?: string;
-  brand?: Brand;
+  metaTitle?: string | null
+  metaDescription?: string | null
+  description?: string | null
 
-  createdAt: string;
-  updatedAt: string;
+  status: ProductStatus
+  deletedAt?: string | null
 
-  specs: ProductSpec[];
-  variants: ProductVariant[];
-  media: ProductMedia[];
-  tags: Tag[];
+  subCategoryId: string
+  brandId?: string | null
 
-  // Frontend-only
-  imageFile?: File;
-  image?: string;
+  createdAt: string
+  updatedAt: string
+
+  variants?: ProductVariant[]
+  media?: ProductMedia[]
 }
 
-/** Convenience type for flat specs (frontend display/compatibility logic) */
-export interface ProductSpecsFlat {
-  [key: string]: string | string[] | number | undefined;
-}
-
-/** Convert ProductSpec[] to flat object for legacy/compat logic */
-export function specsToFlat(specs: ProductSpec[]): ProductSpecsFlat {
-  const flat: ProductSpecsFlat = {};
-  if (!specs || !Array.isArray(specs)) return flat;
-  for (const s of specs) {
-    const num = Number(s.value);
-    const parsedValue = isNaN(num) ? s.value : num;
-
-    if (flat[s.key] !== undefined) {
-      if (Array.isArray(flat[s.key])) {
-        (flat[s.key] as Array<string | number>).push(parsedValue);
-      } else {
-        flat[s.key] = [flat[s.key] as string | number, parsedValue] as any;
-      }
-    } else {
-      flat[s.key] = parsedValue;
-    }
-  }
-  return flat;
-}
-
-/** Convert flat object to ProductSpec array for API/DB */
-export function flatToSpecs(flat: ProductSpecsFlat): Partial<ProductSpec>[] {
-  const specs: Partial<ProductSpec>[] = [];
-
-  for (const [key, value] of Object.entries(flat)) {
-    if (value === undefined || value === '') continue;
-
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        specs.push({ key, value: String(item) });
-      }
-    } else {
-      specs.push({ key, value: String(value) });
-    }
-  }
-
-  return specs;
-}
-
-export interface CartItem extends Product {
-  quantity: number;
-  selectedVariant: ProductVariant;
-}
-
-// ──────────────────────────────────────────────────────
-// CATALOG — Brand
-// ──────────────────────────────────────────────────────
-
-export interface Brand {
-  id: string;
-  name: string;
-  categories: Category[]; // Maps to DB field 'categories'
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ──────────────────────────────────────────────────────
-// CATALOG — Category Hierarchy
-// ──────────────────────────────────────────────────────
-
-export interface CategoryNode {
-  id?: string;       // DB has id, but tree nodes in frontend may not always have it
-  label: string;
-  children?: CategoryNode[];
-  category?: Category;
-  brand?: string;
-  query?: string;
-  parentId?: string;
-  sortOrder?: number;
-  isOpen?: boolean;  // Frontend-only UI state
-}
-
-// ──────────────────────────────────────────────────────
-// CATALOG — Category Schema (attribute definitions)
-// ──────────────────────────────────────────────────────
-
-export interface AttributeDefinition {
-  id?: string;
-  key: string;
-  label: string;
-  type: 'text' | 'number' | 'select' | 'multi-select' | 'boolean';
-  options?: string[];
-  required: boolean;
-  unit?: string;
-  sortOrder?: number;
-  categorySchemaId?: string;
-  dependencyKey?: string;
-  dependencyValue?: string;
-}
-
-export interface CategorySchema {
-  id?: string;
-  category: Category;
-  attributes: AttributeDefinition[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// ──────────────────────────────────────────────────────
-// CATALOG — Filter Config
-// ──────────────────────────────────────────────────────
-
-export interface FilterDefinition {
-  id?: string;
-  key: string;
-  label: string;
-  type: FilterType;
-  options?: string[];
-  min?: number;
-  max?: number;
-  dependencyKey?: string;
-  dependencyValue?: string;
-  sortOrder?: number;
-  categoryFilterConfigId?: string;
-  // Frontend convenience accessor
-  dependency?: {
-    key: string;
-    value: string;
-  };
-}
-
-export interface CategoryFilterConfig {
-  id?: string;
-  category: Category;
-  filters: FilterDefinition[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// ──────────────────────────────────────────────────────
-// INVENTORY
-// ──────────────────────────────────────────────────────
-
-export interface Warehouse {
-  id: string;
-  name: string;
-  code: string;
-  address?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WarehouseInventory {
-  id: string;
-  variantId: string;
-  warehouseId: string;
-  quantity: number;
-  reserved: number;
-  reorderLevel: number;
-  costPrice: number;
-  location: string;
-  lastUpdated?: string;
-
-  variant?: ProductVariant;
-  warehouse?: Warehouse;
-}
-
-export interface StockMovement {
-  id: string;
-  warehouseInventoryId: string;
-  warehouseId: string;
-  type: StockMovementType;
-  quantity: number;
-  previousQuantity: number;
-  newQuantity: number;
-  reason?: string;
-  performedBy: string;
-  orderId?: string;
-  purchaseOrderId?: string;
-  createdAt: string;
-  // Added for frontend compatibility/lookup
-  sku: string;
-  date: string;
-}
-
-// ──────────────────────────────────────────────────────
-// SUPPLIERS & PURCHASE ORDERS
-// ──────────────────────────────────────────────────────
-
-export interface Supplier {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PurchaseOrderItem {
-  id: string;
-  purchaseOrderId: string;
-  variantId: string;
-  quantityOrdered: number;
-  quantityReceived: number;
-  unitCost: number;
-  variant?: ProductVariant;
-}
-
-export type PurchaseOrderStatus = "PENDING" | "PARTIAL" | "COMPLETED" | "CANCELLED";
-
-export interface PurchaseOrder {
-  id: string;
-  supplierId: string;
-  warehouseId: string;
-  status: PurchaseOrderStatus;
-  expectedDelivery?: string;
-  createdAt: string;
-  updatedAt: string;
-
-  supplier?: Supplier;
-  items: PurchaseOrderItem[];
-}
-
-// ──────────────────────────────────────────────────────
-// CUSTOMER
-// ──────────────────────────────────────────────────────
+// =====================================================
+// CUSTOMER + ORDER
+// =====================================================
 
 export interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  company?: string;
-  addressLine1?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+  id: string
+  name: string
+  email: string
+  phone?: string | null
+  company?: string | null
 
-// ──────────────────────────────────────────────────────
-// ORDERS
-// ──────────────────────────────────────────────────────
+  addressLine1?: string | null
+  city?: string | null
+  state?: string | null
+  postalCode?: string | null
+  country?: string | null
+
+  createdAt: string
+  updatedAt: string
+}
 
 export interface OrderItem {
-  id: string;
-  orderId: string;
-  variantId: string;
-  name: string;
-  category: Category;
-  price: number;
-  quantity: number;
-  image?: string;
-  sku?: string;
-  variantSnapshot?: Record<string, any>;
-}
+  id: string
+  orderId: string
+  variantId: string
 
-export interface OrderLog {
-  id: string;
-  orderId: string;
-  status: OrderStatus;
-  timestamp: string; // ISO DateTime
-  note?: string;
+  name: string
+  category: string
+
+  price: number
+  quantity: number
+
+  sku?: string | null
+  image?: string | null
 }
 
 export interface Order {
-  id: string;
-  channel: SalesChannel;
-  customerName: string;
-  email: string;
-  phone?: string;
-  date: string;
-  subtotal: number;
-  gstAmount: number;
-  taxAmount: number;
-  discountAmount: number;
-  total: number;
-  status: OrderStatus;
-  version: number;
+  id: string
+  customerName: string
+  email: string
 
-  customerId?: string;
-  customer?: Customer;
+  subtotal: number
+  gstAmount: number
+  taxAmount: number
+  discountAmount: number
+  total: number
 
-  // Flat shipping fields (match DB)
-  shippingStreet?: string;
-  shippingCity?: string;
-  shippingState?: string;
-  shippingZip?: string;
-  shippingCountry?: string;
+  status: OrderStatus
 
-  // Flat payment fields (match DB)
-  paymentMethod?: string;
-  paymentTransactionId?: string;
-  paymentStatus?: string;
-  source?: Record<string, any>;
+  createdAt: string
+  updatedAt: string
 
-  createdAt: string;
-  updatedAt: string;
-
-  items: OrderItem[];
-  logs: OrderLog[];
-  payments?: PaymentTransaction[];
+  items?: OrderItem[]
 }
 
-// ──────────────────────────────────────────────────────
-// BUILD GUIDES
-// ──────────────────────────────────────────────────────
+// =====================================================
+// INVENTORY
+// =====================================================
 
-export interface BuildGuideItem {
-  id: string;
-  buildGuideId: string;
-  variantId: string;
-  quantity: number;
-  variant?: ProductVariant;
+export interface InventoryItem {
+  id: string
+  variantId: string
+
+  trackingType: InventoryTrackingType
+
+  serialNumber?: string | null
+  quantityOnHand: number
+  quantityReserved: number
+
+  status: InventoryStatus
+
+  costPrice?: number | null
+
+  createdAt: string
+  updatedAt: string
 }
 
-export interface BuildGuide {
-  id: string;
-  title: string;
-  description?: string;
-  category: string;
-  total: number;
-  createdAt: string;   // ISO DateTime
-  updatedAt: string;
-  items: BuildGuideItem[];
+export interface Reservation {
+  id: string
+  orderId: string
+  inventoryItemId: string
+
+  quantity: number
+  status: ReservationStatus
+
+  createdAt: string
+  updatedAt: string
 }
 
-
-
-// ──────────────────────────────────────────────────────
-// COMPATIBILITY
-// ──────────────────────────────────────────────────────
-
-export interface CompatibilityIssue {
-  level: CompatibilityLevel;
-  message: string;
-  reason?: string;
-  resolution?: string;
-  componentIds: string[];
-}
-
-export interface CompatibilityReport {
-  status: CompatibilityLevel;
-  issues: CompatibilityIssue[];
-}
-
-// ──────────────────────────────────────────────────────
-// BILLING & INVOICES
-// ──────────────────────────────────────────────────────
-
-export interface BillingProfile {
-  id: string;
-  companyName: string;
-  legalName?: string;
-  email: string;
-  phone?: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state: string;       // Required in DB
-  postalCode: string;
-  country: string;
-  gstin?: string;
-  currency: Currency;
-  logoUrl?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+// =====================================================
+// BILLING
+// =====================================================
 
 export interface InvoiceLineItem {
-  id: string;
-  invoiceId?: string;
-  name: string;
-  description?: string;
-  quantity: number;
-  unitPrice: number;
-  taxRatePct: number;
-  hsnCode?: string;
-}
+  id: string
+  invoiceId: string
+  name: string
 
-export type InvoiceAuditEventType =
-  | 'created'
-  | 'updated'
-  | 'sent'
-  | 'viewed'
-  | 'paid'
-  | 'refunded'
-  | 'cancelled'
-  | 'note';
-
-export interface InvoiceAuditEvent {
-  id: string;
-  invoiceId?: string;
-  type: InvoiceAuditEventType;
-  actor: string;
-  message?: string;
-  createdAt: string;
+  quantity: number
+  unitPrice: number
+  taxRatePct: number
 }
 
 export interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  status: InvoiceStatus;
-  customerId: string;
-  customer?: Customer;
-  currency: Currency;
-  orderId?: string;
-  type: InvoiceType;
+  id: string
+  invoiceNumber: string
 
-  subtotal: number;
-  taxTotal: number;
-  discountPct: number;
-  shipping: number;
-  total: number;
-  amountPaid: number;
-  amountDue: number;
+  status: InvoiceStatus
+  type: InvoiceType
 
-  notes?: string;
-  sentAt?: string;
-  refundedAt?: string;
-  cancelledAt?: string;
-  paidAt?: string;
-  voidedAt?: string;
+  customerId: string
+  orderId?: string | null
 
-  createdAt: string;
-  dueDate: string;
-  lastUpdatedAt: string;
+  subtotal: number
+  taxTotal: number
+  discountPct: number
+  shipping: number
 
-  lineItems: InvoiceLineItem[];
-  audit: InvoiceAuditEvent[];
-  creditNotes?: CreditNote[];
+  total: number
+  amountPaid: number
+  amountDue: number
+
+  createdAt: string
+  dueDate: string
+
+  lineItems?: InvoiceLineItem[]
 }
 
-export type InvoiceFilterStatus = 'all' | InvoiceStatus;
-
-// ================== FINAL CTA ==================
-export interface FinalCTAContent {
-  headline: string;
-  subheadline: string;
-  ctaText: string;
-  ctaLink: string;
-  backgroundStyle: 'gradient' | 'solid' | 'pattern';
-}
-
-// ================== PAYMENT (frontend-only, for order form) ==================
-export type PaymentMethodType = 'card' | 'upi' | 'bank_transfer';
-
-export interface PaymentMethod {
-  id: string;
-  type: PaymentMethodType;
-  label: string;
-  isDefault: boolean;
-  details?: Record<string, string>;
-}
-
-// ──────────────────────────────────────────────────────
-// PAYMENT TRANSACTIONS
-// ──────────────────────────────────────────────────────
+// =====================================================
+// PAYMENTS
+// =====================================================
 
 export interface PaymentTransaction {
-  id: string;
-  orderId: string;
-  method: PaymentMethodEnum;
-  gatewayTxnId?: string;
-  amount: number;
-  currency: Currency;
-  status: PaymentStatusType;
-  idempotencyKey: string;
-  metadata?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  orderId: string
+
+  method: PaymentMethodType
+  amount: number
+
+  status: PaymentStatus
+
+  createdAt: string
+  updatedAt: string
 }
 
-// ──────────────────────────────────────────────────────
-// CREDIT NOTES
-// ──────────────────────────────────────────────────────
+// =====================================================
+// BUILD + COMPATIBILITY
+// =====================================================
 
-export interface CreditNoteLineItem {
-  id: string;
-  creditNoteId: string;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  taxRatePct: number;
-  hsnCode?: string;
+export interface Build {
+  id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+
+  items?: BuildItem[]
 }
 
-export interface CreditNote {
-  id: string;
-  creditNoteNumber: string;
-  originalInvoiceId: string;
-  orderId?: string;
-  reason: string;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
-  createdAt: string;
-  lineItems: CreditNoteLineItem[];
+export interface BuildItem {
+  id: string
+  buildId: string
+  variantId: string
+  slotId: string
 }
 
-// ──────────────────────────────────────────────────────
-// AUDIT LOG
-// ──────────────────────────────────────────────────────
-
-export interface AuditLog {
-  id: string;
-  entityType: string;
-  entityId: string;
-  action: string;
-  actor: string;
-  before?: Record<string, any>;
-  after?: Record<string, any>;
-  metadata?: Record<string, any>;
-  createdAt: string;
+export interface CompatibilityRule {
+  id: string
+  name: string
+  operator: CompatibilityOperator
+  message: string
+  severity: CompatibilitySeverity
 }
 
-
-// ──────────────────────────────────────────────────────
-// Order manager 
-// ──────────────────────────────────────────────────────
-
-export interface StatusConfig {
-  label: string;
-  badgeClass: string;
-  dotClass: string;
-  icon: React.ReactNode;
-  description: string;
+export interface CompatibilityCheck {
+  id: string
+  ruleId: string
+  passed: boolean
+  message: string
+  severity: CompatibilitySeverity
 }

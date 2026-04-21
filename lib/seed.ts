@@ -1,1700 +1,2845 @@
-
+/**
+ * seed.ts — Full database seed for PC components store
+ *
+ * Schema-aligned with schema.prisma (no Category enum, no Warehouse, no ProductSpec table).
+ * Uses: Category (model) → SubCategory → SpecDefinition → SpecOption
+ *       Product → ProductVariant → VariantSpec
+ *       CompatibilityScope → CompatibilityRule
+ *       PartSlot → SubCategorySlot → SlotConstraint
+ *       CategoryHierarchy (recursive)
+ *       Customer → Order → OrderItem
+ *       Invoice → InvoiceLineItem
+ *       InventoryItem
+ *       BillingProfile, InvoiceSequence, BuildGuide
+ */
 
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Category, Currency, FilterType, InvoiceStatus, OrderStatus, PrismaClient } from "../generated/prisma/client";
+import {
+
+  FilterType,
+  OrderStatus,
+  InvoiceStatus,
+  PaymentStatus,
+  VariantStatus,
+  ProductStatus,
+  SpecValueType,
+  CompatibilityOperator,
+  CompatibilitySeverity,
+  InventoryStatus,
+  InventoryTrackingType,
+} from "../generated/prisma/enums";
+import { PrismaClient } from "@/generated/prisma/client";
 
 const connectionString = `${process.env.DATABASE_URL}`;
-
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Maps TypeScript enum string values to Prisma schema enum keys */
-function categoryToEnum(cat: string): Category {
-  const map: Record<string, Category> = {
-    'Processor': Category.PROCESSOR,
-    'Graphics Card': Category.GPU,
-    'Motherboard': Category.MOTHERBOARD,
-    'RAM': Category.RAM,
-    'Storage': Category.STORAGE,
-    'Power Supply': Category.PSU,
-    'Cabinet': Category.CABINET,
-    'Cooler': Category.COOLER,
-    'Monitor': Category.MONITOR,
-    'Peripheral': Category.PERIPHERAL,
-    'Networking': Category.NETWORKING,
-  };
-  const result = map[cat];
-  if (!result) throw new Error(`Unknown category string: "${cat}"`);
-  return result;
+interface SeedSpecDef {
+  name: string;
+  valueType: SpecValueType;
+  isFilterable?: boolean;
+  isRange?: boolean;
+  isMulti?: boolean;
+  filterGroup?: string;
+  options?: string[];
 }
 
-/** Normalise formFactor values across mockData ('mATX' → 'Micro-ATX') */
-function normaliseSpec(key: string, value: string): string {
-  if (key === 'formFactor' && value === 'mATX') return 'Micro-ATX';
-  return value;
+interface SeedSubCategory {
+  name: string;
+  description: string;
+  slotName: string | null;
+  specDefs: SeedSpecDef[];
+}
+
+interface SeedCategory {
+  name: string;
+  description: string;
+  subCategories: SeedSubCategory[];
+}
+
+function slug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BRANDS
+// 1. BRANDS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BRANDS_DATA = [
-  { name: 'Intel', categories: [Category.PROCESSOR, Category.GPU, Category.NETWORKING] },
-  { name: 'AMD', categories: [Category.PROCESSOR, Category.GPU, Category.MOTHERBOARD] },
-  { name: 'NVIDIA', categories: [Category.GPU] },
-  { name: 'ASUS', categories: [Category.MOTHERBOARD, Category.GPU, Category.MONITOR, Category.PSU, Category.PERIPHERAL] },
-  { name: 'MSI', categories: [Category.MOTHERBOARD, Category.GPU, Category.MONITOR, Category.PSU] },
-  { name: 'Gigabyte', categories: [Category.MOTHERBOARD, Category.GPU] },
-  { name: 'ASRock', categories: [Category.MOTHERBOARD, Category.GPU] },
-  { name: 'Corsair', categories: [Category.RAM, Category.PSU, Category.CABINET, Category.COOLER, Category.PERIPHERAL] },
-  { name: 'G.Skill', categories: [Category.RAM] },
-  { name: 'Kingston', categories: [Category.RAM, Category.STORAGE] },
-  { name: 'Samsung', categories: [Category.STORAGE, Category.MONITOR] },
-  { name: 'Western Digital', categories: [Category.STORAGE] },
-  { name: 'Crucial', categories: [Category.STORAGE] },
-  { name: 'DeepCool', categories: [Category.COOLER, Category.PSU] },
-  { name: 'Noctua', categories: [Category.COOLER] },
-  { name: 'EKWB', categories: [Category.COOLER] },
-  { name: 'Lian Li', categories: [Category.CABINET, Category.COOLER] },
-  { name: 'Cooler Master', categories: [Category.COOLER, Category.PSU, Category.CABINET] },
-  { name: 'Sapphire', categories: [Category.GPU] },
-  { name: 'Zotac', categories: [Category.GPU] },
-  { name: 'LG', categories: [Category.MONITOR] },
-  { name: 'BenQ', categories: [Category.MONITOR] },
-  { name: 'Keychron', categories: [Category.PERIPHERAL] },
-  { name: 'Logitech', categories: [Category.PERIPHERAL] },
-  { name: 'HyperX', categories: [Category.PERIPHERAL] },
-  { name: 'TP-Link', categories: [Category.NETWORKING] },
-  { name: 'D-Link', categories: [Category.NETWORKING] },
+const BRANDS = [
+  "Intel", "AMD", "NVIDIA", "ASUS", "MSI", "Gigabyte", "ASRock",
+  "Corsair", "G.Skill", "Kingston", "Samsung", "Western Digital",
+  "Crucial", "Seagate", "DeepCool", "Noctua", "EKWB", "Lian Li",
+  "Cooler Master", "NZXT", "Fractal Design", "Sapphire", "XFX",
+  "PowerColor", "Zotac", "Palit", "LG", "BenQ", "Dell", "AOC",
+  "Acer", "ViewSonic", "Keychron", "Logitech", "Razer", "HyperX",
+  "SteelSeries", "TP-Link", "ASUS (Network)", "Netgear", "Ant Esports",
+  "Thermaltake", "Seasonic", "be quiet!", "Phanteks",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRODUCTS
+// 2. CATEGORIES & SUBCATEGORIES
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PRODUCTS_DATA = [
-  // ── PROCESSORS ─────────────────────────────────────────────────────────────
+/**
+ * Each SubCategory also lists:
+ *   - specDefs: spec definitions (name, valueType, options, filterable, etc.)
+ *   - slotName: the PartSlot name this subcategory maps to (optional)
+ */
+const CATEGORY_TREE: SeedCategory[] = [
   {
-    id: 'cpu-1', sku: 'CPU-AMD-7800X3D',
-    name: 'AMD Ryzen 7 7800X3D', category: 'Processor', price: 36000, stock: 15,
-    image: 'https://www.amd.com/content/dam/amd/en/images/products/processors/ryzen/2505503-ryzen-7-7800x3d-og.jpg',
-    description: 'The ultimate gaming processor with 3D V-Cache technology.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '120', ramType: 'DDR5', series: '7000 Series', cores: '8' }
+    name: "Processor",
+    description: "Desktop and workstation central processing units",
+    subCategories: [
+      {
+        name: "Desktop CPU",
+        description: "Consumer desktop processors",
+        slotName: "CPU",
+        specDefs: [
+          {
+            name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["LGA1700", "LGA1851", "AM4", "AM5", "sTR5", "LGA1200", "LGA1151"],
+          },
+          {
+            name: "Core Count", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance",
+            options: [],
+          },
+          {
+            name: "Thread Count", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "Base Clock (GHz)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance",
+            options: [],
+          },
+          {
+            name: "Boost Clock (GHz)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance",
+            options: [],
+          },
+          {
+            name: "TDP (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Power",
+            options: [],
+          },
+          {
+            name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["DDR4", "DDR5", "DDR4/DDR5"],
+          },
+          {
+            name: "Max Memory (GB)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "Integrated Graphics", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features",
+            options: ["None", "Intel UHD 770", "Intel UHD 730", "Intel UHD 710", "Radeon Graphics", "Intel Arc"],
+          },
+          {
+            name: "Architecture", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["Raptor Lake", "Alder Lake", "Zen 4", "Zen 4 V-Cache", "Zen 3", "Zen 3+", "Zen 5", "Arrow Lake", "Meteor Lake"],
+          },
+          {
+            name: "PCIe Version", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["PCIe 4.0", "PCIe 5.0"],
+          },
+          {
+            name: "Overclockable", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features",
+            options: [],
+          },
+          {
+            name: "Series", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["Core i3", "Core i5", "Core i7", "Core i9", "Core Ultra 5", "Core Ultra 7", "Core Ultra 9",
+              "Ryzen 5", "Ryzen 7", "Ryzen 9", "Threadripper", "Athlon"],
+          },
+          {
+            name: "Process Node", valueType: SpecValueType.STRING, isFilterable: false,
+            options: ["5nm", "6nm", "7nm", "10nm", "Intel 7", "Intel 4"],
+          },
+          {
+            name: "L3 Cache (MB)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+        ],
+      },
+      {
+        name: "HEDT CPU",
+        description: "High-end desktop / workstation processors",
+        slotName: "CPU",
+        specDefs: [
+          { name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["sTR5", "LGA4677", "SP5"] },
+          { name: "Core Count", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "TDP (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Power", options: [] },
+          { name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["DDR5", "ECC DDR5"] },
+          { name: "Memory Channels", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Architecture", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Zen 4", "Zen 4c"] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-2', sku: 'CPU-INT-14900K',
-    name: 'Intel Core i9-14900K', category: 'Processor', price: 55000, stock: 8,
-    image: 'https://m.media-amazon.com/images/I/619ytLAytAL.jpg',
-    description: '14th Gen High performance for creators and gamers.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '253', ramType: 'DDR5', generation: '14th Gen', cores: '24' }
+    name: "Motherboard",
+    description: "Desktop motherboards for AMD and Intel platforms",
+    subCategories: [
+      {
+        name: "ATX Motherboard",
+        description: "Full-size ATX motherboards",
+        slotName: "MOTHERBOARD",
+        specDefs: [
+          {
+            name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["LGA1700", "LGA1851", "AM4", "AM5", "sTR5"],
+          },
+          {
+            name: "Chipset", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["X870E", "X870", "X670E", "X670", "B650E", "B650", "A620", "B550", "X570", "B450",
+              "Z890", "Z790", "B760", "H770", "H610", "Z690", "Z590", "H570", "B560"],
+          },
+          {
+            name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["ATX"],
+          },
+          {
+            name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["DDR4", "DDR5"],
+          },
+          {
+            name: "Memory Slots", valueType: SpecValueType.NUMBER, isFilterable: true, filterGroup: "Specs", options: [],
+          },
+          {
+            name: "Max Memory (GB)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "PCIe x16 Slots", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "M.2 Slots", valueType: SpecValueType.NUMBER, isFilterable: true, filterGroup: "Storage", options: [],
+          },
+          {
+            name: "USB 3.2 Gen2 Ports", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "USB4/Thunderbolt", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [],
+          },
+          {
+            name: "WiFi", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features",
+            options: ["None", "WiFi 6", "WiFi 6E", "WiFi 7"],
+          },
+          {
+            name: "Bluetooth", valueType: SpecValueType.STRING, isFilterable: false,
+            options: ["None", "5.2", "5.3"],
+          },
+          {
+            name: "LAN Speed", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features",
+            options: ["1GbE", "2.5GbE", "5GbE", "10GbE"],
+          },
+          {
+            name: "PCIe Gen (Primary)", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["PCIe 3.0", "PCIe 4.0", "PCIe 5.0"],
+          },
+          {
+            name: "VRM Phases", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "SATA Ports", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+        ],
+      },
+      {
+        name: "Micro-ATX Motherboard",
+        description: "Compact Micro-ATX motherboards",
+        slotName: "MOTHERBOARD",
+        specDefs: [
+          { name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["LGA1700", "LGA1851", "AM4", "AM5"] },
+          { name: "Chipset", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["B650", "A620", "B550", "B450", "B760", "H610"] },
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Micro-ATX"] },
+          { name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["DDR4", "DDR5"] },
+          { name: "Memory Slots", valueType: SpecValueType.NUMBER, isFilterable: true, filterGroup: "Specs", options: [] },
+          { name: "M.2 Slots", valueType: SpecValueType.NUMBER, isFilterable: true, filterGroup: "Storage", options: [] },
+          { name: "WiFi", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["None", "WiFi 6", "WiFi 6E"] },
+          { name: "LAN Speed", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["1GbE", "2.5GbE"] },
+          { name: "SATA Ports", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+        ],
+      },
+      {
+        name: "Mini-ITX Motherboard",
+        description: "Small form factor Mini-ITX motherboards",
+        slotName: "MOTHERBOARD",
+        specDefs: [
+          { name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["LGA1700", "AM5", "AM4"] },
+          { name: "Chipset", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["B650", "B760", "Z790", "Z690"] },
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Mini-ITX"] },
+          { name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["DDR4", "DDR5"] },
+          { name: "Memory Slots", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "M.2 Slots", valueType: SpecValueType.NUMBER, isFilterable: true, filterGroup: "Storage", options: [] },
+          { name: "WiFi", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["WiFi 6", "WiFi 6E", "WiFi 7"] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-3', sku: 'CPU-AMD-5600X',
-    name: 'AMD Ryzen 5 5600X', category: 'Processor', price: 14000, stock: 25,
-    image: 'https://www.amd.com/content/dam/amd/en/images/products/processors/ryzen/2505503-ryzen-5-5600x-og.jpg',
-    description: 'Budget king for gaming.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM4', wattage: '65', ramType: 'DDR4', series: '5000 Series', cores: '6' }
+    name: "Graphics Card",
+    description: "Discrete graphics cards for gaming and professional workloads",
+    subCategories: [
+      {
+        name: "NVIDIA GPU",
+        description: "NVIDIA GeForce and Quadro GPUs",
+        slotName: "GPU",
+        specDefs: [
+          {
+            name: "GPU Chip", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["RTX 5090", "RTX 5080", "RTX 5070 Ti", "RTX 5070", "RTX 5060 Ti", "RTX 5060",
+              "RTX 4090", "RTX 4080 Super", "RTX 4080", "RTX 4070 Ti Super", "RTX 4070 Ti",
+              "RTX 4070 Super", "RTX 4070", "RTX 4060 Ti", "RTX 4060",
+              "RTX 3090 Ti", "RTX 3090", "RTX 3080 Ti", "RTX 3080", "RTX 3070 Ti", "RTX 3070"],
+          },
+          {
+            name: "VRAM (GB)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance",
+            options: [],
+          },
+          {
+            name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["GDDR6", "GDDR6X", "GDDR7"],
+          },
+          {
+            name: "Memory Bus (bit)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "TDP (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Power",
+            options: [],
+          },
+          {
+            name: "Card Length (mm)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Physical",
+            options: [],
+          },
+          {
+            name: "PCIe Interface", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["PCIe 4.0 x16", "PCIe 5.0 x16"],
+          },
+          {
+            name: "Power Connector", valueType: SpecValueType.STRING, isFilterable: false,
+            options: ["2x 8-pin", "3x 8-pin", "16-pin (12VHPWR)", "2x 16-pin"],
+          },
+          {
+            name: "DisplayPort Outputs", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "HDMI Version", valueType: SpecValueType.STRING, isFilterable: false,
+            options: ["HDMI 2.0", "HDMI 2.1", "HDMI 2.1a"],
+          },
+          {
+            name: "Base Clock (MHz)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "Boost Clock (MHz)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "Cooling Solution", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Cooling",
+            options: ["Dual Fan", "Triple Fan", "Founders Edition", "Single Fan"],
+          },
+          {
+            name: "Slot Width", valueType: SpecValueType.STRING, isFilterable: false,
+            options: ["2-slot", "2.5-slot", "3-slot", "3.5-slot"],
+          },
+        ],
+      },
+      {
+        name: "AMD GPU",
+        description: "AMD Radeon RX GPUs",
+        slotName: "GPU",
+        specDefs: [
+          {
+            name: "GPU Chip", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["RX 9070 XT", "RX 9070", "RX 7900 XTX", "RX 7900 XT", "RX 7900 GRE",
+              "RX 7800 XT", "RX 7700 XT", "RX 7600 XT", "RX 7600",
+              "RX 6950 XT", "RX 6900 XT", "RX 6800 XT", "RX 6800", "RX 6750 XT", "RX 6700 XT"],
+          },
+          { name: "VRAM (GB)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          {
+            name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["GDDR6", "GDDR6 ECC"],
+          },
+          { name: "Memory Bus (bit)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "TDP (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Power", options: [] },
+          { name: "Card Length (mm)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Physical", options: [] },
+          {
+            name: "PCIe Interface", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["PCIe 4.0 x16", "PCIe 5.0 x16"],
+          },
+          {
+            name: "Cooling Solution", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Cooling",
+            options: ["Dual Fan", "Triple Fan", "Reference"],
+          },
+        ],
+      },
+      {
+        name: "Intel Arc GPU",
+        description: "Intel Arc discrete graphics cards",
+        slotName: "GPU",
+        specDefs: [
+          {
+            name: "GPU Chip", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["Arc B580", "Arc B770", "Arc A770", "Arc A750", "Arc A380"],
+          },
+          { name: "VRAM (GB)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["GDDR6"] },
+          { name: "TDP (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Power", options: [] },
+          { name: "PCIe Interface", valueType: SpecValueType.STRING, isFilterable: false, options: ["PCIe 4.0 x16", "PCIe 5.0 x16"] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-4', sku: 'CPU-INT-13600K',
-    name: 'Intel Core i5-13600K', category: 'Processor', price: 28500, stock: 20,
-    image: 'https://m.media-amazon.com/images/I/61lNEpDfdcL.jpg',
-    description: '13th Gen mid-range beast.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '125', ramType: 'DDR5', generation: '13th Gen', cores: '14' }
+    name: "RAM",
+    description: "Desktop and laptop memory modules",
+    subCategories: [
+      {
+        name: "DDR5 RAM",
+        description: "DDR5 memory for modern platforms",
+        slotName: "RAM",
+        specDefs: [
+          { name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["DDR5"] },
+          {
+            name: "Capacity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["16GB (8GBx2)", "32GB (16GBx2)", "48GB (24GBx2)", "64GB (32GBx2)", "96GB (48GBx2)", "16GB", "32GB", "64GB"],
+          },
+          {
+            name: "Speed (MT/s)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance",
+            options: [],
+          },
+          {
+            name: "CAS Latency", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "Timings", valueType: SpecValueType.STRING, isFilterable: false, options: [],
+          },
+          {
+            name: "Voltage", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "RGB", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [],
+          },
+          {
+            name: "Heat Spreader", valueType: SpecValueType.STRING, isFilterable: false,
+            options: ["Standard", "Low Profile", "Tall Heatsink"],
+          },
+          {
+            name: "XMP/EXPO Profile", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features",
+            options: ["XMP 3.0", "EXPO", "XMP 3.0 & EXPO", "None"],
+          },
+          {
+            name: "ECC", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [],
+          },
+        ],
+      },
+      {
+        name: "DDR4 RAM",
+        description: "DDR4 memory for existing platforms",
+        slotName: "RAM",
+        specDefs: [
+          { name: "Memory Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["DDR4"] },
+          {
+            name: "Capacity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["8GB (4GBx2)", "16GB (8GBx2)", "32GB (16GBx2)", "64GB (32GBx2)", "8GB", "16GB", "32GB"],
+          },
+          { name: "Speed (MT/s)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "CAS Latency", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Voltage", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "RGB", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          {
+            name: "XMP Profile", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features",
+            options: ["XMP 2.0", "None"],
+          },
+          { name: "ECC", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-5', sku: 'CPU-AMD-7950X',
-    name: 'AMD Ryzen 9 7950X', category: 'Processor', price: 52000, stock: 5,
-    image: 'https://www.amd.com/content/dam/amd/en/images/products/processors/ryzen/2505503-ryzen-9-7900x-og.jpg',
-    description: 'Top tier productivity powerhouse.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '170', ramType: 'DDR5', series: '7000 Series', cores: '16' }
+    name: "Storage",
+    description: "Solid state drives, hard disk drives, and external storage",
+    subCategories: [
+      {
+        name: "NVMe SSD",
+        description: "M.2 NVMe solid state drives",
+        slotName: "STORAGE",
+        specDefs: [
+          {
+            name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["M.2 2280", "M.2 2242", "M.2 22110"],
+          },
+          {
+            name: "Interface", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
+            options: ["PCIe 3.0 x4 NVMe", "PCIe 4.0 x4 NVMe", "PCIe 5.0 x4 NVMe"],
+          },
+          {
+            name: "Capacity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["250GB", "500GB", "1TB", "2TB", "4TB"],
+          },
+          { name: "Sequential Read (MB/s)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "Sequential Write (MB/s)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "TBW", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          {
+            name: "NAND Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["TLC", "QLC", "MLC", "SLC"],
+          },
+          { name: "DRAM Cache", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          {
+            name: "Heatsink Included", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [],
+          },
+        ],
+      },
+      {
+        name: "SATA SSD",
+        description: "2.5-inch SATA solid state drives",
+        slotName: "STORAGE",
+        specDefs: [
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["2.5-inch"] },
+          { name: "Interface", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["SATA III (6Gb/s)"] },
+          {
+            name: "Capacity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["120GB", "240GB", "480GB", "500GB", "960GB", "1TB", "2TB"],
+          },
+          { name: "Sequential Read (MB/s)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Sequential Write (MB/s)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "NAND Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["TLC", "QLC", "MLC"] },
+        ],
+      },
+      {
+        name: "HDD",
+        description: "Internal mechanical hard disk drives",
+        slotName: "STORAGE",
+        specDefs: [
+          {
+            name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["3.5-inch", "2.5-inch"],
+          },
+          { name: "Interface", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["SATA III (6Gb/s)"] },
+          {
+            name: "Capacity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["1TB", "2TB", "4TB", "6TB", "8TB", "12TB", "16TB", "18TB"],
+          },
+          {
+            name: "RPM", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Performance",
+            options: ["5400 RPM", "7200 RPM", "10000 RPM"],
+          },
+          { name: "Cache (MB)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-6', sku: 'CPU-AMD-7960X',
-    name: 'AMD Ryzen Threadripper 7960X', category: 'Processor', price: 135000, stock: 2,
-    image: 'https://m.media-amazon.com/images/I/71Gyox1aqRL.jpg',
-    description: 'HEDT processor for extreme workstations.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'sTR5', wattage: '350', ramType: 'DDR5', series: 'Threadripper', cores: '24' }
+    name: "Cooler",
+    description: "CPU coolers, case fans, and thermal solutions",
+    subCategories: [
+      {
+        name: "AIO Liquid Cooler",
+        description: "All-in-one closed-loop liquid coolers",
+        slotName: "COOLER",
+        specDefs: [
+          {
+            name: "Radiator Size", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["120mm", "240mm", "280mm", "360mm", "420mm"],
+          },
+          {
+            name: "Socket Compatibility", valueType: SpecValueType.STRING, isFilterable: true, isMulti: true, filterGroup: "Compatibility",
+            options: ["LGA1700", "LGA1851", "AM4", "AM5", "LGA2066", "sTR5"],
+          },
+          { name: "Fan Count", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Fan Size (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Fan Speed (RPM)", valueType: SpecValueType.STRING, isFilterable: false, options: [] },
+          { name: "Pump Speed (RPM)", valueType: SpecValueType.STRING, isFilterable: false, options: [] },
+          { name: "Noise (dBA)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "ARGB", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "LCD Display", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Tubing Length (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+        ],
+      },
+      {
+        name: "Air Cooler",
+        description: "Air cooling tower heatsink solutions",
+        slotName: "COOLER",
+        specDefs: [
+          {
+            name: "Socket Compatibility", valueType: SpecValueType.STRING, isFilterable: true, isMulti: true, filterGroup: "Compatibility",
+            options: ["LGA1700", "LGA1851", "AM4", "AM5"],
+          },
+          { name: "Height (mm)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Physical", options: [] },
+          {
+            name: "Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["Single Tower", "Dual Tower", "Low Profile"],
+          },
+          { name: "Fan Count", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Fan Size (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Noise (dBA)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Heat Pipes", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "TDP Rating (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "ARGB", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+        ],
+      },
+      {
+        name: "Case Fan",
+        description: "120mm and 140mm case fans",
+        slotName: null,
+        specDefs: [
+          { name: "Fan Size (mm)", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["80mm", "92mm", "120mm", "140mm", "200mm"] },
+          { name: "Max Speed (RPM)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Airflow (CFM)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Static Pressure (mmH2O)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Noise (dBA)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Connector", valueType: SpecValueType.STRING, isFilterable: false, options: ["3-pin", "4-pin PWM"] },
+          { name: "ARGB", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Pack Quantity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["1-pack", "3-pack", "5-pack"] },
+        ],
+      },
+      {
+        name: "Thermal Paste",
+        description: "Thermal interface materials",
+        slotName: null,
+        specDefs: [
+          { name: "Thermal Conductivity (W/mK)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "Weight (g)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Carbon", "Metal", "Ceramic", "Liquid Metal"] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-7', sku: 'CPU-AMD-7700X',
-    name: 'AMD Ryzen 7 7700X', category: 'Processor', price: 32500, stock: 14,
-    image: 'https://m.media-amazon.com/images/I/71fZgV7KzBL.jpg',
-    description: 'High performance Zen4 gaming CPU.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '105', ramType: 'DDR5', series: '7000 Series', cores: '8' }
+    name: "Power Supply",
+    description: "ATX power supply units for desktop systems",
+    subCategories: [
+      {
+        name: "ATX PSU",
+        description: "Standard ATX power supply units",
+        slotName: "PSU",
+        specDefs: [
+          {
+            name: "Wattage", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Specs",
+            options: [],
+          },
+          {
+            name: "Efficiency Rating", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs",
+            options: ["80+ White", "80+ Bronze", "80+ Silver", "80+ Gold", "80+ Platinum", "80+ Titanium"],
+          },
+          {
+            name: "Modular", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features",
+            options: ["Non-Modular", "Semi-Modular", "Fully Modular"],
+          },
+          { name: "PCIe 12VHPWR Connector", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Fan Size (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Fan Bearing", valueType: SpecValueType.STRING, isFilterable: false, options: ["Sleeve", "Ball", "Fluid Dynamic", "FDB"] },
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: false, options: ["ATX", "SFX", "SFX-L"] },
+          { name: "PCIe 6+2 Connectors", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "SATA Connectors", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Molex Connectors", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "ATX 3.0 Compatible", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Zero RPM Mode", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          {
+            name: "Warranty (years)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Specs",
+            options: [],
+          },
+        ],
+      },
+      {
+        name: "SFX PSU",
+        description: "Small form factor SFX/SFX-L power supplies",
+        slotName: "PSU",
+        specDefs: [
+          { name: "Wattage", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Specs", options: [] },
+          { name: "Efficiency Rating", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["80+ Gold", "80+ Platinum"] },
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["SFX", "SFX-L"] },
+          { name: "Modular", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["Fully Modular", "Semi-Modular"] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-8', sku: 'CPU-INT-14700K',
-    name: 'Intel Core i7-14700K', category: 'Processor', price: 43000, stock: 10,
-    image: 'https://m.media-amazon.com/images/I/61lNEpDfdcL.jpg',
-    description: 'High-end gaming + productivity CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '253', ramType: 'DDR5', generation: '14th Gen', cores: '20' }
+    name: "Cabinet",
+    description: "PC cases and chassis",
+    subCategories: [
+      {
+        name: "Mid Tower Case",
+        description: "Standard mid tower PC cases",
+        slotName: "CASE",
+        specDefs: [
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Mid Tower"] },
+          {
+            name: "Motherboard Support", valueType: SpecValueType.STRING, isFilterable: true, isMulti: true, filterGroup: "Compatibility",
+            options: ["Mini-ITX", "Micro-ATX", "ATX", "E-ATX"],
+          },
+          {
+            name: "Max CPU Cooler Height (mm)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Compatibility",
+            options: [],
+          },
+          {
+            name: "Max GPU Length (mm)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Compatibility",
+            options: [],
+          },
+          {
+            name: "Max PSU Length (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [],
+          },
+          {
+            name: "Front I/O", valueType: SpecValueType.STRING, isFilterable: false,
+            options: ["USB 3.0 x2", "USB 3.0 x2, USB-C", "USB 3.2 Gen 2 Type-C"],
+          },
+          { name: "Drive Bays (3.5-inch)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Drive Bays (2.5-inch)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Radiator Support (Top)", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Cooling", options: ["None", "120/240mm", "240/360mm", "280/360mm", "360mm"] },
+          { name: "Radiator Support (Front)", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Cooling", options: ["120/240mm", "240/280/360mm", "360mm", "420mm"] },
+          { name: "Included Fans", valueType: SpecValueType.STRING, isFilterable: false, options: [] },
+          { name: "Tempered Glass Panel", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "ARGB Controller", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Color", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Appearance", options: ["Black", "White", "Grey"] },
+        ],
+      },
+      {
+        name: "Full Tower Case",
+        description: "Large full tower PC cases",
+        slotName: "CASE",
+        specDefs: [
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Full Tower", "Super Tower"] },
+          { name: "Motherboard Support", valueType: SpecValueType.STRING, isFilterable: true, isMulti: true, filterGroup: "Compatibility", options: ["ATX", "E-ATX", "XL-ATX"] },
+          { name: "Max GPU Length (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Radiator Support (Top)", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Cooling", options: ["360mm", "420mm", "480mm"] },
+          { name: "Tempered Glass Panel", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Color", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Appearance", options: ["Black", "White"] },
+        ],
+      },
+      {
+        name: "Mini-ITX Case",
+        description: "Small form factor cases",
+        slotName: "CASE",
+        specDefs: [
+          { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Mini-ITX"] },
+          { name: "Volume (L)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Physical", options: [] },
+          { name: "Max GPU Length (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Max CPU Cooler Height (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "PSU Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["ATX", "SFX", "SFX-L"] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-9', sku: 'CPU-AMD-7600',
-    name: 'AMD Ryzen 5 7600', category: 'Processor', price: 21000, stock: 28,
-    image: 'https://m.media-amazon.com/images/I/61C2H9V3yDL.jpg',
-    description: 'Efficient midrange Zen4 chip.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '65', ramType: 'DDR5', series: '7000 Series', cores: '6' }
+    name: "Monitor",
+    description: "Desktop monitors for gaming, professional, and general use",
+    subCategories: [
+      {
+        name: "Gaming Monitor",
+        description: "High refresh rate gaming monitors",
+        slotName: null,
+        specDefs: [
+          {
+            name: "Panel Size (inch)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Display",
+            options: [],
+          },
+          {
+            name: "Resolution", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Display",
+            options: ["1920x1080 (FHD)", "2560x1440 (QHD)", "3440x1440 (UWQHD)", "3840x2160 (4K UHD)", "5120x1440 (DQHD)"],
+          },
+          {
+            name: "Panel Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Display",
+            options: ["IPS", "VA", "TN", "OLED", "QD-OLED", "WOLED"],
+          },
+          {
+            name: "Refresh Rate (Hz)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance",
+            options: [],
+          },
+          {
+            name: "Response Time (ms)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance",
+            options: [],
+          },
+          {
+            name: "Adaptive Sync", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features",
+            options: ["G-Sync", "FreeSync Premium", "FreeSync Premium Pro", "G-Sync Compatible", "None"],
+          },
+          { name: "HDR", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["None", "HDR10", "HDR400", "HDR600", "HDR1000", "True HDR"] },
+          { name: "Brightness (nits)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Color Gamut (sRGB %)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Curved", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Display", options: [] },
+          { name: "HDMI Ports", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "DisplayPort Ports", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "USB Hub", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Height Adjustable", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+        ],
+      },
+      {
+        name: "Professional Monitor",
+        description: "Color-accurate monitors for creative work",
+        slotName: null,
+        specDefs: [
+          { name: "Panel Size (inch)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Display", options: [] },
+          { name: "Resolution", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Display", options: ["1920x1080 (FHD)", "2560x1440 (QHD)", "3840x2160 (4K UHD)", "5120x2880 (5K)"] },
+          { name: "Panel Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Display", options: ["IPS", "OLED", "Nano IPS"] },
+          { name: "Color Gamut (DCI-P3 %)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Color", options: [] },
+          { name: "Color Gamut (sRGB %)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Delta E", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "HDR", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["None", "HDR10", "DisplayHDR 400", "DisplayHDR 600", "DisplayHDR 1000"] },
+          { name: "USB-C PD (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Features", options: [] },
+          { name: "Thunderbolt", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Height Adjustable", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Refresh Rate (Hz)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-10', sku: 'CPU-INT-13400F',
-    name: 'Intel Core i5-13400F', category: 'Processor', price: 18000, stock: 30,
-    image: 'https://m.media-amazon.com/images/I/71Tz1lS3TAL.jpg',
-    description: 'Budget gaming champion.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '148', ramType: 'DDR5', generation: '13th Gen', cores: '10' }
+    name: "Peripheral",
+    description: "Keyboards, mice, headsets, and other peripherals",
+    subCategories: [
+      {
+        name: "Keyboard",
+        description: "Mechanical, membrane, and gaming keyboards",
+        slotName: null,
+        specDefs: [
+          { name: "Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Mechanical", "Membrane", "Optical-Mechanical", "Hall Effect"] },
+          { name: "Connectivity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["Wired", "Wireless (2.4GHz)", "Bluetooth", "Wired/Wireless", "Tri-mode"] },
+          { name: "Layout", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Full-size (100%)", "TKL (80%)", "75%", "65%", "60%", "40%", "Numpad"] },
+          { name: "Switch Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Cherry MX Red", "Cherry MX Blue", "Cherry MX Brown", "Gateron Red", "Gateron Yellow", "Kailh Box Red", "Optical Red", "Proprietary"] },
+          { name: "Hot-Swap", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "RGB Backlight", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Per-key RGB", valueType: SpecValueType.BOOLEAN, isFilterable: false, options: [] },
+          { name: "Polling Rate (Hz)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Battery Life (hrs)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "NKRO", valueType: SpecValueType.BOOLEAN, isFilterable: false, options: [] },
+          { name: "Gasket Mount", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+        ],
+      },
+      {
+        name: "Mouse",
+        description: "Gaming and productivity mice",
+        slotName: null,
+        specDefs: [
+          { name: "Connectivity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["Wired", "Wireless (2.4GHz)", "Bluetooth", "Wired/Wireless"] },
+          { name: "Sensor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["PixArt PAW3395", "PixArt PAW3370", "PixArt PAW3950", "Hero 25K", "Focus Pro 30K", "TrueMove Pro"] },
+          { name: "Max DPI", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "Polling Rate (Hz)", valueType: SpecValueType.NUMBER, isFilterable: true, filterGroup: "Performance", options: [] },
+          { name: "Weight (g)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Physical", options: [] },
+          { name: "Buttons", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "RGB", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Battery Life (hrs)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Grip Style", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Palm", "Claw", "Fingertip", "Ambidextrous"] },
+        ],
+      },
+      {
+        name: "Headset",
+        description: "Gaming and audio headsets",
+        slotName: null,
+        specDefs: [
+          { name: "Connectivity", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["Wired (3.5mm)", "Wired (USB)", "Wireless (2.4GHz)", "Bluetooth", "Dual Wireless"] },
+          { name: "Driver Size (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Frequency Response", valueType: SpecValueType.STRING, isFilterable: false, options: [] },
+          { name: "Microphone Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["Detachable", "Retractable", "Built-in", "None"] },
+          { name: "Surround Sound", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Features", options: ["Stereo", "Virtual 7.1", "True 7.1", "360 Spatial"] },
+          { name: "Noise Cancellation", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "Battery Life (hrs)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Weight (g)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+        ],
+      },
+      {
+        name: "Mouse Pad",
+        description: "Desk mats and mouse pads",
+        slotName: null,
+        specDefs: [
+          { name: "Size", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Small (250x210mm)", "Medium (350x250mm)", "Large (450x400mm)", "XL (800x300mm)", "XXL (900x400mm)", "Desk Mat (900x400mm+)"] },
+          { name: "Surface Type", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Soft Cloth", "Hard", "Hybrid"] },
+          { name: "Thickness (mm)", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "RGB Edge Lighting", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+        ],
+      },
+    ],
   },
   {
-    id: 'cpu-11', sku: 'CPU-AMD-5800X',
-    name: 'AMD Ryzen 7 5800X', category: 'Processor', price: 22500, stock: 18,
-    image: 'https://m.media-amazon.com/images/I/61mYyJ6gH0L.jpg',
-    description: 'High performance AM4 processor.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM4', wattage: '105', ramType: 'DDR4', series: '5000 Series', cores: '8' }
+    name: "Networking",
+    description: "Routers, switches, network adapters, and cables",
+    subCategories: [
+      {
+        name: "Wi-Fi Router",
+        description: "Wireless home and gaming routers",
+        slotName: null,
+        specDefs: [
+          { name: "WiFi Standard", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["WiFi 5 (802.11ac)", "WiFi 6 (802.11ax)", "WiFi 6E", "WiFi 7 (802.11be)"] },
+          { name: "Max Speed (Mbps)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
+          { name: "Bands", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Dual-band", "Tri-band", "Quad-band"] },
+          { name: "LAN Ports", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "WAN Port Speed", valueType: SpecValueType.STRING, isFilterable: false, options: ["1GbE", "2.5GbE", "10GbE"] },
+          { name: "USB Port", valueType: SpecValueType.BOOLEAN, isFilterable: false, options: [] },
+          { name: "MU-MIMO", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "OFDMA", valueType: SpecValueType.BOOLEAN, isFilterable: false, options: [] },
+          { name: "Antennas", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+        ],
+      },
+      {
+        name: "Network Switch",
+        description: "Unmanaged and managed Ethernet switches",
+        slotName: null,
+        specDefs: [
+          { name: "Ports", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["5-port", "8-port", "16-port", "24-port", "48-port"] },
+          { name: "Port Speed", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["100Mbps", "1GbE", "2.5GbE", "10GbE"] },
+          { name: "Managed", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "PoE", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
+          { name: "SFP Ports", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+        ],
+      },
+      {
+        name: "Network Adapter",
+        description: "PCIe and USB Wi-Fi/LAN adapters",
+        slotName: null,
+        specDefs: [
+          { name: "Interface", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["PCIe x1", "USB 3.0", "USB-C", "M.2"] },
+          { name: "WiFi Standard", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["WiFi 6", "WiFi 6E", "WiFi 7", "N/A (LAN only)"] },
+          { name: "LAN Speed", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["1GbE", "2.5GbE", "5GbE", "10GbE"] },
+          { name: "Bluetooth", valueType: SpecValueType.STRING, isFilterable: false, options: ["None", "5.0", "5.2", "5.3", "5.4"] },
+          { name: "Antenna", valueType: SpecValueType.STRING, isFilterable: false, options: ["None", "External", "Internal"] },
+        ],
+      },
+    ],
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. PART SLOTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PART_SLOTS = [
+  { name: "CPU",         minItems: 1, maxItems: 1 },
+  { name: "MOTHERBOARD", minItems: 1, maxItems: 1 },
+  { name: "GPU",         minItems: 0, maxItems: 2 },
+  { name: "RAM",         minItems: 1, maxItems: 4 },
+  { name: "STORAGE",     minItems: 1, maxItems: 6 },
+  { name: "COOLER",      minItems: 1, maxItems: 1 },
+  { name: "PSU",         minItems: 1, maxItems: 1 },
+  { name: "CASE",        minItems: 1, maxItems: 1 },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. PRODUCTS
+// ─────────────────────────────────────────────────────────────────────────────
+// Each product references { subCategoryName, brandName } for dynamic ID lookup.
+// Spec values reference { specName, value (string/number/bool), optionValue }
+
+type SpecValue =
+  | { specName: string; valueString: string; optionValue?: string }
+  | { specName: string; valueNumber: number }
+  | { specName: string; valueBool: boolean };
+
+interface ProductSeed {
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  subCategoryName: string;
+  brandName: string;
+  price: number;
+  compareAtPrice?: number;
+  image: string;
+  stock: number;
+  specs: SpecValue[];
+}
+
+const PRODUCTS: ProductSeed[] = [
+  // ── DESKTOP CPUs ────────────────────────────────────────────────────────────
+  {
+    id: "cpu-01", sku: "CPU-AMD-7800X3D",
+    name: "AMD Ryzen 7 7800X3D",
+    description: "The ultimate gaming processor featuring 96MB AMD 3D V-Cache, 8 cores/16 threads on AM5, delivering unmatched 1080p gaming performance.",
+    subCategoryName: "Desktop CPU", brandName: "AMD", price: 36000, image: "https://cdn.amd.com/System/Placeholder/prd_ryzen_7700x.jpg", stock: 15,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Core Count", valueNumber: 8 },
+      { specName: "Thread Count", valueNumber: 16 },
+      { specName: "Base Clock (GHz)", valueNumber: 4.2 },
+      { specName: "Boost Clock (GHz)", valueNumber: 5.0 },
+      { specName: "TDP (W)", valueNumber: 120 },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Max Memory (GB)", valueNumber: 128 },
+      { specName: "Integrated Graphics", valueString: "Radeon Graphics", optionValue: "Radeon Graphics" },
+      { specName: "Architecture", valueString: "Zen 4 V-Cache", optionValue: "Zen 4 V-Cache" },
+      { specName: "PCIe Version", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "Overclockable", valueBool: false },
+      { specName: "Series", valueString: "Ryzen 7", optionValue: "Ryzen 7" },
+      { specName: "Process Node", valueString: "5nm" },
+      { specName: "L3 Cache (MB)", valueNumber: 96 },
+    ],
   },
   {
-    id: 'cpu-12', sku: 'CPU-INT-12100F',
-    name: 'Intel Core i3-12100F', category: 'Processor', price: 9000, stock: 40,
-    image: 'https://m.media-amazon.com/images/I/61p7FZ7m4DL.jpg',
-    description: 'Entry-level gaming CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '89', ramType: 'DDR5', generation: '12th Gen', cores: '4' }
+    id: "cpu-02", sku: "CPU-INT-14900K",
+    name: "Intel Core i9-14900K",
+    description: "Intel's 14th Gen flagship with 24 cores (8P+16E), up to 6.0GHz boost, ideal for gaming and demanding workloads on LGA1700.",
+    subCategoryName: "Desktop CPU", brandName: "Intel", price: 54000, image: "https://www.intel.com/content/dam/products/placeholder.png", stock: 8,
+    specs: [
+      { specName: "Socket", valueString: "LGA1700", optionValue: "LGA1700" },
+      { specName: "Core Count", valueNumber: 24 },
+      { specName: "Thread Count", valueNumber: 32 },
+      { specName: "Base Clock (GHz)", valueNumber: 3.2 },
+      { specName: "Boost Clock (GHz)", valueNumber: 6.0 },
+      { specName: "TDP (W)", valueNumber: 253 },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Max Memory (GB)", valueNumber: 192 },
+      { specName: "Integrated Graphics", valueString: "Intel UHD 770", optionValue: "Intel UHD 770" },
+      { specName: "Architecture", valueString: "Raptor Lake", optionValue: "Raptor Lake" },
+      { specName: "PCIe Version", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "Overclockable", valueBool: true },
+      { specName: "Series", valueString: "Core i9", optionValue: "Core i9" },
+      { specName: "Process Node", valueString: "Intel 7" },
+      { specName: "L3 Cache (MB)", valueNumber: 36 },
+    ],
   },
   {
-    id: 'cpu-13', sku: 'CPU-AMD-5900X',
-    name: 'AMD Ryzen 9 5900X', category: 'Processor', price: 34000, stock: 9,
-    image: 'https://m.media-amazon.com/images/I/71u7V9iK9xL.jpg',
-    description: 'High core productivity chip.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM4', wattage: '105', ramType: 'DDR4', series: '5000 Series', cores: '12' }
+    id: "cpu-03", sku: "CPU-AMD-7600X",
+    name: "AMD Ryzen 5 7600X",
+    description: "Fast Zen 4 6-core processor on AM5, excellent for budget gaming builds with strong IPC and DDR5 support.",
+    subCategoryName: "Desktop CPU", brandName: "AMD", price: 22500, image: "https://cdn.amd.com/System/Placeholder/prd_ryzen_5600x.jpg", stock: 24,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Core Count", valueNumber: 6 },
+      { specName: "Thread Count", valueNumber: 12 },
+      { specName: "Base Clock (GHz)", valueNumber: 4.7 },
+      { specName: "Boost Clock (GHz)", valueNumber: 5.3 },
+      { specName: "TDP (W)", valueNumber: 105 },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Max Memory (GB)", valueNumber: 128 },
+      { specName: "Integrated Graphics", valueString: "Radeon Graphics", optionValue: "Radeon Graphics" },
+      { specName: "Architecture", valueString: "Zen 4", optionValue: "Zen 4" },
+      { specName: "PCIe Version", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "Overclockable", valueBool: true },
+      { specName: "Series", valueString: "Ryzen 5", optionValue: "Ryzen 5" },
+      { specName: "Process Node", valueString: "5nm" },
+      { specName: "L3 Cache (MB)", valueNumber: 32 },
+    ],
   },
   {
-    id: 'cpu-14', sku: 'CPU-INT-12900K',
-    name: 'Intel Core i9-12900K', category: 'Processor', price: 36000, stock: 12,
-    image: 'https://m.media-amazon.com/images/I/61mYyJ6gH0L.jpg',
-    description: 'Flagship 12th Gen CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '241', ramType: 'DDR5', generation: '12th Gen', cores: '16' }
+    id: "cpu-04", sku: "CPU-INT-13600K",
+    name: "Intel Core i5-13600K",
+    description: "14-core (6P+8E) 13th Gen powerhouse, the best mid-range gaming CPU with unlocked multiplier and PCIe 5.0 on LGA1700.",
+    subCategoryName: "Desktop CPU", brandName: "Intel", price: 28000, image: "https://www.intel.com/content/dam/products/placeholder.png", stock: 20,
+    specs: [
+      { specName: "Socket", valueString: "LGA1700", optionValue: "LGA1700" },
+      { specName: "Core Count", valueNumber: 14 },
+      { specName: "Thread Count", valueNumber: 20 },
+      { specName: "Base Clock (GHz)", valueNumber: 3.5 },
+      { specName: "Boost Clock (GHz)", valueNumber: 5.1 },
+      { specName: "TDP (W)", valueNumber: 125 },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Max Memory (GB)", valueNumber: 192 },
+      { specName: "Integrated Graphics", valueString: "Intel UHD 770", optionValue: "Intel UHD 770" },
+      { specName: "Architecture", valueString: "Raptor Lake", optionValue: "Raptor Lake" },
+      { specName: "PCIe Version", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "Overclockable", valueBool: true },
+      { specName: "Series", valueString: "Core i5", optionValue: "Core i5" },
+      { specName: "Process Node", valueString: "Intel 7" },
+      { specName: "L3 Cache (MB)", valueNumber: 24 },
+    ],
   },
   {
-    id: 'cpu-15', sku: 'CPU-AMD-7500F',
-    name: 'AMD Ryzen 5 7500F', category: 'Processor', price: 16500, stock: 26,
-    image: 'https://m.media-amazon.com/images/I/71fZgV7KzBL.jpg',
-    description: 'Budget Zen4 performer.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '65', ramType: 'DDR5', series: '7000 Series', cores: '6' }
+    id: "cpu-05", sku: "CPU-AMD-5600X",
+    name: "AMD Ryzen 5 5600X",
+    description: "Zen 3 6-core 12-thread AM4 CPU, legendary budget gaming processor still very capable for 1080p and 1440p gaming.",
+    subCategoryName: "Desktop CPU", brandName: "AMD", price: 13500, image: "https://cdn.amd.com/System/Placeholder/prd_ryzen_5600x.jpg", stock: 30,
+    specs: [
+      { specName: "Socket", valueString: "AM4", optionValue: "AM4" },
+      { specName: "Core Count", valueNumber: 6 },
+      { specName: "Thread Count", valueNumber: 12 },
+      { specName: "Base Clock (GHz)", valueNumber: 3.7 },
+      { specName: "Boost Clock (GHz)", valueNumber: 4.6 },
+      { specName: "TDP (W)", valueNumber: 65 },
+      { specName: "Memory Type", valueString: "DDR4", optionValue: "DDR4" },
+      { specName: "Max Memory (GB)", valueNumber: 128 },
+      { specName: "Integrated Graphics", valueString: "None", optionValue: "None" },
+      { specName: "Architecture", valueString: "Zen 3", optionValue: "Zen 3" },
+      { specName: "PCIe Version", valueString: "PCIe 4.0", optionValue: "PCIe 4.0" },
+      { specName: "Overclockable", valueBool: true },
+      { specName: "Series", valueString: "Ryzen 5", optionValue: "Ryzen 5" },
+      { specName: "Process Node", valueString: "7nm" },
+      { specName: "L3 Cache (MB)", valueNumber: 32 },
+    ],
   },
   {
-    id: 'cpu-16', sku: 'CPU-INT-14600K',
-    name: 'Intel Core i5-14600K', category: 'Processor', price: 31000, stock: 16,
-    image: 'https://m.media-amazon.com/images/I/61lNEpDfdcL.jpg',
-    description: 'Best value performance CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '181', ramType: 'DDR5', generation: '14th Gen', cores: '14' }
+    id: "cpu-06", sku: "CPU-AMD-9950X",
+    name: "AMD Ryzen 9 9950X",
+    description: "AMD's flagship Zen 5 processor with 16 cores and 32 threads, offering tremendous performance for gaming and professional content creation on AM5.",
+    subCategoryName: "Desktop CPU", brandName: "AMD", price: 68000, image: "https://cdn.amd.com/System/Placeholder/prd_ryzen_9950x.jpg", stock: 5,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Core Count", valueNumber: 16 },
+      { specName: "Thread Count", valueNumber: 32 },
+      { specName: "Base Clock (GHz)", valueNumber: 4.3 },
+      { specName: "Boost Clock (GHz)", valueNumber: 5.7 },
+      { specName: "TDP (W)", valueNumber: 170 },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Max Memory (GB)", valueNumber: 256 },
+      { specName: "Integrated Graphics", valueString: "Radeon Graphics", optionValue: "Radeon Graphics" },
+      { specName: "Architecture", valueString: "Zen 5", optionValue: "Zen 5" },
+      { specName: "PCIe Version", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "Overclockable", valueBool: true },
+      { specName: "Series", valueString: "Ryzen 9", optionValue: "Ryzen 9" },
+      { specName: "Process Node", valueString: "5nm" },
+      { specName: "L3 Cache (MB)", valueNumber: 64 },
+    ],
   },
   {
-    id: 'cpu-17', sku: 'CPU-AMD-7950X3D',
-    name: 'AMD Ryzen 9 7950X3D', category: 'Processor', price: 62000, stock: 6,
-    image: 'https://m.media-amazon.com/images/I/71Gyox1aqRL.jpg',
-    description: 'Ultimate gaming + workstation CPU.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '120', ramType: 'DDR5', series: '7000 Series', cores: '16' }
+    id: "cpu-07", sku: "CPU-INT-12400F",
+    name: "Intel Core i5-12400F",
+    description: "Budget-friendly 12th Gen Alder Lake 6P-core processor without iGPU, excellent value for gaming paired with a discrete GPU.",
+    subCategoryName: "Desktop CPU", brandName: "Intel", price: 12000, image: "https://www.intel.com/content/dam/products/placeholder.png", stock: 35,
+    specs: [
+      { specName: "Socket", valueString: "LGA1700", optionValue: "LGA1700" },
+      { specName: "Core Count", valueNumber: 6 },
+      { specName: "Thread Count", valueNumber: 12 },
+      { specName: "Base Clock (GHz)", valueNumber: 2.5 },
+      { specName: "Boost Clock (GHz)", valueNumber: 4.4 },
+      { specName: "TDP (W)", valueNumber: 65 },
+      { specName: "Memory Type", valueString: "DDR4", optionValue: "DDR4" },
+      { specName: "Max Memory (GB)", valueNumber: 128 },
+      { specName: "Integrated Graphics", valueString: "None", optionValue: "None" },
+      { specName: "Architecture", valueString: "Alder Lake", optionValue: "Alder Lake" },
+      { specName: "PCIe Version", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "Overclockable", valueBool: false },
+      { specName: "Series", valueString: "Core i5", optionValue: "Core i5" },
+      { specName: "Process Node", valueString: "Intel 7" },
+      { specName: "L3 Cache (MB)", valueNumber: 18 },
+    ],
   },
   {
-    id: 'cpu-18', sku: 'CPU-INT-13700K',
-    name: 'Intel Core i7-13700K', category: 'Processor', price: 39500, stock: 11,
-    image: 'https://m.media-amazon.com/images/I/61lNEpDfdcL.jpg',
-    description: 'Balanced performance CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '253', ramType: 'DDR5', generation: '13th Gen', cores: '16' }
+    id: "cpu-08", sku: "CPU-AMD-7950X3D",
+    name: "AMD Ryzen 9 7950X3D",
+    description: "The ultimate dual-CCD processor combining 3D V-Cache on one CCD for gaming and raw compute power on the other, perfect for streaming-gaming workstations.",
+    subCategoryName: "Desktop CPU", brandName: "AMD", price: 64000, image: "https://cdn.amd.com/System/Placeholder/prd_ryzen_9_7950x3d.jpg", stock: 4,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Core Count", valueNumber: 16 },
+      { specName: "Thread Count", valueNumber: 32 },
+      { specName: "Base Clock (GHz)", valueNumber: 4.2 },
+      { specName: "Boost Clock (GHz)", valueNumber: 5.7 },
+      { specName: "TDP (W)", valueNumber: 120 },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Max Memory (GB)", valueNumber: 128 },
+      { specName: "Integrated Graphics", valueString: "Radeon Graphics", optionValue: "Radeon Graphics" },
+      { specName: "Architecture", valueString: "Zen 4 V-Cache", optionValue: "Zen 4 V-Cache" },
+      { specName: "PCIe Version", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "Overclockable", valueBool: false },
+      { specName: "Series", valueString: "Ryzen 9", optionValue: "Ryzen 9" },
+      { specName: "Process Node", valueString: "5nm" },
+      { specName: "L3 Cache (MB)", valueNumber: 128 },
+    ],
   },
+
+  // ── HEDT CPUs ───────────────────────────────────────────────────────────────
   {
-    id: 'cpu-19', sku: 'CPU-AMD-5600',
-    name: 'AMD Ryzen 5 5600', category: 'Processor', price: 12500, stock: 33,
-    image: 'https://m.media-amazon.com/images/I/61C2H9V3yDL.jpg',
-    description: 'Budget AM4 gaming CPU.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM4', wattage: '65', ramType: 'DDR4', series: '5000 Series', cores: '6' }
-  },
-  {
-    id: 'cpu-20', sku: 'CPU-INT-12400F',
-    name: 'Intel Core i5-12400F', category: 'Processor', price: 14000, stock: 29,
-    image: 'https://m.media-amazon.com/images/I/71Tz1lS3TAL.jpg',
-    description: 'Great value midrange CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '117', ramType: 'DDR5', generation: '12th Gen', cores: '6' }
-  },
-  {
-    id: 'cpu-21', sku: 'CPU-AMD-5700X',
-    name: 'AMD Ryzen 7 5700X', category: 'Processor', price: 21000, stock: 19,
-    image: 'https://m.media-amazon.com/images/I/61mYyJ6gH0L.jpg',
-    description: 'Efficient 8-core CPU.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM4', wattage: '65', ramType: 'DDR4', series: '5000 Series', cores: '8' }
-  },
-  {
-    id: 'cpu-22', sku: 'CPU-INT-12600K',
-    name: 'Intel Core i5-12600K', category: 'Processor', price: 24500, stock: 17,
-    image: 'https://m.media-amazon.com/images/I/61lNEpDfdcL.jpg',
-    description: 'Popular enthusiast CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '150', ramType: 'DDR5', generation: '12th Gen', cores: '10' }
-  },
-  {
-    id: 'cpu-23', sku: 'CPU-AMD-7600X',
-    name: 'AMD Ryzen 5 7600X', category: 'Processor', price: 23500, stock: 23,
-    image: 'https://m.media-amazon.com/images/I/71fZgV7KzBL.jpg',
-    description: 'High clock gaming CPU.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '105', ramType: 'DDR5', series: '7000 Series', cores: '6' }
-  },
-  {
-    id: 'cpu-24', sku: 'CPU-INT-14700',
-    name: 'Intel Core i7-14700', category: 'Processor', price: 38000, stock: 13,
-    image: 'https://m.media-amazon.com/images/I/61lNEpDfdcL.jpg',
-    description: 'Non-K high performance CPU.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '219', ramType: 'DDR5', generation: '14th Gen', cores: '20' }
-  },
-  {
-    id: 'cpu-25', sku: 'CPU-AMD-7900',
-    name: 'AMD Ryzen 9 7900', category: 'Processor', price: 41000, stock: 8,
-    image: 'https://m.media-amazon.com/images/I/71Gyox1aqRL.jpg',
-    description: 'Efficient 12-core Zen4 CPU.',
-    brandName: 'AMD',
-    specs: { brand: 'AMD', socket: 'AM5', wattage: '65', ramType: 'DDR5', series: '7000 Series', cores: '12' }
-  },
-  {
-    id: 'cpu-26', sku: 'CPU-INT-13900KS',
-    name: 'Intel Core i9-13900KS', category: 'Processor', price: 65000, stock: 4,
-    image: 'https://m.media-amazon.com/images/I/61lNEpDfdcL.jpg',
-    description: 'Extreme flagship processor.',
-    brandName: 'Intel',
-    specs: { brand: 'Intel', socket: 'LGA1700', wattage: '253', ramType: 'DDR5', generation: '13th Gen', cores: '24' }
+    id: "cpu-09", sku: "CPU-AMD-7960X",
+    name: "AMD Ryzen Threadripper 7960X",
+    description: "24-core 48-thread HEDT workstation processor on sTR5 socket with massive 152MB L3, quad-channel DDR5 and 88 PCIe lanes.",
+    subCategoryName: "HEDT CPU", brandName: "AMD", price: 135000, image: "https://cdn.amd.com/System/Placeholder/prd_threadripper.jpg", stock: 2,
+    specs: [
+      { specName: "Socket", valueString: "sTR5", optionValue: "sTR5" },
+      { specName: "Core Count", valueNumber: 24 },
+      { specName: "TDP (W)", valueNumber: 350 },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Memory Channels", valueNumber: 4 },
+      { specName: "Architecture", valueString: "Zen 4", optionValue: "Zen 4" },
+    ],
   },
 
   // ── MOTHERBOARDS ────────────────────────────────────────────────────────────
   {
-    id: 'mobo-1', sku: 'MB-ROG-X670E',
-    name: 'ASUS ROG Strix X670E-E Gaming WiFi', category: 'Motherboard', price: 42000, stock: 10,
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSog2RHpDaYyq58a4pnux9TyvzNBUFhYM2ZQA&s',
-    description: 'Premium AM5 motherboard with PCIe 5.0.',
-    brandName: 'ASUS',
-    specs: { brand: 'ASUS', socket: 'AM5', ramType: 'DDR5', formFactor: 'ATX', chipset: 'X670' }
+    id: "mobo-01", sku: "MB-ASUS-X670E-ROG",
+    name: "ASUS ROG Strix X670E-E Gaming WiFi",
+    description: "Premium AM5 ATX motherboard with X670E chipset, PCIe 5.0 x16 and M.2, DDR5-6000+, WiFi 6E, 2.5GbE and robust 18+2 power delivery for Ryzen 7000 overclocking.",
+    subCategoryName: "ATX Motherboard", brandName: "ASUS", price: 42000, image: "https://placeholder.asus.com/rog-strix-x670e.jpg", stock: 10,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Chipset", valueString: "X670E", optionValue: "X670E" },
+      { specName: "Form Factor", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Memory Slots", valueNumber: 4 },
+      { specName: "Max Memory (GB)", valueNumber: 192 },
+      { specName: "PCIe x16 Slots", valueNumber: 2 },
+      { specName: "M.2 Slots", valueNumber: 4 },
+      { specName: "USB 3.2 Gen2 Ports", valueNumber: 6 },
+      { specName: "USB4/Thunderbolt", valueBool: false },
+      { specName: "WiFi", valueString: "WiFi 6E", optionValue: "WiFi 6E" },
+      { specName: "Bluetooth", valueString: "5.3" },
+      { specName: "LAN Speed", valueString: "2.5GbE", optionValue: "2.5GbE" },
+      { specName: "PCIe Gen (Primary)", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "VRM Phases", valueNumber: 18 },
+      { specName: "SATA Ports", valueNumber: 6 },
+    ],
   },
   {
-    id: 'mobo-2', sku: 'MB-MSI-Z790',
-    name: 'MSI MAG Z790 Tomahawk WiFi', category: 'Motherboard', price: 28000, stock: 12,
-    image: 'https://asset.msi.com/resize/image/global/product/product_1664265391459c76c55d481a806150407f1b07a6bb.png62405b38c58fe0f07fcef2367d8a9ba1/1024.png',
-    description: 'Reliable foundation for Intel 12th/13th/14th Gen.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'LGA1700', ramType: 'DDR5', formFactor: 'ATX', chipset: 'Z790' }
+    id: "mobo-02", sku: "MB-MSI-Z790-TOMAHAWK",
+    name: "MSI MAG Z790 Tomahawk WiFi",
+    description: "Solid Z790 ATX motherboard for Intel 12th/13th/14th Gen, featuring DDR5, PCIe 5.0, WiFi 6E, and 16+1+1 power stages.",
+    subCategoryName: "ATX Motherboard", brandName: "MSI", price: 28000, image: "https://placeholder.msi.com/z790-tomahawk.jpg", stock: 12,
+    specs: [
+      { specName: "Socket", valueString: "LGA1700", optionValue: "LGA1700" },
+      { specName: "Chipset", valueString: "Z790", optionValue: "Z790" },
+      { specName: "Form Factor", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Memory Slots", valueNumber: 4 },
+      { specName: "Max Memory (GB)", valueNumber: 192 },
+      { specName: "PCIe x16 Slots", valueNumber: 2 },
+      { specName: "M.2 Slots", valueNumber: 5 },
+      { specName: "USB 3.2 Gen2 Ports", valueNumber: 4 },
+      { specName: "USB4/Thunderbolt", valueBool: false },
+      { specName: "WiFi", valueString: "WiFi 6E", optionValue: "WiFi 6E" },
+      { specName: "Bluetooth", valueString: "5.3" },
+      { specName: "LAN Speed", valueString: "2.5GbE", optionValue: "2.5GbE" },
+      { specName: "PCIe Gen (Primary)", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "VRM Phases", valueNumber: 16 },
+      { specName: "SATA Ports", valueNumber: 6 },
+    ],
   },
   {
-    id: 'mobo-3', sku: 'MB-GIG-B550M',
-    name: 'Gigabyte B550M DS3H', category: 'Motherboard', price: 9000, stock: 30,
-    image: 'https://m.media-amazon.com/images/I/71ZMMyOQfOL.jpg',
-    description: 'Solid budget board for AM4.',
-    brandName: 'Gigabyte',
-    // 'mATX' → normalised to 'Micro-ATX' to match filter config options
-    specs: { brand: 'Gigabyte', socket: 'AM4', ramType: 'DDR4', formFactor: 'Micro-ATX', chipset: 'B550' }
+    id: "mobo-03", sku: "MB-GIG-B550M-DS3H",
+    name: "Gigabyte B550M DS3H",
+    description: "Budget Micro-ATX board for AMD AM4 Ryzen 3000/5000 series, DDR4 support, PCIe 4.0, and dual M.2 slots.",
+    subCategoryName: "Micro-ATX Motherboard", brandName: "Gigabyte", price: 8500, image: "https://placeholder.gigabyte.com/b550m-ds3h.jpg", stock: 30,
+    specs: [
+      { specName: "Socket", valueString: "AM4", optionValue: "AM4" },
+      { specName: "Chipset", valueString: "B550", optionValue: "B550" },
+      { specName: "Form Factor", valueString: "Micro-ATX", optionValue: "Micro-ATX" },
+      { specName: "Memory Type", valueString: "DDR4", optionValue: "DDR4" },
+      { specName: "Memory Slots", valueNumber: 4 },
+      { specName: "M.2 Slots", valueNumber: 2 },
+      { specName: "WiFi", valueString: "None", optionValue: "None" },
+      { specName: "LAN Speed", valueString: "1GbE", optionValue: "1GbE" },
+      { specName: "SATA Ports", valueNumber: 4 },
+    ],
   },
   {
-    id: 'mobo-4', sku: 'MB-ASR-B650M',
-    name: 'ASRock B650M Pro RS', category: 'Motherboard', price: 13500, stock: 18,
-    image: 'https://www.asrock.com/mb/photo/B650M%20Pro%20RS(M1).png',
-    description: 'Great value AM5 Micro ATX board.',
-    brandName: 'ASRock',
-    specs: { brand: 'ASRock', socket: 'AM5', ramType: 'DDR5', formFactor: 'Micro-ATX', chipset: 'B650' }
+    id: "mobo-04", sku: "MB-ASR-B650M-PRO",
+    name: "ASRock B650M Pro RS",
+    description: "Great value AM5 Micro-ATX board with B650 chipset, DDR5, PCIe 4.0 M.2, and 2.5GbE LAN.",
+    subCategoryName: "Micro-ATX Motherboard", brandName: "ASRock", price: 13500, image: "https://placeholder.asrock.com/b650m-pro.jpg", stock: 18,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Chipset", valueString: "B650", optionValue: "B650" },
+      { specName: "Form Factor", valueString: "Micro-ATX", optionValue: "Micro-ATX" },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Memory Slots", valueNumber: 4 },
+      { specName: "M.2 Slots", valueNumber: 2 },
+      { specName: "WiFi", valueString: "None", optionValue: "None" },
+      { specName: "LAN Speed", valueString: "2.5GbE", optionValue: "2.5GbE" },
+      { specName: "SATA Ports", valueNumber: 4 },
+    ],
   },
   {
-    id: 'mobo-5', sku: 'MB-MSI-B760',
-    name: 'MSI PRO B760-P DDR4', category: 'Motherboard', price: 15500, stock: 15,
-    image: 'https://m.media-amazon.com/images/I/91ZPVQjJ7kL.jpg',
-    description: 'Cost effective Intel board supporting DDR4.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'LGA1700', ramType: 'DDR4', formFactor: 'ATX', chipset: 'B760' }
+    id: "mobo-05", sku: "MB-ASUS-B650-TUF",
+    name: "ASUS TUF Gaming B650-Plus WiFi",
+    description: "Durable ATX AM5 board with B650 chipset, DDR5-6000 support, 3x M.2, WiFi 6, and military-grade components.",
+    subCategoryName: "ATX Motherboard", brandName: "ASUS", price: 19000, image: "https://placeholder.asus.com/tuf-b650-plus.jpg", stock: 16,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Chipset", valueString: "B650", optionValue: "B650" },
+      { specName: "Form Factor", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Memory Slots", valueNumber: 4 },
+      { specName: "Max Memory (GB)", valueNumber: 192 },
+      { specName: "PCIe x16 Slots", valueNumber: 2 },
+      { specName: "M.2 Slots", valueNumber: 3 },
+      { specName: "USB 3.2 Gen2 Ports", valueNumber: 2 },
+      { specName: "USB4/Thunderbolt", valueBool: false },
+      { specName: "WiFi", valueString: "WiFi 6", optionValue: "WiFi 6" },
+      { specName: "Bluetooth", valueString: "5.2" },
+      { specName: "LAN Speed", valueString: "2.5GbE", optionValue: "2.5GbE" },
+      { specName: "PCIe Gen (Primary)", valueString: "PCIe 4.0", optionValue: "PCIe 4.0" },
+      { specName: "VRM Phases", valueNumber: 12 },
+      { specName: "SATA Ports", valueNumber: 4 },
+    ],
   },
   {
-    id: 'mobo-6', sku: 'MB-ASUS-B650',
-    name: 'ASUS TUF B650-PLUS', category: 'Motherboard', price: 19000, stock: 18,
-    image: 'https://m.media-amazon.com/images/I/71M9yG3R7XL.jpg',
-    description: 'Durable AM5 board.',
-    brandName: 'ASUS',
-    specs: { brand: 'ASUS', socket: 'AM5', ramType: 'DDR5', formFactor: 'ATX', chipset: 'B650' }
-  },
-  {
-    id: 'mobo-7', sku: 'MB-MSI-B650',
-    name: 'MSI B650 Gaming Plus', category: 'Motherboard', price: 17500, stock: 20,
-    image: 'https://m.media-amazon.com/images/I/81zK8VZxZPL.jpg',
-    description: 'Balanced AM5 motherboard.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'AM5', ramType: 'DDR5', formFactor: 'ATX', chipset: 'B650' }
-  },
-  {
-    id: 'mobo-8', sku: 'MB-GIG-X670',
-    name: 'Gigabyte X670 Aorus Elite', category: 'Motherboard', price: 29000, stock: 9,
-    image: 'https://m.media-amazon.com/images/I/81E6R7Y6dPL.jpg',
-    description: 'Premium AM5 board.',
-    brandName: 'Gigabyte',
-    specs: { brand: 'Gigabyte', socket: 'AM5', ramType: 'DDR5', formFactor: 'ATX', chipset: 'X670' }
-  },
-  {
-    id: 'mobo-9', sku: 'MB-ASR-A620',
-    name: 'ASRock A620M-HDV', category: 'Motherboard', price: 9000, stock: 32,
-    image: 'https://m.media-amazon.com/images/I/71L+O+6N0AL.jpg',
-    description: 'Entry AM5 board.',
-    brandName: 'ASRock',
-    specs: { brand: 'ASRock', socket: 'AM5', ramType: 'DDR5', formFactor: 'Micro-ATX', chipset: 'A620' }
-  },
-  {
-    id: 'mobo-10', sku: 'MB-MSI-Z690',
-    name: 'MSI Z690 Tomahawk', category: 'Motherboard', price: 26000, stock: 14,
-    image: 'https://m.media-amazon.com/images/I/81zK8VZxZPL.jpg',
-    description: 'High-end Intel board.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'LGA1700', ramType: 'DDR5', formFactor: 'ATX', chipset: 'Z690' }
-  },
-  {
-    id: 'mobo-11', sku: 'MB-ASUS-B760',
-    name: 'ASUS Prime B760M-A', category: 'Motherboard', price: 15500, stock: 21,
-    image: 'https://m.media-amazon.com/images/I/71M9yG3R7XL.jpg',
-    description: 'Reliable Intel board.',
-    brandName: 'ASUS',
-    specs: { brand: 'ASUS', socket: 'LGA1700', ramType: 'DDR5', formFactor: 'Micro-ATX', chipset: 'B760' }
-  },
-  {
-    id: 'mobo-12', sku: 'MB-GIG-H610',
-    name: 'Gigabyte H610M S2H', category: 'Motherboard', price: 7000, stock: 40,
-    image: 'https://m.media-amazon.com/images/I/71ZMMyOQfOL.jpg',
-    description: 'Budget Intel board.',
-    brandName: 'Gigabyte',
-    specs: { brand: 'Gigabyte', socket: 'LGA1700', ramType: 'DDR4', formFactor: 'Micro-ATX', chipset: 'H610' }
-  },
-  {
-    id: 'mobo-13', sku: 'MB-ASUS-X570',
-    name: 'ASUS ROG Strix X570-E', category: 'Motherboard', price: 24000, stock: 11,
-    image: 'https://m.media-amazon.com/images/I/71M9yG3R7XL.jpg',
-    description: 'Premium AM4 board.',
-    brandName: 'ASUS',
-    specs: { brand: 'ASUS', socket: 'AM4', ramType: 'DDR4', formFactor: 'ATX', chipset: 'X570' }
-  },
-  {
-    id: 'mobo-14', sku: 'MB-MSI-B550',
-    name: 'MSI B550 Tomahawk', category: 'Motherboard', price: 14500, stock: 22,
-    image: 'https://m.media-amazon.com/images/I/81zK8VZxZPL.jpg',
-    description: 'Popular AM4 board.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'AM4', ramType: 'DDR4', formFactor: 'ATX', chipset: 'B550' }
-  },
-  {
-    id: 'mobo-15', sku: 'MB-GIG-A520',
-    name: 'Gigabyte A520M', category: 'Motherboard', price: 6000, stock: 35,
-    image: 'https://m.media-amazon.com/images/I/71ZMMyOQfOL.jpg',
-    description: 'Entry AM4 motherboard.',
-    brandName: 'Gigabyte',
-    specs: { brand: 'Gigabyte', socket: 'AM4', ramType: 'DDR4', formFactor: 'Micro-ATX', chipset: 'A520' }
-  },
-  {
-    id: 'mobo-16', sku: 'MB-ASR-Z790',
-    name: 'ASRock Z790 Steel Legend', category: 'Motherboard', price: 30500, stock: 8,
-    image: 'https://m.media-amazon.com/images/I/81E6R7Y6dPL.jpg',
-    description: 'High-end Intel board.',
-    brandName: 'ASRock',
-    specs: { brand: 'ASRock', socket: 'LGA1700', ramType: 'DDR5', formFactor: 'ATX', chipset: 'Z790' }
-  },
-  {
-    id: 'mobo-17', sku: 'MB-MSI-H610',
-    name: 'MSI Pro H610M', category: 'Motherboard', price: 7200, stock: 37,
-    image: 'https://m.media-amazon.com/images/I/71ZMMyOQfOL.jpg',
-    description: 'Budget Intel motherboard.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'LGA1700', ramType: 'DDR4', formFactor: 'Micro-ATX', chipset: 'H610' }
-  },
-  {
-    id: 'mobo-18', sku: 'MB-ASUS-Z790',
-    name: 'ASUS TUF Z790-Plus', category: 'Motherboard', price: 31000, stock: 10,
-    image: 'https://m.media-amazon.com/images/I/71M9yG3R7XL.jpg',
-    description: 'Enthusiast Intel board.',
-    brandName: 'ASUS',
-    specs: { brand: 'ASUS', socket: 'LGA1700', ramType: 'DDR5', formFactor: 'ATX', chipset: 'Z790' }
-  },
-  {
-    id: 'mobo-19', sku: 'MB-GIG-B760',
-    name: 'Gigabyte B760 Gaming X', category: 'Motherboard', price: 17000, stock: 19,
-    image: 'https://m.media-amazon.com/images/I/81E6R7Y6dPL.jpg',
-    description: 'Balanced Intel board.',
-    brandName: 'Gigabyte',
-    specs: { brand: 'Gigabyte', socket: 'LGA1700', ramType: 'DDR5', formFactor: 'ATX', chipset: 'B760' }
-  },
-  {
-    id: 'mobo-20', sku: 'MB-ASR-B450',
-    name: 'ASRock B450M Pro4', category: 'Motherboard', price: 8000, stock: 29,
-    image: 'https://m.media-amazon.com/images/I/71ZMMyOQfOL.jpg',
-    description: 'Affordable AM4 board.',
-    brandName: 'ASRock',
-    specs: { brand: 'ASRock', socket: 'AM4', ramType: 'DDR4', formFactor: 'Micro-ATX', chipset: 'B450' }
-  },
-  {
-    id: 'mobo-21', sku: 'MB-MSI-X570',
-    name: 'MSI X570 Gaming Edge', category: 'Motherboard', price: 20500, stock: 12,
-    image: 'https://m.media-amazon.com/images/I/81zK8VZxZPL.jpg',
-    description: 'AM4 enthusiast board.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'AM4', ramType: 'DDR4', formFactor: 'ATX', chipset: 'X570' }
-  },
-  {
-    id: 'mobo-22', sku: 'MB-ASUS-A520',
-    name: 'ASUS Prime A520M-K', category: 'Motherboard', price: 6500, stock: 42,
-    image: 'https://m.media-amazon.com/images/I/71ZMMyOQfOL.jpg',
-    description: 'Budget AM4 motherboard.',
-    brandName: 'ASUS',
-    specs: { brand: 'ASUS', socket: 'AM4', ramType: 'DDR4', formFactor: 'Micro-ATX', chipset: 'A520' }
-  },
-  {
-    id: 'mobo-23', sku: 'MB-GIG-B650M',
-    name: 'Gigabyte B650M DS3H', category: 'Motherboard', price: 13500, stock: 17,
-    image: 'https://m.media-amazon.com/images/I/81E6R7Y6dPL.jpg',
-    description: 'Compact AM5 board.',
-    brandName: 'Gigabyte',
-    specs: { brand: 'Gigabyte', socket: 'AM5', ramType: 'DDR5', formFactor: 'Micro-ATX', chipset: 'B650' }
-  },
-  {
-    id: 'mobo-24', sku: 'MB-MSI-X670E',
-    name: 'MSI X670E Carbon', category: 'Motherboard', price: 46000, stock: 6,
-    image: 'https://m.media-amazon.com/images/I/81zK8VZxZPL.jpg',
-    description: 'Ultra premium AM5 board.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', socket: 'AM5', ramType: 'DDR5', formFactor: 'ATX', chipset: 'X670' }
-  },
-  {
-    id: 'mobo-25', sku: 'MB-ASR-H610',
-    name: 'ASRock H610M-HDV', category: 'Motherboard', price: 6800, stock: 38,
-    image: 'https://m.media-amazon.com/images/I/71ZMMyOQfOL.jpg',
-    description: 'Entry Intel motherboard.',
-    brandName: 'ASRock',
-    specs: { brand: 'ASRock', socket: 'LGA1700', ramType: 'DDR4', formFactor: 'Micro-ATX', chipset: 'H610' }
+    id: "mobo-06", sku: "MB-GIG-X670-AORUS",
+    name: "Gigabyte X670 Aorus Elite AX",
+    description: "High-end X670 ATX motherboard for AMD Ryzen 7000, with 16+2+2 VRM, PCIe 5.0 x16, 4x M.2, WiFi 6E, and 2.5GbE.",
+    subCategoryName: "ATX Motherboard", brandName: "Gigabyte", price: 29000, image: "https://placeholder.gigabyte.com/x670-aorus-elite.jpg", stock: 9,
+    specs: [
+      { specName: "Socket", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Chipset", valueString: "X670", optionValue: "X670" },
+      { specName: "Form Factor", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Memory Slots", valueNumber: 4 },
+      { specName: "Max Memory (GB)", valueNumber: 192 },
+      { specName: "PCIe x16 Slots", valueNumber: 2 },
+      { specName: "M.2 Slots", valueNumber: 4 },
+      { specName: "USB 3.2 Gen2 Ports", valueNumber: 4 },
+      { specName: "USB4/Thunderbolt", valueBool: false },
+      { specName: "WiFi", valueString: "WiFi 6E", optionValue: "WiFi 6E" },
+      { specName: "Bluetooth", valueString: "5.3" },
+      { specName: "LAN Speed", valueString: "2.5GbE", optionValue: "2.5GbE" },
+      { specName: "PCIe Gen (Primary)", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "VRM Phases", valueNumber: 16 },
+      { specName: "SATA Ports", valueNumber: 4 },
+    ],
   },
 
-  // ── GRAPHICS CARDS ──────────────────────────────────────────────────────────
+  // ── GPUs — NVIDIA ────────────────────────────────────────────────────────────
   {
-    id: 'gpu-1', sku: 'GPU-NV-4090',
-    name: 'NVIDIA RTX 4090 Founders Edition', category: 'Graphics Card', price: 185000, stock: 3,
-    image: 'https://m.media-amazon.com/images/I/71RgD3MP-hL._AC_UF1000,1000_QL80_.jpg',
-    description: 'The absolute best performance for 4K gaming and AI.',
-    brandName: 'NVIDIA',
-    specs: { brand: 'NVIDIA', wattage: '450', memory: '24GB', series: '40 Series' }
+    id: "gpu-01", sku: "GPU-ASUS-4090-ROG",
+    name: "ASUS ROG Strix GeForce RTX 4090 24GB OC",
+    description: "NVIDIA's flagship Ada Lovelace GPU with 24GB GDDR6X, triple 80mm fans, and top-of-class rasterization and ray-tracing performance for 4K gaming.",
+    subCategoryName: "NVIDIA GPU", brandName: "ASUS", price: 175000, image: "https://placeholder.asus.com/rog-strix-4090.jpg", stock: 3,
+    specs: [
+      { specName: "GPU Chip", valueString: "RTX 4090", optionValue: "RTX 4090" },
+      { specName: "VRAM (GB)", valueNumber: 24 },
+      { specName: "Memory Type", valueString: "GDDR6X", optionValue: "GDDR6X" },
+      { specName: "Memory Bus (bit)", valueNumber: 384 },
+      { specName: "TDP (W)", valueNumber: 450 },
+      { specName: "Card Length (mm)", valueNumber: 357 },
+      { specName: "PCIe Interface", valueString: "PCIe 4.0 x16", optionValue: "PCIe 4.0 x16" },
+      { specName: "Power Connector", valueString: "16-pin (12VHPWR)" },
+      { specName: "DisplayPort Outputs", valueNumber: 3 },
+      { specName: "HDMI Version", valueString: "HDMI 2.1" },
+      { specName: "Base Clock (MHz)", valueNumber: 2235 },
+      { specName: "Boost Clock (MHz)", valueNumber: 2640 },
+      { specName: "Cooling Solution", valueString: "Triple Fan", optionValue: "Triple Fan" },
+      { specName: "Slot Width", valueString: "3.5-slot" },
+    ],
   },
   {
-    id: 'gpu-2', sku: 'GPU-SAP-7800XT',
-    name: 'Sapphire Nitro+ AMD Radeon RX 7800 XT', category: 'Graphics Card', price: 52000, stock: 20,
-    image: 'https://m.media-amazon.com/images/I/81zdqJr2TYL.jpg',
-    description: 'Great value for 1440p gaming.',
-    brandName: 'Sapphire',
-    specs: { brand: 'Sapphire', wattage: '263', memory: '16GB', series: '7000 Series' }
+    id: "gpu-02", sku: "GPU-MSI-4080S-SLIM",
+    name: "MSI GeForce RTX 4080 Super 16GB Gaming X Slim",
+    description: "NVIDIA RTX 4080 Super with 16GB GDDR6X, 10240 CUDA cores, exceptional 4K gaming performance in a sleek dual-fan design.",
+    subCategoryName: "NVIDIA GPU", brandName: "MSI", price: 95000, image: "https://placeholder.msi.com/rtx-4080-super.jpg", stock: 6,
+    specs: [
+      { specName: "GPU Chip", valueString: "RTX 4080 Super", optionValue: "RTX 4080 Super" },
+      { specName: "VRAM (GB)", valueNumber: 16 },
+      { specName: "Memory Type", valueString: "GDDR6X", optionValue: "GDDR6X" },
+      { specName: "Memory Bus (bit)", valueNumber: 256 },
+      { specName: "TDP (W)", valueNumber: 320 },
+      { specName: "Card Length (mm)", valueNumber: 336 },
+      { specName: "PCIe Interface", valueString: "PCIe 4.0 x16", optionValue: "PCIe 4.0 x16" },
+      { specName: "Power Connector", valueString: "16-pin (12VHPWR)" },
+      { specName: "DisplayPort Outputs", valueNumber: 3 },
+      { specName: "HDMI Version", valueString: "HDMI 2.1" },
+      { specName: "Base Clock (MHz)", valueNumber: 2295 },
+      { specName: "Boost Clock (MHz)", valueNumber: 2610 },
+      { specName: "Cooling Solution", valueString: "Dual Fan", optionValue: "Dual Fan" },
+      { specName: "Slot Width", valueString: "2.5-slot" },
+    ],
   },
   {
-    id: 'gpu-3', sku: 'GPU-ZOT-4070',
-    name: 'Zotac Gaming GeForce RTX 4070 Twin Edge', category: 'Graphics Card', price: 56000, stock: 25,
-    image: 'https://m.media-amazon.com/images/I/61KZsTaMtcL._AC_UF1000,1000_QL80_FMwebp_.jpg',
-    description: 'Compact 1440p card.',
-    brandName: 'Zotac',
-    specs: { brand: 'Zotac', wattage: '200', memory: '12GB', series: '40 Series' }
+    id: "gpu-03", sku: "GPU-ZOTAC-4070S-TWIN",
+    name: "Zotac GeForce RTX 4070 Super 12GB Twin Edge OC",
+    description: "High-performance RTX 4070 Super with 12GB GDDR6X, 7168 CUDA cores and IceStorm 2.0 cooling for 1440p gaming excellence.",
+    subCategoryName: "NVIDIA GPU", brandName: "Zotac", price: 56000, image: "https://placeholder.zotac.com/rtx-4070-super.jpg", stock: 10,
+    specs: [
+      { specName: "GPU Chip", valueString: "RTX 4070 Super", optionValue: "RTX 4070 Super" },
+      { specName: "VRAM (GB)", valueNumber: 12 },
+      { specName: "Memory Type", valueString: "GDDR6X", optionValue: "GDDR6X" },
+      { specName: "Memory Bus (bit)", valueNumber: 192 },
+      { specName: "TDP (W)", valueNumber: 220 },
+      { specName: "Card Length (mm)", valueNumber: 302 },
+      { specName: "PCIe Interface", valueString: "PCIe 4.0 x16", optionValue: "PCIe 4.0 x16" },
+      { specName: "Power Connector", valueString: "16-pin (12VHPWR)" },
+      { specName: "DisplayPort Outputs", valueNumber: 3 },
+      { specName: "HDMI Version", valueString: "HDMI 2.1" },
+      { specName: "Base Clock (MHz)", valueNumber: 1980 },
+      { specName: "Boost Clock (MHz)", valueNumber: 2505 },
+      { specName: "Cooling Solution", valueString: "Dual Fan", optionValue: "Dual Fan" },
+      { specName: "Slot Width", valueString: "2-slot" },
+    ],
   },
   {
-    id: 'gpu-4', sku: 'GPU-ASUS-3060',
-    name: 'ASUS Dual GeForce RTX 3060 V2 OC', category: 'Graphics Card', price: 26000, stock: 40,
-    image: 'https://m.media-amazon.com/images/I/71hoPufXoDL._AC_UF1000,1000_QL80_.jpg',
-    description: 'The budget king for 1080p gaming.',
-    brandName: 'ASUS',
-    specs: { brand: 'ASUS', wattage: '170', memory: '12GB', series: '30 Series' }
+    id: "gpu-04", sku: "GPU-ASUS-4060-DUAL",
+    name: "ASUS Dual GeForce RTX 4060 8GB OC",
+    description: "RTX 4060 featuring 8GB GDDR6, 3072 CUDA cores, DLSS 3, and AV1 encoding — a great 1080p gaming GPU for mainstream builds.",
+    subCategoryName: "NVIDIA GPU", brandName: "ASUS", price: 32000, image: "https://placeholder.asus.com/dual-rtx-4060.jpg", stock: 18,
+    specs: [
+      { specName: "GPU Chip", valueString: "RTX 4060", optionValue: "RTX 4060" },
+      { specName: "VRAM (GB)", valueNumber: 8 },
+      { specName: "Memory Type", valueString: "GDDR6", optionValue: "GDDR6" },
+      { specName: "Memory Bus (bit)", valueNumber: 128 },
+      { specName: "TDP (W)", valueNumber: 115 },
+      { specName: "Card Length (mm)", valueNumber: 251 },
+      { specName: "PCIe Interface", valueString: "PCIe 4.0 x16", optionValue: "PCIe 4.0 x16" },
+      { specName: "Power Connector", valueString: "2x 8-pin" },
+      { specName: "DisplayPort Outputs", valueNumber: 3 },
+      { specName: "HDMI Version", valueString: "HDMI 2.1" },
+      { specName: "Base Clock (MHz)", valueNumber: 1830 },
+      { specName: "Boost Clock (MHz)", valueNumber: 2505 },
+      { specName: "Cooling Solution", valueString: "Dual Fan", optionValue: "Dual Fan" },
+      { specName: "Slot Width", valueString: "2-slot" },
+    ],
+  },
+
+  // ── GPUs — AMD ──────────────────────────────────────────────────────────────
+  {
+    id: "gpu-05", sku: "GPU-SAP-7900XTX-NITRO",
+    name: "Sapphire Nitro+ RX 7900 XTX 24GB",
+    description: "AMD's flagship RDNA 3 GPU with 24GB GDDR6, massive 384-bit bus, superb 4K gaming and professional workloads at competitive pricing.",
+    subCategoryName: "AMD GPU", brandName: "Sapphire", price: 85000, image: "https://placeholder.sapphire.com/nitro-7900xtx.jpg", stock: 4,
+    specs: [
+      { specName: "GPU Chip", valueString: "RX 7900 XTX", optionValue: "RX 7900 XTX" },
+      { specName: "VRAM (GB)", valueNumber: 24 },
+      { specName: "Memory Type", valueString: "GDDR6", optionValue: "GDDR6" },
+      { specName: "Memory Bus (bit)", valueNumber: 384 },
+      { specName: "TDP (W)", valueNumber: 355 },
+      { specName: "Card Length (mm)", valueNumber: 336 },
+      { specName: "PCIe Interface", valueString: "PCIe 4.0 x16", optionValue: "PCIe 4.0 x16" },
+      { specName: "Cooling Solution", valueString: "Triple Fan", optionValue: "Triple Fan" },
+    ],
   },
   {
-    id: 'gpu-5', sku: 'GPU-GIG-6600',
-    name: 'Gigabyte Radeon RX 6600 Eagle', category: 'Graphics Card', price: 19500, stock: 15,
-    image: 'https://m.media-amazon.com/images/I/6121pomHteL.jpg',
-    description: 'Entry level 1080p performer.',
-    brandName: 'Gigabyte',
-    specs: { brand: 'Gigabyte', wattage: '132', memory: '8GB', series: '6000 Series' }
+    id: "gpu-06", sku: "GPU-XFX-7800XT-QUICK",
+    name: "XFX Speedster QICK RX 7800 XT 16GB",
+    description: "AMD RX 7800 XT with 16GB GDDR6, 60 RDNA 3 compute units, excellent 1440p performance and DisplayPort 2.1 support.",
+    subCategoryName: "AMD GPU", brandName: "XFX", price: 42000, image: "https://placeholder.xfx.com/7800xt.jpg", stock: 12,
+    specs: [
+      { specName: "GPU Chip", valueString: "RX 7800 XT", optionValue: "RX 7800 XT" },
+      { specName: "VRAM (GB)", valueNumber: 16 },
+      { specName: "Memory Type", valueString: "GDDR6", optionValue: "GDDR6" },
+      { specName: "Memory Bus (bit)", valueNumber: 256 },
+      { specName: "TDP (W)", valueNumber: 263 },
+      { specName: "Card Length (mm)", valueNumber: 310 },
+      { specName: "PCIe Interface", valueString: "PCIe 4.0 x16", optionValue: "PCIe 4.0 x16" },
+      { specName: "Cooling Solution", valueString: "Triple Fan", optionValue: "Triple Fan" },
+    ],
+  },
+  {
+    id: "gpu-07", sku: "GPU-POW-9070XT-RED",
+    name: "PowerColor Red Devil RX 9070 XT 16GB",
+    description: "AMD's latest RDNA 4 flagship consumer GPU with 16GB GDDR6, 64 CUs, hardware ray-tracing acceleration, and AV1 encoding at phenomenal 1440p/4K speeds.",
+    subCategoryName: "AMD GPU", brandName: "PowerColor", price: 55000, image: "https://placeholder.powercolor.com/rx-9070xt.jpg", stock: 8,
+    specs: [
+      { specName: "GPU Chip", valueString: "RX 9070 XT", optionValue: "RX 9070 XT" },
+      { specName: "VRAM (GB)", valueNumber: 16 },
+      { specName: "Memory Type", valueString: "GDDR6", optionValue: "GDDR6" },
+      { specName: "Memory Bus (bit)", valueNumber: 256 },
+      { specName: "TDP (W)", valueNumber: 304 },
+      { specName: "Card Length (mm)", valueNumber: 325 },
+      { specName: "PCIe Interface", valueString: "PCIe 5.0 x16", optionValue: "PCIe 5.0 x16" },
+      { specName: "Cooling Solution", valueString: "Triple Fan", optionValue: "Triple Fan" },
+    ],
   },
 
   // ── RAM ─────────────────────────────────────────────────────────────────────
   {
-    id: 'ram-1', sku: 'RAM-GSK-32',
-    name: 'G.Skill Trident Z5 RGB 32GB (16GBx2)', category: 'RAM', price: 12500, stock: 50,
-    image: 'https://m.media-amazon.com/images/I/61bc6zvEIIL.jpg',
-    description: 'High speed DDR5 6000MHz memory for enthusiasts.',
-    brandName: 'G.Skill',
-    specs: { brand: 'G.Skill', ramType: 'DDR5', frequency: '6000MHz', capacity: '32GB' }
+    id: "ram-01", sku: "RAM-GSK-TZ5-32DDR5",
+    name: "G.Skill Trident Z5 RGB 32GB DDR5-6000 (2x16GB)",
+    description: "High-performance DDR5-6000 kit with XMP 3.0 and EXPO dual-profile support, CL30 timings, and vibrant RGB lighting for enthusiast builds.",
+    subCategoryName: "DDR5 RAM", brandName: "G.Skill", price: 12500, image: "https://placeholder.gskill.com/tz5-ddr5.jpg", stock: 50,
+    specs: [
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Capacity", valueString: "32GB (16GBx2)", optionValue: "32GB (16GBx2)" },
+      { specName: "Speed (MT/s)", valueNumber: 6000 },
+      { specName: "CAS Latency", valueNumber: 30 },
+      { specName: "Timings", valueString: "30-38-38-96" },
+      { specName: "Voltage", valueNumber: 1.35 },
+      { specName: "RGB", valueBool: true },
+      { specName: "Heat Spreader", valueString: "Tall Heatsink" },
+      { specName: "XMP/EXPO Profile", valueString: "XMP 3.0 & EXPO", optionValue: "XMP 3.0 & EXPO" },
+      { specName: "ECC", valueBool: false },
+    ],
   },
   {
-    id: 'ram-2', sku: 'RAM-COR-16',
-    name: 'Corsair Vengeance LPX 16GB (8GBx2)', category: 'RAM', price: 4500, stock: 100,
-    image: 'https://m.media-amazon.com/images/I/51W4+1Da0IL._AC_UF1000,1000_QL80_.jpg',
-    description: 'Reliable DDR4 3200MHz memory.',
-    brandName: 'Corsair',
-    specs: { brand: 'Corsair', ramType: 'DDR4', frequency: '3200MHz', capacity: '16GB' }
+    id: "ram-02", sku: "RAM-COR-VEN-16DDR4",
+    name: "Corsair Vengeance LPX 16GB DDR4-3200 (2x8GB)",
+    description: "Reliable DDR4-3200 kit with XMP 2.0 support, low-profile heatspreader for tight clearances, and proven compatibility across all platforms.",
+    subCategoryName: "DDR4 RAM", brandName: "Corsair", price: 4500, image: "https://placeholder.corsair.com/vengeance-lpx.jpg", stock: 80,
+    specs: [
+      { specName: "Memory Type", valueString: "DDR4", optionValue: "DDR4" },
+      { specName: "Capacity", valueString: "16GB (8GBx2)", optionValue: "16GB (8GBx2)" },
+      { specName: "Speed (MT/s)", valueNumber: 3200 },
+      { specName: "CAS Latency", valueNumber: 16 },
+      { specName: "Timings", valueString: "16-18-18-36" },
+      { specName: "Voltage", valueNumber: 1.35 },
+      { specName: "RGB", valueBool: false },
+      { specName: "XMP Profile", valueString: "XMP 2.0", optionValue: "XMP 2.0" },
+      { specName: "ECC", valueBool: false },
+    ],
   },
   {
-    id: 'ram-3', sku: 'RAM-KIN-8',
-    name: 'Kingston Fury Beast 8GB', category: 'RAM', price: 2200, stock: 80,
-    image: 'https://m.media-amazon.com/images/I/71+pGDyVzrL.jpg',
-    description: 'Single stick DDR4 module.',
-    brandName: 'Kingston',
-    specs: { brand: 'Kingston', ramType: 'DDR4', frequency: '3200MHz', capacity: '8GB' }
+    id: "ram-03", sku: "RAM-KIN-FUR-8DDR4",
+    name: "Kingston Fury Beast 8GB DDR4-3200",
+    description: "Single-stick DDR4-3200 entry module with plug-and-play XMP, low-profile design, ideal for budget single-channel or channel pairing.",
+    subCategoryName: "DDR4 RAM", brandName: "Kingston", price: 2200, image: "https://placeholder.kingston.com/fury-beast.jpg", stock: 100,
+    specs: [
+      { specName: "Memory Type", valueString: "DDR4", optionValue: "DDR4" },
+      { specName: "Capacity", valueString: "8GB", optionValue: "8GB" },
+      { specName: "Speed (MT/s)", valueNumber: 3200 },
+      { specName: "CAS Latency", valueNumber: 16 },
+      { specName: "Timings", valueString: "16-18-18-36" },
+      { specName: "Voltage", valueNumber: 1.35 },
+      { specName: "RGB", valueBool: false },
+      { specName: "XMP Profile", valueString: "XMP 2.0", optionValue: "XMP 2.0" },
+      { specName: "ECC", valueBool: false },
+    ],
+  },
+  {
+    id: "ram-04", sku: "RAM-COR-DOM-64DDR5",
+    name: "Corsair Dominator Titanium 64GB DDR5-6400 (2x32GB)",
+    description: "Premium 64GB DDR5-6400 RGB kit with Corsair's DHX+ cooling and iCUE integration, targeting extreme overclockers and content creation workstations.",
+    subCategoryName: "DDR5 RAM", brandName: "Corsair", price: 28000, image: "https://placeholder.corsair.com/dominator-titanium.jpg", stock: 8,
+    specs: [
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Capacity", valueString: "64GB (32GBx2)", optionValue: "64GB (32GBx2)" },
+      { specName: "Speed (MT/s)", valueNumber: 6400 },
+      { specName: "CAS Latency", valueNumber: 32 },
+      { specName: "Timings", valueString: "32-40-40-102" },
+      { specName: "Voltage", valueNumber: 1.4 },
+      { specName: "RGB", valueBool: true },
+      { specName: "Heat Spreader", valueString: "Tall Heatsink" },
+      { specName: "XMP/EXPO Profile", valueString: "XMP 3.0", optionValue: "XMP 3.0" },
+      { specName: "ECC", valueBool: false },
+    ],
+  },
+  {
+    id: "ram-05", sku: "RAM-GSK-RIP-32DDR4",
+    name: "G.Skill Ripjaws V 32GB DDR4-3600 (2x16GB)",
+    description: "High-speed DDR4-3600 dual kit with tight CL16 timings, ideal for AMD Zen 3 platforms where DDR4 sweet spot is 3600MHz.",
+    subCategoryName: "DDR4 RAM", brandName: "G.Skill", price: 9000, image: "https://placeholder.gskill.com/ripjaws-v.jpg", stock: 40,
+    specs: [
+      { specName: "Memory Type", valueString: "DDR4", optionValue: "DDR4" },
+      { specName: "Capacity", valueString: "32GB (16GBx2)", optionValue: "32GB (16GBx2)" },
+      { specName: "Speed (MT/s)", valueNumber: 3600 },
+      { specName: "CAS Latency", valueNumber: 16 },
+      { specName: "Timings", valueString: "16-19-19-39" },
+      { specName: "Voltage", valueNumber: 1.35 },
+      { specName: "RGB", valueBool: false },
+      { specName: "XMP Profile", valueString: "XMP 2.0", optionValue: "XMP 2.0" },
+      { specName: "ECC", valueBool: false },
+    ],
   },
 
-  // ── COOLING ─────────────────────────────────────────────────────────────────
+  // ── STORAGE — NVMe SSDs ─────────────────────────────────────────────────────
   {
-    id: 'cool-1', sku: 'COOL-DEP-LS720',
-    name: 'DeepCool LS720 ARGB AIO', category: 'Cooler', price: 11000, stock: 20,
-    image: 'https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPULiquidCoolers/LS720_WH/Overview/01.png?fm=webp&q=60',
-    description: '360mm ARGB AIO Liquid Cooler.',
-    brandName: 'DeepCool',
-    specs: { brand: 'DeepCool', type: 'AIO Liquid Cooler', size: '360mm' }
+    id: "ssd-01", sku: "SSD-SAM-990PRO-1T",
+    name: "Samsung 990 Pro 1TB NVMe Gen4",
+    description: "Samsung's flagship consumer Gen4 NVMe SSD, 7450/6900 MB/s sequential r/w, optimized for gaming load times and PS5 storage expansion.",
+    subCategoryName: "NVMe SSD", brandName: "Samsung", price: 9500, image: "https://placeholder.samsung.com/990pro.jpg", stock: 40,
+    specs: [
+      { specName: "Form Factor", valueString: "M.2 2280", optionValue: "M.2 2280" },
+      { specName: "Interface", valueString: "PCIe 4.0 x4 NVMe", optionValue: "PCIe 4.0 x4 NVMe" },
+      { specName: "Capacity", valueString: "1TB", optionValue: "1TB" },
+      { specName: "Sequential Read (MB/s)", valueNumber: 7450 },
+      { specName: "Sequential Write (MB/s)", valueNumber: 6900 },
+      { specName: "TBW", valueNumber: 600 },
+      { specName: "NAND Type", valueString: "TLC", optionValue: "TLC" },
+      { specName: "DRAM Cache", valueBool: true },
+      { specName: "Heatsink Included", valueBool: false },
+    ],
   },
   {
-    id: 'cool-2', sku: 'COOL-NOC-D15',
-    name: 'Noctua NH-D15', category: 'Cooler', price: 8500, stock: 15,
-    image: 'https://m.media-amazon.com/images/I/91Hw1zcAIjL.jpg',
-    description: 'Premium Air Cooler, dual tower design.',
-    brandName: 'Noctua',
-    specs: { brand: 'Noctua', type: 'Air Cooler' }
+    id: "ssd-02", sku: "SSD-CRU-P3-500",
+    name: "Crucial P3 500GB NVMe Gen3",
+    description: "Budget-friendly Gen3 NVMe SSD offering a massive upgrade from HDD, 3500/1900 MB/s sequential, for entry-level to mainstream builds.",
+    subCategoryName: "NVMe SSD", brandName: "Crucial", price: 3000, image: "https://placeholder.crucial.com/p3-500gb.jpg", stock: 60,
+    specs: [
+      { specName: "Form Factor", valueString: "M.2 2280", optionValue: "M.2 2280" },
+      { specName: "Interface", valueString: "PCIe 3.0 x4 NVMe", optionValue: "PCIe 3.0 x4 NVMe" },
+      { specName: "Capacity", valueString: "500GB", optionValue: "500GB" },
+      { specName: "Sequential Read (MB/s)", valueNumber: 3500 },
+      { specName: "Sequential Write (MB/s)", valueNumber: 1900 },
+      { specName: "TBW", valueNumber: 110 },
+      { specName: "NAND Type", valueString: "QLC", optionValue: "QLC" },
+      { specName: "DRAM Cache", valueBool: false },
+      { specName: "Heatsink Included", valueBool: false },
+    ],
   },
   {
-    id: 'cool-3', sku: 'COOL-EK-WB',
-    name: 'EKWB Quantum Velocity CPU Water Block', category: 'Cooler', price: 9500, stock: 5,
-    image: 'https://m.media-amazon.com/images/I/51w8kD-Y+2L._AC_UF1000,1000_QL80_.jpg',
-    description: 'High-end custom loop CPU Water Block.',
-    brandName: 'EKWB',
-    specs: { brand: 'EKWB', type: 'Water Block', socket: 'AM5/LGA1700' }
-  },
-  {
-    id: 'cool-4', sku: 'COOL-COR-XD5',
-    name: 'Corsair Hydro X Series XD5 Pump', category: 'Cooler', price: 14500, stock: 8,
-    image: 'https://m.media-amazon.com/images/I/61CL70frlAL._AC_UF1000,1000_QL80_.jpg',
-    description: 'RGB Pump and Reservoir Combo for custom loops.',
-    brandName: 'Corsair',
-    specs: { brand: 'Corsair', type: 'Pump & Reservoir' }
+    id: "ssd-03", sku: "SSD-SAM-990PRO-2T",
+    name: "Samsung 990 Pro 2TB NVMe Gen4",
+    description: "2TB capacity Gen4 NVMe flagship, 7450/6900 MB/s, 1200 TBW endurance, the definitive primary drive for high-capacity storage needs.",
+    subCategoryName: "NVMe SSD", brandName: "Samsung", price: 17000, image: "https://placeholder.samsung.com/990pro-2tb.jpg", stock: 20,
+    specs: [
+      { specName: "Form Factor", valueString: "M.2 2280", optionValue: "M.2 2280" },
+      { specName: "Interface", valueString: "PCIe 4.0 x4 NVMe", optionValue: "PCIe 4.0 x4 NVMe" },
+      { specName: "Capacity", valueString: "2TB", optionValue: "2TB" },
+      { specName: "Sequential Read (MB/s)", valueNumber: 7450 },
+      { specName: "Sequential Write (MB/s)", valueNumber: 6900 },
+      { specName: "TBW", valueNumber: 1200 },
+      { specName: "NAND Type", valueString: "TLC", optionValue: "TLC" },
+      { specName: "DRAM Cache", valueBool: true },
+      { specName: "Heatsink Included", valueBool: false },
+    ],
   },
 
-  // ── STORAGE ─────────────────────────────────────────────────────────────────
+  // ── STORAGE — HDD ───────────────────────────────────────────────────────────
   {
-    id: 'stg-1', sku: 'SSD-SAM-990',
-    name: 'Samsung 990 Pro 1TB', category: 'Storage', price: 10500, stock: 40,
-    image: 'https://m.media-amazon.com/images/I/71XHEQZZW+L.jpg',
-    description: 'Blazing fast NVMe Gen4 SSD.',
-    brandName: 'Samsung',
-    specs: { brand: 'Samsung', type: 'SSD', interface: 'NVMe Gen4', capacity: '1TB' }
+    id: "hdd-01", sku: "HDD-WD-BLUE-2T",
+    name: "Western Digital Blue 2TB 3.5-inch HDD",
+    description: "Reliable 7200RPM SATA HDD for mass storage, 256MB cache, ideal for media libraries and bulk data backup in desktop systems.",
+    subCategoryName: "HDD", brandName: "Western Digital", price: 4800, image: "https://placeholder.wd.com/blue-2tb.jpg", stock: 60,
+    specs: [
+      { specName: "Form Factor", valueString: "3.5-inch", optionValue: "3.5-inch" },
+      { specName: "Interface", valueString: "SATA III (6Gb/s)", optionValue: "SATA III (6Gb/s)" },
+      { specName: "Capacity", valueString: "2TB", optionValue: "2TB" },
+      { specName: "RPM", valueString: "7200 RPM", optionValue: "7200 RPM" },
+      { specName: "Cache (MB)", valueNumber: 256 },
+    ],
   },
   {
-    id: 'stg-2', sku: 'HDD-WD-2TB',
-    name: 'Western Digital Blue 2TB HDD', category: 'Storage', price: 4800, stock: 60,
-    image: 'https://m.media-amazon.com/images/I/71pzrrdIS2L.jpg',
-    description: 'Reliable storage for mass data.',
-    brandName: 'Western Digital',
-    specs: { brand: 'Western Digital', type: 'HDD', interface: 'SATA', capacity: '2TB' }
+    id: "hdd-02", sku: "HDD-SEA-BAR-4T",
+    name: "Seagate Barracuda 4TB 3.5-inch HDD",
+    description: "High-capacity 5400RPM Seagate Barracuda drive with 256MB cache, excellent cost-per-GB for cold storage and media archiving.",
+    subCategoryName: "HDD", brandName: "Seagate", price: 7500, image: "https://placeholder.seagate.com/barracuda-4tb.jpg", stock: 35,
+    specs: [
+      { specName: "Form Factor", valueString: "3.5-inch", optionValue: "3.5-inch" },
+      { specName: "Interface", valueString: "SATA III (6Gb/s)", optionValue: "SATA III (6Gb/s)" },
+      { specName: "Capacity", valueString: "4TB", optionValue: "4TB" },
+      { specName: "RPM", valueString: "5400 RPM", optionValue: "5400 RPM" },
+      { specName: "Cache (MB)", valueNumber: 256 },
+    ],
+  },
+
+  // ── COOLERS ─────────────────────────────────────────────────────────────────
+  {
+    id: "cool-01", sku: "COOL-DEP-LS720",
+    name: "DeepCool LS720 360mm ARGB AIO",
+    description: "360mm all-in-one liquid cooler with 3x 120mm ARGB fans, anti-leak pump, and broad socket support including AM5 and LGA1700.",
+    subCategoryName: "AIO Liquid Cooler", brandName: "DeepCool", price: 10500, image: "https://placeholder.deepcool.com/ls720.jpg", stock: 20,
+    specs: [
+      { specName: "Radiator Size", valueString: "360mm", optionValue: "360mm" },
+      { specName: "Socket Compatibility", valueString: "LGA1700", optionValue: "LGA1700" },
+      { specName: "Fan Count", valueNumber: 3 },
+      { specName: "Fan Size (mm)", valueNumber: 120 },
+      { specName: "Fan Speed (RPM)", valueString: "500-1850 RPM" },
+      { specName: "Pump Speed (RPM)", valueString: "800-3200 RPM" },
+      { specName: "Noise (dBA)", valueNumber: 31 },
+      { specName: "ARGB", valueBool: true },
+      { specName: "LCD Display", valueBool: false },
+      { specName: "Tubing Length (mm)", valueNumber: 400 },
+    ],
   },
   {
-    id: 'stg-3', sku: 'SSD-CRU-500',
-    name: 'Crucial P3 500GB', category: 'Storage', price: 3500, stock: 35,
-    image: 'https://m.media-amazon.com/images/I/51pMg25AthL.jpg',
-    description: 'Budget NVMe Gen3 SSD.',
-    brandName: 'Crucial',
-    specs: { brand: 'Crucial', type: 'SSD', interface: 'NVMe Gen3', capacity: '500GB' }
+    id: "cool-02", sku: "COOL-NOC-NH-D15",
+    name: "Noctua NH-D15 Dual Tower Air Cooler",
+    description: "The legendary dual-tower air cooler with two NF-A15 140mm fans, 250W TDP rating, compatible with AM5 and LGA1700 via included mounting kits.",
+    subCategoryName: "Air Cooler", brandName: "Noctua", price: 9000, image: "https://placeholder.noctua.com/nh-d15.jpg", stock: 15,
+    specs: [
+      { specName: "Socket Compatibility", valueString: "LGA1700", optionValue: "LGA1700" },
+      { specName: "Height (mm)", valueNumber: 165 },
+      { specName: "Type", valueString: "Dual Tower", optionValue: "Dual Tower" },
+      { specName: "Fan Count", valueNumber: 2 },
+      { specName: "Fan Size (mm)", valueNumber: 140 },
+      { specName: "Noise (dBA)", valueNumber: 24.6 },
+      { specName: "Heat Pipes", valueNumber: 6 },
+      { specName: "TDP Rating (W)", valueNumber: 250 },
+      { specName: "ARGB", valueBool: false },
+    ],
+  },
+  {
+    id: "cool-03", sku: "COOL-NZXT-KRAKEN-360",
+    name: "NZXT Kraken Elite 360 RGB AIO",
+    description: "360mm AIO with a 2.36-inch LCD pump head display, 3x 120mm Infinity Mirror fans, and premium braided tubing for flagship builds.",
+    subCategoryName: "AIO Liquid Cooler", brandName: "NZXT", price: 18000, image: "https://placeholder.nzxt.com/kraken-elite-360.jpg", stock: 8,
+    specs: [
+      { specName: "Radiator Size", valueString: "360mm", optionValue: "360mm" },
+      { specName: "Socket Compatibility", valueString: "AM5", optionValue: "AM5" },
+      { specName: "Fan Count", valueNumber: 3 },
+      { specName: "Fan Size (mm)", valueNumber: 120 },
+      { specName: "Fan Speed (RPM)", valueString: "500-2000 RPM" },
+      { specName: "Pump Speed (RPM)", valueString: "800-3000 RPM" },
+      { specName: "Noise (dBA)", valueNumber: 36 },
+      { specName: "ARGB", valueBool: true },
+      { specName: "LCD Display", valueBool: true },
+      { specName: "Tubing Length (mm)", valueNumber: 400 },
+    ],
+  },
+  {
+    id: "cool-04", sku: "COOL-CM-HYPER-212",
+    name: "Cooler Master Hyper 212 Halo Black",
+    description: "Affordable single-tower air cooler with 4 direct contact heat pipes, 120mm ARGB fan, and broad socket support for budget/mid-range builds.",
+    subCategoryName: "Air Cooler", brandName: "Cooler Master", price: 3500, image: "https://placeholder.coolermaster.com/hyper-212.jpg", stock: 45,
+    specs: [
+      { specName: "Socket Compatibility", valueString: "LGA1700", optionValue: "LGA1700" },
+      { specName: "Height (mm)", valueNumber: 158 },
+      { specName: "Type", valueString: "Single Tower", optionValue: "Single Tower" },
+      { specName: "Fan Count", valueNumber: 1 },
+      { specName: "Fan Size (mm)", valueNumber: 120 },
+      { specName: "Noise (dBA)", valueNumber: 27 },
+      { specName: "Heat Pipes", valueNumber: 4 },
+      { specName: "TDP Rating (W)", valueNumber: 150 },
+      { specName: "ARGB", valueBool: true },
+    ],
   },
 
   // ── PSU ─────────────────────────────────────────────────────────────────────
   {
-    id: 'psu-1', sku: 'PSU-COR-850',
-    name: 'Corsair RM850e', category: 'Power Supply', price: 11000, stock: 15,
-    image: 'https://m.media-amazon.com/images/I/61J0tIvkBYL.jpg',
-    description: '850W 80 Plus Gold Rated Modular PSU.',
-    brandName: 'Corsair',
-    specs: { brand: 'Corsair', wattage: '850', efficiency: 'Gold' }
+    id: "psu-01", sku: "PSU-COR-RM850E",
+    name: "Corsair RM850e 850W 80+ Gold Fully Modular",
+    description: "850W 80 Plus Gold fully modular ATX 3.0 PSU with native 12VHPWR connector for RTX 40-series GPUs, zero-RPM mode, and Japanese capacitors.",
+    subCategoryName: "ATX PSU", brandName: "Corsair", price: 11000, image: "https://placeholder.corsair.com/rm850e.jpg", stock: 15,
+    specs: [
+      { specName: "Wattage", valueNumber: 850 },
+      { specName: "Efficiency Rating", valueString: "80+ Gold", optionValue: "80+ Gold" },
+      { specName: "Modular", valueString: "Fully Modular", optionValue: "Fully Modular" },
+      { specName: "PCIe 12VHPWR Connector", valueBool: true },
+      { specName: "Fan Size (mm)", valueNumber: 120 },
+      { specName: "Fan Bearing", valueString: "Fluid Dynamic" },
+      { specName: "Form Factor", valueString: "ATX" },
+      { specName: "PCIe 6+2 Connectors", valueNumber: 4 },
+      { specName: "SATA Connectors", valueNumber: 12 },
+      { specName: "Molex Connectors", valueNumber: 4 },
+      { specName: "ATX 3.0 Compatible", valueBool: true },
+      { specName: "Zero RPM Mode", valueBool: true },
+      { specName: "Warranty (years)", valueNumber: 10 },
+    ],
   },
   {
-    id: 'psu-2', sku: 'PSU-CM-550',
-    name: 'Cooler Master MWE 550 V2', category: 'Power Supply', price: 4500, stock: 22,
-    image: 'https://m.media-amazon.com/images/I/81zTChlbPHL._AC_UF1000,1000_QL80_.jpg',
-    description: '550W 80 Plus Bronze Rated PSU.',
-    brandName: 'Cooler Master',
-    specs: { brand: 'Cooler Master', wattage: '550', efficiency: 'Bronze' }
+    id: "psu-02", sku: "PSU-CM-MWE-550",
+    name: "Cooler Master MWE 550W 80+ Bronze",
+    description: "Budget 550W 80+ Bronze non-modular PSU, reliable for entry-level gaming and workstation builds without a high-end GPU.",
+    subCategoryName: "ATX PSU", brandName: "Cooler Master", price: 4200, image: "https://placeholder.coolermaster.com/mwe-550.jpg", stock: 25,
+    specs: [
+      { specName: "Wattage", valueNumber: 550 },
+      { specName: "Efficiency Rating", valueString: "80+ Bronze", optionValue: "80+ Bronze" },
+      { specName: "Modular", valueString: "Non-Modular", optionValue: "Non-Modular" },
+      { specName: "PCIe 12VHPWR Connector", valueBool: false },
+      { specName: "Fan Size (mm)", valueNumber: 120 },
+      { specName: "Form Factor", valueString: "ATX" },
+      { specName: "PCIe 6+2 Connectors", valueNumber: 2 },
+      { specName: "SATA Connectors", valueNumber: 6 },
+      { specName: "Molex Connectors", valueNumber: 4 },
+      { specName: "ATX 3.0 Compatible", valueBool: false },
+      { specName: "Zero RPM Mode", valueBool: false },
+      { specName: "Warranty (years)", valueNumber: 5 },
+    ],
   },
   {
-    id: 'psu-3', sku: 'PSU-MSI-1000',
-    name: 'MSI MPG A1000G', category: 'Power Supply', price: 16000, stock: 10,
-    image: 'https://m.media-amazon.com/images/I/719fJ78WuEL.jpg',
-    description: '1000W PCIe 5.0 Ready Gold PSU.',
-    brandName: 'MSI',
-    specs: { brand: 'MSI', wattage: '1000', efficiency: 'Gold' }
+    id: "psu-03", sku: "PSU-MSI-MPG-1000G",
+    name: "MSI MPG A1000G PCIE5 1000W 80+ Gold",
+    description: "1000W 80+ Gold fully modular PSU with ATX 3.0 compliance, native 12VHPWR connector, and PCIe 5.0 readiness for the most demanding systems.",
+    subCategoryName: "ATX PSU", brandName: "MSI", price: 14500, image: "https://placeholder.msi.com/mpg-a1000g.jpg", stock: 10,
+    specs: [
+      { specName: "Wattage", valueNumber: 1000 },
+      { specName: "Efficiency Rating", valueString: "80+ Gold", optionValue: "80+ Gold" },
+      { specName: "Modular", valueString: "Fully Modular", optionValue: "Fully Modular" },
+      { specName: "PCIe 12VHPWR Connector", valueBool: true },
+      { specName: "Fan Size (mm)", valueNumber: 135 },
+      { specName: "Form Factor", valueString: "ATX" },
+      { specName: "PCIe 6+2 Connectors", valueNumber: 6 },
+      { specName: "SATA Connectors", valueNumber: 12 },
+      { specName: "Molex Connectors", valueNumber: 4 },
+      { specName: "ATX 3.0 Compatible", valueBool: true },
+      { specName: "Zero RPM Mode", valueBool: true },
+      { specName: "Warranty (years)", valueNumber: 7 },
+    ],
+  },
+  {
+    id: "psu-04", sku: "PSU-BEQ-DARK-750",
+    name: "be quiet! Dark Power 13 750W 80+ Titanium",
+    description: "Exceptional 750W Titanium PSU from be quiet! with >94% efficiency, ultra-silent 135mm fan, fully modular cables, and 10-year warranty.",
+    subCategoryName: "ATX PSU", brandName: "be quiet!", price: 18000, image: "https://placeholder.bequiet.com/dark-power-13.jpg", stock: 6,
+    specs: [
+      { specName: "Wattage", valueNumber: 750 },
+      { specName: "Efficiency Rating", valueString: "80+ Titanium", optionValue: "80+ Titanium" },
+      { specName: "Modular", valueString: "Fully Modular", optionValue: "Fully Modular" },
+      { specName: "PCIe 12VHPWR Connector", valueBool: true },
+      { specName: "Fan Size (mm)", valueNumber: 135 },
+      { specName: "Form Factor", valueString: "ATX" },
+      { specName: "PCIe 6+2 Connectors", valueNumber: 4 },
+      { specName: "SATA Connectors", valueNumber: 8 },
+      { specName: "ATX 3.0 Compatible", valueBool: true },
+      { specName: "Zero RPM Mode", valueBool: true },
+      { specName: "Warranty (years)", valueNumber: 10 },
+    ],
   },
 
-  // ── CABINETS ────────────────────────────────────────────────────────────────
+  // ── CASES ───────────────────────────────────────────────────────────────────
   {
-    id: 'cab-1', sku: 'CAB-LIA-O11',
-    name: 'Lian Li O11 Dynamic Evo', category: 'Cabinet', price: 14000, stock: 12,
-    image: 'https://m.media-amazon.com/images/I/61KmNQhuxvL._AC_UF1000,1000_QL80_.jpg',
-    description: 'The classic showcase Mid Tower chassis.',
-    brandName: 'Lian Li',
-    specs: { brand: 'Lian Li', formFactor: 'Mid Tower', color: 'Black' }
+    id: "case-01", sku: "CASE-LIA-O11-EVO",
+    name: "Lian Li O11 Dynamic EVO Mid Tower",
+    description: "Iconic dual-chamber mid tower case with full tempered glass on three sides, 360mm triple-radiator support on three positions, and excellent cable management.",
+    subCategoryName: "Mid Tower Case", brandName: "Lian Li", price: 14000, image: "https://placeholder.lianli.com/o11-evo.jpg", stock: 12,
+    specs: [
+      { specName: "Form Factor", valueString: "Mid Tower", optionValue: "Mid Tower" },
+      { specName: "Motherboard Support", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Max CPU Cooler Height (mm)", valueNumber: 167 },
+      { specName: "Max GPU Length (mm)", valueNumber: 420 },
+      { specName: "Max PSU Length (mm)", valueNumber: 270 },
+      { specName: "Front I/O", valueString: "USB 3.0 x2, USB-C" },
+      { specName: "Drive Bays (3.5-inch)", valueNumber: 2 },
+      { specName: "Drive Bays (2.5-inch)", valueNumber: 4 },
+      { specName: "Radiator Support (Top)", valueString: "240/280/360mm" },
+      { specName: "Radiator Support (Front)", valueString: "240/280/360mm" },
+      { specName: "Included Fans", valueString: "3x 120mm" },
+      { specName: "Tempered Glass Panel", valueBool: true },
+      { specName: "ARGB Controller", valueBool: false },
+      { specName: "Color", valueString: "Black", optionValue: "Black" },
+    ],
   },
   {
-    id: 'cab-2', sku: 'CAB-COR-4000',
-    name: 'Corsair 4000D Airflow', category: 'Cabinet', price: 7000, stock: 30,
-    image: 'https://m.media-amazon.com/images/I/71J4iohAlaL.jpg',
-    description: 'High airflow Mid Tower case.',
-    brandName: 'Corsair',
-    specs: { brand: 'Corsair', formFactor: 'Mid Tower', color: 'White' }
+    id: "case-02", sku: "CASE-COR-4000D",
+    name: "Corsair 4000D Airflow Mid Tower",
+    description: "Airflow-optimized mid tower with mesh front panel, dual 120mm fans included, support for 360mm radiators and E-ATX boards, with magnetic filter on top.",
+    subCategoryName: "Mid Tower Case", brandName: "Corsair", price: 7000, image: "https://placeholder.corsair.com/4000d.jpg", stock: 25,
+    specs: [
+      { specName: "Form Factor", valueString: "Mid Tower", optionValue: "Mid Tower" },
+      { specName: "Motherboard Support", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Max CPU Cooler Height (mm)", valueNumber: 170 },
+      { specName: "Max GPU Length (mm)", valueNumber: 360 },
+      { specName: "Front I/O", valueString: "USB 3.0 x2, USB-C" },
+      { specName: "Drive Bays (3.5-inch)", valueNumber: 2 },
+      { specName: "Drive Bays (2.5-inch)", valueNumber: 2 },
+      { specName: "Radiator Support (Top)", valueString: "240/360mm" },
+      { specName: "Radiator Support (Front)", valueString: "240/280/360mm" },
+      { specName: "Included Fans", valueString: "2x 120mm" },
+      { specName: "Tempered Glass Panel", valueBool: true },
+      { specName: "ARGB Controller", valueBool: false },
+      { specName: "Color", valueString: "Black", optionValue: "Black" },
+    ],
   },
   {
-    id: 'cab-3', sku: 'CAB-CM-HAF',
-    name: 'Cooler Master HAF 700 Evo', category: 'Cabinet', price: 35000, stock: 4,
-    image: 'https://m.media-amazon.com/images/I/61hC6R08S+L._AC_UF1000,1000_QL80_.jpg',
-    description: 'Massive Full Tower for extreme builds.',
-    brandName: 'Cooler Master',
-    specs: { brand: 'Cooler Master', formFactor: 'Full Tower', color: 'Titanium' }
+    id: "case-03", sku: "CASE-FRA-DEFINE-7",
+    name: "Fractal Design Define 7 Mid Tower",
+    description: "Sound-dampened mid tower with modular interior, universal fan hub, support for up to 420mm radiators, and two-chamber design with dust filtration.",
+    subCategoryName: "Mid Tower Case", brandName: "Fractal Design", price: 12000, image: "https://placeholder.fractaldesign.com/define-7.jpg", stock: 10,
+    specs: [
+      { specName: "Form Factor", valueString: "Mid Tower", optionValue: "Mid Tower" },
+      { specName: "Motherboard Support", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Max CPU Cooler Height (mm)", valueNumber: 185 },
+      { specName: "Max GPU Length (mm)", valueNumber: 491 },
+      { specName: "Front I/O", valueString: "USB 3.0 x2, USB-C" },
+      { specName: "Drive Bays (3.5-inch)", valueNumber: 5 },
+      { specName: "Drive Bays (2.5-inch)", valueNumber: 3 },
+      { specName: "Radiator Support (Front)", valueString: "360mm" },
+      { specName: "Included Fans", valueString: "2x 140mm" },
+      { specName: "Tempered Glass Panel", valueBool: true },
+      { specName: "ARGB Controller", valueBool: false },
+      { specName: "Color", valueString: "Black", optionValue: "Black" },
+    ],
+  },
+  {
+    id: "case-04", sku: "CASE-CM-HAF700",
+    name: "Cooler Master HAF 700 EVO Full Tower",
+    description: "Massive full tower with E-ATX support, twin 200mm ARGB mesh fans, comprehensive radiator support, and modular internal design for extreme enthusiast builds.",
+    subCategoryName: "Full Tower Case", brandName: "Cooler Master", price: 35000, image: "https://placeholder.coolermaster.com/haf700.jpg", stock: 3,
+    specs: [
+      { specName: "Form Factor", valueString: "Full Tower", optionValue: "Full Tower" },
+      { specName: "Motherboard Support", valueString: "E-ATX", optionValue: "E-ATX" },
+      { specName: "Max GPU Length (mm)", valueNumber: 490 },
+      { specName: "Radiator Support (Top)", valueString: "360mm" },
+      { specName: "Tempered Glass Panel", valueBool: true },
+      { specName: "Color", valueString: "Black", optionValue: "Black" },
+    ],
   },
 
   // ── MONITORS ────────────────────────────────────────────────────────────────
   {
-    id: 'mon-1', sku: 'MON-LG-27',
-    name: 'LG UltraGear 27GN950', category: 'Monitor', price: 45000, stock: 5,
-    image: 'https://media.us.lg.com/transform/6747bdf5-28d0-4caa-a288-ba854a3c6553/Monitor_SYNC_mnt-27gn950-09_features_900x600?io=transform:fill,width:1536',
-    description: '27 Inch 4K 144Hz Nano IPS Gaming Monitor.',
-    brandName: 'LG',
-    specs: { brand: 'LG', size: '27 Inch', resolution: '4K', type: 'Gaming' }
+    id: "mon-01", sku: "MON-LG-27GN950",
+    name: "LG UltraGear 27GN950 27-inch 4K 144Hz",
+    description: "Premium 27-inch 4K Nano IPS gaming monitor with 144Hz, 1ms response, G-Sync Compatible, HDR600, 98% DCI-P3 coverage for elite 4K gaming.",
+    subCategoryName: "Gaming Monitor", brandName: "LG", price: 45000, image: "https://placeholder.lg.com/27gn950.jpg", stock: 6,
+    specs: [
+      { specName: "Panel Size (inch)", valueNumber: 27 },
+      { specName: "Resolution", valueString: "3840x2160 (4K UHD)", optionValue: "3840x2160 (4K UHD)" },
+      { specName: "Panel Type", valueString: "IPS", optionValue: "IPS" },
+      { specName: "Refresh Rate (Hz)", valueNumber: 144 },
+      { specName: "Response Time (ms)", valueNumber: 1 },
+      { specName: "Adaptive Sync", valueString: "G-Sync Compatible", optionValue: "G-Sync Compatible" },
+      { specName: "HDR", valueString: "HDR600", optionValue: "HDR600" },
+      { specName: "Brightness (nits)", valueNumber: 600 },
+      { specName: "Color Gamut (sRGB %)", valueNumber: 135 },
+      { specName: "Curved", valueBool: false },
+      { specName: "HDMI Ports", valueNumber: 2 },
+      { specName: "DisplayPort Ports", valueNumber: 1 },
+      { specName: "USB Hub", valueBool: true },
+      { specName: "Height Adjustable", valueBool: true },
+    ],
   },
   {
-    id: 'mon-2', sku: 'MON-BEN-24',
-    name: 'BenQ GW2480', category: 'Monitor', price: 10000, stock: 40,
-    image: 'https://image.benq.com/is/image/benqco/gw2480l-left45?$ResponsivePreset$&fmt=png-alpha',
-    description: '24 Inch Eye Care Monitor.',
-    brandName: 'BenQ',
-    specs: { brand: 'BenQ', size: '24 Inch', resolution: '1080p', type: 'Professional' }
+    id: "mon-02", sku: "MON-SAM-G7-32",
+    name: "Samsung Odyssey G7 32-inch 2K 240Hz",
+    description: "32-inch curved QLED 2K monitor with 240Hz, 1ms MPRT, G-Sync Compatible, DisplayHDR 600, and 2500R curvature for immersive gaming.",
+    subCategoryName: "Gaming Monitor", brandName: "Samsung", price: 38000, image: "https://placeholder.samsung.com/odyssey-g7.jpg", stock: 8,
+    specs: [
+      { specName: "Panel Size (inch)", valueNumber: 32 },
+      { specName: "Resolution", valueString: "2560x1440 (QHD)", optionValue: "2560x1440 (QHD)" },
+      { specName: "Panel Type", valueString: "VA", optionValue: "VA" },
+      { specName: "Refresh Rate (Hz)", valueNumber: 240 },
+      { specName: "Response Time (ms)", valueNumber: 1 },
+      { specName: "Adaptive Sync", valueString: "FreeSync Premium Pro", optionValue: "FreeSync Premium Pro" },
+      { specName: "HDR", valueString: "HDR600", optionValue: "HDR600" },
+      { specName: "Brightness (nits)", valueNumber: 600 },
+      { specName: "Color Gamut (sRGB %)", valueNumber: 125 },
+      { specName: "Curved", valueBool: true },
+      { specName: "HDMI Ports", valueNumber: 2 },
+      { specName: "DisplayPort Ports", valueNumber: 1 },
+      { specName: "USB Hub", valueBool: true },
+      { specName: "Height Adjustable", valueBool: true },
+    ],
   },
   {
-    id: 'mon-3', sku: 'MON-SAM-32',
-    name: 'Samsung Odyssey G7', category: 'Monitor', price: 38000, stock: 8,
-    image: 'https://m.media-amazon.com/images/I/81UUzgE+FIL._AC_UF1000,1000_QL80_.jpg',
-    description: '32 Inch Curved 240Hz Gaming Monitor.',
-    brandName: 'Samsung',
-    specs: { brand: 'Samsung', size: '32 Inch', resolution: '2K', type: 'Gaming' }
+    id: "mon-03", sku: "MON-BEN-GW2480",
+    name: "BenQ GW2480 24-inch 1080p Professional",
+    description: "24-inch 1080p IPS eye-care monitor with flicker-free, low blue light mode, and B.I. sensor for ergonomic professional and office use.",
+    subCategoryName: "Professional Monitor", brandName: "BenQ", price: 10000, image: "https://placeholder.benq.com/gw2480.jpg", stock: 35,
+    specs: [
+      { specName: "Panel Size (inch)", valueNumber: 24 },
+      { specName: "Resolution", valueString: "1920x1080 (FHD)", optionValue: "1920x1080 (FHD)" },
+      { specName: "Panel Type", valueString: "IPS", optionValue: "IPS" },
+      { specName: "Color Gamut (DCI-P3 %)", valueNumber: 72 },
+      { specName: "Color Gamut (sRGB %)", valueNumber: 99 },
+      { specName: "Delta E", valueNumber: 2 },
+      { specName: "HDR", valueString: "None" },
+      { specName: "USB-C PD (W)", valueNumber: 0 },
+      { specName: "Thunderbolt", valueBool: false },
+      { specName: "Height Adjustable", valueBool: true },
+      { specName: "Refresh Rate (Hz)", valueNumber: 60 },
+    ],
   },
 
   // ── PERIPHERALS ─────────────────────────────────────────────────────────────
   {
-    id: 'per-1', sku: 'PER-KEY-K2',
-    name: 'Keychron K2 V2', category: 'Peripheral', price: 8000, stock: 10,
-    image: 'https://picsum.photos/300/300?random=15',
-    description: 'Wireless Mechanical Keyboard.',
-    brandName: 'Keychron',
-    specs: { brand: 'Keychron', type: 'Mechanical Keyboard', connectivity: 'Wireless' }
+    id: "kb-01", sku: "KB-KEY-K2-V2",
+    name: "Keychron K2 V2 75% Wireless Mechanical",
+    description: "Compact 75% wireless mechanical keyboard with multi-device Bluetooth 5.1, hot-swap PCB, RGB backlight, and available in multiple switch options.",
+    subCategoryName: "Keyboard", brandName: "Keychron", price: 7500, image: "https://placeholder.keychron.com/k2.jpg", stock: 20,
+    specs: [
+      { specName: "Type", valueString: "Mechanical", optionValue: "Mechanical" },
+      { specName: "Connectivity", valueString: "Tri-mode", optionValue: "Tri-mode" },
+      { specName: "Layout", valueString: "75%", optionValue: "75%" },
+      { specName: "Switch Type", valueString: "Gateron Red", optionValue: "Gateron Red" },
+      { specName: "Hot-Swap", valueBool: true },
+      { specName: "RGB Backlight", valueBool: true },
+      { specName: "Per-key RGB", valueBool: true },
+      { specName: "Polling Rate (Hz)", valueNumber: 1000 },
+      { specName: "Battery Life (hrs)", valueNumber: 4000 },
+      { specName: "NKRO", valueBool: true },
+      { specName: "Gasket Mount", valueBool: false },
+    ],
   },
   {
-    id: 'per-2', sku: 'PER-LOG-GPX',
-    name: 'Logitech G Pro X Superlight', category: 'Peripheral', price: 13000, stock: 8,
-    image: 'https://picsum.photos/300/300?random=16',
-    description: 'Ultra-lightweight wireless gaming mouse.',
-    brandName: 'Logitech',
-    specs: { brand: 'Logitech', type: 'Gaming Mouse', connectivity: 'Wireless' }
+    id: "kb-02", sku: "KB-LOG-G915-TKL",
+    name: "Logitech G915 TKL Wireless Mechanical",
+    description: "Premium tenkeyless wireless keyboard with LIGHTSPEED 2.4GHz, Bluetooth, ultra-thin GL tactile switches, per-key RGB, and 40-hour battery life.",
+    subCategoryName: "Keyboard", brandName: "Logitech", price: 15000, image: "https://placeholder.logitech.com/g915-tkl.jpg", stock: 12,
+    specs: [
+      { specName: "Type", valueString: "Mechanical", optionValue: "Mechanical" },
+      { specName: "Connectivity", valueString: "Wired/Wireless", optionValue: "Wired/Wireless" },
+      { specName: "Layout", valueString: "TKL (80%)", optionValue: "TKL (80%)" },
+      { specName: "Switch Type", valueString: "Proprietary", optionValue: "Proprietary" },
+      { specName: "Hot-Swap", valueBool: false },
+      { specName: "RGB Backlight", valueBool: true },
+      { specName: "Per-key RGB", valueBool: true },
+      { specName: "Polling Rate (Hz)", valueNumber: 1000 },
+      { specName: "Battery Life (hrs)", valueNumber: 40 },
+      { specName: "NKRO", valueBool: true },
+      { specName: "Gasket Mount", valueBool: false },
+    ],
   },
   {
-    id: 'per-3', sku: 'PER-HYP-CL2',
-    name: 'HyperX Cloud II', category: 'Peripheral', price: 7500, stock: 25,
-    image: 'https://picsum.photos/300/300?random=38',
-    description: 'Legendary wired gaming headset.',
-    brandName: 'HyperX',
-    specs: { brand: 'HyperX', type: 'Headset', connectivity: 'Wired' }
+    id: "ms-01", sku: "MS-LOG-GPX2-SL",
+    name: "Logitech G Pro X Superlight 2",
+    description: "Ultra-lightweight 60g wireless gaming mouse with HERO 25K sensor, 300-hour battery, zero-latency LIGHTSPEED, and Logitech's best optical tracking.",
+    subCategoryName: "Mouse", brandName: "Logitech", price: 14000, image: "https://placeholder.logitech.com/gpx2.jpg", stock: 10,
+    specs: [
+      { specName: "Connectivity", valueString: "Wireless (2.4GHz)", optionValue: "Wireless (2.4GHz)" },
+      { specName: "Sensor", valueString: "Hero 25K", optionValue: "Hero 25K" },
+      { specName: "Max DPI", valueNumber: 25600 },
+      { specName: "Polling Rate (Hz)", valueNumber: 2000 },
+      { specName: "Weight (g)", valueNumber: 60 },
+      { specName: "Buttons", valueNumber: 5 },
+      { specName: "RGB", valueBool: false },
+      { specName: "Battery Life (hrs)", valueNumber: 95 },
+      { specName: "Grip Style", valueString: "Ambidextrous", optionValue: "Ambidextrous" },
+    ],
+  },
+  {
+    id: "ms-02", sku: "MS-RAZ-DW-V3-HB",
+    name: "Razer DeathAdder V3 HyperSpeed Wireless",
+    description: "Ergonomic right-handed wireless mouse with Focus Pro 30K optical sensor, 121g weight, and Razer HyperSpeed wireless for up to 300-hour battery.",
+    subCategoryName: "Mouse", brandName: "Razer", price: 7500, image: "https://placeholder.razer.com/deathadder-v3.jpg", stock: 22,
+    specs: [
+      { specName: "Connectivity", valueString: "Wireless (2.4GHz)", optionValue: "Wireless (2.4GHz)" },
+      { specName: "Sensor", valueString: "Focus Pro 30K", optionValue: "Focus Pro 30K" },
+      { specName: "Max DPI", valueNumber: 30000 },
+      { specName: "Polling Rate (Hz)", valueNumber: 1000 },
+      { specName: "Weight (g)", valueNumber: 81 },
+      { specName: "Buttons", valueNumber: 6 },
+      { specName: "RGB", valueBool: false },
+      { specName: "Battery Life (hrs)", valueNumber: 300 },
+      { specName: "Grip Style", valueString: "Palm", optionValue: "Palm" },
+    ],
+  },
+  {
+    id: "hs-01", sku: "HS-HYP-CLOUD-II",
+    name: "HyperX Cloud II Wired Gaming Headset",
+    description: "Legendary wired gaming headset with 53mm drivers, memory foam ear cushions, detachable cardioid microphone, and virtual 7.1 surround via USB mixer.",
+    subCategoryName: "Headset", brandName: "HyperX", price: 7000, image: "https://placeholder.hyperx.com/cloud-ii.jpg", stock: 25,
+    specs: [
+      { specName: "Connectivity", valueString: "Wired (3.5mm)", optionValue: "Wired (3.5mm)" },
+      { specName: "Driver Size (mm)", valueNumber: 53 },
+      { specName: "Frequency Response", valueString: "15Hz–25,000Hz" },
+      { specName: "Microphone Type", valueString: "Detachable", optionValue: "Detachable" },
+      { specName: "Surround Sound", valueString: "Virtual 7.1", optionValue: "Virtual 7.1" },
+      { specName: "Noise Cancellation", valueBool: false },
+      { specName: "Battery Life (hrs)", valueNumber: 0 },
+      { specName: "Weight (g)", valueNumber: 309 },
+    ],
+  },
+  {
+    id: "hs-02", sku: "HS-STL-ARC-NOVA-7",
+    name: "SteelSeries Arctis Nova 7 Wireless",
+    description: "Premium wireless gaming headset with dual-wireless (2.4GHz + Bluetooth), ClearCast Gen2 mic, 38-hour battery, and 360° spatial audio.",
+    subCategoryName: "Headset", brandName: "SteelSeries", price: 18000, image: "https://placeholder.steelseries.com/arctis-nova-7.jpg", stock: 10,
+    specs: [
+      { specName: "Connectivity", valueString: "Dual Wireless", optionValue: "Dual Wireless" },
+      { specName: "Driver Size (mm)", valueNumber: 40 },
+      { specName: "Frequency Response", valueString: "20Hz–20,000Hz" },
+      { specName: "Microphone Type", valueString: "Retractable", optionValue: "Retractable" },
+      { specName: "Surround Sound", valueString: "360 Spatial", optionValue: "360 Spatial" },
+      { specName: "Noise Cancellation", valueBool: false },
+      { specName: "Battery Life (hrs)", valueNumber: 38 },
+      { specName: "Weight (g)", valueNumber: 338 },
+    ],
   },
 
   // ── NETWORKING ──────────────────────────────────────────────────────────────
   {
-    id: 'net-1', sku: 'NET-TP-AX73',
-    name: 'TP-Link Archer AX73', category: 'Networking', price: 9000, stock: 12,
-    image: 'https://picsum.photos/300/300?random=39',
-    description: 'AX5400 Dual-Band Gigabit Wi-Fi 6 Router.',
-    brandName: 'TP-Link',
-    specs: { brand: 'TP-Link', type: 'Router', standard: 'WiFi 6' }
+    id: "net-01", sku: "NET-TPLINK-AXE75",
+    name: "TP-Link Archer AXE75 Wi-Fi 6E Tri-Band Router",
+    description: "Tri-band Wi-Fi 6E router with 6GHz band support for up to 6600Mbps total throughput, 4x Gigabit LAN, MU-MIMO, and OFDMA for low-latency gaming.",
+    subCategoryName: "Wi-Fi Router", brandName: "TP-Link", price: 12000, image: "https://placeholder.tplink.com/axe75.jpg", stock: 12,
+    specs: [
+      { specName: "WiFi Standard", valueString: "WiFi 6E", optionValue: "WiFi 6E" },
+      { specName: "Max Speed (Mbps)", valueNumber: 6600 },
+      { specName: "Bands", valueString: "Tri-band", optionValue: "Tri-band" },
+      { specName: "LAN Ports", valueNumber: 4 },
+      { specName: "WAN Port Speed", valueString: "1GbE" },
+      { specName: "USB Port", valueBool: true },
+      { specName: "MU-MIMO", valueBool: true },
+      { specName: "OFDMA", valueBool: true },
+      { specName: "Antennas", valueNumber: 4 },
+    ],
   },
   {
-    id: 'net-2', sku: 'NET-DL-8P',
-    name: 'D-Link 8 Port Gigabit Switch', category: 'Networking', price: 1500, stock: 50,
-    image: 'https://picsum.photos/300/300?random=40',
-    description: 'Unmanaged Gigabit Desktop Switch.',
-    brandName: 'D-Link',
-    specs: { brand: 'D-Link', type: 'Switch', ports: '8' }
+    id: "net-02", sku: "NET-DLINK-8P-GIG",
+    name: "D-Link 8-Port Gigabit Unmanaged Switch",
+    description: "Compact plug-and-play 8-port Gigabit Ethernet desktop switch for home and small office wired networking, fanless silent operation.",
+    subCategoryName: "Network Switch", brandName: "D-Link", price: 1500, image: "https://placeholder.dlink.com/8port.jpg", stock: 50,
+    specs: [
+      { specName: "Ports", valueString: "8-port", optionValue: "8-port" },
+      { specName: "Port Speed", valueString: "1GbE", optionValue: "1GbE" },
+      { specName: "Managed", valueBool: false },
+      { specName: "PoE", valueBool: false },
+      { specName: "SFP Ports", valueNumber: 0 },
+    ],
   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CATEGORY SCHEMAS (from ShopContext INITIAL_SCHEMAS)
+// 5. CATEGORY HIERARCHY (nav tree)
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface SeedAttributeDef {
-  key: string;
+interface HierarchyNode {
   label: string;
-  type: string;
-  required: boolean;
-  sortOrder: number;
-  options?: string[];
-  unit?: string;
-  dependencyKey?: string;
-  dependencyValue?: string;
+  categoryName?: string;
+  query?: string;
+  brand?: string;
+  children?: HierarchyNode[];
 }
 
-const CATEGORY_SCHEMAS_DATA: { category: Category; attributes: SeedAttributeDef[] }[] = [
+const HIERARCHY_TREE: HierarchyNode[] = [
   {
-    category: Category.PROCESSOR,
-    attributes: [
-      { key: 'socket', label: 'Intel Socket', type: 'select', required: true, options: ['LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 0, dependencyKey: 'brand', dependencyValue: 'Intel' },
-      { key: 'socket', label: 'AMD Socket', type: 'select', required: true, options: ['AM4', 'AM5', 'sTR5'], sortOrder: 1, dependencyKey: 'brand', dependencyValue: 'AMD' },
-      { key: 'cores', label: 'Cores', type: 'number', required: true, sortOrder: 2 },
-      { key: 'generation', label: 'Generation', type: 'select', required: false, options: ['9th Gen', '10th Gen', '11th Gen', '12th Gen', '13th Gen', '14th Gen'], sortOrder: 3, dependencyKey: 'brand', dependencyValue: 'Intel' },
-      { key: 'series', label: 'Series', type: 'select', required: false, options: ['3000 Series', '5000 Series', '7000 Series', '8000 Series', '9000 Series', 'Threadripper'], sortOrder: 4, dependencyKey: 'brand', dependencyValue: 'AMD' },
-      { key: 'wattage', label: 'TDP (Watts)', type: 'number', required: true, unit: 'W', sortOrder: 5 },
-      { key: 'ramType', label: 'RAM Support', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 6 },
-      { key: 'family', label: 'CPU Family', type: 'select', required: false, options: ['Athlon', 'Ryzen 3', 'Ryzen 5', 'Ryzen 7', 'Ryzen 9'], sortOrder: 7, dependencyKey: 'brand', dependencyValue: 'AMD' },
-      { key: 'family', label: 'CPU Line', type: 'select', required: false, options: ['Core i3', 'Core i5', 'Core i7', 'Core i9', 'Core Ultra 5', 'Core Ultra 7', 'Core Ultra 9'], sortOrder: 8, dependencyKey: 'brand', dependencyValue: 'Intel' },
-      { key: 'maxMemory', label: 'Max Memory', type: 'select', required: false, options: ['64 GB', '128 GB', '192 GB', '256 GB'], sortOrder: 9 },
-      { key: 'integratedGraphics', label: 'Integrated Graphics', type: 'select', required: false, options: ['No', 'Intel UHD Graphics 630', 'Intel UHD Graphics 730', 'Intel UHD Graphics 770', 'Radeon Graphics'], sortOrder: 10 },
-    ]
+    label: "Processor", categoryName: "Processor",
+    children: [
+      { label: "Intel Processor", brand: "Intel" },
+      { label: "AMD Processor", brand: "AMD" },
+      { label: "Desktop CPU", query: "Desktop" },
+      { label: "HEDT / Workstation CPU", query: "Threadripper" },
+      { label: "Entry-level CPU", query: "Budget" },
+      { label: "Mid-Range CPU", query: "Mid" },
+      { label: "High-end CPU", query: "High" },
+    ],
   },
   {
-    category: Category.MOTHERBOARD,
-    attributes: [
-      { key: 'platform', label: 'Platform', type: 'select', required: true, options: ['AMD', 'Intel'], sortOrder: 0 },
-      { key: 'socket', label: 'Socket', type: 'select', required: true, options: ['AM4', 'AM5', 'sTR5', 'LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 1 },
-      { key: 'chipset', label: 'Chipset', type: 'select', required: true, options: ['A520', 'B450', 'B550', 'B650', 'B760', 'X570', 'X670', 'X870', 'H510', 'H610', 'Z690', 'Z790', 'Z890'], sortOrder: 2 },
-      { key: 'formFactor', label: 'Form Factor', type: 'select', required: true, options: ['ATX', 'Micro-ATX', 'E-ATX', 'Mini-ITX'], sortOrder: 3 },
-      { key: 'ramType', label: 'Memory Type', type: 'select', required: true, options: ['DDR4', 'DDR5'], sortOrder: 4 },
-    ]
+    label: "Motherboard", categoryName: "Motherboard",
+    children: [
+      {
+        label: "AMD Chipset",
+        children: [
+          { label: "X870E / X870", query: "X870" },
+          { label: "X670E / X670", query: "X670" },
+          { label: "B650", query: "B650" },
+          { label: "B550", query: "B550" },
+          { label: "B450", query: "B450" },
+          { label: "A620", query: "A620" },
+        ],
+      },
+      {
+        label: "Intel Chipset",
+        children: [
+          { label: "Z890", query: "Z890" },
+          { label: "Z790", query: "Z790" },
+          { label: "B760", query: "B760" },
+          { label: "H610", query: "H610" },
+          { label: "Z690", query: "Z690" },
+        ],
+      },
+      { label: "ATX", query: "ATX" },
+      { label: "Micro-ATX", query: "Micro-ATX" },
+      { label: "Mini-ITX", query: "Mini-ITX" },
+    ],
   },
   {
-    category: Category.GPU,
-    attributes: [
-      { key: 'chipset', label: 'Chipset', type: 'select', required: true, options: ['AMD RADEON', 'NVIDIA GEFORCE', 'NVIDIA QUADRO', 'Intel Arc'], sortOrder: 0 },
-      { key: 'model', label: 'GPU Model', type: 'text', required: true, sortOrder: 1 },
-      { key: 'memory', label: 'VRAM', type: 'text', required: true, sortOrder: 2 },
-      { key: 'memoryType', label: 'Memory Type', type: 'select', required: true, options: ['DDR3', 'GDDR5', 'GDDR6', 'GDDR6X', 'GDDR7'], sortOrder: 3 },
-      { key: 'pcie', label: 'PCI Express', type: 'select', required: false, options: ['2.0', '3.0', '4.0', '5.0'], sortOrder: 4 },
-      { key: 'wattage', label: 'TDP (W)', type: 'number', required: true, unit: 'W', sortOrder: 5 },
-      { key: 'length', label: 'Length', type: 'number', required: false, unit: 'mm', sortOrder: 6 },
-    ]
+    label: "Graphics Card", categoryName: "Graphics Card",
+    children: [
+      {
+        label: "NVIDIA GeForce",
+        children: [
+          { label: "RTX 50 Series", query: "RTX 50" },
+          { label: "RTX 40 Series", query: "RTX 40" },
+          { label: "RTX 30 Series", query: "RTX 30" },
+        ],
+      },
+      {
+        label: "AMD Radeon",
+        children: [
+          { label: "RX 9000 Series", query: "RX 9" },
+          { label: "RX 7000 Series", query: "RX 7" },
+          { label: "RX 6000 Series", query: "RX 6" },
+        ],
+      },
+      { label: "Intel Arc", query: "Arc" },
+    ],
   },
   {
-    category: Category.RAM,
-    attributes: [
-      { key: 'ramType', label: 'Memory Type', type: 'select', required: true, options: ['DDR3', 'DDR4', 'DDR5'], sortOrder: 0 },
-      { key: 'capacity', label: 'Capacity', type: 'text', required: true, sortOrder: 1 },
-      { key: 'frequency', label: 'Speed', type: 'text', required: true, sortOrder: 2 },
-      { key: 'kit', label: 'Kit Type', type: 'select', required: false, options: ['4x1', '8x1', '16x1', '16x2', '24x2', '32x2'], sortOrder: 3 },
-      { key: 'series', label: 'Product Series', type: 'text', required: false, sortOrder: 4 },
-    ]
+    label: "RAM", categoryName: "RAM",
+    children: [
+      { label: "DDR5 RAM", query: "DDR5" },
+      { label: "DDR4 RAM", query: "DDR4" },
+      { label: "Desktop RAM", query: "Desktop" },
+      { label: "Dual Channel Kit", query: "2x" },
+      { label: "32GB Kit", query: "32GB" },
+      { label: "64GB Kit", query: "64GB" },
+    ],
   },
   {
-    category: Category.STORAGE,
-    attributes: [
-      { key: 'type', label: 'Category', type: 'select', required: true, options: ['Internal SSD', 'Internal HDD', 'External SSD', 'External HDD', 'Enterprise SSD', 'Pen Drive'], sortOrder: 0 },
-      { key: 'capacity', label: 'Capacity', type: 'text', required: true, sortOrder: 1 },
-      { key: 'interface', label: 'Interface', type: 'text', required: false, sortOrder: 2 },
-      { key: 'series', label: 'Series', type: 'text', required: false, sortOrder: 3 },
-    ]
+    label: "Storage", categoryName: "Storage",
+    children: [
+      {
+        label: "NVMe SSD",
+        children: [
+          { label: "PCIe Gen 5", query: "Gen5" },
+          { label: "PCIe Gen 4", query: "Gen4" },
+          { label: "PCIe Gen 3", query: "Gen3" },
+        ],
+      },
+      { label: "SATA SSD", query: "SATA" },
+      {
+        label: "HDD",
+        children: [
+          { label: "Internal HDD", query: "Internal" },
+          { label: "External HDD", query: "External" },
+        ],
+      },
+    ],
   },
   {
-    category: Category.PSU,
-    attributes: [
-      { key: 'wattage', label: 'Wattage', type: 'number', required: true, unit: 'W', sortOrder: 0 },
-      { key: 'efficiency', label: 'Certification', type: 'select', required: true, options: ['Bronze', 'Gold', 'Platinum', 'Silver', 'Titanium'], sortOrder: 1 },
-      { key: 'modular', label: 'Modular', type: 'select', required: true, options: ['Fully', 'Non', 'Semi'], sortOrder: 2 },
-      { key: 'series', label: 'Series', type: 'text', required: false, sortOrder: 3 },
-      { key: 'pcie62', label: 'PCIe 6+2 Connectors', type: 'number', required: false, sortOrder: 4 },
-      { key: 'sata', label: 'SATA Connectors', type: 'number', required: false, sortOrder: 5 },
-      { key: 'peripheral4pin', label: 'Peripheral 4-Pin', type: 'number', required: false, sortOrder: 6 },
-      { key: 'formFactor', label: 'Form Factor', type: 'select', required: false, options: ['ATX', 'SFX', 'SFX-L', 'TFX'], sortOrder: 7 },
-    ]
+    label: "CPU Cooler", categoryName: "Cooler",
+    children: [
+      { label: "AIO Liquid Cooler", query: "AIO" },
+      { label: "Air Cooler", query: "Air" },
+      { label: "360mm AIO", query: "360mm" },
+      { label: "280mm AIO", query: "280mm" },
+      { label: "240mm AIO", query: "240mm" },
+      { label: "Case Fans", query: "Case Fan" },
+      { label: "Thermal Paste", query: "Thermal Paste" },
+    ],
   },
   {
-    category: Category.CABINET,
-    attributes: [
-      { key: 'formFactor', label: 'Cabinet Size', type: 'select', required: true, options: ['Full', 'Mid', 'Mini', 'Super', 'SFF'], sortOrder: 0 },
-      { key: 'motherboardSupport', label: 'Motherboard Size', type: 'select', required: true, options: ['ATX', 'E-ATX', 'ITX', 'M-ATX', 'M-ITX'], sortOrder: 1 },
-      { key: 'radiatorSupport', label: 'Radiator Support', type: 'text', required: false, sortOrder: 2 },
-      { key: 'color', label: 'Color', type: 'text', required: false, sortOrder: 3 },
-      { key: 'maxGpuLength', label: 'Max GPU Length', type: 'number', required: false, unit: 'mm', sortOrder: 4 },
-      { key: 'maxCoolerHeight', label: 'Max Cooler Height', type: 'number', required: false, unit: 'mm', sortOrder: 5 },
-      { key: 'psuFormFactorSupport', label: 'PSU Support', type: 'multi-select', required: false, options: ['ATX', 'SFX', 'SFX-L', 'TFX'], sortOrder: 6 },
-    ]
+    label: "Power Supply (SMPS)", categoryName: "Power Supply",
+    children: [
+      { label: "Fully Modular", query: "Fully Modular" },
+      { label: "Semi Modular", query: "Semi Modular" },
+      { label: "Non Modular", query: "Non Modular" },
+      { label: "Titanium / Platinum", query: "Titanium" },
+      { label: "Gold", query: "Gold" },
+      { label: "Bronze", query: "Bronze" },
+      { label: "650W", query: "650W" },
+      { label: "750W", query: "750W" },
+      { label: "850W", query: "850W" },
+      { label: "1000W+", query: "1000W" },
+    ],
   },
   {
-    category: Category.COOLER,
-    attributes: [
-      { key: 'type', label: 'Cooling Type', type: 'select', required: true, options: ['AIR COOLER', 'LIQUID AIO COOLER', 'Water Block', 'Pump & Reservoir'], sortOrder: 0 },
-      { key: 'socket', label: 'Socket Support', type: 'multi-select', required: false, options: ['AM2', 'AM2+', 'AM3', 'AM3+', 'AM4', 'AM5', 'LGA1151', 'LGA1200', 'LGA1700'], sortOrder: 1 },
-      { key: 'radiatorSize', label: 'Radiator Size', type: 'select', required: false, options: ['240mm', '280mm', '360mm', '420mm'], sortOrder: 2 },
-      { key: 'fanSize', label: 'Fan Size', type: 'select', required: false, options: ['40mm', '60mm', '90mm', '92mm', '120mm', '140mm'], sortOrder: 3 },
-      { key: 'pwm', label: 'PWM Controller', type: 'select', required: false, options: ['NA', 'YES'], sortOrder: 4 },
-      { key: 'height', label: 'Cooler Height', type: 'number', required: false, unit: 'mm', sortOrder: 5 },
-    ]
+    label: "Cabinet", categoryName: "Cabinet",
+    children: [
+      { label: "Mid Tower", query: "Mid Tower" },
+      { label: "Full Tower", query: "Full Tower" },
+      { label: "Mini-ITX Case", query: "Mini-ITX" },
+      { label: "ARGB Cabinet", query: "ARGB" },
+      { label: "Tempered Glass", query: "Tempered Glass" },
+      { label: "Airflow Case", query: "Airflow" },
+    ],
   },
   {
-    category: Category.MONITOR,
-    attributes: [
-      { key: 'size', label: 'Screen Size', type: 'select', required: true, options: ['22 Inch', '24 Inch', '27 Inch', '32 Inch', '34 Inch', '49 Inch'], sortOrder: 0 },
-      { key: 'displayType', label: 'Display Type', type: 'select', required: false, options: ['FHD', 'QHD', 'UHD', 'DQHD', '5K HDR'], sortOrder: 1 },
-      { key: 'panel', label: 'Panel Type', type: 'select', required: false, options: ['IPS', 'OLED', 'QD-OLED', 'TN', 'VA'], sortOrder: 2 },
-      { key: 'resolution', label: 'Resolution', type: 'select', required: true, options: ['1080p', '1440p', '2K', '4K', '5K'], sortOrder: 3 },
-      { key: 'responseTime', label: 'Response Time', type: 'text', required: false, sortOrder: 4 },
-      { key: 'refreshRate', label: 'Refresh Rate', type: 'select', required: false, options: ['60Hz', '75Hz', '144Hz', '165Hz', '240Hz', '360Hz'], sortOrder: 5 },
-      { key: 'surface', label: 'Screen Surface', type: 'select', required: false, options: ['CURVED', 'FLAT'], sortOrder: 6 },
-      { key: 'connectivity', label: 'Connectivity', type: 'multi-select', required: false, options: ['D-SUB', 'DISPLAY PORT', 'DVI', 'HDMI', 'USB-C'], sortOrder: 7 },
-      { key: 'type', label: 'Type', type: 'select', required: false, options: ['Gaming', 'Professional', 'Curved'], sortOrder: 8 },
-    ]
+    label: "Monitor", categoryName: "Monitor",
+    children: [
+      { label: "24 inch", query: "24" },
+      { label: "27 inch", query: "27" },
+      { label: "32 inch", query: "32" },
+      { label: "4K Monitor", query: "4K" },
+      { label: "2K / 1440p", query: "1440p" },
+      { label: "Gaming Monitor", query: "Gaming" },
+      { label: "Curved Monitor", query: "Curved" },
+      { label: "144Hz+", query: "144Hz" },
+      { label: "240Hz+", query: "240Hz" },
+      { label: "Professional Monitor", query: "Professional" },
+      { label: "Ultra-Wide", query: "Ultrawide" },
+    ],
   },
   {
-    category: Category.PERIPHERAL,
-    attributes: [
-      { key: 'type', label: 'Type', type: 'select', required: true, options: ['Headset', 'Keyboard', 'Mouse', 'Mouse Pad', 'Speaker', 'Headphone', 'Webcam', 'Software'], sortOrder: 0 },
-      { key: 'connectivity', label: 'Connectivity', type: 'select', required: false, options: ['Wired', 'Wireless', 'Bluetooth'], sortOrder: 1 },
-    ]
+    label: "Peripherals", categoryName: "Peripheral",
+    children: [
+      {
+        label: "Keyboard",
+        children: [
+          { label: "Mechanical Keyboard", query: "Mechanical" },
+          { label: "Wireless Keyboard", query: "Wireless" },
+          { label: "Wired Keyboard", query: "Wired" },
+          { label: "60% / 65%", query: "60%" },
+          { label: "TKL", query: "TKL" },
+          { label: "Full-size", query: "Full-size" },
+        ],
+      },
+      {
+        label: "Mouse",
+        children: [
+          { label: "Wireless Mouse", query: "Wireless" },
+          { label: "Wired Mouse", query: "Wired" },
+          { label: "Gaming Mouse", query: "Gaming" },
+          { label: "Ergonomic Mouse", query: "Ergonomic" },
+        ],
+      },
+      { label: "Headset", query: "Headset" },
+      { label: "Mouse Pad", query: "Mouse Pad" },
+      { label: "Webcam", query: "Webcam" },
+      { label: "Speakers", query: "Speaker" },
+    ],
   },
   {
-    category: Category.NETWORKING,
-    attributes: [
-      { key: 'type', label: 'Device Type', type: 'select', required: true, options: ['Router', 'Switch', 'Adapter', 'Cable'], sortOrder: 0 },
-    ]
-  },
-  {
-    category: Category.LAPTOP,
-    attributes: [
-      { key: 'processor', label: 'Processor', type: 'select', required: true, options: ['AMD Ryzen 3', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Intel Core 5', 'Intel Core i3', 'Intel Core i5', 'Intel Core i7'], sortOrder: 0 },
-      { key: 'processorSeries', label: 'Processor Series', type: 'select', required: false, options: ['Intel 12th Gen', 'Intel 13th Gen', 'Intel 14th Gen', 'Ryzen 5000 Series', 'Ryzen 7000 Series'], sortOrder: 1 },
-      { key: 'memorySize', label: 'Memory Size', type: 'select', required: true, options: ['8GB', '16GB', '32GB'], sortOrder: 2 },
-      { key: 'memoryType', label: 'Memory Type', type: 'select', required: true, options: ['DDR4', 'DDR5', 'LPDDR5'], sortOrder: 3 },
-      { key: 'ssd', label: 'SSD', type: 'select', required: false, options: ['256GB NVMe', '512GB NVMe', '1TB NVMe'], sortOrder: 4 },
-      { key: 'graphics', label: 'Graphics', type: 'select', required: false, options: ['AMD Radeon', 'Integrated', 'Intel Graphics', 'Iris Xe', 'UHD', 'NVIDIA RTX 3050', 'NVIDIA RTX 4050', 'NVIDIA RTX 4060'], sortOrder: 5 },
-      { key: 'screenResolution', label: 'Screen Resolution', type: 'select', required: false, options: ['1080p', '1440p', '2K', '4K'], sortOrder: 6 },
-    ]
+    label: "Networking", categoryName: "Networking",
+    children: [
+      { label: "WiFi 6E Router", query: "WiFi 6E" },
+      { label: "WiFi 7 Router", query: "WiFi 7" },
+      { label: "Gigabit Switch", query: "Switch" },
+      { label: "Network Adapter", query: "Adapter" },
+    ],
   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FILTER CONFIG
+// 6. COMPATIBILITY RULES
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface SeedFilterDef {
-  key: string;
-  label: string;
-  type: FilterType;
-  options?: string[];
-  min?: number;
-  max?: number;
-  dependencyKey?: string;
-  dependencyValue?: string;
-  sortOrder: number;
+interface CompatRuleSeed {
+  name: string;
+  sourceSubCategory: string;
+  targetSubCategory: string;
+  sourceSpec: string;
+  targetSpec: string;
+  operator: CompatibilityOperator;
+  message: string;
+  severity: CompatibilitySeverity;
 }
 
-const FILTER_CONFIG_DATA: { category: Category; filters: SeedFilterDef[] }[] = [
-  // ── PROCESSOR ──────────────────────────────────────────────────────────────
+const COMPAT_RULES: CompatRuleSeed[] = [
+  // CPU socket ↔ Motherboard socket
   {
-    category: Category.PROCESSOR,
-    filters: [
-      { key: 'search_description', label: 'Search in Descriptions', type: FilterType.search, sortOrder: 0 },
-      { key: 'search_subcategory', label: 'Search in Subcategories', type: FilterType.search, sortOrder: 1 },
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AMD', 'Intel'], sortOrder: 2 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 3 },
-      // AMD
-      { key: 'specs.family', label: 'CPU', type: FilterType.checkbox, options: ['Athlon', 'Ryzen 3', 'Ryzen 5', 'Ryzen 7', 'Ryzen 9'], sortOrder: 4, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      { key: 'specs.cores', label: 'Cores', type: FilterType.checkbox, options: ['2', '4', '6', '8', '12', '16', '24'], sortOrder: 5, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      { key: 'specs.series', label: 'Series', type: FilterType.checkbox, options: ['3000 Series', '5000 Series', '7000 Series', '8000 Series', '9000 Series'], sortOrder: 6, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['AM4', 'AM5'], sortOrder: 7, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      { key: 'specs.maxMemory', label: 'Max Memory Support', type: FilterType.checkbox, options: ['64 GB', '128 GB', '192 GB', '256 GB'], sortOrder: 8, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      { key: 'specs.integratedGraphics', label: 'Integrated Graphics', type: FilterType.checkbox, options: ['No', 'Radeon Graphics', 'Radeon Vega 3', 'Radeon Vega 8', 'Radeon Vega 11'], sortOrder: 9, dependencyKey: 'specs.brand', dependencyValue: 'AMD' },
-      // Intel
-      { key: 'specs.family', label: 'CPU', type: FilterType.checkbox, options: ['Core Ultra 5', 'Core Ultra 7', 'Core Ultra 9', 'Core i3', 'Core i5', 'Core i7', 'Core i9'], sortOrder: 10, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
-      { key: 'specs.cores', label: 'Cores', type: FilterType.checkbox, options: ['2', '4', '6', '8', '10', '12', '14', '20', '24'], sortOrder: 11, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
-      { key: 'specs.generation', label: 'Series', type: FilterType.checkbox, options: ['9th Gen', '10th Gen', '11th Gen', '12th Gen', '13th Gen', '14th Gen'], sortOrder: 12, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
-      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 13, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
-      { key: 'specs.maxMemory', label: 'Max Memory Support', type: FilterType.checkbox, options: ['64 GB', '128 GB', '192 GB', '256 GB'], sortOrder: 14, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
-      { key: 'specs.integratedGraphics', label: 'Integrated Graphics', type: FilterType.checkbox, options: ['No', 'Intel UHD Graphics 630', 'Intel UHD Graphics 730', 'Intel UHD Graphics 770'], sortOrder: 15, dependencyKey: 'specs.brand', dependencyValue: 'Intel' },
-    ]
-  },
-  // ── CPU COOLER ─────────────────────────────────────────────────────────────
-  {
-    category: Category.COOLER,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AEROCOOL', 'ALSEYE', 'Ant Esports', 'ANTEC', 'ARCTIC', 'Cooler Master', 'Corsair', 'DeepCool', 'Lian Li', 'Noctua', 'NZXT'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Cooling Type', type: FilterType.checkbox, options: ['AIR COOLER', 'LIQUID AIO COOLER'], sortOrder: 2 },
-      { key: 'specs.socket', label: 'Socket Support', type: FilterType.checkbox, options: ['AM2', 'AM2+', 'AM3', 'AM3+', 'AM4', 'AM5', 'LGA1151', 'LGA1200', 'LGA1700'], sortOrder: 3 },
-      { key: 'specs.radiatorSize', label: 'Radiator Size', type: FilterType.checkbox, options: ['240mm', '280mm', '360mm', '420mm'], sortOrder: 4 },
-      { key: 'specs.fanSize', label: 'Fan Size', type: FilterType.checkbox, options: ['40mm', '60mm', '90mm', '92mm', '120mm', '140mm'], sortOrder: 5 },
-      { key: 'specs.pwm', label: 'PWM Controller', type: FilterType.checkbox, options: ['NA', 'YES'], sortOrder: 6 },
-    ]
-  },
-  // ── MOTHERBOARD ────────────────────────────────────────────────────────────
-  {
-    category: Category.MOTHERBOARD,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ASROCK', 'ASUS', 'GIGABYTE', 'MSI'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.platform', label: 'Platform', type: FilterType.checkbox, options: ['AMD', 'Intel'], sortOrder: 2 },
-      // AMD Platform
-      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['AM4', 'AM5'], sortOrder: 3, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
-      { key: 'specs.chipset', label: 'Chipset', type: FilterType.checkbox, options: ['A520', 'B450', 'B550', 'B650', 'X570', 'X670', 'X870'], sortOrder: 4, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
-      { key: 'specs.ramType', label: 'Supported Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 5, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
-      { key: 'specs.formFactor', label: 'Form Factor', type: FilterType.checkbox, options: ['ATX', 'Micro-ATX', 'Mini-ITX', 'E-ATX'], sortOrder: 6, dependencyKey: 'specs.platform', dependencyValue: 'AMD' },
-      // Intel Platform
-      { key: 'specs.socket', label: 'Socket', type: FilterType.checkbox, options: ['LGA1151', 'LGA1200', 'LGA1700', 'LGA1851'], sortOrder: 7, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
-      { key: 'specs.chipset', label: 'Chipset', type: FilterType.checkbox, options: ['B760', 'H510', 'H610', 'Z690', 'Z790', 'Z890'], sortOrder: 8, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
-      { key: 'specs.ramType', label: 'Supported Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 9, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
-      { key: 'specs.formFactor', label: 'Form Factor', type: FilterType.checkbox, options: ['ATX', 'Micro-ATX', 'Mini-ITX', 'E-ATX'], sortOrder: 10, dependencyKey: 'specs.platform', dependencyValue: 'Intel' },
-    ]
-  },
-  // ── GRAPHICS CARD ──────────────────────────────────────────────────────────
-  {
-    category: Category.GPU,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ASROCK', 'ASUS', 'GALAX', 'GIGABYTE', 'INNO3D', 'MSI', 'Sapphire', 'Zotac'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.chipset', label: 'Chipset', type: FilterType.checkbox, options: ['AMD RADEON', 'NVIDIA GEFORCE', 'NVIDIA QUADRO', 'Intel Arc'], sortOrder: 2 },
-      { key: 'specs.model', label: 'GPU', type: FilterType.checkbox, options: ['A400', 'A1000', 'GT 710', 'GT 730', 'GT 1030', 'GTX 1650', 'GTX 1660', 'RTX 3060', 'RTX 4060', 'RTX 4070', 'RTX 4080', 'RTX 4090', 'RX 7600', 'RX 7800 XT'], sortOrder: 3 },
-      { key: 'specs.pcie', label: 'PCI EXPRESS', type: FilterType.checkbox, options: ['2.0', '3.0', '4.0', '5.0'], sortOrder: 4 },
-      { key: 'specs.memory', label: 'Memory Size', type: FilterType.checkbox, options: ['2GB', '4GB', '6GB', '8GB', '12GB', '16GB', '20GB', '24GB'], sortOrder: 5 },
-      { key: 'specs.memoryType', label: 'Memory Type', type: FilterType.checkbox, options: ['DDR3', 'GDDR5', 'GDDR6', 'GDDR6X', 'GDDR7'], sortOrder: 6 },
-    ]
-  },
-  // ── RAM ────────────────────────────────────────────────────────────────────
-  {
-    category: Category.RAM,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ACER', 'ADATA', 'CORSAIR', 'CRUCIAL', 'EVM', 'G.Skill', 'Kingston', 'TeamGroup'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.series', label: 'Product Series', type: FilterType.checkbox, options: ['AEGIS', 'DOMINATOR PLATINUM RGB', 'DOMINATOR RGB DDR5', 'DOMINATOR TITANIUM RGB DDR5', 'FURY BEAST', 'TRIDENT Z5', 'VENGEANCE'], sortOrder: 2 },
-      { key: 'specs.ramType', label: 'Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5'], sortOrder: 3 },
-      { key: 'specs.capacity', label: 'Capacity', type: FilterType.checkbox, options: ['4GB', '8GB', '16GB', '32GB', '48GB', '64GB'], sortOrder: 4 },
-      { key: 'specs.kit', label: 'Kit Type', type: FilterType.checkbox, options: ['4x1', '8x1', '16x1', '16x2', '24x2', '32x2'], sortOrder: 5 },
-      { key: 'specs.frequency', label: 'Speed', type: FilterType.checkbox, options: ['2666 MHz', '3200 MHz', '4800 MHz', '5200 MHz', '5600 MHz', '6000 MHz'], sortOrder: 6 },
-    ]
-  },
-  // ── STORAGE ────────────────────────────────────────────────────────────────
-  {
-    category: Category.STORAGE,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ACER', 'ADATA', 'ADDLINK', 'Ant Esports', 'ASUS', 'Crucial', 'Kingston', 'Samsung', 'Seagate', 'Western Digital'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Category', type: FilterType.checkbox, options: ['Enterprise SSD', 'External HDD', 'External SSD', 'Internal HDD', 'Internal SSD', 'Pen Drive'], sortOrder: 2 },
-      { key: 'specs.series', label: 'Series', type: FilterType.checkbox, options: ['690 NEO', '870 EVO', '990 EVO', '990 PRO', '9100 PRO'], sortOrder: 3 },
-      { key: 'specs.capacity', label: 'Capacity', type: FilterType.checkbox, options: ['500GB', '1TB', '1.92TB', '2TB', '3.84TB', '4TB', '8TB'], sortOrder: 4 },
-    ]
-  },
-  // ── SMPS (PSU) ─────────────────────────────────────────────────────────────
-  {
-    category: Category.PSU,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['Ant Esports', 'ANTEC', 'ASUS', 'COOLER MASTER', 'CORSAIR', 'DeepCool', 'MSI', 'Seasonic'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.wattage', label: 'Wattage', type: FilterType.checkbox, options: ['400', '450', '500', '520', '550', '650', '750', '850', '1000', '1200'], sortOrder: 2 },
-      { key: 'specs.series', label: 'Series', type: FilterType.checkbox, options: ['ATOM', 'AURA', 'AXi', 'C', 'CSK', 'HX', 'RM', 'RMx'], sortOrder: 3 },
-      { key: 'specs.efficiency', label: 'Certification', type: FilterType.checkbox, options: ['Bronze', 'Gold', 'Platinum', 'Silver', 'Titanium'], sortOrder: 4 },
-      { key: 'specs.modular', label: 'Modular', type: FilterType.checkbox, options: ['Fully', 'Non', 'Semi'], sortOrder: 5 },
-      { key: 'specs.pcie62', label: 'PCIe Connector (6+2)', type: FilterType.checkbox, options: ['1', '2', '3', '4', '5'], sortOrder: 6 },
-      { key: 'specs.sata', label: 'SATA Connector', type: FilterType.checkbox, options: ['2', '3', '4', '5', '6'], sortOrder: 7 },
-      { key: 'specs.peripheral4pin', label: 'Peripheral 4-Pin', type: FilterType.checkbox, options: ['1', '2', '3', '4', '5'], sortOrder: 8 },
-    ]
-  },
-  // ── CABINET ────────────────────────────────────────────────────────────────
-  {
-    category: Category.CABINET,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AEROCOOL', 'Ant Esports', 'ANTEC', 'ARCTIC', 'ASUS', 'Cooler Master', 'Corsair', 'Lian Li', 'NZXT'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.formFactor', label: 'Cabinet Size', type: FilterType.checkbox, options: ['Full', 'Mid', 'Mini', 'Super', 'SFF'], sortOrder: 2 },
-      { key: 'specs.motherboardSupport', label: 'Motherboard Size', type: FilterType.checkbox, options: ['ATX', 'E-ATX', 'ITX', 'M-ATX', 'M-ITX'], sortOrder: 3 },
-      { key: 'specs.radiatorSupport', label: 'Radiator Support', type: FilterType.checkbox, options: ['120mm', '140mm', '240mm', '280mm', '360mm'], sortOrder: 4 },
-    ]
-  },
-  // ── MONITOR ────────────────────────────────────────────────────────────────
-  {
-    category: Category.MONITOR,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['AOC', 'ASUS', 'BENQ', 'COOLER MASTER', 'DELL', 'LG', 'MSI', 'Samsung', 'ViewSonic'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.size', label: 'Screen Size', type: FilterType.checkbox, options: ['22 Inch', '24 Inch', '27 Inch', '32 Inch', '34 Inch', '49 Inch'], sortOrder: 2 },
-      { key: 'specs.displayType', label: 'Display Type', type: FilterType.checkbox, options: ['FHD', 'QHD', 'UHD', 'DQHD', '5K HDR'], sortOrder: 3 },
-      { key: 'specs.panel', label: 'Panel Type', type: FilterType.checkbox, options: ['IPS', 'OLED', 'QD-OLED', 'TN', 'VA'], sortOrder: 4 },
-      { key: 'specs.resolution', label: 'Resolution', type: FilterType.checkbox, options: ['1080p', '1440p', '2K', '4K', '5K'], sortOrder: 5 },
-      { key: 'specs.responseTime', label: 'Response Time', type: FilterType.checkbox, options: ['0.5ms', '1ms', '2ms', '4ms', '5ms'], sortOrder: 6 },
-      { key: 'specs.refreshRate', label: 'Refresh Rate', type: FilterType.checkbox, options: ['60Hz', '75Hz', '144Hz', '165Hz', '240Hz', '360Hz'], sortOrder: 7 },
-      { key: 'specs.surface', label: 'Screen Surface', type: FilterType.checkbox, options: ['CURVED', 'FLAT'], sortOrder: 8 },
-      { key: 'specs.connectivity', label: 'Connectivity', type: FilterType.checkbox, options: ['D-SUB', 'DISPLAY PORT', 'DVI', 'HDMI', 'USB-C'], sortOrder: 9 },
-    ]
-  },
-  // ── PERIPHERALS ────────────────────────────────────────────────────────────
-  {
-    category: Category.PERIPHERAL,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: [], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Type', type: FilterType.checkbox, options: ['Headset', 'Keyboard', 'Mouse', 'Mouse Pad', 'Speaker', 'Headphone', 'Webcam', 'Software'], sortOrder: 2 },
-      { key: 'specs.connectivity', label: 'Connectivity', type: FilterType.checkbox, options: ['Wired', 'Wireless', 'Bluetooth'], sortOrder: 3 },
-    ]
-  },
-  // ── NETWORKING ─────────────────────────────────────────────────────────────
-  {
-    category: Category.NETWORKING,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: [], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.type', label: 'Device Type', type: FilterType.checkbox, options: ['Router', 'Switch', 'Adapter', 'Cable'], sortOrder: 2 },
-    ]
-  },
-  // ── LAPTOP ─────────────────────────────────────────────────────────────────
-  {
-    category: Category.LAPTOP,
-    filters: [
-      { key: 'specs.brand', label: 'Manufacturer', type: FilterType.checkbox, options: ['ACER', 'ASUS', 'HP', 'MSI', 'Lenovo', 'Dell'], sortOrder: 0 },
-      { key: 'stock_status', label: 'Stock Status', type: FilterType.checkbox, options: ['In Stock', 'Out of Stock'], sortOrder: 1 },
-      { key: 'specs.processor', label: 'Processor', type: FilterType.checkbox, options: ['AMD Ryzen 3', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Intel Core 5', 'Intel Core i3', 'Intel Core i5', 'Intel Core i7'], sortOrder: 2 },
-      { key: 'specs.processorSeries', label: 'Processor Series', type: FilterType.checkbox, options: ['Intel 12th Gen', 'Intel 13th Gen', 'Intel 14th Gen', 'Ryzen 5000 Series', 'Ryzen 7000 Series'], sortOrder: 3 },
-      { key: 'specs.memorySize', label: 'Memory Size', type: FilterType.checkbox, options: ['8GB', '16GB', '32GB'], sortOrder: 4 },
-      { key: 'specs.memoryType', label: 'Memory Type', type: FilterType.checkbox, options: ['DDR4', 'DDR5', 'LPDDR5'], sortOrder: 5 },
-      { key: 'specs.ssd', label: 'SSD', type: FilterType.checkbox, options: ['256GB NVMe', '512GB NVMe', '1TB NVMe'], sortOrder: 6 },
-      { key: 'specs.graphics', label: 'Graphics', type: FilterType.checkbox, options: ['AMD Radeon', 'Integrated', 'Intel Graphics', 'Iris Xe', 'UHD', 'NVIDIA RTX 3050', 'NVIDIA RTX 4050', 'NVIDIA RTX 4060'], sortOrder: 7 },
-      { key: 'specs.screenResolution', label: 'Screen Resolution', type: FilterType.checkbox, options: ['1080p', '1440p', '2K', '4K'], sortOrder: 8 },
-    ]
-  },
-];
-
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ORDERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Helper to find product data inline (without importing TS frontend module)
-const productById = (id: string) => PRODUCTS_DATA.find(p => p.id === id)!;
-
-const ORDERS_DATA = [
-  {
-    id: 'ORD-2501',
-    customerName: 'Arjun Kapoor',
-    email: 'arjun.kapoor@gmail.com',
-    date: new Date('2025-01-14T08:22:00Z'),
-    status: OrderStatus.PENDING,
-    total: 36000 + 42000 + 25000,
-    shippingStreet: '14A, Sector 15', shippingCity: 'Noida', shippingState: 'Uttar Pradesh', shippingZip: '201301', shippingCountry: 'India',
-    paymentMethod: 'Net Banking', paymentStatus: 'Pending', paymentTransactionId: null,
-    items: [
-      { productId: 'cpu-1', quantity: 2 },
-      { productId: 'mobo-1', quantity: 1 },
-      { productId: 'ram-1', quantity: 2 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-14T08:22:00Z'), note: 'Order placed. Awaiting Net Banking payment confirmation.' },
-    ],
+    name: "CPU-MB Socket Match (Desktop)",
+    sourceSubCategory: "Desktop CPU", targetSubCategory: "ATX Motherboard",
+    sourceSpec: "Socket", targetSpec: "Socket",
+    operator: CompatibilityOperator.EQUAL,
+    message: "CPU socket must match motherboard socket (e.g. AM5 CPU with AM5 motherboard).",
+    severity: CompatibilitySeverity.ERROR,
   },
   {
-    id: 'ORD-2502',
-    customerName: 'Meera Nair',
-    email: 'meera.nair@outlook.com',
-    date: new Date('2025-01-13T14:05:00Z'),
-    status: OrderStatus.PAID,
-    total: 185000 + 16000,
-    shippingStreet: '22, Kaloor Junction', shippingCity: 'Kochi', shippingState: 'Kerala', shippingZip: '682017', shippingCountry: 'India',
-    paymentMethod: 'Credit Card', paymentStatus: 'Success', paymentTransactionId: 'TXN-CC-20250113-5821',
-    items: [
-      { productId: 'gpu-1', quantity: 1 },
-      { productId: 'psu-3', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-13T14:05:00Z'), note: 'Order placed via website.' },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-13T14:07:30Z'), note: 'Credit card payment authorised. TXN-CC-20250113-5821.' },
-    ],
+    name: "CPU-MB Socket Match (Desktop → mATX)",
+    sourceSubCategory: "Desktop CPU", targetSubCategory: "Micro-ATX Motherboard",
+    sourceSpec: "Socket", targetSpec: "Socket",
+    operator: CompatibilityOperator.EQUAL,
+    message: "CPU socket must match motherboard socket.",
+    severity: CompatibilitySeverity.ERROR,
   },
   {
-    id: 'ORD-2503',
-    customerName: 'Vikram Desai',
-    email: 'vikram.desai@company.in',
-    date: new Date('2025-01-12T11:30:00Z'),
-    status: OrderStatus.PROCESSING,
-    total: 55000 + 42000 + 52000 + 21000 + 11000,
-    shippingStreet: 'A-403, Powai Heights', shippingCity: 'Mumbai', shippingState: 'Maharashtra', shippingZip: '400076', shippingCountry: 'India',
-    paymentMethod: 'UPI', paymentStatus: 'Success', paymentTransactionId: 'UPI-20250112-VD-7391',
-    items: [
-      { productId: 'cpu-2', quantity: 1 },
-      { productId: 'mobo-1', quantity: 1 },
-      { productId: 'gpu-2', quantity: 1 },
-      { productId: 'stg-1', quantity: 2 },
-      { productId: 'cool-1', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-12T11:30:00Z'), note: 'Order placed via website.' },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-12T11:31:00Z'), note: 'UPI payment confirmed. Ref: UPI-20250112-VD-7391.' },
-      { status: OrderStatus.PROCESSING, timestamp: new Date('2025-01-12T14:00:00Z'), note: 'Picked and packing in progress.' },
-    ],
+    name: "CPU-MB Socket Match (HEDT)",
+    sourceSubCategory: "HEDT CPU", targetSubCategory: "ATX Motherboard",
+    sourceSpec: "Socket", targetSpec: "Socket",
+    operator: CompatibilityOperator.EQUAL,
+    message: "HEDT CPU socket must match motherboard socket.",
+    severity: CompatibilitySeverity.ERROR,
+  },
+  // CPU Memory Type ↔ Motherboard Memory Type
+  {
+    name: "CPU-MB RAM Type Match (Desktop→ATX)",
+    sourceSubCategory: "Desktop CPU", targetSubCategory: "ATX Motherboard",
+    sourceSpec: "Memory Type", targetSpec: "Memory Type",
+    operator: CompatibilityOperator.EQUAL,
+    message: "CPU supports a different memory type than the motherboard (DDR4 vs DDR5 mismatch).",
+    severity: CompatibilitySeverity.ERROR,
+  },
+  // RAM Memory Type ↔ Motherboard Memory Type
+  {
+    name: "RAM-MB DDR Type Match (DDR5→ATX)",
+    sourceSubCategory: "DDR5 RAM", targetSubCategory: "ATX Motherboard",
+    sourceSpec: "Memory Type", targetSpec: "Memory Type",
+    operator: CompatibilityOperator.EQUAL,
+    message: "RAM memory type must match the motherboard's supported memory type.",
+    severity: CompatibilitySeverity.ERROR,
   },
   {
-    id: 'ORD-2504',
-    customerName: 'Priya Sharma',
-    email: 'priya.sharma@techcorp.io',
-    date: new Date('2025-01-10T09:15:00Z'),
-    status: OrderStatus.SHIPPED,
-    total: 36000 + 28000 + 12500 + 10500,
-    shippingStreet: 'F-12, DLF City Phase 2', shippingCity: 'Gurugram', shippingState: 'Haryana', shippingZip: '122002', shippingCountry: 'India',
-    paymentMethod: 'Credit Card', paymentStatus: 'Success', paymentTransactionId: 'TXN-CC-20250110-4421',
-    items: [
-      { productId: 'cpu-1', quantity: 1 },
-      { productId: 'mobo-2', quantity: 1 },
-      { productId: 'ram-1', quantity: 1 },
-      { productId: 'stg-1', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-10T09:15:00Z') },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-10T09:16:00Z'), note: 'Card payment confirmed.' },
-      { status: OrderStatus.PROCESSING, timestamp: new Date('2025-01-10T11:00:00Z'), note: 'Items picked and packed.' },
-      { status: OrderStatus.SHIPPED, timestamp: new Date('2025-01-11T10:00:00Z'), note: 'Shipped via BlueDart. AWB: BD-2025-44192.' },
-    ],
+    name: "RAM-MB DDR Type Match (DDR4→ATX)",
+    sourceSubCategory: "DDR4 RAM", targetSubCategory: "ATX Motherboard",
+    sourceSpec: "Memory Type", targetSpec: "Memory Type",
+    operator: CompatibilityOperator.EQUAL,
+    message: "RAM memory type must match the motherboard's supported memory type.",
+    severity: CompatibilitySeverity.ERROR,
   },
   {
-    id: 'ORD-2505',
-    customerName: 'Rahul Mehta',
-    email: 'rahul.mehta@freelance.dev',
-    date: new Date('2025-01-08T20:00:00Z'),
-    status: OrderStatus.DELIVERED,
-    total: 56000 + 4500 + 14000 + 11000,
-    shippingStreet: '78, MG Road', shippingCity: 'Bengaluru', shippingState: 'Karnataka', shippingZip: '560001', shippingCountry: 'India',
-    paymentMethod: 'UPI', paymentStatus: 'Success', paymentTransactionId: 'UPI-20250108-RM-5544',
-    items: [
-      { productId: 'gpu-3', quantity: 1 },
-      { productId: 'ram-2', quantity: 1 },
-      { productId: 'cab-1', quantity: 1 },
-      { productId: 'cool-1', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-08T20:00:00Z') },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-08T20:01:00Z'), note: 'UPI payment instant.' },
-      { status: OrderStatus.PROCESSING, timestamp: new Date('2025-01-09T10:00:00Z') },
-      { status: OrderStatus.SHIPPED, timestamp: new Date('2025-01-09T15:00:00Z'), note: 'Shipped via DTDC.' },
-      { status: OrderStatus.DELIVERED, timestamp: new Date('2025-01-11T13:00:00Z'), note: 'Delivered and signed by customer.' },
-    ],
+    name: "RAM-MB DDR Type Match (DDR4→mATX)",
+    sourceSubCategory: "DDR4 RAM", targetSubCategory: "Micro-ATX Motherboard",
+    sourceSpec: "Memory Type", targetSpec: "Memory Type",
+    operator: CompatibilityOperator.EQUAL,
+    message: "RAM memory type must match the motherboard's supported memory type.",
+    severity: CompatibilitySeverity.ERROR,
+  },
+  // GPU TDP warning for PSU wattage
+  {
+    name: "GPU TDP vs PSU Wattage Headroom",
+    sourceSubCategory: "NVIDIA GPU", targetSubCategory: "ATX PSU",
+    sourceSpec: "TDP (W)", targetSpec: "Wattage",
+    operator: CompatibilityOperator.LESS_THAN,
+    message: "PSU wattage may be insufficient for this GPU. Ensure at least 150W headroom above GPU TDP.",
+    severity: CompatibilitySeverity.WARNING,
   },
   {
-    id: 'ORD-2506',
-    customerName: 'Ananya Bose',
-    email: 'ananya.bose@student.edu',
-    date: new Date('2025-01-07T16:30:00Z'),
-    status: OrderStatus.CANCELLED,
-    total: 9000 + 2200 + 3500,
-    shippingStreet: '5, Lake Town', shippingCity: 'Kolkata', shippingState: 'West Bengal', shippingZip: '700089', shippingCountry: 'India',
-    paymentMethod: 'UPI', paymentStatus: 'Failed', paymentTransactionId: null,
-    items: [
-      { productId: 'cpu-12', quantity: 1 },
-      { productId: 'ram-3', quantity: 1 },
-      { productId: 'stg-3', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-07T16:30:00Z'), note: 'Order placed.' },
-      { status: OrderStatus.CANCELLED, timestamp: new Date('2025-01-07T18:00:00Z'), note: 'Cancelled due to UPI payment failure. Stock released.' },
-    ],
+    name: "AMD GPU TDP vs PSU Wattage Headroom",
+    sourceSubCategory: "AMD GPU", targetSubCategory: "ATX PSU",
+    sourceSpec: "TDP (W)", targetSpec: "Wattage",
+    operator: CompatibilityOperator.LESS_THAN,
+    message: "PSU wattage may be insufficient for this GPU. Ensure at least 150W headroom above GPU TDP.",
+    severity: CompatibilitySeverity.WARNING,
+  },
+  // Case GPU length clearance warning
+  {
+    name: "GPU Length vs Case Clearance",
+    sourceSubCategory: "NVIDIA GPU", targetSubCategory: "Mid Tower Case",
+    sourceSpec: "Card Length (mm)", targetSpec: "Max GPU Length (mm)",
+    operator: CompatibilityOperator.LESS_OR_EQUAL,
+    message: "GPU may be too long to fit in this case. Check maximum GPU length clearance.",
+    severity: CompatibilitySeverity.WARNING,
   },
   {
-    id: 'ORD-2507',
-    customerName: 'Sameer Khan',
-    email: 'sameer.khan@retailshop.in',
-    date: new Date('2025-01-05T10:00:00Z'),
-    status: OrderStatus.RETURNED,
-    total: 26000,
-    shippingStreet: 'Shop 12, Electronics Market', shippingCity: 'Hyderabad', shippingState: 'Telangana', shippingZip: '500003', shippingCountry: 'India',
-    paymentMethod: 'Net Banking', paymentStatus: 'Success', paymentTransactionId: 'NEFT-20250105-SK-0032',
-    items: [
-      { productId: 'gpu-4', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-05T10:00:00Z') },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-05T10:30:00Z'), note: 'NEFT confirmed.' },
-      { status: OrderStatus.SHIPPED, timestamp: new Date('2025-01-05T14:00:00Z'), note: 'Shipped via Delhivery.' },
-      { status: OrderStatus.DELIVERED, timestamp: new Date('2025-01-06T12:00:00Z') },
-      { status: OrderStatus.RETURNED, timestamp: new Date('2025-01-07T11:00:00Z'), note: 'Customer reported DOA. Return pickup scheduled.' },
-    ],
+    name: "AMD GPU Length vs Case Clearance",
+    sourceSubCategory: "AMD GPU", targetSubCategory: "Mid Tower Case",
+    sourceSpec: "Card Length (mm)", targetSpec: "Max GPU Length (mm)",
+    operator: CompatibilityOperator.LESS_OR_EQUAL,
+    message: "AMD GPU may be too long for this case.",
+    severity: CompatibilitySeverity.WARNING,
   },
+  // Air Cooler height vs case clearance
   {
-    id: 'ORD-2508',
-    customerName: 'Infosys Procurement Team',
-    email: 'procurement@infosys.com',
-    date: new Date('2025-01-13T10:00:00Z'),
-    status: OrderStatus.PROCESSING,
-    total: (28500 + 4500 + 3500) * 10,
-    shippingStreet: '44, Electronics City Phase 1', shippingCity: 'Bengaluru', shippingState: 'Karnataka', shippingZip: '560100', shippingCountry: 'India',
-    paymentMethod: 'Net Banking', paymentStatus: 'Success', paymentTransactionId: 'NEFT-20250113-INFOSYS-0099',
-    items: [
-      { productId: 'cpu-4', quantity: 10 },
-      { productId: 'ram-2', quantity: 10 },
-      { productId: 'stg-3', quantity: 10 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-13T10:00:00Z'), note: 'Bulk B2B order received. PO: PO-INFY-2025-0041.' },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-13T14:00:00Z'), note: 'NEFT payment received. Ref: NEFT-20250113-INFOSYS-0099.' },
-      { status: OrderStatus.PROCESSING, timestamp: new Date('2025-01-14T09:00:00Z'), note: 'Bulk picking started. Assigned to Warehouse Team B.' },
-    ],
-  },
-  {
-    id: 'ORD-2509',
-    customerName: 'Riya Joshi',
-    email: 'riya.joshi@startuplab.io',
-    date: new Date('2025-01-14T06:55:00Z'),
-    status: OrderStatus.SHIPPED,
-    total: 10500 + 4500,
-    shippingStreet: 'B-12, Startup Village', shippingCity: 'Kozhikode', shippingState: 'Kerala', shippingZip: '673016', shippingCountry: 'India',
-    paymentMethod: 'UPI', paymentStatus: 'Success', paymentTransactionId: 'UPI-20250114-RJOSHI-1182',
-    items: [
-      { productId: 'stg-1', quantity: 1 },
-      { productId: 'cool-2', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-14T06:55:00Z') },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-14T06:56:10Z'), note: 'Instant UPI payment.' },
-      { status: OrderStatus.PROCESSING, timestamp: new Date('2025-01-14T07:30:00Z'), note: 'Express order. Packed in 20 mins.' },
-      { status: OrderStatus.SHIPPED, timestamp: new Date('2025-01-14T09:00:00Z'), note: 'Shipped via FedEx Express. AWB: FE20250114-7741.' },
-    ],
-  },
-  {
-    id: 'ORD-2510',
-    customerName: 'Deepak Chawla',
-    email: 'deepak.chawla@3dstudio.in',
-    date: new Date('2025-01-03T16:00:00Z'),
-    status: OrderStatus.DELIVERED,
-    total: 135000 + 370000 + 50000 + 21000 + 16000 + 35000,
-    shippingStreet: 'Studio 3, Film City Road', shippingCity: 'Hyderabad', shippingState: 'Telangana', shippingZip: '500032', shippingCountry: 'India',
-    paymentMethod: 'Net Banking', paymentStatus: 'Success', paymentTransactionId: 'RTGS-20250103-DCHAWLA-7712',
-    items: [
-      { productId: 'cpu-6', quantity: 1 },
-      { productId: 'gpu-1', quantity: 2 },
-      { productId: 'ram-1', quantity: 4 },
-      { productId: 'stg-1', quantity: 2 },
-      { productId: 'psu-3', quantity: 1 },
-      { productId: 'cab-3', quantity: 1 },
-    ],
-    logs: [
-      { status: OrderStatus.PENDING, timestamp: new Date('2025-01-03T16:00:00Z') },
-      { status: OrderStatus.PAID, timestamp: new Date('2025-01-03T16:45:00Z'), note: 'RTGS confirmed. High-value order flagged for priority handling.' },
-      { status: OrderStatus.PROCESSING, timestamp: new Date('2025-01-04T09:00:00Z'), note: 'Senior warehouse staff assigned. Bubble-wrapped each GPU separately.' },
-      { status: OrderStatus.SHIPPED, timestamp: new Date('2025-01-05T10:00:00Z'), note: 'Shipped via Safexpress Cargo. Docket: SX2025010500321.' },
-      { status: OrderStatus.DELIVERED, timestamp: new Date('2025-01-08T14:00:00Z'), note: 'Delivered and unpacked by customer. All items verified OK.' },
-    ],
+    name: "Air Cooler Height vs Case Clearance",
+    sourceSubCategory: "Air Cooler", targetSubCategory: "Mid Tower Case",
+    sourceSpec: "Height (mm)", targetSpec: "Max CPU Cooler Height (mm)",
+    operator: CompatibilityOperator.LESS_OR_EQUAL,
+    message: "CPU air cooler may be too tall for this case. Check maximum cooler height.",
+    severity: CompatibilitySeverity.WARNING,
   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SAVED BUILDS
-// ─────────────────────────────────────────────────────────────────────────────
-
-const SAVED_BUILDS_DATA = [
-  {
-    id: 'build-gaming-1',
-    name: 'High-End Gaming Build (1440p / 4K)',
-    total: 36000 + 42000 + 52000 + 12500 + 10500 + 16000 + 14000 + 11000,
-    createdAt: new Date('2024-12-10'),
-    items: [
-      { productId: 'cpu-1', quantity: 1 },
-      { productId: 'mobo-1', quantity: 1 },
-      { productId: 'gpu-2', quantity: 1 },
-      { productId: 'ram-1', quantity: 1 },
-      { productId: 'stg-1', quantity: 1 },
-      { productId: 'psu-3', quantity: 1 },
-      { productId: 'cab-1', quantity: 1 },
-      { productId: 'cool-1', quantity: 1 },
-    ],
-  },
-  {
-    id: 'build-budget-1',
-    name: 'Budget 1080p Gaming Build',
-    total: 12500 + 9000 + 19500 + 4500 + 3500 + 4500 + 7000,
-    createdAt: new Date('2024-11-22'),
-    items: [
-      { productId: 'cpu-19', quantity: 1 },
-      { productId: 'mobo-3', quantity: 1 },
-      { productId: 'gpu-5', quantity: 1 },
-      { productId: 'ram-2', quantity: 1 },
-      { productId: 'stg-3', quantity: 1 },
-      { productId: 'psu-2', quantity: 1 },
-      { productId: 'cab-2', quantity: 1 },
-    ],
-  },
-  {
-    id: 'build-workstation-1',
-    name: 'Content Creation / Workstation Build',
-    total: 135000 + 46000 + 185000 + 25000 + 21000 + 16000 + 35000 + 14500,
-    createdAt: new Date('2024-10-05'),
-    items: [
-      { productId: 'cpu-6', quantity: 1 },
-      { productId: 'mobo-24', quantity: 1 },
-      { productId: 'gpu-1', quantity: 1 },
-      { productId: 'ram-1', quantity: 2 },
-      { productId: 'stg-1', quantity: 2 },
-      { productId: 'psu-3', quantity: 1 },
-      { productId: 'cab-3', quantity: 1 },
-      { productId: 'cool-4', quantity: 1 },
-    ],
-  },
-];
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BILLING PROFILE (store fixture)
-// ─────────────────────────────────────────────────────────────────────────────
-
-const BILLING_PROFILE_DATA = {
-  companyName: 'BitKart Technologies Pvt. Ltd.',
-  legalName: 'BitKart Technologies Private Limited',
-  email: 'billing@bitkart.in',
-  phone: '+91-80-4567-8900',
-  addressLine1: '42, Tech Park, Whitefield',
-  addressLine2: 'Electronic City Phase 2',
-  city: 'Bengaluru',
-  state: 'Karnataka',
-  postalCode: '560066',
-  country: 'India',
-  gstin: '29AABCT1234F1Z5',
-  currency: Currency.INR,
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CUSTOMERS & INVOICES
+// 7. SAMPLE DATA — Customers, Orders, Invoices
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CUSTOMERS_DATA = [
   {
-    id: 'cust-1',
-    name: 'Arjun Kapoor',
-    email: 'arjun.kapoor@gmail.com',
-    phone: '+91-98765-10001',
-    company: null,
-    addressLine1: '14A, Sector 15',
-    city: 'Noida', state: 'Uttar Pradesh', postalCode: '201301', country: 'India',
+    id: "cust-01", name: "Arjun Kapoor", email: "arjun.kapoor@gmail.com",
+    phone: "+91-9876543210", company: null,
+    addressLine1: "14A, Sector 15", city: "Noida", state: "Uttar Pradesh",
+    postalCode: "201301", country: "India",
   },
   {
-    id: 'cust-2',
-    name: 'Meera Nair',
-    email: 'meera.nair@outlook.com',
-    phone: '+91-98765-10002',
-    company: null,
-    addressLine1: '22, Kaloor Junction',
-    city: 'Kochi', state: 'Kerala', postalCode: '682017', country: 'India',
+    id: "cust-02", name: "Meera Nair", email: "meera.nair@outlook.com",
+    phone: "+91-9845123456", company: null,
+    addressLine1: "22, Kaloor Junction", city: "Kochi", state: "Kerala",
+    postalCode: "682017", country: "India",
   },
   {
-    id: 'cust-3',
-    name: 'Infosys Procurement',
-    email: 'procurement@infosys.com',
-    phone: '+91-80-4116-4100',
-    company: 'Infosys Ltd.',
-    addressLine1: '44, Electronics City Phase 1',
-    city: 'Bengaluru', state: 'Karnataka', postalCode: '560100', country: 'India',
+    id: "cust-03", name: "Infosys Procurement", email: "procurement@infosys.com",
+    phone: "+91-8022741234", company: "Infosys Ltd",
+    addressLine1: "44, Electronics City Phase 1", city: "Bengaluru", state: "Karnataka",
+    postalCode: "560100", country: "India",
+  },
+  {
+    id: "cust-04", name: "Vikram Desai", email: "vikram.desai@company.in",
+    phone: "+91-9920123456", company: "DesignLab Studio",
+    addressLine1: "A-403, Powai Heights", city: "Mumbai", state: "Maharashtra",
+    postalCode: "400076", country: "India",
+  },
+  {
+    id: "cust-05", name: "Priya Sharma", email: "priya.sharma@techcorp.io",
+    phone: "+91-9818012345", company: "TechCorp India",
+    addressLine1: "F-12, DLF City Phase 2", city: "Gurugram", state: "Haryana",
+    postalCode: "122002", country: "India",
   },
 ];
 
-const INVOICES_DATA = [
+interface OrderSeed {
+  id: string;
+  customerName: string;
+  email: string;
+  phone?: string;
+  date: Date;
+  status: OrderStatus;
+  subtotal: number;
+  gstAmount: number;
+  total: number;
+  shippingStreet: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingZip: string;
+  shippingCountry: string;
+  paymentMethod: string;
+  paymentStatus: PaymentStatus;
+  customerId?: string;
+  items: { productId: string; quantity: number }[];
+  logs: { status: OrderStatus; timestamp: Date; note?: string }[];
+}
+
+const ORDERS_DATA: OrderSeed[] = [
   {
-    id: 'inv-001',
-    invoiceNumber: 'INV-2025-0001',
-    status: InvoiceStatus.PAID,
-    customerId: 'cust-1',
-    currency: Currency.INR,
-    subtotal: 78000,
-    taxTotal: 14040,
-    discountPct: 0,
-    shipping: 0,
-    total: 92040,
-    amountPaid: 92040,
-    amountDue: 0,
-    notes: 'High-end gaming build components.',
-    paidAt: new Date('2025-01-14T09:00:00Z'),
-    dueDate: new Date('2025-01-28T00:00:00Z'),
-    createdAt: new Date('2025-01-14T08:30:00Z'),
-    lineItems: [
-      { name: 'AMD Ryzen 7 7800X3D', quantity: 1, unitPrice: 36000, taxRatePct: 18 },
-      { name: 'ASUS ROG Strix X670E-E Gaming', quantity: 1, unitPrice: 42000, taxRatePct: 18 },
+    id: "ORD-2501",
+    customerName: "Arjun Kapoor", email: "arjun.kapoor@gmail.com",
+    phone: "+91-9876543210",
+    date: new Date("2025-01-14T08:22:00Z"),
+    status: OrderStatus.PENDING,
+    subtotal: 78000, gstAmount: 14040, total: 92040,
+    shippingStreet: "14A, Sector 15", shippingCity: "Noida", shippingState: "Uttar Pradesh",
+    shippingZip: "201301", shippingCountry: "India",
+    paymentMethod: "Net Banking", paymentStatus: PaymentStatus.PENDING,
+    customerId: "cust-01",
+    items: [
+      { productId: "cpu-01", quantity: 1 },
+      { productId: "mobo-01", quantity: 1 },
+      { productId: "ram-01", quantity: 1 },
     ],
-    audit: [
-      { type: 'created', actor: 'Admin', message: 'Invoice created for order ORD-2501.' },
-      { type: 'paid', actor: 'System', message: 'Payment received via Net Banking.' },
+    logs: [
+      { status: OrderStatus.PENDING, timestamp: new Date("2025-01-14T08:22:00Z"), note: "Order placed. Awaiting Net Banking payment." },
     ],
   },
   {
-    id: 'inv-002',
-    invoiceNumber: 'INV-2025-0002',
-    status: InvoiceStatus.PENDING,
-    customerId: 'cust-2',
-    currency: Currency.INR,
-    subtotal: 201000,
-    taxTotal: 36180,
-    discountPct: 0,
-    shipping: 500,
-    total: 237680,
-    amountPaid: 0,
-    amountDue: 237680,
-    notes: 'High-performance GPU order.',
-    dueDate: new Date('2025-01-27T00:00:00Z'),
-    createdAt: new Date('2025-01-13T14:10:00Z'),
-    lineItems: [
-      { name: 'NVIDIA RTX 4090 Founders Edition', quantity: 1, unitPrice: 185000, taxRatePct: 18 },
-      { name: 'MSI MPG A1000G', quantity: 1, unitPrice: 16000, taxRatePct: 18 },
+    id: "ORD-2502",
+    customerName: "Meera Nair", email: "meera.nair@outlook.com",
+    phone: "+91-9845123456",
+    date: new Date("2025-01-13T14:05:00Z"),
+    status: OrderStatus.PAID,
+    subtotal: 175000, gstAmount: 31500, total: 206500,
+    shippingStreet: "22, Kaloor Junction", shippingCity: "Kochi", shippingState: "Kerala",
+    shippingZip: "682017", shippingCountry: "India",
+    paymentMethod: "Credit Card", paymentStatus: PaymentStatus.COMPLETED,
+    customerId: "cust-02",
+    items: [
+      { productId: "gpu-01", quantity: 1 },
+      { productId: "psu-03", quantity: 1 },
     ],
-    audit: [
-      { type: 'created', actor: 'Admin', message: 'Invoice created for ORD-2502.' },
-      { type: 'sent', actor: 'Admin', message: 'Invoice emailed to customer.' },
+    logs: [
+      { status: OrderStatus.PENDING, timestamp: new Date("2025-01-13T14:05:00Z"), note: "Order placed via website." },
+      { status: OrderStatus.PAID, timestamp: new Date("2025-01-13T14:07:30Z"), note: "Credit card payment authorised. TXN-CC-20250113-5821." },
     ],
   },
   {
-    id: 'inv-003',
-    invoiceNumber: 'INV-2025-0003',
-    status: InvoiceStatus.OVERDUE,
-    customerId: 'cust-3',
-    currency: Currency.INR,
-    subtotal: 365000,
-    taxTotal: 65700,
-    discountPct: 5,
-    shipping: 2000,
-    total: 413950,
-    amountPaid: 0,
-    amountDue: 413950,
-    notes: 'Bulk B2B order — Net-30 payment terms.',
-    dueDate: new Date('2025-01-13T00:00:00Z'), // past due
-    createdAt: new Date('2025-01-13T10:00:00Z'),
-    lineItems: [
-      { name: 'Intel Core i5-13600K', quantity: 10, unitPrice: 28500, taxRatePct: 18 },
-      { name: 'Corsair Vengeance 16GB', quantity: 10, unitPrice: 4500, taxRatePct: 18 },
-      { name: 'Crucial P3 500GB', quantity: 10, unitPrice: 3500, taxRatePct: 18 },
+    id: "ORD-2503",
+    customerName: "Vikram Desai", email: "vikram.desai@company.in",
+    phone: "+91-9920123456",
+    date: new Date("2025-01-12T11:30:00Z"),
+    status: OrderStatus.PROCESSING,
+    subtotal: 120800, gstAmount: 21744, total: 142544,
+    shippingStreet: "A-403, Powai Heights", shippingCity: "Mumbai", shippingState: "Maharashtra",
+    shippingZip: "400076", shippingCountry: "India",
+    paymentMethod: "UPI", paymentStatus: PaymentStatus.COMPLETED,
+    customerId: "cust-04",
+    items: [
+      { productId: "cpu-02", quantity: 1 },
+      { productId: "mobo-02", quantity: 1 },
+      { productId: "gpu-02", quantity: 1 },
+      { productId: "ssd-01", quantity: 2 },
+      { productId: "cool-01", quantity: 1 },
     ],
-    audit: [
-      { type: 'created', actor: 'Admin', message: 'Invoice created for bulk B2B order ORD-2508.' },
-      { type: 'sent', actor: 'Admin', message: 'Invoice sent to procurement@infosys.com.' },
-      { type: 'note', actor: 'System', message: 'Invoice overdue — payment not received by due date.' },
+    logs: [
+      { status: OrderStatus.PENDING, timestamp: new Date("2025-01-12T11:30:00Z") },
+      { status: OrderStatus.PAID, timestamp: new Date("2025-01-12T11:31:00Z"), note: "UPI payment confirmed. Ref: UPI-20250112-VD-7391." },
+      { status: OrderStatus.PROCESSING, timestamp: new Date("2025-01-12T14:00:00Z"), note: "Picked and packing in progress." },
+    ],
+  },
+  {
+    id: "ORD-2504",
+    customerName: "Priya Sharma", email: "priya.sharma@techcorp.io",
+    date: new Date("2025-01-10T09:15:00Z"),
+    status: OrderStatus.SHIPPED,
+    subtotal: 65000, gstAmount: 11700, total: 76700,
+    shippingStreet: "F-12, DLF City Phase 2", shippingCity: "Gurugram", shippingState: "Haryana",
+    shippingZip: "122002", shippingCountry: "India",
+    paymentMethod: "Credit Card", paymentStatus: PaymentStatus.COMPLETED,
+    customerId: "cust-05",
+    items: [
+      { productId: "cpu-01", quantity: 1 },
+      { productId: "mobo-02", quantity: 1 },
+      { productId: "ram-01", quantity: 1 },
+      { productId: "ssd-01", quantity: 1 },
+    ],
+    logs: [
+      { status: OrderStatus.PENDING, timestamp: new Date("2025-01-10T09:15:00Z") },
+      { status: OrderStatus.PAID, timestamp: new Date("2025-01-10T09:16:00Z"), note: "Card payment confirmed." },
+      { status: OrderStatus.PROCESSING, timestamp: new Date("2025-01-10T11:00:00Z"), note: "Items picked and packed." },
+      { status: OrderStatus.SHIPPED, timestamp: new Date("2025-01-11T10:00:00Z"), note: "Shipped via BlueDart. AWB: BD-2025-44192." },
+    ],
+  },
+  {
+    id: "ORD-2505",
+    customerName: "Infosys Procurement", email: "procurement@infosys.com",
+    date: new Date("2025-01-13T10:00:00Z"),
+    status: OrderStatus.PROCESSING,
+    subtotal: 365000, gstAmount: 65700, total: 430700,
+    shippingStreet: "44, Electronics City Phase 1", shippingCity: "Bengaluru", shippingState: "Karnataka",
+    shippingZip: "560100", shippingCountry: "India",
+    paymentMethod: "Net Banking", paymentStatus: PaymentStatus.COMPLETED,
+    customerId: "cust-03",
+    items: [
+      { productId: "cpu-04", quantity: 10 },
+      { productId: "ram-02", quantity: 10 },
+      { productId: "ssd-02", quantity: 10 },
+    ],
+    logs: [
+      { status: OrderStatus.PENDING, timestamp: new Date("2025-01-13T10:00:00Z"), note: "Bulk B2B order. PO: PO-INFY-2025-0041." },
+      { status: OrderStatus.PAID, timestamp: new Date("2025-01-13T14:00:00Z"), note: "NEFT received. Ref: NEFT-20250113-INFOSYS-0099." },
+      { status: OrderStatus.PROCESSING, timestamp: new Date("2025-01-14T09:00:00Z"), note: "Bulk picking started. Team B." },
     ],
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. BILLING PROFILE
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BILLING_PROFILE = {
+  companyName: "PCStore India Pvt. Ltd.",
+  legalName: "PCStore India Private Limited",
+  email: "billing@pcstore.in",
+  phone: "+91-80-12345678",
+  addressLine1: "42, Residency Road",
+  addressLine2: "Ashok Nagar",
+  city: "Bengaluru",
+  state: "Karnataka",
+  postalCode: "560025",
+  country: "India",
+  gstin: "29AABCP1234F1ZS",
+  logoUrl: "https://pcstore.in/logo.png",
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN SEED FUNCTION
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('🌱 Starting seed...');
+  console.log("🌱 Starting seed...");
 
+  // ── 1. Admin User ────────────────────────────────────────────────────────
+  console.log("  → Seeding admin user...");
+  await prisma.user.upsert({
+    where: { email: "admin@pcstore.in" },
+    update: {},
+    create: {
+      email: "admin@pcstore.in",
+      name: "PCStore Admin",
+      password: "$2b$10$examplehash", // bcrypt hash placeholder
+      role: "ADMIN",
+    },
+  });
 
-  // ── 2. Brands ──────────────────────────────────────────────────────────────
-  console.log('  → Seeding brands...');
-  const brandMap: Record<string, string> = {}; // name → id
-
-  for (const b of BRANDS_DATA) {
+  // ── 2. Brands ────────────────────────────────────────────────────────────
+  console.log("  → Seeding brands...");
+  const brandMap = new Map<string, string>(); // name → id
+  for (const name of BRANDS) {
     const brand = await prisma.brand.upsert({
-      where: { name: b.name },
-      update: { categories: b.categories },
-      create: { name: b.name, categories: b.categories },
+      where: { name },
+      update: {},
+      create: { name, slug: slug(name) },
     });
-    brandMap[b.name] = brand.id;
+    brandMap.set(name, brand.id);
+  }
+  // Extra brand aliases used in PRODUCTS
+  for (const [alias, canonical] of [
+    ["Sapphire", "Sapphire"],
+    ["XFX", "XFX"],
+    ["PowerColor", "PowerColor"],
+    ["Palit", "Palit"],
+    ["be quiet!", "be quiet!"],
+    ["Fractal Design", "Fractal Design"],
+    ["Phanteks", "Phanteks"],
+    ["Thermaltake", "Thermaltake"],
+    ["Seasonic", "Seasonic"],
+    ["Razer", "Razer"],
+    ["SteelSeries", "SteelSeries"],
+    ["D-Link", "D-Link"],
+  ] as const) {
+    if (!brandMap.has(alias)) {
+      const b = await prisma.brand.upsert({
+        where: { name: alias },
+        update: {},
+        create: { name: alias, slug: slug(alias) },
+      });
+      brandMap.set(alias, b.id);
+    }
   }
 
-  // ── 3. Products + Specs ────────────────────────────────────────────────────
-  console.log('  → Seeding products and specs...');
-  const variantMap = new Map<string, string>();
-
-  for (const p of PRODUCTS_DATA) {
-    const cat = categoryToEnum(p.category);
-    const brandId = p.brandName ? brandMap[p.brandName] : undefined;
-
-    let prod = await prisma.product.findUnique({
-      where: { id: p.id },
-      include: { variants: true }
-    });
-
-    if (!prod) {
-      prod = await prisma.product.create({
-        data: {
-          id: p.id,
-          slug: p.id, // using id as slug for seeding
-          name: p.name,
-          category: cat,
-          description: p.description,
-          brandId: brandId ?? null,
-          media: {
-            create: [{ url: p.image, sortOrder: 0 }]
-          },
-          variants: {
-            create: [{
-              sku: p.sku,
-              price: p.price,
-              status: 'IN_STOCK'
-            }]
-          }
-        },
-        include: { variants: true }
+  // ── 3. Part Slots ─────────────────────────────────────────────────────────
+  console.log("  → Seeding part slots...");
+  const partSlotMap = new Map<string, string>(); // name → id
+  for (const ps of PART_SLOTS) {
+    const existing = await prisma.partSlot.findUnique({ where: { name: ps.name } });
+    let slot = existing;
+    if (!slot) {
+      slot = await prisma.partSlot.create({
+        data: { name: ps.name, minItems: ps.minItems, maxItems: ps.maxItems },
       });
     }
+    partSlotMap.set(ps.name, slot.id);
 
-    variantMap.set(p.id, prod.variants[0].id);
+    // SlotConstraint
+    const scExists = await prisma.slotConstraint.findUnique({ where: { slotId: slot.id } });
+    if (!scExists) {
+      await prisma.slotConstraint.create({
+        data: { slotId: slot.id, minItems: ps.minItems, maxItems: ps.maxItems },
+      });
+    }
+  }
 
-    // Clear existing specs
-    await prisma.productSpec.deleteMany({
-      where: { productId: p.id },
+  // ── 4. Categories + SubCategories + SpecDefinitions ──────────────────────
+  console.log("  → Seeding categories, subcategories, and spec definitions...");
+  const categoryMap = new Map<string, string>();      // categoryName → id
+  const subCategoryMap = new Map<string, string>();   // subCategoryName → id
+  const specDefMap = new Map<string, string>();        // "subCatId::specName" → specDef.id
+  const specOptionMap = new Map<string, string>();     // "specDefId::value" → option.id
+
+  for (const cat of CATEGORY_TREE) {
+    const dbCat = await prisma.category.upsert({
+      where: { name: cat.name },
+      update: { description: cat.description },
+      create: { name: cat.name, description: cat.description },
     });
+    categoryMap.set(cat.name, dbCat.id);
 
-    for (const [key, rawValue] of Object.entries(p.specs)) {
-      const values = Array.isArray(rawValue) ? rawValue : [rawValue];
-      for (const val of values) {
-        const value = normaliseSpec(key, String(val));
-        await prisma.productSpec.create({
-          data: { productId: p.id, key, value },
+    for (const sub of cat.subCategories) {
+      // SubCategory unique on [categoryId, name]
+      let dbSub = await prisma.subCategory.findFirst({
+        where: { categoryId: dbCat.id, name: sub.name },
+      });
+      if (!dbSub) {
+        dbSub = await prisma.subCategory.create({
+          data: { name: sub.name, description: sub.description, categoryId: dbCat.id },
         });
+      }
+      subCategoryMap.set(sub.name, dbSub.id);
+
+      // SubCategorySlot link
+      if (sub.slotName && partSlotMap.has(sub.slotName)) {
+        const slotId = partSlotMap.get(sub.slotName)!;
+        const scSlotExists = await prisma.subCategorySlot.findUnique({
+          where: { subCategoryId_slotId: { subCategoryId: dbSub.id, slotId } },
+        });
+        if (!scSlotExists) {
+          await prisma.subCategorySlot.create({
+            data: { subCategoryId: dbSub.id, slotId },
+          });
+        }
+      }
+
+      // SpecDefinitions
+      for (const sd of sub.specDefs) {
+        let dbSpec = await prisma.specDefinition.findUnique({
+          where: { subCategoryId_name: { subCategoryId: dbSub.id, name: sd.name } },
+        });
+        if (!dbSpec) {
+          dbSpec = await prisma.specDefinition.create({
+            data: {
+              subCategoryId: dbSub.id,
+              name: sd.name,
+              valueType: sd.valueType,
+              isFilterable: sd.isFilterable ?? true,
+              isRange: sd.isRange ?? false,
+              isMulti: sd.isMulti ?? false,
+              filterGroup: sd.filterGroup ?? null,
+            },
+          });
+        }
+        specDefMap.set(`${dbSub.id}::${sd.name}`, dbSpec.id);
+
+        // SpecOptions (for STRING type)
+        if (sd.options && sd.options.length > 0) {
+          for (let i = 0; i < sd.options.length; i++) {
+            const optVal = sd.options[i];
+            const optKey = `${dbSpec.id}::${optVal}`;
+            if (!specOptionMap.has(optKey)) {
+              const existing = await prisma.specOption.findFirst({
+                where: { specId: dbSpec.id, value: optVal },
+              });
+              let opt = existing;
+              if (!opt) {
+                opt = await prisma.specOption.create({
+                  data: { specId: dbSpec.id, value: optVal, label: optVal, order: i },
+                });
+              }
+              specOptionMap.set(optKey, opt.id);
+            }
+          }
+        }
       }
     }
   }
 
-  // ── 4. Inventory ───────────────────────────────────────────────────────────
-  console.log('  → Seeding inventory...');
-  let defaultWarehouse = await prisma.warehouse.findFirst();
-  if (!defaultWarehouse) {
-    defaultWarehouse = await prisma.warehouse.create({
-      data: { name: 'Main Warehouse', code: 'MAIN', isActive: true, address: 'Bengaluru, India' }
-    });
-  }
+  // ── 5. Products + Variants + VariantSpecs + Inventory ─────────────────────
+  console.log("  → Seeding products, variants, specs, and inventory...");
+  const variantMap = new Map<string, string>(); // productId → variantId
 
-  for (const p of PRODUCTS_DATA) {
-    const variantId = variantMap.get(p.id);
-    if (!variantId) continue;
+  for (const p of PRODUCTS) {
+    const subCatId = subCategoryMap.get(p.subCategoryName);
+    if (!subCatId) {
+      console.warn(`    ⚠ SubCategory not found: ${p.subCategoryName} for ${p.name}`);
+      continue;
+    }
+    const brandId = brandMap.get(p.brandName) ?? null;
 
-    const existing = await prisma.warehouseInventory.findFirst({ where: { variantId: variantId } });
-    if (!existing) {
-      const inv = await prisma.warehouseInventory.create({
+    // Product
+    let product = await prisma.product.findUnique({ where: { id: p.id }, include: { variants: true } });
+    if (!product) {
+      product = await prisma.product.create({
         data: {
-          variantId: variantId,
-          warehouseId: defaultWarehouse.id,
-          quantity: p.stock,
-          reserved: 0,
-          reorderLevel: Math.max(2, Math.floor(p.stock * 0.15)), // ~15% of stock
-          costPrice: Math.round(p.price * 0.65),              // assumed 65% of retail
-          location: 'Aisle 1',
-          lastUpdated: new Date(),
+          id: p.id,
+          slug: p.id,
+          name: p.name,
+          description: p.description,
+          status: ProductStatus.ACTIVE,
+          subCategoryId: subCatId,
+          brandId,
+          media: { create: [{ url: p.image, altText: p.name, sortOrder: 0 }] },
+          variants: {
+            create: [{
+              sku: p.sku,
+              price: p.price,
+              compareAtPrice: p.compareAtPrice ?? null,
+              status: VariantStatus.IN_STOCK,
+            }],
+          },
         },
+        include: { variants: true },
       });
-      // Record initial inward stock movement
-      await prisma.stockMovement.create({
+    }
+
+    const variant = product.variants[0];
+    variantMap.set(p.id, variant.id);
+
+    // VariantSpecs
+    for (const sv of p.specs) {
+      const specKey = `${subCatId}::${sv.specName}`;
+      const specDefId = specDefMap.get(specKey);
+      if (!specDefId) {
+        console.warn(`    ⚠ SpecDef not found: ${sv.specName} in ${p.subCategoryName}`);
+        continue;
+      }
+
+      const existing = await prisma.variantSpec.findUnique({
+        where: { variantId_specId: { variantId: variant.id, specId: specDefId } },
+      });
+      if (existing) continue;
+
+      let optionId: string | null = null;
+      let valueString: string | null = null;
+      let valueNumber: number | null = null;
+      let valueBool: boolean | null = null;
+
+      if ("valueString" in sv) {
+        valueString = sv.valueString;
+        if (sv.optionValue) {
+          const optKey = `${specDefId}::${sv.optionValue}`;
+          optionId = specOptionMap.get(optKey) ?? null;
+        }
+      } else if ("valueNumber" in sv) {
+        valueNumber = sv.valueNumber;
+      } else if ("valueBool" in sv) {
+        valueBool = sv.valueBool;
+      }
+
+      await prisma.variantSpec.create({
         data: {
-          warehouseInventoryId: inv.id,
-          warehouseId: defaultWarehouse.id,
-          type: 'INWARD',
-          quantity: p.stock,
-          previousQuantity: 0,
-          newQuantity: p.stock,
-          reason: 'Initial stock from seed',
-          performedBy: 'System',
+          variantId: variant.id,
+          specId: specDefId,
+          optionId,
+          valueString,
+          valueNumber,
+          valueBool,
+        },
+      });
+    }
+
+    // Inventory
+    const existingInv = await prisma.inventoryItem.findFirst({ where: { variantId: variant.id } });
+    if (!existingInv) {
+      await prisma.inventoryItem.create({
+        data: {
+          variantId: variant.id,
+          trackingType: InventoryTrackingType.BULK,
+          quantityOnHand: p.stock,
+          quantityReserved: 0,
+          status: p.stock > 0 ? InventoryStatus.IN_STOCK : InventoryStatus.IN_TRANSIT,
+          costPrice: Math.round(p.price * 0.65),
+          receivedAt: new Date(),
+          notes: "Initial seed stock",
         },
       });
     }
   }
 
-  // ── 5. Category Schemas ────────────────────────────────────────────────────
-  console.log('  → Seeding category schemas...');
-  for (const s of CATEGORY_SCHEMAS_DATA) {
-    const schema = await prisma.categorySchema.upsert({
-      where: { category: s.category },
-      update: {},
-      create: { category: s.category },
+  // ── 6. Compatibility Scopes + Rules ───────────────────────────────────────
+  console.log("  → Seeding compatibility scopes and rules...");
+  for (const rule of COMPAT_RULES) {
+    const sourceSCId = subCategoryMap.get(rule.sourceSubCategory);
+    const targetSCId = subCategoryMap.get(rule.targetSubCategory);
+    if (!sourceSCId || !targetSCId) {
+      console.warn(`    ⚠ SubCategory not found for compat rule: ${rule.name}`);
+      continue;
+    }
+
+    let scope = await prisma.compatibilityScope.findUnique({
+      where: { sourceSubCategoryId_targetSubCategoryId: { sourceSubCategoryId: sourceSCId, targetSubCategoryId: targetSCId } },
     });
-
-    for (const attr of s.attributes) {
-      await prisma.attributeDefinition.upsert({
-        where: { categorySchemaId_key: { categorySchemaId: schema.id, key: attr.key } },
-        update: {
-          label: attr.label,
-          type: attr.type,
-          required: attr.required,
-          options: attr.options ?? [],
-          unit: attr.unit ?? null,
-          sortOrder: attr.sortOrder,
-          dependencyKey: attr.dependencyKey ?? null,
-          dependencyValue: attr.dependencyValue ?? null,
-        },
-        create: {
-          categorySchemaId: schema.id,
-          key: attr.key,
-          label: attr.label,
-          type: attr.type,
-          required: attr.required,
-          options: attr.options ?? [],
-          unit: attr.unit ?? null,
-          sortOrder: attr.sortOrder,
-          dependencyKey: attr.dependencyKey ?? null,
-          dependencyValue: attr.dependencyValue ?? null,
-        },
+    if (!scope) {
+      scope = await prisma.compatibilityScope.create({
+        data: { sourceSubCategoryId: sourceSCId, targetSubCategoryId: targetSCId },
       });
     }
-  }
 
-  // ── 6. Filter Config ───────────────────────────────────────────────────────
-  console.log('  → Seeding filter configurations...');
-  for (const fc of FILTER_CONFIG_DATA) {
-    const config = await prisma.categoryFilterConfig.upsert({
-      where: { category: fc.category },
-      update: {},
-      create: { category: fc.category },
+    const sourceSpecId = specDefMap.get(`${sourceSCId}::${rule.sourceSpec}`);
+    const targetSpecId = specDefMap.get(`${targetSCId}::${rule.targetSpec}`);
+    if (!sourceSpecId || !targetSpecId) {
+      console.warn(`    ⚠ Spec not found for compat rule: ${rule.name}`);
+      continue;
+    }
+
+    const existingRule = await prisma.compatibilityRule.findFirst({
+      where: { name: rule.name, scopeId: scope.id },
     });
-
-    for (const f of fc.filters) {
-      await prisma.filterDefinition.upsert({
-        where: { categoryFilterConfigId_key: { categoryFilterConfigId: config.id, key: f.key } },
-        update: {
-          label: f.label,
-          type: f.type,
-          options: f.options ?? [],
-          min: f.min ?? null,
-          max: f.max ?? null,
-          dependencyKey: f.dependencyKey ?? null,
-          dependencyValue: f.dependencyValue ?? null,
-          sortOrder: f.sortOrder,
-        },
-        create: {
-          categoryFilterConfigId: config.id,
-          key: f.key,
-          label: f.label,
-          type: f.type,
-          options: f.options ?? [],
-          min: f.min ?? null,
-          max: f.max ?? null,
-          dependencyKey: f.dependencyKey ?? null,
-          dependencyValue: f.dependencyValue ?? null,
-          sortOrder: f.sortOrder,
+    if (!existingRule) {
+      await prisma.compatibilityRule.create({
+        data: {
+          name: rule.name,
+          sourceSpecId,
+          targetSpecId,
+          operator: rule.operator,
+          message: rule.message,
+          severity: rule.severity,
+          scopeId: scope.id,
         },
       });
     }
   }
 
-  // ── 7. Category Hierarchy ──────────────────────────────────────────────────
-  console.log('  → Seeding category hierarchy...');
+  // ── 7. Category Hierarchy ─────────────────────────────────────────────────
+  console.log("  → Seeding category hierarchy...");
 
-  // Recursive upsert via label path (label is unique enough within seed context)
   async function seedNode(
-    node: { label: string; category?: Category; query?: string; brand?: string; children?: typeof node[] },
+    node: HierarchyNode,
     parentId: string | null,
     order: number,
   ): Promise<void> {
-    // Use a composite "path" as a stable identifier
+    const categoryId = node.categoryName ? categoryMap.get(node.categoryName) ?? null : null;
+
     const existing = await prisma.categoryHierarchy.findFirst({
       where: { label: node.label, parentId: parentId ?? undefined },
     });
@@ -1706,10 +2851,10 @@ async function main() {
       const created = await prisma.categoryHierarchy.create({
         data: {
           label: node.label,
-          category: node.category ?? null,
+          categoryId,
           query: node.query ?? null,
           brand: node.brand ?? null,
-          parentId: parentId,
+          parentId,
           sortOrder: order,
         },
       });
@@ -1723,231 +2868,22 @@ async function main() {
     }
   }
 
-  // Top-level nodes from categoryTree.ts (condensed — full tree is represented)
-  const TOP_LEVEL_NODES = [
-    // ── Custom Liquid Cooling ──
-    {
-      label: 'Custom Liquid Cooling', category: Category.COOLER,
-      children: [
-        { label: 'CPU Water Block', query: 'Water Block' },
-        { label: 'GPU Water Block', query: 'GPU Block' },
-        { label: 'Pump And Reservoir', query: 'Pump' },
-        { label: 'Radiator', query: 'Radiator' },
-        { label: 'Tubing', query: 'Tubing' },
-        { label: 'Fitting Adapters', query: 'Fitting' },
-        { label: 'Coolant', query: 'Coolant' },
-        { label: 'Distro Plate', query: 'Distro' },
-        { label: 'DIY Accessories', query: 'Accessory' },
-      ]
-    },
-    // ── Processor ──
-    {
-      label: 'Processor', category: Category.PROCESSOR,
-      children: [
-        { label: 'Intel Processor', brand: 'Intel' },
-        { label: 'AMD Processor', brand: 'AMD' },
-        { label: 'Extreme-level Processor', query: 'Extreme' },
-        { label: 'High-end Processor', query: 'High-end' },
-        { label: 'Mid-Range Processor', query: 'Mid-Range' },
-        { label: 'Entry-level Processor', query: 'Entry' },
-        { label: 'Server CPU', query: 'Server' },
-      ]
-    },
-    // ── CPU Cooler ──
-    {
-      label: 'CPU Cooler', category: Category.COOLER,
-      children: [
-        { label: 'Liquid Cooler', query: 'Liquid' },
-        { label: 'Thermal Paste', query: 'Paste' },
-        { label: 'Air Cooler', query: 'Air Cooler' },
-        { label: 'Cooling Accessories', query: 'Accessory' },
-      ]
-    },
-    // ── Motherboard ──
-    {
-      label: 'Motherboard', category: Category.MOTHERBOARD,
-      children: [
-        {
-          label: 'AMD Chipset', children: [
-            { label: 'X870', query: 'X870' }, { label: 'X670', query: 'X670' },
-            { label: 'B650', query: 'B650' }, { label: 'B550', query: 'B550' },
-            { label: 'B450', query: 'B450' }, { label: 'A620', query: 'A620' },
-            { label: 'A520', query: 'A520' },
-          ]
-        },
-        {
-          label: 'Intel Chipset', children: [
-            { label: 'Z890', query: 'Z890' }, { label: 'Z790', query: 'Z790' },
-            { label: 'B760', query: 'B760' }, { label: 'H610', query: 'H610' },
-            { label: 'H510', query: 'H510' },
-          ]
-        },
-        { label: 'Overclocking Motherboard', query: 'Overclocking' },
-        { label: 'Workstation Motherboard', query: 'Workstation' },
-      ],
-    },
-    // ── Graphics Card ──
-    {
-      label: 'Graphics Card', category: Category.GPU,
-      children: [
-        { label: 'Intel Arc Graphics Card', query: 'Arc' },
-        {
-          label: 'Nvidia', children: [
-            { label: 'RTX 50 Series', query: '50 Series' },
-            { label: 'RTX 40 Series', query: '40 Series' },
-            { label: 'RTX 30 Series', query: '30 Series' },
-            { label: 'Quadro', query: 'Quadro' },
-          ]
-        },
-        { label: 'Graphics Card Accessories', query: 'Accessory' },
-        {
-          label: 'Amd Radeon', children: [
-            { label: 'RX 9000 Series', query: '9000' },
-            { label: 'RX 7000 Series', query: '7000' },
-            { label: 'RX 6000 Series', query: '6000' },
-          ]
-        },
-      ],
-    },
-    // ── RAM ──
-    {
-      label: 'RAM', category: Category.RAM,
-      children: [
-        { label: 'Desktop Ram', query: 'Desktop' },
-        { label: 'Laptop Ram', query: 'Laptop' },
-        { label: 'DDR4 Ram', query: 'DDR4' },
-        { label: 'DDR3 Ram', query: 'DDR3' },
-        { label: 'DDR5 Ram', query: 'DDR5' },
-        { label: 'Single Channel Ram', query: 'Single' },
-        { label: 'Dual Channel Ram', query: 'Dual' },
-        { label: 'Quad Channel Ram', query: 'Quad' },
-      ],
-    },
-    // ── Storage ──
-    {
-      label: 'Storage', category: Category.STORAGE,
-      children: [
-        {
-          label: 'HDD', children: [
-            { label: 'Internal HDD', query: 'Internal' },
-            { label: 'External HDD', query: 'External' },
-            { label: 'Enterprise HDD', query: 'Enterprise' },
-          ]
-        },
-        {
-          label: 'SSD', children: [
-            { label: 'NVMe Gen5', query: 'Gen5' },
-            { label: 'NVMe Gen4', query: 'Gen4' },
-            { label: 'NVMe Gen3', query: 'Gen3' },
-            { label: 'SATA 2.5"', query: 'SATA' },
-            { label: 'External SSD', query: 'External' },
-          ]
-        },
-        { label: 'Pen Drive', query: 'Pen Drive' },
-      ],
-    },
-    // ── SMPS (PSU) ──
-    {
-      label: 'SMPS (PSU)', category: Category.PSU,
-      children: [
-        { label: 'Non Modular', query: 'Non Modular' },
-        { label: 'Fully Modular', query: 'Fully Modular' },
-        { label: 'Semi Modular', query: 'Semi Modular' },
-        { label: 'Platinum', query: 'Platinum' },
-        { label: 'Gold', query: 'Gold' },
-        { label: 'Bronze', query: 'Bronze' },
-      ],
-    },
-    // ── Cabinet ──
-    {
-      label: 'Cabinet', category: Category.CABINET,
-      children: [
-        { label: 'Full Tower', query: 'Full Tower' },
-        { label: 'ARGB', query: 'ARGB' },
-        { label: 'Mid Tower', query: 'Mid Tower' },
-        { label: 'Case Accessories', query: 'Accessory' },
-        { label: 'Mini Tower', query: 'Mini Tower' },
-        { label: 'With RGB Fan', query: 'RGB Fan' },
-        { label: 'DIY', query: 'DIY' },
-        { label: 'With SMPS', query: 'SMPS' },
-        { label: 'Under INR 3500', query: 'Budget' },
-        { label: 'Small Form Factor', query: 'SFF' },
-      ],
-    },
-    // ── Monitor ──
-    {
-      label: 'Monitor', category: Category.MONITOR,
-      children: [
-        { label: '22 inch', query: '22' },
-        { label: '24 inch', query: '24' },
-        { label: '27 inch', query: '27' },
-        { label: '2K', query: '2K' },
-        { label: '32 inch', query: '32' },
-        { label: '34 inch', query: '34' },
-        { label: '4K', query: '4K' },
-        { label: 'Gaming', query: 'Gaming' },
-        { label: 'Curved', query: 'Curved' },
-        { label: 'Professional', query: 'Professional' },
-      ],
-    },
-    // ── Peripherals ──
-    {
-      label: 'Peripherals', category: Category.PERIPHERAL,
-      children: [
-        { label: 'Headset', query: 'Headset' },
-        {
-          label: 'Keyboard', children: [
-            { label: 'Mechanical', query: 'Mechanical' },
-            { label: 'Gaming', query: 'Gaming' },
-            { label: 'Wireless', query: 'Wireless' },
-            { label: 'Wired', query: 'Wired' },
-            { label: 'Combos', query: 'Combo' },
-          ]
-        },
-        {
-          label: 'Mouse', children: [
-            { label: 'Gaming', query: 'Gaming' },
-            { label: 'RGB', query: 'RGB' },
-            { label: 'Wired', query: 'Wired' },
-            { label: 'Wireless', query: 'Wireless' },
-            { label: 'Combos', query: 'Combo' },
-          ]
-        },
-        { label: 'Mouse Pad', query: 'Mouse Pad' },
-        {
-          label: 'Networking', category: Category.NETWORKING, children: [
-            { label: 'Router', query: 'Router' },
-            { label: 'Switch', query: 'Switch' },
-            { label: 'Cable', query: 'Cable' },
-            { label: 'Adapter', query: 'Adapter' },
-          ]
-        },
-        {
-          label: 'Printer & Scanner', children: [
-            { label: 'Printer', query: 'Printer' },
-            { label: 'Scanner', query: 'Scanner' },
-            { label: 'Cartridge', query: 'Cartridge' },
-            { label: 'Toner', query: 'Toner' },
-          ]
-        },
-        { label: 'Software', query: 'Software' },
-        { label: 'Speaker', query: 'Speaker' },
-        { label: 'Headphone', query: 'Headphone' },
-        { label: 'Webcam', query: 'Webcam' },
-      ],
-    },
-    // ── Laptop ──
-    {
-      label: 'Laptop', category: Category.LAPTOP,
-    },
-  ];
-
-  for (let i = 0; i < TOP_LEVEL_NODES.length; i++) {
-    await seedNode(TOP_LEVEL_NODES[i] as any, null, i);
+  for (let i = 0; i < HIERARCHY_TREE.length; i++) {
+    await seedNode(HIERARCHY_TREE[i], null, i);
   }
 
-  // ── 8. Orders ──────────────────────────────────────────────────────────────
-  console.log('  → Seeding orders...');
+  // ── 8. Customers ──────────────────────────────────────────────────────────
+  console.log("  → Seeding customers...");
+  for (const c of CUSTOMERS_DATA) {
+    await prisma.customer.upsert({
+      where: { id: c.id },
+      update: { name: c.name, phone: c.phone ?? null },
+      create: c,
+    });
+  }
+
+  // ── 9. Orders ─────────────────────────────────────────────────────────────
+  console.log("  → Seeding orders...");
   for (const o of ORDERS_DATA) {
     const order = await prisma.order.upsert({
       where: { id: o.id },
@@ -1956,8 +2892,12 @@ async function main() {
         id: o.id,
         customerName: o.customerName,
         email: o.email,
+        phone: o.phone ?? null,
         date: o.date,
         status: o.status,
+        subtotal: o.subtotal,
+        gstAmount: o.gstAmount,
+        taxAmount: o.gstAmount,
         total: o.total,
         shippingStreet: o.shippingStreet,
         shippingCity: o.shippingCity,
@@ -1966,24 +2906,24 @@ async function main() {
         shippingCountry: o.shippingCountry,
         paymentMethod: o.paymentMethod,
         paymentStatus: o.paymentStatus,
-        paymentTransactionId: o.paymentTransactionId,
+        customerId: o.customerId ?? null,
       },
     });
 
-    // Order items — skip if already exist
+    // Order items
     const existingItems = await prisma.orderItem.count({ where: { orderId: order.id } });
     if (existingItems === 0) {
       for (const item of o.items) {
-        const prod = productById(item.productId);
+        const prod = PRODUCTS.find(p => p.id === item.productId);
         const variantId = variantMap.get(item.productId);
-        if (!variantId) continue;
+        if (!prod || !variantId) continue;
 
         await prisma.orderItem.create({
           data: {
             orderId: order.id,
-            variantId: variantId,
+            variantId,
             name: prod.name,
-            category: categoryToEnum(prod.category),
+            category: prod.subCategoryName,
             price: prod.price,
             quantity: item.quantity,
             image: prod.image,
@@ -1993,7 +2933,7 @@ async function main() {
       }
     }
 
-    // Order logs — skip if already exist
+    // Order logs
     const existingLogs = await prisma.orderLog.count({ where: { orderId: order.id } });
     if (existingLogs === 0) {
       for (const log of o.logs) {
@@ -2009,51 +2949,100 @@ async function main() {
     }
   }
 
+  // ── 10. InvoiceSequence ───────────────────────────────────────────────────
+  console.log("  → Seeding invoice sequence...");
+  await prisma.invoiceSequence.upsert({
+    where: { id: "invoice_seq" },
+    update: {},
+    create: { id: "invoice_seq", currentValue: 3 },
+  });
 
+  // ── 11. Invoices ──────────────────────────────────────────────────────────
+  console.log("  → Seeding invoices...");
+  const INVOICES = [
+    {
+      id: "inv-001",
+      invoiceNumber: "INV-2025-0001",
+      status: InvoiceStatus.PAID,
+      customerId: "cust-01",
+      orderId: "ORD-2501",
+      subtotal: 78000,
+      taxTotal: 14040,
+      discountPct: 0,
+      shipping: 0,
+      total: 92040,
+      amountPaid: 92040,
+      amountDue: 0,
+      notes: "Gaming build components — AMD + ASUS X670E.",
+      paidAt: new Date("2025-01-14T09:00:00Z"),
+      dueDate: new Date("2025-01-28T00:00:00Z"),
+      createdAt: new Date("2025-01-14T08:30:00Z"),
+      lineItems: [
+        { name: "AMD Ryzen 7 7800X3D", quantity: 1, unitPrice: 36000, taxRatePct: 18, hsnCode: "8471" },
+        { name: "ASUS ROG Strix X670E-E Gaming WiFi", quantity: 1, unitPrice: 42000, taxRatePct: 18, hsnCode: "8473" },
+      ],
+      audit: [
+        { type: "created", actor: "Admin", message: "Invoice created for order ORD-2501." },
+        { type: "paid", actor: "System", message: "Payment received via Net Banking." },
+      ],
+    },
+    {
+      id: "inv-002",
+      invoiceNumber: "INV-2025-0002",
+      status: InvoiceStatus.PENDING,
+      customerId: "cust-02",
+      orderId: "ORD-2502",
+      subtotal: 175000,
+      taxTotal: 31500,
+      discountPct: 0,
+      shipping: 500,
+      total: 207000,
+      amountPaid: 0,
+      amountDue: 207000,
+      notes: "NVIDIA RTX 4090 + MSI 1000W PSU.",
+      paidAt: null,
+      dueDate: new Date("2025-01-27T00:00:00Z"),
+      createdAt: new Date("2025-01-13T14:10:00Z"),
+      lineItems: [
+        { name: "ASUS ROG Strix RTX 4090 24GB OC", quantity: 1, unitPrice: 175000, taxRatePct: 18, hsnCode: "8471" },
+        { name: "MSI MPG A1000G PCIE5 1000W PSU", quantity: 1, unitPrice: 14500, taxRatePct: 18, hsnCode: "8504" },
+      ],
+      audit: [
+        { type: "created", actor: "Admin", message: "Invoice created for ORD-2502." },
+        { type: "sent", actor: "Admin", message: "Invoice emailed to customer." },
+      ],
+    },
+    {
+      id: "inv-003",
+      invoiceNumber: "INV-2025-0003",
+      status: InvoiceStatus.OVERDUE,
+      customerId: "cust-03",
+      orderId: "ORD-2505",
+      subtotal: 365000,
+      taxTotal: 65700,
+      discountPct: 5,
+      shipping: 2000,
+      total: 428950,
+      amountPaid: 0,
+      amountDue: 428950,
+      notes: "Bulk B2B order — Net-30 payment terms. Infosys PO: PO-INFY-2025-0041.",
+      paidAt: null,
+      dueDate: new Date("2025-01-13T00:00:00Z"),
+      createdAt: new Date("2025-01-13T10:00:00Z"),
+      lineItems: [
+        { name: "Intel Core i5-13600K (x10)", quantity: 10, unitPrice: 28000, taxRatePct: 18, hsnCode: "8471" },
+        { name: "Corsair Vengeance LPX 16GB DDR4 (x10)", quantity: 10, unitPrice: 4500, taxRatePct: 18, hsnCode: "8473" },
+        { name: "Crucial P3 500GB NVMe (x10)", quantity: 10, unitPrice: 3000, taxRatePct: 18, hsnCode: "8471" },
+      ],
+      audit: [
+        { type: "created", actor: "Admin", message: "Invoice created for bulk B2B order ORD-2505." },
+        { type: "sent", actor: "Admin", message: "Invoice sent to procurement@infosys.com." },
+        { type: "note", actor: "System", message: "Invoice overdue — payment not received by due date." },
+      ],
+    },
+  ];
 
-  // ── 10. Build Guides ───────────────────────────────────────────────────────
-  console.log('  → Seeding build guides...');
-  for (const b of SAVED_BUILDS_DATA) {
-    const existingBuild = await prisma.buildGuide.findUnique({ where: { id: b.id } });
-    if (!existingBuild) {
-      await prisma.buildGuide.create({
-        data: {
-          id: b.id,
-          title: b.name,
-          description: "Pre-configured build guide based on popular choices.",
-          category: "Gaming",
-          createdAt: b.createdAt,
-          items: {
-            create: b.items.filter(i => variantMap.has(i.productId)).map(item => ({
-              variantId: variantMap.get(item.productId)!,
-              quantity: item.quantity,
-            })),
-          },
-        },
-      });
-    }
-  }
-
-  // ── 11. Billing Profile ────────────────────────────────────────────────────
-  console.log('  → Seeding billing profile...');
-  const existingProfile = await prisma.billingProfile.findFirst();
-  if (!existingProfile) {
-    await prisma.billingProfile.create({ data: BILLING_PROFILE_DATA });
-  }
-
-  // ── 12. Customers ──────────────────────────────────────────────────────────
-  console.log('  → Seeding customers...');
-  for (const c of CUSTOMERS_DATA) {
-    await prisma.customer.upsert({
-      where: { id: c.id },
-      update: { name: c.name, phone: c.phone },
-      create: c,
-    });
-  }
-
-  // ── 13. Invoices ───────────────────────────────────────────────────────────
-  console.log('  → Seeding invoices...');
-  for (const inv of INVOICES_DATA) {
+  for (const inv of INVOICES) {
     const existing = await prisma.invoice.findUnique({ where: { invoiceNumber: inv.invoiceNumber } });
     if (!existing) {
       await prisma.invoice.create({
@@ -2062,7 +3051,7 @@ async function main() {
           invoiceNumber: inv.invoiceNumber,
           status: inv.status,
           customerId: inv.customerId,
-          currency: inv.currency,
+          orderId: inv.orderId,
           subtotal: inv.subtotal,
           taxTotal: inv.taxTotal,
           discountPct: inv.discountPct,
@@ -2080,6 +3069,7 @@ async function main() {
               quantity: li.quantity,
               unitPrice: li.unitPrice,
               taxRatePct: li.taxRatePct,
+              hsnCode: li.hsnCode,
             })),
           },
           audit: {
@@ -2094,13 +3084,107 @@ async function main() {
     }
   }
 
+  // ── 12. Build Guides ──────────────────────────────────────────────────────
+  console.log("  → Seeding build guides...");
+  const BUILD_GUIDES = [
+    {
+      id: "build-001",
+      title: "Budget Gaming PC — AMD Ryzen 5 + RTX 4060",
+      description: "Great 1080p gaming build under ₹90,000 with excellent price-to-performance ratio.",
+      category: "Gaming",
+      items: [
+        { productId: "cpu-03", quantity: 1 },  // Ryzen 5 7600X
+        { productId: "mobo-04", quantity: 1 },  // ASRock B650M
+        { productId: "ram-01", quantity: 1 },   // G.Skill DDR5-6000
+        { productId: "gpu-04", quantity: 1 },   // RTX 4060
+        { productId: "ssd-01", quantity: 1 },   // Samsung 990 Pro 1TB
+        { productId: "psu-01", quantity: 1 },   // Corsair RM850e
+        { productId: "case-02", quantity: 1 },  // Corsair 4000D
+        { productId: "cool-04", quantity: 1 },  // CM Hyper 212
+      ],
+    },
+    {
+      id: "build-002",
+      title: "High-End Gaming Build — Ryzen 7 7800X3D + RTX 4080 Super",
+      description: "Top-tier 1440p/4K gaming rig leveraging AMD 3D V-Cache and NVIDIA Ada Lovelace.",
+      category: "Gaming",
+      items: [
+        { productId: "cpu-01", quantity: 1 },  // Ryzen 7 7800X3D
+        { productId: "mobo-01", quantity: 1 },  // ASUS ROG X670E
+        { productId: "ram-01", quantity: 2 },   // G.Skill DDR5-6000 x2
+        { productId: "gpu-02", quantity: 1 },   // RTX 4080 Super
+        { productId: "ssd-03", quantity: 1 },   // Samsung 990 Pro 2TB
+        { productId: "psu-03", quantity: 1 },   // MSI MPG 1000W
+        { productId: "case-01", quantity: 1 },  // Lian Li O11 EVO
+        { productId: "cool-01", quantity: 1 },  // DeepCool LS720 AIO
+      ],
+    },
+    {
+      id: "build-003",
+      title: "Content Creator Workstation — i9-14900K + RTX 4090",
+      description: "Professional video editing and 3D rendering workstation for demanding creative workflows.",
+      category: "Workstation",
+      items: [
+        { productId: "cpu-02", quantity: 1 },   // i9-14900K
+        { productId: "mobo-02", quantity: 1 },  // MSI Z790 Tomahawk
+        { productId: "ram-04", quantity: 1 },   // Corsair Dominator 64GB DDR5
+        { productId: "gpu-01", quantity: 1 },   // RTX 4090
+        { productId: "ssd-03", quantity: 2 },   // Samsung 990 Pro 2TB x2
+        { productId: "hdd-02", quantity: 1 },   // Seagate 4TB HDD
+        { productId: "psu-03", quantity: 1 },   // MSI MPG 1000W
+        { productId: "case-04", quantity: 1 },  // CM HAF 700
+        { productId: "cool-03", quantity: 1 },  // NZXT Kraken Elite 360
+      ],
+    },
+  ];
 
-  console.log('✅ Seed complete.');
+  for (const bg of BUILD_GUIDES) {
+    const existingBG = await prisma.buildGuide.findUnique({ where: { id: bg.id } });
+    if (!existingBG) {
+      const total = bg.items.reduce((sum, item) => {
+        const prod = PRODUCTS.find(p => p.id === item.productId);
+        return sum + (prod?.price ?? 0) * item.quantity;
+      }, 0);
+      await prisma.buildGuide.create({
+        data: {
+          id: bg.id,
+          title: bg.title,
+          description: bg.description,
+          category: bg.category,
+          total,
+          items: {
+            create: bg.items
+              .filter(i => variantMap.has(i.productId))
+              .map(item => ({
+                variantId: variantMap.get(item.productId)!,
+                quantity: item.quantity,
+              })),
+          },
+        },
+      });
+    }
+  }
+
+  // ── 13. Billing Profile ───────────────────────────────────────────────────
+  console.log("  → Seeding billing profile...");
+  const existingProfile = await prisma.billingProfile.findFirst();
+  if (!existingProfile) {
+    await prisma.billingProfile.create({ data: BILLING_PROFILE });
+  }
+
+  console.log("✅ Seed complete.");
+  console.log(`   Brands: ${brandMap.size}`);
+  console.log(`   Categories: ${categoryMap.size}`);
+  console.log(`   SubCategories: ${subCategoryMap.size}`);
+  console.log(`   Products: ${PRODUCTS.length}`);
+  console.log(`   PartSlots: ${partSlotMap.size}`);
+  console.log(`   Customers: ${CUSTOMERS_DATA.length}`);
+  console.log(`   Orders: ${ORDERS_DATA.length}`);
 }
 
 main()
   .catch(e => {
-    console.error('❌ Seed failed:', e);
+    console.error("❌ Seed failed:", e);
     process.exit(1);
   })
   .finally(async () => {

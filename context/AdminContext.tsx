@@ -5,10 +5,13 @@ import React, {
     useCallback, useMemo, useRef,
 } from 'react';
 import {
-    Product, Category, CategoryNode, Brand, CategorySchema, AttributeDefinition,
-    CategoryFilterConfig, FilterDefinition, WarehouseInventory, StockMovement, StockMovementType,
+    Product, Category, CategoryNode, Brand,
+    CategorySchema, AttributeDefinition,
+    CategoryFilterConfig, FilterDefinition,
+    LegacyCategoryKey,
+    InventoryItem, StockMovementType,
     Order, OrderStatus, Invoice, Customer, BillingProfile,
-    Supplier, PurchaseOrder, CreditNote, Warehouse, BuildGuide,
+    BuildGuide,
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,27 +20,10 @@ import { useToast } from '@/hooks/use-toast';
 ───────────────────────────────────────────────────────────────────────────── */
 interface AdminContextType {
     // Inventory
-    warehouses: Warehouse[];
-    refreshWarehouses: () => Promise<void>;
-    inventory: WarehouseInventory[];
+    inventory: InventoryItem[];
     refreshInventory: () => Promise<void>;
-    stockMovements: StockMovement[];
-    refreshStockMovements: () => Promise<void>;
-    adjustStock: (warehouseInventoryId: string, quantity: number, type: StockMovementType, reason?: string) => Promise<void>;
-    transferStock: (sourceWarehouseId: string, targetWarehouseId: string, variantId: string, quantity: number, reason?: string) => Promise<void>;
-    getInventoryItem: (sku: string) => WarehouseInventory | undefined;
-
-    // Procurement
-    suppliers: Supplier[];
-    refreshSuppliers: () => Promise<void>;
-    createSupplier: (data: Partial<Supplier>) => Promise<void>;
-    updateSupplier: (id: string, data: Partial<Supplier>) => Promise<void>;
-    deleteSupplier: (id: string) => Promise<void>;
-
-    purchaseOrders: PurchaseOrder[];
-    refreshPurchaseOrders: () => Promise<void>;
-    createPurchaseOrder: (data: Partial<PurchaseOrder>) => Promise<void>;
-    receivePurchaseOrder: (id: string, items: { itemId: string; quantityReceiving: number }[]) => Promise<void>;
+    adjustStock: (inventoryItemId: string, quantity: number, type: StockMovementType, reason?: string) => Promise<void>;
+    getInventoryItem: (sku: string) => InventoryItem | undefined;
 
     // Orders
     orders: Order[];
@@ -57,12 +43,14 @@ interface AdminContextType {
     deleteBrand: (brandId: string) => Promise<void>;
 
     // Schemas & Filters
+    // NOTE: `category` here is a LegacyCategoryKey (e.g. 'PROCESSOR'), NOT a Category DB model.
+    // The /api/categories/schemas and /api/categories/filters routes use this separate enum.
     schemas: CategorySchema[];
     refreshSchemas: () => Promise<void>;
-    updateSchema: (category: Category, attributes: AttributeDefinition[]) => Promise<void>;
+    updateSchema: (category: LegacyCategoryKey, attributes: AttributeDefinition[]) => Promise<void>;
     filterConfigs: CategoryFilterConfig[];
     refreshFilterConfigs: () => Promise<void>;
-    updateFilterConfig: (category: Category, filters: FilterDefinition[]) => Promise<void>;
+    updateFilterConfig: (category: LegacyCategoryKey, filters: FilterDefinition[]) => Promise<void>;
 
     // Invoices
     invoices: Invoice[];
@@ -70,7 +58,12 @@ interface AdminContextType {
     createInvoice: (data: Partial<Invoice>) => Promise<void>;
     updateInvoice: (id: string, data: Partial<Invoice>) => Promise<void>;
     voidInvoice: (id: string) => Promise<void>;
-    createCreditNote: (data: { originalInvoiceId: string; orderId?: string; reason: string; items: { name: string; quantity: number; unitPrice: number; taxRatePct?: number }[] }) => Promise<void>;
+    createCreditNote: (data: {
+        originalInvoiceId: string;
+        orderId?: string;
+        reason: string;
+        items: { name: string; quantity: number; unitPrice: number; taxRatePct?: number }[];
+    }) => Promise<void>;
 
     // Public Data (for Admin Reference)
     products: Product[];
@@ -101,20 +94,10 @@ interface AdminContextType {
     isAdmin: boolean;
     isLoading: boolean;
     syncData: () => Promise<void>;
-
-    // Marketing
-    marketingStats: any;
-    marketingCampaigns: any[];
-    marketingLeads: { items: any[]; total: number };
-    marketingContacts: any;
-    marketingLogs: any[];
-    refreshMarketing: (query?: string, activeView?: string) => Promise<void>;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   SPLIT CONTEXTS
-   Consumers only re-render when their specific slice changes, not on every
-   unrelated state update (e.g. marketing changes won't re-render inventory tabs).
+   CONTEXT
 ───────────────────────────────────────────────────────────────────────────── */
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
@@ -136,14 +119,14 @@ function sanitizeCategoryNodes(nodes: CategoryNode[]): CategoryNode[] {
 
 // Tab → fetch groups mapping — static, never changes
 const TAB_FETCHES: Record<string, string[]> = {
-    overview:       ['orders', 'inventory', 'invoices', 'customers', 'stockMovements', 'products', 'brands'],
+    overview:       ['orders', 'inventory', 'invoices', 'customers', 'products', 'brands'],
     orders:         ['orders', 'inventory', 'customers', 'products'],
     categories:     ['schemas', 'filterConfigs', 'categories'],
-    inventory:      ['inventory', 'warehouses', 'stockMovements', 'products'],
-    procurement:    ['suppliers', 'purchaseOrders', 'inventory', 'products'],
+    inventory:      ['inventory', 'products'],
+    procurement:    ['inventory', 'products'],
     billing:        ['invoices', 'customers', 'billingProfile'],
     'saved-builds': ['savedBuilds'],
-    marketing:      ['marketing'],
+    marketing:      [],
     products:       ['products', 'brands', 'categories'],
     brands:         ['brands', 'categories'],
 };
@@ -155,7 +138,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTabState] = useState(() => {
-        // Lazy initializer — reads URL once, avoids extra re-render from useEffect
         if (typeof window !== 'undefined') {
             return new URLSearchParams(window.location.search).get('tab') || 'overview';
         }
@@ -163,34 +145,22 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
 
     // --- STATE ---
-    const [inventory, setInventory] = useState<WarehouseInventory[]>([]);
-    const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [schemas, setSchemas] = useState<CategorySchema[]>([]);
-    const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
-    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [inventory, setInventory]           = useState<InventoryItem[]>([]);
+    const [orders, setOrders]                 = useState<Order[]>([]);
+    const [schemas, setSchemas]               = useState<CategorySchema[]>([]);
+    const [filterConfigs, setFilterConfigs]   = useState<CategoryFilterConfig[]>([]);
+    const [invoices, setInvoices]             = useState<Invoice[]>([]);
+    const [customers, setCustomers]           = useState<Customer[]>([]);
     const [billingProfile, setBillingProfile] = useState<BillingProfile | null>(null);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [brands, setBrands] = useState<Brand[]>([]);
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-    const [savedBuilds, setSavedBuilds] = useState<BuildGuide[]>([]);
-
-    // Marketing State
-    const [marketingStats, setMarketingStats] = useState<any>(null);
-    const [marketingCampaigns, setMarketingCampaigns] = useState<any[]>([]);
-    const [marketingLeads, setMarketingLeads] = useState<{ items: any[]; total: number }>({ items: [], total: 0 });
-    const [marketingContacts, setMarketingContacts] = useState<any>(null);
-    const [marketingLogs, setMarketingLogs] = useState<any[]>([]);
+    const [categories, setCategories]         = useState<Category[]>([]);
+    const [brands, setBrands]                 = useState<Brand[]>([]);
+    const [products, setProducts]             = useState<Product[]>([]);
+    const [savedBuilds, setSavedBuilds]       = useState<BuildGuide[]>([]);
 
     // Inventory lookup Map — O(1) instead of O(n) linear scan on every getInventoryItem call
-    const inventoryMapRef = useRef<Map<string, WarehouseInventory>>(new Map());
-    // Keep map in sync whenever inventory array changes
+    const inventoryMapRef = useRef<Map<string, InventoryItem>>(new Map());
     useEffect(() => {
-        const map = new Map<string, WarehouseInventory>();
+        const map = new Map<string, InventoryItem>();
         const arr = Array.isArray(inventory) ? inventory : [];
         for (const item of arr) {
             if (item.variant?.sku) map.set(item.variant.sku, item);
@@ -217,28 +187,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     /* ─────────────────────────────────────────────────────────────────────────
        INDIVIDUAL FETCHERS
-       Each is a stable callback — only recreated if its own setter changes
-       (which never happens, so these are effectively permanent stable refs).
     ───────────────────────────────────────────────────────────────────────── */
     const refreshInventory = useCallback(async () => {
         try {
             const res = await fetch('/api/inventory?limit=3000');
             const data = await res.json();
             setInventory(data.items ?? (Array.isArray(data) ? data : []));
-        } catch (err) { console.error(err); }
-    }, []);
-
-    const refreshWarehouses = useCallback(async () => {
-        try {
-            const res = await fetch('/api/warehouses');
-            setWarehouses(await res.json());
-        } catch (err) { console.error(err); }
-    }, []);
-
-    const refreshStockMovements = useCallback(async () => {
-        try {
-            const res = await fetch('/api/inventory/movements');
-            setStockMovements(await res.json());
         } catch (err) { console.error(err); }
     }, []);
 
@@ -309,22 +263,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, []);
 
-    const refreshSuppliers = useCallback(async () => {
-        try {
-            const res = await fetch('/api/suppliers');
-            const data = await res.json();
-            setSuppliers(data.suppliers ?? data);
-        } catch (err) { console.error(err); }
-    }, []);
-
-    const refreshPurchaseOrders = useCallback(async () => {
-        try {
-            const res = await fetch('/api/inventory/purchase-orders');
-            const data = await res.json();
-            setPurchaseOrders(data.orders ?? data);
-        } catch (err) { console.error(err); }
-    }, []);
-
     const refreshSavedBuilds = useCallback(async () => {
         try {
             const res = await fetch('/api/build-guides');
@@ -332,69 +270,25 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, []);
 
-    const refreshMarketing = useCallback(async (query = '', view = 'campaigns') => {
-        try {
-            const isLeadsView = view === 'leads' || !!query;
-            const isContactsView = view === 'contacts';
-
-            const [statsRes, campaignsRes, logsRes, leadsRes, contactsRes] = await Promise.all([
-                fetch('/api/marketing/stats'),
-                fetch('/api/marketing/campaigns'),
-                fetch('/api/marketing/logs?limit=15'),
-                isLeadsView
-                    ? fetch(`/api/marketing/leads?limit=50&q=${query}`)
-                    : Promise.resolve(null),
-                isContactsView
-                    ? fetch('/api/marketing/all-contacts')
-                    : Promise.resolve(null),
-            ]);
-
-            // Parse only the responses that actually exist
-            const [stats, campaigns, logs] = await Promise.all([
-                statsRes.json(), campaignsRes.json(), logsRes.json(),
-            ]);
-            setMarketingStats(stats);
-            setMarketingCampaigns(campaigns);
-            setMarketingLogs(logs);
-
-            if (leadsRes) {
-                const leads = await leadsRes.json();
-                if (leads) setMarketingLeads(leads);
-            }
-            if (contactsRes) {
-                const contacts = await contactsRes.json();
-                if (contacts) setMarketingContacts(contacts);
-            }
-        } catch (err) { console.error(err); }
-    }, []);
-
     /* ─────────────────────────────────────────────────────────────────────────
-       STABLE FETCHER MAP — resolved once, used by both initTabData and syncData
-       to eliminate the duplicate switch blocks entirely.
+       STABLE FETCHER MAP
     ───────────────────────────────────────────────────────────────────────── */
     const fetcherMap = useMemo<Record<string, () => Promise<void>>>(() => ({
         orders:         refreshOrders,
         inventory:      refreshInventory,
         invoices:       refreshInvoices,
         customers:      refreshCustomers,
-        stockMovements: refreshStockMovements,
         schemas:        refreshSchemas,
         filterConfigs:  refreshFilterConfigs,
-        warehouses:     refreshWarehouses,
-        suppliers:      refreshSuppliers,
-        purchaseOrders: refreshPurchaseOrders,
         billingProfile: refreshBillingProfile,
         savedBuilds:    refreshSavedBuilds,
-        marketing:      refreshMarketing,
         products:       refreshProducts,
         categories:     refreshCategories,
         brands:         refreshBrands,
     }), [
         refreshOrders, refreshInventory, refreshInvoices, refreshCustomers,
-        refreshStockMovements, refreshSchemas, refreshFilterConfigs, refreshWarehouses,
-        refreshSuppliers, refreshPurchaseOrders, refreshBillingProfile,
-        refreshSavedBuilds, refreshMarketing,
-        refreshProducts, refreshCategories, refreshBrands,
+        refreshSchemas, refreshFilterConfigs, refreshBillingProfile,
+        refreshSavedBuilds, refreshProducts, refreshCategories, refreshBrands,
     ]);
 
     // Shared loader — runs only what each tab declares in TAB_FETCHES
@@ -418,8 +312,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     /* ─────────────────────────────────────────────────────────────────────────
        POLLING — refresh critical data every 30 s
     ───────────────────────────────────────────────────────────────────────── */
-    // Use refs so the interval closure doesn't need to be recreated on every
-    // isLoading / activeTab change — avoids clearing & re-setting the interval
     const activeTabRef = useRef(activeTab);
     const isLoadingRef = useRef(isLoading);
     useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
@@ -435,49 +327,30 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             if (polls.length) Promise.all(polls).catch(console.error);
         }, 30_000);
         return () => clearInterval(id);
-    }, [refreshInventory, refreshOrders]); // stable callbacks — interval set once
+    }, [refreshInventory, refreshOrders]);
 
     /* ─────────────────────────────────────────────────────────────────────────
        ACTIONS
     ───────────────────────────────────────────────────────────────────────── */
     const adjustStock = useCallback(async (
-        warehouseInventoryId: string, quantity: number, type: StockMovementType, reason?: string,
+        inventoryItemId: string, quantity: number, type: StockMovementType, reason?: string,
     ) => {
         try {
-            const res = await fetch(`/api/inventory/${warehouseInventoryId}/movements`, {
+            const res = await fetch(`/api/inventory/${inventoryItemId}/movements`, {
                 method: 'POST', headers: JSON_HEADERS,
                 body: JSON.stringify({ type, quantity, reason }),
             });
             if (res.ok) {
                 toast({ title: 'Stock adjusted' });
-                await Promise.all([refreshInventory(), refreshStockMovements()]);
+                await refreshInventory();
             }
         } catch (err) { console.error(err); }
-    }, [refreshInventory, refreshStockMovements, toast]);
+    }, [refreshInventory, toast]);
 
-    const transferStock = useCallback(async (
-        sourceWarehouseId: string, targetWarehouseId: string, variantId: string, quantity: number, reason?: string,
-    ) => {
-        try {
-            const res = await fetch('/api/inventory/transfer', {
-                method: 'POST', headers: JSON_HEADERS,
-                body: JSON.stringify({ sourceWarehouseId, targetWarehouseId, variantId, quantity, reason }),
-            });
-            if (res.ok) {
-                toast({ title: 'Stock transferred successfully' });
-                await Promise.all([refreshInventory(), refreshStockMovements()]);
-            } else {
-                const data = await res.json();
-                toast({ title: 'Transfer Failed', description: data.error || 'Could not transfer stock', variant: 'destructive' });
-                throw new Error(data.error);
-            }
-        } catch (err) { console.error(err); throw err; }
-    }, [refreshInventory, refreshStockMovements, toast]);
-
-    // O(1) lookup via Map instead of O(n) .find()
+    // O(1) lookup via Map
     const getInventoryItem = useCallback((sku: string) => {
         return inventoryMapRef.current.get(sku);
-    }, []); // stable — reads from ref, no deps needed
+    }, []);
 
     const updateOrderStatus = useCallback(async (orderId: string, newStatus: OrderStatus, note?: string) => {
         try {
@@ -532,18 +405,17 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [toast]);
 
     const deleteProduct = useCallback(async (productId: string) => {
-        // Optimistic removal
         setProducts(prev => prev.filter(p => p.id !== productId));
         try {
             const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Delete failed');
             toast({ title: 'Product deleted' });
-            refreshProducts(); // background consistency check — intentionally not awaited
+            refreshProducts();
         } catch (err: any) {
             console.error(err);
             toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
-            refreshProducts(); // rollback — intentionally not awaited
+            refreshProducts();
         }
     }, [refreshProducts, toast]);
 
@@ -586,7 +458,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [toast]);
 
-    const updateSchema = useCallback(async (category: Category, attributes: AttributeDefinition[]) => {
+    // NOTE: `category` is LegacyCategoryKey (e.g. 'PROCESSOR'), not a Category DB model id.
+    const updateSchema = useCallback(async (category: LegacyCategoryKey, attributes: AttributeDefinition[]) => {
         try {
             const res = await fetch('/api/categories/schemas', {
                 method: 'PUT', headers: JSON_HEADERS,
@@ -596,7 +469,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshSchemas, toast]);
 
-    const updateFilterConfig = useCallback(async (category: Category, filters: FilterDefinition[]) => {
+    // NOTE: `category` is LegacyCategoryKey (e.g. 'GPU'), not a Category DB model id.
+    const updateFilterConfig = useCallback(async (category: LegacyCategoryKey, filters: FilterDefinition[]) => {
         try {
             const res = await fetch('/api/categories/filters', {
                 method: 'PUT', headers: JSON_HEADERS,
@@ -674,75 +548,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (err) { console.error(err); }
     }, [refreshBillingProfile, toast]);
 
-    const createSupplier = useCallback(async (data: Partial<Supplier>) => {
-        try {
-            const res = await fetch('/api/suppliers', {
-                method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data),
-            });
-            if (res.ok) { toast({ title: 'Supplier Created' }); await refreshSuppliers(); }
-            else {
-                const json = await res.json();
-                toast({ title: 'Failed', description: json.error || 'Could not create supplier', variant: 'destructive' });
-            }
-        } catch (err) { console.error(err); }
-    }, [refreshSuppliers, toast]);
-
-    const updateSupplier = useCallback(async (id: string, data: Partial<Supplier>) => {
-        try {
-            const res = await fetch(`/api/suppliers/${id}`, {
-                method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(data),
-            });
-            if (res.ok) { toast({ title: 'Supplier Updated' }); await refreshSuppliers(); }
-            else {
-                const json = await res.json();
-                toast({ title: 'Failed', description: json.error || 'Could not update supplier', variant: 'destructive' });
-            }
-        } catch (err) { console.error(err); }
-    }, [refreshSuppliers, toast]);
-
-    const deleteSupplier = useCallback(async (id: string) => {
-        try {
-            const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
-            if (res.ok) { toast({ title: 'Supplier Deleted' }); await refreshSuppliers(); }
-            else {
-                const json = await res.json();
-                toast({ title: 'Failed', description: json.error || 'Could not delete supplier', variant: 'destructive' });
-            }
-        } catch (err) { console.error(err); }
-    }, [refreshSuppliers, toast]);
-
-    const createPurchaseOrder = useCallback(async (data: Partial<PurchaseOrder>) => {
-        try {
-            const res = await fetch('/api/inventory/purchase-orders', {
-                method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data),
-            });
-            if (res.ok) { toast({ title: 'Purchase Order Created' }); await refreshPurchaseOrders(); }
-            else {
-                const json = await res.json();
-                toast({ title: 'Failed', description: json.error || 'Could not create purchase order', variant: 'destructive' });
-            }
-        } catch (err) { console.error(err); }
-    }, [refreshPurchaseOrders, toast]);
-
-    const receivePurchaseOrder = useCallback(async (
-        id: string, items: { itemId: string; quantityReceiving: number }[],
-    ) => {
-        try {
-            const res = await fetch(`/api/inventory/purchase-orders/${id}/receive`, {
-                method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ items }),
-            });
-            if (res.ok) {
-                toast({ title: 'Items Received Successfully' });
-                // All three run concurrently — was sequential awaits before
-                await Promise.all([refreshPurchaseOrders(), refreshInventory(), refreshStockMovements()]);
-            } else {
-                const json = await res.json();
-                toast({ title: 'Failed', description: json.error || 'Could not receive items', variant: 'destructive' });
-            }
-        } catch (err) { console.error(err); }
-    }, [refreshPurchaseOrders, refreshInventory, refreshStockMovements, toast]);
-
-    // syncData now delegates to shared loadTabData — no more duplicate switch
     const syncData = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -758,17 +563,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     /* ─────────────────────────────────────────────────────────────────────────
        CONTEXT VALUE
-       Split into stable sub-objects so that consumers using only e.g. `orders`
-       don't re-render when `inventory` changes. Each sub-object is memoized
-       independently — only recomputes when its own slice changes.
     ───────────────────────────────────────────────────────────────────────── */
     const value = useMemo<AdminContextType>(() => ({
         // Inventory
-        inventory, refreshInventory, warehouses, refreshWarehouses,
-        stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
-        // Procurement
-        suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
-        purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
+        inventory, refreshInventory, adjustStock, getInventoryItem,
         // Orders
         orders, refreshOrders, updateOrderStatus, deleteOrder,
         // Products
@@ -793,13 +591,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         isAdmin: true,
         isLoading,
         syncData,
-        // Marketing
-        marketingStats, marketingCampaigns, marketingLeads, marketingContacts, marketingLogs, refreshMarketing,
     }), [
-        inventory, refreshInventory, warehouses, refreshWarehouses,
-        stockMovements, refreshStockMovements, adjustStock, transferStock, getInventoryItem,
-        suppliers, refreshSuppliers, createSupplier, updateSupplier, deleteSupplier,
-        purchaseOrders, refreshPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
+        inventory, refreshInventory, adjustStock, getInventoryItem,
         orders, refreshOrders, updateOrderStatus, deleteOrder,
         addProduct, updateProduct, deleteProduct,
         updateCategories, addBrand, updateBrand, deleteBrand,
@@ -812,7 +605,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         savedBuilds, refreshSavedBuilds,
         activeTab, setActiveTab,
         isLoading, syncData,
-        marketingStats, marketingCampaigns, marketingLeads, marketingContacts, marketingLogs, refreshMarketing,
     ]);
 
     return (

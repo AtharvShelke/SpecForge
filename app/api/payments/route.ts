@@ -3,15 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { createPaymentTransaction, reconcileOrderPayments } from "@/services/paymentService";
 
-const PaymentMethodEnum = z.enum(["CARD", "UPI", "BANK_TRANSFER", "CASH", "WALLET"]);
+const PaymentMethodEnum = z.enum(["RAZORPAY", "UPI", "BANK_TRANSFER"]);
 const PaymentStatusEnum = z.enum(["INITIATED", "PENDING", "COMPLETED", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED"]);
-const CurrencyEnum = z.enum(["INR", "USD", "EUR", "GBP"]);
 
 const createPaymentSchema = z.object({
     orderId: z.string().min(1),
     method: PaymentMethodEnum,
     amount: z.number().positive(),
-    currency: CurrencyEnum.default("INR"),
     gatewayTxnId: z.string().optional(),
     idempotencyKey: z.string().min(1),
     status: PaymentStatusEnum.default("COMPLETED"),
@@ -38,7 +36,7 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: "desc" },
         });
 
-        const reconciliation = await reconcileOrderPayments(prisma, orderId, order.total);
+        const reconciliation = await reconcileOrderPayments(prisma, orderId, Number(order.total));
 
         return NextResponse.json({
             transactions,
@@ -67,7 +65,6 @@ export async function POST(req: NextRequest) {
                 orderId: data.orderId,
                 method: data.method as any,
                 amount: data.amount,
-                currency: data.currency as any,
                 gatewayTxnId: data.gatewayTxnId,
                 idempotencyKey: data.idempotencyKey,
                 status: data.status as any,

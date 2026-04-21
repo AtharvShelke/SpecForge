@@ -3,8 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateTax, type TaxLineInput } from "@/lib/tax-engine";
 
-const CurrencyEnum = z.enum(["INR", "USD", "EUR", "GBP"]);
-
 const lineItemSchema = z.object({
     name: z.string().min(1),
     description: z.string().optional(),
@@ -17,7 +15,6 @@ const lineItemSchema = z.object({
 const createInvoiceSchema = z.object({
     customerId: z.string().uuid(),
     orderId: z.string().optional(),
-    currency: CurrencyEnum.default("INR"),
     discountPct: z.number().min(0).max(100).default(0),
     shipping: z.number().min(0).default(0),
     notes: z.string().optional(),
@@ -53,7 +50,6 @@ export async function GET(req: NextRequest) {
                     orderId: true,
                     type: true,
                     status: true,
-                    currency: true,
                     subtotal: true,
                     taxTotal: true,
                     discountPct: true,
@@ -128,7 +124,6 @@ export async function POST(req: NextRequest) {
                     type: 'STANDARD',
                     status: "DRAFT",
                     customerId: data.customerId,
-                    currency: data.currency,
                     subtotal: taxResult.subtotal,
                     taxTotal: taxResult.totalTax,
                     discountPct: data.discountPct,

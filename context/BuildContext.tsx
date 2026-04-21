@@ -117,7 +117,7 @@ export const BuildProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }
 
             const newCart: any[] = [];
-            for (const item of build.items) {
+            for (const item of build.items || []) {
                 const fullProduct = item.variant?.product;
                 if (fullProduct) {
                     newCart.push({ ...fullProduct, quantity: item.quantity, selectedVariant: item.variant });

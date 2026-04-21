@@ -27,23 +27,28 @@ export type AggregateBrand = {
 export type BrandMinAggregateOutputType = {
   id: string | null
   name: string | null
+  slug: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  deletedAt: Date | null
 }
 
 export type BrandMaxAggregateOutputType = {
   id: string | null
   name: string | null
+  slug: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  deletedAt: Date | null
 }
 
 export type BrandCountAggregateOutputType = {
   id: number
   name: number
-  categories: number
+  slug: number
   createdAt: number
   updatedAt: number
+  deletedAt: number
   _all: number
 }
 
@@ -51,23 +56,28 @@ export type BrandCountAggregateOutputType = {
 export type BrandMinAggregateInputType = {
   id?: true
   name?: true
+  slug?: true
   createdAt?: true
   updatedAt?: true
+  deletedAt?: true
 }
 
 export type BrandMaxAggregateInputType = {
   id?: true
   name?: true
+  slug?: true
   createdAt?: true
   updatedAt?: true
+  deletedAt?: true
 }
 
 export type BrandCountAggregateInputType = {
   id?: true
   name?: true
-  categories?: true
+  slug?: true
   createdAt?: true
   updatedAt?: true
+  deletedAt?: true
   _all?: true
 }
 
@@ -146,9 +156,10 @@ export type BrandGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 export type BrandGroupByOutputType = {
   id: string
   name: string
-  categories: $Enums.Category[]
+  slug: string
   createdAt: Date
   updatedAt: Date
+  deletedAt: Date | null
   _count: BrandCountAggregateOutputType | null
   _min: BrandMinAggregateOutputType | null
   _max: BrandMaxAggregateOutputType | null
@@ -175,39 +186,43 @@ export type BrandWhereInput = {
   NOT?: Prisma.BrandWhereInput | Prisma.BrandWhereInput[]
   id?: Prisma.StringFilter<"Brand"> | string
   name?: Prisma.StringFilter<"Brand"> | string
-  categories?: Prisma.EnumCategoryNullableListFilter<"Brand">
+  slug?: Prisma.StringFilter<"Brand"> | string
   createdAt?: Prisma.DateTimeFilter<"Brand"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Brand"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableFilter<"Brand"> | Date | string | null
   products?: Prisma.ProductListRelationFilter
 }
 
 export type BrandOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  categories?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   products?: Prisma.ProductOrderByRelationAggregateInput
 }
 
 export type BrandWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   name?: string
+  slug?: string
   AND?: Prisma.BrandWhereInput | Prisma.BrandWhereInput[]
   OR?: Prisma.BrandWhereInput[]
   NOT?: Prisma.BrandWhereInput | Prisma.BrandWhereInput[]
-  categories?: Prisma.EnumCategoryNullableListFilter<"Brand">
   createdAt?: Prisma.DateTimeFilter<"Brand"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Brand"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableFilter<"Brand"> | Date | string | null
   products?: Prisma.ProductListRelationFilter
-}, "id" | "name">
+}, "id" | "name" | "slug">
 
 export type BrandOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  categories?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.BrandCountOrderByAggregateInput
   _max?: Prisma.BrandMaxOrderByAggregateInput
   _min?: Prisma.BrandMinOrderByAggregateInput
@@ -219,99 +234,104 @@ export type BrandScalarWhereWithAggregatesInput = {
   NOT?: Prisma.BrandScalarWhereWithAggregatesInput | Prisma.BrandScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Brand"> | string
   name?: Prisma.StringWithAggregatesFilter<"Brand"> | string
-  categories?: Prisma.EnumCategoryNullableListFilter<"Brand">
+  slug?: Prisma.StringWithAggregatesFilter<"Brand"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Brand"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Brand"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Brand"> | Date | string | null
 }
 
 export type BrandCreateInput = {
   id?: string
   name: string
-  categories?: Prisma.BrandCreatecategoriesInput | $Enums.Category[]
+  slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   products?: Prisma.ProductCreateNestedManyWithoutBrandInput
 }
 
 export type BrandUncheckedCreateInput = {
   id?: string
   name: string
-  categories?: Prisma.BrandCreatecategoriesInput | $Enums.Category[]
+  slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutBrandInput
 }
 
 export type BrandUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  categories?: Prisma.BrandUpdatecategoriesInput | $Enums.Category[]
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   products?: Prisma.ProductUpdateManyWithoutBrandNestedInput
 }
 
 export type BrandUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  categories?: Prisma.BrandUpdatecategoriesInput | $Enums.Category[]
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   products?: Prisma.ProductUncheckedUpdateManyWithoutBrandNestedInput
 }
 
 export type BrandCreateManyInput = {
   id?: string
   name: string
-  categories?: Prisma.BrandCreatecategoriesInput | $Enums.Category[]
+  slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
 }
 
 export type BrandUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  categories?: Prisma.BrandUpdatecategoriesInput | $Enums.Category[]
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type BrandUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  categories?: Prisma.BrandUpdatecategoriesInput | $Enums.Category[]
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type EnumCategoryNullableListFilter<$PrismaModel = never> = {
-  equals?: $Enums.Category[] | Prisma.ListEnumCategoryFieldRefInput<$PrismaModel> | null
-  has?: $Enums.Category | Prisma.EnumCategoryFieldRefInput<$PrismaModel> | null
-  hasEvery?: $Enums.Category[] | Prisma.ListEnumCategoryFieldRefInput<$PrismaModel>
-  hasSome?: $Enums.Category[] | Prisma.ListEnumCategoryFieldRefInput<$PrismaModel>
-  isEmpty?: boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type BrandCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  categories?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
 }
 
 export type BrandMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
 }
 
 export type BrandMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
 }
 
 export type BrandNullableScalarRelationFilter = {
@@ -319,13 +339,8 @@ export type BrandNullableScalarRelationFilter = {
   isNot?: Prisma.BrandWhereInput | null
 }
 
-export type BrandCreatecategoriesInput = {
-  set: $Enums.Category[]
-}
-
-export type BrandUpdatecategoriesInput = {
-  set?: $Enums.Category[]
-  push?: $Enums.Category | $Enums.Category[]
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type BrandCreateNestedOneWithoutProductsInput = {
@@ -347,17 +362,19 @@ export type BrandUpdateOneWithoutProductsNestedInput = {
 export type BrandCreateWithoutProductsInput = {
   id?: string
   name: string
-  categories?: Prisma.BrandCreatecategoriesInput | $Enums.Category[]
+  slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
 }
 
 export type BrandUncheckedCreateWithoutProductsInput = {
   id?: string
   name: string
-  categories?: Prisma.BrandCreatecategoriesInput | $Enums.Category[]
+  slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
 }
 
 export type BrandCreateOrConnectWithoutProductsInput = {
@@ -379,17 +396,19 @@ export type BrandUpdateToOneWithWhereWithoutProductsInput = {
 export type BrandUpdateWithoutProductsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  categories?: Prisma.BrandUpdatecategoriesInput | $Enums.Category[]
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type BrandUncheckedUpdateWithoutProductsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  categories?: Prisma.BrandUpdatecategoriesInput | $Enums.Category[]
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -426,9 +445,10 @@ export type BrandCountOutputTypeCountProductsArgs<ExtArgs extends runtime.Types.
 export type BrandSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  categories?: boolean
+  slug?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
   products?: boolean | Prisma.Brand$productsArgs<ExtArgs>
   _count?: boolean | Prisma.BrandCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["brand"]>
@@ -436,28 +456,31 @@ export type BrandSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type BrandSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  categories?: boolean
+  slug?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
 }, ExtArgs["result"]["brand"]>
 
 export type BrandSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  categories?: boolean
+  slug?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
 }, ExtArgs["result"]["brand"]>
 
 export type BrandSelectScalar = {
   id?: boolean
   name?: boolean
-  categories?: boolean
+  slug?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
 }
 
-export type BrandOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "categories" | "createdAt" | "updatedAt", ExtArgs["result"]["brand"]>
+export type BrandOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["brand"]>
 export type BrandInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   products?: boolean | Prisma.Brand$productsArgs<ExtArgs>
   _count?: boolean | Prisma.BrandCountOutputTypeDefaultArgs<ExtArgs>
@@ -473,9 +496,10 @@ export type $BrandPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
-    categories: $Enums.Category[]
+    slug: string
     createdAt: Date
     updatedAt: Date
+    deletedAt: Date | null
   }, ExtArgs["result"]["brand"]>
   composites: {}
 }
@@ -902,9 +926,10 @@ export interface Prisma__BrandClient<T, Null = never, ExtArgs extends runtime.Ty
 export interface BrandFieldRefs {
   readonly id: Prisma.FieldRef<"Brand", 'String'>
   readonly name: Prisma.FieldRef<"Brand", 'String'>
-  readonly categories: Prisma.FieldRef<"Brand", 'Category[]'>
+  readonly slug: Prisma.FieldRef<"Brand", 'String'>
   readonly createdAt: Prisma.FieldRef<"Brand", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Brand", 'DateTime'>
+  readonly deletedAt: Prisma.FieldRef<"Brand", 'DateTime'>
 }
     
 

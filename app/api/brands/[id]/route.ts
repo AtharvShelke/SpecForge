@@ -2,14 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-const CategoryEnum = z.enum([
-    "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
-]);
-
 const updateBrandSchema = z.object({
     name: z.string().min(1).optional(),
-    categories: z.array(CategoryEnum).optional(),
+    slug: z.string().min(1).optional(),
 });
 
 // ── GET /api/brands/[id] ────────────────────────────────
@@ -43,11 +38,17 @@ export async function PUT(
         const body = await req.json();
         const data = updateBrandSchema.parse(body);
 
-        // Check unique name if changing
+        // Check unique constraints before attempting update
         if (data.name) {
-            const existing = await prisma.brand.findUnique({ where: { name: data.name } });
-            if (existing && existing.id !== id) {
+            const existingName = await prisma.brand.findUnique({ where: { name: data.name } });
+            if (existingName && existingName.id !== id) {
                 return NextResponse.json({ error: "Brand name already exists" }, { status: 409 });
+            }
+        }
+        if (data.slug) {
+            const existingSlug = await prisma.brand.findUnique({ where: { slug: data.slug } });
+            if (existingSlug && existingSlug.id !== id) {
+                return NextResponse.json({ error: "Brand slug already exists" }, { status: 409 });
             }
         }
 

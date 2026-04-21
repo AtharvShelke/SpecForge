@@ -8,9 +8,11 @@
  */
 
 import type { PrismaClient } from '@/generated/prisma/client';
-import type { PaymentMethodType, PaymentStatus, Currency } from '@/generated/prisma/client';
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
+export type PaymentMethodType = "RAZORPAY" | "UPI" | "BANK_TRANSFER";
+export type PaymentStatus = "INITIATED" | "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED";
 
 // ─────────────────────────────────────────────────
 // PAYMENT CREATION
@@ -20,7 +22,6 @@ export interface CreatePaymentInput {
     orderId: string;
     method: PaymentMethodType;
     amount: number;
-    currency?: Currency;
     gatewayTxnId?: string;
     idempotencyKey: string;
     metadata?: Record<string, any>;
@@ -43,7 +44,6 @@ export async function createPaymentTransaction(tx: PrismaTx, input: CreatePaymen
             orderId: input.orderId,
             method: input.method,
             amount: input.amount,
-            currency: input.currency ?? 'INR',
             gatewayTxnId: input.gatewayTxnId,
             status: input.status ?? 'COMPLETED',
             idempotencyKey: input.idempotencyKey,
@@ -81,11 +81,11 @@ export async function reconcileOrderPayments(
 
     const totalPaid = transactions
         .filter(t => t.status === 'COMPLETED')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0); // Handle Decimal math safely
 
     const totalRefunded = transactions
         .filter(t => t.status === 'REFUNDED' || t.status === 'PARTIALLY_REFUNDED')
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
 
     const netPaid = totalPaid - totalRefunded;
 
@@ -128,7 +128,6 @@ export async function recordRefund(tx: PrismaTx, input: RefundInput) {
             orderId: input.orderId,
             method: original.method,
             amount: -Math.abs(input.amount),
-            currency: original.currency,
             status: 'REFUNDED',
             idempotencyKey,
             metadata: {
@@ -138,8 +137,9 @@ export async function recordRefund(tx: PrismaTx, input: RefundInput) {
         },
     });
 
-    // Update original payment status
-    const isFullRefund = Math.abs(input.amount) >= original.amount;
+    // Update original payment status resolving Decimal safe casting
+    const originalAmountAssigned = Number(original.amount);
+    const isFullRefund = Math.abs(input.amount) >= originalAmountAssigned;
     await tx.paymentTransaction.update({
         where: { id: input.originalPaymentId },
         data: {

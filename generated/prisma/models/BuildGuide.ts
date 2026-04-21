@@ -27,11 +27,11 @@ export type AggregateBuildGuide = {
 }
 
 export type BuildGuideAvgAggregateOutputType = {
-  total: number | null
+  total: runtime.Decimal | null
 }
 
 export type BuildGuideSumAggregateOutputType = {
-  total: number | null
+  total: runtime.Decimal | null
 }
 
 export type BuildGuideMinAggregateOutputType = {
@@ -39,7 +39,7 @@ export type BuildGuideMinAggregateOutputType = {
   title: string | null
   description: string | null
   category: string | null
-  total: number | null
+  total: runtime.Decimal | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -49,7 +49,7 @@ export type BuildGuideMaxAggregateOutputType = {
   title: string | null
   description: string | null
   category: string | null
-  total: number | null
+  total: runtime.Decimal | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -196,7 +196,7 @@ export type BuildGuideGroupByOutputType = {
   title: string
   description: string | null
   category: string
-  total: number
+  total: runtime.Decimal
   createdAt: Date
   updatedAt: Date
   _count: BuildGuideCountAggregateOutputType | null
@@ -229,7 +229,7 @@ export type BuildGuideWhereInput = {
   title?: Prisma.StringFilter<"BuildGuide"> | string
   description?: Prisma.StringNullableFilter<"BuildGuide"> | string | null
   category?: Prisma.StringFilter<"BuildGuide"> | string
-  total?: Prisma.FloatFilter<"BuildGuide"> | number
+  total?: Prisma.DecimalFilter<"BuildGuide"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   items?: Prisma.BuildGuideItemListRelationFilter
@@ -254,7 +254,7 @@ export type BuildGuideWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"BuildGuide"> | string
   description?: Prisma.StringNullableFilter<"BuildGuide"> | string | null
   category?: Prisma.StringFilter<"BuildGuide"> | string
-  total?: Prisma.FloatFilter<"BuildGuide"> | number
+  total?: Prisma.DecimalFilter<"BuildGuide"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   items?: Prisma.BuildGuideItemListRelationFilter
@@ -283,7 +283,7 @@ export type BuildGuideScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"BuildGuide"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"BuildGuide"> | string | null
   category?: Prisma.StringWithAggregatesFilter<"BuildGuide"> | string
-  total?: Prisma.FloatWithAggregatesFilter<"BuildGuide"> | number
+  total?: Prisma.DecimalWithAggregatesFilter<"BuildGuide"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"BuildGuide"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"BuildGuide"> | Date | string
 }
@@ -293,7 +293,7 @@ export type BuildGuideCreateInput = {
   title: string
   description?: string | null
   category?: string
-  total?: number
+  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.BuildGuideItemCreateNestedManyWithoutBuildGuideInput
@@ -304,7 +304,7 @@ export type BuildGuideUncheckedCreateInput = {
   title: string
   description?: string | null
   category?: string
-  total?: number
+  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.BuildGuideItemUncheckedCreateNestedManyWithoutBuildGuideInput
@@ -315,7 +315,7 @@ export type BuildGuideUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.BuildGuideItemUpdateManyWithoutBuildGuideNestedInput
@@ -326,7 +326,7 @@ export type BuildGuideUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.BuildGuideItemUncheckedUpdateManyWithoutBuildGuideNestedInput
@@ -337,7 +337,7 @@ export type BuildGuideCreateManyInput = {
   title: string
   description?: string | null
   category?: string
-  total?: number
+  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -347,7 +347,7 @@ export type BuildGuideUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -357,7 +357,7 @@ export type BuildGuideUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -424,7 +424,7 @@ export type BuildGuideCreateWithoutItemsInput = {
   title: string
   description?: string | null
   category?: string
-  total?: number
+  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -434,7 +434,7 @@ export type BuildGuideUncheckedCreateWithoutItemsInput = {
   title: string
   description?: string | null
   category?: string
-  total?: number
+  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -460,7 +460,7 @@ export type BuildGuideUpdateWithoutItemsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -470,7 +470,7 @@ export type BuildGuideUncheckedUpdateWithoutItemsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -566,7 +566,7 @@ export type $BuildGuidePayload<ExtArgs extends runtime.Types.Extensions.Internal
     title: string
     description: string | null
     category: string
-    total: number
+    total: runtime.Decimal
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["buildGuide"]>
@@ -997,7 +997,7 @@ export interface BuildGuideFieldRefs {
   readonly title: Prisma.FieldRef<"BuildGuide", 'String'>
   readonly description: Prisma.FieldRef<"BuildGuide", 'String'>
   readonly category: Prisma.FieldRef<"BuildGuide", 'String'>
-  readonly total: Prisma.FieldRef<"BuildGuide", 'Float'>
+  readonly total: Prisma.FieldRef<"BuildGuide", 'Decimal'>
   readonly createdAt: Prisma.FieldRef<"BuildGuide", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"BuildGuide", 'DateTime'>
 }

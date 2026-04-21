@@ -6,8 +6,8 @@ import {
     useRef, useCallback, useMemo, type ReactNode,
 } from 'react';
 import {
-    CartItem, Product, CategoryNode, Brand,
-    Order, CategoryFilterConfig,
+    CartItem, Product, Brand,
+    Order,
 } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,13 +28,11 @@ interface ShopContextType {
     removeFromCompare: (productId: string) => void;
     products: Product[];
     refreshProducts: () => Promise<void>;
-    categories: CategoryNode[];
-    refreshCategories: () => Promise<void>;
     brands: Brand[];
     refreshBrands: () => Promise<void>;
     orders: Order[];
     refreshOrders: (email?: string) => Promise<void>;
-    filterConfigs: CategoryFilterConfig[];
+    filterConfigs: any[];
     refreshFilterConfigs: () => Promise<void>;
     placeOrder: (customerName: string, email: string) => void;
     isLoading: boolean;
@@ -68,13 +66,12 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const [isLoading, setIsLoading] = useState(true);
     const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<CategoryNode[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [compareItems, setCompareItems] = useState<Product[]>([]);
     const [isCartOpen, setCartOpen] = useState(false);
     const [orders, setOrders] = useState<Order[]>([]);
-    const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
+    const [filterConfigs, setFilterConfigs] = useState<any[]>([]);
     const [initBuildGuides, setInitBuildGuides] = useState<any[]>([]);
     // ── Refresh functions ─────────────────────────────────────────────────────
     // Each has an empty dep array — they only call stable setter functions.
@@ -89,17 +86,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, []);
 
-    const refreshCategories = useCallback(async () => {
-        try {
-            const res = await fetch('/api/categories/hierarchy');
-            const data = await res.json();
-            setCategories(data);
-        } catch (err) {
-            console.error('Failed to fetch categories:', err);
-        }
-    }, []);
-
-    const refreshBrands = useCallback(async () => {
+        const refreshBrands = useCallback(async () => {
         try {
             const res = await fetch('/api/brands');
             const data = await res.json();
@@ -152,9 +139,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsLoading(true);
         fetch('/api/init')
             .then(res => res.json())
-            .then(({ products, categories, brands, filterConfigs, buildGuides }) => {
+            .then(({ products, brands, filterConfigs, buildGuides }) => {
                 if (products) setProducts(products);
-                if (categories) setCategories(categories);
+                
                 if (brands) setBrands(brands);
                 if (filterConfigs) setFilterConfigs(filterConfigs);
                 if (buildGuides) setInitBuildGuides(buildGuides);
@@ -241,7 +228,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 queueMicrotask(() => toast({ title: 'Compare limit reached', description: 'You can compare up to 4 items max.', variant: 'destructive' }));
                 return prev;
             }
-            if (prev.length > 0 && prev[0].category !== product.category) {
+            if (prev.length > 0 && prev[0].subCategoryId !== product.subCategoryId) {
                 queueMicrotask(() => toast({ title: 'Different category', description: 'You can only compare items from the same category.', variant: 'destructive' }));
                 return prev;
             }
@@ -270,7 +257,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     productId: item.id,
                     variantId: item.selectedVariant?.id ?? '',
                     name: item.name,
-                    category: item.category,
+                    category: item.subCategory?.name || "Uncategorized",
                     price: item.selectedVariant?.price ?? 0,
                     quantity: item.quantity,
                     image: item.media?.[0]?.url ?? '',
@@ -306,8 +293,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         removeFromCompare,
         products,
         refreshProducts,
-        categories,
-        refreshCategories,
         brands,
         refreshBrands,
         orders,
@@ -320,7 +305,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }), [
         cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
         isCartOpen, compareItems, addToCompare, removeFromCompare,
-        products, refreshProducts, categories, refreshCategories,
+        products, refreshProducts, 
         brands, refreshBrands, orders, refreshOrders,
         filterConfigs, refreshFilterConfigs, placeOrder, isLoading,
         initBuildGuides,

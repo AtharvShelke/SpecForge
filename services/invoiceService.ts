@@ -40,7 +40,6 @@ async function nextInvoiceNumber(tx: PrismaTx): Promise<string> {
  * Format: CN-YYMM-000001
  */
 async function nextCreditNoteNumber(tx: PrismaTx): Promise<string> {
-    // Use a separate sequence row for credit notes
     const seq = await tx.invoiceSequence.upsert({
         where: { id: 'credit_note_seq' },
         update: { currentValue: { increment: 1 } },
@@ -110,7 +109,7 @@ export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
 
     // Build tax inputs from order items
     const taxInputs: TaxLineInput[] = order.items.map(item => ({
-        unitPrice: item.price,
+        unitPrice: Number(item.price),
         quantity: item.quantity,
         taxRatePct: 18, // default for PC components
     }));
@@ -122,7 +121,7 @@ export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
         name: item.name,
         description: item.sku ? `SKU: ${item.sku}` : undefined,
         quantity: item.quantity,
-        unitPrice: item.price,
+        unitPrice: Number(item.price),
         taxRatePct: taxResult.lineResults[idx].taxRatePct,
     }));
 
@@ -134,7 +133,6 @@ export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
             type: 'STANDARD',
             status: 'PAID',
             customerId,
-            currency: 'INR',
             subtotal: taxResult.subtotal,
             taxTotal: taxResult.totalTax,
             discountPct: 0,
@@ -192,7 +190,7 @@ export function isValidInvoiceTransition(from: string, to: string): boolean {
 }
 
 // ─────────────────────────────────────────────────
-// CREDIT NOTES
+// CREDIT NOTES (Now modeled as InvoiceType = CREDIT_NOTE)
 // ─────────────────────────────────────────────────
 
 export interface CreditNoteInput {
@@ -229,15 +227,23 @@ export async function createCreditNote(tx: PrismaTx, input: CreditNoteInput) {
 
     const creditNoteNumber = await nextCreditNoteNumber(tx);
 
-    const creditNote = await tx.creditNote.create({
+    // Create the Credit Note as an Invoice using the CREDIT_NOTE type enum
+    const creditNote = await tx.invoice.create({
         data: {
-            creditNoteNumber,
-            originalInvoiceId: input.originalInvoiceId,
-            orderId: input.orderId,
-            reason: input.reason,
+            invoiceNumber: creditNoteNumber,
+            orderId: input.orderId || invoice.orderId,
+            customerId: invoice.customerId,
+            type: 'CREDIT_NOTE',
+            status: 'PAID', // Credit notes are usually finalized/published immediately
             subtotal: taxResult.subtotal,
             taxTotal: taxResult.totalTax,
+            discountPct: 0,
+            shipping: 0,
             total: taxResult.grandTotal,
+            amountPaid: 0,
+            amountDue: 0,
+            notes: `Credit Note for Invoice ${invoice.invoiceNumber}. Reason: ${input.reason}`,
+            dueDate: new Date(),
             lineItems: {
                 create: input.items.map((item, idx) => ({
                     name: item.name,
@@ -247,12 +253,19 @@ export async function createCreditNote(tx: PrismaTx, input: CreditNoteInput) {
                     hsnCode: item.hsnCode,
                 })),
             },
+            audit: {
+                create: {
+                    type: 'created',
+                    actor: 'System',
+                    message: `Credit note created for invoice ${invoice.id}`,
+                },
+            },
         },
         include: { lineItems: true },
     });
 
-    // If credit note covers full invoice amount, void the invoice
-    if (roundCurrency(taxResult.grandTotal) >= roundCurrency(invoice.total)) {
+    // If credit note covers full invoice amount, void the original invoice
+    if (roundCurrency(taxResult.grandTotal) >= roundCurrency(Number(invoice.total))) {
         await tx.invoice.update({
             where: { id: input.originalInvoiceId },
             data: {

@@ -9,24 +9,6 @@
 * 🟢 You can import this file directly.
 */
 
-export const Category = {
-  PROCESSOR: 'PROCESSOR',
-  GPU: 'GPU',
-  MOTHERBOARD: 'MOTHERBOARD',
-  RAM: 'RAM',
-  STORAGE: 'STORAGE',
-  PSU: 'PSU',
-  CABINET: 'CABINET',
-  COOLER: 'COOLER',
-  MONITOR: 'MONITOR',
-  PERIPHERAL: 'PERIPHERAL',
-  NETWORKING: 'NETWORKING',
-  LAPTOP: 'LAPTOP'
-} as const
-
-export type Category = (typeof Category)[keyof typeof Category]
-
-
 export const OrderStatus = {
   PENDING: 'PENDING',
   PAID: 'PAID',
@@ -83,23 +65,10 @@ export const InvoiceType = {
 export type InvoiceType = (typeof InvoiceType)[keyof typeof InvoiceType]
 
 
-export const SalesChannel = {
-  ONLINE: 'ONLINE',
-  POS: 'POS',
-  MANUAL: 'MANUAL',
-  API: 'API',
-  PHONE: 'PHONE'
-} as const
-
-export type SalesChannel = (typeof SalesChannel)[keyof typeof SalesChannel]
-
-
 export const PaymentMethodType = {
-  CARD: 'CARD',
+  RAZORPAY: 'RAZORPAY',
   UPI: 'UPI',
-  BANK_TRANSFER: 'BANK_TRANSFER',
-  CASH: 'CASH',
-  WALLET: 'WALLET'
+  BANK_TRANSFER: 'BANK_TRANSFER'
 } as const
 
 export type PaymentMethodType = (typeof PaymentMethodType)[keyof typeof PaymentMethodType]
@@ -115,26 +84,6 @@ export const PaymentStatus = {
 } as const
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
-
-
-export const PurchaseOrderStatus = {
-  PENDING: 'PENDING',
-  PARTIAL: 'PARTIAL',
-  COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
-} as const
-
-export type PurchaseOrderStatus = (typeof PurchaseOrderStatus)[keyof typeof PurchaseOrderStatus]
-
-
-export const Currency = {
-  INR: 'INR',
-  USD: 'USD',
-  EUR: 'EUR',
-  GBP: 'GBP'
-} as const
-
-export type Currency = (typeof Currency)[keyof typeof Currency]
 
 
 export const FilterType = {
@@ -157,25 +106,82 @@ export const ProductStatus = {
 export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus]
 
 
+export const VariantStatus = {
+  IN_STOCK: 'IN_STOCK',
+  OUT_OF_STOCK: 'OUT_OF_STOCK',
+  DISCONTINUED: 'DISCONTINUED',
+  PREORDER: 'PREORDER'
+} as const
+
+export type VariantStatus = (typeof VariantStatus)[keyof typeof VariantStatus]
+
+
 export const Role = {
-  SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
-  WAREHOUSE_STAFF: 'WAREHOUSE_STAFF',
-  FINANCE: 'FINANCE',
   USER: 'USER'
 } as const
 
 export type Role = (typeof Role)[keyof typeof Role]
 
 
-export const MarketingEventType = {
-  PAGE_VIEW: 'PAGE_VIEW',
-  CART_VISIT: 'CART_VISIT',
-  CART_ABANDONED: 'CART_ABANDONED',
-  CHECKOUT_STARTED: 'CHECKOUT_STARTED',
-  PRODUCT_VIEWED: 'PRODUCT_VIEWED',
-  CUSTOM: 'CUSTOM',
-  NEWSLETTER_SIGNUP: 'NEWSLETTER_SIGNUP'
+export const SpecValueType = {
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  BOOLEAN: 'BOOLEAN'
 } as const
 
-export type MarketingEventType = (typeof MarketingEventType)[keyof typeof MarketingEventType]
+export type SpecValueType = (typeof SpecValueType)[keyof typeof SpecValueType]
+
+
+export const CompatibilityOperator = {
+  EQUAL: 'EQUAL',
+  NOT_EQUAL: 'NOT_EQUAL',
+  LESS_THAN: 'LESS_THAN',
+  LESS_OR_EQUAL: 'LESS_OR_EQUAL',
+  GREATER_THAN: 'GREATER_THAN',
+  GREATER_OR_EQUAL: 'GREATER_OR_EQUAL',
+  IN_LIST: 'IN_LIST',
+  CONTAINS: 'CONTAINS'
+} as const
+
+export type CompatibilityOperator = (typeof CompatibilityOperator)[keyof typeof CompatibilityOperator]
+
+
+export const CompatibilitySeverity = {
+  ERROR: 'ERROR',
+  WARNING: 'WARNING',
+  INFO: 'INFO'
+} as const
+
+export type CompatibilitySeverity = (typeof CompatibilitySeverity)[keyof typeof CompatibilitySeverity]
+
+
+export const InventoryStatus = {
+  IN_STOCK: 'IN_STOCK',
+  RESERVED: 'RESERVED',
+  SOLD: 'SOLD',
+  DAMAGED: 'DAMAGED',
+  RMA: 'RMA',
+  IN_TRANSIT: 'IN_TRANSIT',
+  RETURNED: 'RETURNED'
+} as const
+
+export type InventoryStatus = (typeof InventoryStatus)[keyof typeof InventoryStatus]
+
+
+export const InventoryTrackingType = {
+  SERIALIZED: 'SERIALIZED',
+  BULK: 'BULK'
+} as const
+
+export type InventoryTrackingType = (typeof InventoryTrackingType)[keyof typeof InventoryTrackingType]
+
+
+export const ReservationStatus = {
+  ACTIVE: 'ACTIVE',
+  RELEASED: 'RELEASED',
+  CONVERTED: 'CONVERTED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type ReservationStatus = (typeof ReservationStatus)[keyof typeof ReservationStatus]

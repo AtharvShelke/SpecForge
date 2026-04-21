@@ -52,35 +52,40 @@ export type User = Prisma.UserModel
  */
 export type Brand = Prisma.BrandModel
 /**
+ * Model Category
+ * 
+ */
+export type Category = Prisma.CategoryModel
+/**
+ * Model SubCategory
+ * 
+ */
+export type SubCategory = Prisma.SubCategoryModel
+/**
  * Model CategoryHierarchy
  * 
  */
 export type CategoryHierarchy = Prisma.CategoryHierarchyModel
 /**
- * Model CategorySchema
+ * Model SpecDefinition
  * 
  */
-export type CategorySchema = Prisma.CategorySchemaModel
+export type SpecDefinition = Prisma.SpecDefinitionModel
 /**
- * Model AttributeDefinition
+ * Model VariantSpec
  * 
  */
-export type AttributeDefinition = Prisma.AttributeDefinitionModel
+export type VariantSpec = Prisma.VariantSpecModel
 /**
- * Model CategoryFilterConfig
+ * Model SpecOptionDependency
  * 
  */
-export type CategoryFilterConfig = Prisma.CategoryFilterConfigModel
+export type SpecOptionDependency = Prisma.SpecOptionDependencyModel
 /**
- * Model FilterDefinition
+ * Model SpecOption
  * 
  */
-export type FilterDefinition = Prisma.FilterDefinitionModel
-/**
- * Model Tag
- * 
- */
-export type Tag = Prisma.TagModel
+export type SpecOption = Prisma.SpecOptionModel
 /**
  * Model ProductMedia
  * 
@@ -96,41 +101,6 @@ export type Product = Prisma.ProductModel
  * 
  */
 export type ProductVariant = Prisma.ProductVariantModel
-/**
- * Model ProductSpec
- * 
- */
-export type ProductSpec = Prisma.ProductSpecModel
-/**
- * Model Warehouse
- * 
- */
-export type Warehouse = Prisma.WarehouseModel
-/**
- * Model WarehouseInventory
- * 
- */
-export type WarehouseInventory = Prisma.WarehouseInventoryModel
-/**
- * Model StockMovement
- * 
- */
-export type StockMovement = Prisma.StockMovementModel
-/**
- * Model Supplier
- * 
- */
-export type Supplier = Prisma.SupplierModel
-/**
- * Model PurchaseOrder
- * 
- */
-export type PurchaseOrder = Prisma.PurchaseOrderModel
-/**
- * Model PurchaseOrderItem
- * 
- */
-export type PurchaseOrderItem = Prisma.PurchaseOrderItemModel
 /**
  * Model Customer
  * 
@@ -197,37 +167,77 @@ export type InvoiceAuditEvent = Prisma.InvoiceAuditEventModel
  */
 export type PaymentTransaction = Prisma.PaymentTransactionModel
 /**
- * Model CreditNote
+ * Model PaymentProof
  * 
  */
-export type CreditNote = Prisma.CreditNoteModel
-/**
- * Model CreditNoteLineItem
- * 
- */
-export type CreditNoteLineItem = Prisma.CreditNoteLineItemModel
+export type PaymentProof = Prisma.PaymentProofModel
 /**
  * Model AuditLog
  * 
  */
 export type AuditLog = Prisma.AuditLogModel
 /**
- * Model Lead
+ * Model InventoryItem
  * 
  */
-export type Lead = Prisma.LeadModel
+export type InventoryItem = Prisma.InventoryItemModel
 /**
- * Model MarketingEvent
+ * Model Reservation
  * 
  */
-export type MarketingEvent = Prisma.MarketingEventModel
+export type Reservation = Prisma.ReservationModel
 /**
- * Model MarketingCampaign
+ * Model Build
  * 
  */
-export type MarketingCampaign = Prisma.MarketingCampaignModel
+export type Build = Prisma.BuildModel
 /**
- * Model EmailLog
+ * Model BuildItem
  * 
  */
-export type EmailLog = Prisma.EmailLogModel
+export type BuildItem = Prisma.BuildItemModel
+/**
+ * Model PartSlot
+ * 
+ */
+export type PartSlot = Prisma.PartSlotModel
+/**
+ * Model CompatibilityRule
+ * 
+ */
+export type CompatibilityRule = Prisma.CompatibilityRuleModel
+/**
+ * Model CompatibilityScope
+ * 
+ */
+export type CompatibilityScope = Prisma.CompatibilityScopeModel
+/**
+ * Model DerivedSpec
+ * 
+ */
+export type DerivedSpec = Prisma.DerivedSpecModel
+/**
+ * Model BuildCompatibilityResult
+ * 
+ */
+export type BuildCompatibilityResult = Prisma.BuildCompatibilityResultModel
+/**
+ * Model CompatibilityCheck
+ * 
+ */
+export type CompatibilityCheck = Prisma.CompatibilityCheckModel
+/**
+ * Model SlotConstraint
+ * 
+ */
+export type SlotConstraint = Prisma.SlotConstraintModel
+/**
+ * Model VariantCompatibilityCache
+ * 
+ */
+export type VariantCompatibilityCache = Prisma.VariantCompatibilityCacheModel
+/**
+ * Model SubCategorySlot
+ * 
+ */
+export type SubCategorySlot = Prisma.SubCategorySlotModel

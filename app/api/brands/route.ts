@@ -2,14 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-const CategoryEnum = z.enum([
-  "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-  "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
-]);
-
 const createBrandSchema = z.object({
   name: z.string().min(1).trim(),
-  categories: z.array(CategoryEnum).default([]),
+  slug: z.string().min(1).trim().optional(),
 });
 
 // ── Stable cache headers for GET (revalidate every 30s via stale-while-revalidate) ──
@@ -26,7 +21,7 @@ export async function GET() {
       select: {
         id: true,
         name: true,
-        categories: true,
+        slug: true,
         createdAt: true,
         _count: { select: { products: true } },
       },
@@ -42,7 +37,6 @@ export async function GET() {
 // ── POST /api/brands ────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    // Parse body and validate in parallel-friendly flow (no blocking await before validation)
     const body = await req.json();
     const parsed = createBrandSchema.safeParse(body);
 
@@ -51,39 +45,27 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data;
+    const finalSlug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-    // Use upsert-style conflict detection via a single atomic DB round-trip
-    // instead of findUnique + create (two round-trips = 2x latency)
     try {
       const brand = await prisma.brand.create({
-        data: { name: data.name, categories: data.categories },
-        // Return only what the client needs — avoids fetching unused fields
+        data: { name: data.name, slug: finalSlug },
         select: {
           id: true,
           name: true,
-          categories: true,
+          slug: true,
           createdAt: true,
         },
       });
 
       return NextResponse.json(brand, { status: 201 });
-    } catch (dbError: unknown) {
-      // P2002 = Prisma unique constraint violation — catches the race condition
-      // that the two-query pattern couldn't handle anyway
-      if (
-        typeof dbError === "object" &&
-        dbError !== null &&
-        "code" in dbError &&
-        (dbError as { code: string }).code === "P2002"
-      ) {
-        return NextResponse.json({ error: "Brand name already exists" }, { status: 409 });
+    } catch (dbError: any) {
+      if (dbError?.code === "P2002") {
+        return NextResponse.json({ error: "Brand name or slug already exists" }, { status: 409 });
       }
       throw dbError; // re-throw anything else to the outer catch
     }
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
-    }
     console.error("POST /api/brands error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

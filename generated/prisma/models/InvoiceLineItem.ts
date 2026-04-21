@@ -28,14 +28,14 @@ export type AggregateInvoiceLineItem = {
 
 export type InvoiceLineItemAvgAggregateOutputType = {
   quantity: number | null
-  unitPrice: number | null
-  taxRatePct: number | null
+  unitPrice: runtime.Decimal | null
+  taxRatePct: runtime.Decimal | null
 }
 
 export type InvoiceLineItemSumAggregateOutputType = {
   quantity: number | null
-  unitPrice: number | null
-  taxRatePct: number | null
+  unitPrice: runtime.Decimal | null
+  taxRatePct: runtime.Decimal | null
 }
 
 export type InvoiceLineItemMinAggregateOutputType = {
@@ -44,8 +44,8 @@ export type InvoiceLineItemMinAggregateOutputType = {
   name: string | null
   description: string | null
   quantity: number | null
-  unitPrice: number | null
-  taxRatePct: number | null
+  unitPrice: runtime.Decimal | null
+  taxRatePct: runtime.Decimal | null
   hsnCode: string | null
 }
 
@@ -55,8 +55,8 @@ export type InvoiceLineItemMaxAggregateOutputType = {
   name: string | null
   description: string | null
   quantity: number | null
-  unitPrice: number | null
-  taxRatePct: number | null
+  unitPrice: runtime.Decimal | null
+  taxRatePct: runtime.Decimal | null
   hsnCode: string | null
 }
 
@@ -211,8 +211,8 @@ export type InvoiceLineItemGroupByOutputType = {
   name: string
   description: string | null
   quantity: number
-  unitPrice: number
-  taxRatePct: number
+  unitPrice: runtime.Decimal
+  taxRatePct: runtime.Decimal
   hsnCode: string | null
   _count: InvoiceLineItemCountAggregateOutputType | null
   _avg: InvoiceLineItemAvgAggregateOutputType | null
@@ -245,8 +245,8 @@ export type InvoiceLineItemWhereInput = {
   name?: Prisma.StringFilter<"InvoiceLineItem"> | string
   description?: Prisma.StringNullableFilter<"InvoiceLineItem"> | string | null
   quantity?: Prisma.IntFilter<"InvoiceLineItem"> | number
-  unitPrice?: Prisma.FloatFilter<"InvoiceLineItem"> | number
-  taxRatePct?: Prisma.FloatFilter<"InvoiceLineItem"> | number
+  unitPrice?: Prisma.DecimalFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.StringNullableFilter<"InvoiceLineItem"> | string | null
   invoice?: Prisma.XOR<Prisma.InvoiceScalarRelationFilter, Prisma.InvoiceWhereInput>
 }
@@ -272,8 +272,8 @@ export type InvoiceLineItemWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"InvoiceLineItem"> | string
   description?: Prisma.StringNullableFilter<"InvoiceLineItem"> | string | null
   quantity?: Prisma.IntFilter<"InvoiceLineItem"> | number
-  unitPrice?: Prisma.FloatFilter<"InvoiceLineItem"> | number
-  taxRatePct?: Prisma.FloatFilter<"InvoiceLineItem"> | number
+  unitPrice?: Prisma.DecimalFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.StringNullableFilter<"InvoiceLineItem"> | string | null
   invoice?: Prisma.XOR<Prisma.InvoiceScalarRelationFilter, Prisma.InvoiceWhereInput>
 }, "id">
@@ -303,8 +303,8 @@ export type InvoiceLineItemScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"InvoiceLineItem"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"InvoiceLineItem"> | string | null
   quantity?: Prisma.IntWithAggregatesFilter<"InvoiceLineItem"> | number
-  unitPrice?: Prisma.FloatWithAggregatesFilter<"InvoiceLineItem"> | number
-  taxRatePct?: Prisma.FloatWithAggregatesFilter<"InvoiceLineItem"> | number
+  unitPrice?: Prisma.DecimalWithAggregatesFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalWithAggregatesFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.StringNullableWithAggregatesFilter<"InvoiceLineItem"> | string | null
 }
 
@@ -313,8 +313,8 @@ export type InvoiceLineItemCreateInput = {
   name: string
   description?: string | null
   quantity: number
-  unitPrice: number
-  taxRatePct?: number
+  unitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: string | null
   invoice: Prisma.InvoiceCreateNestedOneWithoutLineItemsInput
 }
@@ -325,8 +325,8 @@ export type InvoiceLineItemUncheckedCreateInput = {
   name: string
   description?: string | null
   quantity: number
-  unitPrice: number
-  taxRatePct?: number
+  unitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: string | null
 }
 
@@ -335,8 +335,8 @@ export type InvoiceLineItemUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  taxRatePct?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   invoice?: Prisma.InvoiceUpdateOneRequiredWithoutLineItemsNestedInput
 }
@@ -347,8 +347,8 @@ export type InvoiceLineItemUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  taxRatePct?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -358,8 +358,8 @@ export type InvoiceLineItemCreateManyInput = {
   name: string
   description?: string | null
   quantity: number
-  unitPrice: number
-  taxRatePct?: number
+  unitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: string | null
 }
 
@@ -368,8 +368,8 @@ export type InvoiceLineItemUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  taxRatePct?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -379,8 +379,8 @@ export type InvoiceLineItemUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  taxRatePct?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -486,8 +486,8 @@ export type InvoiceLineItemCreateWithoutInvoiceInput = {
   name: string
   description?: string | null
   quantity: number
-  unitPrice: number
-  taxRatePct?: number
+  unitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: string | null
 }
 
@@ -496,8 +496,8 @@ export type InvoiceLineItemUncheckedCreateWithoutInvoiceInput = {
   name: string
   description?: string | null
   quantity: number
-  unitPrice: number
-  taxRatePct?: number
+  unitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: string | null
 }
 
@@ -536,8 +536,8 @@ export type InvoiceLineItemScalarWhereInput = {
   name?: Prisma.StringFilter<"InvoiceLineItem"> | string
   description?: Prisma.StringNullableFilter<"InvoiceLineItem"> | string | null
   quantity?: Prisma.IntFilter<"InvoiceLineItem"> | number
-  unitPrice?: Prisma.FloatFilter<"InvoiceLineItem"> | number
-  taxRatePct?: Prisma.FloatFilter<"InvoiceLineItem"> | number
+  unitPrice?: Prisma.DecimalFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFilter<"InvoiceLineItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.StringNullableFilter<"InvoiceLineItem"> | string | null
 }
 
@@ -546,8 +546,8 @@ export type InvoiceLineItemCreateManyInvoiceInput = {
   name: string
   description?: string | null
   quantity: number
-  unitPrice: number
-  taxRatePct?: number
+  unitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: string | null
 }
 
@@ -556,8 +556,8 @@ export type InvoiceLineItemUpdateWithoutInvoiceInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  taxRatePct?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -566,8 +566,8 @@ export type InvoiceLineItemUncheckedUpdateWithoutInvoiceInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  taxRatePct?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -576,8 +576,8 @@ export type InvoiceLineItemUncheckedUpdateManyWithoutInvoiceInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  taxRatePct?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxRatePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   hsnCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -652,8 +652,8 @@ export type $InvoiceLineItemPayload<ExtArgs extends runtime.Types.Extensions.Int
     name: string
     description: string | null
     quantity: number
-    unitPrice: number
-    taxRatePct: number
+    unitPrice: runtime.Decimal
+    taxRatePct: runtime.Decimal
     hsnCode: string | null
   }, ExtArgs["result"]["invoiceLineItem"]>
   composites: {}
@@ -1084,8 +1084,8 @@ export interface InvoiceLineItemFieldRefs {
   readonly name: Prisma.FieldRef<"InvoiceLineItem", 'String'>
   readonly description: Prisma.FieldRef<"InvoiceLineItem", 'String'>
   readonly quantity: Prisma.FieldRef<"InvoiceLineItem", 'Int'>
-  readonly unitPrice: Prisma.FieldRef<"InvoiceLineItem", 'Float'>
-  readonly taxRatePct: Prisma.FieldRef<"InvoiceLineItem", 'Float'>
+  readonly unitPrice: Prisma.FieldRef<"InvoiceLineItem", 'Decimal'>
+  readonly taxRatePct: Prisma.FieldRef<"InvoiceLineItem", 'Decimal'>
   readonly hsnCode: Prisma.FieldRef<"InvoiceLineItem", 'String'>
 }
     

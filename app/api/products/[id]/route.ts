@@ -2,22 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-const CategoryEnum = z.enum([
-    "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
-]);
-
 const specSchema = z.object({
-    key: z.string().min(1),
-    value: z.string().min(1),
+    specId: z.string().uuid(),
+    optionId: z.string().uuid().optional().nullable(),
+    valueString: z.string().optional().nullable(),
+    valueNumber: z.number().optional().nullable(),
+    valueBool: z.boolean().optional().nullable(),
 });
 
 const updateProductSchema = z.object({
     name: z.string().min(1).optional(),
-    category: CategoryEnum.optional(),
+    subCategoryId: z.string().uuid().optional(),
     price: z.number().positive().optional(),
     stock: z.number().int().min(0).optional(),
-    images: z.array(z.string().min(1)).optional(), // Support multiple images
+    images: z.array(z.string().min(1)).optional(),
     description: z.string().nullable().optional(),
     brandId: z.string().uuid().nullable().optional(),
     specs: z.array(specSchema).optional(),
@@ -33,9 +31,19 @@ export async function GET(
         const product = await prisma.product.findUnique({
             where: { id },
             include: {
-                specs: true,
                 brand: true,
-                variants: { include: { warehouseInventories: true } },
+                subCategory: true,
+                variants: { 
+                    include: { 
+                        inventoryItems: true,
+                        variantSpecs: {
+                            include: {
+                                spec: true,
+                                option: true
+                            }
+                        }
+                    } 
+                },
                 media: true
             },
         });
@@ -67,61 +75,90 @@ export async function PUT(
         }
 
         const product = await prisma.$transaction(async (tx) => {
-            // Update specs: delete old, create new
-            if (data.specs) {
-                await tx.productSpec.deleteMany({ where: { productId: id } });
-                await tx.productSpec.createMany({
-                    data: data.specs.map((s) => ({ productId: id, key: s.key, value: s.value })),
-                });
-            }
-
-            const { specs: _, price, stock, images, ...productData } = data;
-            const p = await tx.product.update({
+            const { specs, price, stock, images, ...productData } = data;
+            
+            await tx.product.update({
                 where: { id },
-                data: productData,
-                include: { specs: true, brand: true, variants: true, media: true },
+                data: productData
             });
 
-            // Map flat API updates to variant models if passed
-            if (price !== undefined || stock !== undefined) {
+            // Handle specs, price, stock on the first variant if requested
+            if (price !== undefined || stock !== undefined || specs !== undefined) {
                 const variant = await tx.productVariant.findFirst({ where: { productId: id } });
                 if (variant) {
-                    await tx.productVariant.update({
-                        where: { id: variant.id },
-                        data: {
-                            ...(price !== undefined ? { price } : {})
-                        }
-                    });
-                    // If stock passed, update main warehouse
+                    if (price !== undefined) {
+                        await tx.productVariant.update({
+                            where: { id: variant.id },
+                            data: { price }
+                        });
+                    }
                     if (stock !== undefined) {
-                        const defaultWarehouse = await tx.warehouse.findFirst({ where: { code: "MAIN" } });
-                        if (defaultWarehouse) {
-                            const inv = await tx.warehouseInventory.findUnique({ where: { variantId_warehouseId: { variantId: variant.id, warehouseId: defaultWarehouse.id } } });
-                            if (inv) {
-                                await tx.warehouseInventory.update({
-                                    where: { id: inv.id },
-                                    data: { quantity: stock }
-                                });
-                            }
+                        const inv = await tx.inventoryItem.findFirst({ where: { variantId: variant.id } });
+                        if (inv) {
+                            await tx.inventoryItem.update({
+                                where: { id: inv.id },
+                                data: { quantityOnHand: stock }
+                            });
+                        } else {
+                            await tx.inventoryItem.create({
+                                data: {
+                                    variantId: variant.id,
+                                    trackingType: "BULK",
+                                    quantityOnHand: stock,
+                                    quantityReserved: 0,
+                                    status: "IN_STOCK"
+                                }
+                            });
+                        }
+                    }
+                    if (specs !== undefined) {
+                        await tx.variantSpec.deleteMany({ where: { variantId: variant.id } });
+                        if (specs.length > 0) {
+                            await tx.variantSpec.createMany({
+                                data: specs.map(s => ({
+                                    variantId: variant.id,
+                                    specId: s.specId,
+                                    optionId: s.optionId ?? null,
+                                    valueString: s.valueString ?? null,
+                                    valueNumber: s.valueNumber ?? null,
+                                    valueBool: s.valueBool ?? null,
+                                }))
+                            });
                         }
                     }
                 }
             }
 
             if (images !== undefined) {
-                // Delete existing media and create new ones
                 await tx.productMedia.deleteMany({ where: { productId: id } });
-                await tx.productMedia.createMany({
-                    data: images.map((url, index) => ({
-                        productId: id,
-                        url,
-                        sortOrder: index
-                    }))
-                });
+                if (images.length > 0) {
+                    await tx.productMedia.createMany({
+                        data: images.map((url, index) => ({
+                            productId: id,
+                            url,
+                            sortOrder: index
+                        }))
+                    });
+                }
             }
 
-
-            return p;
+            // Return updated complete representation
+            return await tx.product.findUnique({
+                where: { id },
+                include: {
+                    brand: true,
+                    subCategory: true,
+                    variants: {
+                        include: { 
+                            inventoryItems: true, 
+                            variantSpecs: {
+                                include: { spec: true, option: true }
+                            } 
+                        }
+                    },
+                    media: true
+                }
+            });
         });
 
         return NextResponse.json(product);
@@ -146,7 +183,7 @@ export async function DELETE(
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
-        // Will fail if OrderItems or BuildGuideItems reference this product (onDelete: Restrict)
+        // Will fail if referenced via strict relations
         await prisma.product.delete({ where: { id } });
         return NextResponse.json({ message: "Product deleted" });
     } catch (error: any) {

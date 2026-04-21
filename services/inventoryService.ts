@@ -1,14 +1,4 @@
-/**
- * Centralized Inventory Service
- *
- * Channel-agnostic inventory reservation, confirmation, and restoration.
- * All sales channels funnel through these functions — no inventory logic
- * should live in API routes directly.
- */
-
 import { PrismaClient } from "@/generated/prisma/client";
-
-
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -37,48 +27,46 @@ export async function reserveInventory(
     performedBy: string = 'System'
 ): Promise<void> {
     for (const item of items) {
-        // Find best warehouse with sufficient stock
-        const inv = await tx.warehouseInventory.findFirst({
-            where: { variantId: item.variantId, quantity: { gte: item.quantity } },
-            orderBy: { quantity: 'desc' },
+        // Find best bulk inventory item with sufficient stock for this variant.
+        const inv = await tx.inventoryItem.findFirst({
+            where: { 
+                variantId: item.variantId, 
+                quantityOnHand: { gte: item.quantity },
+                status: 'IN_STOCK'
+            },
+            orderBy: { quantityOnHand: 'desc' },
         });
 
         if (!inv) throw new InsufficientStockError(item.variantId);
 
         // Optimistic concurrency: re-check quantity in WHERE clause
-        const updated = await tx.warehouseInventory.updateMany({
-            where: { id: inv.id, quantity: { gte: item.quantity } },
+        const updated = await tx.inventoryItem.updateMany({
+            where: { id: inv.id, quantityOnHand: { gte: item.quantity } },
             data: {
-                quantity: { decrement: item.quantity },
-                reserved: { increment: item.quantity },
-                lastUpdated: new Date(),
+                quantityOnHand: { decrement: item.quantity },
+                quantityReserved: { increment: item.quantity },
             },
         });
 
         if (updated.count === 0) throw new InsufficientStockError(item.variantId);
 
-        // Log stock movement with order reference
-        await tx.stockMovement.create({
+        // Record the formal reservation linking via the new Reservation model
+        await tx.reservation.create({
             data: {
-                warehouseInventoryId: inv.id,
-                warehouseId: inv.warehouseId,
-                type: 'RESERVE',
-                quantity: item.quantity,
-                previousQuantity: inv.quantity,
-                newQuantity: inv.quantity - item.quantity,
                 orderId,
-                reason: `Order ${orderId} placed — stock reserved`,
-                performedBy,
-            },
+                inventoryItemId: inv.id,
+                quantity: item.quantity,
+                status: 'ACTIVE'
+            }
         });
 
-        // Trigger OUT_OF_STOCK status if total available quantity hits 0 across all warehouses
-        const allInv = await tx.warehouseInventory.aggregate({
+        // Trigger OUT_OF_STOCK status if total available quantity hits 0
+        const allInv = await tx.inventoryItem.aggregate({
             where: { variantId: item.variantId },
-            _sum: { quantity: true }
+            _sum: { quantityOnHand: true }
         });
 
-        if ((allInv._sum.quantity || 0) <= 0) {
+        if ((allInv._sum.quantityOnHand || 0) <= 0) {
             await tx.productVariant.update({
                 where: { id: item.variantId },
                 data: { status: 'OUT_OF_STOCK' }
@@ -98,32 +86,24 @@ export async function confirmInventory(
     performedBy: string = 'System'
 ): Promise<void> {
     for (const item of items) {
-        const inv = await tx.warehouseInventory.findFirst({
-            where: { variantId: item.variantId },
-        });
-        if (!inv) continue;
-
-        await tx.warehouseInventory.update({
-            where: { id: inv.id },
-            data: {
-                reserved: { decrement: item.quantity },
-                lastUpdated: new Date(),
-            },
+        const reservations = await tx.reservation.findMany({
+            where: { orderId, status: 'ACTIVE', inventoryItem: { variantId: item.variantId } },
+            include: { inventoryItem: true }
         });
 
-        await tx.stockMovement.create({
-            data: {
-                warehouseInventoryId: inv.id,
-                warehouseId: inv.warehouseId,
-                type: 'SALE',
-                quantity: item.quantity,
-                previousQuantity: inv.quantity,
-                newQuantity: inv.quantity,
-                orderId,
-                reason: `Order ${orderId} shipped — reserved stock confirmed`,
-                performedBy,
-            },
-        });
+        for (const res of reservations) {
+            await tx.inventoryItem.update({
+                where: { id: res.inventoryItemId },
+                data: {
+                    quantityReserved: { decrement: res.quantity },
+                },
+            });
+
+            await tx.reservation.update({
+                where: { id: res.id },
+                data: { status: 'CONVERTED' }
+            });
+        }
     }
 }
 
@@ -140,59 +120,70 @@ export async function restoreInventory(
     performedBy: string = 'System'
 ): Promise<void> {
     for (const item of items) {
-        const inv = await tx.warehouseInventory.findFirst({
-            where: { variantId: item.variantId },
-        });
-        if (!inv) continue;
-
-        const newQuantity = inv.quantity + item.quantity;
-
         if (isPreShip) {
-            // Pre-ship cancellation: move from reserved back to available
-            await tx.warehouseInventory.update({
-                where: { id: inv.id },
-                data: {
-                    quantity: { increment: item.quantity },
-                    reserved: { decrement: item.quantity },
-                    lastUpdated: new Date(),
-                },
+            // Pre-ship cancellation: move from reserved back to available and release Reservation
+            const reservations = await tx.reservation.findMany({
+                where: { orderId, status: 'ACTIVE', inventoryItem: { variantId: item.variantId } },
+                include: { inventoryItem: true }
             });
+
+            let restoredTotal = 0;
+            for (const res of reservations) {
+                await tx.inventoryItem.update({
+                    where: { id: res.inventoryItemId },
+                    data: {
+                        quantityOnHand: { increment: res.quantity },
+                        quantityReserved: { decrement: res.quantity },
+                    },
+                });
+
+                await tx.reservation.update({
+                    where: { id: res.id },
+                    data: { status: 'RELEASED' }
+                });
+                restoredTotal += res.quantity;
+            }
+
+            // If returned item makes stock > 0, make sure status is IN_STOCK
+            if (restoredTotal > 0) {
+                const variant = await tx.productVariant.findUnique({
+                    where: { id: item.variantId },
+                    select: { status: true }
+                });
+
+                if (variant?.status === 'OUT_OF_STOCK') {
+                    await tx.productVariant.update({
+                        where: { id: item.variantId },
+                        data: { status: 'IN_STOCK' }
+                    });
+                }
+            }
         } else {
-            // Post-ship return: add back to available (no reserved to decrement)
-            await tx.warehouseInventory.update({
-                where: { id: inv.id },
-                data: {
-                    quantity: { increment: item.quantity },
-                    lastUpdated: new Date(),
-                },
+            // Post-ship return: add back to available
+            const inv = await tx.inventoryItem.findFirst({
+                where: { variantId: item.variantId, trackingType: 'BULK' }
             });
-        }
 
-        await tx.stockMovement.create({
-            data: {
-                warehouseInventoryId: inv.id,
-                warehouseId: inv.warehouseId,
-                type: 'RETURN',
-                quantity: item.quantity,
-                previousQuantity: inv.quantity,
-                newQuantity,
-                orderId,
-                reason,
-                performedBy,
-            },
-        });
+            if (inv) {
+                await tx.inventoryItem.update({
+                    where: { id: inv.id },
+                    data: {
+                        quantityOnHand: { increment: item.quantity },
+                    },
+                });
+                
+                const variant = await tx.productVariant.findUnique({
+                    where: { id: item.variantId },
+                    select: { status: true }
+                });
 
-        // If returned item makes stock > 0, make sure status is ACTIVE
-        const variant = await tx.productVariant.findUnique({
-            where: { id: item.variantId },
-            select: { status: true }
-        });
-
-        if (variant?.status === 'OUT_OF_STOCK' && newQuantity > 0) {
-            await tx.productVariant.update({
-                where: { id: item.variantId },
-                data: { status: 'ACTIVE' }
-            });
+                if (variant?.status === 'OUT_OF_STOCK') {
+                    await tx.productVariant.update({
+                        where: { id: item.variantId },
+                        data: { status: 'IN_STOCK' }
+                    });
+                }
+            }
         }
     }
 }
