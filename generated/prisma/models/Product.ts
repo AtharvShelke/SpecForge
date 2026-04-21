@@ -40,7 +40,8 @@ export type ProductMinAggregateOutputType = {
   name: string | null
   metaTitle: string | null
   metaDescription: string | null
-  category: $Enums.Category | null
+  categoryId: string | null
+  subCategoryId: string | null
   description: string | null
   status: $Enums.ProductStatus | null
   deletedAt: Date | null
@@ -56,7 +57,8 @@ export type ProductMaxAggregateOutputType = {
   name: string | null
   metaTitle: string | null
   metaDescription: string | null
-  category: $Enums.Category | null
+  categoryId: string | null
+  subCategoryId: string | null
   description: string | null
   status: $Enums.ProductStatus | null
   deletedAt: Date | null
@@ -72,7 +74,8 @@ export type ProductCountAggregateOutputType = {
   name: number
   metaTitle: number
   metaDescription: number
-  category: number
+  categoryId: number
+  subCategoryId: number
   description: number
   status: number
   deletedAt: number
@@ -98,7 +101,8 @@ export type ProductMinAggregateInputType = {
   name?: true
   metaTitle?: true
   metaDescription?: true
-  category?: true
+  categoryId?: true
+  subCategoryId?: true
   description?: true
   status?: true
   deletedAt?: true
@@ -114,7 +118,8 @@ export type ProductMaxAggregateInputType = {
   name?: true
   metaTitle?: true
   metaDescription?: true
-  category?: true
+  categoryId?: true
+  subCategoryId?: true
   description?: true
   status?: true
   deletedAt?: true
@@ -130,7 +135,8 @@ export type ProductCountAggregateInputType = {
   name?: true
   metaTitle?: true
   metaDescription?: true
-  category?: true
+  categoryId?: true
+  subCategoryId?: true
   description?: true
   status?: true
   deletedAt?: true
@@ -233,7 +239,8 @@ export type ProductGroupByOutputType = {
   name: string
   metaTitle: string | null
   metaDescription: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description: string | null
   status: $Enums.ProductStatus
   deletedAt: Date | null
@@ -272,7 +279,8 @@ export type ProductWhereInput = {
   name?: Prisma.StringFilter<"Product"> | string
   metaTitle?: Prisma.StringNullableFilter<"Product"> | string | null
   metaDescription?: Prisma.StringNullableFilter<"Product"> | string | null
-  category?: Prisma.EnumCategoryFilter<"Product"> | $Enums.Category
+  categoryId?: Prisma.StringFilter<"Product"> | string
+  subCategoryId?: Prisma.StringFilter<"Product"> | string
   description?: Prisma.StringNullableFilter<"Product"> | string | null
   status?: Prisma.EnumProductStatusFilter<"Product"> | $Enums.ProductStatus
   deletedAt?: Prisma.DateTimeNullableFilter<"Product"> | Date | string | null
@@ -280,8 +288,9 @@ export type ProductWhereInput = {
   brandId?: Prisma.StringNullableFilter<"Product"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
+  category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
   brand?: Prisma.XOR<Prisma.BrandNullableScalarRelationFilter, Prisma.BrandWhereInput> | null
-  specs?: Prisma.ProductSpecListRelationFilter
   variants?: Prisma.ProductVariantListRelationFilter
   media?: Prisma.ProductMediaListRelationFilter
   tags?: Prisma.TagListRelationFilter
@@ -293,7 +302,8 @@ export type ProductOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   metaTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   metaDescription?: Prisma.SortOrderInput | Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
+  subCategoryId?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -301,8 +311,9 @@ export type ProductOrderByWithRelationInput = {
   brandId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  category?: Prisma.CategoryOrderByWithRelationInput
+  subCategory?: Prisma.SubCategoryOrderByWithRelationInput
   brand?: Prisma.BrandOrderByWithRelationInput
-  specs?: Prisma.ProductSpecOrderByRelationAggregateInput
   variants?: Prisma.ProductVariantOrderByRelationAggregateInput
   media?: Prisma.ProductMediaOrderByRelationAggregateInput
   tags?: Prisma.TagOrderByRelationAggregateInput
@@ -317,7 +328,8 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Product"> | string
   metaTitle?: Prisma.StringNullableFilter<"Product"> | string | null
   metaDescription?: Prisma.StringNullableFilter<"Product"> | string | null
-  category?: Prisma.EnumCategoryFilter<"Product"> | $Enums.Category
+  categoryId?: Prisma.StringFilter<"Product"> | string
+  subCategoryId?: Prisma.StringFilter<"Product"> | string
   description?: Prisma.StringNullableFilter<"Product"> | string | null
   status?: Prisma.EnumProductStatusFilter<"Product"> | $Enums.ProductStatus
   deletedAt?: Prisma.DateTimeNullableFilter<"Product"> | Date | string | null
@@ -325,8 +337,9 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   brandId?: Prisma.StringNullableFilter<"Product"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
+  category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
   brand?: Prisma.XOR<Prisma.BrandNullableScalarRelationFilter, Prisma.BrandWhereInput> | null
-  specs?: Prisma.ProductSpecListRelationFilter
   variants?: Prisma.ProductVariantListRelationFilter
   media?: Prisma.ProductMediaListRelationFilter
   tags?: Prisma.TagListRelationFilter
@@ -338,7 +351,8 @@ export type ProductOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   metaTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   metaDescription?: Prisma.SortOrderInput | Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
+  subCategoryId?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -362,7 +376,8 @@ export type ProductScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Product"> | string
   metaTitle?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
   metaDescription?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
-  category?: Prisma.EnumCategoryWithAggregatesFilter<"Product"> | $Enums.Category
+  categoryId?: Prisma.StringWithAggregatesFilter<"Product"> | string
+  subCategoryId?: Prisma.StringWithAggregatesFilter<"Product"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
   status?: Prisma.EnumProductStatusWithAggregatesFilter<"Product"> | $Enums.ProductStatus
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Product"> | Date | string | null
@@ -378,15 +393,15 @@ export type ProductCreateInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutProductsInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutProductsInput
   brand?: Prisma.BrandCreateNestedOneWithoutProductsInput
-  specs?: Prisma.ProductSpecCreateNestedManyWithoutProductInput
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaCreateNestedManyWithoutProductInput
   tags?: Prisma.TagCreateNestedManyWithoutProductsInput
@@ -398,7 +413,8 @@ export type ProductUncheckedCreateInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
@@ -406,7 +422,6 @@ export type ProductUncheckedCreateInput = {
   brandId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  specs?: Prisma.ProductSpecUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutProductInput
   tags?: Prisma.TagUncheckedCreateNestedManyWithoutProductsInput
@@ -418,15 +433,15 @@ export type ProductUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutProductsNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutProductsNestedInput
   brand?: Prisma.BrandUpdateOneWithoutProductsNestedInput
-  specs?: Prisma.ProductSpecUpdateManyWithoutProductNestedInput
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUpdateManyWithoutProductsNestedInput
@@ -438,7 +453,8 @@ export type ProductUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -446,7 +462,6 @@ export type ProductUncheckedUpdateInput = {
   brandId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  specs?: Prisma.ProductSpecUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUncheckedUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUncheckedUpdateManyWithoutProductsNestedInput
@@ -458,7 +473,8 @@ export type ProductCreateManyInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
@@ -474,7 +490,6 @@ export type ProductUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -489,7 +504,8 @@ export type ProductUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -520,7 +536,8 @@ export type ProductCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   metaTitle?: Prisma.SortOrder
   metaDescription?: Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
+  subCategoryId?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -540,7 +557,8 @@ export type ProductMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   metaTitle?: Prisma.SortOrder
   metaDescription?: Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
+  subCategoryId?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -556,7 +574,8 @@ export type ProductMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   metaTitle?: Prisma.SortOrder
   metaDescription?: Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
+  subCategoryId?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -568,6 +587,90 @@ export type ProductMinOrderByAggregateInput = {
 
 export type ProductSumOrderByAggregateInput = {
   version?: Prisma.SortOrder
+}
+
+export type ProductCreateNestedManyWithoutCategoryInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutCategoryInput, Prisma.ProductUncheckedCreateWithoutCategoryInput> | Prisma.ProductCreateWithoutCategoryInput[] | Prisma.ProductUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutCategoryInput | Prisma.ProductCreateOrConnectWithoutCategoryInput[]
+  createMany?: Prisma.ProductCreateManyCategoryInputEnvelope
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+}
+
+export type ProductUncheckedCreateNestedManyWithoutCategoryInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutCategoryInput, Prisma.ProductUncheckedCreateWithoutCategoryInput> | Prisma.ProductCreateWithoutCategoryInput[] | Prisma.ProductUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutCategoryInput | Prisma.ProductCreateOrConnectWithoutCategoryInput[]
+  createMany?: Prisma.ProductCreateManyCategoryInputEnvelope
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+}
+
+export type ProductUpdateManyWithoutCategoryNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutCategoryInput, Prisma.ProductUncheckedCreateWithoutCategoryInput> | Prisma.ProductCreateWithoutCategoryInput[] | Prisma.ProductUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutCategoryInput | Prisma.ProductCreateOrConnectWithoutCategoryInput[]
+  upsert?: Prisma.ProductUpsertWithWhereUniqueWithoutCategoryInput | Prisma.ProductUpsertWithWhereUniqueWithoutCategoryInput[]
+  createMany?: Prisma.ProductCreateManyCategoryInputEnvelope
+  set?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  disconnect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  delete?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  update?: Prisma.ProductUpdateWithWhereUniqueWithoutCategoryInput | Prisma.ProductUpdateWithWhereUniqueWithoutCategoryInput[]
+  updateMany?: Prisma.ProductUpdateManyWithWhereWithoutCategoryInput | Prisma.ProductUpdateManyWithWhereWithoutCategoryInput[]
+  deleteMany?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
+}
+
+export type ProductUncheckedUpdateManyWithoutCategoryNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutCategoryInput, Prisma.ProductUncheckedCreateWithoutCategoryInput> | Prisma.ProductCreateWithoutCategoryInput[] | Prisma.ProductUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutCategoryInput | Prisma.ProductCreateOrConnectWithoutCategoryInput[]
+  upsert?: Prisma.ProductUpsertWithWhereUniqueWithoutCategoryInput | Prisma.ProductUpsertWithWhereUniqueWithoutCategoryInput[]
+  createMany?: Prisma.ProductCreateManyCategoryInputEnvelope
+  set?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  disconnect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  delete?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  update?: Prisma.ProductUpdateWithWhereUniqueWithoutCategoryInput | Prisma.ProductUpdateWithWhereUniqueWithoutCategoryInput[]
+  updateMany?: Prisma.ProductUpdateManyWithWhereWithoutCategoryInput | Prisma.ProductUpdateManyWithWhereWithoutCategoryInput[]
+  deleteMany?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
+}
+
+export type ProductCreateNestedManyWithoutSubCategoryInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutSubCategoryInput, Prisma.ProductUncheckedCreateWithoutSubCategoryInput> | Prisma.ProductCreateWithoutSubCategoryInput[] | Prisma.ProductUncheckedCreateWithoutSubCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutSubCategoryInput | Prisma.ProductCreateOrConnectWithoutSubCategoryInput[]
+  createMany?: Prisma.ProductCreateManySubCategoryInputEnvelope
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+}
+
+export type ProductUncheckedCreateNestedManyWithoutSubCategoryInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutSubCategoryInput, Prisma.ProductUncheckedCreateWithoutSubCategoryInput> | Prisma.ProductCreateWithoutSubCategoryInput[] | Prisma.ProductUncheckedCreateWithoutSubCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutSubCategoryInput | Prisma.ProductCreateOrConnectWithoutSubCategoryInput[]
+  createMany?: Prisma.ProductCreateManySubCategoryInputEnvelope
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+}
+
+export type ProductUpdateManyWithoutSubCategoryNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutSubCategoryInput, Prisma.ProductUncheckedCreateWithoutSubCategoryInput> | Prisma.ProductCreateWithoutSubCategoryInput[] | Prisma.ProductUncheckedCreateWithoutSubCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutSubCategoryInput | Prisma.ProductCreateOrConnectWithoutSubCategoryInput[]
+  upsert?: Prisma.ProductUpsertWithWhereUniqueWithoutSubCategoryInput | Prisma.ProductUpsertWithWhereUniqueWithoutSubCategoryInput[]
+  createMany?: Prisma.ProductCreateManySubCategoryInputEnvelope
+  set?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  disconnect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  delete?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  update?: Prisma.ProductUpdateWithWhereUniqueWithoutSubCategoryInput | Prisma.ProductUpdateWithWhereUniqueWithoutSubCategoryInput[]
+  updateMany?: Prisma.ProductUpdateManyWithWhereWithoutSubCategoryInput | Prisma.ProductUpdateManyWithWhereWithoutSubCategoryInput[]
+  deleteMany?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
+}
+
+export type ProductUncheckedUpdateManyWithoutSubCategoryNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutSubCategoryInput, Prisma.ProductUncheckedCreateWithoutSubCategoryInput> | Prisma.ProductCreateWithoutSubCategoryInput[] | Prisma.ProductUncheckedCreateWithoutSubCategoryInput[]
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutSubCategoryInput | Prisma.ProductCreateOrConnectWithoutSubCategoryInput[]
+  upsert?: Prisma.ProductUpsertWithWhereUniqueWithoutSubCategoryInput | Prisma.ProductUpsertWithWhereUniqueWithoutSubCategoryInput[]
+  createMany?: Prisma.ProductCreateManySubCategoryInputEnvelope
+  set?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  disconnect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  delete?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  connect?: Prisma.ProductWhereUniqueInput | Prisma.ProductWhereUniqueInput[]
+  update?: Prisma.ProductUpdateWithWhereUniqueWithoutSubCategoryInput | Prisma.ProductUpdateWithWhereUniqueWithoutSubCategoryInput[]
+  updateMany?: Prisma.ProductUpdateManyWithWhereWithoutSubCategoryInput | Prisma.ProductUpdateManyWithWhereWithoutSubCategoryInput[]
+  deleteMany?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
 }
 
 export type ProductCreateNestedManyWithoutBrandInput = {
@@ -686,18 +789,152 @@ export type ProductUpdateOneRequiredWithoutVariantsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutVariantsInput, Prisma.ProductUpdateWithoutVariantsInput>, Prisma.ProductUncheckedUpdateWithoutVariantsInput>
 }
 
-export type ProductCreateNestedOneWithoutSpecsInput = {
-  create?: Prisma.XOR<Prisma.ProductCreateWithoutSpecsInput, Prisma.ProductUncheckedCreateWithoutSpecsInput>
-  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutSpecsInput
-  connect?: Prisma.ProductWhereUniqueInput
+export type ProductCreateWithoutCategoryInput = {
+  id?: string
+  slug?: string
+  name: string
+  metaTitle?: string | null
+  metaDescription?: string | null
+  description?: string | null
+  status?: $Enums.ProductStatus
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutProductsInput
+  brand?: Prisma.BrandCreateNestedOneWithoutProductsInput
+  variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
+  media?: Prisma.ProductMediaCreateNestedManyWithoutProductInput
+  tags?: Prisma.TagCreateNestedManyWithoutProductsInput
 }
 
-export type ProductUpdateOneRequiredWithoutSpecsNestedInput = {
-  create?: Prisma.XOR<Prisma.ProductCreateWithoutSpecsInput, Prisma.ProductUncheckedCreateWithoutSpecsInput>
-  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutSpecsInput
-  upsert?: Prisma.ProductUpsertWithoutSpecsInput
-  connect?: Prisma.ProductWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutSpecsInput, Prisma.ProductUpdateWithoutSpecsInput>, Prisma.ProductUncheckedUpdateWithoutSpecsInput>
+export type ProductUncheckedCreateWithoutCategoryInput = {
+  id?: string
+  slug?: string
+  name: string
+  metaTitle?: string | null
+  metaDescription?: string | null
+  subCategoryId: string
+  description?: string | null
+  status?: $Enums.ProductStatus
+  deletedAt?: Date | string | null
+  version?: number
+  brandId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
+  media?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutProductInput
+  tags?: Prisma.TagUncheckedCreateNestedManyWithoutProductsInput
+}
+
+export type ProductCreateOrConnectWithoutCategoryInput = {
+  where: Prisma.ProductWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProductCreateWithoutCategoryInput, Prisma.ProductUncheckedCreateWithoutCategoryInput>
+}
+
+export type ProductCreateManyCategoryInputEnvelope = {
+  data: Prisma.ProductCreateManyCategoryInput | Prisma.ProductCreateManyCategoryInput[]
+  skipDuplicates?: boolean
+}
+
+export type ProductUpsertWithWhereUniqueWithoutCategoryInput = {
+  where: Prisma.ProductWhereUniqueInput
+  update: Prisma.XOR<Prisma.ProductUpdateWithoutCategoryInput, Prisma.ProductUncheckedUpdateWithoutCategoryInput>
+  create: Prisma.XOR<Prisma.ProductCreateWithoutCategoryInput, Prisma.ProductUncheckedCreateWithoutCategoryInput>
+}
+
+export type ProductUpdateWithWhereUniqueWithoutCategoryInput = {
+  where: Prisma.ProductWhereUniqueInput
+  data: Prisma.XOR<Prisma.ProductUpdateWithoutCategoryInput, Prisma.ProductUncheckedUpdateWithoutCategoryInput>
+}
+
+export type ProductUpdateManyWithWhereWithoutCategoryInput = {
+  where: Prisma.ProductScalarWhereInput
+  data: Prisma.XOR<Prisma.ProductUpdateManyMutationInput, Prisma.ProductUncheckedUpdateManyWithoutCategoryInput>
+}
+
+export type ProductScalarWhereInput = {
+  AND?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
+  OR?: Prisma.ProductScalarWhereInput[]
+  NOT?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
+  id?: Prisma.StringFilter<"Product"> | string
+  slug?: Prisma.StringFilter<"Product"> | string
+  name?: Prisma.StringFilter<"Product"> | string
+  metaTitle?: Prisma.StringNullableFilter<"Product"> | string | null
+  metaDescription?: Prisma.StringNullableFilter<"Product"> | string | null
+  categoryId?: Prisma.StringFilter<"Product"> | string
+  subCategoryId?: Prisma.StringFilter<"Product"> | string
+  description?: Prisma.StringNullableFilter<"Product"> | string | null
+  status?: Prisma.EnumProductStatusFilter<"Product"> | $Enums.ProductStatus
+  deletedAt?: Prisma.DateTimeNullableFilter<"Product"> | Date | string | null
+  version?: Prisma.IntFilter<"Product"> | number
+  brandId?: Prisma.StringNullableFilter<"Product"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
+}
+
+export type ProductCreateWithoutSubCategoryInput = {
+  id?: string
+  slug?: string
+  name: string
+  metaTitle?: string | null
+  metaDescription?: string | null
+  description?: string | null
+  status?: $Enums.ProductStatus
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutProductsInput
+  brand?: Prisma.BrandCreateNestedOneWithoutProductsInput
+  variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
+  media?: Prisma.ProductMediaCreateNestedManyWithoutProductInput
+  tags?: Prisma.TagCreateNestedManyWithoutProductsInput
+}
+
+export type ProductUncheckedCreateWithoutSubCategoryInput = {
+  id?: string
+  slug?: string
+  name: string
+  metaTitle?: string | null
+  metaDescription?: string | null
+  categoryId: string
+  description?: string | null
+  status?: $Enums.ProductStatus
+  deletedAt?: Date | string | null
+  version?: number
+  brandId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
+  media?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutProductInput
+  tags?: Prisma.TagUncheckedCreateNestedManyWithoutProductsInput
+}
+
+export type ProductCreateOrConnectWithoutSubCategoryInput = {
+  where: Prisma.ProductWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProductCreateWithoutSubCategoryInput, Prisma.ProductUncheckedCreateWithoutSubCategoryInput>
+}
+
+export type ProductCreateManySubCategoryInputEnvelope = {
+  data: Prisma.ProductCreateManySubCategoryInput | Prisma.ProductCreateManySubCategoryInput[]
+  skipDuplicates?: boolean
+}
+
+export type ProductUpsertWithWhereUniqueWithoutSubCategoryInput = {
+  where: Prisma.ProductWhereUniqueInput
+  update: Prisma.XOR<Prisma.ProductUpdateWithoutSubCategoryInput, Prisma.ProductUncheckedUpdateWithoutSubCategoryInput>
+  create: Prisma.XOR<Prisma.ProductCreateWithoutSubCategoryInput, Prisma.ProductUncheckedCreateWithoutSubCategoryInput>
+}
+
+export type ProductUpdateWithWhereUniqueWithoutSubCategoryInput = {
+  where: Prisma.ProductWhereUniqueInput
+  data: Prisma.XOR<Prisma.ProductUpdateWithoutSubCategoryInput, Prisma.ProductUncheckedUpdateWithoutSubCategoryInput>
+}
+
+export type ProductUpdateManyWithWhereWithoutSubCategoryInput = {
+  where: Prisma.ProductScalarWhereInput
+  data: Prisma.XOR<Prisma.ProductUpdateManyMutationInput, Prisma.ProductUncheckedUpdateManyWithoutSubCategoryInput>
 }
 
 export type ProductCreateWithoutBrandInput = {
@@ -706,14 +943,14 @@ export type ProductCreateWithoutBrandInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  specs?: Prisma.ProductSpecCreateNestedManyWithoutProductInput
+  category: Prisma.CategoryCreateNestedOneWithoutProductsInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutProductsInput
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaCreateNestedManyWithoutProductInput
   tags?: Prisma.TagCreateNestedManyWithoutProductsInput
@@ -725,14 +962,14 @@ export type ProductUncheckedCreateWithoutBrandInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  specs?: Prisma.ProductSpecUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutProductInput
   tags?: Prisma.TagUncheckedCreateNestedManyWithoutProductsInput
@@ -764,40 +1001,21 @@ export type ProductUpdateManyWithWhereWithoutBrandInput = {
   data: Prisma.XOR<Prisma.ProductUpdateManyMutationInput, Prisma.ProductUncheckedUpdateManyWithoutBrandInput>
 }
 
-export type ProductScalarWhereInput = {
-  AND?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
-  OR?: Prisma.ProductScalarWhereInput[]
-  NOT?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
-  id?: Prisma.StringFilter<"Product"> | string
-  slug?: Prisma.StringFilter<"Product"> | string
-  name?: Prisma.StringFilter<"Product"> | string
-  metaTitle?: Prisma.StringNullableFilter<"Product"> | string | null
-  metaDescription?: Prisma.StringNullableFilter<"Product"> | string | null
-  category?: Prisma.EnumCategoryFilter<"Product"> | $Enums.Category
-  description?: Prisma.StringNullableFilter<"Product"> | string | null
-  status?: Prisma.EnumProductStatusFilter<"Product"> | $Enums.ProductStatus
-  deletedAt?: Prisma.DateTimeNullableFilter<"Product"> | Date | string | null
-  version?: Prisma.IntFilter<"Product"> | number
-  brandId?: Prisma.StringNullableFilter<"Product"> | string | null
-  createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
-}
-
 export type ProductCreateWithoutTagsInput = {
   id?: string
   slug?: string
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutProductsInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutProductsInput
   brand?: Prisma.BrandCreateNestedOneWithoutProductsInput
-  specs?: Prisma.ProductSpecCreateNestedManyWithoutProductInput
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaCreateNestedManyWithoutProductInput
 }
@@ -808,7 +1026,8 @@ export type ProductUncheckedCreateWithoutTagsInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
@@ -816,7 +1035,6 @@ export type ProductUncheckedCreateWithoutTagsInput = {
   brandId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  specs?: Prisma.ProductSpecUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutProductInput
 }
@@ -848,15 +1066,15 @@ export type ProductCreateWithoutMediaInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutProductsInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutProductsInput
   brand?: Prisma.BrandCreateNestedOneWithoutProductsInput
-  specs?: Prisma.ProductSpecCreateNestedManyWithoutProductInput
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
   tags?: Prisma.TagCreateNestedManyWithoutProductsInput
 }
@@ -867,7 +1085,8 @@ export type ProductUncheckedCreateWithoutMediaInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
@@ -875,7 +1094,6 @@ export type ProductUncheckedCreateWithoutMediaInput = {
   brandId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  specs?: Prisma.ProductSpecUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
   tags?: Prisma.TagUncheckedCreateNestedManyWithoutProductsInput
 }
@@ -902,15 +1120,15 @@ export type ProductUpdateWithoutMediaInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutProductsNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutProductsNestedInput
   brand?: Prisma.BrandUpdateOneWithoutProductsNestedInput
-  specs?: Prisma.ProductSpecUpdateManyWithoutProductNestedInput
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUpdateManyWithoutProductsNestedInput
 }
@@ -921,7 +1139,8 @@ export type ProductUncheckedUpdateWithoutMediaInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -929,7 +1148,6 @@ export type ProductUncheckedUpdateWithoutMediaInput = {
   brandId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  specs?: Prisma.ProductSpecUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUncheckedUpdateManyWithoutProductsNestedInput
 }
@@ -940,15 +1158,15 @@ export type ProductCreateWithoutVariantsInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutProductsInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutProductsInput
   brand?: Prisma.BrandCreateNestedOneWithoutProductsInput
-  specs?: Prisma.ProductSpecCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaCreateNestedManyWithoutProductInput
   tags?: Prisma.TagCreateNestedManyWithoutProductsInput
 }
@@ -959,7 +1177,8 @@ export type ProductUncheckedCreateWithoutVariantsInput = {
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
@@ -967,7 +1186,6 @@ export type ProductUncheckedCreateWithoutVariantsInput = {
   brandId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  specs?: Prisma.ProductSpecUncheckedCreateNestedManyWithoutProductInput
   media?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutProductInput
   tags?: Prisma.TagUncheckedCreateNestedManyWithoutProductsInput
 }
@@ -994,15 +1212,15 @@ export type ProductUpdateWithoutVariantsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutProductsNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutProductsNestedInput
   brand?: Prisma.BrandUpdateOneWithoutProductsNestedInput
-  specs?: Prisma.ProductSpecUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUpdateManyWithoutProductsNestedInput
 }
@@ -1013,7 +1231,8 @@ export type ProductUncheckedUpdateWithoutVariantsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1021,37 +1240,17 @@ export type ProductUncheckedUpdateWithoutVariantsInput = {
   brandId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  specs?: Prisma.ProductSpecUncheckedUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUncheckedUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUncheckedUpdateManyWithoutProductsNestedInput
 }
 
-export type ProductCreateWithoutSpecsInput = {
+export type ProductCreateManyCategoryInput = {
   id?: string
   slug?: string
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
-  description?: string | null
-  status?: $Enums.ProductStatus
-  deletedAt?: Date | string | null
-  version?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  brand?: Prisma.BrandCreateNestedOneWithoutProductsInput
-  variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
-  media?: Prisma.ProductMediaCreateNestedManyWithoutProductInput
-  tags?: Prisma.TagCreateNestedManyWithoutProductsInput
-}
-
-export type ProductUncheckedCreateWithoutSpecsInput = {
-  id?: string
-  slug?: string
-  name: string
-  metaTitle?: string | null
-  metaDescription?: string | null
-  category: $Enums.Category
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
@@ -1059,53 +1258,34 @@ export type ProductUncheckedCreateWithoutSpecsInput = {
   brandId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
-  media?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutProductInput
-  tags?: Prisma.TagUncheckedCreateNestedManyWithoutProductsInput
 }
 
-export type ProductCreateOrConnectWithoutSpecsInput = {
-  where: Prisma.ProductWhereUniqueInput
-  create: Prisma.XOR<Prisma.ProductCreateWithoutSpecsInput, Prisma.ProductUncheckedCreateWithoutSpecsInput>
-}
-
-export type ProductUpsertWithoutSpecsInput = {
-  update: Prisma.XOR<Prisma.ProductUpdateWithoutSpecsInput, Prisma.ProductUncheckedUpdateWithoutSpecsInput>
-  create: Prisma.XOR<Prisma.ProductCreateWithoutSpecsInput, Prisma.ProductUncheckedCreateWithoutSpecsInput>
-  where?: Prisma.ProductWhereInput
-}
-
-export type ProductUpdateToOneWithWhereWithoutSpecsInput = {
-  where?: Prisma.ProductWhereInput
-  data: Prisma.XOR<Prisma.ProductUpdateWithoutSpecsInput, Prisma.ProductUncheckedUpdateWithoutSpecsInput>
-}
-
-export type ProductUpdateWithoutSpecsInput = {
+export type ProductUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutProductsNestedInput
   brand?: Prisma.BrandUpdateOneWithoutProductsNestedInput
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUpdateManyWithoutProductsNestedInput
 }
 
-export type ProductUncheckedUpdateWithoutSpecsInput = {
+export type ProductUncheckedUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1118,13 +1298,100 @@ export type ProductUncheckedUpdateWithoutSpecsInput = {
   tags?: Prisma.TagUncheckedUpdateManyWithoutProductsNestedInput
 }
 
+export type ProductUncheckedUpdateManyWithoutCategoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  brandId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type ProductCreateManySubCategoryInput = {
+  id?: string
+  slug?: string
+  name: string
+  metaTitle?: string | null
+  metaDescription?: string | null
+  categoryId: string
+  description?: string | null
+  status?: $Enums.ProductStatus
+  deletedAt?: Date | string | null
+  version?: number
+  brandId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type ProductUpdateWithoutSubCategoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutProductsNestedInput
+  brand?: Prisma.BrandUpdateOneWithoutProductsNestedInput
+  variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
+  media?: Prisma.ProductMediaUpdateManyWithoutProductNestedInput
+  tags?: Prisma.TagUpdateManyWithoutProductsNestedInput
+}
+
+export type ProductUncheckedUpdateWithoutSubCategoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  brandId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
+  media?: Prisma.ProductMediaUncheckedUpdateManyWithoutProductNestedInput
+  tags?: Prisma.TagUncheckedUpdateManyWithoutProductsNestedInput
+}
+
+export type ProductUncheckedUpdateManyWithoutSubCategoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  brandId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type ProductCreateManyBrandInput = {
   id?: string
   slug?: string
   name: string
   metaTitle?: string | null
   metaDescription?: string | null
-  category: $Enums.Category
+  categoryId: string
+  subCategoryId: string
   description?: string | null
   status?: $Enums.ProductStatus
   deletedAt?: Date | string | null
@@ -1139,14 +1406,14 @@ export type ProductUpdateWithoutBrandInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  specs?: Prisma.ProductSpecUpdateManyWithoutProductNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutProductsNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutProductsNestedInput
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUpdateManyWithoutProductsNestedInput
@@ -1158,14 +1425,14 @@ export type ProductUncheckedUpdateWithoutBrandInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  specs?: Prisma.ProductSpecUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUncheckedUpdateManyWithoutProductNestedInput
   tags?: Prisma.TagUncheckedUpdateManyWithoutProductsNestedInput
@@ -1177,7 +1444,8 @@ export type ProductUncheckedUpdateManyWithoutBrandInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1192,15 +1460,15 @@ export type ProductUpdateWithoutTagsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutProductsNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutProductsNestedInput
   brand?: Prisma.BrandUpdateOneWithoutProductsNestedInput
-  specs?: Prisma.ProductSpecUpdateManyWithoutProductNestedInput
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUpdateManyWithoutProductNestedInput
 }
@@ -1211,7 +1479,8 @@ export type ProductUncheckedUpdateWithoutTagsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1219,7 +1488,6 @@ export type ProductUncheckedUpdateWithoutTagsInput = {
   brandId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  specs?: Prisma.ProductSpecUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
   media?: Prisma.ProductMediaUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -1230,7 +1498,8 @@ export type ProductUncheckedUpdateManyWithoutTagsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   metaTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metaDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumCategoryFieldUpdateOperationsInput | $Enums.Category
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1246,14 +1515,12 @@ export type ProductUncheckedUpdateManyWithoutTagsInput = {
  */
 
 export type ProductCountOutputType = {
-  specs: number
   variants: number
   media: number
   tags: number
 }
 
 export type ProductCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  specs?: boolean | ProductCountOutputTypeCountSpecsArgs
   variants?: boolean | ProductCountOutputTypeCountVariantsArgs
   media?: boolean | ProductCountOutputTypeCountMediaArgs
   tags?: boolean | ProductCountOutputTypeCountTagsArgs
@@ -1267,13 +1534,6 @@ export type ProductCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
    * Select specific fields to fetch from the ProductCountOutputType
    */
   select?: Prisma.ProductCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * ProductCountOutputType without action
- */
-export type ProductCountOutputTypeCountSpecsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ProductSpecWhereInput
 }
 
 /**
@@ -1304,7 +1564,8 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name?: boolean
   metaTitle?: boolean
   metaDescription?: boolean
-  category?: boolean
+  categoryId?: boolean
+  subCategoryId?: boolean
   description?: boolean
   status?: boolean
   deletedAt?: boolean
@@ -1312,8 +1573,9 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   brandId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   brand?: boolean | Prisma.Product$brandArgs<ExtArgs>
-  specs?: boolean | Prisma.Product$specsArgs<ExtArgs>
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
   media?: boolean | Prisma.Product$mediaArgs<ExtArgs>
   tags?: boolean | Prisma.Product$tagsArgs<ExtArgs>
@@ -1326,7 +1588,8 @@ export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   metaTitle?: boolean
   metaDescription?: boolean
-  category?: boolean
+  categoryId?: boolean
+  subCategoryId?: boolean
   description?: boolean
   status?: boolean
   deletedAt?: boolean
@@ -1334,6 +1597,8 @@ export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   brandId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   brand?: boolean | Prisma.Product$brandArgs<ExtArgs>
 }, ExtArgs["result"]["product"]>
 
@@ -1343,7 +1608,8 @@ export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   metaTitle?: boolean
   metaDescription?: boolean
-  category?: boolean
+  categoryId?: boolean
+  subCategoryId?: boolean
   description?: boolean
   status?: boolean
   deletedAt?: boolean
@@ -1351,6 +1617,8 @@ export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   brandId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   brand?: boolean | Prisma.Product$brandArgs<ExtArgs>
 }, ExtArgs["result"]["product"]>
 
@@ -1360,7 +1628,8 @@ export type ProductSelectScalar = {
   name?: boolean
   metaTitle?: boolean
   metaDescription?: boolean
-  category?: boolean
+  categoryId?: boolean
+  subCategoryId?: boolean
   description?: boolean
   status?: boolean
   deletedAt?: boolean
@@ -1370,27 +1639,33 @@ export type ProductSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "metaTitle" | "metaDescription" | "category" | "description" | "status" | "deletedAt" | "version" | "brandId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "metaTitle" | "metaDescription" | "categoryId" | "subCategoryId" | "description" | "status" | "deletedAt" | "version" | "brandId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
 export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   brand?: boolean | Prisma.Product$brandArgs<ExtArgs>
-  specs?: boolean | Prisma.Product$specsArgs<ExtArgs>
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
   media?: boolean | Prisma.Product$mediaArgs<ExtArgs>
   tags?: boolean | Prisma.Product$tagsArgs<ExtArgs>
   _count?: boolean | Prisma.ProductCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProductIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   brand?: boolean | Prisma.Product$brandArgs<ExtArgs>
 }
 export type ProductIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   brand?: boolean | Prisma.Product$brandArgs<ExtArgs>
 }
 
 export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Product"
   objects: {
+    category: Prisma.$CategoryPayload<ExtArgs>
+    subCategory: Prisma.$SubCategoryPayload<ExtArgs>
     brand: Prisma.$BrandPayload<ExtArgs> | null
-    specs: Prisma.$ProductSpecPayload<ExtArgs>[]
     variants: Prisma.$ProductVariantPayload<ExtArgs>[]
     media: Prisma.$ProductMediaPayload<ExtArgs>[]
     tags: Prisma.$TagPayload<ExtArgs>[]
@@ -1401,7 +1676,8 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     name: string
     metaTitle: string | null
     metaDescription: string | null
-    category: $Enums.Category
+    categoryId: string
+    subCategoryId: string
     description: string | null
     status: $Enums.ProductStatus
     deletedAt: Date | null
@@ -1803,8 +2079,9 @@ readonly fields: ProductFieldRefs;
  */
 export interface Prisma__ProductClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  subCategory<T extends Prisma.SubCategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__SubCategoryClient<runtime.Types.Result.GetResult<Prisma.$SubCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   brand<T extends Prisma.Product$brandArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$brandArgs<ExtArgs>>): Prisma.Prisma__BrandClient<runtime.Types.Result.GetResult<Prisma.$BrandPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  specs<T extends Prisma.Product$specsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$specsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductSpecPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   variants<T extends Prisma.Product$variantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$variantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   media<T extends Prisma.Product$mediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$mediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tags<T extends Prisma.Product$tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1842,7 +2119,8 @@ export interface ProductFieldRefs {
   readonly name: Prisma.FieldRef<"Product", 'String'>
   readonly metaTitle: Prisma.FieldRef<"Product", 'String'>
   readonly metaDescription: Prisma.FieldRef<"Product", 'String'>
-  readonly category: Prisma.FieldRef<"Product", 'Category'>
+  readonly categoryId: Prisma.FieldRef<"Product", 'String'>
+  readonly subCategoryId: Prisma.FieldRef<"Product", 'String'>
   readonly description: Prisma.FieldRef<"Product", 'String'>
   readonly status: Prisma.FieldRef<"Product", 'ProductStatus'>
   readonly deletedAt: Prisma.FieldRef<"Product", 'DateTime'>
@@ -2262,30 +2540,6 @@ export type Product$brandArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   include?: Prisma.BrandInclude<ExtArgs> | null
   where?: Prisma.BrandWhereInput
-}
-
-/**
- * Product.specs
- */
-export type Product$specsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ProductSpec
-   */
-  select?: Prisma.ProductSpecSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ProductSpec
-   */
-  omit?: Prisma.ProductSpecOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ProductSpecInclude<ExtArgs> | null
-  where?: Prisma.ProductSpecWhereInput
-  orderBy?: Prisma.ProductSpecOrderByWithRelationInput | Prisma.ProductSpecOrderByWithRelationInput[]
-  cursor?: Prisma.ProductSpecWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ProductSpecScalarFieldEnum | Prisma.ProductSpecScalarFieldEnum[]
 }
 
 /**

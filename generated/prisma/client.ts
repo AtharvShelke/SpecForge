@@ -47,35 +47,20 @@ export { Prisma }
  */
 export type User = Prisma.UserModel
 /**
+ * Model Category
+ * 
+ */
+export type Category = Prisma.CategoryModel
+/**
+ * Model SubCategory
+ * 
+ */
+export type SubCategory = Prisma.SubCategoryModel
+/**
  * Model Brand
  * 
  */
 export type Brand = Prisma.BrandModel
-/**
- * Model CategoryHierarchy
- * 
- */
-export type CategoryHierarchy = Prisma.CategoryHierarchyModel
-/**
- * Model CategorySchema
- * 
- */
-export type CategorySchema = Prisma.CategorySchemaModel
-/**
- * Model AttributeDefinition
- * 
- */
-export type AttributeDefinition = Prisma.AttributeDefinitionModel
-/**
- * Model CategoryFilterConfig
- * 
- */
-export type CategoryFilterConfig = Prisma.CategoryFilterConfigModel
-/**
- * Model FilterDefinition
- * 
- */
-export type FilterDefinition = Prisma.FilterDefinitionModel
 /**
  * Model Tag
  * 
@@ -97,142 +82,37 @@ export type Product = Prisma.ProductModel
  */
 export type ProductVariant = Prisma.ProductVariantModel
 /**
- * Model ProductSpec
+ * Model SpecDefinition
  * 
  */
-export type ProductSpec = Prisma.ProductSpecModel
+export type SpecDefinition = Prisma.SpecDefinitionModel
 /**
- * Model Warehouse
+ * Model SpecOption
  * 
  */
-export type Warehouse = Prisma.WarehouseModel
+export type SpecOption = Prisma.SpecOptionModel
 /**
- * Model WarehouseInventory
+ * Model SpecOptionDependency
  * 
  */
-export type WarehouseInventory = Prisma.WarehouseInventoryModel
+export type SpecOptionDependency = Prisma.SpecOptionDependencyModel
 /**
- * Model StockMovement
+ * Model VariantSpec
  * 
  */
-export type StockMovement = Prisma.StockMovementModel
+export type VariantSpec = Prisma.VariantSpecModel
+/**
+ * Model CompatibilityRule
+ * 
+ */
+export type CompatibilityRule = Prisma.CompatibilityRuleModel
 /**
  * Model InventoryUnit
  * 
  */
 export type InventoryUnit = Prisma.InventoryUnitModel
 /**
- * Model Supplier
+ * Model Reservation
  * 
  */
-export type Supplier = Prisma.SupplierModel
-/**
- * Model PurchaseOrder
- * 
- */
-export type PurchaseOrder = Prisma.PurchaseOrderModel
-/**
- * Model PurchaseOrderItem
- * 
- */
-export type PurchaseOrderItem = Prisma.PurchaseOrderItemModel
-/**
- * Model Customer
- * 
- */
-export type Customer = Prisma.CustomerModel
-/**
- * Model Order
- * 
- */
-export type Order = Prisma.OrderModel
-/**
- * Model OrderItem
- * 
- */
-export type OrderItem = Prisma.OrderItemModel
-/**
- * Model OrderLog
- * 
- */
-export type OrderLog = Prisma.OrderLogModel
-/**
- * Model ShipmentTracking
- * 
- */
-export type ShipmentTracking = Prisma.ShipmentTrackingModel
-/**
- * Model BuildGuide
- * 
- */
-export type BuildGuide = Prisma.BuildGuideModel
-/**
- * Model BuildGuideItem
- * 
- */
-export type BuildGuideItem = Prisma.BuildGuideItemModel
-/**
- * Model InvoiceSequence
- * 
- */
-export type InvoiceSequence = Prisma.InvoiceSequenceModel
-/**
- * Model BillingProfile
- * 
- */
-export type BillingProfile = Prisma.BillingProfileModel
-/**
- * Model Invoice
- * 
- */
-export type Invoice = Prisma.InvoiceModel
-/**
- * Model InvoiceLineItem
- * 
- */
-export type InvoiceLineItem = Prisma.InvoiceLineItemModel
-/**
- * Model InvoiceAuditEvent
- * 
- */
-export type InvoiceAuditEvent = Prisma.InvoiceAuditEventModel
-/**
- * Model PaymentTransaction
- * 
- */
-export type PaymentTransaction = Prisma.PaymentTransactionModel
-/**
- * Model CreditNote
- * 
- */
-export type CreditNote = Prisma.CreditNoteModel
-/**
- * Model CreditNoteLineItem
- * 
- */
-export type CreditNoteLineItem = Prisma.CreditNoteLineItemModel
-/**
- * Model AuditLog
- * 
- */
-export type AuditLog = Prisma.AuditLogModel
-/**
- * Model Lead
- * 
- */
-export type Lead = Prisma.LeadModel
-/**
- * Model MarketingEvent
- * 
- */
-export type MarketingEvent = Prisma.MarketingEventModel
-/**
- * Model MarketingCampaign
- * 
- */
-export type MarketingCampaign = Prisma.MarketingCampaignModel
-/**
- * Model EmailLog
- * 
- */
-export type EmailLog = Prisma.EmailLogModel
+export type Reservation = Prisma.ReservationModel

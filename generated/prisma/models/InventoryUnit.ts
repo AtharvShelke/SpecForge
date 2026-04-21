@@ -27,46 +27,28 @@ export type AggregateInventoryUnit = {
 export type InventoryUnitMinAggregateOutputType = {
   id: string | null
   variantId: string | null
-  warehouseId: string | null
-  sn: string | null
-  imei: string | null
+  serialNumber: string | null
   status: $Enums.InventoryUnitStatus | null
-  orderItemId: string | null
-  purchaseOrderItemId: string | null
-  warehouseInventoryId: string | null
   createdAt: Date | null
   updatedAt: Date | null
-  soldAt: Date | null
 }
 
 export type InventoryUnitMaxAggregateOutputType = {
   id: string | null
   variantId: string | null
-  warehouseId: string | null
-  sn: string | null
-  imei: string | null
+  serialNumber: string | null
   status: $Enums.InventoryUnitStatus | null
-  orderItemId: string | null
-  purchaseOrderItemId: string | null
-  warehouseInventoryId: string | null
   createdAt: Date | null
   updatedAt: Date | null
-  soldAt: Date | null
 }
 
 export type InventoryUnitCountAggregateOutputType = {
   id: number
   variantId: number
-  warehouseId: number
-  sn: number
-  imei: number
+  serialNumber: number
   status: number
-  orderItemId: number
-  purchaseOrderItemId: number
-  warehouseInventoryId: number
   createdAt: number
   updatedAt: number
-  soldAt: number
   _all: number
 }
 
@@ -74,46 +56,28 @@ export type InventoryUnitCountAggregateOutputType = {
 export type InventoryUnitMinAggregateInputType = {
   id?: true
   variantId?: true
-  warehouseId?: true
-  sn?: true
-  imei?: true
+  serialNumber?: true
   status?: true
-  orderItemId?: true
-  purchaseOrderItemId?: true
-  warehouseInventoryId?: true
   createdAt?: true
   updatedAt?: true
-  soldAt?: true
 }
 
 export type InventoryUnitMaxAggregateInputType = {
   id?: true
   variantId?: true
-  warehouseId?: true
-  sn?: true
-  imei?: true
+  serialNumber?: true
   status?: true
-  orderItemId?: true
-  purchaseOrderItemId?: true
-  warehouseInventoryId?: true
   createdAt?: true
   updatedAt?: true
-  soldAt?: true
 }
 
 export type InventoryUnitCountAggregateInputType = {
   id?: true
   variantId?: true
-  warehouseId?: true
-  sn?: true
-  imei?: true
+  serialNumber?: true
   status?: true
-  orderItemId?: true
-  purchaseOrderItemId?: true
-  warehouseInventoryId?: true
   createdAt?: true
   updatedAt?: true
-  soldAt?: true
   _all?: true
 }
 
@@ -192,16 +156,10 @@ export type InventoryUnitGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
 export type InventoryUnitGroupByOutputType = {
   id: string
   variantId: string
-  warehouseId: string
-  sn: string | null
-  imei: string | null
+  serialNumber: string | null
   status: $Enums.InventoryUnitStatus
-  orderItemId: string | null
-  purchaseOrderItemId: string | null
-  warehouseInventoryId: string | null
   createdAt: Date
   updatedAt: Date
-  soldAt: Date | null
   _count: InventoryUnitCountAggregateOutputType | null
   _min: InventoryUnitMinAggregateOutputType | null
   _max: InventoryUnitMaxAggregateOutputType | null
@@ -228,82 +186,46 @@ export type InventoryUnitWhereInput = {
   NOT?: Prisma.InventoryUnitWhereInput | Prisma.InventoryUnitWhereInput[]
   id?: Prisma.StringFilter<"InventoryUnit"> | string
   variantId?: Prisma.StringFilter<"InventoryUnit"> | string
-  warehouseId?: Prisma.StringFilter<"InventoryUnit"> | string
-  sn?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  imei?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
+  serialNumber?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
   status?: Prisma.EnumInventoryUnitStatusFilter<"InventoryUnit"> | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  purchaseOrderItemId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  warehouseInventoryId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
   createdAt?: Prisma.DateTimeFilter<"InventoryUnit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"InventoryUnit"> | Date | string
-  soldAt?: Prisma.DateTimeNullableFilter<"InventoryUnit"> | Date | string | null
   variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
-  warehouse?: Prisma.XOR<Prisma.WarehouseScalarRelationFilter, Prisma.WarehouseWhereInput>
-  warehouseInventory?: Prisma.XOR<Prisma.WarehouseInventoryNullableScalarRelationFilter, Prisma.WarehouseInventoryWhereInput> | null
-  orderItem?: Prisma.XOR<Prisma.OrderItemNullableScalarRelationFilter, Prisma.OrderItemWhereInput> | null
-  purchaseOrderItem?: Prisma.XOR<Prisma.PurchaseOrderItemNullableScalarRelationFilter, Prisma.PurchaseOrderItemWhereInput> | null
-  stockMovements?: Prisma.StockMovementListRelationFilter
+  reservation?: Prisma.XOR<Prisma.ReservationNullableScalarRelationFilter, Prisma.ReservationWhereInput> | null
 }
 
 export type InventoryUnitOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
-  warehouseId?: Prisma.SortOrder
-  sn?: Prisma.SortOrderInput | Prisma.SortOrder
-  imei?: Prisma.SortOrderInput | Prisma.SortOrder
+  serialNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
-  orderItemId?: Prisma.SortOrderInput | Prisma.SortOrder
-  purchaseOrderItemId?: Prisma.SortOrderInput | Prisma.SortOrder
-  warehouseInventoryId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  soldAt?: Prisma.SortOrderInput | Prisma.SortOrder
   variant?: Prisma.ProductVariantOrderByWithRelationInput
-  warehouse?: Prisma.WarehouseOrderByWithRelationInput
-  warehouseInventory?: Prisma.WarehouseInventoryOrderByWithRelationInput
-  orderItem?: Prisma.OrderItemOrderByWithRelationInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemOrderByWithRelationInput
-  stockMovements?: Prisma.StockMovementOrderByRelationAggregateInput
+  reservation?: Prisma.ReservationOrderByWithRelationInput
 }
 
 export type InventoryUnitWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  sn?: string
-  imei?: string
+  serialNumber?: string
   AND?: Prisma.InventoryUnitWhereInput | Prisma.InventoryUnitWhereInput[]
   OR?: Prisma.InventoryUnitWhereInput[]
   NOT?: Prisma.InventoryUnitWhereInput | Prisma.InventoryUnitWhereInput[]
   variantId?: Prisma.StringFilter<"InventoryUnit"> | string
-  warehouseId?: Prisma.StringFilter<"InventoryUnit"> | string
   status?: Prisma.EnumInventoryUnitStatusFilter<"InventoryUnit"> | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  purchaseOrderItemId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  warehouseInventoryId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
   createdAt?: Prisma.DateTimeFilter<"InventoryUnit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"InventoryUnit"> | Date | string
-  soldAt?: Prisma.DateTimeNullableFilter<"InventoryUnit"> | Date | string | null
   variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
-  warehouse?: Prisma.XOR<Prisma.WarehouseScalarRelationFilter, Prisma.WarehouseWhereInput>
-  warehouseInventory?: Prisma.XOR<Prisma.WarehouseInventoryNullableScalarRelationFilter, Prisma.WarehouseInventoryWhereInput> | null
-  orderItem?: Prisma.XOR<Prisma.OrderItemNullableScalarRelationFilter, Prisma.OrderItemWhereInput> | null
-  purchaseOrderItem?: Prisma.XOR<Prisma.PurchaseOrderItemNullableScalarRelationFilter, Prisma.PurchaseOrderItemWhereInput> | null
-  stockMovements?: Prisma.StockMovementListRelationFilter
-}, "id" | "sn" | "imei">
+  reservation?: Prisma.XOR<Prisma.ReservationNullableScalarRelationFilter, Prisma.ReservationWhereInput> | null
+}, "id" | "serialNumber">
 
 export type InventoryUnitOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
-  warehouseId?: Prisma.SortOrder
-  sn?: Prisma.SortOrderInput | Prisma.SortOrder
-  imei?: Prisma.SortOrderInput | Prisma.SortOrder
+  serialNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
-  orderItemId?: Prisma.SortOrderInput | Prisma.SortOrder
-  purchaseOrderItemId?: Prisma.SortOrderInput | Prisma.SortOrder
-  warehouseInventoryId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  soldAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.InventoryUnitCountOrderByAggregateInput
   _max?: Prisma.InventoryUnitMaxOrderByAggregateInput
   _min?: Prisma.InventoryUnitMinOrderByAggregateInput
@@ -315,120 +237,76 @@ export type InventoryUnitScalarWhereWithAggregatesInput = {
   NOT?: Prisma.InventoryUnitScalarWhereWithAggregatesInput | Prisma.InventoryUnitScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"InventoryUnit"> | string
   variantId?: Prisma.StringWithAggregatesFilter<"InventoryUnit"> | string
-  warehouseId?: Prisma.StringWithAggregatesFilter<"InventoryUnit"> | string
-  sn?: Prisma.StringNullableWithAggregatesFilter<"InventoryUnit"> | string | null
-  imei?: Prisma.StringNullableWithAggregatesFilter<"InventoryUnit"> | string | null
+  serialNumber?: Prisma.StringNullableWithAggregatesFilter<"InventoryUnit"> | string | null
   status?: Prisma.EnumInventoryUnitStatusWithAggregatesFilter<"InventoryUnit"> | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.StringNullableWithAggregatesFilter<"InventoryUnit"> | string | null
-  purchaseOrderItemId?: Prisma.StringNullableWithAggregatesFilter<"InventoryUnit"> | string | null
-  warehouseInventoryId?: Prisma.StringNullableWithAggregatesFilter<"InventoryUnit"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"InventoryUnit"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"InventoryUnit"> | Date | string
-  soldAt?: Prisma.DateTimeNullableWithAggregatesFilter<"InventoryUnit"> | Date | string | null
 }
 
 export type InventoryUnitCreateInput = {
   id?: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
   variant: Prisma.ProductVariantCreateNestedOneWithoutInventoryUnitsInput
-  warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoryUnitsInput
-  warehouseInventory?: Prisma.WarehouseInventoryCreateNestedOneWithoutInventoryUnitsInput
-  orderItem?: Prisma.OrderItemCreateNestedOneWithoutInventoryUnitsInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemCreateNestedOneWithoutInventoryUnitsInput
-  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutInventoryUnitInput
+  reservation?: Prisma.ReservationCreateNestedOneWithoutInventoryUnitInput
 }
 
 export type InventoryUnitUncheckedCreateInput = {
   id?: string
   variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutInventoryUnitInput
+  reservation?: Prisma.ReservationUncheckedCreateNestedOneWithoutInventoryUnitInput
 }
 
 export type InventoryUnitUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   variant?: Prisma.ProductVariantUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouseInventory?: Prisma.WarehouseInventoryUpdateOneWithoutInventoryUnitsNestedInput
-  orderItem?: Prisma.OrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  stockMovements?: Prisma.StockMovementUpdateManyWithoutInventoryUnitNestedInput
+  reservation?: Prisma.ReservationUpdateOneWithoutInventoryUnitNestedInput
 }
 
 export type InventoryUnitUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutInventoryUnitNestedInput
+  reservation?: Prisma.ReservationUncheckedUpdateOneWithoutInventoryUnitNestedInput
 }
 
 export type InventoryUnitCreateManyInput = {
   id?: string
   variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
 }
 
 export type InventoryUnitUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type InventoryUnitUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type InventoryUnitListRelationFilter = {
@@ -441,54 +319,36 @@ export type InventoryUnitOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type InventoryUnitNullableScalarRelationFilter = {
-  is?: Prisma.InventoryUnitWhereInput | null
-  isNot?: Prisma.InventoryUnitWhereInput | null
-}
-
 export type InventoryUnitCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
-  warehouseId?: Prisma.SortOrder
-  sn?: Prisma.SortOrder
-  imei?: Prisma.SortOrder
+  serialNumber?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  orderItemId?: Prisma.SortOrder
-  purchaseOrderItemId?: Prisma.SortOrder
-  warehouseInventoryId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  soldAt?: Prisma.SortOrder
 }
 
 export type InventoryUnitMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
-  warehouseId?: Prisma.SortOrder
-  sn?: Prisma.SortOrder
-  imei?: Prisma.SortOrder
+  serialNumber?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  orderItemId?: Prisma.SortOrder
-  purchaseOrderItemId?: Prisma.SortOrder
-  warehouseInventoryId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  soldAt?: Prisma.SortOrder
 }
 
 export type InventoryUnitMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
-  warehouseId?: Prisma.SortOrder
-  sn?: Prisma.SortOrder
-  imei?: Prisma.SortOrder
+  serialNumber?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  orderItemId?: Prisma.SortOrder
-  purchaseOrderItemId?: Prisma.SortOrder
-  warehouseInventoryId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  soldAt?: Prisma.SortOrder
+}
+
+export type InventoryUnitScalarRelationFilter = {
+  is?: Prisma.InventoryUnitWhereInput
+  isNot?: Prisma.InventoryUnitWhereInput
 }
 
 export type InventoryUnitCreateNestedManyWithoutVariantInput = {
@@ -533,222 +393,40 @@ export type InventoryUnitUncheckedUpdateManyWithoutVariantNestedInput = {
   deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
 }
 
-export type InventoryUnitCreateNestedManyWithoutWarehouseInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput> | Prisma.InventoryUnitCreateWithoutWarehouseInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-}
-
-export type InventoryUnitUncheckedCreateNestedManyWithoutWarehouseInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput> | Prisma.InventoryUnitCreateWithoutWarehouseInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-}
-
-export type InventoryUnitUpdateManyWithoutWarehouseNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput> | Prisma.InventoryUnitCreateWithoutWarehouseInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutWarehouseNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput> | Prisma.InventoryUnitCreateWithoutWarehouseInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
-}
-
-export type InventoryUnitCreateNestedManyWithoutWarehouseInventoryInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput> | Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInventoryInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-}
-
-export type InventoryUnitUncheckedCreateNestedManyWithoutWarehouseInventoryInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput> | Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInventoryInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-}
-
-export type InventoryUnitUpdateManyWithoutWarehouseInventoryNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput> | Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInventoryInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInventoryInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInventoryInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInventoryInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInventoryInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInventoryInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInventoryInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutWarehouseInventoryNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput> | Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput[] | Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput | Prisma.InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInventoryInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInventoryInput[]
-  createMany?: Prisma.InventoryUnitCreateManyWarehouseInventoryInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInventoryInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInventoryInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInventoryInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutWarehouseInventoryInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
-}
-
-export type InventoryUnitCreateNestedOneWithoutStockMovementsInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutStockMovementsInput, Prisma.InventoryUnitUncheckedCreateWithoutStockMovementsInput>
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutStockMovementsInput
-  connect?: Prisma.InventoryUnitWhereUniqueInput
-}
-
-export type InventoryUnitUpdateOneWithoutStockMovementsNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutStockMovementsInput, Prisma.InventoryUnitUncheckedCreateWithoutStockMovementsInput>
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutStockMovementsInput
-  upsert?: Prisma.InventoryUnitUpsertWithoutStockMovementsInput
-  disconnect?: Prisma.InventoryUnitWhereInput | boolean
-  delete?: Prisma.InventoryUnitWhereInput | boolean
-  connect?: Prisma.InventoryUnitWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.InventoryUnitUpdateToOneWithWhereWithoutStockMovementsInput, Prisma.InventoryUnitUpdateWithoutStockMovementsInput>, Prisma.InventoryUnitUncheckedUpdateWithoutStockMovementsInput>
-}
-
 export type EnumInventoryUnitStatusFieldUpdateOperationsInput = {
   set?: $Enums.InventoryUnitStatus
 }
 
-export type InventoryUnitCreateNestedManyWithoutPurchaseOrderItemInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput> | Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyPurchaseOrderItemInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
+export type InventoryUnitCreateNestedOneWithoutReservationInput = {
+  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutReservationInput, Prisma.InventoryUnitUncheckedCreateWithoutReservationInput>
+  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutReservationInput
+  connect?: Prisma.InventoryUnitWhereUniqueInput
 }
 
-export type InventoryUnitUncheckedCreateNestedManyWithoutPurchaseOrderItemInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput> | Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyPurchaseOrderItemInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-}
-
-export type InventoryUnitUpdateManyWithoutPurchaseOrderItemNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput> | Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutPurchaseOrderItemInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutPurchaseOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyPurchaseOrderItemInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutPurchaseOrderItemInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutPurchaseOrderItemInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutPurchaseOrderItemInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutPurchaseOrderItemInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutPurchaseOrderItemNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput> | Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutPurchaseOrderItemInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutPurchaseOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyPurchaseOrderItemInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutPurchaseOrderItemInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutPurchaseOrderItemInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutPurchaseOrderItemInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutPurchaseOrderItemInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
-}
-
-export type InventoryUnitCreateNestedManyWithoutOrderItemInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput> | Prisma.InventoryUnitCreateWithoutOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyOrderItemInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-}
-
-export type InventoryUnitUncheckedCreateNestedManyWithoutOrderItemInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput> | Prisma.InventoryUnitCreateWithoutOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyOrderItemInputEnvelope
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-}
-
-export type InventoryUnitUpdateManyWithoutOrderItemNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput> | Prisma.InventoryUnitCreateWithoutOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutOrderItemInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyOrderItemInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutOrderItemInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutOrderItemInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutOrderItemInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutOrderItemInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutOrderItemNestedInput = {
-  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput> | Prisma.InventoryUnitCreateWithoutOrderItemInput[] | Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput[]
-  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput | Prisma.InventoryUnitCreateOrConnectWithoutOrderItemInput[]
-  upsert?: Prisma.InventoryUnitUpsertWithWhereUniqueWithoutOrderItemInput | Prisma.InventoryUnitUpsertWithWhereUniqueWithoutOrderItemInput[]
-  createMany?: Prisma.InventoryUnitCreateManyOrderItemInputEnvelope
-  set?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  disconnect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  delete?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  connect?: Prisma.InventoryUnitWhereUniqueInput | Prisma.InventoryUnitWhereUniqueInput[]
-  update?: Prisma.InventoryUnitUpdateWithWhereUniqueWithoutOrderItemInput | Prisma.InventoryUnitUpdateWithWhereUniqueWithoutOrderItemInput[]
-  updateMany?: Prisma.InventoryUnitUpdateManyWithWhereWithoutOrderItemInput | Prisma.InventoryUnitUpdateManyWithWhereWithoutOrderItemInput[]
-  deleteMany?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
+export type InventoryUnitUpdateOneRequiredWithoutReservationNestedInput = {
+  create?: Prisma.XOR<Prisma.InventoryUnitCreateWithoutReservationInput, Prisma.InventoryUnitUncheckedCreateWithoutReservationInput>
+  connectOrCreate?: Prisma.InventoryUnitCreateOrConnectWithoutReservationInput
+  upsert?: Prisma.InventoryUnitUpsertWithoutReservationInput
+  connect?: Prisma.InventoryUnitWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.InventoryUnitUpdateToOneWithWhereWithoutReservationInput, Prisma.InventoryUnitUpdateWithoutReservationInput>, Prisma.InventoryUnitUncheckedUpdateWithoutReservationInput>
 }
 
 export type InventoryUnitCreateWithoutVariantInput = {
   id?: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
-  warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoryUnitsInput
-  warehouseInventory?: Prisma.WarehouseInventoryCreateNestedOneWithoutInventoryUnitsInput
-  orderItem?: Prisma.OrderItemCreateNestedOneWithoutInventoryUnitsInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemCreateNestedOneWithoutInventoryUnitsInput
-  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutInventoryUnitInput
+  reservation?: Prisma.ReservationCreateNestedOneWithoutInventoryUnitInput
 }
 
 export type InventoryUnitUncheckedCreateWithoutVariantInput = {
   id?: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutInventoryUnitInput
+  reservation?: Prisma.ReservationUncheckedCreateNestedOneWithoutInventoryUnitInput
 }
 
 export type InventoryUnitCreateOrConnectWithoutVariantInput = {
@@ -783,764 +461,165 @@ export type InventoryUnitScalarWhereInput = {
   NOT?: Prisma.InventoryUnitScalarWhereInput | Prisma.InventoryUnitScalarWhereInput[]
   id?: Prisma.StringFilter<"InventoryUnit"> | string
   variantId?: Prisma.StringFilter<"InventoryUnit"> | string
-  warehouseId?: Prisma.StringFilter<"InventoryUnit"> | string
-  sn?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  imei?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
+  serialNumber?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
   status?: Prisma.EnumInventoryUnitStatusFilter<"InventoryUnit"> | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  purchaseOrderItemId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
-  warehouseInventoryId?: Prisma.StringNullableFilter<"InventoryUnit"> | string | null
   createdAt?: Prisma.DateTimeFilter<"InventoryUnit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"InventoryUnit"> | Date | string
-  soldAt?: Prisma.DateTimeNullableFilter<"InventoryUnit"> | Date | string | null
 }
 
-export type InventoryUnitCreateWithoutWarehouseInput = {
+export type InventoryUnitCreateWithoutReservationInput = {
   id?: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
   variant: Prisma.ProductVariantCreateNestedOneWithoutInventoryUnitsInput
-  warehouseInventory?: Prisma.WarehouseInventoryCreateNestedOneWithoutInventoryUnitsInput
-  orderItem?: Prisma.OrderItemCreateNestedOneWithoutInventoryUnitsInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemCreateNestedOneWithoutInventoryUnitsInput
-  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutInventoryUnitInput
 }
 
-export type InventoryUnitUncheckedCreateWithoutWarehouseInput = {
+export type InventoryUnitUncheckedCreateWithoutReservationInput = {
   id?: string
   variantId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutInventoryUnitInput
-}
-
-export type InventoryUnitCreateOrConnectWithoutWarehouseInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput>
-}
-
-export type InventoryUnitCreateManyWarehouseInputEnvelope = {
-  data: Prisma.InventoryUnitCreateManyWarehouseInput | Prisma.InventoryUnitCreateManyWarehouseInput[]
-  skipDuplicates?: boolean
-}
-
-export type InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  update: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedUpdateWithoutWarehouseInput>
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInput>
-}
-
-export type InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutWarehouseInput, Prisma.InventoryUnitUncheckedUpdateWithoutWarehouseInput>
-}
-
-export type InventoryUnitUpdateManyWithWhereWithoutWarehouseInput = {
-  where: Prisma.InventoryUnitScalarWhereInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateManyMutationInput, Prisma.InventoryUnitUncheckedUpdateManyWithoutWarehouseInput>
-}
-
-export type InventoryUnitCreateWithoutWarehouseInventoryInput = {
-  id?: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
-  variant: Prisma.ProductVariantCreateNestedOneWithoutInventoryUnitsInput
-  warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoryUnitsInput
-  orderItem?: Prisma.OrderItemCreateNestedOneWithoutInventoryUnitsInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemCreateNestedOneWithoutInventoryUnitsInput
-  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutInventoryUnitInput
 }
 
-export type InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput = {
-  id?: string
-  variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutInventoryUnitInput
-}
-
-export type InventoryUnitCreateOrConnectWithoutWarehouseInventoryInput = {
+export type InventoryUnitCreateOrConnectWithoutReservationInput = {
   where: Prisma.InventoryUnitWhereUniqueInput
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput>
+  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutReservationInput, Prisma.InventoryUnitUncheckedCreateWithoutReservationInput>
 }
 
-export type InventoryUnitCreateManyWarehouseInventoryInputEnvelope = {
-  data: Prisma.InventoryUnitCreateManyWarehouseInventoryInput | Prisma.InventoryUnitCreateManyWarehouseInventoryInput[]
-  skipDuplicates?: boolean
-}
-
-export type InventoryUnitUpsertWithWhereUniqueWithoutWarehouseInventoryInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  update: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedUpdateWithoutWarehouseInventoryInput>
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedCreateWithoutWarehouseInventoryInput>
-}
-
-export type InventoryUnitUpdateWithWhereUniqueWithoutWarehouseInventoryInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutWarehouseInventoryInput, Prisma.InventoryUnitUncheckedUpdateWithoutWarehouseInventoryInput>
-}
-
-export type InventoryUnitUpdateManyWithWhereWithoutWarehouseInventoryInput = {
-  where: Prisma.InventoryUnitScalarWhereInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateManyMutationInput, Prisma.InventoryUnitUncheckedUpdateManyWithoutWarehouseInventoryInput>
-}
-
-export type InventoryUnitCreateWithoutStockMovementsInput = {
-  id?: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-  variant: Prisma.ProductVariantCreateNestedOneWithoutInventoryUnitsInput
-  warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoryUnitsInput
-  warehouseInventory?: Prisma.WarehouseInventoryCreateNestedOneWithoutInventoryUnitsInput
-  orderItem?: Prisma.OrderItemCreateNestedOneWithoutInventoryUnitsInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemCreateNestedOneWithoutInventoryUnitsInput
-}
-
-export type InventoryUnitUncheckedCreateWithoutStockMovementsInput = {
-  id?: string
-  variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-}
-
-export type InventoryUnitCreateOrConnectWithoutStockMovementsInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutStockMovementsInput, Prisma.InventoryUnitUncheckedCreateWithoutStockMovementsInput>
-}
-
-export type InventoryUnitUpsertWithoutStockMovementsInput = {
-  update: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutStockMovementsInput, Prisma.InventoryUnitUncheckedUpdateWithoutStockMovementsInput>
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutStockMovementsInput, Prisma.InventoryUnitUncheckedCreateWithoutStockMovementsInput>
+export type InventoryUnitUpsertWithoutReservationInput = {
+  update: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutReservationInput, Prisma.InventoryUnitUncheckedUpdateWithoutReservationInput>
+  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutReservationInput, Prisma.InventoryUnitUncheckedCreateWithoutReservationInput>
   where?: Prisma.InventoryUnitWhereInput
 }
 
-export type InventoryUnitUpdateToOneWithWhereWithoutStockMovementsInput = {
+export type InventoryUnitUpdateToOneWithWhereWithoutReservationInput = {
   where?: Prisma.InventoryUnitWhereInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutStockMovementsInput, Prisma.InventoryUnitUncheckedUpdateWithoutStockMovementsInput>
+  data: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutReservationInput, Prisma.InventoryUnitUncheckedUpdateWithoutReservationInput>
 }
 
-export type InventoryUnitUpdateWithoutStockMovementsInput = {
+export type InventoryUnitUpdateWithoutReservationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   variant?: Prisma.ProductVariantUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouseInventory?: Prisma.WarehouseInventoryUpdateOneWithoutInventoryUnitsNestedInput
-  orderItem?: Prisma.OrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemUpdateOneWithoutInventoryUnitsNestedInput
 }
 
-export type InventoryUnitUncheckedUpdateWithoutStockMovementsInput = {
+export type InventoryUnitUncheckedUpdateWithoutReservationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type InventoryUnitCreateWithoutPurchaseOrderItemInput = {
-  id?: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-  variant: Prisma.ProductVariantCreateNestedOneWithoutInventoryUnitsInput
-  warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoryUnitsInput
-  warehouseInventory?: Prisma.WarehouseInventoryCreateNestedOneWithoutInventoryUnitsInput
-  orderItem?: Prisma.OrderItemCreateNestedOneWithoutInventoryUnitsInput
-  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutInventoryUnitInput
-}
-
-export type InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput = {
-  id?: string
-  variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  warehouseInventoryId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutInventoryUnitInput
-}
-
-export type InventoryUnitCreateOrConnectWithoutPurchaseOrderItemInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput>
-}
-
-export type InventoryUnitCreateManyPurchaseOrderItemInputEnvelope = {
-  data: Prisma.InventoryUnitCreateManyPurchaseOrderItemInput | Prisma.InventoryUnitCreateManyPurchaseOrderItemInput[]
-  skipDuplicates?: boolean
-}
-
-export type InventoryUnitUpsertWithWhereUniqueWithoutPurchaseOrderItemInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  update: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedUpdateWithoutPurchaseOrderItemInput>
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutPurchaseOrderItemInput>
-}
-
-export type InventoryUnitUpdateWithWhereUniqueWithoutPurchaseOrderItemInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutPurchaseOrderItemInput, Prisma.InventoryUnitUncheckedUpdateWithoutPurchaseOrderItemInput>
-}
-
-export type InventoryUnitUpdateManyWithWhereWithoutPurchaseOrderItemInput = {
-  where: Prisma.InventoryUnitScalarWhereInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateManyMutationInput, Prisma.InventoryUnitUncheckedUpdateManyWithoutPurchaseOrderItemInput>
-}
-
-export type InventoryUnitCreateWithoutOrderItemInput = {
-  id?: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-  variant: Prisma.ProductVariantCreateNestedOneWithoutInventoryUnitsInput
-  warehouse: Prisma.WarehouseCreateNestedOneWithoutInventoryUnitsInput
-  warehouseInventory?: Prisma.WarehouseInventoryCreateNestedOneWithoutInventoryUnitsInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemCreateNestedOneWithoutInventoryUnitsInput
-  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutInventoryUnitInput
-}
-
-export type InventoryUnitUncheckedCreateWithoutOrderItemInput = {
-  id?: string
-  variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutInventoryUnitInput
-}
-
-export type InventoryUnitCreateOrConnectWithoutOrderItemInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput>
-}
-
-export type InventoryUnitCreateManyOrderItemInputEnvelope = {
-  data: Prisma.InventoryUnitCreateManyOrderItemInput | Prisma.InventoryUnitCreateManyOrderItemInput[]
-  skipDuplicates?: boolean
-}
-
-export type InventoryUnitUpsertWithWhereUniqueWithoutOrderItemInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  update: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedUpdateWithoutOrderItemInput>
-  create: Prisma.XOR<Prisma.InventoryUnitCreateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedCreateWithoutOrderItemInput>
-}
-
-export type InventoryUnitUpdateWithWhereUniqueWithoutOrderItemInput = {
-  where: Prisma.InventoryUnitWhereUniqueInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateWithoutOrderItemInput, Prisma.InventoryUnitUncheckedUpdateWithoutOrderItemInput>
-}
-
-export type InventoryUnitUpdateManyWithWhereWithoutOrderItemInput = {
-  where: Prisma.InventoryUnitScalarWhereInput
-  data: Prisma.XOR<Prisma.InventoryUnitUpdateManyMutationInput, Prisma.InventoryUnitUncheckedUpdateManyWithoutOrderItemInput>
 }
 
 export type InventoryUnitCreateManyVariantInput = {
   id?: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
+  serialNumber?: string | null
   status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  soldAt?: Date | string | null
 }
 
 export type InventoryUnitUpdateWithoutVariantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouseInventory?: Prisma.WarehouseInventoryUpdateOneWithoutInventoryUnitsNestedInput
-  orderItem?: Prisma.OrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  stockMovements?: Prisma.StockMovementUpdateManyWithoutInventoryUnitNestedInput
+  reservation?: Prisma.ReservationUpdateOneWithoutInventoryUnitNestedInput
 }
 
 export type InventoryUnitUncheckedUpdateWithoutVariantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutInventoryUnitNestedInput
+  reservation?: Prisma.ReservationUncheckedUpdateOneWithoutInventoryUnitNestedInput
 }
 
 export type InventoryUnitUncheckedUpdateManyWithoutVariantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type InventoryUnitCreateManyWarehouseInput = {
-  id?: string
-  variantId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-}
-
-export type InventoryUnitUpdateWithoutWarehouseInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serialNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouseInventory?: Prisma.WarehouseInventoryUpdateOneWithoutInventoryUnitsNestedInput
-  orderItem?: Prisma.OrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  stockMovements?: Prisma.StockMovementUpdateManyWithoutInventoryUnitNestedInput
 }
 
-export type InventoryUnitUncheckedUpdateWithoutWarehouseInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutInventoryUnitNestedInput
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutWarehouseInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type InventoryUnitCreateManyWarehouseInventoryInput = {
-  id?: string
-  variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  purchaseOrderItemId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-}
-
-export type InventoryUnitUpdateWithoutWarehouseInventoryInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  orderItem?: Prisma.OrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  stockMovements?: Prisma.StockMovementUpdateManyWithoutInventoryUnitNestedInput
-}
-
-export type InventoryUnitUncheckedUpdateWithoutWarehouseInventoryInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutInventoryUnitNestedInput
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutWarehouseInventoryInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type InventoryUnitCreateManyPurchaseOrderItemInput = {
-  id?: string
-  variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  orderItemId?: string | null
-  warehouseInventoryId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-}
-
-export type InventoryUnitUpdateWithoutPurchaseOrderItemInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouseInventory?: Prisma.WarehouseInventoryUpdateOneWithoutInventoryUnitsNestedInput
-  orderItem?: Prisma.OrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  stockMovements?: Prisma.StockMovementUpdateManyWithoutInventoryUnitNestedInput
-}
-
-export type InventoryUnitUncheckedUpdateWithoutPurchaseOrderItemInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutInventoryUnitNestedInput
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutPurchaseOrderItemInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  orderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type InventoryUnitCreateManyOrderItemInput = {
-  id?: string
-  variantId: string
-  warehouseId: string
-  sn?: string | null
-  imei?: string | null
-  status?: $Enums.InventoryUnitStatus
-  purchaseOrderItemId?: string | null
-  warehouseInventoryId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  soldAt?: Date | string | null
-}
-
-export type InventoryUnitUpdateWithoutOrderItemInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouse?: Prisma.WarehouseUpdateOneRequiredWithoutInventoryUnitsNestedInput
-  warehouseInventory?: Prisma.WarehouseInventoryUpdateOneWithoutInventoryUnitsNestedInput
-  purchaseOrderItem?: Prisma.PurchaseOrderItemUpdateOneWithoutInventoryUnitsNestedInput
-  stockMovements?: Prisma.StockMovementUpdateManyWithoutInventoryUnitNestedInput
-}
-
-export type InventoryUnitUncheckedUpdateWithoutOrderItemInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutInventoryUnitNestedInput
-}
-
-export type InventoryUnitUncheckedUpdateManyWithoutOrderItemInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
-  warehouseId?: Prisma.StringFieldUpdateOperationsInput | string
-  sn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imei?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
-  purchaseOrderItemId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  warehouseInventoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  soldAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-
-/**
- * Count Type InventoryUnitCountOutputType
- */
-
-export type InventoryUnitCountOutputType = {
-  stockMovements: number
-}
-
-export type InventoryUnitCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  stockMovements?: boolean | InventoryUnitCountOutputTypeCountStockMovementsArgs
-}
-
-/**
- * InventoryUnitCountOutputType without action
- */
-export type InventoryUnitCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the InventoryUnitCountOutputType
-   */
-  select?: Prisma.InventoryUnitCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * InventoryUnitCountOutputType without action
- */
-export type InventoryUnitCountOutputTypeCountStockMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.StockMovementWhereInput
-}
 
 
 export type InventoryUnitSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   variantId?: boolean
-  warehouseId?: boolean
-  sn?: boolean
-  imei?: boolean
+  serialNumber?: boolean
   status?: boolean
-  orderItemId?: boolean
-  purchaseOrderItemId?: boolean
-  warehouseInventoryId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  soldAt?: boolean
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
-  warehouseInventory?: boolean | Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs>
-  orderItem?: boolean | Prisma.InventoryUnit$orderItemArgs<ExtArgs>
-  purchaseOrderItem?: boolean | Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs>
-  stockMovements?: boolean | Prisma.InventoryUnit$stockMovementsArgs<ExtArgs>
-  _count?: boolean | Prisma.InventoryUnitCountOutputTypeDefaultArgs<ExtArgs>
+  reservation?: boolean | Prisma.InventoryUnit$reservationArgs<ExtArgs>
 }, ExtArgs["result"]["inventoryUnit"]>
 
 export type InventoryUnitSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   variantId?: boolean
-  warehouseId?: boolean
-  sn?: boolean
-  imei?: boolean
+  serialNumber?: boolean
   status?: boolean
-  orderItemId?: boolean
-  purchaseOrderItemId?: boolean
-  warehouseInventoryId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  soldAt?: boolean
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
-  warehouseInventory?: boolean | Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs>
-  orderItem?: boolean | Prisma.InventoryUnit$orderItemArgs<ExtArgs>
-  purchaseOrderItem?: boolean | Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs>
 }, ExtArgs["result"]["inventoryUnit"]>
 
 export type InventoryUnitSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   variantId?: boolean
-  warehouseId?: boolean
-  sn?: boolean
-  imei?: boolean
+  serialNumber?: boolean
   status?: boolean
-  orderItemId?: boolean
-  purchaseOrderItemId?: boolean
-  warehouseInventoryId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  soldAt?: boolean
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
-  warehouseInventory?: boolean | Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs>
-  orderItem?: boolean | Prisma.InventoryUnit$orderItemArgs<ExtArgs>
-  purchaseOrderItem?: boolean | Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs>
 }, ExtArgs["result"]["inventoryUnit"]>
 
 export type InventoryUnitSelectScalar = {
   id?: boolean
   variantId?: boolean
-  warehouseId?: boolean
-  sn?: boolean
-  imei?: boolean
+  serialNumber?: boolean
   status?: boolean
-  orderItemId?: boolean
-  purchaseOrderItemId?: boolean
-  warehouseInventoryId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  soldAt?: boolean
 }
 
-export type InventoryUnitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "warehouseId" | "sn" | "imei" | "status" | "orderItemId" | "purchaseOrderItemId" | "warehouseInventoryId" | "createdAt" | "updatedAt" | "soldAt", ExtArgs["result"]["inventoryUnit"]>
+export type InventoryUnitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "serialNumber" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["inventoryUnit"]>
 export type InventoryUnitInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
-  warehouseInventory?: boolean | Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs>
-  orderItem?: boolean | Prisma.InventoryUnit$orderItemArgs<ExtArgs>
-  purchaseOrderItem?: boolean | Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs>
-  stockMovements?: boolean | Prisma.InventoryUnit$stockMovementsArgs<ExtArgs>
-  _count?: boolean | Prisma.InventoryUnitCountOutputTypeDefaultArgs<ExtArgs>
+  reservation?: boolean | Prisma.InventoryUnit$reservationArgs<ExtArgs>
 }
 export type InventoryUnitIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
-  warehouseInventory?: boolean | Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs>
-  orderItem?: boolean | Prisma.InventoryUnit$orderItemArgs<ExtArgs>
-  purchaseOrderItem?: boolean | Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs>
 }
 export type InventoryUnitIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  warehouse?: boolean | Prisma.WarehouseDefaultArgs<ExtArgs>
-  warehouseInventory?: boolean | Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs>
-  orderItem?: boolean | Prisma.InventoryUnit$orderItemArgs<ExtArgs>
-  purchaseOrderItem?: boolean | Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs>
 }
 
 export type $InventoryUnitPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "InventoryUnit"
   objects: {
     variant: Prisma.$ProductVariantPayload<ExtArgs>
-    warehouse: Prisma.$WarehousePayload<ExtArgs>
-    warehouseInventory: Prisma.$WarehouseInventoryPayload<ExtArgs> | null
-    orderItem: Prisma.$OrderItemPayload<ExtArgs> | null
-    purchaseOrderItem: Prisma.$PurchaseOrderItemPayload<ExtArgs> | null
-    stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
+    reservation: Prisma.$ReservationPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     variantId: string
-    warehouseId: string
-    sn: string | null
-    imei: string | null
+    serialNumber: string | null
     status: $Enums.InventoryUnitStatus
-    orderItemId: string | null
-    purchaseOrderItemId: string | null
-    warehouseInventoryId: string | null
     createdAt: Date
     updatedAt: Date
-    soldAt: Date | null
   }, ExtArgs["result"]["inventoryUnit"]>
   composites: {}
 }
@@ -1936,11 +1015,7 @@ readonly fields: InventoryUnitFieldRefs;
 export interface Prisma__InventoryUnitClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  warehouse<T extends Prisma.WarehouseDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WarehouseDefaultArgs<ExtArgs>>): Prisma.Prisma__WarehouseClient<runtime.Types.Result.GetResult<Prisma.$WarehousePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  warehouseInventory<T extends Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InventoryUnit$warehouseInventoryArgs<ExtArgs>>): Prisma.Prisma__WarehouseInventoryClient<runtime.Types.Result.GetResult<Prisma.$WarehouseInventoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  orderItem<T extends Prisma.InventoryUnit$orderItemArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InventoryUnit$orderItemArgs<ExtArgs>>): Prisma.Prisma__OrderItemClient<runtime.Types.Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  purchaseOrderItem<T extends Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InventoryUnit$purchaseOrderItemArgs<ExtArgs>>): Prisma.Prisma__PurchaseOrderItemClient<runtime.Types.Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  stockMovements<T extends Prisma.InventoryUnit$stockMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InventoryUnit$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  reservation<T extends Prisma.InventoryUnit$reservationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InventoryUnit$reservationArgs<ExtArgs>>): Prisma.Prisma__ReservationClient<runtime.Types.Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1972,16 +1047,10 @@ export interface Prisma__InventoryUnitClient<T, Null = never, ExtArgs extends ru
 export interface InventoryUnitFieldRefs {
   readonly id: Prisma.FieldRef<"InventoryUnit", 'String'>
   readonly variantId: Prisma.FieldRef<"InventoryUnit", 'String'>
-  readonly warehouseId: Prisma.FieldRef<"InventoryUnit", 'String'>
-  readonly sn: Prisma.FieldRef<"InventoryUnit", 'String'>
-  readonly imei: Prisma.FieldRef<"InventoryUnit", 'String'>
+  readonly serialNumber: Prisma.FieldRef<"InventoryUnit", 'String'>
   readonly status: Prisma.FieldRef<"InventoryUnit", 'InventoryUnitStatus'>
-  readonly orderItemId: Prisma.FieldRef<"InventoryUnit", 'String'>
-  readonly purchaseOrderItemId: Prisma.FieldRef<"InventoryUnit", 'String'>
-  readonly warehouseInventoryId: Prisma.FieldRef<"InventoryUnit", 'String'>
   readonly createdAt: Prisma.FieldRef<"InventoryUnit", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"InventoryUnit", 'DateTime'>
-  readonly soldAt: Prisma.FieldRef<"InventoryUnit", 'DateTime'>
 }
     
 
@@ -2378,84 +1447,22 @@ export type InventoryUnitDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
- * InventoryUnit.warehouseInventory
+ * InventoryUnit.reservation
  */
-export type InventoryUnit$warehouseInventoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type InventoryUnit$reservationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the WarehouseInventory
+   * Select specific fields to fetch from the Reservation
    */
-  select?: Prisma.WarehouseInventorySelect<ExtArgs> | null
+  select?: Prisma.ReservationSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the WarehouseInventory
+   * Omit specific fields from the Reservation
    */
-  omit?: Prisma.WarehouseInventoryOmit<ExtArgs> | null
+  omit?: Prisma.ReservationOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.WarehouseInventoryInclude<ExtArgs> | null
-  where?: Prisma.WarehouseInventoryWhereInput
-}
-
-/**
- * InventoryUnit.orderItem
- */
-export type InventoryUnit$orderItemArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the OrderItem
-   */
-  select?: Prisma.OrderItemSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the OrderItem
-   */
-  omit?: Prisma.OrderItemOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.OrderItemInclude<ExtArgs> | null
-  where?: Prisma.OrderItemWhereInput
-}
-
-/**
- * InventoryUnit.purchaseOrderItem
- */
-export type InventoryUnit$purchaseOrderItemArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the PurchaseOrderItem
-   */
-  select?: Prisma.PurchaseOrderItemSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the PurchaseOrderItem
-   */
-  omit?: Prisma.PurchaseOrderItemOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.PurchaseOrderItemInclude<ExtArgs> | null
-  where?: Prisma.PurchaseOrderItemWhereInput
-}
-
-/**
- * InventoryUnit.stockMovements
- */
-export type InventoryUnit$stockMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the StockMovement
-   */
-  select?: Prisma.StockMovementSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the StockMovement
-   */
-  omit?: Prisma.StockMovementOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.StockMovementInclude<ExtArgs> | null
-  where?: Prisma.StockMovementWhereInput
-  orderBy?: Prisma.StockMovementOrderByWithRelationInput | Prisma.StockMovementOrderByWithRelationInput[]
-  cursor?: Prisma.StockMovementWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.StockMovementScalarFieldEnum | Prisma.StockMovementScalarFieldEnum[]
+  include?: Prisma.ReservationInclude<ExtArgs> | null
+  where?: Prisma.ReservationWhereInput
 }
 
 /**

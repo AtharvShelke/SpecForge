@@ -9,157 +9,6 @@
 * 🟢 You can import this file directly.
 */
 
-export const Category = {
-  PROCESSOR: 'PROCESSOR',
-  GPU: 'GPU',
-  MOTHERBOARD: 'MOTHERBOARD',
-  RAM: 'RAM',
-  STORAGE: 'STORAGE',
-  PSU: 'PSU',
-  CABINET: 'CABINET',
-  COOLER: 'COOLER',
-  MONITOR: 'MONITOR',
-  PERIPHERAL: 'PERIPHERAL',
-  NETWORKING: 'NETWORKING',
-  LAPTOP: 'LAPTOP'
-} as const
-
-export type Category = (typeof Category)[keyof typeof Category]
-
-
-export const OrderStatus = {
-  PENDING: 'PENDING',
-  PAID: 'PAID',
-  PROCESSING: 'PROCESSING',
-  SHIPPED: 'SHIPPED',
-  DELIVERED: 'DELIVERED',
-  CANCELLED: 'CANCELLED',
-  RETURNED: 'RETURNED'
-} as const
-
-export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
-
-
-export const CompatibilityLevel = {
-  COMPATIBLE: 'COMPATIBLE',
-  WARNING: 'WARNING',
-  INCOMPATIBLE: 'INCOMPATIBLE'
-} as const
-
-export type CompatibilityLevel = (typeof CompatibilityLevel)[keyof typeof CompatibilityLevel]
-
-
-export const StockMovementType = {
-  PURCHASE: 'PURCHASE',
-  INWARD: 'INWARD',
-  OUTWARD: 'OUTWARD',
-  SALE: 'SALE',
-  RETURN: 'RETURN',
-  ADJUSTMENT: 'ADJUSTMENT',
-  RESERVE: 'RESERVE'
-} as const
-
-export type StockMovementType = (typeof StockMovementType)[keyof typeof StockMovementType]
-
-
-export const InvoiceStatus = {
-  DRAFT: 'DRAFT',
-  PENDING: 'PENDING',
-  PAID: 'PAID',
-  OVERDUE: 'OVERDUE',
-  CANCELLED: 'CANCELLED',
-  REFUNDED: 'REFUNDED',
-  VOIDED: 'VOIDED'
-} as const
-
-export type InvoiceStatus = (typeof InvoiceStatus)[keyof typeof InvoiceStatus]
-
-
-export const InvoiceType = {
-  STANDARD: 'STANDARD',
-  CREDIT_NOTE: 'CREDIT_NOTE'
-} as const
-
-export type InvoiceType = (typeof InvoiceType)[keyof typeof InvoiceType]
-
-
-export const SalesChannel = {
-  ONLINE: 'ONLINE',
-  POS: 'POS',
-  MANUAL: 'MANUAL',
-  API: 'API',
-  PHONE: 'PHONE'
-} as const
-
-export type SalesChannel = (typeof SalesChannel)[keyof typeof SalesChannel]
-
-
-export const PaymentMethodType = {
-  CARD: 'CARD',
-  UPI: 'UPI',
-  BANK_TRANSFER: 'BANK_TRANSFER',
-  CASH: 'CASH',
-  WALLET: 'WALLET'
-} as const
-
-export type PaymentMethodType = (typeof PaymentMethodType)[keyof typeof PaymentMethodType]
-
-
-export const PaymentStatus = {
-  INITIATED: 'INITIATED',
-  PENDING: 'PENDING',
-  COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED',
-  REFUNDED: 'REFUNDED',
-  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED'
-} as const
-
-export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
-
-
-export const PurchaseOrderStatus = {
-  PENDING: 'PENDING',
-  PARTIAL: 'PARTIAL',
-  COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
-} as const
-
-export type PurchaseOrderStatus = (typeof PurchaseOrderStatus)[keyof typeof PurchaseOrderStatus]
-
-
-export const InventoryUnitStatus = {
-  AVAILABLE: 'AVAILABLE',
-  RESERVED: 'RESERVED',
-  SOLD: 'SOLD',
-  RETURNED: 'RETURNED',
-  LOST: 'LOST',
-  DAMAGED: 'DAMAGED'
-} as const
-
-export type InventoryUnitStatus = (typeof InventoryUnitStatus)[keyof typeof InventoryUnitStatus]
-
-
-export const Currency = {
-  INR: 'INR',
-  USD: 'USD',
-  EUR: 'EUR',
-  GBP: 'GBP'
-} as const
-
-export type Currency = (typeof Currency)[keyof typeof Currency]
-
-
-export const FilterType = {
-  checkbox: 'checkbox',
-  range: 'range',
-  boolean: 'boolean',
-  search: 'search',
-  dropdown: 'dropdown'
-} as const
-
-export type FilterType = (typeof FilterType)[keyof typeof FilterType]
-
-
 export const ProductStatus = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
@@ -169,25 +18,51 @@ export const ProductStatus = {
 export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus]
 
 
+export const SpecValueType = {
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  BOOLEAN: 'BOOLEAN'
+} as const
+
+export type SpecValueType = (typeof SpecValueType)[keyof typeof SpecValueType]
+
+
+export const CompatibilityOperator = {
+  EQUAL: 'EQUAL',
+  NOT_EQUAL: 'NOT_EQUAL',
+  LESS_THAN: 'LESS_THAN',
+  LESS_OR_EQUAL: 'LESS_OR_EQUAL',
+  GREATER_THAN: 'GREATER_THAN',
+  GREATER_OR_EQUAL: 'GREATER_OR_EQUAL',
+  IN_LIST: 'IN_LIST',
+  CONTAINS: 'CONTAINS'
+} as const
+
+export type CompatibilityOperator = (typeof CompatibilityOperator)[keyof typeof CompatibilityOperator]
+
+
+export const CompatibilitySeverity = {
+  ERROR: 'ERROR',
+  WARNING: 'WARNING',
+  INFO: 'INFO'
+} as const
+
+export type CompatibilitySeverity = (typeof CompatibilitySeverity)[keyof typeof CompatibilitySeverity]
+
+
+export const InventoryUnitStatus = {
+  AVAILABLE: 'AVAILABLE',
+  RESERVED: 'RESERVED',
+  SOLD: 'SOLD'
+} as const
+
+export type InventoryUnitStatus = (typeof InventoryUnitStatus)[keyof typeof InventoryUnitStatus]
+
+
 export const Role = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
-  WAREHOUSE_STAFF: 'WAREHOUSE_STAFF',
-  FINANCE: 'FINANCE',
   USER: 'USER'
 } as const
 
 export type Role = (typeof Role)[keyof typeof Role]
-
-
-export const MarketingEventType = {
-  PAGE_VIEW: 'PAGE_VIEW',
-  CART_VISIT: 'CART_VISIT',
-  CART_ABANDONED: 'CART_ABANDONED',
-  CHECKOUT_STARTED: 'CHECKOUT_STARTED',
-  PRODUCT_VIEWED: 'PRODUCT_VIEWED',
-  CUSTOM: 'CUSTOM',
-  NEWSLETTER_SIGNUP: 'NEWSLETTER_SIGNUP'
-} as const
-
-export type MarketingEventType = (typeof MarketingEventType)[keyof typeof MarketingEventType]
