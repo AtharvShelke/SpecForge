@@ -1,4 +1,4 @@
-import { BillingProfile, Currency, Invoice, InvoiceLineItem, InvoiceStatus } from "@/types";
+import { BillingProfile, Invoice, InvoiceLineItem, InvoiceStatus } from "@/types";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -12,7 +12,7 @@ export function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-export function formatCurrency(amount: number, currency: Currency) {
+export function formatCurrency(amount: number, currency: string = 'INR') {
   // Uses user's locale by default; keeps it simple
   try {
     return new Intl.NumberFormat(undefined, {
@@ -48,7 +48,7 @@ export function formatDateTime(dateIso: string) {
 }
 
 export function isOverdue(dueDateIso: string, status: InvoiceStatus) {
-  if (status === "paid" || status === "cancelled" || status === "refunded") return false;
+  if (status === InvoiceStatus.PAID || status === InvoiceStatus.CANCELLED || status === InvoiceStatus.REFUNDED) return false;
   const due = new Date(dueDateIso).getTime();
   const now = Date.now();
   return now > due;
@@ -80,18 +80,20 @@ export function computeInvoiceTotals(
 
 export function statusLabel(status: InvoiceStatus) {
   switch (status) {
-    case "draft":
+    case "DRAFT":
       return "Draft";
-    case "pending":
+    case "PENDING":
       return "Pending";
-    case "paid":
+    case "PAID":
       return "Paid";
-    case "overdue":
+    case "OVERDUE":
       return "Overdue";
-    case "cancelled":
+    case "CANCELLED":
       return "Cancelled";
-    case "refunded":
+    case "REFUNDED":
       return "Refunded";
+    case "VOIDED":
+      return "Voided";
     default:
       return status;
   }
@@ -100,18 +102,20 @@ export function statusLabel(status: InvoiceStatus) {
 export function statusBadgeClasses(status: InvoiceStatus) {
   // Matches your project vibe: soft bg + border + strong text
   switch (status) {
-    case "paid":
+    case "PAID":
       return "bg-green-50 text-green-700 border-green-200";
-    case "pending":
+    case "PENDING":
       return "bg-blue-50 text-blue-700 border-blue-200";
-    case "draft":
+    case "DRAFT":
       return "bg-gray-50 text-gray-700 border-gray-200";
-    case "overdue":
+    case "OVERDUE":
       return "bg-red-50 text-red-700 border-red-200";
-    case "cancelled":
+    case "CANCELLED":
       return "bg-gray-100 text-gray-600 border-gray-200";
-    case "refunded":
+    case "REFUNDED":
       return "bg-purple-50 text-purple-700 border-purple-200";
+    case "VOIDED":
+      return "bg-gray-100 text-gray-500 border-gray-200";
     default:
       return "bg-gray-50 text-gray-700 border-gray-200";
   }
@@ -184,24 +188,24 @@ export function generateInvoicePdfBlob({
     : ["Bill To:", "Unknown Customer"];
 
   const itemsHeader = "Items:";
-  const itemsLines = invoice.lineItems.map((li) => {
+  const itemsLines = (invoice.lineItems ?? []).map((li) => {
     const lineTotal = li.quantity * li.unitPrice;
     const tax = ((li.taxRatePct ?? 0) / 100) * lineTotal;
     const full = lineTotal + tax;
-    return `${li.name}  |  ${li.quantity} x ${formatCurrency(li.unitPrice, invoice.currency)}  |  ${formatCurrency(
+    return `${li.name}  |  ${li.quantity} x ${formatCurrency(li.unitPrice, 'INR')}  |  ${formatCurrency(
       full,
-      invoice.currency
+      'INR'
     )}`;
   });
 
   const totals = [
-    `Subtotal: ${formatCurrency(invoice.subtotal, invoice.currency)}`,
-    `Tax: ${formatCurrency(invoice.taxTotal, invoice.currency)}`,
-    invoice.shipping ? `Shipping: ${formatCurrency(invoice.shipping, invoice.currency)}` : null,
+    `Subtotal: ${formatCurrency(invoice.subtotal, 'INR')}`,
+    `Tax: ${formatCurrency(invoice.taxTotal, 'INR')}`,
+    invoice.shipping ? `Shipping: ${formatCurrency(invoice.shipping, 'INR')}` : null,
     invoice.discountPct ? `Discount: ${invoice.discountPct}%` : null,
-    `Total: ${formatCurrency(invoice.total, invoice.currency)}`,
-    `Paid: ${formatCurrency(invoice.amountPaid, invoice.currency)}`,
-    `Amount Due: ${formatCurrency(invoice.amountDue, invoice.currency)}`,
+    `Total: ${formatCurrency(invoice.total, 'INR')}`,
+    `Paid: ${formatCurrency(invoice.amountPaid, 'INR')}`,
+    `Amount Due: ${formatCurrency(invoice.amountDue, 'INR')}`,
   ].filter(Boolean) as string[];
 
   const notes = invoice.notes ? [`Notes:`, invoice.notes] : [];

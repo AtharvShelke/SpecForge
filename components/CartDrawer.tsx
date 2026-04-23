@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
 import { X, Trash2, AlertOctagon, CheckCircle2, AlertTriangle, CreditCard, Save, ShoppingBag } from 'lucide-react';
-import { CompatibilityLevel, CompatibilityIssue } from '@/types';
+import { CompatibilityCheck, CompatibilitySeverity } from '@/types';
 import Link from 'next/link';
 
 const CartDrawer: React.FC = () => {
@@ -18,8 +18,10 @@ const CartDrawer: React.FC = () => {
   } = useShop();
 
   const {
-    compatibilityReport,
-    saveCurrentBuild,
+    overallStatus,
+    compatibilityErrors,
+    compatibilityWarnings,
+    createBuild,
   } = useBuild();
 
   const [isNaming, setIsNaming] = useState(false);
@@ -38,13 +40,14 @@ const CartDrawer: React.FC = () => {
 
   if (!isCartOpen) return null;
 
-  const isCompatible = compatibilityReport.status === CompatibilityLevel.COMPATIBLE;
-  const isFatal = compatibilityReport.status === CompatibilityLevel.INCOMPATIBLE;
+  const isCompatible = overallStatus === 'COMPATIBLE';
+  const isFatal = overallStatus === 'INCOMPATIBLE';
+  const issues = [...compatibilityErrors, ...compatibilityWarnings];
 
-  const handleSaveBuild = (e: React.FormEvent) => {
+  const handleSaveBuild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (buildName.trim()) {
-      saveCurrentBuild(buildName);
+      await createBuild(buildName);
       setIsNaming(false);
       setBuildName('');
       alert('Build Saved Successfully!');
@@ -86,12 +89,12 @@ const CartDrawer: React.FC = () => {
                       }`}>
                       {isFatal ? 'Incompatible Build' : !isCompatible ? 'Check Issues' : 'Compatible Build'}
                     </h3>
-                    {compatibilityReport.issues.length > 0 && (
+                    {issues.length > 0 && (
                       <ul className="mt-0.5 space-y-0.5">
-                        {compatibilityReport.issues.map((issue: CompatibilityIssue, idx: number) => (
-                          <li key={idx} className={`text-[10px] sm:text-xs ${issue.level === CompatibilityLevel.INCOMPATIBLE ? 'text-red-700 font-medium' : 'text-yellow-700'
+                        {issues.map((check: CompatibilityCheck, idx: number) => (
+                          <li key={idx} className={`text-[10px] sm:text-xs ${check.severity === CompatibilitySeverity.ERROR ? 'text-red-700 font-medium' : 'text-yellow-700'
                             }`}>
-                            • {issue.message}
+                            • {check.message}
                           </li>
                         ))}
                       </ul>

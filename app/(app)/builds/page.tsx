@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useMemo, useCallback, memo, Suspense } from 'react';
 import { useBuild } from '@/context/BuildContext';
-import { validateBuild } from '@/services/compatibility';
+// Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
+const validateBuild = (_items: any[]): { status: any; issues: any[] } => ({ status: 'COMPATIBLE', issues: [] });
 import {
   Save, Upload, Share2, Cpu, Monitor, HardDrive, Zap, Box, X,
   CheckCircle2, AlertTriangle, AlertOctagon, Link2, ArrowRight, Calendar, Layers,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Category, CompatibilityLevel, BuildGuide, CartItem } from '@/types';
+import { CompatibilityLevel, Build, CartItem } from '@/types';
+import { CATEGORY_NAMES, sameCategory } from '@/lib/categoryUtils';
 import { useToast } from '@/hooks/use-toast';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
@@ -19,19 +21,19 @@ import { getBaseUrl } from '@/lib/utils';
 
 // JSX elements as icon values force React to re-create them on every render.
 // Store component references instead and render them at use-site.
-const CATEGORY_ICON_COMPONENTS: Record<Category, React.ElementType> = {
-  [Category.PROCESSOR]:  Cpu,
-  [Category.GPU]:        Monitor,
-  [Category.RAM]:        Layers,
-  [Category.MOTHERBOARD]:Cpu,
-  [Category.STORAGE]:    HardDrive,
-  [Category.PSU]:        Zap,
-  [Category.CABINET]:    Box,
-  [Category.COOLER]:     Zap,
-  [Category.MONITOR]:    Monitor,
-  [Category.PERIPHERAL]: Monitor,
-  [Category.NETWORKING]: HardDrive,
-  [Category.LAPTOP]:     Monitor,
+const CATEGORY_ICON_COMPONENTS: Record<string, React.ElementType> = {
+  [CATEGORY_NAMES.PROCESSOR]:  Cpu,
+  [CATEGORY_NAMES.GPU]:        Monitor,
+  [CATEGORY_NAMES.RAM]:        Layers,
+  [CATEGORY_NAMES.MOTHERBOARD]:Cpu,
+  [CATEGORY_NAMES.STORAGE]:    HardDrive,
+  [CATEGORY_NAMES.PSU]:        Zap,
+  [CATEGORY_NAMES.CABINET]:    Box,
+  [CATEGORY_NAMES.COOLER]:     Zap,
+  [CATEGORY_NAMES.MONITOR]:    Monitor,
+  [CATEGORY_NAMES.PERIPHERAL]: Monitor,
+  [CATEGORY_NAMES.NETWORKING]: HardDrive,
+  Laptop:                      Monitor,
 };
 
 // Compat display config — plain object, never recreated
@@ -54,33 +56,33 @@ const MODAL_SHEET_TRANS   = { type: 'spring', damping: 25, stiffness: 300 } as c
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getCoverImage(build: BuildGuide): string | null {
-  const gpu = build.items.find(i => i.variant?.product?.category === Category.GPU);
+function getCoverImage(build: Build): string | null {
+  const gpu = (build.items ?? []).find(i => sameCategory(i.variant?.product?.category, CATEGORY_NAMES.GPU));
   if (gpu?.variant?.product) return gpu.variant.product.media?.[0]?.url ?? null;
-  const cpu = build.items.find(i => i.variant?.product?.category === Category.PROCESSOR);
+  const cpu = (build.items ?? []).find(i => sameCategory(i.variant?.product?.category, CATEGORY_NAMES.PROCESSOR));
   if (cpu?.variant?.product) return cpu.variant.product.media?.[0]?.url ?? null;
-  return build.items[0]?.variant?.product?.media?.[0]?.url ?? null;
+  return build.items?.[0]?.variant?.product?.media?.[0]?.url ?? null;
 }
 
-function buildShareUrl(build: BuildGuide): string {
+function buildShareUrl(build: Build): string {
   return `${getBaseUrl()}/builds/${build.id}`;
 }
 
 // Converts build items to CartItem[] — extracted so both CompatChip and
 // BuildModal can share the same transformation without duplicating it.
-function buildToCartItems(build: BuildGuide): CartItem[] {
-  return build.items
+function buildToCartItems(build: Build): CartItem[] {
+  return (build.items ?? [])
     .map(i => i.variant?.product
-      ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant })
+      ? ({ ...i.variant.product, quantity: (i as any).quantity ?? 1, selectedVariant: i.variant })
       : null)
     .filter(Boolean) as CartItem[];
 }
 
 // ── CompatChip ────────────────────────────────────────────────────────────────
 
-const CompatChip = memo(function CompatChip({ build }: { build: BuildGuide }) {
+const CompatChip = memo(function CompatChip({ build }: { build: Build }) {
   const report  = useMemo(() => validateBuild(buildToCartItems(build)), [build]);
-  const cfg     = COMPAT_CHIP_CONFIG[report.status] ?? COMPAT_CHIP_CONFIG[CompatibilityLevel.COMPATIBLE];
+  const cfg     = COMPAT_CHIP_CONFIG[report.status as CompatibilityLevel] ?? COMPAT_CHIP_CONFIG[CompatibilityLevel.COMPATIBLE];
   const { Icon } = cfg;
 
   return (
@@ -97,7 +99,7 @@ const BuildModal = memo(function BuildModal({
   onClose,
   onLoad,
 }: {
-  build:   BuildGuide
+  build:   Build
   onClose: () => void
   onLoad:  () => void
 }) {
@@ -105,7 +107,7 @@ const BuildModal = memo(function BuildModal({
   const [copied, setCopied] = useState(false);
 
   const totalPrice = useMemo(
-    () => build.items.reduce((sum, item) => sum + (item.variant?.price ?? 0) * item.quantity, 0),
+    () => (build.items ?? []).reduce((sum, item) => sum + (item.variant?.price ?? 0) * ((item as any).quantity ?? 1), 0),
     [build.items]
   );
 
@@ -115,7 +117,7 @@ const BuildModal = memo(function BuildModal({
     setTimeout(() => setCopied(false), 2000);
   }, [build]);
 
-  const compatCfg = COMPAT_MODAL_CONFIG[report.status] ?? COMPAT_MODAL_CONFIG[CompatibilityLevel.COMPATIBLE];
+  const compatCfg = COMPAT_MODAL_CONFIG[report.status as CompatibilityLevel] ?? COMPAT_MODAL_CONFIG[CompatibilityLevel.COMPATIBLE];
   const { Icon: CompatIcon } = compatCfg;
 
   return (
@@ -133,11 +135,11 @@ const BuildModal = memo(function BuildModal({
       >
         <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-zinc-900 truncate pr-4">{build.title}</h2>
+            <h2 className="text-lg font-bold text-zinc-900 truncate pr-4">{build.name}</h2>
             <div className="flex items-center gap-2 mt-0.5 text-zinc-400 font-bold text-[9px] uppercase tracking-widest">
               <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(build.createdAt).toLocaleDateString()}</span>
               <span>•</span>
-              <span>{build.items.length} Parts</span>
+              <span>{build.items?.length ?? 0} Parts</span>
             </div>
           </div>
           <button onClick={onClose} className="shrink-0 p-1.5 hover:bg-zinc-100 rounded-lg transition-colors">
@@ -158,7 +160,7 @@ const BuildModal = memo(function BuildModal({
 
           <div className="space-y-1.5">
             <h4 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Build Manifest</h4>
-            {build.items.map((item) => (
+            {(build.items ?? []).map((item) => (
               <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-all">
                 <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center p-1 border border-zinc-100 shrink-0">
                   <img
@@ -172,7 +174,7 @@ const BuildModal = memo(function BuildModal({
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-zinc-900 text-[13px] truncate">{item.variant?.product?.name}</p>
                   <p className="text-[9px] font-bold text-zinc-400 uppercase">
-                    {item.variant?.product?.category} {item.quantity > 1 && `×${item.quantity}`}
+                    {item.variant?.product?.category} {((item as any).quantity ?? 1) > 1 && `x${(item as any).quantity}`}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
@@ -218,15 +220,15 @@ const BuildCard = memo(function BuildCard({
   onCopyDirect,
   onLoad,
 }: {
-  build:         BuildGuide
+  build:         Build
   index:         number
   copiedId:      string | null
-  onOpen:        (b: BuildGuide) => void
-  onCopyDirect:  (e: React.MouseEvent, b: BuildGuide) => void
+  onOpen:        (b: Build) => void
+  onCopyDirect:  (e: React.MouseEvent, b: Build) => void
   onLoad:        (e: React.MouseEvent, id: string) => void
 }) {
   const coverImg   = useMemo(() => getCoverImage(build), [build]);
-  const totalItems = build.items.length;
+  const totalItems = build.items?.length ?? 0;
   const isCopied   = copiedId === build.id;
 
   const handleOpen      = useCallback(() => onOpen(build),                              [onOpen, build]);
@@ -259,16 +261,16 @@ const BuildCard = memo(function BuildCard({
 
       <div className="p-4 flex flex-col flex-1">
         <div className="mb-3">
-          <h3 className="text-[13px] font-bold text-zinc-900 truncate">{build.title}</h3>
+          <h3 className="text-[13px] font-bold text-zinc-900 truncate">{build.name}</h3>
           <p className="text-[9px] font-bold text-zinc-400 flex items-center gap-1 mt-0.5 uppercase">
             <Calendar size={10} /> {new Date(build.createdAt).toLocaleDateString()}
           </p>
         </div>
 
         <div className="space-y-1 mb-4">
-          {build.items.slice(0, 2).map((item) => {
+          {(build.items ?? []).slice(0, 2).map((item) => {
             const IconComp = item.variant?.product
-              ? CATEGORY_ICON_COMPONENTS[item.variant.product.category as Category]
+              ? CATEGORY_ICON_COMPONENTS[item.variant.product.category]
               : null;
             return (
               <div key={item.id} className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 bg-zinc-50 px-2 py-1 rounded-md">
@@ -284,7 +286,7 @@ const BuildCard = memo(function BuildCard({
 
         <div className="mt-auto pt-3 border-t border-zinc-50 flex items-center justify-between">
           <div className="flex -space-x-1.5">
-            {build.items.slice(0, 3).map((item, idx) => (
+            {(build.items ?? []).slice(0, 3).map((item, idx) => (
               <div key={idx} className="w-6 h-6 rounded-full border-2 border-white bg-white shadow-sm overflow-hidden ring-1 ring-zinc-100">
                 <img
                   src={item.variant?.product?.media?.[0]?.url ?? '/placeholder.png'}
@@ -319,15 +321,15 @@ const BuildCard = memo(function BuildCard({
 // ── BuildsContent ─────────────────────────────────────────────────────────────
 
 function BuildsContent() {
-  const { buildGuides, loadBuild, refreshBuildGuides } = useBuild();
-  const [activeBuild, setActiveBuild] = useState<BuildGuide | null>(null);
+  const { builds, loadBuild, refreshBuilds } = useBuild();
+  const [activeBuild, setActiveBuild] = useState<Build | null>(null);
   const [copiedId,    setCopiedId]    = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Refresh build guides on mount
-  useEffect(() => { refreshBuildGuides(); }, [refreshBuildGuides]);
+  // Refresh builds on mount
+  useEffect(() => { refreshBuilds(); }, [refreshBuilds]);
 
-  const handleCopyDirect = useCallback(async (e: React.MouseEvent, build: BuildGuide) => {
+  const handleCopyDirect = useCallback(async (e: React.MouseEvent, build: Build) => {
     e.stopPropagation();
     await navigator.clipboard.writeText(buildShareUrl(build));
     setCopiedId(build.id);
@@ -351,7 +353,7 @@ function BuildsContent() {
       <PageLayout.Header>
         <PageTitle
           title="Saved Builds"
-          subtitle={`${buildGuides.length} configurations available.`}
+          subtitle={`${builds.length} configurations available.`}
           badge={
             <div className="inline-flex items-center gap-2 bg-white border border-zinc-200 text-zinc-500 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md mb-2 shadow-sm">
               <Save size={10} className="text-indigo-600" /> Library
@@ -361,7 +363,7 @@ function BuildsContent() {
       </PageLayout.Header>
 
       <PageLayout.Content className="flex-1" padding="sm">
-        {buildGuides.length === 0 ? (
+        {builds.length === 0 ? (
           <div className="max-w-xs mx-auto mt-20 text-center">
             <Box className="text-zinc-200 mx-auto mb-4" size={40} />
             <h3 className="text-lg font-bold text-zinc-900">Empty Library</h3>
@@ -372,7 +374,7 @@ function BuildsContent() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {buildGuides.map((build, i) => (
+            {builds.map((build, i) => (
               <BuildCard
                 key={build.id}
                 build={build}

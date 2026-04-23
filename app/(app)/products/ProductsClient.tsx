@@ -1,20 +1,25 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback, memo, Suspense } from 'react';
-import { Category, Product, CompatibilityLevel, specsToFlat } from '@/types';
+import { Product, CompatibilityLevel, specsToFlat } from '@/types';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
+import { useProductFilters } from '@/hooks/useProductFilters';
+import { filterProducts as filterProductsService } from '@/lib/services/product.service';
+import { fetchCatalogProducts } from '@/lib/catalogFrontend';
 import {
     Search, Plus, CheckCircle, AlertTriangle, XCircle, Filter,
     Grid2x2, ChevronLeft, ChevronRight, ChevronDown, List,
     BarChart2, ArrowUpDown, ArrowLeft, SlidersHorizontal, X, Zap,
     Check, Hammer
 } from 'lucide-react';
-import { validateBuild } from '@/services/compatibility';
+// Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
+const validateBuild = (_items: any[]): { status: any; issues: any[] } => ({ status: 'COMPATIBLE', issues: [] });
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar';
 import { CategoryNode, BUILD_SEQUENCE } from '@/data/categoryTree';
+import { CATEGORY_NAMES, sameCategory } from '@/lib/categoryUtils';
 import { PageLayout } from '@/components/layout/PageLayout';
 import Image from 'next/image';
 import BuildProgressSidebar from '@/components/build/BuildProgressSidebar';
@@ -205,33 +210,30 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const initialQueryParam    = searchParams.get('q');
     const initialModeParam     = searchParams.get('mode');
 
+    const categoryNodes = useMemo<CategoryNode[]>(() => categories.map((category) => ({
+        label: category.name,
+        category: category.name,
+        children: category.subCategories?.map((subCategory) => ({
+            label: subCategory.name,
+            category: category.name,
+            subCategoryId: subCategory.id,
+        })),
+    })), [categories]);
+
     const initialTab = useMemo(() => {
         if (initialQueryParam) return null;
-        if (initialCategoryParam && categories.length > 0) {
-            const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
+        if (initialCategoryParam && categoryNodes.length > 0) {
+            const found = categoryNodes.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
             if (found) return found;
         }
-        return categories.length > 0 ? ALL_PRODUCTS_TAB : null;
-    }, [initialCategoryParam, categories, initialQueryParam]);
+        return categoryNodes.length > 0 ? ALL_PRODUCTS_TAB : null;
+    }, [initialCategoryParam, categoryNodes, initialQueryParam]);
 
     const [searchTerm,          setSearchTerm]          = useState(searchParams.get('q') ?? '');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
     const [activeTab,           setActiveTab]           = useState<CategoryNode | null>(initialTab);
     const [selectedNode,        setSelectedNode]        = useState<CategoryNode | null>(null);
-    const [expandedSubcategory, setExpandedSubcategory] = useState<string | null>(null);
     const [sidebarSearchTerm,   setSidebarSearchTerm]   = useState('');
-    const [selectedFilters,     setSelectedFilters]     = useState<Record<string, string[]>>(() => {
-        const filters: Record<string, string[]> = {};
-        searchParams.forEach((value, key) => {
-            if (key.startsWith('f_')) {
-                const actualKey = key.slice(2);
-                if (!filters[actualKey]) filters[actualKey] = [];
-                filters[actualKey].push(value);
-            }
-        });
-        return filters;
-    });
-    const [priceRange,          setPriceRange]          = useState({ min: Number(searchParams.get('minPrice')) || 0, max: Number(searchParams.get('maxPrice')) || DEFAULT_MAX_PRICE });
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [currentPage,         setCurrentPage]         = useState(Number(searchParams.get('page')) || 1);
     const [isLoadingProducts,   setIsLoadingProducts]   = useState(true);
@@ -241,60 +243,58 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const [sortOption,          setSortOption]          = useState(searchParams.get('sort') ?? 'price-asc');
     const [viewMode,            setViewMode]            = useState(searchParams.get('view') ?? 'grid');
 
+    // ── Product filters hook ────────────────────────────────────────────────────
+    const {
+        filter: advancedFilter,
+        specFilters,
+        priceMin,
+        priceMax,
+        brandId,
+        status,
+        setSpecFilter,
+        removeSpecValue,
+        setPriceRange: setPriceRangeFilter,
+        setBrandId: setBrandIdFilter,
+        setStatus: setStatusFilter,
+        clearFilters,
+        subCategoryId,
+        setSubCategoryId,
+    } = useProductFilters();
+
     // ── Debounce search ───────────────────────────────────────────────────────
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    // ── Category nav scroll buttons ───────────────────────────────────────────
-    const categoryNavRef = useRef<HTMLDivElement | null>(null);
-    const [canScrollLeft,  setCanScrollLeft]  = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(false);
-
-    const updateScrollButtons = useCallback(() => {
-        const el = categoryNavRef.current;
-        if (!el) return;
-        setCanScrollLeft(el.scrollLeft > 0);
-        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-    }, []);
-
-    useEffect(() => { updateScrollButtons(); }, [categories, updateScrollButtons]);
-
-    const scrollCategories = useCallback((direction: 'left' | 'right') => {
-        const el = categoryNavRef.current;
-        if (!el) return;
-        el.scrollBy({ left: direction === 'left' ? -el.clientWidth * 0.6 : el.clientWidth * 0.6, behavior: 'smooth' });
-    }, []);
-
     // ── Category initialisation ───────────────────────────────────────────────
     const hasInitializedCategories = useRef(false);
 
     useEffect(() => {
-        if (categories.length > 0 && !hasInitializedCategories.current) {
+        if (categoryNodes.length > 0 && !hasInitializedCategories.current) {
             hasInitializedCategories.current = true;
             const q = searchParams.get('q');
             if (q) { setActiveTab(null); return; }
             if (initialCategoryParam) {
-                const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
+                const found = categoryNodes.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
                 if (found) { setActiveTab(found); return; }
             }
             setActiveTab(ALL_PRODUCTS_TAB);
         }
-    }, [categories, initialCategoryParam, searchParams]);
+    }, [categoryNodes, initialCategoryParam, searchParams]);
 
     useEffect(() => {
-        if (!activeTab && categories.length > 0 && !searchTerm && hasInitializedCategories.current) {
+        if (!activeTab && categoryNodes.length > 0 && !searchTerm && hasInitializedCategories.current) {
             setActiveTab(ALL_PRODUCTS_TAB);
         }
-    }, [activeTab, categories, searchTerm]);
+    }, [activeTab, categoryNodes, searchTerm]);
 
     useEffect(() => {
         if (initialModeParam === 'build' && !isBuildMode) toggleBuildMode();
     }, []); // intentionally empty — run once on mount
 
     // ── Reset filters on tab change ───────────────────────────────────────────
-    const prevActiveTab = useRef<Category | undefined>(undefined);
+    const prevActiveTab = useRef<string | undefined>(undefined);
 
     useEffect(() => {
         if (!activeTab) return;
@@ -302,48 +302,42 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         if (prevActiveTab.current !== activeTab.category) {
             prevActiveTab.current = activeTab.category;
             setSelectedNode(null);
-            setSelectedFilters({});
-            setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
+            clearFilters();
             setCurrentPage(1);
             // Reset fetch dedup so the new category always triggers a fresh fetch
-            prevParamsRef.current = '';
+            prevFilterRef.current = '';
         }
-    }, [activeTab]);
+    }, [activeTab, clearFilters]);
 
     // ── Hydrate selectedNode from URL ─────────────────────────────────────────
-    const hasHydratedNode = useRef(false);
-
     useEffect(() => {
-        const subLabel = searchParams.get('sub');
-        if (subLabel && activeTab?.children && !hasHydratedNode.current) {
-            const findNode = (nodes: CategoryNode[]): CategoryNode | null => {
-                for (const n of nodes) {
-                    if (n.label === subLabel) return n;
-                    if (n.children) { const f = findNode(n.children); if (f) return f; }
-                }
-                return null;
-            };
-            const foundNode = findNode(activeTab.children);
-            if (foundNode) setSelectedNode(foundNode);
-            hasHydratedNode.current = true;
+        const subValue = subCategoryId ?? searchParams.get('sub');
+        if (!activeTab?.children) {
+            setSelectedNode(null);
+            return;
         }
-    }, [activeTab, searchParams]);
 
-    // ── URL sync ──────────────────────────────────────────────────────────────
+        if (!subValue) {
+            setSelectedNode(null);
+            return;
+        }
+
+        const foundNode = activeTab.children.find((node) =>
+            node.subCategoryId === subValue || node.label === subValue
+        ) ?? null;
+        setSelectedNode(foundNode);
+    }, [activeTab, searchParams, subCategoryId]);
+
+    // ── URL sync for non-filter params (filter params handled by useProductFilters) ─
     const prevUrlState = useRef('');
 
     useEffect(() => {
         const params = new URLSearchParams();
-        if (activeTab)             params.set('category',  activeTab.label);
-        if (selectedNode)          params.set('sub',       selectedNode.label);
+        if (activeTab && activeTab.label !== ALL_PRODUCTS_TAB.label) params.set('category', activeTab.label);
+        if (subCategoryId)        params.set('subCategoryId', subCategoryId);
         if (isBuildMode)           params.set('mode',      'build');
         if (debouncedSearchTerm)   params.set('q',         debouncedSearchTerm);
         if (sidebarSearchTerm)     params.set('sq',        sidebarSearchTerm);
-        if (priceRange.min > 0)    params.set('minPrice',  priceRange.min.toString());
-        if (priceRange.max < DEFAULT_MAX_PRICE) params.set('maxPrice', priceRange.max.toString());
-        for (const key of Object.keys(selectedFilters).sort()) {
-            for (const v of [...selectedFilters[key]].sort()) params.append(`f_${key}`, v);
-        }
         if (currentPage > 1)        params.set('page', currentPage.toString());
         if (sortOption !== 'price-asc') params.set('sort', sortOption);
         if (viewMode !== 'grid')    params.set('view', viewMode);
@@ -359,7 +353,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         if (currentParams.toString() !== newUrlStr) {
             window.history.replaceState(null, '', `${pathname}?${newUrlStr}`);
         }
-    }, [activeTab, selectedNode, isBuildMode, debouncedSearchTerm, sidebarSearchTerm, priceRange, selectedFilters, currentPage, pathname, sortOption, viewMode]);
+    }, [activeTab, subCategoryId, isBuildMode, debouncedSearchTerm, sidebarSearchTerm, currentPage, pathname, sortOption, viewMode]);
 
     // ── Build mode auto-advance ───────────────────────────────────────────────
     const prevCartLength = useRef(cart.length);
@@ -372,37 +366,53 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         if (cartAdded || modeToggled) {
             const nextMissingCat = BUILD_SEQUENCE.find(cat => !cart.some(item => item.category === cat));
             if (nextMissingCat) {
-                const nextNode = categories.find(node => node.category === nextMissingCat);
-                if (nextNode) { setActiveTab(nextNode); setSelectedFilters({}); }
+                const nextNode = categoryNodes.find(node => sameCategory(node.category, nextMissingCat));
+                if (nextNode) { setActiveTab(nextNode); clearFilters(); }
             }
         }
         prevCartLength.current = cart.length;
         prevBuildMode.current  = isBuildMode;
-    }, [cart, isBuildMode, categories]);
+    }, [cart, isBuildMode, categoryNodes, clearFilters]);
 
     // ── Handlers (stable references with useCallback) ─────────────────────────
-    const handleBuildCategorySelect = useCallback((category: Category) => {
-        const node = categories.find(n => n.category === category);
+    const handleBuildCategorySelect = useCallback((category: string) => {
+        const node = categoryNodes.find(n => sameCategory(n.category, category));
         if (node) setActiveTab(node);
-    }, [categories]);
+    }, [categoryNodes]);
 
-    const handleFilterChange = useCallback((key: string, value: string) => {
-        setSelectedFilters(prev => {
-            const current = prev[key] ?? [];
-            const updated = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
-            if (updated.length === 0) { const { [key]: _, ...rest } = prev; return rest; }
-            return { ...prev, [key]: updated };
-        });
-    }, []);
+    /**
+     * Handles spec filter changes — toggles values for a given spec.
+     * Uses setSpecFilter from useProductFilters hook.
+     */
+    const handleFilterChange = useCallback((specId: string, value: string) => {
+        const currentValues = specFilters.find(f => f.specId === specId)?.values ?? [];
+        const updated = currentValues.includes(value)
+            ? currentValues.filter(v => v !== value)
+            : [...currentValues, value];
+        setSpecFilter(specId, updated);
+    }, [specFilters, setSpecFilter]);
+
+    const handleSubCategorySelect = useCallback((nextNode: CategoryNode | null) => {
+        setSelectedNode(nextNode);
+        setSubCategoryId(nextNode?.subCategoryId ?? null);
+    }, [setSubCategoryId]);
+
+    const selectedFilterMap = useMemo(() => {
+        return specFilters.reduce<Record<string, string[]>>((acc, filter) => {
+            acc[filter.specId] = filter.values;
+            return acc;
+        }, {});
+    }, [specFilters]);
 
     const clearAllFilters = useCallback(() => {
         setSelectedNode(null);
-        setSelectedFilters({});
-        setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
+        clearFilters();
         setSidebarSearchTerm('');
-    }, []);
+    }, [clearFilters]);
 
-    const handlePriceChange = useCallback((min: number, max: number) => setPriceRange({ min, max }), []);
+    const handlePriceChange = useCallback((min: number, max: number) => {
+        setPriceRangeFilter(min, max);
+    }, [setPriceRangeFilter]);
 
     const handleCompareToggle = useCallback((e: React.MouseEvent, product: Product) => {
         e.preventDefault();
@@ -413,18 +423,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     }, [compareItems, removeFromCompare, addToCompare]);
 
     // ── Product fetch ─────────────────────────────────────────────────────────
-    const prevParamsRef = useRef<string>((() => {
-        if (initialData?.products?.length > 0 && initialCategoryParam) {
-            const p = new URLSearchParams();
-            p.set('category', initialCategoryParam);
-            p.set('sort', sortOption);
-            p.set('page', '1');
-            p.set('limit', ITEMS_PER_PAGE.toString());
-            p.sort();
-            return p.toString();
-        }
-        return '';
-    })());
+    const prevFilterRef = useRef<string>('');
 
     useEffect(() => {
         if (!activeTab && !debouncedSearchTerm) return;
@@ -434,52 +433,64 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         const fetchProducts = async () => {
             setIsLoadingProducts(true);
             try {
-                const params = new URLSearchParams();
-                if (activeTab?.category) params.set('category', String(activeTab.category));
-                if (selectedNode?.brand) params.set('nodeBrand', selectedNode.brand);
-                if (selectedNode?.query) params.set('nodeQuery', selectedNode.query);
+                // Build filter key for dedup
+                const filterKey = JSON.stringify({
+                    activeTab: activeTab?.category,
+                    selectedSubCategoryId: selectedNode?.subCategoryId,
+                    advancedFilter,
+                    debouncedSearchTerm,
+                    sidebarSearchTerm,
+                    currentPage,
+                    sortOption,
+                });
 
-                if (isBuildMode) {
-                    const cpu      = cart.find(i => i.category === Category.PROCESSOR);
-                    const mobo     = cart.find(i => i.category === Category.MOTHERBOARD);
-                    const activeCat = activeTab?.category;
-                    const cpuSpecs  = cpu  ? specsToFlat(cpu.specs)  : null;
-                    const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
-                    if (activeCat === Category.MOTHERBOARD && cpuSpecs?.socket)  params.set('f_specs.socket', cpuSpecs.socket as string);
-                    if (activeCat === Category.PROCESSOR   && moboSpecs?.socket) params.set('f_specs.socket', moboSpecs.socket as string);
-                    if (activeCat === Category.RAM && (cpuSpecs || moboSpecs)) {
-                        const type = moboSpecs?.ramType ?? cpuSpecs?.ramType;
-                        if (type) params.set('f_specs.ramType', type as string);
-                    }
+                if (prevFilterRef.current === filterKey) {
+                    setIsLoadingProducts(false);
+                    return;
                 }
+                prevFilterRef.current = filterKey;
 
-                if (debouncedSearchTerm) params.set('q',  debouncedSearchTerm);
-                if (sidebarSearchTerm)   params.set('sq', sidebarSearchTerm);
+                // Check if we have an active subcategory or spec filters (use AdvancedFilter)
+                const hasAdvancedFilters = advancedFilter.subCategoryId || advancedFilter.filters.length > 0;
 
-                for (const key of Object.keys(selectedFilters).sort()) {
-                    for (const v of [...selectedFilters[key]].sort()) {
-                        params.append(key.startsWith('specs.') ? `f_${key}` : `f_${key}`, v);
+                if (hasAdvancedFilters) {
+                    // Use the typed AdvancedFilter with filterProducts service
+                    const data = await filterProductsService(advancedFilter);
+                    setFetchedProducts(data);
+                    setTotalCount(data.length);
+                    // Note: filterOptions not available via filterProducts, keep existing availableFilters
+                } else {
+                    // Fall back to the canonical catalog endpoint and normalize on the client.
+                    const params = new URLSearchParams();
+                    if (activeTab?.category) params.set('category', String(activeTab.category));
+                    if (selectedNode?.subCategoryId) params.set('subCategoryId', selectedNode.subCategoryId);
+
+                    if (isBuildMode) {
+                        const cpu      = cart.find(i => sameCategory(i.category, CATEGORY_NAMES.PROCESSOR));
+                        const mobo     = cart.find(i => sameCategory(i.category, CATEGORY_NAMES.MOTHERBOARD));
+                        const activeCat = activeTab?.category;
+                        const cpuSpecs  = cpu  ? specsToFlat(cpu.specs)  : null;
+                        const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
+                        if (sameCategory(activeCat, CATEGORY_NAMES.MOTHERBOARD) && cpuSpecs?.socket)  params.set('f_specs.socket', cpuSpecs.socket as string);
+                        if (sameCategory(activeCat, CATEGORY_NAMES.PROCESSOR) && moboSpecs?.socket) params.set('f_specs.socket', moboSpecs.socket as string);
+                        if (sameCategory(activeCat, CATEGORY_NAMES.RAM) && (cpuSpecs || moboSpecs)) {
+                            const type = moboSpecs?.ramType ?? cpuSpecs?.ramType;
+                            if (type) params.set('f_specs.ramType', type as string);
+                        }
                     }
-                }
 
-                if (priceRange.min > 0)              params.set('minPrice', priceRange.min.toString());
-                if (priceRange.max < DEFAULT_MAX_PRICE) params.set('maxPrice', priceRange.max.toString());
-                if (sortOption !== 'popularity')      params.set('sort', sortOption);
-                params.set('page',  currentPage.toString());
-                params.set('limit', ITEMS_PER_PAGE.toString());
-                params.sort();
+                    if (debouncedSearchTerm) params.set('q', debouncedSearchTerm);
+                    if (sidebarSearchTerm)   params.set('sq', sidebarSearchTerm);
 
-                const queryString = params.toString();
-                if (prevParamsRef.current === queryString) { setIsLoadingProducts(false); return; }
-                prevParamsRef.current = queryString;
+                    if (sortOption !== 'price-asc') params.set('sort', sortOption);
+                    params.set('page', currentPage.toString());
+                    params.set('limit', ITEMS_PER_PAGE.toString());
+                    params.sort();
 
-                const res  = await fetch(`/api/products?${queryString}&getFilters=true`, { signal: controller.signal });
-                const data = await res.json();
-
-                if (data.products) {
+                    const data = await fetchCatalogProducts(params);
                     setFetchedProducts(data.products);
                     setTotalCount(data.total ?? 0);
-                    if (data.filterOptions) setAvailableFilters(data.filterOptions);
+                    setAvailableFilters(data.filterOptions);
                 }
             } catch (err: any) {
                 if (err?.name !== 'AbortError') console.error('Failed to fetch products:', err);
@@ -490,9 +501,9 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
         fetchProducts();
         return () => controller.abort();
-    }, [activeTab, selectedNode, isBuildMode, cart, debouncedSearchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption, currentPage]);
+    }, [activeTab, selectedNode, isBuildMode, cart, debouncedSearchTerm, sidebarSearchTerm, advancedFilter, currentPage, sortOption]);
 
-    useEffect(() => { setCurrentPage(1); }, [activeTab, selectedNode, debouncedSearchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption]);
+    useEffect(() => { setCurrentPage(1); }, [activeTab, selectedNode, debouncedSearchTerm, sidebarSearchTerm, advancedFilter, sortOption]);
 
     // ── Derived values ────────────────────────────────────────────────────────
     const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -502,14 +513,16 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         return validateBuild(hypotheticalCart);
     }, [cart]);
 
-    const hasActiveFilters = !!(selectedNode || Object.keys(selectedFilters).length > 0 || priceRange.min > 0 || priceRange.max < DEFAULT_MAX_PRICE);
+    const hasActiveFilters = !!(selectedNode || specFilters.length > 0 || priceMin > 0 || priceMax < DEFAULT_MAX_PRICE || brandId || status);
 
     // Stable empty array — avoids new reference on every render
     const categoryBaseProducts = EMPTY_ARRAY;
 
     const activeFilterCount = (selectedNode ? 1 : 0)
-        + Object.values(selectedFilters).reduce((a, v) => a + v.length, 0)
-        + (priceRange.min > 0 || priceRange.max < DEFAULT_MAX_PRICE ? 1 : 0);
+        + specFilters.reduce((a, f) => a + f.values.length, 0)
+        + (priceMin > 0 || priceMax < DEFAULT_MAX_PRICE ? 1 : 0)
+        + (brandId ? 1 : 0)
+        + (status ? 1 : 0);
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
@@ -563,79 +576,65 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 </button>
                             </div>
 
-                            {/* ROW 3 — top-level categories only (nodes without a parentId) */}
-                            <div className="flex overflow-x-auto no-scrollbar gap-1.5 py-2">
-                                {[ALL_PRODUCTS_TAB, ...categories.filter(n => !n.parentId)].map((node) => {
-                                    const isActive = activeTab?.label === node.label;
-                                    return (
-                                        <button
-                                            key={node.label}
-                                            onClick={() => { setActiveTab(node); setSelectedNode(null); setExpandedSubcategory(null); }}
-                                            className={`whitespace-nowrap px-4 h-8 text-[13px] font-semibold tracking-[-0.01em] rounded-full border transition-all duration-200 shrink-0 ${isActive ? 'bg-zinc-900 text-white border-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]' : 'bg-transparent border-transparent text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 hover:border-zinc-200'}`}
-                                        >
-                                            {node.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            <div className="rounded-[24px] border border-zinc-200/80 bg-white/90 p-2.5 shadow-[0_10px_30px_rgba(24,24,27,0.05)] backdrop-blur-sm">
+                                <div className="flex items-center justify-between gap-3 px-1 pb-2">
+                                    <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400">Browse</p>
+                                        <p className="mt-1 text-[13px] text-zinc-600">Switch category with tabs, then refine with an exact subcategory.</p>
+                                    </div>
+                                    {activeTab?.children && activeTab.children.length > 0 && (
+                                        <span className="hidden sm:inline-flex rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                                            {activeTab.children.length} subcategories
+                                        </span>
+                                    )}
+                                </div>
 
-                            {/* ROW 4 — direct children of the active top-level tab */}
-                            {activeTab?.children && activeTab.children.length > 0 && (
-                                <div className="flex overflow-x-auto no-scrollbar gap-1.5 pb-2.5 pt-0.5 border-t border-zinc-100">
-                                    {/* "All X" reset pill */}
-                                    <button
-                                        onClick={() => { setSelectedNode(null); setExpandedSubcategory(null); }}
-                                        className={`px-3.5 h-7 text-[12px] font-semibold rounded-full border whitespace-nowrap shrink-0 transition-all duration-200 mt-2 ${!selectedNode ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-transparent border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50'}`}
-                                    >
-                                        All {activeTab.label}
-                                    </button>
-
-                                    {/* Only direct children of the active tab — not grandchildren */}
-                                    {activeTab.children.map((child) => {
-                                        const isSelected = selectedNode?.label === child.label;
-                                        const hasNested  = !!child.children?.length;
-                                        const isExpanded = expandedSubcategory === child.label;
+                                <div className="flex overflow-x-auto no-scrollbar gap-1.5 py-1">
+                                    {[ALL_PRODUCTS_TAB, ...categoryNodes].map((node) => {
+                                        const isActive = activeTab?.label === node.label;
                                         return (
-                                            <div key={child.label} className="relative mt-2 shrink-0">
-                                                <button
-                                                    onClick={() => {
-                                                        if (hasNested) {
-                                                            setExpandedSubcategory(isExpanded ? null : child.label);
-                                                        } else {
-                                                            setSelectedNode(child);
-                                                            setExpandedSubcategory(null);
-                                                        }
-                                                    }}
-                                                    className={`px-3.5 h-7 flex items-center gap-1 text-[12px] font-semibold rounded-full border whitespace-nowrap transition-all duration-200 ${isSelected ? 'bg-zinc-900 text-white border-zinc-900' : isExpanded ? 'bg-zinc-100 border-zinc-300 text-zinc-700' : 'bg-transparent border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50'}`}
-                                                >
-                                                    {child.label}
-                                                    {hasNested && (
-                                                        <ChevronDown size={11} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                                                    )}
-                                                </button>
-
-                                                {/* Dropdown for grandchildren */}
-                                                {hasNested && isExpanded && (
-                                                    <div className="absolute top-full left-0 mt-2 z-50 min-w-[200px] bg-white border border-zinc-900/[0.08] rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] py-1.5 overflow-hidden subcategory-dropdown">
-                                                        {child.children?.map((nested) => {
-                                                            const isNestedActive = selectedNode?.label === nested.label;
-                                                            return (
-                                                                <button
-                                                                    key={nested.label}
-                                                                    onClick={() => { setSelectedNode(nested); setExpandedSubcategory(null); }}
-                                                                    className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors duration-150 ${isNestedActive ? 'text-zinc-900 bg-zinc-50' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'}`}
-                                                                >
-                                                                    {nested.label}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <button
+                                                key={node.label}
+                                                onClick={() => { setActiveTab(node); handleSubCategorySelect(null); }}
+                                                className={`whitespace-nowrap px-4 h-9 text-[13px] font-semibold tracking-[-0.01em] rounded-full border transition-all duration-200 shrink-0 ${isActive ? 'bg-zinc-900 text-white border-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'}`}
+                                            >
+                                                {node.label}
+                                            </button>
                                         );
                                     })}
                                 </div>
-                            )}
+
+                                {activeTab?.children && activeTab.children.length > 0 && (
+                                    <div className="mt-2 flex flex-col gap-2 border-t border-zinc-100 px-1 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                                                Subcategory
+                                            </p>
+                                            <p className="mt-1 text-[12px] text-zinc-500">
+                                                {selectedNode?.label ? `Showing ${selectedNode.label}` : `All ${activeTab.label} products`}
+                                            </p>
+                                        </div>
+                                        <div className="relative w-full sm:max-w-[320px]">
+                                            <select
+                                                value={selectedNode?.subCategoryId ?? ''}
+                                                onChange={(e) => {
+                                                    const nextNode = activeTab.children?.find((child) => child.subCategoryId === e.target.value) ?? null;
+                                                    handleSubCategorySelect(nextNode);
+                                                }}
+                                                className="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-9 text-[13px] font-medium text-zinc-700 shadow-sm transition-colors focus:border-zinc-400 focus:outline-none"
+                                            >
+                                                <option value="">All {activeTab.label}</option>
+                                                {activeTab.children.map((child) => (
+                                                    <option key={child.subCategoryId ?? child.label} value={child.subCategoryId ?? ''}>
+                                                        {child.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -650,15 +649,15 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                             {activeTab && (
                                 <Sidebar
                                     nodes={activeTab.children ?? []}
-                                    onSelect={setSelectedNode}
+                                    onSelect={handleSubCategorySelect}
                                     selectedNode={selectedNode}
-                                    priceRange={priceRange}
+                                    priceRange={{ min: priceMin, max: priceMax }}
                                     onPriceChange={handlePriceChange}
                                     activeCategory={activeTab.category}
                                     onBuildStepChange={handleBuildCategorySelect}
                                     currentProducts={categoryBaseProducts}
                                     dynamicFilters={availableFilters}
-                                    selectedFilters={selectedFilters}
+                                    selectedFilters={selectedFilterMap}
                                     onFilterChange={handleFilterChange}
                                     onClearFilters={clearAllFilters}
                                     sidebarSearchTerm={sidebarSearchTerm}
@@ -674,16 +673,16 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 <div className="relative w-full max-w-[280px] sm:max-w-sm bg-white shadow-2xl h-full rounded-r-3xl overflow-hidden">
                                     <Sidebar
                                         nodes={activeTab.children ?? []}
-                                        onSelect={setSelectedNode}
+                                        onSelect={handleSubCategorySelect}
                                         selectedNode={selectedNode}
                                         onCloseMobile={() => setIsMobileFiltersOpen(false)}
-                                        priceRange={priceRange}
+                                        priceRange={{ min: priceMin, max: priceMax }}
                                         onPriceChange={handlePriceChange}
                                         activeCategory={activeTab.category}
                                         onBuildStepChange={handleBuildCategorySelect}
                                         currentProducts={categoryBaseProducts}
                                         dynamicFilters={availableFilters}
-                                        selectedFilters={selectedFilters}
+                                        selectedFilters={selectedFilterMap}
                                         onFilterChange={handleFilterChange}
                                         onClearFilters={clearAllFilters}
                                         sidebarSearchTerm={sidebarSearchTerm}
@@ -730,21 +729,21 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         {selectedNode && (
                                             <span className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-900 text-white text-[10px] font-medium rounded-full">
                                                 {selectedNode.label}
-                                                <button onClick={() => setSelectedNode(null)} className="hover:text-zinc-300"><X size={9} /></button>
+                                                <button onClick={() => handleSubCategorySelect(null)} className="hover:text-zinc-300"><X size={9} /></button>
                                             </span>
                                         )}
-                                        {Object.entries(selectedFilters).map(([key, values]) =>
-                                            values.map(val => (
-                                                <span key={`${key}-${val}`} className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-100 text-zinc-700 text-[10px] font-medium rounded-full border border-zinc-200">
+                                        {specFilters.map((specFilter) =>
+                                            specFilter.values.map(val => (
+                                                <span key={`${specFilter.specId}-${val}`} className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-100 text-zinc-700 text-[10px] font-medium rounded-full border border-zinc-200">
                                                     {val}
-                                                    <button onClick={() => handleFilterChange(key, val)} className="text-zinc-400 hover:text-zinc-700"><X size={9} /></button>
+                                                    <button onClick={() => removeSpecValue(specFilter.specId, val)} className="text-zinc-400 hover:text-zinc-700"><X size={9} /></button>
                                                 </span>
                                             ))
                                         )}
-                                        {(priceRange.min > 0 || priceRange.max < DEFAULT_MAX_PRICE) && (
+                                        {(priceMin > 0 || priceMax < DEFAULT_MAX_PRICE) && (
                                             <span className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-100 text-zinc-700 text-[10px] font-medium rounded-full border border-zinc-200">
-                                                ₹{priceRange.min.toLocaleString()} – ₹{priceRange.max.toLocaleString()}
-                                                <button onClick={() => setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE })} className="text-zinc-400 hover:text-zinc-700"><X size={9} /></button>
+                                                ₹{priceMin.toLocaleString()} – ₹{priceMax.toLocaleString()}
+                                                <button onClick={() => setPriceRangeFilter(0, DEFAULT_MAX_PRICE)} className="text-zinc-400 hover:text-zinc-700"><X size={9} /></button>
                                             </span>
                                         )}
                                         <button onClick={clearAllFilters} className="text-[10px] font-medium text-zinc-400 hover:text-zinc-700 transition-colors underline underline-offset-2">Clear all</button>

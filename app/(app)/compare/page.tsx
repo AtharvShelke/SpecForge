@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { specsToFlat, Product, Category } from '@/types';
+import { specsToFlat, Product } from '@/types';
 import Link from 'next/link';
 import { ArrowLeft, XCircle, ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';

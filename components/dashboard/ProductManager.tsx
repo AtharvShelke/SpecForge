@@ -3,7 +3,8 @@
 import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useAdmin } from '@/context/AdminContext';
-import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec } from '@/types';
+import { Brand, Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec } from '@/types';
+import { CATEGORY_NAMES } from '@/lib/categoryUtils';
 import {
     Edit,
     Plus,
@@ -33,6 +34,7 @@ import {
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import ImageUploader from '../uploadthing/ImageUploader';
 import { cn } from '@/lib/utils';
+import { fetchCatalogProducts } from '@/lib/catalogFrontend';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -317,9 +319,25 @@ interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
     images: string[];
 }
 
+type ProductSchemaAttribute = {
+    key: string;
+    label: string;
+    type: string;
+    options?: string[];
+    required?: boolean;
+    unit?: string;
+    dependencyKey?: string;
+    dependencyValue?: string;
+};
+
+type ProductSchema = {
+    category: string;
+    attributes: ProductSchemaAttribute[];
+};
+
 const EMPTY_FORM: ProductFormState = {
     id: '', sku: '', name: '', price: 0, stock: 0,
-    category: Category.PROCESSOR,
+    category: CATEGORY_NAMES.PROCESSOR,
     images: ['https://picsum.photos/300/300'],
     specs: { brand: '' }, description: ''
 };
@@ -328,7 +346,17 @@ const EMPTY_FORM: ProductFormState = {
 // MAIN
 // ─────────────────────────────────────────────────────────────
 const ProductManager = () => {
-    const { products, addProduct, updateProduct, deleteProduct, categories, brands, schemas, syncData, isLoading } = useAdmin();
+    const { products, addProduct, updateProduct, deleteProduct, categories, brands, schemas, syncData, isLoading } = useAdmin() as unknown as {
+        products: Product[];
+        addProduct: (...args: any[]) => Promise<void>;
+        updateProduct: (...args: any[]) => Promise<void>;
+        deleteProduct: (id: string) => Promise<void>;
+        categories: Array<Category | string>;
+        brands: Brand[];
+        schemas: ProductSchema[];
+        syncData: () => Promise<void>;
+        isLoading: boolean;
+    };
 
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -355,6 +383,10 @@ const ProductManager = () => {
     const currentStockStatus = searchParams.get("f_stock_status") || "all";
     const currentMinPrice = searchParams.get("minPrice") || "";
     const currentMaxPrice = searchParams.get("maxPrice") || "";
+    const categoryOptions = useMemo(
+        () => (categories ?? []).map((category) => typeof category === 'string' ? category : category.name).filter(Boolean),
+        [categories],
+    );
 
     const [showDetail, setShowDetail] = useState(false);
 
@@ -374,9 +406,8 @@ const ProductManager = () => {
                 const query = new URLSearchParams(searchParamsStr);
                 if (!query.has("limit")) query.set("limit", "10");
                 if (!query.has("page")) query.set("page", "1");
-                const res = await fetch(`/api/products?${query.toString()}`);
-                if (!cancelled && res.ok) {
-                    const data = await res.json();
+                const data = await fetchCatalogProducts(query);
+                if (!cancelled) {
                     setPaginatedProducts(data.products);
                     setTotalProducts(data.total);
                 }
@@ -403,9 +434,9 @@ const ProductManager = () => {
     const [newProductCost, setNewProductCost] = useState(0);
 
     const currentSchema = useMemo(() => {
-        const schema = schemas.find(s => s.category === currentProduct.category);
+        const schema = schemas.find((s) => s.category === currentProduct.category);
         if (!schema) return [];
-        return schema.attributes.filter(attr => {
+        return schema.attributes.filter((attr) => {
             if (!attr.dependencyKey) return true;
             const depVal = currentProduct.specs?.[attr.key === 'socket' ? 'brand' : attr.dependencyKey];
             return Array.isArray(depVal) ? depVal.includes(attr.dependencyValue || '') : depVal === attr.dependencyValue;
@@ -413,7 +444,7 @@ const ProductManager = () => {
     }, [currentProduct.category, currentProduct.specs, schemas]);
 
     const availableBrands = useMemo(() =>
-        brands.filter(b => b.categories.includes(currentProduct.category as Category)),
+        brands.filter((b) => b.categories?.includes(currentProduct.category || '')),
         [currentProduct.category, brands]
     );
 
@@ -438,7 +469,7 @@ const ProductManager = () => {
         if (!currentProduct.name?.trim()) { alert('Product name is required'); return; }
         if (!currentProduct.specs?.brand) { alert('Brand is required'); return; }
         const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
-        if (currentProduct.id && products.find(p => p.id === currentProduct.id)) {
+        if (currentProduct.id && products.find((p) => p.id === currentProduct.id)) {
             await updateProduct({ ...currentProduct, specs: apiSpecs, price: currentProduct.price, stock: currentProduct.stock, images: currentProduct.images } as any);
         } else {
             const newProduct: Product = {
@@ -446,7 +477,7 @@ const ProductManager = () => {
                 sku: generateSKU(currentProduct),
                 name: currentProduct.name || '', price: currentProduct.price || 0,
                 stock: currentProduct.stock || 0,
-                category: currentProduct.category || Category.PROCESSOR,
+                category: currentProduct.category || categoryOptions[0] || CATEGORY_NAMES.PROCESSOR,
                 images: currentProduct.images.length > 0 ? currentProduct.images : ['https://picsum.photos/300/300'],
                 description: currentProduct.description || '', specs: apiSpecs
             } as Product;
@@ -485,15 +516,15 @@ const ProductManager = () => {
     const handleAddNew = useCallback(() => { resetForm(); setIsEditing(true); }, [resetForm]);
 
     const handleCategoryChange = useCallback((val: string) => {
-        setCurrentProduct(prev => ({ ...prev, category: val as Category, specs: { brand: '' } }));
+        setCurrentProduct(prev => ({ ...prev, category: val, specs: { brand: '' } }));
     }, []);
 
     const handleSpecChange = useCallback((key: string, value: string | number | string[]) => {
         setCurrentProduct(prev => {
             let newSpecs = { ...prev.specs, [key]: value };
-            const schema = schemas.find(s => s.category === prev.category);
+            const schema = schemas.find((s) => s.category === prev.category);
             if (schema) {
-                schema.attributes.forEach(attr => {
+                schema.attributes.forEach((attr) => {
                     const depKey = attr.key === 'socket' ? 'brand' : attr.dependencyKey;
                     if (depKey === key) {
                         const isSatisfied = Array.isArray(value) ? value.includes(attr.dependencyValue || '') : value === attr.dependencyValue;
@@ -535,11 +566,11 @@ const ProductManager = () => {
     const handleClearFilters = useCallback(() => router.push(pathname), [router, pathname]);
 
     const activeSchemaSpecs = useMemo(() =>
-        currentSchema.filter(attr => attr.required || currentProduct.specs?.[attr.key] !== undefined),
+        currentSchema.filter((attr) => attr.required || currentProduct.specs?.[attr.key] !== undefined),
         [currentSchema, currentProduct.specs]
     );
 
-    const schemaKeys = useMemo(() => currentSchema.map(attr => attr.key), [currentSchema]);
+    const schemaKeys = useMemo(() => currentSchema.map((attr) => attr.key), [currentSchema]);
 
     const customSpecs = useMemo(() =>
         Object.entries(currentProduct.specs || {}).filter(([key]) => !schemaKeys.includes(key) && key !== 'brand'),
@@ -689,7 +720,7 @@ const ProductManager = () => {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
-                                                    {Object.values(Category).map(cat => (
+                                                    {categoryOptions.map((cat: string) => (
                                                         <SelectItem key={cat} value={cat} className="text-xs py-2 focus:bg-stone-50">{cat}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -702,7 +733,7 @@ const ProductManager = () => {
                                                     <SelectValue placeholder="Select brand..." />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
-                                                    {availableBrands.map(brand => (
+                                                    {availableBrands.map((brand: Brand) => (
                                                         <SelectItem key={brand.id} value={brand.name} className="text-xs py-2 focus:bg-stone-50">{brand.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -711,7 +742,7 @@ const ProductManager = () => {
                                         <div className="sm:col-span-2">
                                             <FieldLabel>Description</FieldLabel>
                                             <Textarea
-                                                value={currentProduct.description}
+                                                value={currentProduct.description ?? ''}
                                                 onChange={e => setCurrentProduct(prev => ({ ...prev, description: e.target.value }))}
                                                 placeholder="Enter technical details and overview..."
                                                 className="min-h-[100px] text-sm border-stone-200 rounded-xl shadow-none resize-none"
@@ -726,14 +757,14 @@ const ProductManager = () => {
                         <CollapsibleSection icon={<Settings2 size={12} />} title="Specifications">
                             <div className="p-3 md:p-5 space-y-5">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                                    {activeSchemaSpecs.map(attr => (
+                                    {activeSchemaSpecs.map((attr: ProductSchemaAttribute) => (
                                         <div key={attr.key} className="relative group">
                                             <FieldLabel required={attr.required}>
                                                 {attr.label}{attr.unit && <span className="normal-case text-stone-400 ml-1">({attr.unit})</span>}
                                             </FieldLabel>
                                             {attr.type === 'multi-select' ? (
                                                 <div className="flex flex-wrap gap-1.5 pt-1">
-                                                    {attr.options?.map(option => (
+                                                    {attr.options?.map((option: string) => (
                                                         <button
                                                             key={option} type="button"
                                                             onClick={() => handleMultiSelectToggle(attr.key, option)}
@@ -752,7 +783,7 @@ const ProductManager = () => {
                                                 <Input
                                                     type={attr.type === 'number' ? 'number' : 'text'}
                                                     className="h-10 md:h-9 text-sm rounded-xl border-stone-200"
-                                                    value={currentProduct.specs?.[attr.key] || ''}
+                                                    value={currentProduct.specs?.[attr.key] == null ? '' : String(currentProduct.specs[attr.key])}
                                                     onChange={e => handleSpecChange(attr.key, attr.type === 'number' ? Number(e.target.value) : e.target.value)}
                                                 />
                                             )}
@@ -1147,7 +1178,7 @@ const ProductManager = () => {
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 shadow-md">
                                     <SelectItem value="all" className="text-xs focus:bg-stone-50">All Categories</SelectItem>
-                                    {Object.values(Category).map(cat => (
+                                    {categoryOptions.map((cat: string) => (
                                         <SelectItem key={cat} value={cat} className="text-xs focus:bg-stone-50">{cat}</SelectItem>
                                     ))}
                                 </SelectContent>

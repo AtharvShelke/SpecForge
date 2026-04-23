@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useShop } from '@/context/ShopContext';
+import { useOrder } from '@/context/OrderContext';
 import {
     Package,
     Truck,
@@ -15,7 +15,7 @@ import { Order, OrderStatus } from '@/types';
 import Link from 'next/link';
 
 const Orders: React.FC = () => {
-    const { orders, refreshOrders } = useShop();
+    const { orders, refreshOrders } = useOrder();
 
     React.useEffect(() => {
         refreshOrders();
@@ -36,8 +36,9 @@ const Orders: React.FC = () => {
     };
 
     const getExpectedDelivery = (order: Order) => {
-        const delivered = order.logs.find((l) => l.status === OrderStatus.DELIVERED);
-        const shipped = order.logs.find((l) => l.status === OrderStatus.SHIPPED);
+        const logs = order.logs ?? [];
+        const delivered = logs.find((l) => l.status === OrderStatus.DELIVERED);
+        const shipped = logs.find((l) => l.status === OrderStatus.SHIPPED);
 
         if (delivered) {
             return `Delivered on ${new Date(delivered.timestamp).toLocaleDateString()}`;
@@ -76,9 +77,10 @@ const Orders: React.FC = () => {
                             const deliveryText = getExpectedDelivery(order);
 
                             return (
-                                <div
+                                <Link
                                     key={order.id}
-                                    className="bg-white rounded-xl border shadow-sm overflow-hidden"
+                                    href={`/orders/${order.id}`}
+                                    className="block bg-white rounded-xl border shadow-sm overflow-hidden hover:shadow-md hover:border-indigo-200 transition-all duration-200 group"
                                 >
                                     {/* Header */}
                                     <div className="bg-gray-50 px-6 py-4 border-b flex flex-wrap justify-between gap-4">
@@ -113,7 +115,7 @@ const Orders: React.FC = () => {
 
                                     {/* Items */}
                                     <div className="px-6 space-y-4">
-                                        {order.items.map((item: any) => (
+                                        {(order.items ?? []).map((item: any) => (
                                             <div key={item.id} className="flex gap-4">
                                                 <img
                                                     src={item.image}
@@ -139,12 +141,17 @@ const Orders: React.FC = () => {
                                             <MapPin size={16} />
                                             {order.shippingCity}, {order.shippingState}
                                         </div>
-                                        <div className="text-sm text-gray-600 flex items-center gap-2">
-                                            <CreditCard size={16} />
-                                            {order.paymentMethod}
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-sm text-gray-600 flex items-center gap-2">
+                                                <CreditCard size={16} />
+                                                {order.paymentMethod}
+                                            </div>
+                                            <span className="text-xs font-semibold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                View Details →
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             );
                         })}
                     </div>

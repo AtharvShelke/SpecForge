@@ -1,9 +1,21 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
+import { verifyToken } from "@/lib/jwt";
+import { cookies } from "next/headers";
 
 const f = createUploadthing();
 
-const auth = (req: Request) => ({ id: "fakeId" }); // Fake auth function
+const auth = async (req: Request) => {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) return null;
+
+  const payload = await verifyToken(token);
+  if (!payload) return null;
+
+  return { id: payload.userId as string };
+};
 
 // FileRouter for your app, can contain multiple FileRoutes
 export const ourFileRouter = {

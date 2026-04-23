@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
 
 import { useAdmin } from '@/context/AdminContext';
-import { Category } from '@/types';
 import {
     Trash,
     Plus,
@@ -21,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import type { Brand, Category } from '@/types';
 
 // ─────────────────────────────────────────────────────────────
 // SHARED PRIMITIVES — memoized
@@ -127,11 +127,12 @@ CategoryPill.displayName = 'CategoryPill';
 // BRAND CARD — memoized to prevent re-renders on list changes
 // ─────────────────────────────────────────────────────────────
 const BrandCard = memo(({ brand, onDelete }: {
-    brand: { id: string; name: string; categories: Category[] };
+    brand: Brand;
     onDelete: (id: string, name: string) => void;
 }) => {
     const handleDelete = useCallback(() => onDelete(brand.id, brand.name), [onDelete, brand.id, brand.name]);
     const shortId = brand.id.substring(0, 8).toUpperCase();
+    const brandCategories = brand.categories ?? [];
 
     return (
         <Panel stripe="stone" className="group">
@@ -158,9 +159,9 @@ const BrandCard = memo(({ brand, onDelete }: {
 
                 <div className="h-px bg-stone-100" />
 
-                {brand.categories.length > 0 ? (
+                {brandCategories.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                        {brand.categories.map(cat => (
+                        {brandCategories.map(cat => (
                             <CategoryPill key={cat} label={cat} />
                         ))}
                     </div>
@@ -179,15 +180,15 @@ const BrandCard = memo(({ brand, onDelete }: {
 BrandCard.displayName = 'BrandCard';
 
 // Precompute category values once at module level — never recreated
-const ALL_CATEGORIES = Object.values(Category);
+const EMPTY_CATEGORIES: string[] = [];
 
 // ─────────────────────────────────────────────────────────────
 // CATEGORY CHIP — memoized toggle chip for the mobile selector
 // ─────────────────────────────────────────────────────────────
 const CategoryChip = memo(({ cat, active, onToggle }: {
-    cat: Category;
+    cat: string;
     active: boolean;
-    onToggle: (cat: Category) => void;
+    onToggle: (cat: string) => void;
 }) => {
     const handleClick = useCallback(() => onToggle(cat), [onToggle, cat]);
     return (
@@ -212,9 +213,9 @@ CategoryChip.displayName = 'CategoryChip';
 // DESKTOP CATEGORY ROW — memoized list item
 // ─────────────────────────────────────────────────────────────
 const DesktopCategoryRow = memo(({ cat, active, onToggle }: {
-    cat: Category;
+    cat: string;
     active: boolean;
-    onToggle: (cat: Category) => void;
+    onToggle: (cat: string) => void;
 }) => {
     const handleClick = useCallback(() => onToggle(cat), [onToggle, cat]);
     return (
@@ -244,10 +245,15 @@ DesktopCategoryRow.displayName = 'DesktopCategoryRow';
 // BRAND MANAGER
 // ─────────────────────────────────────────────────────────────
 const BrandManager = () => {
-    const { brands, addBrand, deleteBrand, syncData, isLoading } = useAdmin();
+    const admin = useAdmin() as any;
+    const { syncData, isLoading } = admin;
+    const brands: Brand[] = admin.catalog?.brands ?? admin.brands ?? [];
+    const catalogCategories: Category[] = admin.catalog?.categories ?? [];
+    const addBrand = admin.addBrand ?? (() => undefined);
+    const deleteBrand = admin.deleteBrand ?? (() => undefined);
 
     const [newBrandName, setNewBrandName] = useState('');
-    const [selectedCats, setSelectedCats] = useState<Category[]>([]);
+    const [selectedCats, setSelectedCats] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [formOpen, setFormOpen] = useState(true);
 
@@ -266,7 +272,7 @@ const BrandManager = () => {
         if (window.innerWidth < 1024) setFormOpen(false);
     }, [newBrandName, selectedCats, addBrand]);
 
-    const toggleCat = useCallback((cat: Category) =>
+    const toggleCat = useCallback((cat: string) =>
         setSelectedCats(prev =>
             prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
         ), []);
@@ -292,6 +298,10 @@ const BrandManager = () => {
 
     // Pre-build a Set for O(1) active lookups instead of Array.includes O(n)
     const selectedCatSet = useMemo(() => new Set(selectedCats), [selectedCats]);
+    const allCategories = useMemo(
+        () => catalogCategories.map((category) => category.name).filter(Boolean),
+        [catalogCategories],
+    );
 
     const brandsCount = brands.length;
 
@@ -375,7 +385,7 @@ const BrandManager = () => {
 
                                     {/* Mobile chip grid */}
                                     <div className="lg:hidden flex flex-wrap gap-1.5 p-2 rounded-lg border border-stone-200 bg-stone-50/50">
-                                        {ALL_CATEGORIES.map(cat => (
+                                        {(allCategories.length ? allCategories : EMPTY_CATEGORIES).map(cat => (
                                             <CategoryChip
                                                 key={cat}
                                                 cat={cat}
@@ -389,7 +399,7 @@ const BrandManager = () => {
                                     <div className="hidden lg:block rounded-lg border border-stone-200 overflow-hidden">
                                         <ScrollArea className="h-[200px]">
                                             <div className="p-1.5 space-y-0.5">
-                                                {ALL_CATEGORIES.map(cat => (
+                                                {(allCategories.length ? allCategories : EMPTY_CATEGORIES).map(cat => (
                                                     <DesktopCategoryRow
                                                         key={cat}
                                                         cat={cat}

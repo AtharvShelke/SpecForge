@@ -1,3 +1,5 @@
+import type React from 'react'
+
 // =====================================================
 // ENUMS (STRICT MATCH WITH PRISMA)
 // =====================================================
@@ -137,6 +139,7 @@ export interface User {
   id: string
   email: string
   name: string
+  password?: string
   role: Role
   createdAt: string
   updatedAt: string
@@ -155,6 +158,7 @@ export interface Category {
   deletedAt?: string | null
 
   subCategories?: SubCategory[]
+  categoryHierarchies?: CategoryHierarchy[]
 }
 
 export interface SubCategory {
@@ -169,6 +173,12 @@ export interface SubCategory {
   updatedAt: string
   deletedAt?: string | null
 
+  products?: Product[]
+
+  sourceCompatibilityScopes?: CompatibilityScope[]
+  targetCompatibilityScopes?: CompatibilityScope[]
+
+  subCategorySlots?: SubCategorySlot[]
   specDefinitions?: SpecDefinition[]
 }
 
@@ -181,7 +191,54 @@ export interface CategoryHierarchy {
   brand?: string | null
   sortOrder: number
 
+  parent?: CategoryHierarchy | null
   children?: CategoryHierarchy[]
+  category?: Category | null
+}
+
+export interface ProductSpec {
+  key: string
+  value: string | number | boolean | string[] | null | undefined
+  name?: string
+}
+
+export type ProductSpecsFlat = Record<string, ProductSpec['value']>
+
+export interface FilterDefinition {
+  key: string
+  label: string
+  type: FilterType | `${FilterType}`
+  options?: string[]
+  placeholder?: string
+  dependency?: {
+    key: string
+    value: string
+  }
+  dependencyKey?: string
+  dependencyValue?: string
+}
+
+export interface StatusConfig {
+  label: string
+  badgeClass: string
+  dotClass: string
+  icon: React.ReactNode
+  description?: string
+}
+
+export interface CategoryFilterConfig {
+  category: string
+  filters: FilterDefinition[]
+}
+
+export interface CategoryNode {
+  label: string
+  children?: CategoryNode[]
+  category?: string
+  brand?: string
+  query?: string
+  subCategoryId?: string
+  isOpen?: boolean
 }
 
 // =====================================================
@@ -191,6 +248,7 @@ export interface CategoryHierarchy {
 export interface SpecDefinition {
   id: string
   subCategoryId: string
+  subCategory?: SubCategory
 
   name: string
   valueType: SpecValueType
@@ -203,16 +261,47 @@ export interface SpecDefinition {
   filterOrder?: number | null
 
   options?: SpecOption[]
+  variantSpecs?: VariantSpec[]
+
+  parentOptionDeps?: SpecOptionDependency[]
+  childOptionDeps?: SpecOptionDependency[]
+  sourceRules?: CompatibilityRule[]
+  targetRules?: CompatibilityRule[]
+
+  derivedSpecs?: DerivedSpec[]
+}
+
+export interface SpecOptionDependency {
+  id: string
+
+  parentSpecId: string
+  parentOptionId: string
+  childSpecId: string
+  childOptionId?: string | null
+
+  parentSpec?: SpecDefinition
+  parentOption?: SpecOption
+  childSpec?: SpecDefinition
+  childOption?: SpecOption | null
 }
 
 export interface SpecOption {
   id: string
   specId: string
+  spec?: SpecDefinition
+
   value: string
   label?: string | null
   order?: number | null
 
   parentOptionId?: string | null
+  parentOption?: SpecOption | null
+  children?: SpecOption[]
+
+  variantSpecs?: VariantSpec[]
+
+  parentOptionDeps?: SpecOptionDependency[]
+  childOptionDeps?: SpecOptionDependency[]
 }
 
 export interface VariantSpec {
@@ -224,6 +313,19 @@ export interface VariantSpec {
   valueString?: string | null
   valueNumber?: number | null
   valueBool?: boolean | null
+
+  variant?: ProductVariant
+  spec?: SpecDefinition
+  option?: SpecOption | null
+}
+
+export interface DerivedSpec {
+  id: string
+  name: string
+  resultSpecId: string
+  formula: string
+
+  resultSpec?: SpecDefinition
 }
 
 // =====================================================
@@ -237,6 +339,9 @@ export interface Brand {
   createdAt: string
   updatedAt: string
   deletedAt?: string | null
+  categories?: string[]
+
+  products?: Product[]
 }
 
 export interface ProductMedia {
@@ -245,6 +350,8 @@ export interface ProductMedia {
   url: string
   altText?: string | null
   sortOrder: number
+
+  product?: Product
 }
 
 export interface ProductVariant {
@@ -263,7 +370,14 @@ export interface ProductVariant {
   createdAt: string
   updatedAt: string
 
+  product?: Product
+
   variantSpecs?: VariantSpec[]
+  orderItems?: OrderItem[]
+  buildGuideItems?: BuildGuideItem[]
+  buildItems?: BuildItem[]
+  inventoryItems?: InventoryItem[]
+  warehouseInventories?: WarehouseInventory[]
 }
 
 export interface Product {
@@ -279,7 +393,15 @@ export interface Product {
   deletedAt?: string | null
 
   subCategoryId: string
+  subCategory?: SubCategory
+
   brandId?: string | null
+  brand?: Brand | null
+
+  category: string
+  image?: string | null
+  images?: string[]
+  specs?: ProductSpec[]
 
   createdAt: string
   updatedAt: string
@@ -287,7 +409,21 @@ export interface Product {
   variants?: ProductVariant[]
   media?: ProductMedia[]
 }
-
+export interface CartItem {
+  productId?: string
+  variantId?: string
+  id: string
+  name: string
+  category: string
+  quantity: number
+  specs?: ProductSpec[]
+  product?: Product
+  variant?: ProductVariant
+  selectedVariant?: ProductVariant
+  variants?: ProductVariant[]
+  image?: string | null
+  images?: string[]
+}
 // =====================================================
 // CUSTOMER + ORDER
 // =====================================================
@@ -307,12 +443,16 @@ export interface Customer {
 
   createdAt: string
   updatedAt: string
+
+  invoices?: Invoice[]
+  orders?: Order[]
 }
 
 export interface OrderItem {
   id: string
   orderId: string
   variantId: string
+  inventoryItemId?: string | null
 
   name: string
   category: string
@@ -322,12 +462,44 @@ export interface OrderItem {
 
   sku?: string | null
   image?: string | null
+  variantSnapshot?: Record<string, any> | null
+
+  order?: Order
+  variant?: ProductVariant
+  inventoryItem?: InventoryItem | null
+}
+
+export interface OrderLog {
+  id: string
+  orderId: string
+  status: OrderStatus
+  timestamp: string
+  note?: string | null
+
+  order?: Order
+}
+
+export interface ShipmentTracking {
+  id: string
+  orderId: string
+  trackingNumber: string
+  carrier: string
+  status: string
+  estimatedDelivery?: string | null
+  createdAt: string
+  updatedAt: string
+
+  order?: Order
 }
 
 export interface Order {
   id: string
   customerName: string
   email: string
+  phone?: string | null
+
+  customerId?: string | null
+  customer?: Customer | null
 
   subtotal: number
   gstAmount: number
@@ -336,11 +508,54 @@ export interface Order {
   total: number
 
   status: OrderStatus
+  version: number
+  deletedAt?: string | null
 
+  shippingStreet?: string | null
+  shippingCity?: string | null
+  shippingState?: string | null
+  shippingZip?: string | null
+  shippingCountry?: string | null
+
+  paymentMethod?: string | null
+  paymentTransactionId?: string | null
+  paymentStatus?: PaymentStatus | null
+  
+  idempotencyKey?: string | null
+  source?: Record<string, any> | null
+
+  date: string
   createdAt: string
   updatedAt: string
 
   items?: OrderItem[]
+  logs?: OrderLog[]
+  shipments?: ShipmentTracking[]
+  payments?: PaymentTransaction[]
+  invoices?: Invoice[]
+  reservations?: Reservation[]
+}
+
+export interface BuildGuide {
+  id: string
+  title: string
+  description?: string | null
+  category: string
+  total: number
+  createdAt: string
+  updatedAt: string
+
+  items?: BuildGuideItem[]
+}
+
+export interface BuildGuideItem {
+  id: string
+  buildGuideId: string
+  variantId: string
+  quantity: number
+
+  buildGuide?: BuildGuide
+  variant?: ProductVariant
 }
 
 // =====================================================
@@ -354,15 +569,66 @@ export interface InventoryItem {
   trackingType: InventoryTrackingType
 
   serialNumber?: string | null
+  partNumber?: string | null
+
   quantityOnHand: number
   quantityReserved: number
 
   status: InventoryStatus
 
   costPrice?: number | null
+  batchNumber?: string | null
+  receivedAt?: string | null
+  notes?: string | null
 
   createdAt: string
   updatedAt: string
+
+  variant?: ProductVariant & { product?: Product }
+  orderItems?: OrderItem[]
+  reservations?: Reservation[]
+}
+
+export interface WarehouseInventory extends InventoryItem {
+  sku?: string
+  location?: string
+  quantity: number
+  reserved?: number
+  reorderLevel: number
+  costPrice: number
+  warehouseId?: string
+  warehouseName?: string
+}
+
+export type PurchaseOrderStatus = 'PENDING' | 'PARTIAL' | 'COMPLETED' | 'CANCELLED'
+
+export interface Supplier {
+  id: string
+  name: string
+  email?: string | null
+  phone?: string | null
+  address?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface PurchaseOrderItem {
+  variantId: string
+  quantityOrdered: number
+  quantityReceived: number
+  unitCost: number
+  variant?: ProductVariant & { product?: Product }
+}
+
+export interface PurchaseOrder {
+  id: string
+  supplierId: string
+  supplier?: Supplier | null
+  status: PurchaseOrderStatus
+  expectedDelivery?: string | null
+  createdAt: string
+  updatedAt?: string
+  items: PurchaseOrderItem[]
 }
 
 export interface Reservation {
@@ -372,6 +638,10 @@ export interface Reservation {
 
   quantity: number
   status: ReservationStatus
+  expiresAt?: string | null
+
+  order?: Order
+  inventoryItem?: InventoryItem
 
   createdAt: string
   updatedAt: string
@@ -381,14 +651,53 @@ export interface Reservation {
 // BILLING
 // =====================================================
 
+export interface InvoiceSequence {
+  id: string
+  currentValue: number
+}
+
+export interface BillingProfile {
+  id: string
+  companyName: string
+  legalName?: string | null
+  email: string
+  phone?: string | null
+  addressLine1: string
+  addressLine2?: string | null
+  city: string
+  state: string
+  postalCode: string
+  country: string
+  gstin?: string | null
+  logoUrl?: string | null
+
+  createdAt: string
+  updatedAt: string
+}
+
 export interface InvoiceLineItem {
   id: string
   invoiceId: string
   name: string
+  description?: string | null
 
   quantity: number
   unitPrice: number
   taxRatePct: number
+  hsnCode?: string | null
+
+  invoice?: Invoice
+}
+
+export interface InvoiceAuditEvent {
+  id: string
+  invoiceId: string
+  type: string
+  actor: string
+  message?: string | null
+  createdAt: string
+
+  invoice?: Invoice
 }
 
 export interface Invoice {
@@ -399,7 +708,9 @@ export interface Invoice {
   type: InvoiceType
 
   customerId: string
+  customer?: Customer
   orderId?: string | null
+  order?: Order | null
 
   subtotal: number
   taxTotal: number
@@ -410,10 +721,19 @@ export interface Invoice {
   amountPaid: number
   amountDue: number
 
+  notes?: string | null
+  sentAt?: string | null
+  refundedAt?: string | null
+  cancelledAt?: string | null
+  paidAt?: string | null
+  voidedAt?: string | null
+
   createdAt: string
   dueDate: string
+  lastUpdatedAt: string
 
   lineItems?: InvoiceLineItem[]
+  audit?: InvoiceAuditEvent[]
 }
 
 // =====================================================
@@ -425,12 +745,44 @@ export interface PaymentTransaction {
   orderId: string
 
   method: PaymentMethodType
+  gatewayTxnId?: string | null
   amount: number
 
   status: PaymentStatus
+  idempotencyKey: string
+  metadata?: Record<string, any> | null
 
   createdAt: string
   updatedAt: string
+
+  order?: Order
+  paymentProofs?: PaymentProof[]
+}
+
+export interface PaymentProof {
+  id: string
+  transactionId: string
+  proofUrl?: string | null
+  createdAt: string
+  updatedAt: string
+
+  paymentTransaction?: PaymentTransaction
+}
+
+// =====================================================
+// AUDIT LOG
+// =====================================================
+
+export interface AuditLog {
+  id: string
+  entityType: string
+  entityId: string
+  action: string
+  actor: string
+  before?: Record<string, any> | null
+  after?: Record<string, any> | null
+  metadata?: Record<string, any> | null
+  createdAt: string
 }
 
 // =====================================================
@@ -444,6 +796,7 @@ export interface Build {
   updatedAt: string
 
   items?: BuildItem[]
+  buildCompatibilityResults?: BuildCompatibilityResult[]
 }
 
 export interface BuildItem {
@@ -451,20 +804,290 @@ export interface BuildItem {
   buildId: string
   variantId: string
   slotId: string
+
+  build?: Build
+  variant?: ProductVariant
+  slot?: PartSlot
+}
+
+export interface PartSlot {
+  id: string
+  name: string
+  maxItems?: number | null
+  minItems?: number | null
+
+  buildItems?: BuildItem[]
+  slotConstraint?: SlotConstraint | null
+  subCategorySlots?: SubCategorySlot[]
+}
+
+export interface SubCategorySlot {
+  id: string
+  subCategoryId: string
+  slotId: string
+
+  subCategory?: SubCategory
+  slot?: PartSlot
+}
+
+export interface SlotConstraint {
+  id: string
+  slotId: string
+  minItems: number
+  maxItems: number
+
+  slot?: PartSlot
+}
+
+export interface CompatibilityScope {
+  id: string
+  sourceSubCategoryId: string
+  targetSubCategoryId: string
+
+  sourceSubCategory?: SubCategory
+  targetSubCategory?: SubCategory
+
+  rules?: CompatibilityRule[]
 }
 
 export interface CompatibilityRule {
   id: string
   name: string
+  sourceSpecId: string
+  targetSpecId: string
   operator: CompatibilityOperator
   message: string
   severity: CompatibilitySeverity
+  scopeId: string
+
+  sourceSpec?: SpecDefinition
+  targetSpec?: SpecDefinition
+  scope?: CompatibilityScope
+
+  compatibilityChecks?: CompatibilityCheck[]
+}
+
+export interface BuildCompatibilityResult {
+  id: string
+  buildId: string
+  isCompatible: boolean
+  createdAt: string
+
+  checks?: CompatibilityCheck[]
+  build?: Build
 }
 
 export interface CompatibilityCheck {
   id: string
+  resultId: string
   ruleId: string
+  sourceVariantId?: string | null
+  targetVariantId?: string | null
   passed: boolean
   message: string
   severity: CompatibilitySeverity
+  
+  result?: BuildCompatibilityResult
+  rule?: CompatibilityRule
+}
+
+export interface CompatibilityResult {
+  id: string
+  buildId: string
+  isCompatible: boolean
+  createdAt: string
+  checks?: CompatibilityCheck[]
+  summary?: {
+    totalChecks: number
+    passed: number
+    failed: number
+    errors: number
+    warnings: number
+  }
+  details?: Array<{
+    ruleId: string
+    ruleName: string
+    sourceVariantId: string
+    targetVariantId: string
+    passed: boolean
+    message: string
+    severity: string
+    sourceSpecName: string
+    targetSpecName: string
+    sourceValue: any
+    targetValue: any
+  }>
+}
+
+export interface VariantCompatibilityCache {
+  id: string
+  variantAId: string
+  variantBId: string
+  compatible: boolean
+  message?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  — typed inputs for deep relational creates
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CreateVariantSpec {
+  specId: string;
+  optionId?: string;
+  valueString?: string;
+  valueNumber?: number;
+  valueBool?: boolean;
+}
+
+export interface CreateVariant {
+  sku: string;
+  price: number;
+  compareAtPrice?: number;
+  attributes?: any;
+  status?: string;
+  specs?: CreateVariantSpec[];
+}
+
+export interface CreateProduct {
+  name: string;
+  subCategoryId: string;
+  slug?: string;
+  brandId?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  description?: string;
+  status?: string;
+  variants?: CreateVariant[];
+}
+
+export interface CreateSpecWithOptions {
+  subCategoryId: string;
+  name: string;
+  valueType: string;
+  isFilterable?: boolean;
+  isRange?: boolean;
+  isMulti?: boolean;
+  filterGroup?: string;
+  filterOrder?: number;
+  options?: Array<{
+    value: string;
+    label?: string;
+    order?: number;
+  }>;
+}
+
+export interface AdvancedFilter {
+  subCategoryId: string;
+  filters: Array<{
+    specId: string;
+    values: string[];
+  }>;
+  priceMin?: number;
+  priceMax?: number;
+  brandId?: string;
+  status?: string;
+}
+
+export function specsToFlat(specs?: ProductSpec[] | null): ProductSpecsFlat {
+  if (!Array.isArray(specs)) return {}
+
+  return specs.reduce<ProductSpecsFlat>((acc, spec) => {
+    if (!spec?.key) return acc
+    acc[spec.key] = spec.value
+    return acc
+  }, {})
+}
+
+export function flatToSpecs(specs?: ProductSpecsFlat | null): ProductSpec[] {
+  if (!specs) return []
+
+  return Object.entries(specs)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => ({
+      key,
+      value,
+      name: key,
+    }))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BILLING — Typed Inputs
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CreateInvoiceLineItem {
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  taxRatePct?: number;
+  hsnCode?: string;
+}
+
+export interface CreateInvoice {
+  customerId: string;
+  orderId?: string;
+  type?: InvoiceType;
+  subtotal?: number;
+  taxTotal?: number;
+  discountPct?: number;
+  shipping?: number;
+  total?: number;
+  amountPaid?: number;
+  amountDue?: number;
+  dueDate: string;
+  notes?: string;
+  lineItems?: CreateInvoiceLineItem[];
+}
+
+export interface PayInvoiceInput {
+  amount?: number;
+  note?: string;
+  actor?: string;
+}
+
+export interface InvoiceActionInput {
+  reason?: string;
+  actor?: string;
+}
+
+export interface CreateCreditNoteInput {
+  reason?: string;
+  actor?: string;
+  lineItems?: CreateInvoiceLineItem[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDER — Typed Inputs
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CreateOrderItem {
+  variantId: string;
+  inventoryItemId?: string;
+  name: string;
+  category?: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  sku?: string;
+}
+
+export interface CreateOrder {
+  id?: string;
+  customerName: string;
+  email: string;
+  phone?: string;
+  customerId?: string;
+  subtotal?: number;
+  gstAmount?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  total: number;
+  shippingStreet?: string;
+  shippingCity?: string;
+  shippingState?: string;
+  shippingZip?: string;
+  shippingCountry?: string;
+  items?: CreateOrderItem[];
 }

@@ -1,287 +1,108 @@
-/**
- * Centralized Invoice Generation Service
- *
- * Handles:
- * - Sequential invoice number generation (atomic DB increment)
- * - Automatic invoice creation from paid orders
- * - Invoice immutability enforcement
- * - Credit note generation for refunds/voids
- * - Idempotent invoice generation (won't duplicate)
- */
+import {
+  Invoice,
+  CreateInvoice,
+  PayInvoiceInput,
+  InvoiceActionInput,
+  CreateCreditNoteInput,
+} from '../types';
 
-import type { PrismaClient } from '@/generated/prisma/client';
-import { calculateTax, roundCurrency, type TaxLineInput } from '@/lib/tax-engine';
-
-type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
-
-// ─────────────────────────────────────────────────
-// SEQUENTIAL NUMBERING
-// ─────────────────────────────────────────────────
-
-/**
- * Atomically generate the next sequential invoice number.
- * Format: INV-YYMM-000001
- */
-async function nextInvoiceNumber(tx: PrismaTx): Promise<string> {
-    const seq = await tx.invoiceSequence.upsert({
-        where: { id: 'invoice_seq' },
-        update: { currentValue: { increment: 1 } },
-        create: { id: 'invoice_seq', currentValue: 1 },
-    });
-
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    return `INV-${yy}${mm}-${String(seq.currentValue).padStart(6, '0')}`;
-}
-
-/**
- * Atomically generate the next sequential credit note number.
- * Format: CN-YYMM-000001
- */
-async function nextCreditNoteNumber(tx: PrismaTx): Promise<string> {
-    const seq = await tx.invoiceSequence.upsert({
-        where: { id: 'credit_note_seq' },
-        update: { currentValue: { increment: 1 } },
-        create: { id: 'credit_note_seq', currentValue: 1 },
-    });
-
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    return `CN-${yy}${mm}-${String(seq.currentValue).padStart(6, '0')}`;
-}
-
-// ─────────────────────────────────────────────────
-// INVOICE GENERATION
-// ─────────────────────────────────────────────────
-
-/**
- * Generate an invoice for a paid order.
- * Idempotent: if an invoice already exists for this order, returns it.
- *
- * @param tx - Prisma transaction client
- * @param orderId - The order to generate an invoice for
- * @returns The created (or existing) invoice
- */
-export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
-    // Idempotency check: don't create duplicates
-    const existing = await tx.invoice.findFirst({
-        where: { orderId, type: 'STANDARD' },
-        include: { customer: true, lineItems: true, audit: true },
-    });
-    if (existing) return existing;
-
-    // Load order with items
-    const order = await tx.order.findUniqueOrThrow({
-        where: { id: orderId },
-        include: { items: true },
-    });
-
-    // Find or create customer record
-    let customerId = order.customerId;
-    if (!customerId) {
-        const customer = await tx.customer.upsert({
-            where: { id: 'lookup' }, // This won't match, so it'll search by email below
-            update: {},
-            create: {
-                name: order.customerName,
-                email: order.email,
-                phone: order.phone,
-            },
-        }).catch(async () => {
-            // Upsert by email isn't directly supported, find first then create
-            const found = await tx.customer.findFirst({ where: { email: order.email } });
-            if (found) return found;
-            return tx.customer.create({
-                data: {
-                    name: order.customerName,
-                    email: order.email,
-                    phone: order.phone,
-                },
-            });
-        });
-        customerId = customer.id;
+async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...options?.headers, 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    let msg = 'Request failed';
+    try {
+      const errData = await res.json();
+      msg = errData.error || errData.message || (await res.text());
+    } catch {
+      try { msg = await res.text(); } catch {}
     }
-
-    // Compute invoice number
-    const invoiceNumber = await nextInvoiceNumber(tx);
-
-    // Build tax inputs from order items
-    const taxInputs: TaxLineInput[] = order.items.map(item => ({
-        unitPrice: Number(item.price),
-        quantity: item.quantity,
-        taxRatePct: 18, // default for PC components
-    }));
-
-    const taxResult = calculateTax({ items: taxInputs });
-
-    // Build line items
-    const lineItems = order.items.map((item, idx) => ({
-        name: item.name,
-        description: item.sku ? `SKU: ${item.sku}` : undefined,
-        quantity: item.quantity,
-        unitPrice: Number(item.price),
-        taxRatePct: taxResult.lineResults[idx].taxRatePct,
-    }));
-
-    // Create immutable invoice
-    const invoice = await tx.invoice.create({
-        data: {
-            invoiceNumber,
-            orderId,
-            type: 'STANDARD',
-            status: 'PAID',
-            customerId,
-            subtotal: taxResult.subtotal,
-            taxTotal: taxResult.totalTax,
-            discountPct: 0,
-            shipping: 0,
-            total: taxResult.grandTotal,
-            amountPaid: taxResult.grandTotal,
-            amountDue: 0,
-            paidAt: new Date(),
-            dueDate: new Date(),
-            lineItems: { create: lineItems },
-            audit: {
-                create: {
-                    type: 'created',
-                    actor: 'System',
-                    message: `Invoice auto-generated for order ${orderId}`,
-                },
-            },
-        },
-        include: { customer: true, lineItems: true, audit: true },
-    });
-
-    return invoice;
-}
-
-// ─────────────────────────────────────────────────
-// IMMUTABILITY ENFORCEMENT
-// ─────────────────────────────────────────────────
-
-/** Statuses that indicate an invoice is finalized and cannot be modified */
-const IMMUTABLE_STATUSES = ['PAID', 'OVERDUE', 'CANCELLED', 'REFUNDED', 'VOIDED'];
-
-/**
- * Check if an invoice can be modified.
- * Only draft and pending invoices can be edited.
- */
-export function isInvoiceImmutable(status: string): boolean {
-    return IMMUTABLE_STATUSES.includes(status);
+    throw new Error(msg);
+  }
+  return res.json();
 }
 
 /**
- * Valid status transitions for invoices.
+ * Fetch all invoices with optional filtering.
  */
-const INVOICE_TRANSITIONS: Record<string, string[]> = {
-    DRAFT: ['PENDING', 'CANCELLED'],
-    PENDING: ['PAID', 'OVERDUE', 'CANCELLED'],
-    OVERDUE: ['PAID', 'CANCELLED'],
-    PAID: ['VOIDED'],
-    CANCELLED: [],
-    REFUNDED: [],
-    VOIDED: [],
-};
-
-export function isValidInvoiceTransition(from: string, to: string): boolean {
-    return INVOICE_TRANSITIONS[from]?.includes(to) ?? false;
-}
-
-// ─────────────────────────────────────────────────
-// CREDIT NOTES (Now modeled as InvoiceType = CREDIT_NOTE)
-// ─────────────────────────────────────────────────
-
-export interface CreditNoteInput {
-    originalInvoiceId: string;
-    orderId?: string;
-    reason: string;
-    items: {
-        name: string;
-        quantity: number;
-        unitPrice: number;
-        taxRatePct?: number;
-        hsnCode?: string;
-    }[];
+export async function getInvoices(filters?: { status?: string; customerId?: string; orderId?: string }): Promise<Invoice[]> {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.customerId) params.set('customerId', filters.customerId);
+  if (filters?.orderId) params.set('orderId', filters.orderId);
+  const qs = params.toString();
+  const url = qs ? `/api/billing/invoices?${qs}` : '/api/billing/invoices';
+  return fetchJSON<Invoice[]>(url);
 }
 
 /**
- * Create a credit note against an existing invoice.
- * Voids the original if fully credited.
+ * Fetch a single invoice by ID, ensuring lineItems and audit are present.
  */
-export async function createCreditNote(tx: PrismaTx, input: CreditNoteInput) {
-    const invoice = await tx.invoice.findUniqueOrThrow({
-        where: { id: input.originalInvoiceId },
-        include: { lineItems: true },
-    });
+export async function getInvoice(id: string): Promise<Invoice> {
+  const invoice = await fetchJSON<Invoice>(`/api/billing/invoices/${id}`);
+  if (!invoice.lineItems) invoice.lineItems = [];
+  if (!invoice.audit) invoice.audit = [];
+  return invoice;
+}
 
-    // Calculate credit amounts
-    const taxInputs: TaxLineInput[] = input.items.map(item => ({
-        unitPrice: item.unitPrice,
-        quantity: item.quantity,
-        taxRatePct: item.taxRatePct ?? 18,
-    }));
+/**
+ * Create a new invoice.
+ */
+export async function createInvoice(data: CreateInvoice): Promise<Invoice> {
+  return fetchJSON<Invoice>('/api/billing/invoices', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
 
-    const taxResult = calculateTax({ items: taxInputs });
+/**
+ * Pay an invoice.
+ */
+export async function payInvoice(id: string, data: PayInvoiceInput): Promise<Invoice> {
+  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/pay`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
 
-    const creditNoteNumber = await nextCreditNoteNumber(tx);
+/**
+ * Send an invoice to the customer.
+ */
+export async function sendInvoice(id: string, data: InvoiceActionInput): Promise<Invoice> {
+  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/send`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
 
-    // Create the Credit Note as an Invoice using the CREDIT_NOTE type enum
-    const creditNote = await tx.invoice.create({
-        data: {
-            invoiceNumber: creditNoteNumber,
-            orderId: input.orderId || invoice.orderId,
-            customerId: invoice.customerId,
-            type: 'CREDIT_NOTE',
-            status: 'PAID', // Credit notes are usually finalized/published immediately
-            subtotal: taxResult.subtotal,
-            taxTotal: taxResult.totalTax,
-            discountPct: 0,
-            shipping: 0,
-            total: taxResult.grandTotal,
-            amountPaid: 0,
-            amountDue: 0,
-            notes: `Credit Note for Invoice ${invoice.invoiceNumber}. Reason: ${input.reason}`,
-            dueDate: new Date(),
-            lineItems: {
-                create: input.items.map((item, idx) => ({
-                    name: item.name,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    taxRatePct: taxResult.lineResults[idx].taxRatePct,
-                    hsnCode: item.hsnCode,
-                })),
-            },
-            audit: {
-                create: {
-                    type: 'created',
-                    actor: 'System',
-                    message: `Credit note created for invoice ${invoice.id}`,
-                },
-            },
-        },
-        include: { lineItems: true },
-    });
+/**
+ * Cancel an invoice.
+ */
+export async function cancelInvoice(id: string, data: InvoiceActionInput): Promise<Invoice> {
+  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
 
-    // If credit note covers full invoice amount, void the original invoice
-    if (roundCurrency(taxResult.grandTotal) >= roundCurrency(Number(invoice.total))) {
-        await tx.invoice.update({
-            where: { id: input.originalInvoiceId },
-            data: {
-                status: 'VOIDED',
-                voidedAt: new Date(),
-            },
-        });
-        await tx.invoiceAuditEvent.create({
-            data: {
-                invoiceId: input.originalInvoiceId,
-                type: 'voided',
-                actor: 'System',
-                message: `Invoice voided — credit note ${creditNoteNumber} issued`,
-            },
-        });
-    }
+/**
+ * Void an invoice.
+ */
+export async function voidInvoice(id: string, data: InvoiceActionInput): Promise<Invoice> {
+  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/void`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
 
-    return creditNote;
+/**
+ * Create a credit note against an invoice.
+ */
+export async function createCreditNote(id: string, data: CreateCreditNoteInput): Promise<Invoice> {
+  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/credit-note`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }

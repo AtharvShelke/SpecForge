@@ -8,11 +8,9 @@
  */
 
 import type { PrismaClient } from '@/generated/prisma/client';
+import { PaymentMethodType, PaymentStatus } from '@/types';
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
-
-export type PaymentMethodType = "RAZORPAY" | "UPI" | "BANK_TRANSFER";
-export type PaymentStatus = "INITIATED" | "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED";
 
 // ─────────────────────────────────────────────────
 // PAYMENT CREATION

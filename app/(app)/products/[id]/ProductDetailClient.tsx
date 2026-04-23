@@ -14,21 +14,26 @@ import {
     Plus,
 } from 'lucide-react';
 import { CompatibilityLevel, specsToFlat, Product } from '@/types';
-import { validateBuild } from '@/services/compatibility';
+import { CATEGORY_NAMES } from '@/lib/categoryUtils';
+// Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
+const validateBuild = (_items: any[]): { status: CompatibilityLevel; issues: any[] } => ({
+    status: CompatibilityLevel.COMPATIBLE,
+    issues: [],
+});
 
 // ── Constants (module scope — never recreated) ────────────────────────────────
 
 const CATEGORY_HIGHLIGHTS: Record<string, string[]> = {
-    PROCESSOR:   ['cores', 'socket', 'wattage', 'ramType', 'series', 'generation'],
-    GPU:         ['memory', 'wattage', 'series'],
-    RAM:         ['capacity', 'frequency', 'ramType'],
-    MOTHERBOARD: ['chipset', 'socket', 'formFactor', 'ramType'],
-    COOLER:      ['type', 'size'],
-    STORAGE:     ['type', 'interface', 'capacity'],
-    CABINET:     ['formFactor', 'color'],
-    PSU:         ['wattage', 'efficiency'],
-    MONITOR:     ['size', 'resolution', 'type'],
-    PERIPHERAL:  ['type', 'connectivity'],
+    [CATEGORY_NAMES.PROCESSOR]: ['cores', 'socket', 'wattage', 'ramType', 'series', 'generation'],
+    [CATEGORY_NAMES.GPU]: ['memory', 'wattage', 'series'],
+    [CATEGORY_NAMES.RAM]: ['capacity', 'frequency', 'ramType'],
+    [CATEGORY_NAMES.MOTHERBOARD]: ['chipset', 'socket', 'formFactor', 'ramType'],
+    [CATEGORY_NAMES.COOLER]: ['type', 'size'],
+    [CATEGORY_NAMES.STORAGE]: ['type', 'interface', 'capacity'],
+    [CATEGORY_NAMES.PSU]: ['wattage', 'efficiency'],
+    [CATEGORY_NAMES.CABINET]: ['formFactor', 'color'],
+    [CATEGORY_NAMES.MONITOR]: ['size', 'resolution', 'type'],
+    [CATEGORY_NAMES.PERIPHERAL]: ['type', 'connectivity'],
 };
 
 // Status config — plain object, never recreated

@@ -1,34 +1,35 @@
 
-import { Category } from '../types';
+import { CATEGORY_NAMES } from '../lib/categoryUtils';
 
 export interface CategoryNode {
   label: string;
   children?: CategoryNode[];
   // Filter logic
-  category?: Category;
+  category?: string;
   brand?: string;
   query?: string; // Matches against product name or specs
+  subCategoryId?: string;
   isOpen?: boolean; // Initial UI state
 }
 
 export const BUILD_SEQUENCE = [
-  Category.PROCESSOR,
-  Category.MOTHERBOARD,
-  Category.RAM,
-  Category.STORAGE,
-  Category.GPU,
-  Category.PSU,
-  Category.CABINET,
-  Category.COOLER,
-  Category.MONITOR,
-  Category.PERIPHERAL
+  CATEGORY_NAMES.PROCESSOR,
+  CATEGORY_NAMES.MOTHERBOARD,
+  CATEGORY_NAMES.RAM,
+  CATEGORY_NAMES.STORAGE,
+  CATEGORY_NAMES.GPU,
+  CATEGORY_NAMES.PSU,
+  CATEGORY_NAMES.CABINET,
+  CATEGORY_NAMES.COOLER,
+  CATEGORY_NAMES.MONITOR,
+  CATEGORY_NAMES.PERIPHERAL
 ];
 
 export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Custom Liquid Cooling ───────────────────────────────────────────────
   {
     label: 'Custom Liquid Cooling',
-    category: Category.COOLER,
+    category: CATEGORY_NAMES.COOLER,
     children: [
       { label: 'CPU Water Block', query: 'Water Block' },
       { label: 'GPU Water Block', query: 'GPU Block' },
@@ -45,7 +46,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Processor ───────────────────────────────────────────────────────────
   {
     label: 'Processor',
-    category: Category.PROCESSOR,
+    category: CATEGORY_NAMES.PROCESSOR,
     children: [
       { label: 'Extreme-level Processor', query: 'Extreme' },
       { label: 'High-end Processor', query: 'High-end' },
@@ -58,7 +59,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── CPU Cooler ──────────────────────────────────────────────────────────
   {
     label: 'CPU Cooler',
-    category: Category.COOLER,
+    category: CATEGORY_NAMES.COOLER,
     children: [
       { label: 'Liquid Cooler', query: 'Liquid' },
       { label: 'Thermal Paste', query: 'Paste' },
@@ -70,7 +71,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Motherboard ─────────────────────────────────────────────────────────
   {
     label: 'Motherboard',
-    category: Category.MOTHERBOARD,
+    category: CATEGORY_NAMES.MOTHERBOARD,
     children: [
       {
         label: 'AMD Chipset',
@@ -102,7 +103,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Graphics Card ───────────────────────────────────────────────────────
   {
     label: 'Graphics Card',
-    category: Category.GPU,
+    category: CATEGORY_NAMES.GPU,
     children: [
       { label: 'Intel Arc Graphics Card', query: 'Arc' },
       {
@@ -129,7 +130,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── RAM ─────────────────────────────────────────────────────────────────
   {
     label: 'RAM',
-    category: Category.RAM,
+    category: CATEGORY_NAMES.RAM,
     children: [
       { label: 'Desktop Ram', query: 'Desktop' },
       { label: 'Laptop Ram', query: 'Laptop' },
@@ -145,7 +146,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Storage ─────────────────────────────────────────────────────────────
   {
     label: 'Storage',
-    category: Category.STORAGE,
+    category: CATEGORY_NAMES.STORAGE,
     children: [
       {
         label: 'HDD',
@@ -172,7 +173,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── SMPS (Power Supply) ─────────────────────────────────────────────────
   {
     label: 'SMPS (PSU)',
-    category: Category.PSU,
+    category: CATEGORY_NAMES.PSU,
     children: [
       { label: 'Non Modular', query: 'Non Modular' },
       { label: 'Fully Modular', query: 'Fully Modular' },
@@ -186,7 +187,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Cabinet ─────────────────────────────────────────────────────────────
   {
     label: 'Cabinet',
-    category: Category.CABINET,
+    category: CATEGORY_NAMES.CABINET,
     children: [
       { label: 'Full Tower', query: 'Full Tower' },
       { label: 'ARGB', query: 'ARGB' },
@@ -204,7 +205,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Monitor ─────────────────────────────────────────────────────────────
   {
     label: 'Monitor',
-    category: Category.MONITOR,
+    category: CATEGORY_NAMES.MONITOR,
     children: [
       { label: '22 inch', query: '22' },
       { label: '24 inch', query: '24' },
@@ -222,7 +223,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Peripherals ─────────────────────────────────────────────────────────
   {
     label: 'Peripherals',
-    category: Category.PERIPHERAL,
+    category: CATEGORY_NAMES.PERIPHERAL,
     children: [
       { label: 'Headset', query: 'Headset' },
       {
@@ -248,7 +249,7 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
       { label: 'Mouse Pad', query: 'Mouse Pad' },
       {
         label: 'Networking',
-        category: Category.NETWORKING,
+        category: CATEGORY_NAMES.NETWORKING,
         children: [
           { label: 'Router', query: 'Router' },
           { label: 'Switch', query: 'Switch' },
@@ -275,6 +276,6 @@ export const CATEGORY_HIERARCHY: CategoryNode[] = [
   // ─── Laptop ──────────────────────────────────────────────────────────────
   {
     label: 'Laptop',
-    category: Category.LAPTOP,
+    category: 'Laptop',
   },
 ];

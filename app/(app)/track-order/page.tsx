@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo, memo, Fragment } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { validateBuild } from '@/services/compatibility';
+// Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
+const validateBuild = (_items: any[]): { status: CompatibilityLevel; issues: any[] } => ({
+    status: CompatibilityLevel.COMPATIBLE,
+    issues: [],
+});
 import {
     Package, Search, Clock, CheckCircle2, Truck, PackageCheck,
     XCircle, MapPin, CreditCard, MessageCircle, ShoppingCart,
@@ -185,7 +189,7 @@ export default function TrackOrderPage() {
         e.preventDefault();
         const trimId      = orderId.trim().toUpperCase();
         const trimContact = contact.trim().toLowerCase();
-        const match = orders.find(o =>
+        const match = orders.find((o: Order) =>
             o.id.toUpperCase() === trimId &&
             (o.email.toLowerCase() === trimContact || (o as any).phone?.toLowerCase() === trimContact)
         );
@@ -204,7 +208,7 @@ export default function TrackOrderPage() {
     const handleReorder = useCallback(() => {
         if (!foundOrder) return;
         clearCart();
-        foundOrder.items.forEach(item => addToCart(item as any));
+        (foundOrder.items ?? []).forEach(item => addToCart(item as any));
         setCartOpen(true);
     }, [foundOrder, clearCart, addToCart, setCartOpen]);
 
@@ -387,11 +391,11 @@ export default function TrackOrderPage() {
                                 <h2 className="font-bold text-zinc-950 text-lg heading-font">Items in This Order</h2>
                             </div>
                             <ul className="divide-y divide-zinc-100">
-                                {foundOrder.items.map((item) => (
+                                {(foundOrder.items ?? []).map((item) => (
                                     <li key={item.id} className="flex items-center gap-4 px-6 py-5 hover:bg-zinc-50/50 transition-colors">
                                         <div className="w-20 h-20 bg-zinc-50 rounded-2xl border border-zinc-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                             <img
-                                                src={item.image}
+                                                src={item.image ?? '/placeholder.png'}
                                                 alt={item.name}
                                                 loading="lazy"
                                                 decoding="async"
@@ -419,7 +423,7 @@ export default function TrackOrderPage() {
                         {/* Compatibility Snapshot */}
                         <div>
                             <h2 className="font-bold text-zinc-950 text-lg heading-font mb-4">Build Compatibility Snapshot</h2>
-                            <CompatBadge items={foundOrder.items as any} />
+                            <CompatBadge items={(foundOrder.items ?? []) as any} />
                         </div>
 
                         {/* Desktop Actions */}

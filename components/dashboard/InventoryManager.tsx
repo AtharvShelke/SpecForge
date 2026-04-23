@@ -28,7 +28,7 @@ import {
     SlidersHorizontal,
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { WarehouseInventory, Category } from '@/types';
+import { WarehouseInventory } from '@/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import {
@@ -59,6 +59,15 @@ const MOV_TYPE_MAP: Record<string, { label: string; cls: string; icon: React.Rea
     OUTWARD:    { label: 'Out',      cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200',          icon: <ArrowUpRight size={10} /> },
     ADJUSTMENT: { label: 'Adj',      cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',    icon: <RefreshCw size={10} /> },
     TRANSFER:   { label: 'Transfer', cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200',    icon: <MoveHorizontal size={10} /> },
+};
+
+type StockMovementRecord = {
+    id: string;
+    date: string;
+    sku: string;
+    type: StockMovementType | string;
+    quantity: number;
+    reason?: string | null;
 };
 const MOV_TYPE_FALLBACK = { label: '', cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200', icon: null };
 
@@ -157,7 +166,27 @@ CollapsibleSection.displayName = 'CollapsibleSection';
    MAIN
 ───────────────────────────────────────────────────────────────*/
 const InventoryManager = () => {
-    const { inventory, stockMovements, adjustStock, transferStock, refreshInventory, syncData, isLoading } = useAdmin();
+    const {
+        inventory,
+        stockMovements,
+        adjustStock,
+        transferStock,
+        refreshInventory,
+        refreshAuditLogs,
+        fetchInventoryPage,
+        syncData,
+        isLoading,
+    } = useAdmin() as unknown as {
+        inventory: WarehouseInventory[];
+        stockMovements: StockMovementRecord[];
+        adjustStock: (sku: string, quantity: number, type: StockMovementType, reason?: string) => Promise<void>;
+        transferStock: (sourceWarehouseId: string, targetWarehouseId: string, variantId: string, quantity: number, reason?: string) => Promise<void>;
+        refreshInventory: () => Promise<void>;
+        refreshAuditLogs: () => Promise<any[]>;
+        fetchInventoryPage: (query?: URLSearchParams | string) => Promise<{ items: WarehouseInventory[]; total: number; page: number; limit: number }>;
+        syncData: () => Promise<void>;
+        isLoading: boolean;
+    };
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
         isOpen: boolean; sku: string; currentQty: number;
@@ -170,7 +199,7 @@ const InventoryManager = () => {
     const [transferTarget, setTransferTarget] = useState<string>('');
     const [transferQty, setTransferQty] = useState<number>(0);
     const [transferReason, setTransferReason] = useState<string>('');
-    const [adjType, setAdjType] = useState<StockMovementType>('INWARD');
+    const [adjType, setAdjType] = useState<StockMovementType>(StockMovementType.INWARD);
     const [adjQty, setAdjQty] = useState(0);
     const [adjReason, setAdjReason] = useState('');
 
@@ -184,11 +213,10 @@ const InventoryManager = () => {
         setAuditLogModal(true);
         setIsLoadingAudit(true);
         try {
-            const res = await fetch('/api/audit-logs');
-            if (res.ok) setAuditLogs(await res.json());
+            setAuditLogs(await refreshAuditLogs());
         } catch (e) { console.error(e); }
         finally { setIsLoadingAudit(false); }
-    }, []);
+    }, [refreshAuditLogs]);
 
     const router = useRouter();
     const pathname = usePathname();
@@ -240,14 +268,10 @@ const InventoryManager = () => {
                 const query = new URLSearchParams(searchParams.toString());
                 if (!query.has("limit")) query.set("limit", "10");
                 if (!query.has("page")) query.set("page", "1");
-                const res = await fetch(`/api/inventory?${query.toString()}`, { signal });
-                if (res.ok) {
-                    const data = await res.json();
-                    setPaginatedInventory(Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []));
-                    setTotalItems(data.total || 0);
-                } else {
-                    setPaginatedInventory([]); setTotalItems(0);
-                }
+                const data = await fetchInventoryPage(query);
+                if (signal.aborted) return;
+                setPaginatedInventory(data.items);
+                setTotalItems(data.total || 0);
             } catch (err: any) {
                 // Ignore aborted requests — not a real error
                 if (err.name !== 'AbortError') {
@@ -274,7 +298,7 @@ const InventoryManager = () => {
         e.preventDefault();
         if (adjustmentModal && adjQty > 0) {
             adjustStock(adjustmentModal.sku, adjQty, adjType, adjReason);
-            setAdjustmentModal(null); setAdjQty(0); setAdjReason(''); setAdjType('INWARD');
+            setAdjustmentModal(null); setAdjQty(0); setAdjReason(''); setAdjType(StockMovementType.INWARD);
             setRefreshTrigger(prev => !prev);
         }
     }, [adjustmentModal, adjQty, adjType, adjReason, adjustStock]);
@@ -365,6 +389,10 @@ const InventoryManager = () => {
         }
         return Object.entries(map).sort((a, b) => b[1].value - a[1].value).slice(0, 5);
     }, [inventory]);
+    const inventoryCategories = useMemo(
+        () => categoryBreakdown.map(([cat]) => cat),
+        [categoryBreakdown],
+    );
 
     // KPI card definitions — memoized so the array isn't reconstructed every render
     const kpiCards = useMemo(() => [
@@ -623,7 +651,7 @@ const InventoryManager = () => {
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 text-stone-800 shadow-md">
                                     <SelectItem value="all" className="text-xs focus:bg-stone-50">All Categories</SelectItem>
-                                    {Object.values(Category).map(cat => (
+                                    {inventoryCategories.map(cat => (
                                         <SelectItem key={cat} value={cat} className="text-xs focus:bg-stone-50">{cat}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -733,7 +761,7 @@ const InventoryManager = () => {
                                                         isOpen: true,
                                                         sku: variant?.sku || item.variantId,
                                                         variantId: item.variantId,
-                                                        sourceWarehouseId: item.warehouseId,
+                                                        sourceWarehouseId: item.warehouseId ?? '',
                                                         currentQty: item.quantity,
                                                     })}
                                                 >
@@ -810,7 +838,7 @@ const InventoryManager = () => {
                                             isOpen: true,
                                             sku: variant?.sku || item.variantId,
                                             variantId: item.variantId,
-                                            sourceWarehouseId: item.warehouseId,
+                                            sourceWarehouseId: item.warehouseId ?? '',
                                             currentQty: item.quantity,
                                         })}
                                     >

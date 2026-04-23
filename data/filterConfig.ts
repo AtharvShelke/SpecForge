@@ -1,10 +1,11 @@
 
-import { Category, CategoryFilterConfig } from '../types';
+import { CategoryFilterConfig } from '../types';
+import { CATEGORY_NAMES } from '../lib/categoryUtils';
 
 export const FILTER_CONFIG: CategoryFilterConfig[] = [
   // ─── PROCESSOR ─────────────────────────────────────────────────────────────
   {
-    category: Category.PROCESSOR,
+    category: CATEGORY_NAMES.PROCESSOR,
     filters: [
       // Universal filters
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AMD', 'Intel'] },
@@ -30,7 +31,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── CPU COOLER ────────────────────────────────────────────────────────────
   {
-    category: Category.COOLER,
+    category: CATEGORY_NAMES.COOLER,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AEROCOOL', 'ALSEYE', 'Ant Esports', 'ANTEC', 'ARCTIC', 'Cooler Master', 'Corsair', 'DeepCool', 'Lian Li', 'Noctua', 'NZXT'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -44,7 +45,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── MOTHERBOARD ───────────────────────────────────────────────────────────
   {
-    category: Category.MOTHERBOARD,
+    category: CATEGORY_NAMES.MOTHERBOARD,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ASROCK', 'ASUS', 'GIGABYTE', 'MSI'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -66,7 +67,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── GRAPHICS CARD ─────────────────────────────────────────────────────────
   {
-    category: Category.GPU,
+    category: CATEGORY_NAMES.GPU,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ASROCK', 'ASUS', 'GALAX', 'GIGABYTE', 'INNO3D', 'MSI', 'Sapphire', 'Zotac'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -80,7 +81,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── RAM ───────────────────────────────────────────────────────────────────
   {
-    category: Category.RAM,
+    category: CATEGORY_NAMES.RAM,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ACER', 'ADATA', 'CORSAIR', 'CRUCIAL', 'EVM', 'G.Skill', 'Kingston', 'TeamGroup'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -94,7 +95,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── STORAGE ───────────────────────────────────────────────────────────────
   {
-    category: Category.STORAGE,
+    category: CATEGORY_NAMES.STORAGE,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ACER', 'ADATA', 'ADDLINK', 'Ant Esports', 'ASUS', 'Crucial', 'Kingston', 'Samsung', 'Seagate', 'Western Digital'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -106,7 +107,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── SMPS (PSU) ────────────────────────────────────────────────────────────
   {
-    category: Category.PSU,
+    category: CATEGORY_NAMES.PSU,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['Ant Esports', 'ANTEC', 'ASUS', 'COOLER MASTER', 'CORSAIR', 'DeepCool', 'MSI', 'Seasonic'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -122,7 +123,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── CABINET ───────────────────────────────────────────────────────────────
   {
-    category: Category.CABINET,
+    category: CATEGORY_NAMES.CABINET,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AEROCOOL', 'Ant Esports', 'ANTEC', 'ARCTIC', 'ASUS', 'Cooler Master', 'Corsair', 'Lian Li', 'NZXT'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -134,7 +135,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── MONITOR ───────────────────────────────────────────────────────────────
   {
-    category: Category.MONITOR,
+    category: CATEGORY_NAMES.MONITOR,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AOC', 'ASUS', 'BENQ', 'COOLER MASTER', 'DELL', 'LG', 'MSI', 'Samsung', 'ViewSonic'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -151,7 +152,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── PERIPHERALS ───────────────────────────────────────────────────────────
   {
-    category: Category.PERIPHERAL,
+    category: CATEGORY_NAMES.PERIPHERAL,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox' },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -162,7 +163,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── NETWORKING ────────────────────────────────────────────────────────────
   {
-    category: Category.NETWORKING,
+    category: CATEGORY_NAMES.NETWORKING,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox' },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -172,7 +173,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── LAPTOP ────────────────────────────────────────────────────────────────
   {
-    category: Category.LAPTOP,
+    category: 'Laptop',
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ACER', 'ASUS', 'HP', 'MSI', 'Lenovo', 'Dell'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },

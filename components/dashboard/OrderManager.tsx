@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
-import { Order, OrderStatus } from '@/types';
+import { Order, OrderItem, OrderLog, OrderStatus, WarehouseInventory } from '@/types';
 import {
   ArrowLeft,
   Clock,
@@ -77,7 +77,7 @@ const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
 
 // Pure function at module scope — called inside useMemo, never re-declared
 function computeFinancials(order: Order) {
-  const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const subtotal = (order.items ?? []).reduce((s, i) => s + i.price * i.quantity, 0);
   const tax = Math.round(subtotal * 0.18);
   return { subtotal, tax, total: subtotal + tax };
 }
@@ -233,7 +233,14 @@ const OrderManager = () => {
   const {
     orders, updateOrderStatus, deleteOrder,
     inventory, syncData, isLoading,
-  } = useAdmin();
+  } = useAdmin() as unknown as {
+    orders: Order[];
+    updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
+    deleteOrder: (id: string) => Promise<void>;
+    inventory: WarehouseInventory[];
+    syncData: () => Promise<void>;
+    isLoading: boolean;
+  };
 
   // Aggregate inventory by variantId across all warehouses
   const aggregatedInventory = useMemo(() => {
@@ -305,8 +312,12 @@ const OrderManager = () => {
   }, [sortedOrders, filterStatus, searchQuery]);
 
   const selectedOrder = useMemo(
-    () => orders.find(o => o.id === selectedId) ?? sortedOrders[0] ?? null,
+    () => orders.find((o: Order) => o.id === selectedId) ?? sortedOrders[0] ?? null,
     [orders, selectedId, sortedOrders],
+  );
+  const selectedOrderItems = useMemo<OrderItem[]>(
+    () => selectedOrder?.items ?? [],
+    [selectedOrder],
   );
 
   // Computed once per selected order — was called twice (header + footer) per render
@@ -653,9 +664,9 @@ const OrderManager = () => {
                             <span className="flex items-center gap-1 flex-wrap">
                               <span>{selectedOrder.paymentMethod}</span>
                               <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide', {
-                                'bg-emerald-50 text-emerald-700': selectedOrder.paymentStatus === 'Success',
-                                'bg-amber-50 text-amber-700': selectedOrder.paymentStatus === 'Pending',
-                                'bg-rose-50 text-rose-600': selectedOrder.paymentStatus === 'Failed',
+                                'bg-emerald-50 text-emerald-700': String(selectedOrder.paymentStatus) === 'Success',
+                                'bg-amber-50 text-amber-700': String(selectedOrder.paymentStatus) === 'Pending',
+                                'bg-rose-50 text-rose-600': String(selectedOrder.paymentStatus) === 'Failed',
                               })}>
                                 {selectedOrder.paymentStatus}
                               </span>
@@ -664,7 +675,7 @@ const OrderManager = () => {
                         },
                         {
                           icon: <Hash size={11} />, label: 'Items',
-                          value: `${selectedOrder.items.length} item${selectedOrder.items.length !== 1 ? 's' : ''}`,
+                          value: `${selectedOrderItems.length} item${selectedOrderItems.length !== 1 ? 's' : ''}`,
                         },
                       ].map(({ icon, label, value }) => (
                         <div key={label}>
@@ -692,11 +703,11 @@ const OrderManager = () => {
                   title="Order Items"
                   badge={
                     <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-                      {selectedOrder.items.length}
+                      {selectedOrderItems.length}
                     </span>
                   }
                 >
-                  {selectedOrder.items.length > 0 ? (
+                  {selectedOrderItems.length > 0 ? (
                     <>
                       {/* Desktop table */}
                       <div className="hidden sm:block overflow-x-auto">
@@ -710,7 +721,7 @@ const OrderManager = () => {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-stone-50">
-                            {selectedOrder.items.map(item => {
+                            {selectedOrderItems.map((item: OrderItem) => {
                               const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
                               const isLow = inv && inv.quantity <= inv.reorderLevel;
                               return (
@@ -719,7 +730,7 @@ const OrderManager = () => {
                                     <div className="flex items-center gap-3">
                                       <div className="h-9 w-9 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
                                         <img
-                                          src={item.image}
+                                          src={item.image ?? FALLBACK_IMG}
                                           alt={item.name}
                                           className="h-full w-full object-contain"
                                           onError={handleImgError}
@@ -756,11 +767,11 @@ const OrderManager = () => {
 
                       {/* Mobile cards */}
                       <div className="sm:hidden divide-y divide-stone-100">
-                        {selectedOrder.items.map(item => (
+                        {selectedOrderItems.map((item: OrderItem) => (
                           <div key={item.id} className="p-3 flex gap-3">
                             <div className="h-12 w-12 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
                               <img
-                                src={item.image}
+                                src={item.image ?? FALLBACK_IMG}
                                 alt={item.name}
                                 className="h-full w-full object-contain"
                                 onError={handleImgError}
@@ -832,7 +843,7 @@ const OrderManager = () => {
                   {/* Inventory Snapshot */}
                   <CollapsibleSection icon={<Warehouse size={12} />} title="Inventory">
                     <div className="px-4 py-3 space-y-2.5">
-                      {selectedOrder.items.map(item => {
+                      {selectedOrderItems.map((item: OrderItem) => {
                         const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
                         const available = inv?.quantity ?? 0;
                         const reserved = inv?.reserved ?? 0;
@@ -871,7 +882,7 @@ const OrderManager = () => {
                   <CollapsibleSection icon={<Clock size={12} />} title="Timeline" defaultOpen={false}>
                     <div className="px-4 py-3">
                       <div className="relative pl-4 border-l-2 border-stone-100 space-y-4">
-                        {(selectedOrder.logs || []).map((log, idx) => {
+                        {(selectedOrder.logs || []).map((log: OrderLog, idx: number) => {
                           const isLatest = idx === (selectedOrder.logs || []).length - 1;
                           const cfg = STATUS_CONFIG[log.status];
                           return (

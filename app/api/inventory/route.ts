@@ -1,91 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getInventoryItems } from "@/lib/services/inventory.service";
+import { serializeInventoryItems } from "@/lib/api/adminSerializers";
+import { ServiceError } from "@/lib/services/catalog.service";
 
-// ── GET /api/inventory ──────────────────────────────────
 export async function GET(req: NextRequest) {
-    try {
-        const { searchParams } = new URL(req.url);
-        const search = searchParams.get("search") || searchParams.get("q");
-        const category = searchParams.get("category");
-        const fStockStatus = searchParams.get("f_stock_status");
+  try {
+    const searchParams = req.nextUrl.searchParams;
+    const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+    const limit = Math.max(1, Number(searchParams.get("limit") ?? 10));
+    const category = searchParams.get("category");
+    const query = searchParams.get("q")?.trim().toLowerCase();
+    const stockStatus = searchParams.get("f_stock_status");
 
-        // Pagination parameters — default 50, max 200
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 5000);
-        const skip = (page - 1) * limit;
+    const items = await getInventoryItems({
+      status: searchParams.get("status") || undefined,
+    });
 
-        let dbWhere: any = {};
+    const normalized = serializeInventoryItems(items as any[]);
+    const filtered = normalized.filter((item: any) => {
+      const productCategory =
+        item?.variant?.product?.subCategory?.category?.name ??
+        item?.variant?.product?.category ??
+        "";
 
-        // 1. Text Search
-        if (search && search.trim() !== "") {
-            dbWhere.OR = [
-                { variant: { sku: { contains: search, mode: "insensitive" } } },
-                { variant: { product: { name: { contains: search, mode: "insensitive" } } } }
-            ];
-        }
+      const haystack = [
+        item?.sku,
+        item?.variant?.sku,
+        item?.variant?.product?.name,
+        productCategory,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-        // 2. Category Filter natively mapped via subCategoryId over to legacy format handling
-        if (category && category !== "all") {
-            dbWhere.variant = {
-                ...(dbWhere.variant || {}),
-                product: { subCategoryId: category }
-            };
-        }
+      if (category && category !== "all" && productCategory !== category) {
+        return false;
+      }
+      if (query && !haystack.includes(query)) {
+        return false;
+      }
+      if (stockStatus === "In Stock" && Number(item.quantity ?? 0) <= 0) {
+        return false;
+      }
+      if (stockStatus === "Out of Stock" && Number(item.quantity ?? 0) > 0) {
+        return false;
+      }
 
-        // 3. Stock Status Filter
-        if (fStockStatus === "out") {
-            dbWhere.quantityOnHand = 0;
-        } else if (fStockStatus === "in") {
-            dbWhere.quantityOnHand = { gt: 0 };
-        }
+      return true;
+    });
 
-        // Execute count + paginated query in parallel
-        const [total, items] = await Promise.all([
-            prisma.inventoryItem.count({ where: dbWhere }),
-            prisma.inventoryItem.findMany({
-                where: dbWhere,
-                select: {
-                    id: true,
-                    variantId: true,
-                    trackingType: true,
-                    serialNumber: true,
-                    partNumber: true,
-                    quantityOnHand: true,
-                    quantityReserved: true,
-                    status: true,
-                    costPrice: true,
-                    batchNumber: true,
-                    receivedAt: true,
-                    notes: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    variant: {
-                        select: {
-                            id: true,
-                            sku: true,
-                            price: true,
-                            status: true,
-                            product: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    subCategoryId: true,
-                                    brand: { select: { id: true, name: true } },
-                                    media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
-                                },
-                            },
-                        },
-                    },
-                },
-                orderBy: { updatedAt: "desc" },
-                skip,
-                take: limit,
-            }),
-        ]);
+    const start = (page - 1) * limit;
 
-        return NextResponse.json({ items, total, page, limit });
-    } catch (error) {
-        console.error("GET /api/inventory error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({
+      items: filtered.slice(start, start + limit),
+      total: filtered.length,
+      page,
+      limit,
+    });
+  } catch (error: any) {
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
     }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

@@ -1,21 +1,20 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, X, Wrench, Check, Filter, SlidersHorizontal, Search } from 'lucide-react';
+import { ChevronDown, X, Check, Filter, SlidersHorizontal, Search } from 'lucide-react';
 import { CategoryNode } from '../data/categoryTree';
 import { useShop } from '../context/ShopContext';
-import { useBuild } from '../context/BuildContext';
-import { Category, Product, FilterDefinition, CategoryFilterConfig } from '../types';
+import { Product, FilterDefinition, CategoryFilterConfig } from '../types';
 
 interface SidebarProps {
   nodes: CategoryNode[];
-  onSelect: (node: CategoryNode) => void;
+  onSelect: (node: CategoryNode | null) => void;
   selectedNode: CategoryNode | null;
   onCloseMobile?: () => void;
   priceRange: { min: number; max: number };
   onPriceChange: (min: number, max: number) => void;
-  activeCategory?: Category;
-  onBuildStepChange?: (category: Category) => void;
+  activeCategory?: string;
+  onBuildStepChange?: (category: string) => void;
   currentProducts: Product[];
   dynamicFilters?: { brands: string[], specs: Record<string, string[]> } | null;
   selectedFilters: Record<string, string[]>;
@@ -40,8 +39,8 @@ const FilterGroup: React.FC<{
     if (key === 'stock_status') return p.variants?.[0]?.status === 'IN_STOCK' ? 'In Stock' : 'Out of Stock';
     if (key.startsWith('specs.')) {
       const specKey = key.split('.')[1];
-      const spec = p.specs.find(s => s.key === specKey);
-      return spec?.value;
+      const spec = p.specs?.find(s => s.key === specKey);
+      return spec?.value == null ? undefined : String(spec.value);
     }
     return undefined;
   };
@@ -165,8 +164,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarSearchTerm,
   onSidebarSearchChange,
 }) => {
-  const { cart, filterConfigs } = useShop();
-  const { isBuildMode, toggleBuildMode } = useBuild();
+  const { filterConfigs } = useShop();
 
   const categoryFilters = useMemo(() => {
     if (!activeCategory) {
@@ -265,10 +263,56 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* ── Scrollable body ── */}
       <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
         <div className="p-3">
+          {/* Category and subcategory */}
+          <div className="mb-5 rounded-2xl border border-border/60 bg-gradient-to-br from-background via-background to-muted/30 p-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Browsing
+            </p>
+            <div className="mt-2 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-[15px] font-semibold leading-tight text-foreground">
+                  {activeCategory || 'All Products'}
+                </h3>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  Pick a subcategory first, then fine-tune with filters.
+                </p>
+              </div>
+              {nodes.length > 0 && (
+                <span className="shrink-0 rounded-full bg-primary/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  {nodes.length} options
+                </span>
+              )}
+            </div>
+
+            {nodes.length > 0 && (
+              <div className="relative mt-3">
+                <select
+                  value={selectedNode?.subCategoryId ?? ''}
+                  onChange={(e) => {
+                    const nextNode = nodes.find((node) => node.subCategoryId === e.target.value) ?? null;
+                    onSelect(nextNode);
+                  }}
+                  className="h-11 w-full appearance-none rounded-xl border border-input bg-background px-3 pr-10 text-[13px] font-medium text-foreground shadow-sm transition-colors focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">All subcategories</option>
+                  {nodes.map((node) => (
+                    <option key={node.subCategoryId ?? node.label} value={node.subCategoryId ?? ''}>
+                      {node.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={15}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Category-Scoped Search */}
           <div className="mb-5">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 px-1">
-              Search within {activeCategory ? activeCategory.charAt(0) + activeCategory.slice(1).toLowerCase() : 'Category'}
+              Search within {activeCategory || 'this category'}
             </p>
             <div className="relative">
               <Search

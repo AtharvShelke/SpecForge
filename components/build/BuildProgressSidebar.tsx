@@ -3,29 +3,29 @@
 import React, { useMemo } from 'react';
 import { useShop } from '../../context/ShopContext';
 import { useBuild } from '../../context/BuildContext';
-import { Category } from '../../types';
 import { Check, XCircle, AlertTriangle, ChevronRight, Monitor, Cpu, HardDrive, Keyboard, Mouse, Headphones, ShieldQuestion } from 'lucide-react';
 import Image from 'next/image';
 import { BUILD_SEQUENCE } from '../../data/categoryTree';
+import { CATEGORY_NAMES, sameCategory } from '../../lib/categoryUtils';
 
 interface BuildProgressSidebarProps {
-    activeCategory?: Category;
-    onStepClick: (category: Category) => void;
+    activeCategory?: string;
+    onStepClick: (category: string) => void;
 }
 
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORY_ICONS: Record<string, any> = {
-    [Category.PROCESSOR]: Cpu,
-    [Category.MOTHERBOARD]: ShieldQuestion, // Fallback icon
-    [Category.RAM]: HardDrive,
-    [Category.STORAGE]: HardDrive,
-    [Category.GPU]: ShieldQuestion,
-    [Category.PSU]: ShieldQuestion,
-    [Category.CABINET]: ShieldQuestion,
-    [Category.COOLER]: ShieldQuestion,
-    [Category.MONITOR]: Monitor,
-    [Category.PERIPHERAL]: Keyboard,
+    [CATEGORY_NAMES.PROCESSOR]: Cpu,
+    [CATEGORY_NAMES.MOTHERBOARD]: ShieldQuestion,
+    [CATEGORY_NAMES.RAM]: HardDrive,
+    [CATEGORY_NAMES.STORAGE]: HardDrive,
+    [CATEGORY_NAMES.GPU]: ShieldQuestion,
+    [CATEGORY_NAMES.PSU]: ShieldQuestion,
+    [CATEGORY_NAMES.CABINET]: ShieldQuestion,
+    [CATEGORY_NAMES.COOLER]: ShieldQuestion,
+    [CATEGORY_NAMES.MONITOR]: Monitor,
+    [CATEGORY_NAMES.PERIPHERAL]: Keyboard,
 };
 
 const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCategory, onStepClick }) => {
@@ -34,7 +34,7 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
 
     const buildSteps = useMemo(() => {
         return BUILD_SEQUENCE.map((cat, index) => {
-            const item = cart.find(i => i.category === cat);
+            const item = cart.find(i => sameCategory(i.category, cat));
             return {
                 category: cat,
                 label: cat.charAt(0) + cat.slice(1).toLowerCase().replace('_', ' '),
@@ -82,7 +82,7 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
 
                         <div className="p-4 space-y-2 relative">
                             {buildSteps.map((step, idx) => {
-                                const isActive = step.category === activeCategory;
+                const isActive = sameCategory(step.category, activeCategory);
                                 const isCompleted = !!step.item;
 
                                 return (

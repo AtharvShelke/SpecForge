@@ -3,8 +3,8 @@
 import React, { useEffect, useState, useMemo, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
-import { BuildGuide, CartItem, CompatibilityLevel, Category } from '@/types';
-import { validateBuild } from '@/services/compatibility';
+import { Build, CompatibilityLevel } from '@/types';
+import { CATEGORY_NAMES } from '@/lib/categoryUtils';
 import {
     Upload,
     Cpu,
@@ -16,24 +16,23 @@ import {
     AlertTriangle,
     AlertOctagon,
     ArrowLeft,
-    Laptop,
 } from 'lucide-react';
 import Link from 'next/link';
 
 // Category Icon Map
-const CATEGORY_ICON: Record<Category, ReactNode> = {
-    [Category.PROCESSOR]: <Cpu size={14} />,
-    [Category.GPU]: <Monitor size={14} />,
-    [Category.RAM]: <Cpu size={14} />,
-    [Category.MOTHERBOARD]: <Cpu size={14} />,
-    [Category.STORAGE]: <HardDrive size={14} />,
-    [Category.PSU]: <Zap size={14} />,
-    [Category.CABINET]: <Box size={14} />,
-    [Category.COOLER]: <Cpu size={14} />,
-    [Category.MONITOR]: <Monitor size={14} />,
-    [Category.PERIPHERAL]: <Monitor size={14} />,
-    [Category.NETWORKING]: <HardDrive size={14} />,
-    [Category.LAPTOP]: <Laptop size={14} />,
+const CATEGORY_ICON: Record<string, ReactNode> = {
+    [CATEGORY_NAMES.PROCESSOR]: <Cpu size={14} />,
+    [CATEGORY_NAMES.GPU]: <Monitor size={14} />,
+    [CATEGORY_NAMES.RAM]: <Cpu size={14} />,
+    [CATEGORY_NAMES.MOTHERBOARD]: <Cpu size={14} />,
+    [CATEGORY_NAMES.STORAGE]: <HardDrive size={14} />,
+    [CATEGORY_NAMES.PSU]: <Zap size={14} />,
+    [CATEGORY_NAMES.CABINET]: <Box size={14} />,
+    [CATEGORY_NAMES.COOLER]: <Cpu size={14} />,
+    [CATEGORY_NAMES.MONITOR]: <Monitor size={14} />,
+    [CATEGORY_NAMES.PERIPHERAL]: <Monitor size={14} />,
+    [CATEGORY_NAMES.NETWORKING]: <HardDrive size={14} />,
+    Laptop: <Monitor size={14} />,
 };
 
 export default function SharedBuildPage() {
@@ -42,7 +41,7 @@ export default function SharedBuildPage() {
     const buildId = params?.buildId as string;
     const { loadCart, setCartOpen } = useShop();
 
-    const [build, setBuild] = useState<BuildGuide | null>(null);
+    const [build, setBuild] = useState<Build | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +49,7 @@ export default function SharedBuildPage() {
         async function fetchBuild() {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/build-guides/${buildId}`);
+                const res = await fetch(`/api/builds/${buildId}`);
                 if (!res.ok) {
                     throw new Error(res.status === 404 ? 'Build not found' : 'Failed to load build');
                 }
@@ -69,9 +68,9 @@ export default function SharedBuildPage() {
 
     const handleLoadCart = () => {
         if (!build) return;
-        const newCart = build.items
+        const newCart = (build.items ?? [])
             .filter((item: any) => item.variant?.product)
-            .map((item: any) => ({ ...item.variant.product, quantity: item.quantity, selectedVariant: item.variant })) as CartItem[];
+            .map((item: any) => ({ ...item.variant.product, quantity: 1, selectedVariant: item.variant }));
         loadCart(newCart);
         setCartOpen(true);
         router.push('/products?mode=build');
@@ -79,12 +78,25 @@ export default function SharedBuildPage() {
 
     const cartItems = useMemo(() => {
         if (!build) return [];
-        return build.items
-            .map((i: any) => (i.variant?.product ? { ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant } : null))
-            .filter(Boolean) as CartItem[];
+        return (build.items ?? [])
+            .map((i: any) => (i.variant?.product ? { ...i.variant.product, quantity: 1, selectedVariant: i.variant } : null))
+            .filter(Boolean);
     }, [build]);
 
-    const report = useMemo(() => validateBuild(cartItems), [cartItems]);
+    // Read compatibility from the build object returned by the API
+    const report = useMemo(() => {
+        if (!build || !build.buildCompatibilityResults || build.buildCompatibilityResults.length === 0) {
+             return { status: CompatibilityLevel.COMPATIBLE, issues: [] };
+        }
+        const lastResult = build.buildCompatibilityResults[build.buildCompatibilityResults.length - 1];
+        
+        let status = CompatibilityLevel.COMPATIBLE;
+        if (!lastResult.isCompatible) status = CompatibilityLevel.INCOMPATIBLE;
+        else if (lastResult.checks?.some((c: any) => !c.passed && c.severity === 'WARNING')) status = CompatibilityLevel.WARNING;
+
+        const issues = lastResult.checks?.filter((c: any) => !c.passed) || [];
+        return { status, issues };
+    }, [build]);
 
     if (loading) {
         return (
@@ -125,6 +137,7 @@ export default function SharedBuildPage() {
             : { bg: 'bg-emerald-50 border-emerald-200 text-emerald-700', label: 'Fully Compatible', Icon: CheckCircle2 };
 
     const { Icon: CompatIcon } = compatCfg;
+    const buildItems = build.items ?? [];
 
     return (
         <div className="min-h-screen bg-zinc-50 py-10">
@@ -139,9 +152,9 @@ export default function SharedBuildPage() {
                     {/* Header */}
                     <div className="p-6 sm:p-8 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{build.title}</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{build.name}</h1>
                             <p className="text-zinc-500 mt-1">
-                                {new Date(build.createdAt).toLocaleDateString()} · {build.items.length} components
+                                {new Date(build.createdAt).toLocaleDateString()} · {buildItems.length} components
                             </p>
                         </div>
                         <button
@@ -166,31 +179,27 @@ export default function SharedBuildPage() {
 
                     {/* Build Items */}
                     <div className="p-6 sm:p-8 space-y-4">
-                        {build.items.map((item) => (
+                        {buildItems.map((item: any) => (
                             <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 border border-zinc-100 rounded-xl p-4 hover:bg-zinc-50 transition-colors">
                                 <div className="w-16 h-16 bg-white border border-zinc-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden self-start sm:self-auto">
-                                    <img src={(item as any).variant?.product?.media?.[0]?.url || '/placeholder.png'} alt={(item as any).variant?.product?.name} className="w-full h-full object-contain p-1.5" />
+                                    <img src={item.variant?.product?.media?.[0]?.url || '/placeholder.png'} alt={item.variant?.product?.name} className="w-full h-full object-contain p-1.5" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-zinc-900 text-base">{(item as any).variant?.product?.name}</h3>
+                                    <h3 className="font-semibold text-zinc-900 text-base">{item.variant?.product?.name}</h3>
                                     <div className="flex items-center gap-2 text-sm text-zinc-500 mt-1">
-                                        <span className="text-zinc-400">{(item as any).variant?.product ? CATEGORY_ICON[(item as any).variant.product.category as Category] : null}</span>
-                                        {(item as any).variant?.product?.category}
-                                        {item.quantity > 1 && <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md text-xs font-medium ml-2">Qty {item.quantity}</span>}
+                                        <span className="text-zinc-400">{item.variant?.product?.subCategory?.category?.name ? CATEGORY_ICON[item.variant.product.subCategory.category.name] : null}</span>
+                                        {item.variant?.product?.subCategory?.category?.name || item.variant?.product?.subCategory?.name}
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {(item as any).variant?.product?.specs && Array.isArray((item as any).variant.product.specs) && (item as any).variant.product.specs.slice(0, 4).map((spec: any) => (
-                                            <span key={spec.key || spec.id} className="text-[11px] font-medium bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md">
-                                                {spec.key}: {spec.value}
+                                        {item.variant?.variantSpecs && Array.isArray(item.variant.variantSpecs) && item.variant.variantSpecs.slice(0, 4).map((spec: any) => (
+                                            <span key={spec.id} className="text-[11px] font-medium bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md">
+                                                {spec.spec?.name}: {spec.valueString || spec.valueNumber || spec.valueBool}
                                             </span>
                                         ))}
                                     </div>
                                 </div>
                                 <div className="sm:text-right flex-shrink-0 mt-2 sm:mt-0">
-                                    <p className="font-bold text-zinc-900 text-lg">₹{(item as any).variant?.price?.toLocaleString('en-IN')}</p>
-                                    {item.quantity > 1 && (
-                                        <p className="text-xs text-zinc-500">₹{((item as any).variant?.price || 0) * item.quantity} total</p>
-                                    )}
+                                    <p className="font-bold text-zinc-900 text-lg">₹{item.variant?.price?.toLocaleString('en-IN')}</p>
                                 </div>
                             </div>
                         ))}

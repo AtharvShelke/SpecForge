@@ -21,7 +21,7 @@ export const generateInvoiceHTML = (order: Order): string => {
   const fmtINR = (n: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
-  const itemRows = order.items.map(item => {
+  const itemRows = (order.items ?? []).map(item => {
     const lineTotal = item.quantity * item.price;
     return `
       <tr>

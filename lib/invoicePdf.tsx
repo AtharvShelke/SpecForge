@@ -251,7 +251,7 @@ const InvoiceDocument: React.FC<InvoiceDocProps> = ({ order }) => {
           <Text style={[s.th, s.colTax]}>Tax (GST)</Text>
           <Text style={[s.th, s.colAmt]}>Amount</Text>
         </View>
-        {order.items.map((item) => (
+        {(order.items ?? []).map((item) => (
           <View key={item.id} style={s.tableRow}>
             <View style={[s.td, s.colDesc]}>
               <Text style={s.tdBold}>{item.name}</Text>

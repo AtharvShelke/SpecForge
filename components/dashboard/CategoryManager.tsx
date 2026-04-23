@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState, useEffect, useCallback, memo } from 'react';
-import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
-import { Category, CategoryNode, FilterDefinition } from '@/types';
+import { CategoryFilterConfig, CategoryNode, FilterDefinition } from '@/types';
+import { CATEGORY_NAMES } from '@/lib/categoryUtils';
 import {
     ChevronDown,
     ChevronRight,
@@ -198,14 +198,14 @@ const NodeForm = memo(({
                 <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Category Mapping</span>
                 <Select
                     value={nodeForm.category ?? 'none'}
-                    onValueChange={val => setNodeForm({ ...nodeForm, category: val === 'none' ? undefined : val as Category })}
+                    onValueChange={val => setNodeForm({ ...nodeForm, category: val === 'none' ? undefined : val })}
                 >
                     <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="none" className="text-xs italic text-stone-400">No Mapping</SelectItem>
-                        {Object.values(Category).map(c => (
+                        {CATEGORY_VALUES.map(c => (
                             <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
                         ))}
                     </SelectContent>
@@ -239,7 +239,7 @@ NodeForm.displayName = 'NodeForm';
 // Stable empty children array reference
 const EMPTY_CHILDREN: any[] = [];
 
-const CATEGORY_VALUES = Object.values(Category);
+const CATEGORY_VALUES = Object.values(CATEGORY_NAMES);
 
 interface TreeNodeProps {
     node: any;
@@ -412,10 +412,22 @@ const EMPTY_FILTER_FORM: Partial<FilterDefinition> = { key: '', label: '', type:
 // ─────────────────────────────────────────────────────────────
 
 const CategoryManager = () => {
-    const { categories, refreshCategories, refreshFilterConfigs: refreshShopFilterConfigs } = useShop();
-    const { updateCategories, filterConfigs, updateFilterConfig, syncData, isLoading } = useAdmin();
+    const { categoryHierarchy, refreshCategoryHierarchy, updateCategories, filterConfigs, updateFilterConfig, syncData, isLoading } = useAdmin() as unknown as {
+        categoryHierarchy: CategoryNode[];
+        refreshCategoryHierarchy: () => Promise<void>;
+        updateCategories: (categories: CategoryNode[]) => Promise<void>;
+        filterConfigs: CategoryFilterConfig[];
+        updateFilterConfig: (category: string, filters: FilterDefinition[]) => Promise<void>;
+        syncData: () => Promise<void>;
+        isLoading: boolean;
+    };
+    const categories = Array.isArray(categoryHierarchy) ? categoryHierarchy : [];
 
-    useEffect(() => { refreshCategories(); }, [refreshCategories]);
+    useEffect(() => {
+        refreshCategoryHierarchy().catch((error) => {
+            console.error('Failed to load category hierarchy', error);
+        });
+    }, [refreshCategoryHierarchy]);
 
     // ── Hierarchy state ──
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -425,7 +437,7 @@ const CategoryManager = () => {
 
     // ── Filter config state ──
     const [configMode, setConfigMode] = useState<'hierarchy' | 'filters'>('hierarchy');
-    const [selectedCatForFilters, setSelectedCatForFilters] = useState<Category>(Category.PROCESSOR);
+    const [selectedCatForFilters, setSelectedCatForFilters] = useState<string>(CATEGORY_NAMES.PROCESSOR);
     const [editingFilterIdx, setEditingFilterIdx] = useState<number | null>(null);
     const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
     const [showFilterModal, setShowFilterModal] = useState(false);
@@ -476,11 +488,11 @@ const CategoryManager = () => {
             for (let i = 1; i < path.length; i++) current = current.children![path[i]];
             Object.assign(current, nodeForm);
         }
-        updateCategories(newTree).then(() => refreshCategories());
+        updateCategories(newTree).then(() => refreshCategoryHierarchy());
         setEditingNodePath(null);
         setIsAddingRoot(false);
         setNodeForm(EMPTY_NODE_FORM);
-    }, [editingNodePath, isAddingRoot, categories, nodeForm, updateCategories, refreshCategories]);
+    }, [editingNodePath, isAddingRoot, categories, nodeForm, updateCategories, refreshCategoryHierarchy]);
 
     const deleteNode = useCallback((pathStr: string, nodeLabel: string) =>
         setDeleteConfirm({ type: 'node', nodePath: pathStr, label: nodeLabel }),
@@ -496,10 +508,10 @@ const CategoryManager = () => {
             for (let i = 1; i < path.length - 1; i++) parent = parent.children![path[i]];
             parent.children!.splice(path[path.length - 1], 1);
         }
-        updateCategories(newTree).then(() => refreshCategories());
-    }, [categories, updateCategories, refreshCategories]);
+        updateCategories(newTree).then(() => refreshCategoryHierarchy());
+    }, [categories, updateCategories, refreshCategoryHierarchy]);
 
-    const activeFilters = useMemo(() =>
+    const activeFilters = useMemo<FilterDefinition[]>(() =>
         filterConfigs.find(c => c.category === selectedCatForFilters)?.filters || EMPTY_CHILDREN,
         [filterConfigs, selectedCatForFilters]
     );
@@ -530,8 +542,8 @@ const CategoryManager = () => {
     const confirmDeleteFilter = useCallback((idx: number) => {
         const newFilters = [...activeFilters];
         newFilters.splice(idx, 1);
-        updateFilterConfig(selectedCatForFilters, newFilters).then(() => refreshShopFilterConfigs());
-    }, [activeFilters, updateFilterConfig, selectedCatForFilters, refreshShopFilterConfigs]);
+        updateFilterConfig(selectedCatForFilters, newFilters);
+    }, [activeFilters, updateFilterConfig, selectedCatForFilters]);
 
     const handleConfirmDelete = useCallback(() => {
         if (!deleteConfirm) return;
@@ -565,7 +577,7 @@ const CategoryManager = () => {
     const handleSyncData = useCallback(() => syncData(), [syncData]);
 
     const handleCatForFiltersChange = useCallback((val: string) =>
-        setSelectedCatForFilters(val as Category),
+        setSelectedCatForFilters(val),
     []);
 
     // ─── Tree renderer — memoized with useCallback, stable deps ───

@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useMemo, memo, useCallback } from 'react';
-import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
-import { OrderStatus } from '@/types';
+import { Order, OrderStatus, Product, WarehouseInventory } from '@/types';
 import {
   AlertTriangle,
   ClipboardList,
@@ -203,7 +202,14 @@ DesktopOrderRow.displayName = 'DesktopOrderRow';
 // MAIN OVERVIEW
 // ─────────────────────────────────────────────────────────────
 const Overview = () => {
-  const { orders, inventory, products, syncData, isLoading, setActiveTab } = useAdmin();
+  const { orders, inventory, products, syncData, isLoading, setActiveTab } = useAdmin() as unknown as {
+    orders: Order[];
+    inventory: WarehouseInventory[];
+    products: Product[];
+    syncData: () => Promise<void>;
+    isLoading: boolean;
+    setActiveTab: (tab: string) => void;
+  };
 
   // ── Derived metrics — all in one pass over orders to avoid multiple iterations ──
   const {
@@ -236,7 +242,7 @@ const Overview = () => {
     for (const o of orders) {
       totalRev += o.total;
       if (o.total > highest) highest = o.total;
-      if (o.paymentStatus === 'Success') successRev += o.total;
+      if (String(o.paymentStatus) === 'Success') successRev += o.total;
       else pendingRev += o.total;
 
       switch (o.status) {

@@ -1,0 +1,11 @@
+txt
+node_modules
+.next
+.md_server
+.md_agent
+.turbo
+.vscode
+.idea
+
+.env
+.claude

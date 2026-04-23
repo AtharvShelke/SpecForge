@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ShopProvider } from "@/context/ShopContext";
 import { BuildProvider } from "@/context/BuildContext";
+import { OrderProvider } from "@/context/OrderContext";
 import Navbar from "@/components/Navbar";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -12,15 +12,6 @@ import CartDrawer from "@/components/CartDrawer";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -50,9 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
          <NextSSRPlugin
           /**
            * The `extractRouterConfig` will extract **only** the route configs
@@ -63,15 +52,17 @@ export default function RootLayout({
           routerConfig={extractRouterConfig(ourFileRouter)}
         />
         <ShopProvider>
-          <BuildProvider>
+          <OrderProvider>
+            <BuildProvider>
 
-            <main className="min-h-screen pb-16 md:pb-0">
-              {children}
-            </main>
-            <CartDrawer />
+              <main className="min-h-screen pb-16 md:pb-0">
+                {children}
+              </main>
+              <CartDrawer />
 
-            <Toaster />
-          </BuildProvider>
+              <Toaster />
+            </BuildProvider>
+          </OrderProvider>
         </ShopProvider>
       </body>
     </html>

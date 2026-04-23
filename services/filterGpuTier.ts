@@ -5,7 +5,7 @@ export function filterGpuTier(products:Product[],tier:GpuTier){
 
   return products.filter(p=>{
 
-    if(p.category !== 'GPU') return false
+    if(p.subCategory?.category?.name !== 'GPU') return false
 
     const price = p.variants?.[0]?.price || 0
 

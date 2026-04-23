@@ -122,7 +122,7 @@ export const ConfirmStatusDialog = ({
                                             if (data.sku) lookupMap.set(data.sku, data);
                                         });
 
-                                        return selectedOrder.items.map(item => {
+                                        return (selectedOrder.items ?? []).map(item => {
                                             const inv = lookupMap.get(item.variantId) || (item.sku ? lookupMap.get(item.sku) : undefined);
                                             const current = inv?.quantity ?? 0;
                                             // ... rest of logic

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import ProductDetailClient from './ProductDetailClient';
 import { notFound } from 'next/navigation';
+import { normalizeCatalogProduct } from '@/lib/catalogFrontend';
 
 // ── Shared DB select shape — fetch once, reuse for both metadata + page ────────
 // Using `select` instead of `include` fetches only the columns we actually need,
@@ -11,17 +12,31 @@ const PRODUCT_SELECT = {
     id:          true,
     name:        true,
     description: true,
-    category:    true,
     status:      true,
+    subCategoryId: true,
+    subCategory: {
+        select: {
+            name: true,
+            category: { select: { name: true } },
+        },
+    },
     media:       { select: { url: true } },
     brand:       { select: { id: true, name: true } },
-    specs:       true,
     variants: {
         select: {
             price:        true,
             compareAtPrice: true,
             status:       true,
             sku:          true,
+            variantSpecs: {
+                select: {
+                    valueString: true,
+                    valueNumber: true,
+                    valueBool: true,
+                    option: { select: { label: true, value: true } },
+                    spec: { select: { name: true } },
+                },
+            },
         },
     },
 } as const;
@@ -89,13 +104,14 @@ export default async function ProductPage({
     if (!product) notFound();
 
     // ── JSON-LD (built once server-side, never re-computed on client) ──────────
-    const firstVariant = product.variants?.[0];
+    const normalizedProduct = normalizeCatalogProduct(product as any);
+    const firstVariant = normalizedProduct.variants?.[0];
     const jsonLd = {
         '@context':   'https://schema.org',
         '@type':      'Product',
-        name:         product.name,
-        image:        product.media?.[0]?.url ?? '',
-        description:  product.description ?? product.name,
+        name:         normalizedProduct.name,
+        image:        normalizedProduct.media?.[0]?.url ?? normalizedProduct.image ?? '',
+        description:  normalizedProduct.description ?? normalizedProduct.name,
         sku:          firstVariant?.sku ?? '',
         offers: {
             '@type':        'Offer',
@@ -117,7 +133,7 @@ export default async function ProductPage({
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: jsonLdString }}
             />
-            <ProductDetailClient product={product as any} />
+            <ProductDetailClient product={normalizedProduct as any} />
         </section>
     );
 }

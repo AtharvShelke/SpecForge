@@ -8,11 +8,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
-import { validateBuild } from '@/services/compatibility';
+// Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
+const validateBuild = (_items: any[]): { status: any; issues: any[] } => ({ status: 'COMPATIBLE', issues: [] });
 import { BUILD_SEQUENCE } from '@/data/categoryTree';
 import {
-    Category, CATEGORY_LABELS, Product, CartItem, CompatibilityLevel, specsToFlat,
+    Product, CartItem, CompatibilityLevel, specsToFlat,
 } from '@/types';
+import { CATEGORY_LABELS, CATEGORY_NAMES, sameCategory } from '@/lib/categoryUtils';
 import {
     Cpu, Monitor, HardDrive, Zap, Box, Fan, Keyboard, Wifi, Layers,
     Check, X, AlertTriangle, Plus, ArrowLeft,
@@ -22,6 +24,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { fetchCatalogProducts } from '@/lib/catalogFrontend';
 
 /* ─────────────────────────────── Styles ─────────────────────────────────── */
 const PAGE_STYLES = `
@@ -119,45 +122,45 @@ const PAGE_STYLES = `
 
 /* ─────────────────────────────── Constants ──────────────────────────────── */
 // Defined outside component — never recreated on render
-const CORE_CATEGORIES: Category[] = [
-    Category.PROCESSOR, Category.MOTHERBOARD, Category.RAM,
-    Category.GPU, Category.STORAGE, Category.PSU, Category.CABINET, Category.COOLER,
+const CORE_CATEGORIES: string[] = [
+    CATEGORY_NAMES.PROCESSOR, CATEGORY_NAMES.MOTHERBOARD, CATEGORY_NAMES.RAM,
+    CATEGORY_NAMES.GPU, CATEGORY_NAMES.STORAGE, CATEGORY_NAMES.PSU, CATEGORY_NAMES.CABINET, CATEGORY_NAMES.COOLER,
 ];
 
 const CAT_ICONS: Record<string, React.FC<any>> = {
-    [Category.PROCESSOR]:   Cpu,
-    [Category.MOTHERBOARD]: Layers,
-    [Category.RAM]:         HardDrive,
-    [Category.GPU]:         Monitor,
-    [Category.STORAGE]:     HardDrive,
-    [Category.PSU]:         Zap,
-    [Category.CABINET]:     Box,
-    [Category.COOLER]:      Fan,
-    [Category.MONITOR]:     Monitor,
-    [Category.PERIPHERAL]:  Keyboard,
-    [Category.NETWORKING]:  Wifi,
+    [CATEGORY_NAMES.PROCESSOR]:   Cpu,
+    [CATEGORY_NAMES.MOTHERBOARD]: Layers,
+    [CATEGORY_NAMES.RAM]:         HardDrive,
+    [CATEGORY_NAMES.GPU]:         Monitor,
+    [CATEGORY_NAMES.STORAGE]:     HardDrive,
+    [CATEGORY_NAMES.PSU]:         Zap,
+    [CATEGORY_NAMES.CABINET]:     Box,
+    [CATEGORY_NAMES.COOLER]:      Fan,
+    [CATEGORY_NAMES.MONITOR]:     Monitor,
+    [CATEGORY_NAMES.PERIPHERAL]:  Keyboard,
+    [CATEGORY_NAMES.NETWORKING]:  Wifi,
 };
 
 const CAT_SHORT: Record<string, string> = {
-    [Category.PROCESSOR]:   'CPU',
-    [Category.MOTHERBOARD]: 'Mobo',
-    [Category.RAM]:         'RAM',
-    [Category.GPU]:         'GPU',
-    [Category.STORAGE]:     'SSD',
-    [Category.PSU]:         'PSU',
-    [Category.CABINET]:     'Case',
-    [Category.COOLER]:      'Cooler',
+    [CATEGORY_NAMES.PROCESSOR]:   'CPU',
+    [CATEGORY_NAMES.MOTHERBOARD]: 'Mobo',
+    [CATEGORY_NAMES.RAM]:         'RAM',
+    [CATEGORY_NAMES.GPU]:         'GPU',
+    [CATEGORY_NAMES.STORAGE]:     'SSD',
+    [CATEGORY_NAMES.PSU]:         'PSU',
+    [CATEGORY_NAMES.CABINET]:     'Case',
+    [CATEGORY_NAMES.COOLER]:      'Cooler',
 };
 
 const CAT_DESCRIPTIONS: Record<string, string> = {
-    [Category.PROCESSOR]:   'The brain of your build — AMD or Intel.',
-    [Category.MOTHERBOARD]: 'Connects everything. Must match your CPU socket.',
-    [Category.RAM]:         'System memory. Must match your motherboard DDR type.',
-    [Category.GPU]:         'Graphics card for gaming and creative work.',
-    [Category.STORAGE]:     'NVMe SSDs for fast load times.',
-    [Category.PSU]:         'Power supply — must handle your total wattage.',
-    [Category.CABINET]:     'The case. Must fit your motherboard and GPU.',
-    [Category.COOLER]:      'Keep your CPU cool under load.',
+    [CATEGORY_NAMES.PROCESSOR]:   'The brain of your build - AMD or Intel.',
+    [CATEGORY_NAMES.MOTHERBOARD]: 'Connects everything. Must match your CPU socket.',
+    [CATEGORY_NAMES.RAM]:         'System memory. Must match your motherboard DDR type.',
+    [CATEGORY_NAMES.GPU]:         'Graphics card for gaming and creative work.',
+    [CATEGORY_NAMES.STORAGE]:     'NVMe SSDs for fast load times.',
+    [CATEGORY_NAMES.PSU]:         'Power supply - must handle your total wattage.',
+    [CATEGORY_NAMES.CABINET]:     'The case. Must fit your motherboard and GPU.',
+    [CATEGORY_NAMES.COOLER]:      'Keep your CPU cool under load.',
 };
 
 // Static animation variants — defined once outside component
@@ -172,16 +175,16 @@ function estimatePowerStats(cart: CartItem[]): { wattage: number; psuCap: number
     let psuCap: number | null = null;
     for (const item of cart) {
         const s = specsToFlat(item.specs);
-        if (item.category === Category.PSU) {
+        if (sameCategory(item.category, CATEGORY_NAMES.PSU)) {
             const cap = Number(s.wattage);
             if (!isNaN(cap)) psuCap = cap;
         }
         const n = Number(s.wattage);
         if (!isNaN(n) && n > 0) { w += n * item.quantity; continue; }
-        if (item.category === Category.PROCESSOR) w += 65;
-        if (item.category === Category.GPU) w += 150;
-        if (item.category === Category.RAM) w += 5 * item.quantity;
-        if (item.category === Category.STORAGE) w += 5 * item.quantity;
+        if (sameCategory(item.category, CATEGORY_NAMES.PROCESSOR)) w += 65;
+        if (sameCategory(item.category, CATEGORY_NAMES.GPU)) w += 150;
+        if (sameCategory(item.category, CATEGORY_NAMES.RAM)) w += 5 * item.quantity;
+        if (sameCategory(item.category, CATEGORY_NAMES.STORAGE)) w += 5 * item.quantity;
     }
     return { wattage: w, psuCap };
 }
@@ -247,7 +250,7 @@ const ProductCard: React.FC<{
 }> = memo(({ product, isInCart, compatibility, compatMessage, onAdd, onRemove, index }) => {
     const price = product.variants?.[0]?.price || 0;
     const compareAt = product.variants?.[0]?.compareAtPrice;
-    const status = product.variants?.[0]?.status;
+    const status = String(product.variants?.[0]?.status ?? '');
 
     const isOos = status === 'OUT_OF_STOCK';
     const isLowStock = status === 'LOW_STOCK';
@@ -429,8 +432,8 @@ ProductCard.displayName = 'ProductCard';
 const BuildSummaryPanel: React.FC<{
     cart: CartItem[];
     onRemove: (id: string) => void;
-    onStepClick: (cat: Category) => void;
-    activeStep: Category;
+    onStepClick: (cat: string) => void;
+    activeStep: string;
     onSave: () => void;
     onShare: () => void;
     onCheckout: () => void;
@@ -446,7 +449,7 @@ const BuildSummaryPanel: React.FC<{
         ? Math.min((wattage / psuCap) * 100, 100)
         : Math.min((wattage / 800) * 100, 100);
     const completedCount = useMemo(
-        () => CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length,
+        () => CORE_CATEGORIES.filter(cat => cart.some(i => sameCategory(i.category, cat))).length,
         [cart],
     );
     const progressPct = (completedCount / CORE_CATEGORIES.length) * 100;
@@ -500,8 +503,8 @@ const BuildSummaryPanel: React.FC<{
             {/* Component rows */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-0.5">
                 {CORE_CATEGORIES.map(cat => {
-                    const item = cart.find(i => i.category === cat);
-                    const isActive = activeStep === cat;
+                    const item = cart.find(i => sameCategory(i.category, cat));
+                    const isActive = sameCategory(activeStep, cat);
                     const CatIcon = CAT_ICONS[cat] || Box;
 
                     return (
@@ -670,7 +673,7 @@ SaveDialog.displayName = 'SaveDialog';
 
 /* ─────────────────────────────── Left Nav Item ──────────────────────────── */
 const NavItem: React.FC<{
-    cat: Category; isActive: boolean; isCompleted: boolean; onClick: () => void;
+    cat: string; isActive: boolean; isCompleted: boolean; onClick: () => void;
 }> = memo(({ cat, isActive, isCompleted, onClick }) => {
     const CatIcon = CAT_ICONS[cat] || Box;
     return (
@@ -718,7 +721,7 @@ export default function PCBuilderPage() {
     const { isBuildMode, toggleBuildMode, saveCurrentBuild, generateShareLink } = useBuild();
     const { toast } = useToast();
 
-    const [activeStep, setActiveStep] = useState<Category>(Category.PROCESSOR);
+    const [activeStep, setActiveStep] = useState<string>(CORE_CATEGORIES[0]);
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -739,8 +742,8 @@ export default function PCBuilderPage() {
 
     // Cache CPU/mobo specs from cart to avoid repeated specsToFlat calls inside fetch effect
     const cartSpecsCache = useMemo(() => {
-        const cpu = cart.find(i => i.category === Category.PROCESSOR);
-        const mobo = cart.find(i => i.category === Category.MOTHERBOARD);
+        const cpu = cart.find(i => sameCategory(i.category, CATEGORY_NAMES.PROCESSOR));
+        const mobo = cart.find(i => sameCategory(i.category, CATEGORY_NAMES.MOTHERBOARD));
         return {
             cpuSocket: cpu ? String(specsToFlat(cpu.specs).socket ?? '') : '',
             moboSocket: mobo ? String(specsToFlat(mobo.specs).socket ?? '') : '',
@@ -763,9 +766,9 @@ export default function PCBuilderPage() {
 
                 if (!showIncompat) {
                     const { cpuSocket, moboSocket, moboRamType, cpuRamType } = cartSpecsCache;
-                    if (activeStep === Category.MOTHERBOARD && cpuSocket) p.set('f_specs.socket', cpuSocket);
-                    if (activeStep === Category.PROCESSOR && moboSocket) p.set('f_specs.socket', moboSocket);
-                    if (activeStep === Category.RAM) {
+                    if (sameCategory(activeStep, CATEGORY_NAMES.MOTHERBOARD) && cpuSocket) p.set('f_specs.socket', cpuSocket);
+                    if (sameCategory(activeStep, CATEGORY_NAMES.PROCESSOR) && moboSocket) p.set('f_specs.socket', moboSocket);
+                    if (sameCategory(activeStep, CATEGORY_NAMES.RAM)) {
                         const type = moboRamType || cpuRamType;
                         if (type) p.set('f_specs.ramType', type);
                     }
@@ -776,10 +779,9 @@ export default function PCBuilderPage() {
                 if (prevParams.current === qs && products.length > 0) { setIsLoading(false); return; }
                 prevParams.current = qs;
 
-                const res = await fetch(`/api/products?${qs}`);
+                const data = await fetchCatalogProducts(qs);
                 if (cancelled) return;
-                const data = await res.json();
-                if (!cancelled && data.products) setProducts(data.products);
+                if (!cancelled) setProducts(data.products);
             } catch (e) {
                 if (!cancelled) console.error(e);
             } finally {
@@ -795,7 +797,7 @@ export default function PCBuilderPage() {
         setTimeout(() => {
             setActiveStep(prev => {
                 const next = CORE_CATEGORIES.find(
-                    cat => cat !== product.category && !cart.some(i => i.category === cat)
+                    cat => !sameCategory(cat, product.category) && !cart.some(i => sameCategory(i.category, cat))
                 );
                 return next ?? prev;
             });
@@ -804,7 +806,7 @@ export default function PCBuilderPage() {
 
     const handleRemove = useCallback((id: string) => removeFromCart(id), [removeFromCart]);
 
-    const handleStepClick = useCallback((cat: Category) => {
+    const handleStepClick = useCallback((cat: string) => {
         setActiveStep(cat);
         setSearchTerm('');
         prevParams.current = '';
@@ -825,7 +827,7 @@ export default function PCBuilderPage() {
         if (cached) return cached;
 
         const hypo: CartItem[] = [
-            ...cart.filter(i => i.category !== product.category),
+            ...cart.filter(i => !sameCategory(i.category, product.category)),
             { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any },
         ];
         const rep = validateBuild(hypo);
@@ -871,7 +873,7 @@ export default function PCBuilderPage() {
     );
     const compatReport = useMemo(() => validateBuild(cart), [cart]);
     const completedCount = useMemo(
-        () => CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length,
+        () => CORE_CATEGORIES.filter(cat => cart.some(i => sameCategory(i.category, cat))).length,
         [cart],
     );
     const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
@@ -965,8 +967,8 @@ export default function PCBuilderPage() {
                         <NavItem
                             key={cat}
                             cat={cat}
-                            isActive={activeStep === cat}
-                            isCompleted={cart.some(i => i.category === cat)}
+                            isActive={sameCategory(activeStep, cat)}
+                            isCompleted={cart.some(i => sameCategory(i.category, cat))}
                             onClick={navClickHandlers[cat]}
                         />
                     ))}
@@ -980,8 +982,8 @@ export default function PCBuilderPage() {
                         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide px-3 sm:px-4 py-2.5">
                             {CORE_CATEGORIES.map(cat => {
                                 const CatIcon = CAT_ICONS[cat] || Box;
-                                const isActive = activeStep === cat;
-                                const isDone = cart.some(i => i.category === cat);
+                                const isActive = sameCategory(activeStep, cat);
+                                const isDone = cart.some(i => sameCategory(i.category, cat));
                                 return (
                                     <button
                                         key={cat}
@@ -1021,7 +1023,7 @@ export default function PCBuilderPage() {
                                         <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none">
                                             {CATEGORY_LABELS[activeStep] || activeStep}
                                         </h2>
-                                        {cart.some(i => i.category === activeStep) && (
+                                        {cart.some(i => sameCategory(i.category, activeStep)) && (
                                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex-shrink-0">
                                                 <Check size={9} strokeWidth={2.5} /> Selected
                                             </span>

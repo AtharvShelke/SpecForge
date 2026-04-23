@@ -5,7 +5,7 @@ import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
-import { CategoryNode, Category, CATEGORY_LABELS } from '@/types'
+import {  CategoryHierarchy } from '@/types'
 
 // ── Constants (outside component — never recreated) ───────────────────────────
 
@@ -21,17 +21,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=2000&auto=format&fit=crop'
 
-// Fixed 6-item order — no mobile/desktop branching needed at this level
-// MONITOR simply becomes a 7th card shown via CSS on mobile only (col-span-6 hidden md:hidden)
-const ALLOWED = ['GPU', 'PROCESSOR', 'MOTHERBOARD', 'RAM', 'STORAGE', 'CABINET', 'MONITOR'] as const
 
-const FALLBACK_CATS = (Object.values(Category) as string[])
-    .slice(0, 7)
-    .map(c => ({
-        category: c,
-        label: CATEGORY_LABELS[c as Category] ?? c,
-        children: [] as CategoryNode[],
-    }))
 
 // Animation variants (defined once, outside component)
 const cardVariants = {
@@ -58,15 +48,20 @@ const GRID_STYLES: Record<number, string> = {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 interface CardProps {
-    cat:      { category: string; label: string }
-    index:    number
-    count?:   number
+    cat: {
+        id: string
+        label: string
+        query?: string | null
+    }
+    index: number
+    count?: number
     priority: boolean
 }
 
 const CategoryCard = memo(function CategoryCard({ cat, index, count, priority }: CardProps) {
-    const bgImage = CATEGORY_IMAGES[cat.category] ?? FALLBACK_IMAGE
-
+    
+const imageKey = cat.label.toUpperCase().replace(/\s+/g, '_')
+const bgImage = CATEGORY_IMAGES[imageKey] ?? FALLBACK_IMAGE
     return (
         <motion.div
             variants={cardVariants}
@@ -82,7 +77,7 @@ const CategoryCard = memo(function CategoryCard({ cat, index, count, priority }:
                 p-3 sm:p-4 md:p-6 cursor-pointer
             `}
         >
-            <Link href={`/products?category=${cat.category}`} className="absolute inset-0 z-20">
+            <Link href={cat.query ? `/products?${cat.query}` : `/products?category=${cat.id}`} className="absolute inset-0 z-20">
                 <span className="sr-only">Shop {cat.label}</span>
             </Link>
 
@@ -123,23 +118,24 @@ const CategoryCard = memo(function CategoryCard({ cat, index, count, priority }:
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
-    categories:     CategoryNode[]
+    categories:     CategoryHierarchy[]
     productCounts?: Record<string, number>
 }
 
 export default function CategorySection({ categories, productCounts }: Props) {
-    const cats = useMemo(() => {
-        const source: { category: string; label: string }[] = categories?.length
-            ? (categories as { category: string; label: string }[]).filter(c =>
-                ALLOWED.includes(c.category as typeof ALLOWED[number])
-              )
-            : FALLBACK_CATS
+   const cats = useMemo(() => {
+    if (!categories?.length) return []
 
-        // Return in ALLOWED order so layout is deterministic
-        return ALLOWED
-            .map(key => source.find(c => c.category === key))
-            .filter((c): c is { category: string; label: string } => !!c)
-    }, [categories])
+    return categories
+        .filter(c => !c.parentId)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .slice(0, 7)
+        .map(c => ({
+            id: c.category?.id || c.id,
+            label: c.label,
+            query: c.query,
+        }))
+}, [categories])
 
     return (
         <section className="py-10 sm:py-20 md:py-24 bg-white overflow-hidden" id="categories">
@@ -174,10 +170,10 @@ export default function CategorySection({ categories, productCounts }: Props) {
                 <div className="grid grid-cols-12 auto-rows-[140px] sm:auto-rows-[180px] md:auto-rows-[240px] gap-3 sm:gap-4 md:gap-6">
                     {cats.map((cat, i) => (
                         <CategoryCard
-                            key={cat.category}
+                            key={cat.id}
                             cat={cat}
                             index={i}
-                            count={productCounts?.[cat.category]}
+                            count={productCounts?.[cat.id]}
                             priority={i === 0}
                         />
                     ))}

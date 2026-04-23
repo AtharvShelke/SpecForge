@@ -3,13 +3,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useAdmin } from '@/context/AdminContext';
+import {
+  InvoiceStatus,
+  InvoiceType,
+} from '@/types';
 import type {
   Invoice,
-  InvoiceStatus,
   InvoiceLineItem,
+  InvoiceAuditEvent,
+  CreateInvoice,
   Customer,
   BillingProfile,
-  Currency,
   Product,
 } from '@/types';
 import {
@@ -32,6 +36,7 @@ import {
   Plus,
   Printer,
   ReceiptText,
+  RefreshCcw,
   RefreshCw,
   Search,
   Send,
@@ -55,6 +60,9 @@ import {
   Layers,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { InvoiceLineItems } from '@/components/invoices/InvoiceLineItems';
+import { InvoiceAuditTrail } from '@/components/invoices/InvoiceAuditTrail';
+import { InvoiceActions } from '@/components/invoices/InvoiceActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -120,15 +128,17 @@ const BILLING_PROFILE: BillingProfile = {
   postalCode: '560001',
   country: 'India',
   gstin: '29ABCDE1234F1Z5',
-  currency: 'INR',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
+const now_iso = new Date().toISOString();
 const INITIAL_CUSTOMERS: Customer[] = [
-  { id: 'cust_1', name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '+91 98765 43210', company: 'Tech Solutions Ltd', addressLine1: '45, Business Center', city: 'Mumbai', state: 'Maharashtra', postalCode: '400001', country: 'India' },
-  { id: 'cust_2', name: 'Priya Patel', email: 'priya.patel@example.com', phone: '+91 99887 77665', company: 'Digital Ventures', addressLine1: '78, Innovation Hub', city: 'Pune', state: 'Maharashtra', postalCode: '411001', country: 'India' },
-  { id: 'cust_3', name: 'Amit Singh', email: 'amit.singh@example.com', phone: '+91 98888 77777', company: 'Enterprise Corp', addressLine1: '90, Corporate Tower', city: 'Delhi', state: 'Delhi', postalCode: '110001', country: 'India' },
-  { id: 'cust_4', name: 'Meera Nair', email: 'meera.nair@example.com', phone: '+91 94440 11223', company: 'StartupLab', addressLine1: '22, Kaloor Junction', city: 'Kochi', state: 'Kerala', postalCode: '682017', country: 'India' },
-  { id: 'cust_5', name: 'Vikram Desai', email: 'vikram.desai@company.in', phone: '+91 97770 33445', company: 'CreativeWorks', addressLine1: '67, Baner Road', city: 'Pune', state: 'Maharashtra', postalCode: '411045', country: 'India' },
+  { id: 'cust_1', name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '+91 98765 43210', company: 'Tech Solutions Ltd', addressLine1: '45, Business Center', city: 'Mumbai', state: 'Maharashtra', postalCode: '400001', country: 'India', createdAt: now_iso, updatedAt: now_iso },
+  { id: 'cust_2', name: 'Priya Patel', email: 'priya.patel@example.com', phone: '+91 99887 77665', company: 'Digital Ventures', addressLine1: '78, Innovation Hub', city: 'Pune', state: 'Maharashtra', postalCode: '411001', country: 'India', createdAt: now_iso, updatedAt: now_iso },
+  { id: 'cust_3', name: 'Amit Singh', email: 'amit.singh@example.com', phone: '+91 98888 77777', company: 'Enterprise Corp', addressLine1: '90, Corporate Tower', city: 'Delhi', state: 'Delhi', postalCode: '110001', country: 'India', createdAt: now_iso, updatedAt: now_iso },
+  { id: 'cust_4', name: 'Meera Nair', email: 'meera.nair@example.com', phone: '+91 94440 11223', company: 'StartupLab', addressLine1: '22, Kaloor Junction', city: 'Kochi', state: 'Kerala', postalCode: '682017', country: 'India', createdAt: now_iso, updatedAt: now_iso },
+  { id: 'cust_5', name: 'Vikram Desai', email: 'vikram.desai@company.in', phone: '+91 97770 33445', company: 'CreativeWorks', addressLine1: '67, Baner Road', city: 'Pune', state: 'Maharashtra', postalCode: '411045', country: 'India', createdAt: now_iso, updatedAt: now_iso },
 ];
 
 type PaymentMethod = 'cash' | 'upi' | 'card' | 'bank_transfer';
@@ -149,13 +159,13 @@ const PAYMENT_METHODS: PaymentMethodConfig[] = [
 ];
 
 const INV_STATUS_CONFIG: Record<InvoiceStatus, { label: string; dotClass: string; badgeClass: string }> = {
-  draft: { label: 'Draft', dotClass: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-600 border-slate-200' },
-  pending: { label: 'Pending', dotClass: 'bg-amber-400', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
-  paid: { label: 'Paid', dotClass: 'bg-emerald-500', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  overdue: { label: 'Overdue', dotClass: 'bg-red-500', badgeClass: 'bg-red-50 text-red-700 border-red-200' },
-  cancelled: { label: 'Cancelled', dotClass: 'bg-rose-400', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' },
-  refunded: { label: 'Refunded', dotClass: 'bg-indigo-400', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  voided: { label: 'Voided', dotClass: 'bg-gray-500', badgeClass: 'bg-gray-100 text-gray-600 border-gray-300' },
+  DRAFT: { label: 'Draft', dotClass: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-600 border-slate-200' },
+  PENDING: { label: 'Pending', dotClass: 'bg-amber-400', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
+  PAID: { label: 'Paid', dotClass: 'bg-emerald-500', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  OVERDUE: { label: 'Overdue', dotClass: 'bg-red-500', badgeClass: 'bg-red-50 text-red-700 border-red-200' },
+  CANCELLED: { label: 'Cancelled', dotClass: 'bg-rose-400', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' },
+  REFUNDED: { label: 'Refunded', dotClass: 'bg-indigo-400', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  VOIDED: { label: 'Voided', dotClass: 'bg-gray-500', badgeClass: 'bg-gray-100 text-gray-600 border-gray-300' },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -189,7 +199,7 @@ const computeTotals = (
 /** Generate printable HTML invoice */
 const buildInvoiceHtml = (invoice: Invoice, profile: BillingProfile): string => {
   const { subtotal, taxTotal, discountAmount, total } = computeTotals(
-    invoice.lineItems,
+    invoice.lineItems || [],
     invoice.discountPct ?? 0,
     invoice.shipping ?? 0
   );
@@ -297,15 +307,15 @@ const InvStatusBadge = ({ status }: { status: InvoiceStatus }) => {
     <span className={cn(
       'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium uppercase tracking-wide border transition-all duration-150',
       cfg?.badgeClass,
-      (status === 'paid') && 'bg-emerald-600 text-white border-emerald-600',
-      (status === 'overdue') && 'bg-red-600 text-white border-red-600'
+      (status === 'PAID') && 'bg-emerald-600 text-white border-emerald-600',
+      (status === 'OVERDUE') && 'bg-red-600 text-white border-red-600'
     )}>
       <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0',
-        status === 'paid' ? 'bg-white' :
-          status === 'overdue' ? 'bg-white' :
+        status === 'PAID' ? 'bg-white' :
+          status === 'OVERDUE' ? 'bg-white' :
             cfg?.dotClass
       )} />
-      {cfg?.label}
+      {cfg?.label || status}
     </span>
   );
 };
@@ -374,7 +384,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
     return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
       (p.variants?.[0]?.sku || '').toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q)
+      (p.subCategory?.name || '').toLowerCase().includes(q)
     ).slice(0, 20);
   }, [products, productSearch]);
 
@@ -396,9 +406,10 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
       }
       const newItem: PosCartItem = {
         id: uid('li'),
+        invoiceId: '',
         productId: p.id,
         name: p.name,
-        description: p.category,
+        description: p.subCategory?.name || '',
         quantity: 1,
         unitPrice: p.variants?.[0]?.price || 0,
         taxRatePct: 18,
@@ -413,6 +424,7 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
     if (!manualItem.name || !manualItem.price) return;
     const newItem: PosCartItem = {
       id: uid('li'),
+      invoiceId: '',
       name: manualItem.name,
       quantity: parseInt(manualItem.qty) || 1,
       unitPrice: parseFloat(manualItem.price) || 0,
@@ -447,14 +459,13 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
     const invoice: Invoice = {
       id: uid('inv'),
       invoiceNumber: `INV-${Date.now().toString().slice(-7)}`,
-      status: 'paid',
-      type: 'STANDARD',
+      status: InvoiceStatus.PAID,
+      type: InvoiceType.STANDARD,
       customerId: pos.customer.id,
       customer: pos.customer,
       createdAt: now,
       dueDate: now,
       paidAt: now,
-      currency: 'INR',
       lineItems: pos.items,
       discountPct: pos.discountPct,
       shipping: pos.shipping,
@@ -466,8 +477,8 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
       amountDue: 0,
       lastUpdatedAt: now,
       audit: [
-        { id: uid('ev'), type: 'created', createdAt: now, actor: 'Admin', message: 'POS sale created' },
-        { id: uid('ev'), type: 'paid', createdAt: now, actor: 'Admin', message: `Paid via ${pos.paymentMethod.toUpperCase()}${pos.paymentRef ? ' · Ref: ' + pos.paymentRef : ''}` },
+        { id: uid('ev'), invoiceId: '', type: 'created', createdAt: now, actor: 'Admin', message: 'POS sale created' },
+        { id: uid('ev'), invoiceId: '', type: 'paid', createdAt: now, actor: 'Admin', message: `Paid via ${pos.paymentMethod.toUpperCase()}${pos.paymentRef ? ' · Ref: ' + pos.paymentRef : ''}` },
       ],
     };
 
@@ -812,13 +823,14 @@ interface InvoiceDetailProps {
   onDownload: (inv: Invoice) => void;
   onSend: (inv: Invoice) => void;
   onBack: () => void;
+  onRefresh?: () => void;
 }
 
 const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
-  invoice, onUpdateStatus, onVoid, onPrint, onDownload, onSend, onBack
+  invoice, onUpdateStatus, onVoid, onPrint, onDownload, onSend, onBack, onRefresh
 }) => {
   const { subtotal, taxTotal, discountAmount, total } = computeTotals(
-    invoice.lineItems,
+    invoice.lineItems || [],
     invoice.discountPct ?? 0,
     invoice.shipping ?? 0
   );
@@ -838,6 +850,9 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
                   {invoice.invoiceNumber}
                 </h2>
                 <InvStatusBadge status={invoice.status} />
+                <span className="px-2 py-1 bg-zinc-100 text-zinc-600 text-[10px] font-bold uppercase tracking-wider rounded-md border border-zinc-200">
+                  {invoice.type === 'CREDIT_NOTE' ? 'Credit Note' : 'Standard'}
+                </span>
               </div>
               <p className="text-sm text-zinc-400">
                 Created {fmtDate(invoice.createdAt)}
@@ -846,16 +861,7 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-              <Button size="lg" className="h-10 px-5 gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-md shadow-sm transition-all active:scale-95"
-                onClick={() => onUpdateStatus(invoice.id, 'paid')}>
-                <CheckCircle2 size={15} /> Mark as Paid
-              </Button>
-            )}
-            <Button size="lg" variant="outline" className="h-10 px-5 gap-2 border-zinc-200 text-zinc-600 font-medium text-sm rounded-md hover:bg-zinc-50 transition-all"
-              onClick={() => onSend(invoice)}>
-              <Send size={15} /> Send
-            </Button>
+            <InvoiceActions invoice={invoice} onActionComplete={onRefresh || (() => {})} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -871,21 +877,6 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-zinc-50 text-xs font-medium" onClick={() => onDownload(invoice)}>
                   <Download size={14} className="text-zinc-400" /> Download
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-zinc-100" />
-                {invoice.status === 'pending' && (
-                  <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-zinc-50 text-xs font-medium text-amber-600" onClick={() => onUpdateStatus(invoice.id, 'overdue')}>
-                    <AlertTriangle size={14} /> Mark Overdue
-                  </DropdownMenuItem>
-                )}
-                {!['cancelled', 'refunded'].includes(invoice.status) && (
-                  <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-zinc-50 text-xs font-medium text-red-500" onClick={() => onUpdateStatus(invoice.id, 'cancelled')}>
-                    <XCircle size={14} /> Cancel Invoice
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator className="bg-zinc-100" />
-                <DropdownMenuItem className="gap-2 p-2 cursor-pointer rounded-md hover:bg-red-50 text-xs font-medium text-red-600" onClick={() => onVoid(invoice.id)}>
-                  <Trash2 size={14} /> Void Invoice
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -907,50 +898,17 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
                 </span>
               }
             />
+            {invoice.sentAt && <MetaItem icon={<Send size={16} />} label="Sent At" value={fmtDate(invoice.sentAt)} />}
+            {invoice.paidAt && <MetaItem icon={<CheckCircle2 size={16} />} label="Paid At" value={fmtDate(invoice.paidAt)} />}
+            {invoice.cancelledAt && <MetaItem icon={<XCircle size={16} />} label="Cancelled At" value={fmtDate(invoice.cancelledAt)} />}
+            {invoice.voidedAt && <MetaItem icon={<Trash2 size={16} />} label="Voided At" value={fmtDate(invoice.voidedAt)} />}
+            {invoice.refundedAt && <MetaItem icon={<RefreshCcw size={16} />} label="Refunded At" value={fmtDate(invoice.refundedAt)} />}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* ── ASSET LIST ── */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                  <Layers size={15} className="text-zinc-400" /> Line Items
-                </h3>
-              </div>
-
-              <div className="border border-zinc-100 rounded-lg overflow-hidden bg-zinc-50/30">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-white border-b border-zinc-100">
-                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Item</th>
-                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-center">Qty</th>
-                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-right">Unit Price</th>
-                      <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {invoice.lineItems?.map(item => {
-                      const lineTotal = item.quantity * item.unitPrice;
-                      const tax = lineTotal * ((item.taxRatePct ?? 18) / 100);
-                      return (
-                        <tr key={item.id} className="group hover:bg-white transition-all">
-                          <td className="px-6 py-4">
-                            <p className="text-sm font-semibold text-zinc-900">{item.name}</p>
-                            {item.description && <p className="text-xs text-zinc-400 mt-0.5">{item.description}</p>}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center justify-center min-w-[32px] h-7 px-2 rounded-md bg-zinc-100 text-zinc-900 font-semibold text-xs tabular-nums border border-zinc-200">
-                              {item.quantity}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm font-medium text-zinc-500 tabular-nums">{fmtINR(item.unitPrice)}</td>
-                          <td className="px-6 py-4 text-right font-semibold text-zinc-900 tabular-nums">{fmtINR(lineTotal + tax)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <InvoiceLineItems lineItems={invoice.lineItems} />
 
               {invoice.notes && (
                 <div className="p-6 bg-zinc-50 border border-zinc-200 rounded-lg flex items-start gap-3">
@@ -997,31 +955,30 @@ const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
                     <span className="text-xs font-medium text-zinc-500">Total</span>
                     <span className="text-3xl font-semibold">{fmtINR(total)}</span>
                   </div>
+                  <div className="flex justify-between items-center text-emerald-400 text-xs font-medium mt-2">
+                    <span>Amount Paid</span>
+                    <span>{fmtINR(invoice.amountPaid)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-red-400 text-xs font-medium mt-2">
+                    <span>Amount Due</span>
+                    <span>{fmtINR(invoice.amountDue)}</span>
+                  </div>
                 </div>
               </div>
 
               {/* ── AUDIT LOG ── */}
-              <div className="p-6 bg-zinc-50 border border-zinc-200 rounded-lg shadow-sm">
-                <h3 className="text-xs font-medium text-zinc-400 mb-4 flex items-center gap-2">
-                  <Monitor size={14} /> Audit Log
-                </h3>
-                <div className="space-y-6">
-                  {[...(invoice?.audit || [])].reverse().map((ev, idx, arr) => (
-                    <div key={ev.id} className="flex gap-4 group">
-                      <div className="flex flex-col items-center shrink-0">
-                        <div className={cn('w-2.5 h-2.5 rounded-full border-2 border-zinc-50', idx === 0 ? 'bg-zinc-900 shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-zinc-300')} />
-                        {idx !== arr.length - 1 && <div className="w-0.5 flex-1 bg-zinc-200 my-1" />}
-                      </div>
-                      <div className="pb-6">
-                        <p className={cn('text-xs font-semibold mb-0.5', idx === 0 ? 'text-zinc-900' : 'text-zinc-500')}>
-                          {ev.message}
-                        </p>
-                        <p className="text-[11px] text-zinc-400">{ev.actor} · {fmtDate(ev.createdAt)}</p>
-                      </div>
-                    </div>
-                  ))}
+              <details className="group border border-zinc-200 rounded-lg overflow-hidden transition-all duration-300">
+                <summary className="flex items-center justify-between px-6 py-4 bg-zinc-50 cursor-pointer list-none select-none hover:bg-zinc-100 transition-colors">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-zinc-900 uppercase tracking-wide">
+                    <Monitor size={14} className="text-zinc-400" />
+                    Audit Trail
+                  </div>
+                  <ChevronDown size={16} className="text-zinc-400 group-open:rotate-180 transition-transform duration-300" />
+                </summary>
+                <div className="border-t border-zinc-200 bg-white">
+                  <InvoiceAuditTrail audit={invoice.audit} />
                 </div>
-              </div>
+              </details>
             </div>
           </div>
         </div>
@@ -1037,9 +994,9 @@ const StatsBar = ({ invoices }: { invoices: Invoice[] }) => {
   const s = useMemo(() => {
     const safeInvoices = invoices || [];
     const total = safeInvoices.length;
-    const revenue = safeInvoices.filter(i => i.status === 'paid').reduce((a, i) => a + i.total, 0);
-    const outstanding = safeInvoices.filter(i => ['pending', 'overdue'].includes(i.status)).reduce((a, i) => a + i.amountDue, 0);
-    const overdue = safeInvoices.filter(i => i.status === 'overdue').length;
+    const revenue = safeInvoices.filter(i => i.status === InvoiceStatus.PAID).reduce((a, i) => a + i.total, 0);
+    const outstanding = safeInvoices.filter(i => [InvoiceStatus.PENDING, InvoiceStatus.OVERDUE].includes(i.status)).reduce((a, i) => a + i.amountDue, 0);
+    const overdue = safeInvoices.filter(i => i.status === InvoiceStatus.OVERDUE).length;
     return { total, revenue, outstanding, overdue };
   }, [invoices]);
 
@@ -1086,9 +1043,12 @@ type PageView = 'list' | 'pos';
 const BillingInvoices: React.FC = () => {
   const { products } = useShop();
   const {
-    invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice,
-    inventory, customers, refreshCustomers, createCustomer,
-    billingProfile, refreshBillingProfile, saveBillingProfile,
+    billing: {
+      invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice,
+      customers, refreshCustomers, createCustomer,
+      billingProfile, refreshBillingProfile, saveBillingProfile,
+    },
+    inventory: { inventory },
     isLoading, syncData
   } = useAdmin();
 
@@ -1105,7 +1065,7 @@ const BillingInvoices: React.FC = () => {
     const inventoryArr = Array.isArray(inventory) ? inventory : [];
     return products.map(p => {
       const inv = inventoryArr.find(i => p.variants?.some(v => v.id === i.variantId));
-      return { ...p, stock: inv?.quantity ?? 0 };
+      return { ...p, stock: inv?.quantityOnHand ?? 0 };
     });
   }, [products, inventory]);
 
@@ -1132,20 +1092,33 @@ const BillingInvoices: React.FC = () => {
     });
   }, [sortedInvoices, filterStatus, searchQuery]);
 
-  const selectedInvoice = useMemo(() =>
-    (invoices || []).find(i => i.id === selectedId) ?? sortedInvoices[0] ?? null,
-    [invoices, selectedId, sortedInvoices]
-  );
+  const selectedInvoice = useMemo(() => {
+    const invs = invoices || [];
+    return invs.find((i: Invoice) => i.id === selectedId) ?? sortedInvoices[0] ?? null;
+  }, [invoices, selectedId, sortedInvoices]);
 
   // ── Handlers ──
 
-  const handlePosComplete = async (invoice: Invoice) => {
-    await createInvoice(invoice);
-    setSelectedId(invoice.id);
+  const handlePosComplete = async (inv: Invoice) => {
+    const payload: CreateInvoice = {
+      customerId: inv.customerId,
+      dueDate: inv.dueDate,
+      type: inv.type,
+      lineItems: inv.lineItems?.map(li => ({
+        name: li.name,
+        quantity: li.quantity,
+        unitPrice: li.unitPrice,
+        taxRatePct: li.taxRatePct,
+        hsnCode: li.hsnCode || undefined,
+      })) || [],
+      notes: inv.notes || undefined,
+    };
+    await createInvoice(payload);
+    setSelectedId(inv.id);
     setView('list');
     setShowMobileDetail(true);
     // Auto-print
-    setTimeout(() => handlePrint(invoice), 300);
+    setTimeout(() => handlePrint(inv), 300);
   };
 
   const handleUpdateStatus = async (id: string, status: InvoiceStatus) => {
@@ -1182,7 +1155,7 @@ const BillingInvoices: React.FC = () => {
     const now = new Date().toISOString();
     await updateInvoice(inv.id, {
       sentAt: now,
-      status: inv.status === 'draft' ? 'pending' : inv.status,
+      status: inv.status === InvoiceStatus.DRAFT ? InvoiceStatus.PENDING : inv.status,
     });
     setSendDialog({ open: false, invoice: null });
   };
@@ -1287,7 +1260,7 @@ const BillingInvoices: React.FC = () => {
               <div className="p-4 space-y-2">
                 {filteredInvoices.map(inv => {
                   const isSelected = selectedId === inv.id;
-                  const isOverdue = inv.status === 'overdue';
+                  const isOverdue = inv.status === InvoiceStatus.OVERDUE;
                   return (
                     <button
                       key={inv.id}
@@ -1398,7 +1371,7 @@ const BillingInvoices: React.FC = () => {
                 <p className="font-semibold text-indigo-900 text-sm">{sendDialog.invoice?.invoiceNumber}</p>
                 <p className="text-xs text-indigo-600 mt-0.5">{sendDialog.invoice && fmtINR(sendDialog.invoice.total)}</p>
               </div>
-              <InvStatusBadge status={sendDialog.invoice?.status ?? 'draft'} />
+              <InvStatusBadge status={sendDialog.invoice?.status ?? InvoiceStatus.DRAFT} />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Send To</label>
@@ -1429,18 +1402,17 @@ function buildSampleInvoices(): Invoice[] {
   const d = (offset: number) => new Date(now - offset * 86400000).toISOString();
 
   const make = (overrides: Partial<Invoice> & Pick<Invoice, 'invoiceNumber' | 'status' | 'customer' | 'lineItems'> & { discountPct?: number; shipping?: number }): Invoice => {
-    const { subtotal, taxTotal, discountAmount, total } = computeTotals(overrides.lineItems, overrides.discountPct ?? 0, overrides.shipping ?? 0);
-    const isPaid = overrides.status === 'paid';
+    const { subtotal, taxTotal, discountAmount, total } = computeTotals(overrides.lineItems || [], overrides.discountPct ?? 0, overrides.shipping ?? 0);
+    const isPaid = overrides.status === InvoiceStatus.PAID;
     const base: Invoice = {
       id: uid('inv'),
       invoiceNumber: overrides.invoiceNumber,
       status: overrides.status,
-      type: overrides.type ?? 'STANDARD',
+      type: overrides.type ?? InvoiceType.STANDARD,
       customerId: overrides.customer?.id || '',
       customer: overrides.customer,
       createdAt: overrides.createdAt ?? d(10),
       dueDate: overrides.dueDate ?? d(-20),
-      currency: 'INR',
       lineItems: overrides.lineItems,
       discountPct: overrides.discountPct ?? 0,
       shipping: overrides.shipping ?? 0,
@@ -1449,7 +1421,7 @@ function buildSampleInvoices(): Invoice[] {
       amountPaid: isPaid ? total : 0,
       amountDue: isPaid ? 0 : total,
       lastUpdatedAt: d(0),
-      audit: [{ id: uid('ev'), type: 'created', createdAt: overrides.createdAt ?? d(10), actor: 'Admin', message: 'Invoice created' }],
+      audit: [{ id: uid('ev'), invoiceId: '', type: 'created', createdAt: overrides.createdAt ?? d(10), actor: 'Admin', message: 'Invoice created' }],
       sentAt: overrides.sentAt,
       paidAt: isPaid ? d(5) : undefined,
     };
@@ -1461,76 +1433,77 @@ function buildSampleInvoices(): Invoice[] {
   return [
     make({
       invoiceNumber: 'INV-7834201',
-      status: 'paid',
+      status: InvoiceStatus.PAID,
       customer: C[0],
       createdAt: d(12), dueDate: d(2), sentAt: d(11),
       lineItems: [
-        { id: uid('li'), name: 'AMD Ryzen 7 7800X3D', quantity: 1, unitPrice: 36000, taxRatePct: 18, description: 'Processor' },
-        { id: uid('li'), name: 'ASUS ROG Strix RX 7800 XT', quantity: 1, unitPrice: 52000, taxRatePct: 18, description: 'Graphics Card' },
-        { id: uid('li'), name: 'Corsair Vengeance DDR5 32GB', quantity: 2, unitPrice: 12500, taxRatePct: 18, description: 'RAM Kit' },
+        { id: uid('li'), invoiceId: '', name: 'AMD Ryzen 7 7800X3D', quantity: 1, unitPrice: 36000, taxRatePct: 18, description: 'Processor' },
+        { id: uid('li'), invoiceId: '', name: 'ASUS ROG Strix RX 7800 XT', quantity: 1, unitPrice: 52000, taxRatePct: 18, description: 'Graphics Card' },
+        { id: uid('li'), invoiceId: '', name: 'Corsair Vengeance DDR5 32GB', quantity: 2, unitPrice: 12500, taxRatePct: 18, description: 'RAM Kit' },
       ],
       discountPct: 5,
       notes: 'B2B order for gaming cafe setup. 30-day warranty included.',
       audit: [
-        { id: uid('ev'), type: 'created', createdAt: d(12), actor: 'Admin', message: 'Invoice created' },
-        { id: uid('ev'), type: 'sent', createdAt: d(11), actor: 'Admin', message: `Invoice sent to ${C[0].email}` },
-        { id: uid('ev'), type: 'paid', createdAt: d(7), actor: 'System', message: 'Payment received via UPI. UTR: UPI2025011082391' },
+        { id: uid('ev'), invoiceId: '', type: 'created', createdAt: d(12), actor: 'Admin', message: 'Invoice created' },
+        { id: uid('ev'), invoiceId: '', type: 'sent', createdAt: d(11), actor: 'Admin', message: `Invoice sent to ${C[0].email}` },
+        { id: uid('ev'), invoiceId: '', type: 'paid', createdAt: d(7), actor: 'System', message: 'Payment received via UPI. UTR: UPI2025011082391' },
       ],
     }),
     make({
       invoiceNumber: 'INV-7834202',
-      status: 'pending',
+      status: InvoiceStatus.PENDING,
       customer: C[1],
       createdAt: d(5), dueDate: d(-7), sentAt: d(4),
       lineItems: [
-        { id: uid('li'), name: 'Samsung 990 Pro 1TB', quantity: 2, unitPrice: 10500, taxRatePct: 18, description: 'NVMe SSD' },
-        { id: uid('li'), name: 'Corsair 4000D Case', quantity: 1, unitPrice: 7000, taxRatePct: 18, description: 'Cabinet' },
+        { id: uid('li'), invoiceId: '', name: 'Samsung 990 Pro 1TB', quantity: 2, unitPrice: 10500, taxRatePct: 18, description: 'NVMe SSD' },
+        { id: uid('li'), invoiceId: '', name: 'Corsair 4000D Case', quantity: 1, unitPrice: 7000, taxRatePct: 18, description: 'Cabinet' },
       ],
       shipping: 250,
     }),
     make({
       invoiceNumber: 'INV-7834203',
-      status: 'overdue',
+      status: InvoiceStatus.OVERDUE,
       customer: C[2],
       createdAt: d(20), dueDate: d(3),
       lineItems: [
-        { id: uid('li'), name: 'Intel Core i9-14900K', quantity: 1, unitPrice: 55000, taxRatePct: 18, description: 'Processor' },
-        { id: uid('li'), name: 'ASUS ROG Maximus Z790', quantity: 1, unitPrice: 58000, taxRatePct: 18, description: 'Motherboard' },
+        { id: uid('li'), invoiceId: '', name: 'Intel Core i9-14900K', quantity: 1, unitPrice: 55000, taxRatePct: 18, description: 'Processor' },
+        { id: uid('li'), invoiceId: '', name: 'ASUS ROG Maximus Z790', quantity: 1, unitPrice: 58000, taxRatePct: 18, description: 'Motherboard' },
       ],
       notes: 'Overdue since Jan 17, 2025. Please follow up.',
     }),
     make({
       invoiceNumber: 'INV-7834204',
-      status: 'draft',
+      status: InvoiceStatus.DRAFT,
       customer: C[3],
       createdAt: d(1), dueDate: d(-29),
       lineItems: [
-        { id: uid('li'), name: 'NVIDIA RTX 4090 FE', quantity: 1, unitPrice: 185000, taxRatePct: 18, description: 'Graphics Card' },
+        { id: uid('li'), invoiceId: '', name: 'NVIDIA RTX 4090 FE', quantity: 1, unitPrice: 185000, taxRatePct: 18, description: 'Graphics Card' },
       ],
       discountPct: 2,
     }),
     make({
       invoiceNumber: 'INV-7834205',
-      status: 'paid',
+      status: InvoiceStatus.PAID,
       customer: C[4],
       createdAt: d(8), dueDate: d(-2), sentAt: d(7),
       lineItems: [
-        { id: uid('li'), name: 'Lian Li O11 Dynamic', quantity: 1, unitPrice: 14000, taxRatePct: 18, description: 'Cabinet' },
-        { id: uid('li'), name: 'Corsair H150i Elite 360', quantity: 1, unitPrice: 11000, taxRatePct: 18, description: 'AIO Cooler' },
-        { id: uid('li'), name: 'Corsair HX1000 PSU', quantity: 1, unitPrice: 16000, taxRatePct: 18, description: 'Power Supply' },
+        { id: uid('li'), invoiceId: '', name: 'Lian Li O11 Dynamic', quantity: 1, unitPrice: 14000, taxRatePct: 18, description: 'Cabinet' },
+        { id: uid('li'), invoiceId: '', name: 'Corsair H150i Elite 360', quantity: 1, unitPrice: 11000, taxRatePct: 18, description: 'AIO Cooler' },
+        { id: uid('li'), invoiceId: '', name: 'Corsair HX1000 PSU', quantity: 1, unitPrice: 16000, taxRatePct: 18, description: 'Power Supply' },
       ],
       shipping: 0,
       notes: 'Thank you for your continued business!',
     }),
     make({
       invoiceNumber: 'INV-7834206',
-      status: 'cancelled',
+      status: InvoiceStatus.CANCELLED,
       customer: C[0],
       createdAt: d(15), dueDate: d(5),
       lineItems: [
-        { id: uid('li'), name: 'AMD Threadripper 7960X', quantity: 1, unitPrice: 135000, taxRatePct: 18, description: 'HEDT Processor' },
+        { id: uid('li'), invoiceId: '', name: 'AMD Threadripper 7960X', quantity: 1, unitPrice: 135000, taxRatePct: 18, description: 'HEDT Processor' },
       ],
       notes: 'Order cancelled — item backordered.',
     }),
   ];
 }
+

@@ -31,6 +31,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import type { BuildGuide } from '@/types';
 
 // ─────────────────────────────────────────────────────────────
 // DESIGN-SYSTEM PRIMITIVES
@@ -155,10 +156,10 @@ CategoryPill.displayName = 'CategoryPill';
 // ─────────────────────────────────────────────────────────────
 
 interface BuildRowProps {
-    build: any;
+    build: BuildGuide;
     isExpanded: boolean;
     onToggle: (id: string) => void;
-    onEdit: (build: any) => void;
+    onEdit: (build: BuildGuide) => void;
     onDelete: (id: string) => void;
 }
 
@@ -339,9 +340,16 @@ const EDIT_FIELDS = [
 
 export default function SavedBuildsManager() {
     const { toast } = useToast();
-    const { savedBuilds: builds, refreshSavedBuilds: fetchBuilds, syncData, isLoading } = useAdmin();
+    const { savedBuilds: builds, refreshSavedBuilds: fetchBuilds, updateSavedBuild, deleteSavedBuild, syncData, isLoading } = useAdmin() as unknown as {
+        savedBuilds: BuildGuide[];
+        refreshSavedBuilds: () => Promise<void>;
+        updateSavedBuild: (id: string, data: Partial<BuildGuide>) => Promise<BuildGuide>;
+        deleteSavedBuild: (id: string) => Promise<void>;
+        syncData: () => Promise<void>;
+        isLoading: boolean;
+    };
     const [searchQuery, setSearchQuery] = useState('');
-    const [editingBuild, setEditingBuild] = useState<any | null>(null);
+    const [editingBuild, setEditingBuild] = useState<BuildGuide | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -349,55 +357,41 @@ export default function SavedBuildsManager() {
 
     const handleDelete = useCallback(async (id: string) => {
         try {
-            const res = await fetch(`/api/build-guides/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                toast({ title: 'Build deleted successfully' });
-                fetchBuilds();
-                setDeleteConfirmId(null);
-            } else {
-                const data = await res.json();
-                toast({ title: 'Delete Failed', description: data.error || 'Could not delete', variant: 'destructive' });
-            }
+            await deleteSavedBuild(id);
+            toast({ title: 'Build deleted successfully' });
+            fetchBuilds();
+            setDeleteConfirmId(null);
         } catch (err) {
             console.error(err);
             toast({ title: 'Error', description: 'Failed to delete build', variant: 'destructive' });
         }
-    }, [fetchBuilds, toast]);
+    }, [deleteSavedBuild, fetchBuilds, toast]);
 
     const handleSave = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingBuild) return;
         try {
-            const res = await fetch(`/api/build-guides/${editingBuild.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: editingBuild.title,
-                    description: editingBuild.description,
-                    category: editingBuild.category,
-                    total: editingBuild.total,
-                }),
+            await updateSavedBuild(editingBuild.id, {
+                title: editingBuild.title,
+                description: editingBuild.description,
+                category: editingBuild.category,
+                total: editingBuild.total,
             });
-            if (res.ok) {
-                toast({ title: 'Build updated successfully' });
-                setEditingBuild(null);
-                fetchBuilds();
-            } else {
-                const data = await res.json();
-                toast({ title: 'Update Failed', description: data.error || 'Could not update', variant: 'destructive' });
-            }
+            toast({ title: 'Build updated successfully' });
+            setEditingBuild(null);
+            fetchBuilds();
         } catch (error) {
             console.error(error);
             toast({ title: 'Error', description: 'Failed to update build', variant: 'destructive' });
         }
-    }, [editingBuild, fetchBuilds, toast]);
+    }, [editingBuild, fetchBuilds, toast, updateSavedBuild]);
 
     // Stable callbacks passed down to BuildRow — memo'd children won't re-render on unrelated state changes
     const handleToggleExpand = useCallback((id: string) =>
         setExpandedId(prev => prev === id ? null : id),
     []);
 
-    const handleEditBuild = useCallback((build: any) => setEditingBuild(build), []);
+    const handleEditBuild = useCallback((build: BuildGuide) => setEditingBuild(build), []);
     const handleDeleteConfirm = useCallback((id: string) => setDeleteConfirmId(id), []);
 
     const handleSyncData = useCallback(() => syncData(), [syncData]);
@@ -418,7 +412,7 @@ export default function SavedBuildsManager() {
     }, [deleteConfirmId, handleDelete]);
 
     const filteredBuilds = useMemo(() =>
-        builds.filter(b =>
+        builds.filter((b) =>
             b.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             b.category?.toLowerCase().includes(searchQuery.toLowerCase())
         ),
@@ -434,7 +428,7 @@ export default function SavedBuildsManager() {
     [builds.length, totalValue]);
 
     const categories = useMemo(() =>
-        [...new Set(builds.map(b => b.category).filter(Boolean))],
+        [...new Set(builds.map((b) => b.category).filter(Boolean))],
     [builds]);
 
     const formattedTotal = useMemo(() =>
@@ -579,7 +573,7 @@ export default function SavedBuildsManager() {
                     </div>
                 ) : (
                     <div className="divide-y divide-stone-100">
-                        {filteredBuilds.map(build => (
+                        {filteredBuilds.map((build: BuildGuide) => (
                             <BuildRow
                                 key={build.id}
                                 build={build}

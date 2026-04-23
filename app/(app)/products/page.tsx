@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { getProductsData } from '@/app/api/products/route';
 import ProductsClient from './ProductsClient';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -75,20 +74,9 @@ export default async function ProductsPage({
     if (!urlParams.has('sort'))   urlParams.set('sort',   'price-asc');
     urlParams.set('getFilters', 'true');
 
-    // Only SSR-fetch when a category is present; client handles the rest
-    let initialData = null;
-    if (urlParams.has('category')) {
-        try {
-            const res  = await getProductsData(urlParams);
-            initialData = await res.json();
-        } catch {
-            // Non-fatal — client will re-fetch
-        }
-    }
-
     return (
         <Suspense fallback={<PageFallback />}>
-            <ProductsClient initialData={initialData} />
+            <ProductsClient />
         </Suspense>
     );
 }
