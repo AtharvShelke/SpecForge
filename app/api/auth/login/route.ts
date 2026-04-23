@@ -59,12 +59,7 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        user: { id: user.id, email: user.email, name: user.name },
-      },
-    });
+    return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
