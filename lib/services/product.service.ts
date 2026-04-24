@@ -28,6 +28,7 @@ import type {
   VariantSpec,
   SpecDefinition,
   AdvancedFilter,
+  CatalogListingResult,
   CreateProduct,
   CreateVariant,
   CreateVariantSpec,
@@ -174,11 +175,18 @@ export async function deleteProduct(id: string): Promise<void> {
  *   ]
  * })
  */
-export async function filterProducts(filter: AdvancedFilter): Promise<Product[]> {
-  return apiFetch<Product[]>(`${BASE}/products/filter`, {
+export async function getCatalogListing(
+  filter: AdvancedFilter
+): Promise<CatalogListingResult> {
+  return apiFetch<CatalogListingResult>(`${BASE}/products/filter`, {
     method: "POST",
     body: JSON.stringify(filter),
   });
+}
+
+export async function filterProducts(filter: AdvancedFilter): Promise<Product[]> {
+  const result = await getCatalogListing(filter);
+  return result.products;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -248,6 +256,7 @@ export type {
   VariantSpec,
   SpecDefinition,
   AdvancedFilter,
+  CatalogListingResult,
   CreateProduct,
   CreateVariant,
   CreateVariantSpec,

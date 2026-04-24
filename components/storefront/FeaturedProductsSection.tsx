@@ -281,7 +281,7 @@ export default function FeaturedProductsSection({
           (categoryMap[activeTab]?.products.length ?? 0) > 0 && (
             <div className="mt-8 text-center">
               <Link
-                href={`/products?category=${activeTab}`}
+                href={`/products?category=${encodeURIComponent(categoryMap[activeTab]?.label || '')}`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
               >
                 See all {categoryMap[activeTab]?.label} (

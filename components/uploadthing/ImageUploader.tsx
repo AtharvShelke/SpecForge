@@ -2,17 +2,22 @@
 
 import { useUploadThing } from "@/lib/uploadthing";
 import { useState, useCallback } from "react";
-import { UploadCloud, CheckCircle2, Loader2, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ImageUploaderProps {
   onUploadComplete?: (url: string) => void;
   onUploadError?: (error: Error) => void;
   previewUrl?: string;
-  endpoint?: "imageUploader";
+  endpoint?: "imageUploader" | "paymentProofUploader";
 }
 
 const MAX_IMAGE_SIZE_MB = 4;
+
+type UploadResponse = {
+  ufsUrl?: string;
+  url?: string;
+};
 
 export default function ImageUploader({
   onUploadComplete,
@@ -26,8 +31,13 @@ export default function ImageUploader({
     setUploadProgress(progress);
   }, []);
 
-  const onClientUploadComplete = useCallback((res: any) => {
+  const onClientUploadComplete = useCallback((res: UploadResponse[]) => {
     const url = res[0].ufsUrl || res[0].url;
+    if (!url) {
+      onUploadError?.(new Error("Upload completed without a file URL."));
+      setUploadProgress(0);
+      return;
+    }
     setUploadProgress(100);
     onUploadComplete?.(url);
     // Reset progress after a short delay to clear the bar

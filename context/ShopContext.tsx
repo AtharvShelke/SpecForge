@@ -117,7 +117,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
           filters: formattedFilters,
         }),
       });
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : (data?.products ?? []));
     } finally {
       setLoading(false);
     }

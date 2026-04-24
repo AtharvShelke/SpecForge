@@ -11,6 +11,7 @@
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "./catalog.service";
 import { Order, CreateOrder, CreateOrderItem } from "@/types";
+import { createPaymentTransaction } from "@/services/paymentService";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATUS TRANSITION MAP (strict DAG)
@@ -57,7 +58,10 @@ export async function listOrders(filters?: {
       customer: true,
       logs: { orderBy: { timestamp: "desc" } },
       shipments: { orderBy: { createdAt: "desc" } },
-      payments: { orderBy: { createdAt: "desc" } },
+      payments: {
+        include: { paymentProofs: true },
+        orderBy: { createdAt: "desc" },
+      },
       invoices: {
         include: { lineItems: true },
         orderBy: { createdAt: "desc" },
@@ -81,7 +85,10 @@ export async function getOrderById(id: string): Promise<Order> {
       },
       logs: { orderBy: { timestamp: "desc" } },
       shipments: { orderBy: { createdAt: "desc" } },
-      payments: { orderBy: { createdAt: "desc" } },
+      payments: {
+        include: { paymentProofs: true },
+        orderBy: { createdAt: "desc" },
+      },
       invoices: {
         include: { lineItems: true },
         orderBy: { createdAt: "desc" },
@@ -105,45 +112,110 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
   const orderId =
     data.id || `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
 
-  const orderData: any = {
-    id: orderId,
-    customerName: data.customerName,
-    email: data.email,
-    phone: data.phone,
-    customerId: data.customerId,
-    subtotal: data.subtotal ?? 0,
-    gstAmount: data.gstAmount ?? 0,
-    taxAmount: data.taxAmount ?? 0,
-    discountAmount: data.discountAmount ?? 0,
-    total: data.total,
-    shippingStreet: data.shippingStreet,
-    shippingCity: data.shippingCity,
-    shippingState: data.shippingState,
-    shippingZip: data.shippingZip,
-    shippingCountry: data.shippingCountry,
-    status: "PENDING",
-  };
-
-  if (data.items && data.items.length > 0) {
-    orderData.items = {
-      create: data.items.map((item) => ({
-        variantId: item.variantId,
-        inventoryItemId: item.inventoryItemId,
-        name: item.name,
-        category: item.category || "General",
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image,
-        sku: item.sku,
-      })),
-    };
-  }
-
   const order = await prisma.$transaction(async (tx) => {
+    let customerId = data.customerId;
+    if (!customerId) {
+      const existingCustomer = await tx.customer.findFirst({
+        where: { email: data.email },
+        orderBy: { createdAt: "asc" },
+      });
+
+      if (existingCustomer) {
+        const updatedCustomer = await tx.customer.update({
+          where: { id: existingCustomer.id },
+          data: {
+            name: data.customerName,
+            phone: data.phone,
+            addressLine1: data.shippingStreet,
+            city: data.shippingCity,
+            state: data.shippingState,
+            postalCode: data.shippingZip,
+            country: data.shippingCountry,
+          },
+        });
+        customerId = updatedCustomer.id;
+      } else {
+        const createdCustomer = await tx.customer.create({
+          data: {
+            name: data.customerName,
+            email: data.email,
+            phone: data.phone,
+            addressLine1: data.shippingStreet,
+            city: data.shippingCity,
+            state: data.shippingState,
+            postalCode: data.shippingZip,
+            country: data.shippingCountry,
+          },
+        });
+        customerId = createdCustomer.id;
+      }
+    }
+
+    const orderData: any = {
+      id: orderId,
+      customerName: data.customerName,
+      email: data.email,
+      phone: data.phone,
+      customerId,
+      subtotal: data.subtotal ?? 0,
+      gstAmount: data.gstAmount ?? 0,
+      taxAmount: data.taxAmount ?? 0,
+      discountAmount: data.discountAmount ?? 0,
+      total: data.total,
+      shippingStreet: data.shippingStreet,
+      shippingCity: data.shippingCity,
+      shippingState: data.shippingState,
+      shippingZip: data.shippingZip,
+      shippingCountry: data.shippingCountry,
+      paymentMethod: data.paymentMethod,
+      paymentTransactionId: data.paymentTransactionId,
+      paymentStatus: data.paymentStatus,
+      idempotencyKey: data.paymentIdempotencyKey,
+      source: data.source,
+      status: "PENDING",
+    };
+
+    if (data.items && data.items.length > 0) {
+      orderData.items = {
+        create: data.items.map((item) => ({
+          variantId: item.variantId,
+          inventoryItemId: item.inventoryItemId,
+          name: item.name,
+          category: item.category || "General",
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+          sku: item.sku,
+        })),
+      };
+    }
+
     const newOrder = await tx.order.create({
       data: orderData,
       include: { items: true },
     });
+
+    if (data.paymentMethod) {
+      const payment = await createPaymentTransaction(tx as any, {
+        orderId: newOrder.id,
+        method: data.paymentMethod,
+        amount: data.total,
+        gatewayTxnId: data.paymentTransactionId || undefined,
+        idempotencyKey:
+          data.paymentIdempotencyKey || `${newOrder.id}-${data.paymentMethod}-${Date.now()}`,
+        metadata: data.paymentMetadata,
+        status: data.paymentStatus,
+      });
+
+      if (data.paymentProofUrl) {
+        await tx.paymentProof.create({
+          data: {
+            transactionId: payment.id,
+            proofUrl: data.paymentProofUrl,
+          },
+        });
+      }
+    }
 
     // Automatically create reservations for items with inventoryItemId
     if (data.items) {

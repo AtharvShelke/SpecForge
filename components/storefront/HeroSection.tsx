@@ -144,7 +144,7 @@ export default function HeroSection() {
                             {['GPUs', 'Processors', 'DDR5 RAM', 'Custom Builds'].map(cat => (
                                 <Link
                                     key={cat}
-                                    href={`/products?category=${cat === 'GPUs' ? 'GPU' : cat}`}
+                                    href={cat === 'Custom Builds' ? '/builds/new' : `/products?category=${cat === 'GPUs' ? 'Graphics Card' : cat === 'Processors' ? 'Processor' : 'RAM'}`}
                                     className="px-3 py-1 text-[10px] rounded-full border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 transition"
                                 >
                                     {cat}

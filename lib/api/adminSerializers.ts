@@ -59,6 +59,22 @@ function serializeVariant(variant: any) {
   };
 }
 
+function serializePaymentProof(proof: any) {
+  return {
+    ...proof,
+  };
+}
+
+function serializePayment(payment: any) {
+  return {
+    ...payment,
+    amount: toNumber(payment?.amount),
+    paymentProofs: Array.isArray(payment?.paymentProofs)
+      ? payment.paymentProofs.map(serializePaymentProof)
+      : [],
+  };
+}
+
 export function serializeProduct(product: any) {
   return normalizeCatalogProduct({
     ...product,
@@ -107,6 +123,9 @@ export function serializeOrder(order: any) {
           price: toNumber(item?.price),
           variant: item?.variant ? serializeVariant(item.variant) : item?.variant,
         }))
+      : [],
+    payments: Array.isArray(order?.payments)
+      ? order.payments.map(serializePayment)
       : [],
   };
 }

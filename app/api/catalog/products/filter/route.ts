@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { filterProducts, ServiceError } from "@/lib/services/catalog.service";
-import { serializeProducts } from "@/lib/api/adminSerializers";
+import { getCatalogListing, ServiceError } from "@/lib/services/catalog.service";
 
 /**
  * POST /api/catalog/products/filter
@@ -9,8 +8,8 @@ import { serializeProducts } from "@/lib/api/adminSerializers";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const products = await filterProducts(body);
-    return NextResponse.json(serializeProducts(products as any[]));
+    const result = await getCatalogListing(body);
+    return NextResponse.json(result);
   } catch (error: any) {
     if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
     console.error("[POST_PRODUCTS_FILTER]", error);

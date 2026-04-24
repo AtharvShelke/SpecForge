@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
-import { Order, OrderItem, OrderLog, OrderStatus, WarehouseInventory } from '@/types';
+import { Order, OrderItem, OrderLog, OrderStatus, PaymentStatus, WarehouseInventory } from '@/types';
 import {
   ArrowLeft,
   Clock,
@@ -50,6 +50,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { NEXT_STATUS_BUTTON, STATUS_CONFIG, STATUS_FLOW } from '@/data/constants';
 import { generateInvoiceHTML } from '@/lib/invoice';
+import OrderPayments from '@/components/orders/OrderPayments';
 import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
 import { ConfirmStatusDialog, DeleteOrderDialog } from '../helper-components/OrderManagerDialogs';
 
@@ -399,6 +400,29 @@ const OrderManager = () => {
     setShowMobileDetail(true);
   }, []);
 
+  const handleReviewPayment = useCallback(async (paymentId: string, status: PaymentStatus.COMPLETED | PaymentStatus.FAILED) => {
+    if (!selectedOrder) return;
+
+    const response = await fetch(`/api/orders/${selectedOrder.id}/payments/${paymentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status,
+        note:
+          status === PaymentStatus.COMPLETED
+            ? 'Manual payment verified by admin.'
+            : 'Manual payment proof rejected by admin.',
+      }),
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.error || 'Failed to review payment.');
+    }
+
+    await syncData();
+  }, [selectedOrder, syncData]);
+
   const handleBackClick = useCallback(() => setShowMobileDetail(false), []);
   const handleOpenDeleteDialog = useCallback(() => setDeleteDialogOpen(true), []);
 
@@ -664,9 +688,9 @@ const OrderManager = () => {
                             <span className="flex items-center gap-1 flex-wrap">
                               <span>{selectedOrder.paymentMethod}</span>
                               <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide', {
-                                'bg-emerald-50 text-emerald-700': String(selectedOrder.paymentStatus) === 'Success',
-                                'bg-amber-50 text-amber-700': String(selectedOrder.paymentStatus) === 'Pending',
-                                'bg-rose-50 text-rose-600': String(selectedOrder.paymentStatus) === 'Failed',
+                                'bg-emerald-50 text-emerald-700': String(selectedOrder.paymentStatus) === PaymentStatus.COMPLETED,
+                                'bg-amber-50 text-amber-700': String(selectedOrder.paymentStatus) === PaymentStatus.PENDING || String(selectedOrder.paymentStatus) === PaymentStatus.INITIATED,
+                                'bg-rose-50 text-rose-600': String(selectedOrder.paymentStatus) === PaymentStatus.FAILED,
                               })}>
                                 {selectedOrder.paymentStatus}
                               </span>
@@ -822,7 +846,7 @@ const OrderManager = () => {
                 </CollapsibleSection>
 
                 {/* ── BOTTOM GRID: Shipping, Inventory, Timeline ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
                   {/* Shipping Address */}
                   <CollapsibleSection icon={<MapPin size={12} />} title="Shipping">
@@ -917,6 +941,23 @@ const OrderManager = () => {
                         })}
                       </div>
                     </div>
+                  </CollapsibleSection>
+
+                  <CollapsibleSection
+                    icon={<CreditCard size={12} />}
+                    title="Payments"
+                    badge={
+                      <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                        {(selectedOrder.payments || []).length}
+                      </span>
+                    }
+                    defaultOpen={(selectedOrder.payments || []).length > 0}
+                  >
+                    <OrderPayments
+                      payments={selectedOrder.payments || []}
+                      canReviewManualPayments
+                      onReviewPayment={handleReviewPayment}
+                    />
                   </CollapsibleSection>
 
                 </div>

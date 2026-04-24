@@ -1,4 +1,4 @@
-import type { Product } from "@/types";
+import type { DynamicCatalogFilter, Product } from "@/types";
 
 type SpecEntry = {
   key: string;
@@ -11,15 +11,10 @@ type CatalogQueryInput =
   | string
   | Record<string, string | number | boolean | undefined | null>;
 
-type CatalogFilterOptions = {
-  brands: string[];
-  specs: Record<string, string[]>;
-};
-
 type CatalogResult = {
   products: Product[];
   total: number;
-  filterOptions: CatalogFilterOptions;
+  filters: DynamicCatalogFilter[];
 };
 
 type RawVariantSpec = {
@@ -31,9 +26,10 @@ type RawVariantSpec = {
 };
 
 type RawVariant = {
-  price?: number | string | null;
-  compareAtPrice?: number | string | null;
+  price?: number | string | any | null;
+  compareAtPrice?: number | string | any | null;
   variantSpecs?: RawVariantSpec[];
+  [key: string]: any;
 };
 
 type RawProduct = Product & {
@@ -140,13 +136,20 @@ export function normalizeCatalogProduct(product: RawProduct): Product {
     .map((media) => ({ ...media, url: sanitizeImageUrl(media.url) }))
     .filter((media) => Boolean(media.url));
 
+  const normalizedVariants = (product.variants ?? []).map((v) => ({
+    ...v,
+    price: v.price ? Number(v.price.toString()) : 0,
+    compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice.toString()) : null,
+  }));
+
   return {
     ...product,
+    variants: normalizedVariants,
     category: normalizeCategory(product),
     image: sanitizeImageUrl(product.image),
     media: normalizedMedia,
     specs: product.specs && product.specs.length > 0 ? product.specs : normalizeSpecs(product),
-  } as Product;
+  } as unknown as Product;
 }
 
 function matchesSearch(product: Product, query: string) {
@@ -260,7 +263,7 @@ function sortProducts(products: Product[], sort?: string | null) {
   return next;
 }
 
-function buildFilterOptions(products: Product[]): CatalogFilterOptions {
+function buildFilterOptions(products: Product[]): DynamicCatalogFilter[] {
   const brandSet = new Set<string>();
   const specsMap = new Map<string, Set<string>>();
 
@@ -275,14 +278,49 @@ function buildFilterOptions(products: Product[]): CatalogFilterOptions {
     }
   }
 
-  return {
-    brands: [...brandSet].sort((a, b) => a.localeCompare(b)),
-    specs: Object.fromEntries(
-      [...specsMap.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, values]) => [key, [...values].sort((a, b) => a.localeCompare(b))]),
-    ),
-  };
+  const filters: DynamicCatalogFilter[] = [];
+
+  const brands = [...brandSet].sort((a, b) => a.localeCompare(b));
+  if (brands.length > 0) {
+    filters.push({
+      id: "brand",
+      key: "brand",
+      label: "Brand",
+      type: "checkbox",
+      group: "General",
+      order: -10,
+      options: brands.map((value) => ({
+        value,
+        label: value,
+        count: products.filter((product) => product.brand?.name === value).length,
+        enabled: true,
+      })),
+    });
+  }
+
+  for (const [key, values] of [...specsMap.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const sortedValues = [...values].sort((a, b) => a.localeCompare(b));
+    filters.push({
+      id: key,
+      key,
+      label: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
+      type: "checkbox",
+      group: "General",
+      order: 0,
+      options: sortedValues.map((value) => ({
+        value,
+        label: value,
+        count: products.filter((product) =>
+          ((product as Product & { specs?: SpecEntry[] }).specs ?? []).some(
+            (spec) => spec.key === key && String(spec.value) === value,
+          ),
+        ).length,
+        enabled: true,
+      })),
+    });
+  }
+
+  return filters;
 }
 
 export async function fetchCatalogProducts(paramsInput?: CatalogQueryInput): Promise<CatalogResult> {
@@ -311,7 +349,7 @@ export async function fetchCatalogProducts(paramsInput?: CatalogQueryInput): Pro
 
   const sorted = sortProducts(filtered, params.get("sort"));
   const total = sorted.length;
-  const filterOptions = buildFilterOptions(filtered);
+  const filters = buildFilterOptions(filtered);
 
   const limitValue = params.get("limit");
   const limit = Number(limitValue ?? total ?? 0);
@@ -325,6 +363,6 @@ export async function fetchCatalogProducts(paramsInput?: CatalogQueryInput): Pro
   return {
     products: paginated,
     total,
-    filterOptions,
+    filters,
   };
 }

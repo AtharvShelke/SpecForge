@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback, memo, Suspense } from 'react';
-import { Product, CompatibilityLevel, specsToFlat } from '@/types';
+import { DynamicCatalogFilter, Product, CompatibilityLevel, specsToFlat } from '@/types';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
 import { useProductFilters } from '@/hooks/useProductFilters';
-import { filterProducts as filterProductsService } from '@/lib/services/product.service';
+import { getCatalogListing as getCatalogListingService } from '@/lib/services/product.service';
 import { fetchCatalogProducts } from '@/lib/catalogFrontend';
 import {
     Search, Plus, CheckCircle, AlertTriangle, XCircle, Filter,
@@ -239,7 +239,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const [isLoadingProducts,   setIsLoadingProducts]   = useState(true);
     const [fetchedProducts,     setFetchedProducts]     = useState<Product[]>(initialData?.products ?? []);
     const [totalCount,          setTotalCount]          = useState(initialData?.total ?? 0);
-    const [availableFilters,    setAvailableFilters]    = useState<{ brands: string[], specs: Record<string, string[]> } | null>(initialData?.filterOptions ?? null);
+    const [availableFilters,    setAvailableFilters]    = useState<DynamicCatalogFilter[] | null>(initialData?.filters ?? null);
     const [sortOption,          setSortOption]          = useState(searchParams.get('sort') ?? 'price-asc');
     const [viewMode,            setViewMode]            = useState(searchParams.get('view') ?? 'grid');
 
@@ -384,13 +384,18 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
      * Handles spec filter changes — toggles values for a given spec.
      * Uses setSpecFilter from useProductFilters hook.
      */
-    const handleFilterChange = useCallback((specId: string, value: string) => {
-        const currentValues = specFilters.find(f => f.specId === specId)?.values ?? [];
+    const handleFilterChange = useCallback((filterId: string, value: string) => {
+        if (filterId === 'brand') {
+            setBrandIdFilter(brandId === value ? null : value);
+            return;
+        }
+
+        const currentValues = specFilters.find(f => f.specId === filterId)?.values ?? [];
         const updated = currentValues.includes(value)
             ? currentValues.filter(v => v !== value)
             : [...currentValues, value];
-        setSpecFilter(specId, updated);
-    }, [specFilters, setSpecFilter]);
+        setSpecFilter(filterId, updated);
+    }, [brandId, specFilters, setBrandIdFilter, setSpecFilter]);
 
     const handleSubCategorySelect = useCallback((nextNode: CategoryNode | null) => {
         setSelectedNode(nextNode);
@@ -398,11 +403,13 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     }, [setSubCategoryId]);
 
     const selectedFilterMap = useMemo(() => {
-        return specFilters.reduce<Record<string, string[]>>((acc, filter) => {
+        const next = specFilters.reduce<Record<string, string[]>>((acc, filter) => {
             acc[filter.specId] = filter.values;
             return acc;
         }, {});
-    }, [specFilters]);
+        if (brandId) next.brand = [brandId];
+        return next;
+    }, [brandId, specFilters]);
 
     const clearAllFilters = useCallback(() => {
         setSelectedNode(null);
@@ -455,10 +462,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
                 if (hasAdvancedFilters) {
                     // Use the typed AdvancedFilter with filterProducts service
-                    const data = await filterProductsService(advancedFilter);
-                    setFetchedProducts(data);
-                    setTotalCount(data.length);
-                    // Note: filterOptions not available via filterProducts, keep existing availableFilters
+                    const data = await getCatalogListingService(advancedFilter);
+                    setFetchedProducts(data.products);
+                    setTotalCount(data.total);
+                    setAvailableFilters(data.filters);
                 } else {
                     // Fall back to the canonical catalog endpoint and normalize on the client.
                     const params = new URLSearchParams();
@@ -490,7 +497,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                     const data = await fetchCatalogProducts(params);
                     setFetchedProducts(data.products);
                     setTotalCount(data.total ?? 0);
-                    setAvailableFilters(data.filterOptions);
+                    setAvailableFilters(data.filters);
                 }
             } catch (err: any) {
                 if (err?.name !== 'AbortError') console.error('Failed to fetch products:', err);
@@ -730,6 +737,12 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                             <span className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-900 text-white text-[10px] font-medium rounded-full">
                                                 {selectedNode.label}
                                                 <button onClick={() => handleSubCategorySelect(null)} className="hover:text-zinc-300"><X size={9} /></button>
+                                            </span>
+                                        )}
+                                        {brandId && (
+                                            <span className="filter-chip inline-flex items-center gap-1 px-2.5 py-0.5 bg-zinc-100 text-zinc-700 text-[10px] font-medium rounded-full border border-zinc-200">
+                                                {brandId}
+                                                <button onClick={() => setBrandIdFilter(null)} className="text-zinc-400 hover:text-zinc-700"><X size={9} /></button>
                                             </span>
                                         )}
                                         {specFilters.map((specFilter) =>

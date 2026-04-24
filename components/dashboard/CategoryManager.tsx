@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
-import { CategoryFilterConfig, CategoryNode, FilterDefinition } from '@/types';
+import { CategoryFilterConfig, CategoryNode, FilterDefinition, SpecDefinition, SubCategory, UpdateSpecInput } from '@/types';
 import { CATEGORY_NAMES } from '@/lib/categoryUtils';
 import {
     ChevronDown,
@@ -406,13 +406,24 @@ FilterCard.displayName = 'FilterCard';
 
 const EMPTY_NODE_FORM: Partial<CategoryNode> = { label: '', category: undefined, brand: '', query: '' };
 const EMPTY_FILTER_FORM: Partial<FilterDefinition> = { key: '', label: '', type: 'checkbox', options: [] };
+const EMPTY_SPEC_FORM: UpdateSpecInput = {
+    name: '',
+    valueType: 'STRING',
+    isFilterable: true,
+    isRange: false,
+    isMulti: false,
+    filterGroup: '',
+    filterOrder: 0,
+    options: [],
+    dependencies: [],
+};
 
 // ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 
 const CategoryManager = () => {
-    const { categoryHierarchy, refreshCategoryHierarchy, updateCategories, filterConfigs, updateFilterConfig, syncData, isLoading } = useAdmin() as unknown as {
+    const { categoryHierarchy, refreshCategoryHierarchy, updateCategories, filterConfigs, updateFilterConfig, syncData, isLoading, subCategories, specs, refreshSpecs, createSpec, updateSpec, deleteSpec } = useAdmin() as unknown as {
         categoryHierarchy: CategoryNode[];
         refreshCategoryHierarchy: () => Promise<void>;
         updateCategories: (categories: CategoryNode[]) => Promise<void>;
@@ -420,14 +431,34 @@ const CategoryManager = () => {
         updateFilterConfig: (category: string, filters: FilterDefinition[]) => Promise<void>;
         syncData: () => Promise<void>;
         isLoading: boolean;
+        subCategories: SubCategory[];
+        specs: SpecDefinition[];
+        refreshSpecs: (subCategoryId?: string) => Promise<void>;
+        createSpec: (data: any) => Promise<void>;
+        updateSpec: (id: string, data: UpdateSpecInput) => Promise<void>;
+        deleteSpec: (id: string, subCategoryId?: string) => Promise<void>;
     };
     const categories = Array.isArray(categoryHierarchy) ? categoryHierarchy : [];
+    const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>('');
 
     useEffect(() => {
         refreshCategoryHierarchy().catch((error) => {
             console.error('Failed to load category hierarchy', error);
         });
     }, [refreshCategoryHierarchy]);
+
+    useEffect(() => {
+        if (!selectedSubCategoryId && subCategories.length > 0) {
+            setSelectedSubCategoryId(subCategories[0].id);
+        }
+    }, [selectedSubCategoryId, subCategories]);
+
+    useEffect(() => {
+        if (!selectedSubCategoryId) return;
+        refreshSpecs(selectedSubCategoryId).catch((error) => {
+            console.error('Failed to load filter schema', error);
+        });
+    }, [refreshSpecs, selectedSubCategoryId]);
 
     // ── Hierarchy state ──
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -441,6 +472,9 @@ const CategoryManager = () => {
     const [editingFilterIdx, setEditingFilterIdx] = useState<number | null>(null);
     const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
     const [showFilterModal, setShowFilterModal] = useState(false);
+    const [showSpecModal, setShowSpecModal] = useState(false);
+    const [editingSpecId, setEditingSpecId] = useState<string | null>(null);
+    const [specForm, setSpecForm] = useState<UpdateSpecInput>(EMPTY_SPEC_FORM);
 
     // ── Delete confirm state ──
     const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -514,6 +548,16 @@ const CategoryManager = () => {
     const activeFilters = useMemo<FilterDefinition[]>(() =>
         filterConfigs.find(c => c.category === selectedCatForFilters)?.filters || EMPTY_CHILDREN,
         [filterConfigs, selectedCatForFilters]
+    );
+
+    const selectedSubCategory = useMemo(
+        () => subCategories.find((subCategory) => subCategory.id === selectedSubCategoryId) ?? null,
+        [selectedSubCategoryId, subCategories],
+    );
+
+    const activeSpecs = useMemo(
+        () => specs.filter((spec) => spec.subCategoryId === selectedSubCategoryId),
+        [selectedSubCategoryId, specs],
     );
 
     const handleSaveFilter = useCallback(() => {
@@ -636,6 +680,115 @@ const CategoryManager = () => {
         setFilterForm(prev => ({ ...prev, type: val as 'checkbox' | 'range' })),
     []);
 
+    const openCreateSpec = useCallback(() => {
+        setEditingSpecId(null);
+        setSpecForm(EMPTY_SPEC_FORM);
+        setShowSpecModal(true);
+    }, []);
+
+    const openEditSpec = useCallback((spec: SpecDefinition) => {
+        setEditingSpecId(spec.id);
+        setSpecForm({
+            name: spec.name,
+            valueType: spec.valueType,
+            isFilterable: spec.isFilterable,
+            isRange: spec.isRange,
+            isMulti: spec.isMulti,
+            filterGroup: spec.filterGroup ?? '',
+            filterOrder: spec.filterOrder ?? 0,
+            options: (spec.options ?? []).map((option, index) => ({
+                id: option.id,
+                value: option.value,
+                label: option.label ?? option.value,
+                order: option.order ?? index,
+            })),
+            dependencies: [
+                ...(spec.childOptionDeps ?? [])
+                    .filter((dependency) => !dependency.childOptionId)
+                    .map((dependency) => ({
+                        parentSpecId: dependency.parentSpecId,
+                        parentOptionValue: dependency.parentOption?.value ?? '',
+                        childOptionValue: null,
+                    })),
+                ...((spec.options ?? []).flatMap((option) =>
+                    (option.childOptionDeps ?? []).map((dependency) => ({
+                        parentSpecId: dependency.parentSpecId,
+                        parentOptionValue: dependency.parentOption?.value ?? '',
+                        childOptionValue: option.value,
+                    })),
+                )),
+            ],
+        });
+        setShowSpecModal(true);
+    }, []);
+
+    const closeSpecModal = useCallback((open: boolean) => {
+        setShowSpecModal(open);
+        if (!open) {
+            setEditingSpecId(null);
+            setSpecForm(EMPTY_SPEC_FORM);
+        }
+    }, []);
+
+    const saveSpec = useCallback(async () => {
+        if (!selectedSubCategoryId || !specForm.name?.trim()) return;
+
+        const payload: UpdateSpecInput = {
+            ...specForm,
+            filterGroup: specForm.filterGroup || null,
+            filterOrder: Number(specForm.filterOrder ?? 0),
+            options: (specForm.options ?? []).filter((option) => option.value.trim().length > 0).map((option, index) => ({
+                ...option,
+                value: option.value.trim(),
+                label: option.label?.trim() || option.value.trim(),
+                order: option.order ?? index,
+            })),
+            dependencies: (specForm.dependencies ?? []).filter((dependency) => dependency.parentSpecId && dependency.parentOptionValue),
+        };
+
+        if (editingSpecId) {
+            await updateSpec(editingSpecId, payload);
+        } else {
+            const response = await fetch('/api/catalog/specs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subCategoryId: selectedSubCategoryId,
+                    name: payload.name ?? '',
+                    valueType: payload.valueType ?? 'STRING',
+                    isFilterable: payload.isFilterable,
+                    isRange: payload.isRange,
+                    isMulti: payload.isMulti,
+                    filterGroup: payload.filterGroup ?? undefined,
+                    filterOrder: payload.filterOrder ?? undefined,
+                    options: payload.options,
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            const created = await response.json();
+            if (payload.dependencies && payload.dependencies.length > 0) {
+                await updateSpec(created.id, payload);
+            }
+        }
+
+        await refreshSpecs(selectedSubCategoryId);
+
+        setShowSpecModal(false);
+        setEditingSpecId(null);
+        setSpecForm(EMPTY_SPEC_FORM);
+    }, [editingSpecId, refreshSpecs, selectedSubCategoryId, specForm, updateSpec]);
+
+    const removeSpec = useCallback(async (spec: SpecDefinition) => {
+        await deleteSpec(spec.id, spec.subCategoryId);
+    }, [deleteSpec]);
+
+    const availableParentSpecs = useMemo(
+        () => activeSpecs.filter((spec) => spec.id !== editingSpecId),
+        [activeSpecs, editingSpecId],
+    );
+
     return (
         <div
             className="space-y-3"
@@ -753,7 +906,7 @@ const CategoryManager = () => {
                         right={
                             <button
                                 type="button"
-                                onClick={openAddFilter}
+                                onClick={openCreateSpec}
                                 className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm flex-shrink-0"
                             >
                                 <Plus size={11} />
@@ -767,28 +920,30 @@ const CategoryManager = () => {
 
                     <div className="px-3 sm:px-5 py-3 space-y-3">
                         <div className="flex items-center gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-xl flex-wrap sm:flex-nowrap">
-                            <SectionLabel icon={<Layers size={11} />}>Category</SectionLabel>
+                            <SectionLabel icon={<Layers size={11} />}>Subcategory</SectionLabel>
                             <div className="flex-1 min-w-0">
                                 <Select
-                                    value={selectedCatForFilters}
-                                    onValueChange={handleCatForFiltersChange}
+                                    value={selectedSubCategoryId}
+                                    onValueChange={setSelectedSubCategoryId}
                                 >
                                     <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {CATEGORY_VALUES.map(c => (
-                                            <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
+                                        {subCategories.map((subCategory) => (
+                                            <SelectItem key={subCategory.id} value={subCategory.id} className="text-xs">
+                                                {subCategory.category?.name ? `${subCategory.category.name} / ${subCategory.name}` : subCategory.name}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                             <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md flex-shrink-0">
-                                {activeFilters.length} filter{activeFilters.length !== 1 ? 's' : ''}
+                                {activeSpecs.length} filter{activeSpecs.length !== 1 ? 's' : ''}
                             </span>
                         </div>
 
-                        {activeFilters.length === 0 ? (
+                        {activeSpecs.length === 0 ? (
                             <div className="py-12 flex flex-col items-center gap-3">
                                 <ListFilter size={24} className="text-stone-200" />
                                 <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
@@ -796,7 +951,7 @@ const CategoryManager = () => {
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={openAddFilter}
+                                    onClick={openCreateSpec}
                                     className="text-[10px] font-bold text-teal-600 uppercase tracking-widest hover:underline"
                                 >
                                     Add first filter →
@@ -804,14 +959,31 @@ const CategoryManager = () => {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                                {activeFilters.map((filter, idx) => (
-                                    <FilterCard
-                                        key={`${filter.key}-${idx}`}
-                                        filter={filter}
-                                        idx={idx}
-                                        onEdit={handleEditFilter}
-                                        onDelete={handleDeleteFilter}
-                                    />
+                                {activeSpecs.map((spec) => (
+                                    <div key={spec.id} className="group flex items-start justify-between gap-2 px-3 py-3 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150">
+                                        <div className="min-w-0 space-y-1.5 flex-1">
+                                            <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{spec.name}</p>
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
+                                                    {spec.valueType}
+                                                </span>
+                                                <Pill color={spec.isFilterable ? 'teal' : 'stone'}>
+                                                    {spec.isFilterable ? 'Visible' : 'Hidden'}
+                                                </Pill>
+                                                {spec.filterGroup && <Pill color="indigo">{spec.filterGroup}</Pill>}
+                                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                                                    {(spec.options ?? []).length} opts
+                                                </span>
+                                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                                                    {(spec.childOptionDeps ?? []).length} rels
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
+                                            <ActionBtn onClick={() => openEditSpec(spec)}><Edit size={12} /></ActionBtn>
+                                            <ActionBtn danger onClick={() => removeSpec(spec)}><Trash size={12} /></ActionBtn>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -822,6 +994,134 @@ const CategoryManager = () => {
             {/* ══════════════════════════════════════ */}
             {/*  FILTER MODAL                          */}
             {/* ══════════════════════════════════════ */}
+            <Dialog open={showSpecModal} onOpenChange={closeSpecModal}>
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 rounded-2xl shadow-xl">
+                    <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300 -mt-6 mb-4 rounded-t-2xl" />
+                    <DialogHeader className="pb-2">
+                        <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
+                            {editingSpecId ? 'Edit Dynamic Filter' : 'New Dynamic Filter'}
+                        </DialogTitle>
+                        <DialogDescription className="text-[11px] text-stone-400">
+                            {selectedSubCategory ? `${selectedSubCategory.category?.name ?? 'Catalog'} / ${selectedSubCategory.name}` : 'Select a subcategory first'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-3 py-1 max-h-[70vh] overflow-y-auto pr-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Filter Label</span>
+                                <Input placeholder="e.g. Socket" value={specForm.name ?? ''} onChange={(e) => setSpecForm((prev) => ({ ...prev, name: e.target.value }))} className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg" />
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Group</span>
+                                <Input placeholder="e.g. Compatibility" value={specForm.filterGroup ?? ''} onChange={(e) => setSpecForm((prev) => ({ ...prev, filterGroup: e.target.value }))} className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg" />
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Value Type</span>
+                                <Select value={specForm.valueType ?? 'STRING'} onValueChange={(value) => setSpecForm((prev) => ({ ...prev, valueType: value }))}>
+                                    <SelectTrigger className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="STRING" className="text-xs">String</SelectItem>
+                                        <SelectItem value="NUMBER" className="text-xs">Number</SelectItem>
+                                        <SelectItem value="BOOLEAN" className="text-xs">Boolean</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Sort Order</span>
+                                <Input type="number" value={specForm.filterOrder ?? 0} onChange={(e) => setSpecForm((prev) => ({ ...prev, filterOrder: Number(e.target.value) }))} className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {[
+                                ['isFilterable', 'Visible'],
+                                ['isRange', 'Range-like'],
+                                ['isMulti', 'Multi-value'],
+                            ].map(([field, label]) => (
+                                <label key={field} className="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600">
+                                    <input type="checkbox" checked={Boolean((specForm as Record<string, unknown>)[field])} onChange={(e) => setSpecForm((prev) => ({ ...prev, [field]: e.target.checked }))} />
+                                    {label}
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Filter Options</span>
+                            <Textarea
+                                placeholder="AM4, AM5, LGA1700"
+                                value={(specForm.options ?? []).map((option) => option.value).join(', ')}
+                                onChange={(e) => setSpecForm((prev) => ({
+                                    ...prev,
+                                    options: e.target.value.split(',').map((value, index) => value.trim()).filter(Boolean).map((value, index) => ({ value, label: value, order: index })),
+                                }))}
+                                className="min-h-[72px] text-xs font-medium border-stone-200 bg-stone-50 rounded-lg resize-none"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Relationships</span>
+                                <button type="button" onClick={() => setSpecForm((prev) => ({ ...prev, dependencies: [...(prev.dependencies ?? []), { parentSpecId: '', parentOptionValue: '', childOptionValue: null }] }))} className="text-[10px] font-bold text-teal-600 uppercase tracking-widest hover:underline">
+                                    Add relation
+                                </button>
+                            </div>
+
+                            {(specForm.dependencies ?? []).map((dependency, index) => {
+                                const parentSpec = availableParentSpecs.find((spec) => spec.id === dependency.parentSpecId);
+                                const parentOptions = parentSpec?.options ?? [];
+
+                                return (
+                                    <div key={`${dependency.parentSpecId}-${dependency.parentOptionValue}-${index}`} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 rounded-xl border border-stone-100 bg-stone-50/60 p-3">
+                                        <Select value={dependency.parentSpecId} onValueChange={(value) => setSpecForm((prev) => ({ ...prev, dependencies: (prev.dependencies ?? []).map((item, itemIndex) => itemIndex === index ? { ...item, parentSpecId: value, parentOptionValue: '' } : item) }))}>
+                                            <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg"><SelectValue placeholder="Parent filter" /></SelectTrigger>
+                                            <SelectContent>
+                                                {availableParentSpecs.map((spec) => (
+                                                    <SelectItem key={spec.id} value={spec.id} className="text-xs">{spec.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={dependency.parentOptionValue} onValueChange={(value) => setSpecForm((prev) => ({ ...prev, dependencies: (prev.dependencies ?? []).map((item, itemIndex) => itemIndex === index ? { ...item, parentOptionValue: value } : item) }))}>
+                                            <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg"><SelectValue placeholder="Parent option" /></SelectTrigger>
+                                            <SelectContent>
+                                                {parentOptions.map((option) => (
+                                                    <SelectItem key={option.id} value={option.value} className="text-xs">{option.label ?? option.value}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={dependency.childOptionValue ?? '__all__'} onValueChange={(value) => setSpecForm((prev) => ({ ...prev, dependencies: (prev.dependencies ?? []).map((item, itemIndex) => itemIndex === index ? { ...item, childOptionValue: value === '__all__' ? null : value } : item) }))}>
+                                            <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg"><SelectValue placeholder="Child option" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="__all__" className="text-xs">Whole filter</SelectItem>
+                                                {(specForm.options ?? []).map((option) => (
+                                                    <SelectItem key={option.value} value={option.value} className="text-xs">{option.label ?? option.value}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <button type="button" onClick={() => setSpecForm((prev) => ({ ...prev, dependencies: (prev.dependencies ?? []).filter((_, itemIndex) => itemIndex !== index) }))} className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-white">
+                                            Remove
+                                        </button>
+                                    </div>
+                                );
+                            })}
+
+                            {(specForm.dependencies ?? []).length === 0 && (
+                                <p className="text-[11px] text-stone-400">No dependencies configured. Add one when a filter or option should only be available after another selection.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 pt-2 flex-row">
+                        <button type="button" onClick={() => closeSpecModal(false)} className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="button" onClick={saveSpec} className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm">
+                            Save Filter
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={showFilterModal} onOpenChange={closeFilterModal}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg bg-white border-stone-200 rounded-2xl shadow-xl">
                     <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300 -mt-6 mb-4 rounded-t-2xl" />

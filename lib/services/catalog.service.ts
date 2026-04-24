@@ -10,6 +10,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { AdvancedFilter, CreateProduct, CreateSpecWithOptions, CreateVariant, CreateVariantSpec } from "@/types";
+import { serializeProducts } from "@/lib/api/adminSerializers";
+import { buildDynamicCatalogResult } from "@/lib/dynamicCatalogFilters";
 
 
 export class CatalogService {
@@ -267,9 +269,25 @@ export class CatalogService {
   static async getSpecs(subCategoryId?: string) {
     return prisma.specDefinition.findMany({
       where: subCategoryId ? { subCategoryId } : undefined,
+      orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
       include: {
         options: {
           orderBy: { order: 'asc' },
+          include: {
+            childOptionDeps: {
+              include: {
+                parentSpec: true,
+                parentOption: true,
+              },
+            },
+          },
+        },
+        childOptionDeps: {
+          include: {
+            parentSpec: true,
+            parentOption: true,
+            childOption: true,
+          },
         },
       },
     });
@@ -594,6 +612,245 @@ export async function createSpec(data: CreateSpecWithOptions) {
   });
 }
 
+export async function updateSpec(
+  id: string,
+  data: {
+    name?: string;
+    valueType?: string;
+    isFilterable?: boolean;
+    isRange?: boolean;
+    isMulti?: boolean;
+    filterGroup?: string | null;
+    filterOrder?: number | null;
+    options?: Array<{ id?: string; value: string; label?: string; order?: number }>;
+    dependencies?: Array<{
+      parentSpecId: string;
+      parentOptionValue: string;
+      childOptionValue?: string | null;
+    }>;
+  },
+) {
+  const existing = await prisma.specDefinition.findUnique({
+    where: { id },
+    include: {
+      options: {
+        orderBy: { order: "asc" },
+        include: {
+          variantSpecs: true,
+          childOptionDeps: true,
+          parentOptionDeps: true,
+        },
+      },
+      childOptionDeps: true,
+    },
+  });
+
+  if (!existing) {
+    throw new ServiceError("SpecDefinition not found", 404);
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.specDefinition.update({
+      where: { id },
+      data: {
+        name: data.name,
+        valueType: data.valueType as any,
+        isFilterable: data.isFilterable,
+        isRange: data.isRange,
+        isMulti: data.isMulti,
+        filterGroup: data.filterGroup,
+        filterOrder: data.filterOrder,
+      },
+    });
+
+    const currentOptions = await tx.specOption.findMany({
+      where: { specId: id },
+      orderBy: { order: "asc" },
+      include: {
+        variantSpecs: true,
+        childOptionDeps: true,
+        parentOptionDeps: true,
+      },
+    });
+
+    const submittedOptions = data.options ?? [];
+    const seenOptionIds = new Set<string>();
+    const nextOptionIdsByValue = new Map<string, string>();
+
+    for (const [index, option] of submittedOptions.entries()) {
+      let saved;
+      if (option.id) {
+        seenOptionIds.add(option.id);
+        saved = await tx.specOption.update({
+          where: { id: option.id },
+          data: {
+            value: option.value,
+            label: option.label ?? option.value,
+            order: option.order ?? index,
+          },
+        });
+      } else {
+        const existingByValue = currentOptions.find((current) => current.value === option.value);
+        if (existingByValue) {
+          seenOptionIds.add(existingByValue.id);
+          saved = await tx.specOption.update({
+            where: { id: existingByValue.id },
+            data: {
+              value: option.value,
+              label: option.label ?? option.value,
+              order: option.order ?? index,
+            },
+          });
+        } else {
+          saved = await tx.specOption.create({
+            data: {
+              specId: id,
+              value: option.value,
+              label: option.label ?? option.value,
+              order: option.order ?? index,
+            },
+          });
+          seenOptionIds.add(saved.id);
+        }
+      }
+
+      nextOptionIdsByValue.set(saved.value, saved.id);
+    }
+
+    const removableOptions = currentOptions.filter((option) => !seenOptionIds.has(option.id));
+    for (const option of removableOptions) {
+      if (
+        option.variantSpecs.length > 0 ||
+        option.childOptionDeps.length > 0 ||
+        option.parentOptionDeps.length > 0
+      ) {
+        throw new ServiceError(
+          `Cannot remove option "${option.value}" because it is already used by products or dependencies.`,
+          409,
+        );
+      }
+
+      await tx.specOption.delete({ where: { id: option.id } });
+    }
+
+    await tx.specOptionDependency.deleteMany({
+      where: {
+        OR: [{ childSpecId: id }, { childOption: { specId: id } }],
+      },
+    });
+
+    for (const dependency of data.dependencies ?? []) {
+      const parentOption = await tx.specOption.findFirst({
+        where: {
+          specId: dependency.parentSpecId,
+          value: dependency.parentOptionValue,
+        },
+      });
+
+      if (!parentOption) {
+        throw new ServiceError(
+          `Parent option "${dependency.parentOptionValue}" was not found.`,
+          400,
+        );
+      }
+
+      let childOptionId: string | null = null;
+      if (dependency.childOptionValue) {
+        childOptionId = nextOptionIdsByValue.get(dependency.childOptionValue) ?? null;
+        if (!childOptionId) {
+          const childOption = await tx.specOption.findFirst({
+            where: { specId: id, value: dependency.childOptionValue },
+          });
+          childOptionId = childOption?.id ?? null;
+        }
+        if (!childOptionId) {
+          throw new ServiceError(
+            `Child option "${dependency.childOptionValue}" was not found.`,
+            400,
+          );
+        }
+      }
+
+      await tx.specOptionDependency.create({
+        data: {
+          parentSpecId: dependency.parentSpecId,
+          parentOptionId: parentOption.id,
+          childSpecId: id,
+          childOptionId,
+        },
+      });
+    }
+
+    return tx.specDefinition.findUnique({
+      where: { id },
+      include: {
+        options: {
+          orderBy: { order: "asc" },
+          include: {
+            childOptionDeps: {
+              include: {
+                parentSpec: true,
+                parentOption: true,
+              },
+            },
+          },
+        },
+        childOptionDeps: {
+          include: {
+            parentSpec: true,
+            parentOption: true,
+            childOption: true,
+          },
+        },
+      },
+    });
+  });
+}
+
+export async function deleteSpec(id: string) {
+  const existing = await prisma.specDefinition.findUnique({
+    where: { id },
+    include: {
+      options: {
+        include: {
+          variantSpecs: true,
+          childOptionDeps: true,
+          parentOptionDeps: true,
+        },
+      },
+      variantSpecs: true,
+      childOptionDeps: true,
+      parentOptionDeps: true,
+    },
+  });
+
+  if (!existing) {
+    throw new ServiceError("SpecDefinition not found", 404);
+  }
+
+  if (
+    existing.variantSpecs.length > 0 ||
+    existing.childOptionDeps.length > 0 ||
+    existing.parentOptionDeps.length > 0 ||
+    existing.options.some(
+      (option) =>
+        option.variantSpecs.length > 0 ||
+        option.childOptionDeps.length > 0 ||
+        option.parentOptionDeps.length > 0,
+    )
+  ) {
+    throw new ServiceError(
+      "This filter is already used by products or dependencies and cannot be deleted.",
+      409,
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.specOption.deleteMany({ where: { specId: id } });
+    await tx.specDefinition.delete({ where: { id } });
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEC OPTIONS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -874,10 +1131,64 @@ export async function getFilterSchema(subCategoryId: string) {
 
   return prisma.specDefinition.findMany({
     where: { subCategoryId, isFilterable: true },
-    orderBy: { filterOrder: "asc" },
+    orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
     include: {
-      options: { orderBy: { order: "asc" } },
+      options: {
+        orderBy: { order: "asc" },
+        include: {
+          childOptionDeps: {
+            include: {
+              parentSpec: true,
+              parentOption: true,
+            },
+          },
+        },
+      },
+      childOptionDeps: {
+        include: {
+          parentSpec: true,
+          parentOption: true,
+          childOption: true,
+        },
+      },
     },
+  });
+}
+
+export async function getCatalogListing(query: AdvancedFilter) {
+  if (!query.subCategoryId) {
+    throw new ServiceError("subCategoryId is required");
+  }
+
+  const [products, filterSchema] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        deletedAt: null,
+        subCategoryId: query.subCategoryId,
+        ...(query.status ? { status: query.status as any } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        subCategory: { include: { category: true } },
+        brand: true,
+        variants: {
+          where: { deletedAt: null },
+          include: {
+            variantSpecs: { include: { spec: true, option: true } },
+            inventoryItems: true,
+          },
+        },
+        media: { orderBy: { sortOrder: "asc" } },
+      },
+    }),
+    getFilterSchema(query.subCategoryId),
+  ]);
+
+  const serializedProducts = serializeProducts(products as any[]);
+  return buildDynamicCatalogResult({
+    products: serializedProducts as any[],
+    filterSchema: filterSchema as any[],
+    query,
   });
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Product, ProductVariant, SpecDefinition, SubCategory, Brand, Category, CategoryNode, CreateProduct, CreateVariant, AdvancedFilter, CreateSpecWithOptions } from '../types';
+import { Product, ProductVariant, SpecDefinition, SubCategory, Brand, Category, CategoryNode, CreateProduct, CreateVariant, AdvancedFilter, CreateSpecWithOptions, UpdateSpecInput } from '../types';
 
 interface CatalogContextType {
   products: Product[];
@@ -25,6 +25,8 @@ interface CatalogContextType {
 
   createVariant: (productId: string, data: CreateVariant) => Promise<void>;
   createSpec: (data: CreateSpecWithOptions) => Promise<void>;
+  updateSpec: (id: string, data: UpdateSpecInput) => Promise<void>;
+  deleteSpec: (id: string, subCategoryId?: string) => Promise<void>;
   
   loading: boolean;
 }
@@ -61,7 +63,7 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     if (filters) {
       url = '/api/catalog/products/filter';
       const data = await fetchJSON(url, { method: 'POST', body: JSON.stringify(filters) });
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : (data?.products ?? []));
       return;
     }
     const data = await fetchJSON(url);
@@ -130,6 +132,17 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     await refreshSpecs(data.subCategoryId);
   };
 
+  const updateSpec = async (id: string, data: UpdateSpecInput) => {
+    const result = await fetchJSON(`/api/catalog/specs/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    const nextSubCategoryId = (result as SpecDefinition | undefined)?.subCategoryId;
+    await refreshSpecs(nextSubCategoryId);
+  };
+
+  const deleteSpec = async (id: string, subCategoryId?: string) => {
+    await fetchJSON(`/api/catalog/specs/${id}`, { method: 'DELETE' });
+    await refreshSpecs(subCategoryId);
+  };
+
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -154,7 +167,7 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     <CatalogContext.Provider value={{
       products, categories, subCategories, brands, specs, categoryHierarchy,
       refreshProducts, refreshCategories, refreshCategoryHierarchy, updateCategoryHierarchy, refreshSubCategories, refreshBrands, refreshSpecs,
-      createProduct, updateProduct, deleteProduct, createVariant, createSpec,
+      createProduct, updateProduct, deleteProduct, createVariant, createSpec, updateSpec, deleteSpec,
       loading
     }}>
       {children}

@@ -990,6 +990,60 @@ export interface AdvancedFilter {
   status?: string;
 }
 
+export interface DynamicFilterDependency {
+  filterId: string
+  values: string[]
+}
+
+export interface DynamicFilterOption {
+  value: string
+  label: string
+  count: number
+  selected?: boolean
+  enabled?: boolean
+  dependencies?: DynamicFilterDependency[]
+}
+
+export interface DynamicCatalogFilter {
+  id: string
+  key: string
+  label: string
+  type: FilterType | `${FilterType}`
+  group?: string | null
+  order?: number | null
+  options: DynamicFilterOption[]
+  dependencies?: DynamicFilterDependency[]
+}
+
+export interface CatalogListingResult {
+  products: Product[]
+  total: number
+  filters: DynamicCatalogFilter[]
+}
+
+export interface SpecDependencyInput {
+  parentSpecId: string
+  parentOptionValue: string
+  childOptionValue?: string | null
+}
+
+export interface UpdateSpecInput {
+  name?: string
+  valueType?: string
+  isFilterable?: boolean
+  isRange?: boolean
+  isMulti?: boolean
+  filterGroup?: string | null
+  filterOrder?: number | null
+  options?: Array<{
+    id?: string
+    value: string
+    label?: string
+    order?: number
+  }>
+  dependencies?: SpecDependencyInput[]
+}
+
 export function specsToFlat(specs?: ProductSpec[] | null): ProductSpecsFlat {
   if (!Array.isArray(specs)) return {}
 
@@ -1089,5 +1143,12 @@ export interface CreateOrder {
   shippingState?: string;
   shippingZip?: string;
   shippingCountry?: string;
+  paymentMethod?: PaymentMethodType;
+  paymentStatus?: PaymentStatus;
+  paymentTransactionId?: string;
+  paymentIdempotencyKey?: string;
+  paymentMetadata?: Record<string, any>;
+  paymentProofUrl?: string;
+  source?: Record<string, any>;
   items?: CreateOrderItem[];
 }

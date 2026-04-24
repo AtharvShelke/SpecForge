@@ -3,10 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateOrderFinancials } from "@/lib/tax-engine"; // Fixed import
+import { PaymentMethodType, PaymentStatus } from "@/types";
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
-    variantId: z.string().min(1),
+    variantId: z.string(),
     quantity: z.number().int().positive(),
 });
 
@@ -19,9 +20,11 @@ const checkoutSchema = z.object({
     shippingState: z.string().optional(),
     shippingZip: z.string().optional(),
     shippingCountry: z.string().optional(),
-    paymentMethod: z.string().optional(),
+    paymentMethod: z.nativeEnum(PaymentMethodType).optional(),
     paymentTransactionId: z.string().optional(),
-    paymentStatus: z.string().optional(),
+    paymentStatus: z.nativeEnum(PaymentStatus).optional(),
+    paymentProofUrl: z.string().url().optional(),
+    paymentReference: z.string().optional(),
     isPosOverride: z.boolean().optional(),
     items: z.array(orderItemSchema).min(1),
 });
@@ -66,8 +69,13 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         }
 
         // 2. Calculate Total (Requires for Orders API payload)
-        const { total } = calculateOrderFinancials(calculationItems);
+        const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
         const orderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+        const isDiscountedManualPayment =
+            data.paymentMethod === PaymentMethodType.UPI ||
+            data.paymentMethod === PaymentMethodType.BANK_TRANSFER;
+        const discountAmount = isDiscountedManualPayment ? Number((total * 0.02).toFixed(2)) : 0;
+        const payableTotal = Number((total - discountAmount).toFixed(2));
 
         // 3. Assemble API Payload targeting self endpoint
         const apiPayload = {
@@ -75,16 +83,36 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             customerName: data.customerName,
             email: data.email,
             phone: data.phone,
-            total,
+            subtotal,
+            gstAmount,
+            taxAmount: gstAmount,
+            discountAmount,
+            total: payableTotal,
             shippingStreet: data.shippingStreet,
             shippingCity: data.shippingCity,
             shippingState: data.shippingState,
             shippingZip: data.shippingZip,
             shippingCountry: data.shippingCountry,
-            // Replaced legacy CASH with valid Enum mappings defined in Orders API
-            paymentMethod: data.isPosOverride ? "BANK_TRANSFER" : (data.paymentMethod || "RAZORPAY"),
-            paymentTransactionId: data.isPosOverride ? `POS-${Date.now()}` : (data.paymentTransactionId || `MOCK-RPY-${Date.now()}`),
-            paymentStatus: data.isPosOverride ? "COMPLETED" : (data.paymentStatus || "COMPLETED"),
+            paymentMethod: data.isPosOverride
+                ? PaymentMethodType.BANK_TRANSFER
+                : (data.paymentMethod || PaymentMethodType.RAZORPAY),
+            paymentTransactionId: data.isPosOverride
+                ? `POS-${Date.now()}`
+                : (data.paymentTransactionId || data.paymentReference),
+            paymentStatus: data.isPosOverride
+                ? PaymentStatus.COMPLETED
+                : (data.paymentStatus || PaymentStatus.PENDING),
+            paymentProofUrl: data.paymentProofUrl,
+            paymentMetadata: {
+                originalTotal: total,
+                payableTotal,
+                discountAmount,
+                paymentReference: data.paymentReference,
+            },
+            source: {
+                channel: data.isPosOverride ? "POS" : "STOREFRONT",
+                paymentType: data.paymentMethod || PaymentMethodType.RAZORPAY,
+            },
             items: orderItemsPayload,
         };
 
@@ -126,13 +154,16 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
         return { success: true, orderId, order: responseData };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Checkout action error:", error);
 
         if (error instanceof z.ZodError) {
             return { success: false, error: "Invalid checkout data provided", details: error.issues };
         }
 
-        return { success: false, error: error.message || "Failed to process checkout. Please try again." };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to process checkout. Please try again.",
+        };
     }
 }

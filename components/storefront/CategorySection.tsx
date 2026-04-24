@@ -77,7 +77,7 @@ const bgImage = CATEGORY_IMAGES[imageKey] ?? FALLBACK_IMAGE
                 p-3 sm:p-4 md:p-6 cursor-pointer
             `}
         >
-            <Link href={cat.query ? `/products?${cat.query}` : `/products?category=${cat.id}`} className="absolute inset-0 z-20">
+            <Link href={cat.query ? `/products?${cat.query}` : `/products?category=${encodeURIComponent(cat.label)}`} className="absolute inset-0 z-20">
                 <span className="sr-only">Shop {cat.label}</span>
             </Link>
 
@@ -173,7 +173,7 @@ export default function CategorySection({ categories, productCounts }: Props) {
                             key={cat.id}
                             cat={cat}
                             index={i}
-                            count={productCounts?.[cat.id]}
+                            count={productCounts?.[cat.label]}
                             priority={i === 0}
                         />
                     ))}

@@ -1,14 +1,14 @@
 import Link from 'next/link'
 
 const QUICK_CATEGORIES = [
-  { label: 'Graphics Cards', category: 'GPU' },
-  { label: 'Processors', category: 'PROCESSOR' },
-  { label: 'Motherboards', category: 'MOTHERBOARD' },
+  { label: 'Graphics Cards', category: 'Graphics Card' },
+  { label: 'Processors', category: 'Processor' },
+  { label: 'Motherboards', category: 'Motherboard' },
   { label: 'RAM', category: 'RAM' },
-  { label: 'SSD', category: 'STORAGE' },
-  { label: 'Cabinets', category: 'CABINET' },
-  { label: 'Power Supplies', category: 'PSU' },
-  { label: 'Coolers', category: 'COOLER' },
+  { label: 'SSD', category: 'Storage' },
+  { label: 'Cabinets', category: 'Cabinet' },
+  { label: 'Power Supplies', category: 'Power Supply' },
+  { label: 'Coolers', category: 'Cooler' },
 ]
 
 export default function QuickCategoriesSection(){

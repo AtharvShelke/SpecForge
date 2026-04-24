@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 
 const f = createUploadthing();
 
-const auth = async (req: Request) => {
+const auth = async () => {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -31,9 +31,9 @@ export const ourFileRouter = {
     },
   })
     // Set permissions and file types for this FileRoute
-    .middleware(async ({ req }) => {
+    .middleware(async () => {
       // This code runs on your server before upload
-      const user = await auth(req);
+      const user = await auth();
 
       // If you throw, the user will not be able to upload
       if (!user) throw new UploadThingError("Unauthorized");
@@ -49,6 +49,19 @@ export const ourFileRouter = {
 
       // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
       return { uploadedBy: metadata.userId };
+    }),
+  paymentProofUploader: f({
+    image: {
+      maxFileSize: "4MB",
+      maxFileCount: 1,
+    },
+  })
+    .middleware(async () => {
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
+      console.log("payment proof uploaded", file.ufsUrl);
+      return { proofUrl: file.ufsUrl };
     }),
 } satisfies FileRouter;
 

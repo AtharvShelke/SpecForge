@@ -220,6 +220,8 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       refreshCategoryHierarchy: catalog.refreshCategoryHierarchy,
       refreshBrands: catalog.refreshBrands,
       refreshSpecs: catalog.refreshSpecs,
+      updateSpec: catalog.updateSpec,
+      deleteSpec: catalog.deleteSpec,
       addBrand,
       deleteBrand,
       updateCategories,

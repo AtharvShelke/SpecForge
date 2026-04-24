@@ -16,9 +16,9 @@ const SOCIAL_LINKS = [
 ] as const;
 
 const EQUIPMENT_LINKS = [
-    { href: '/products?category=GPU',         label: 'Graphics Cards' },
-    { href: '/products?category=CPU',          label: 'Processors'     },
-    { href: '/products?category=MOTHERBOARD',  label: 'Motherboards'   },
+    { href: '/products?category=Graphics Card',         label: 'Graphics Cards' },
+    { href: '/products?category=Processor',          label: 'Processors'     },
+    { href: '/products?category=Motherboard',  label: 'Motherboards'   },
     { href: '/products',                       label: 'All Components' },
 ] as const;
 
