@@ -317,6 +317,11 @@ interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
     stock?: number;
     sku?: string;
     images: string[];
+    inventoryUnits: Array<{
+        id?: string;
+        serialNumber: string;
+        partNumber: string;
+    }>;
 }
 
 type ProductSchemaAttribute = {
@@ -339,7 +344,8 @@ const EMPTY_FORM: ProductFormState = {
     id: '', sku: '', name: '', price: 0, stock: 0,
     category: CATEGORY_NAMES.PROCESSOR,
     images: ['https://picsum.photos/300/300'],
-    specs: { brand: '' }, description: ''
+    specs: { brand: '' }, description: '',
+    inventoryUnits: [{ serialNumber: '', partNumber: '' }],
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -464,29 +470,56 @@ const ProductManager = () => {
         return `${catPrefix}-${brandPrefix}-${Date.now().toString().slice(-6)}`;
     }, []);
 
+    const normalizedInventoryUnits = useMemo(
+        () => currentProduct.inventoryUnits.map((unit) => ({
+            ...unit,
+            serialNumber: unit.serialNumber.trim(),
+            partNumber: unit.partNumber.trim(),
+        })),
+        [currentProduct.inventoryUnits],
+    );
+
+    const filledInventoryUnits = useMemo(
+        () => normalizedInventoryUnits.filter((unit) => unit.serialNumber || unit.partNumber),
+        [normalizedInventoryUnits],
+    );
+
     const handleSave = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentProduct.name?.trim()) { alert('Product name is required'); return; }
         if (!currentProduct.specs?.brand) { alert('Brand is required'); return; }
+        if (filledInventoryUnits.length === 0) { alert('Add at least one inventory unit with serial and part number'); return; }
+        const incompleteUnit = filledInventoryUnits.find((unit) => !unit.serialNumber || !unit.partNumber);
+        if (incompleteUnit) { alert('Every unit must include both serial number and part number'); return; }
         const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
         if (currentProduct.id && products.find((p) => p.id === currentProduct.id)) {
-            await updateProduct({ ...currentProduct, specs: apiSpecs, price: currentProduct.price, stock: currentProduct.stock, images: currentProduct.images } as any);
+            await updateProduct({
+                ...currentProduct,
+                specs: apiSpecs,
+                price: currentProduct.price,
+                stock: filledInventoryUnits.length,
+                images: currentProduct.images,
+                inventoryUnits: filledInventoryUnits,
+                costPrice: newProductCost,
+            } as any);
         } else {
             const newProduct: Product = {
                 ...currentProduct, id: `prod-${Date.now()}`,
                 sku: generateSKU(currentProduct),
                 name: currentProduct.name || '', price: currentProduct.price || 0,
-                stock: currentProduct.stock || 0,
+                stock: filledInventoryUnits.length,
                 category: currentProduct.category || categoryOptions[0] || CATEGORY_NAMES.PROCESSOR,
                 images: currentProduct.images.length > 0 ? currentProduct.images : ['https://picsum.photos/300/300'],
-                description: currentProduct.description || '', specs: apiSpecs
+                description: currentProduct.description || '', specs: apiSpecs,
+                inventoryUnits: filledInventoryUnits,
+                costPrice: newProductCost,
             } as Product;
-            await addProduct(newProduct, currentProduct.stock || 0, newProductCost);
+            await addProduct(newProduct, filledInventoryUnits.length, newProductCost);
         }
         setRefreshTrigger(p => !p);
         setIsEditing(false);
         resetForm();
-    }, [currentProduct, products, updateProduct, addProduct, newProductCost, generateSKU]);
+    }, [currentProduct, products, updateProduct, addProduct, newProductCost, generateSKU, filledInventoryUnits, categoryOptions]);
 
     const handleEdit = useCallback((product: Product) => {
         const firstVariant = product.variants?.[0];
@@ -496,7 +529,17 @@ const ProductManager = () => {
             ...product,
             sku: firstVariant?.sku || '', price: firstVariant?.price || 0, stock: mainStock,
             images: product.media?.length ? product.media.map((m: any) => m.url) : [product.image || 'https://picsum.photos/300/300'],
-            specs: specsToFlat(product.specs)
+            specs: specsToFlat(product.specs),
+            inventoryUnits: (() => {
+                const units = (firstVariant?.inventoryItems ?? [])
+                    .filter((item: any) => Number(item?.quantityOnHand ?? 0) > 0 || Number(item?.quantityReserved ?? 0) > 0)
+                    .map((item: any) => ({
+                        id: item.id,
+                        serialNumber: item.serialNumber || '',
+                        partNumber: item.partNumber || '',
+                    }));
+                return units.length > 0 ? units : [{ serialNumber: '', partNumber: '' }];
+            })(),
         });
         setPreviewUrl(product.media?.[0]?.url || product.image || null);
         setIsEditing(true);
@@ -705,7 +748,7 @@ const ProductManager = () => {
                                             />
                                         </div>
                                         <div>
-                                            <FieldLabel>SKU / Serial</FieldLabel>
+                                            <FieldLabel>Variant SKU</FieldLabel>
                                             <Input
                                                 value={currentProduct.sku}
                                                 onChange={e => setCurrentProduct(prev => ({ ...prev, sku: e.target.value }))}
@@ -913,15 +956,13 @@ const ProductManager = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <FieldLabel>Current Stock Units</FieldLabel>
-                                        <div className="relative mt-1">
-                                            <Package size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                                            <Input
-                                                type="number"
-                                                className="h-11 md:h-10 pl-9 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm focus-visible:ring-indigo-400"
-                                                value={currentProduct.stock}
-                                                onChange={e => setCurrentProduct(prev => ({ ...prev, stock: Number(e.target.value) }))}
-                                            />
+                                        <FieldLabel>Tracked Units</FieldLabel>
+                                        <div className="mt-1 flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <Package size={14} className="text-stone-400" />
+                                                <span className="text-xs text-stone-500">Serialized units ready for sale</span>
+                                            </div>
+                                            <span className="text-base md:text-sm font-mono font-bold text-stone-900">{filledInventoryUnits.length}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -934,6 +975,64 @@ const ProductManager = () => {
                                         <span className="text-sm font-black text-emerald-700 font-mono leading-none">{profitMargin}%</span>
                                     </div>
                                 )}
+                                <div className="space-y-3 border-t border-stone-100 pt-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <FieldLabel required>Inventory Units</FieldLabel>
+                                            <p className="text-[11px] text-stone-400">Each physical unit needs its own serial number and part number.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCurrentProduct(prev => ({
+                                                ...prev,
+                                                inventoryUnits: [...prev.inventoryUnits, { serialNumber: '', partNumber: '' }],
+                                            }))}
+                                            className="h-9 px-3 rounded-lg bg-white border border-stone-200 text-xs font-bold text-stone-600 active:bg-stone-50"
+                                        >
+                                            Add Unit
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {currentProduct.inventoryUnits.map((unit, index) => (
+                                            <div key={unit.id || `unit-${index}`} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 rounded-xl border border-stone-100 bg-stone-50/60 p-2.5">
+                                                <Input
+                                                    value={unit.serialNumber}
+                                                    onChange={e => setCurrentProduct(prev => ({
+                                                        ...prev,
+                                                        inventoryUnits: prev.inventoryUnits.map((entry, entryIndex) =>
+                                                            entryIndex === index ? { ...entry, serialNumber: e.target.value } : entry
+                                                        ),
+                                                    }))}
+                                                    placeholder="Serial number"
+                                                    className="h-9 text-xs font-mono border-stone-200 rounded-lg bg-white"
+                                                />
+                                                <Input
+                                                    value={unit.partNumber}
+                                                    onChange={e => setCurrentProduct(prev => ({
+                                                        ...prev,
+                                                        inventoryUnits: prev.inventoryUnits.map((entry, entryIndex) =>
+                                                            entryIndex === index ? { ...entry, partNumber: e.target.value } : entry
+                                                        ),
+                                                    }))}
+                                                    placeholder="Part number"
+                                                    className="h-9 text-xs font-mono border-stone-200 rounded-lg bg-white"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentProduct(prev => ({
+                                                        ...prev,
+                                                        inventoryUnits: prev.inventoryUnits.length > 1
+                                                            ? prev.inventoryUnits.filter((_, entryIndex) => entryIndex !== index)
+                                                            : [{ serialNumber: '', partNumber: '' }],
+                                                    }))}
+                                                    className="h-9 w-9 rounded-lg border border-stone-200 bg-white text-stone-400 active:bg-stone-50 active:text-rose-500"
+                                                >
+                                                    <Trash size={13} className="mx-auto" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </CollapsibleSection>
                     </div>

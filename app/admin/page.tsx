@@ -1,7 +1,7 @@
 // app/admin/page.tsx
 "use client";
 
-import { lazy, Suspense, memo, type ReactNode } from "react";
+import { lazy, Suspense, memo } from "react";
 import { useAdmin } from "@/context/AdminContext";
 
 // ── Lazy-loaded tab components ────────────────────────────────────────────────
@@ -40,13 +40,13 @@ const SKELETON_STYLE = {
 const TabSkeleton = memo(function TabSkeleton() {
   return (
     <div className="space-y-4 animate-pulse" style={SKELETON_STYLE}>
-      <div className="h-5 w-36 bg-stone-200 rounded-lg" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="h-6 w-40 rounded-full bg-slate-200" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {SKELETON_KEYS.map((i) => (
-          <div key={i} className="h-24 bg-stone-200 rounded-xl" />
+          <div key={i} className="h-28 rounded-[1.5rem] bg-slate-200" />
         ))}
       </div>
-      <div className="h-64 bg-stone-200 rounded-xl" />
+      <div className="h-64 rounded-[1.75rem] bg-slate-200" />
     </div>
   );
 });

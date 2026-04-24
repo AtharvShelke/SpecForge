@@ -4,36 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ArrowRight, ChevronDown, Gamepad2, Video, Cpu } from 'lucide-react'
+import { ArrowRight, Search } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { HERO_SLIDES } from '@/data/constants'
+import Image from 'next/image'
 
-// ── Constants ────────────────────────────────────────────────────────────────
-const SLIDE_DURATION = 5000
-
-// ── Animation variants (defined once, outside component) ─────────────────────
-const glowVariants = {
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: { opacity: 0 },
-}
-
-const imageVariants = {
-    initial: { opacity: 0, x: 40 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -20 },
-}
-
-const contentVariants = {
-    initial: { opacity: 0, y: 28 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-}
-
-const imageTrans = { duration: 1.2, ease: [0.22, 1, 0.36, 1] as const }
-const contentTrans = { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }
-
-// ── Component ─────────────────────────────────────────────────────────────────
+const SLIDE_DURATION = 5400
 
 export default function HeroSection() {
     const router = useRouter()
@@ -41,11 +17,10 @@ export default function HeroSection() {
     const [slideIndex, setSlideIndex] = useState(0)
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-    // Starts (or restarts) the auto-advance timer
     const startTimer = useCallback(() => {
         if (intervalRef.current) clearInterval(intervalRef.current)
         intervalRef.current = setInterval(() => {
-            setSlideIndex(p => (p + 1) % HERO_SLIDES.length)
+            setSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length)
         }, SLIDE_DURATION)
     }, [])
 
@@ -56,230 +31,190 @@ export default function HeroSection() {
         }
     }, [startTimer])
 
-    const goToSlide = useCallback((idx: number) => {
-        setSlideIndex(idx)
-        startTimer() // reset timer so dot-click never double-advances
+    const goToSlide = useCallback((index: number) => {
+        setSlideIndex(index)
+        startTimer()
     }, [startTimer])
 
-    const handleSearch = useCallback((e: React.FormEvent) => {
-        e.preventDefault()
-        const q = query.trim()
-        if (!q) return
-        router.push(`/products?q=${encodeURIComponent(q)}`)
+    const handleSearch = useCallback((event: React.FormEvent) => {
+        event.preventDefault()
+        const trimmed = query.trim()
+        if (!trimmed) return
+        router.push(`/products?q=${encodeURIComponent(trimmed)}`)
     }, [query, router])
 
     const slide = HERO_SLIDES[slideIndex]
-    const SlideIcon = slide.icon
 
     return (
-        <section className="relative h-[95vh] w-full bg-zinc-950 text-white overflow-hidden flex flex-col justify-center">
-
-            {/* ── Ambient glow ── */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={`glow-${slideIndex}`}
-                    variants={glowVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={{ duration: 1.2 }}
-                    className="absolute inset-0 z-0 pointer-events-none"
-                    style={{
-                        background: `radial-gradient(ellipse 60% 60% at 80% 50%, ${slide.accentGlow}, transparent 70%)`
-                    }}
-                />
-            </AnimatePresence>
-
-            {/* ── Hero image (right half) ── */}
-            <div className="absolute inset-0 z-0">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={`img-${slideIndex}`}
-                        variants={imageVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={imageTrans}
-                        className="absolute right-0 top-0 w-full sm:w-[65%] md:w-[55%] h-full opacity-60 sm:opacity-100"
-                    >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={slide.image}
-                            alt={slide.sideLabel}
-                            width={1200}
-                            height={900}
-                            className="w-full h-full object-cover"
-                            fetchPriority={slideIndex === 0 ? 'high' : 'low'}
-                            loading={slideIndex === 0 ? 'eager' : 'lazy'}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
-                    </motion.div>
-                </AnimatePresence>
-
-                {/* Left bleed — keeps text readable on all viewports */}
-                <div className="absolute inset-y-0 left-0 w-[60%] bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent" />
-            </div>
-
-            {/* ── Noise texture ── */}
-            <div
-                aria-hidden="true"
-                className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
-                style={{
-                    backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
-                }}
-            />
-
-            <Container className="relative z-10 flex flex-col justify-between h-[95vh] sm:h-[90vh] lg:h-[92vh] pt-50 pb-50 sm:pt-20 sm:pb-20 lg:pt-24 lg:pb-24 sm:px-0">
-
-                {/* ══════════ TOP CONTENT BLOCK ══════════ */}
-                <div className="relative w-full max-w-lg sm:max-w-xl lg:max-w-lg xl:max-w-xl flex flex-col gap-4 sm:gap-5 lg:gap-4">
-
-                    {/* ── Trending + Slide dots ── */}
-                    <div className="flex flex-col items-start justify-between gap-5">
-                        <div className="hidden md:flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">
-                                Trending:
-                            </span>
-                            {['GPUs', 'Processors', 'DDR5 RAM', 'Custom Builds'].map(cat => (
-                                <Link
-                                    key={cat}
-                                    href={cat === 'Custom Builds' ? '/builds/new' : `/products?category=${cat === 'GPUs' ? 'Graphics Card' : cat === 'Processors' ? 'Processor' : 'RAM'}`}
-                                    className="px-3 py-1 text-[10px] rounded-full border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 transition"
-                                >
-                                    {cat}
-                                </Link>
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {HERO_SLIDES.map((s, i) => (
-                                <button
-                                    key={s.sideLabel}
-                                    onClick={() => goToSlide(i)}
-                                    className="flex items-center gap-2 group"
-                                    aria-label={`Go to ${s.sideLabel} slide`}
-                                >
-                                    <motion.div
-                                        className="h-[2px] rounded-full bg-white"
-                                        animate={{ width: i === slideIndex ? 28 : 10, opacity: i === slideIndex ? 1 : 0.3 }}
-                                        transition={{ duration: 0.4 }}
-                                    />
-                                    <span className={`text-[9px] font-bold uppercase tracking-widest hidden md:block transition-colors duration-300 ${i === slideIndex ? s.sideLabelColor : 'text-zinc-600 group-hover:text-zinc-400'}`}>
-                                        {s.sideLabel}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ── Animated: badge → headline → sub → stats ── */}
+        <section className="relative overflow-hidden px-3 pt-3 sm:px-5 sm:pt-4">
+            <Container maxWidth="2xl">
+                <div className="relative overflow-hidden rounded-[2.25rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,246,242,0.94))] px-6 py-8 shadow-[0_35px_90px_-58px_rgba(20,30,59,0.45)] sm:px-8 sm:py-10 lg:px-12 lg:py-12">
+                    <div className="hero-grid absolute inset-0 opacity-70" />
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300/80 to-transparent" />
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={`content-${slideIndex}`}
-                            variants={contentVariants}
-                            initial="initial"
-                            animate="animate"
-                            exit="exit"
-                            transition={contentTrans}
-                            className="flex flex-col gap-3 sm:gap-4 lg:gap-3"
-                        >
-                            {/* Badge */}
-                            <div className={`inline-flex items-center gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full backdrop-blur-md border self-start ${slide.badgeBg}`}>
-                                <SlideIcon size={11} className={slide.badgeText} />
-                                <span className={`text-[10px] sm:text-xs font-semibold tracking-widest uppercase ${slide.badgeText}`}>
-                                    {slide.badge}
+                            key={`glow-${slideIndex}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="pointer-events-none absolute inset-0"
+                            style={{
+                                background: `radial-gradient(circle at 82% 26%, ${slide.accentGlow}, transparent 34%)`,
+                            }}
+                        />
+                    </AnimatePresence>
+
+                    <div className="relative grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:items-end">
+                        <div className="max-w-3xl">
+                            <div className="mb-6 flex flex-wrap items-center gap-3">
+                                <span className="section-kicker">Premium PC Commerce</span>
+                                <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600">
+                                    Curated hardware. Cleaner checkout. Faster decisions.
                                 </span>
                             </div>
 
-                            {/* Headline */}
-                            <h1 className="text-[2.25rem] leading-[1] sm:text-5xl lg:text-[3rem] xl:text-[3.5rem] font-black tracking-tighter drop-shadow-2xl">
-                                {slide.headline}
-                                <br />
-                                <span className={`text-transparent bg-clip-text bg-gradient-to-r ${slide.accentColor}`}>
-                                    {slide.highlight}
-                                </span>
-                            </h1>
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={`content-${slideIndex}`}
+                                    initial={{ opacity: 0, y: 18 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -12 }}
+                                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                                    className="space-y-6"
+                                >
+                                    <div className="space-y-4">
+                                        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/88 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                                            <span className={`h-2 w-2 rounded-full bg-gradient-to-r ${slide.accentColor}`} />
+                                            {slide.badge}
+                                        </div>
 
-                            {/* Sub */}
-                            <p className="text-zinc-300 text-sm sm:text-base lg:text-sm xl:text-[0.95rem] max-w-sm sm:max-w-md leading-relaxed font-light line-clamp-2 sm:line-clamp-3">
-                                {slide.sub}
-                            </p>
-
-                            {/* Stats */}
-                            <div className="flex items-center gap-5 sm:gap-7 lg:gap-5">
-                                {slide.stats.map((s) => (
-                                    <div key={s.label} className="flex flex-col gap-0.5">
-                                        <span className={`text-base sm:text-lg lg:text-base xl:text-lg font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r ${slide.accentColor}`}>
-                                            {s.value}
-                                        </span>
-                                        <span className="text-[9px] font-semibold text-zinc-500 uppercase tracking-widest">
-                                            {s.label}
-                                        </span>
+                                        <div className="max-w-2xl space-y-4">
+                                            <h1 className="text-5xl leading-[0.92] text-slate-950 sm:text-6xl lg:text-7xl">
+                                                {slide.headline}
+                                                <br />
+                                                <span className={`bg-gradient-to-r ${slide.accentColor} bg-clip-text text-transparent`}>
+                                                    {slide.highlight}
+                                                </span>
+                                            </h1>
+                                            <p className="max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
+                                                {slide.sub}
+                                            </p>
+                                        </div>
                                     </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                        {slide.stats.map((stat) => (
+                                            <div
+                                                key={stat.label}
+                                                className="rounded-[1.5rem] border border-white/70 bg-white/82 px-4 py-4 shadow-[0_16px_36px_-34px_rgba(20,30,59,0.34)]"
+                                            >
+                                                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                                                    {stat.label}
+                                                </p>
+                                                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+                                                    {stat.value}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+
+                            <div className="mt-8 flex flex-wrap items-center gap-3">
+                                <Link
+                                    href="/products"
+                                    className="inline-flex h-12 items-center gap-2 rounded-full bg-slate-950 px-6 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
+                                >
+                                    Shop Components
+                                    <ArrowRight className="size-4" />
+                                </Link>
+                                <Link
+                                    href="/builds/new"
+                                    className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-white/84 px-6 text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950"
+                                >
+                                    Start a Custom Build
+                                </Link>
+                            </div>
+
+                            <form
+                                onSubmit={handleSearch}
+                                className="mt-8 flex flex-col gap-3 rounded-[1.75rem] border border-white/85 bg-white/88 p-3 shadow-[0_24px_60px_-42px_rgba(20,30,59,0.28)] sm:flex-row sm:items-center"
+                            >
+                                <div className="flex min-w-0 flex-1 items-center gap-3 px-2">
+                                    <Search className="size-4 text-slate-400" />
+                                    <input
+                                        value={query}
+                                        onChange={(event) => setQuery(event.target.value)}
+                                        placeholder="Search GPUs, CPUs, DDR5 memory, creator builds..."
+                                        className="h-12 w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="inline-flex h-12 items-center justify-center rounded-full bg-slate-950 px-6 text-sm font-semibold text-white transition-all duration-300 hover:bg-slate-800"
+                                >
+                                    Search catalog
+                                </button>
+                            </form>
+                        </div>
+
+                        <div className="space-y-4">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={`visual-${slideIndex}`}
+                                    initial={{ opacity: 0, x: 18 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -12 }}
+                                    transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                                    className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-slate-950 p-6 text-white soft-shadow"
+                                >
+                                    <div className={`absolute inset-x-0 top-0 h-32 bg-gradient-to-r ${slide.accentColor} opacity-20 blur-3xl`} />
+                                    <div className="relative aspect-[4/4.6] overflow-hidden rounded-[1.5rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_40%),linear-gradient(180deg,#111827,#020617)]">
+                                        <Image
+                                            src={slide.image}
+                                            alt={slide.sideLabel}
+                                            fill
+                                            sizes="(max-width: 1024px) 100vw, 36vw"
+                                            className="h-full w-full object-cover opacity-88"
+                                            priority={slideIndex === 0}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-5">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
+                                                {slide.sideLabel}
+                                            </p>
+                                            <p className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
+                                                Systems built for momentum
+                                            </p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+
+                            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                                {HERO_SLIDES.map((item, index) => (
+                                    <button
+                                        key={item.sideLabel}
+                                        onClick={() => goToSlide(index)}
+                                        className={`rounded-[1.4rem] border px-4 py-4 text-left transition-all duration-300 ${
+                                            index === slideIndex
+                                                ? 'border-slate-900 bg-slate-950 text-white shadow-[0_24px_48px_-34px_rgba(15,23,42,0.72)]'
+                                                : 'border-white/80 bg-white/82 text-slate-700 hover:border-slate-200 hover:bg-white'
+                                        }`}
+                                    >
+                                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] opacity-70">
+                                            {item.sideLabel}
+                                        </p>
+                                        <p className="mt-2 text-sm font-semibold tracking-[-0.02em]">
+                                            {item.badge}
+                                        </p>
+                                    </button>
                                 ))}
                             </div>
-                        </motion.div>
-                    </AnimatePresence>
+                        </div>
+                    </div>
                 </div>
-
-                {/* ══════════ BOTTOM BAR ══════════ */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.4 }}
-                    className="w-full max-w-xl sm:max-w-2xl lg:max-w-xl xl:max-w-2xl flex flex-col gap-3 sm:gap-4"
-                >
-                    {/* CTA */}
-                    <div>
-                        <Link
-                            href={slide.cta}
-                            className="inline-flex items-center gap-2.5 px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white text-zinc-950 font-semibold uppercase tracking-wide text-xs hover:bg-zinc-200 transition"
-                        >
-                            {slide.ctaText}
-                            <ArrowRight size={13} />
-                        </Link>
-                    </div>
-
-                    {/* Search */}
-                    <div className="backdrop-blur-xl bg-black/30 p-1.5 border border-white/10 rounded-xl sm:rounded-2xl md:rounded-full shadow-2xl">
-                        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-0">
-                            <div className="w-full flex items-center pl-3 sm:pl-4">
-                                <Search className="text-zinc-400 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                                <input
-                                    value={query}
-                                    onChange={e => setQuery(e.target.value)}
-                                    placeholder="Search parts, builds..."
-                                    className="w-full h-9 sm:h-10 lg:h-9 pl-2 sm:pl-3 pr-3 bg-transparent text-sm text-white placeholder:text-zinc-500 font-medium focus:outline-none"
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full sm:w-auto h-9 sm:h-10 lg:h-9 px-5 sm:px-6 rounded-lg sm:rounded-full bg-indigo-600 text-white text-xs sm:text-sm font-semibold tracking-wide hover:bg-indigo-500 transition-colors shrink-0"
-                            >
-                                Search
-                            </button>
-                        </form>
-                    </div>
-                </motion.div>
-
-                {/* Scroll cue */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2 }}
-                    className="absolute bottom-30 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 z-20 pointer-events-none"
-                    aria-hidden="true"
-                >
-                    <span className="text-[10px] tracking-widest text-zinc-500 uppercase">Scroll</span>
-                    <motion.div
-                        animate={{ y: [0, 8, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-                        className="text-zinc-400"
-                    >
-                        <ChevronDown size={18} />
-                    </motion.div>
-                </motion.div>
-
             </Container>
         </section>
     )

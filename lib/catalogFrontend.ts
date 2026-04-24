@@ -195,9 +195,20 @@ function matchesNodeQuery(product: Product, query?: string | null) {
 
 function matchesStock(product: Product, stockStatus?: string | null) {
   if (!stockStatus || stockStatus === "all") return true;
-  const variants = (product.variants ?? []) as Array<{ inventoryItems?: Array<{ quantityOnHand?: number }>; status?: string | null }>;
+  const variants = (product.variants ?? []) as Array<{
+    inventoryItems?: Array<{ quantityOnHand?: number; quantityReserved?: number }>;
+    status?: string | null;
+  }>;
   const quantity = variants.reduce((sum, variant) => {
-    const itemQuantity = (variant.inventoryItems ?? []).reduce((inner, item) => inner + Number(item.quantityOnHand ?? 0), 0);
+    const itemQuantity = (variant.inventoryItems ?? []).reduce(
+      (inner, item) =>
+        inner +
+        Math.max(
+          0,
+          Number(item.quantityOnHand ?? 0) - Number(item.quantityReserved ?? 0),
+        ),
+      0,
+    );
     return sum + itemQuantity;
   }, 0);
 

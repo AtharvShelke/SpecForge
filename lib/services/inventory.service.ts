@@ -55,6 +55,10 @@ export async function createInventoryItem(data: {
   trackingType?: string;
   serialNumber?: string;
   partNumber?: string;
+  units?: Array<{
+    serialNumber: string;
+    partNumber: string;
+  }>;
   quantityOnHand?: number;
   status?: string;
   costPrice?: number;
@@ -62,6 +66,74 @@ export async function createInventoryItem(data: {
   notes?: string;
 }) {
   if (!data.variantId) throw new ServiceError("variantId is required");
+
+  if (Array.isArray(data.units) && data.units.length > 0) {
+    const normalizedUnits = data.units.map((unit) => ({
+      serialNumber: unit.serialNumber?.trim(),
+      partNumber: unit.partNumber?.trim(),
+    }));
+
+    const hasMissingValues = normalizedUnits.some(
+      (unit) => !unit.serialNumber || !unit.partNumber,
+    );
+    if (hasMissingValues) {
+      throw new ServiceError("Each unit must include serialNumber and partNumber", 400);
+    }
+
+    const duplicateSerials = normalizedUnits.filter(
+      (unit, index) =>
+        normalizedUnits.findIndex(
+          (candidate) => candidate.serialNumber === unit.serialNumber,
+        ) !== index,
+    );
+    if (duplicateSerials.length > 0) {
+      throw new ServiceError(
+        `Duplicate serial number(s) in request: ${duplicateSerials
+          .map((unit) => unit.serialNumber)
+          .join(", ")}`,
+        409,
+      );
+    }
+
+    const existing = await prisma.inventoryItem.findMany({
+      where: {
+        serialNumber: {
+          in: normalizedUnits.map((unit) => unit.serialNumber!),
+        },
+      },
+      select: { serialNumber: true },
+    });
+
+    if (existing.length > 0) {
+      throw new ServiceError(
+        `Serial number(s) already exist: ${existing
+          .map((item) => item.serialNumber)
+          .filter(Boolean)
+          .join(", ")}`,
+        409,
+      );
+    }
+
+    return prisma.$transaction(
+      normalizedUnits.map((unit) =>
+        prisma.inventoryItem.create({
+          data: {
+            variantId: data.variantId,
+            trackingType: "SERIALIZED",
+            serialNumber: unit.serialNumber,
+            partNumber: unit.partNumber,
+            quantityOnHand: 1,
+            quantityReserved: 0,
+            status: (data.status as any) || "IN_STOCK",
+            costPrice: data.costPrice,
+            batchNumber: data.batchNumber,
+            notes: data.notes,
+            receivedAt: new Date(),
+          },
+        }),
+      ),
+    );
+  }
 
   if (data.serialNumber) {
     const existing = await prisma.inventoryItem.findUnique({
@@ -74,10 +146,11 @@ export async function createInventoryItem(data: {
   return prisma.inventoryItem.create({
     data: {
       variantId: data.variantId,
-      trackingType: (data.trackingType as any) || "BULK",
+      trackingType: (data.trackingType as any) || (data.serialNumber ? "SERIALIZED" : "BULK"),
       serialNumber: data.serialNumber,
       partNumber: data.partNumber,
-      quantityOnHand: data.quantityOnHand ?? 0,
+      quantityOnHand:
+        data.quantityOnHand ?? ((data.serialNumber || data.partNumber) ? 1 : 0),
       status: (data.status as any) || "IN_STOCK",
       costPrice: data.costPrice,
       batchNumber: data.batchNumber,
@@ -92,6 +165,17 @@ export async function adjustStockByVariant(
   quantity: number,
   type: string
 ) {
+  const serializedCount = await prisma.inventoryItem.count({
+    where: { variantId, trackingType: "SERIALIZED" },
+  });
+
+  if (serializedCount > 0) {
+    throw new ServiceError(
+      "Serialized inventory must be managed as individual units with serial and part numbers.",
+      400,
+    );
+  }
+
   let item = await prisma.inventoryItem.findFirst({
     where: { variantId, trackingType: "BULK" },
   });

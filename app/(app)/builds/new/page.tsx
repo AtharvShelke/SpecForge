@@ -9,10 +9,13 @@ import { useRouter } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
 // Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
-const validateBuild = (_items: any[]): { status: any; issues: any[] } => ({ status: 'COMPATIBLE', issues: [] });
-import { BUILD_SEQUENCE } from '@/data/categoryTree';
+type BuildIssue = { componentIds: string[]; level: CompatibilityLevel; message: string };
+const validateBuild = (): { status: CompatibilityLevel; issues: BuildIssue[] } => ({
+    status: CompatibilityLevel.COMPATIBLE,
+    issues: [],
+});
 import {
-    Product, CartItem, CompatibilityLevel, specsToFlat,
+    Product, CartItem, CompatibilityLevel, Role, specsToFlat,
 } from '@/types';
 import { CATEGORY_LABELS, CATEGORY_NAMES, sameCategory } from '@/lib/categoryUtils';
 import {
@@ -127,7 +130,7 @@ const CORE_CATEGORIES: string[] = [
     CATEGORY_NAMES.GPU, CATEGORY_NAMES.STORAGE, CATEGORY_NAMES.PSU, CATEGORY_NAMES.CABINET, CATEGORY_NAMES.COOLER,
 ];
 
-const CAT_ICONS: Record<string, React.FC<any>> = {
+const CAT_ICONS: Record<string, React.ElementType> = {
     [CATEGORY_NAMES.PROCESSOR]:   Cpu,
     [CATEGORY_NAMES.MOTHERBOARD]: Layers,
     [CATEGORY_NAMES.RAM]:         HardDrive,
@@ -192,9 +195,6 @@ function estimatePowerStats(cart: CartItem[]): { wattage: number; psuCap: number
 // Keep legacy helpers as thin wrappers for BuildSummaryPanel (no breaking changes)
 function estimateWattage(cart: CartItem[]): number {
     return estimatePowerStats(cart).wattage;
-}
-function getPsuCap(cart: CartItem[]): number | null {
-    return estimatePowerStats(cart).psuCap;
 }
 
 /* ─────────────────────────────── AnimatedPrice ──────────────────────────── */
@@ -284,7 +284,13 @@ const ProductCard: React.FC<{
 
     const handleButtonClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        isInCart ? onRemove() : (!isIncompat && !isOos && onAdd());
+        if (isInCart) {
+            onRemove();
+            return;
+        }
+        if (!isIncompat && !isOos) {
+            onAdd();
+        }
     }, [isInCart, isIncompat, isOos, onAdd, onRemove]);
 
     return (
@@ -434,8 +440,8 @@ const BuildSummaryPanel: React.FC<{
     onRemove: (id: string) => void;
     onStepClick: (cat: string) => void;
     activeStep: string;
-    onSave: () => void;
-    onShare: () => void;
+    onSave?: () => void;
+    onShare?: () => void;
     onCheckout: () => void;
 }> = memo(({ cart, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
     const report = useMemo(() => validateBuild(cart), [cart]);
@@ -444,10 +450,6 @@ const BuildSummaryPanel: React.FC<{
         [cart],
     );
     // Single pass instead of two separate calls
-    const { wattage, psuCap } = useMemo(() => estimatePowerStats(cart), [cart]);
-    const wattPct = psuCap
-        ? Math.min((wattage / psuCap) * 100, 100)
-        : Math.min((wattage / 800) * 100, 100);
     const completedCount = useMemo(
         () => CORE_CATEGORIES.filter(cat => cart.some(i => sameCategory(i.category, cat))).length,
         [cart],
@@ -460,22 +462,28 @@ const BuildSummaryPanel: React.FC<{
             <div className="px-4 pt-4 pb-3 border-b border-zinc-100 flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Build Summary</h3>
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={onSave}
-                            className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Save build"
-                        >
-                            <Save size={13} />
-                        </button>
-                        <button
-                            onClick={onShare}
-                            className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Share build"
-                        >
-                            <Share2 size={13} />
-                        </button>
-                    </div>
+                    {(onSave || onShare) && (
+                        <div className="flex items-center gap-1">
+                            {onSave && (
+                                <button
+                                    onClick={onSave}
+                                    className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
+                                    title="Save build"
+                                >
+                                    <Save size={13} />
+                                </button>
+                            )}
+                            {onShare && (
+                                <button
+                                    onClick={onShare}
+                                    className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
+                                    title="Share build"
+                                >
+                                    <Share2 size={13} />
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div>
@@ -617,18 +625,23 @@ BuildSummaryPanel.displayName = 'BuildSummaryPanel';
 
 /* ─────────────────────────────── SaveDialog ─────────────────────────────── */
 const SaveDialog: React.FC<{
-    isOpen: boolean;
     onClose: () => void;
-    onSave: (title: string) => void;
-}> = memo(({ isOpen, onClose, onSave }) => {
+    onSave: (title: string) => Promise<void>;
+}> = memo(({ onClose, onSave }) => {
     const [title, setTitle] = useState('');
 
-    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && title.trim()) { onSave(title); onClose(); }
+    const handleKeyDown = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && title.trim()) {
+            await onSave(title);
+            onClose();
+        }
     }, [title, onSave, onClose]);
 
-    const handleSave = useCallback(() => {
-        if (title.trim()) { onSave(title); onClose(); }
+    const handleSave = useCallback(async () => {
+        if (title.trim()) {
+            await onSave(title);
+            onClose();
+        }
     }, [title, onSave, onClose]);
 
     return (
@@ -718,7 +731,7 @@ const SKELETON_ITEMS = Array.from({ length: 12 }, (_, i) => i);
 export default function PCBuilderPage() {
     const router = useRouter();
     const { cart, addToCart, removeFromCart, setCartOpen } = useShop();
-    const { isBuildMode, toggleBuildMode, saveCurrentBuild, generateShareLink } = useBuild();
+    const { isBuildMode, toggleBuildMode, saveCurrentBuild } = useBuild();
     const { toast } = useToast();
 
     const [activeStep, setActiveStep] = useState<string>(CORE_CATEGORIES[0]);
@@ -729,10 +742,33 @@ export default function PCBuilderPage() {
     const [showIncompat, setShowIncompat] = useState(false);
     const [sortOption, setSortOption] = useState('popularity');
     const [saveOpen, setSaveOpen] = useState(false);
+    const [viewerRole, setViewerRole] = useState<Role | null>(null);
     const prevParams = useRef('');
 
     // Only run once on mount — stable empty dep array
     useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        let active = true;
+
+        (async () => {
+            try {
+                const res = await fetch('/api/auth/session');
+                if (!res.ok) return;
+
+                const data = await res.json();
+                if (active) {
+                    setViewerRole(data?.user?.role ?? null);
+                }
+            } catch {
+                if (active) setViewerRole(null);
+            }
+        })();
+
+        return () => {
+            active = false;
+        };
+    }, []);
 
     // Debounce search
     useEffect(() => {
@@ -789,7 +825,7 @@ export default function PCBuilderPage() {
             }
         })();
         return () => { cancelled = true; };
-    }, [activeStep, debounced, sortOption, cartSpecsCache, showIncompat]);
+    }, [activeStep, debounced, sortOption, cartSpecsCache, showIncompat, products.length]);
 
     const handleAdd = useCallback((product: Product) => {
         addToCart(product);
@@ -828,7 +864,7 @@ export default function PCBuilderPage() {
 
         const hypo: CartItem[] = [
             ...cart.filter(i => !sameCategory(i.category, product.category)),
-            { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any },
+            { ...product, quantity: 1, selectedVariant: product.variants?.[0] },
         ];
         const rep = validateBuild(hypo);
         const rel = rep.issues.filter(iss => iss.componentIds.includes(product.id));
@@ -844,22 +880,17 @@ export default function PCBuilderPage() {
         return result;
     }, [cart, cartCompatMap]);
 
-    const handleSave = useCallback((t: string) => saveCurrentBuild(t), [saveCurrentBuild]);
-
-    const handleShare = useCallback(async () => {
-        const link = generateShareLink();
-        if (!link) {
-            toast({ title: 'Nothing to share', description: 'Add components first.', variant: 'destructive' });
-            return;
-        }
-        try { await navigator.clipboard.writeText(link); }
-        catch {
-            const ta = document.createElement('textarea');
-            ta.value = link; document.body.appendChild(ta); ta.select();
-            document.execCommand('copy'); document.body.removeChild(ta);
-        }
-        toast({ title: 'Link copied!', description: 'Share this link to load your build.' });
-    }, [generateShareLink, toast]);
+    const handleSave = useCallback(async (title: string) => {
+        const savedGuide = await saveCurrentBuild({
+            title,
+            items: cart,
+            category: 'Custom',
+        });
+        toast({
+            title: 'Build guide saved',
+            description: `${savedGuide.title} is now visible in Build Guides.`,
+        });
+    }, [cart, saveCurrentBuild, toast]);
 
     const handleOpenSave = useCallback(() => setSaveOpen(true), []);
     const handleCloseSave = useCallback(() => setSaveOpen(false), []);
@@ -896,6 +927,7 @@ export default function PCBuilderPage() {
         () => Object.fromEntries(CORE_CATEGORIES.map(cat => [cat, () => handleStepClick(cat)])),
         [handleStepClick],
     );
+    const isAdmin = viewerRole === Role.ADMIN;
 
     return (
         <div
@@ -910,7 +942,7 @@ export default function PCBuilderPage() {
                 <div className="flex items-center gap-3 sm:gap-5 min-w-0">
                     <button
                         type="button"
-                        onClick={() => router.push('/builds')}
+                        onClick={() => router.push('/build-guides')}
                         className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-900 transition-colors group flex-shrink-0"
                     >
                         <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
@@ -938,23 +970,20 @@ export default function PCBuilderPage() {
                             <AnimatedPrice value={totalPrice} />
                         </p>
                     </div>
-                    <div className="h-5 w-px bg-zinc-100 hidden sm:block" />
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            onClick={handleOpenSave}
-                            className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Save"
-                        >
-                            <Save size={14} />
-                        </button>
-                        <button
-                            onClick={handleShare}
-                            className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Share"
-                        >
-                            <Share2 size={14} />
-                        </button>
-                    </div>
+                    {isAdmin && (
+                        <>
+                            <div className="h-5 w-px bg-zinc-100 hidden sm:block" />
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    onClick={handleOpenSave}
+                                    className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
+                                    title="Save"
+                                >
+                                    <Save size={14} />
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </header>
 
@@ -1169,8 +1198,8 @@ export default function PCBuilderPage() {
                         onRemove={handleRemove}
                         onStepClick={handleStepClick}
                         activeStep={activeStep}
-                        onSave={handleOpenSave}
-                        onShare={handleShare}
+                        onSave={isAdmin ? handleOpenSave : undefined}
+                        onShare={undefined}
                         onCheckout={handleCartOpen}
                     />
                 </aside>
@@ -1214,9 +1243,8 @@ export default function PCBuilderPage() {
 
             {/* Save dialog */}
             <AnimatePresence>
-                {saveOpen && (
+                {isAdmin && saveOpen && (
                     <SaveDialog
-                        isOpen={saveOpen}
                         onClose={handleCloseSave}
                         onSave={handleSave}
                     />

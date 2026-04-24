@@ -1,4 +1,3 @@
-// app/admin/layout.tsx
 "use client";
 
 import { useState, useCallback, memo, type ReactNode } from "react";
@@ -6,8 +5,6 @@ import { AdminProvider, useAdmin } from "@/context/AdminContext";
 import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { AdminHeader } from "@/components/dashboard/AdminHeader";
 import { useRouter } from "next/navigation";
-
-// ── Constants (module scope — never recreated) ────────────────────────────────
 
 const TAB_LABELS: Record<string, string> = {
   overview: "Overview",
@@ -19,12 +16,6 @@ const TAB_LABELS: Record<string, string> = {
   "saved-builds": "Saved Builds",
   billing: "Billing & Invoices",
 } as const;
-
-const SHELL_STYLE = {
-  fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif",
-} as const;
-
-// ── AdminShell ────────────────────────────────────────────────────────────────
 
 const AdminShell = memo(function AdminShell({
   children,
@@ -41,39 +32,34 @@ const AdminShell = memo(function AdminShell({
     router.refresh();
   }, [router]);
 
-  const handleMenuClick = useCallback(() => setIsSidebarOpen(true), []);
-
   return (
-    <div
-      className="flex h-screen bg-stone-50 overflow-hidden antialiased"
-      style={SHELL_STYLE}
-    >
-      <AdminSidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onLogout={handleLogout}
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <AdminHeader
+    <div className="flex min-h-screen bg-transparent px-3 py-3 sm:px-5 sm:py-4">
+      <div className="mx-auto flex w-full max-w-[1600px] gap-4 lg:gap-5">
+        <AdminSidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
           onLogout={handleLogout}
-          onMenuClick={handleMenuClick}
-          title={TAB_LABELS[activeTab] ?? "Admin"}
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
         />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-stone-50">
-          <div className="p-5 lg:p-6 max-w-[1400px] mx-auto 2xl:max-w-[1600px]">
-            {children}
-          </div>
-        </main>
+        <div className="flex min-w-0 flex-1 flex-col gap-4 lg:gap-5">
+          <AdminHeader
+            onLogout={handleLogout}
+            onMenuClick={() => setIsSidebarOpen(true)}
+            title={TAB_LABELS[activeTab] ?? "Admin"}
+          />
+
+          <main className="min-h-0 flex-1 overflow-hidden rounded-[2rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,246,242,0.9))] p-4 shadow-[0_30px_80px_-56px_rgba(20,30,59,0.36)] sm:p-5 lg:p-6">
+            <div className="h-full overflow-y-auto rounded-[1.5rem] bg-white/56 p-3 sm:p-4 lg:p-5">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
 });
-
-// ── AdminLayout ───────────────────────────────────────────────────────────────
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (

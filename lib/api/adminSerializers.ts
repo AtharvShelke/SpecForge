@@ -14,7 +14,7 @@ function mainWarehouseInventory(variant: any) {
     ? variant.inventoryItems
     : [];
 
-  const quantity = inventoryItems.reduce(
+  const totalOnHand = inventoryItems.reduce(
     (sum: number, item: any) => sum + Number(item?.quantityOnHand ?? 0),
     0,
   );
@@ -22,6 +22,7 @@ function mainWarehouseInventory(variant: any) {
     (sum: number, item: any) => sum + Number(item?.quantityReserved ?? 0),
     0,
   );
+  const quantity = Math.max(0, totalOnHand - reserved);
   const avgCost =
     inventoryItems.length > 0
       ? inventoryItems.reduce(
@@ -90,13 +91,17 @@ export function serializeProducts(products: any[]) {
 }
 
 export function serializeInventoryItem(item: any) {
+  const quantityOnHand = Number(item?.quantityOnHand ?? 0);
+  const quantityReserved = Number(item?.quantityReserved ?? 0);
+  const availableQuantity = Math.max(0, quantityOnHand - quantityReserved);
+
   return {
     ...item,
-    quantityOnHand: Number(item?.quantityOnHand ?? 0),
-    quantityReserved: Number(item?.quantityReserved ?? 0),
+    quantityOnHand,
+    quantityReserved,
     costPrice: item?.costPrice == null ? null : toNumber(item.costPrice),
-    quantity: Number(item?.quantityOnHand ?? 0),
-    reserved: Number(item?.quantityReserved ?? 0),
+    quantity: availableQuantity,
+    reserved: quantityReserved,
     reorderLevel: 5,
     sku: item?.variant?.sku ?? item?.variantId ?? "",
     location: "Main Warehouse",

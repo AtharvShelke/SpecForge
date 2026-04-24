@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from "react";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Search, User, Cpu, Menu, X } from "lucide-react";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
     { href: "/products", label: "Products" },
     { href: "/builds/new", label: "Build PC" },
-    { href: "/builds", label: "Saved Builds" },
+    { href: "/build-guides", label: "Build Guides" },
     { href: "/track-order", label: "Track Order" },
 ];
 
@@ -19,14 +19,7 @@ export default function StorefrontNavbar() {
     const { cart, setCartOpen } = useShop();
     const pathname = usePathname();
 
-    const [isScrolled, setIsScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
-
-    const { scrollY } = useScroll();
-
-    useMotionValueEvent(scrollY, "change", (latest) => {
-        setIsScrolled(latest > 50);
-    });
 
     const cartItemCount = cart.reduce(
         (acc, item) => acc + item.quantity,

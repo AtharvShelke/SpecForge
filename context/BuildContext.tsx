@@ -25,6 +25,7 @@ import {
   Build,
   BuildItem,
   BuildGuide,
+  CartItem,
   CompatibilityCheck,
   CompatibilitySeverity,
 } from '../types';
@@ -55,8 +56,8 @@ export interface CompatibilityResult {
     severity: string;
     sourceSpecName: string;
     targetSpecName: string;
-    sourceValue: any;
-    targetValue: any;
+    sourceValue: unknown;
+    targetValue: unknown;
   }>;
 }
 
@@ -113,7 +114,12 @@ interface BuildContextType {
   checkCompatibility: () => Promise<CompatibilityResult | null>;
 
   toggleBuildMode: () => void;
-  saveCurrentBuild: (name?: string) => Promise<void>;
+  saveCurrentBuild: (payload: {
+    title: string;
+    items: CartItem[];
+    category?: string;
+    description?: string;
+  }) => Promise<BuildGuide>;
   generateShareLink: () => string | null;
 
   loading: boolean;
@@ -125,7 +131,7 @@ const BuildContext = createContext<BuildContextType | null>(null);
 // Fetch Utility
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T> {
+async function fetchJSON<T = unknown>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...options,
     headers: { ...options?.headers, 'Content-Type': 'application/json' },
@@ -162,7 +168,7 @@ export const BuildProvider = ({ children }: { children: ReactNode }) => {
   const itemBySlot = useMemo(() => {
     const map = new Map<string, BuildItem>();
     if (build?.items) {
-      build.items.forEach((item: any) => {
+      build.items.forEach((item: BuildItem) => {
         map.set(item.slotId, item);
       });
     }
@@ -230,9 +236,36 @@ export const BuildProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const saveCurrentBuild = useCallback(async (name?: string) => {
-    await createBuild(name);
-  }, [createBuild]);
+  const saveCurrentBuild = useCallback(async (payload: {
+    title: string;
+    items: CartItem[];
+    category?: string;
+    description?: string;
+  }) => {
+    const items = payload.items
+      .filter((item) => item.selectedVariant?.id)
+      .map((item) => ({
+        variantId: item.selectedVariant!.id,
+        quantity: item.quantity,
+      }));
+
+    const created = await fetchJSON<BuildGuide>('/api/build-guides', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: payload.title,
+        category: payload.category,
+        description: payload.description,
+        total: payload.items.reduce(
+          (sum, item) => sum + (item.selectedVariant?.price || 0) * item.quantity,
+          0,
+        ),
+        items,
+      }),
+    });
+
+    setBuildGuides((prev) => [created, ...prev]);
+    return created;
+  }, []);
 
   const loadBuild = useCallback(async (id: string) => {
     setLoading(true);

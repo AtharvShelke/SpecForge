@@ -589,6 +589,12 @@ export interface InventoryItem {
   reservations?: Reservation[]
 }
 
+export interface InventoryUnitInput {
+  id?: string
+  serialNumber: string
+  partNumber: string
+}
+
 export interface WarehouseInventory extends InventoryItem {
   sku?: string
   location?: string
@@ -960,6 +966,8 @@ export interface CreateProduct {
   description?: string;
   status?: string;
   variants?: CreateVariant[];
+  images?: string[];
+  inventoryUnits?: InventoryUnitInput[];
 }
 
 export interface CreateSpecWithOptions {

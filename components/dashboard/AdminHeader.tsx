@@ -1,4 +1,3 @@
-// components/dashboard/AdminHeader.tsx
 'use client';
 
 import React, { memo } from 'react';
@@ -27,87 +26,85 @@ interface AdminHeaderProps {
 }
 
 export const AdminHeader = memo<AdminHeaderProps>(({ onLogout, onMenuClick, title }) => {
-    // Destructure only what's needed — avoids re-render if other context values change
     const { syncData, isLoading } = useAdmin();
 
     return (
-        <header className="h-[60px] bg-white border-b border-stone-100 sticky top-0 z-30 px-5 lg:px-6 flex items-center justify-between gap-4">
+        <header className="app-surface rounded-[1.75rem] px-4 py-3 sm:px-5 lg:px-6">
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                    <button
+                        onClick={onMenuClick}
+                        className="flex size-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-white hover:text-slate-950 lg:hidden"
+                    >
+                        <Menu size={18} strokeWidth={1.75} />
+                    </button>
 
-            {/* Left: hamburger + live badge + Sync */}
-            <div className="flex items-center gap-3 min-w-0">
-                <button
-                    onClick={onMenuClick}
-                    className="p-1.5 -ml-1 rounded-lg hover:bg-stone-100 lg:hidden text-stone-500 transition-colors"
-                >
-                    <Menu size={18} strokeWidth={1.75} />
-                </button>
-
-                {/* Page title (mobile only — desktop shows in sidebar) */}
-                <h2 className="text-sm font-bold text-stone-900 tracking-tight lg:hidden truncate">
-                    {title}
-                </h2>
-
-                {/* Live indicator */}
-                <div className="hidden lg:flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[11px] font-bold text-emerald-600 tracking-tight">Live</span>
+                    <div className="min-w-0">
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                            Admin panel
+                        </p>
+                        <h2 className="truncate text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+                            {title}
+                        </h2>
+                    </div>
                 </div>
 
-                {/* Sync Button — passes syncData directly, no wrapping arrow */}
-                <button
-                    onClick={syncData}
-                    disabled={isLoading}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-500 hover:text-stone-800 transition-all group"
-                    title="Sync Data"
-                >
-                    <RefreshCw size={13} className={cn("transition-transform duration-500", isLoading && "animate-spin")} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline group-hover:block transition-all">Sync</span>
-                </button>
-            </div>
-
-            {/* Right: bell + user */}
-            <div className="flex items-center gap-2">
-
-                {/* Notification bell */}
-                <button className="relative p-2 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors">
-                    <Bell size={15} strokeWidth={1.75} />
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-indigo-500 rounded-full ring-2 ring-white" />
-                </button>
-
-                <div className="w-px h-5 bg-stone-200 mx-1" />
-
-                {/* User dropdown */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg hover:bg-stone-100 transition-colors focus:outline-none">
-                            <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
-                                <span className="text-[10px] font-bold text-white tracking-wider">AD</span>
-                            </div>
-                            <span className="hidden sm:block text-xs font-semibold text-stone-700 tracking-tight">
-                                Admin User
-                            </span>
-                            <ChevronDown size={12} className="text-stone-400 hidden sm:block" />
-                        </button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent
-                        align="end"
-                        className="w-48 mt-2 bg-white border border-stone-200 shadow-lg rounded-xl p-1.5"
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={syncData}
+                        disabled={isLoading}
+                        className="hidden h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/84 px-4 text-sm font-semibold text-slate-600 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950 sm:inline-flex"
+                        title="Sync Data"
                     >
-                        <DropdownMenuLabel className="px-2.5 py-2">
-                            <p className="text-xs font-bold text-stone-900">Admin User</p>
-                            <p className="text-[10px] text-stone-400 font-mono mt-0.5">admin@nexusos.com</p>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-stone-100 my-1" />
-                        <DropdownMenuItem
-                            onClick={onLogout}
-                            className="flex items-center gap-2 px-2.5 py-2 cursor-pointer rounded-lg text-xs font-semibold text-rose-600 focus:text-rose-600 hover:bg-rose-50 focus:bg-rose-50 transition-colors"
+                        <RefreshCw size={14} className={cn("transition-transform duration-500", isLoading && "animate-spin")} />
+                        Refresh
+                    </button>
+
+                    <button className="relative flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white/84 text-slate-600 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950">
+                        <Bell size={15} strokeWidth={1.75} />
+                        <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500" />
+                    </button>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/84 px-2 py-1.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-white">
+                                    <span className="text-[0.7rem] font-semibold tracking-[0.16em]">AD</span>
+                                </div>
+                                <div className="hidden text-left sm:block">
+                                    <p className="text-xs font-semibold text-slate-900">Admin User</p>
+                                    <p className="text-[0.68rem] text-slate-400">Operations</p>
+                                </div>
+                                <ChevronDown size={14} className="hidden text-slate-400 sm:block" />
+                            </button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-52 rounded-[1.25rem] border border-white/80 bg-white/94 p-2 shadow-[0_28px_70px_-48px_rgba(20,30,59,0.45)]"
                         >
-                            <LogOut size={13} strokeWidth={2} />
-                            Sign out
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                            <DropdownMenuLabel className="px-3 py-2">
+                                <p className="text-sm font-semibold text-slate-950">Admin User</p>
+                                <p className="text-xs text-slate-400">admin@mdcomputers.com</p>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-slate-100" />
+                            <DropdownMenuItem
+                                onClick={syncData}
+                                className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:bg-slate-50"
+                            >
+                                <RefreshCw size={14} className={cn(isLoading && "animate-spin")} />
+                                Refresh data
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={onLogout}
+                                className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 focus:bg-rose-50"
+                            >
+                                <LogOut size={14} />
+                                Sign out
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
         </header>
     );

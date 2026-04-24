@@ -155,23 +155,185 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
 
   const legacyAddProduct = useCallback(
     async (data: any) => {
-      await catalog.createProduct(data);
+      const brandName =
+        data?.specs?.brand ||
+        data?.brand?.name ||
+        data?.brandName;
+      const brand = catalog.brands.find((entry) => entry.name === brandName);
+      const directSubCategory = catalog.subCategories.find(
+        (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+      );
+      const categoryMatch = catalog.categories.find(
+        (entry) => entry.name === data?.category,
+      );
+      const subCategoryId =
+        directSubCategory?.id || categoryMatch?.subCategories?.[0]?.id;
+
+      if (!subCategoryId) {
+        throw new Error(`Unable to resolve a sub-category for "${data?.category ?? "this product"}".`);
+      }
+
+      const createdProduct = await fetchJSON("/api/catalog/products", {
+        method: "POST",
+        body: JSON.stringify({
+          name: data.name,
+          slug: data.slug,
+          subCategoryId,
+          brandId: brand?.id,
+          description: data.description,
+          status: data.status || "ACTIVE",
+          variants: [
+            {
+              sku: data.sku,
+              price: data.price || 0,
+              status: "IN_STOCK",
+            },
+          ],
+        }),
+      });
+
+      const variantId = createdProduct?.variants?.[0]?.id;
+      const inventoryUnits = Array.isArray(data?.inventoryUnits)
+        ? data.inventoryUnits
+            .map((unit: any) => ({
+              serialNumber: String(unit?.serialNumber ?? "").trim(),
+              partNumber: String(unit?.partNumber ?? "").trim(),
+            }))
+            .filter((unit: any) => unit.serialNumber && unit.partNumber)
+        : [];
+
+      if (variantId && inventoryUnits.length > 0) {
+        await fetchJSON("/api/inventory/items", {
+          method: "POST",
+          body: JSON.stringify({
+            variantId,
+            trackingType: "SERIALIZED",
+            costPrice:
+              typeof data?.costPrice === "number" ? data.costPrice : undefined,
+            units: inventoryUnits,
+          }),
+        });
+      }
+
+      await Promise.all([catalog.refreshProducts(), inventory.refreshInventory()]);
     },
-    [catalog],
+    [catalog, inventory],
   );
 
   const legacyUpdateProduct = useCallback(
     async (idOrData: any, maybeData?: any) => {
-      if (typeof idOrData === "string") {
-        await catalog.updateProduct(idOrData, maybeData);
-        return;
+      const data =
+        typeof idOrData === "string"
+          ? { ...(maybeData || {}), id: idOrData }
+          : idOrData;
+
+      if (!data?.id) return;
+
+      const existingProduct = catalog.products.find((entry) => entry.id === data.id);
+      const firstVariant = existingProduct?.variants?.[0];
+      const brandName =
+        data?.specs?.brand ||
+        data?.brand?.name ||
+        existingProduct?.brand?.name;
+      const brand = catalog.brands.find((entry) => entry.name === brandName);
+      const directSubCategory = catalog.subCategories.find(
+        (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+      );
+      const categoryMatch = catalog.categories.find(
+        (entry) => entry.name === data?.category,
+      );
+      const subCategoryId =
+        data?.subCategoryId ||
+        directSubCategory?.id ||
+        categoryMatch?.subCategories?.[0]?.id ||
+        existingProduct?.subCategoryId;
+
+      await fetchJSON(`/api/catalog/products/${data.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: data.name,
+          slug: data.slug,
+          subCategoryId,
+          brandId: brand?.id,
+          description: data.description,
+          status: data.status || existingProduct?.status,
+        }),
+      });
+
+      if (firstVariant) {
+        await fetchJSON(`/api/catalog/variants/${firstVariant.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            sku: data.sku || firstVariant.sku,
+            price: data.price ?? firstVariant.price,
+            status:
+              data.status === "ARCHIVED" ? "DISCONTINUED" : firstVariant.status,
+          }),
+        });
       }
 
-      if (idOrData?.id) {
-        await catalog.updateProduct(idOrData.id, idOrData);
+      const desiredUnits = Array.isArray(data?.inventoryUnits)
+        ? data.inventoryUnits
+            .map((unit: any) => ({
+              id: unit?.id,
+              serialNumber: String(unit?.serialNumber ?? "").trim(),
+              partNumber: String(unit?.partNumber ?? "").trim(),
+            }))
+            .filter((unit: any) => unit.serialNumber && unit.partNumber)
+        : [];
+
+      const existingUnits = Array.isArray(firstVariant?.inventoryItems)
+        ? firstVariant.inventoryItems
+        : [];
+
+      for (const unit of desiredUnits.filter((entry: any) => entry.id)) {
+        await fetchJSON(`/api/inventory/items/${unit.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            serialNumber: unit.serialNumber,
+            partNumber: unit.partNumber,
+            costPrice:
+              typeof data?.costPrice === "number" ? data.costPrice : undefined,
+          }),
+        });
       }
+
+      const desiredIds = new Set(
+        desiredUnits.filter((entry: any) => entry.id).map((entry: any) => entry.id),
+      );
+
+      for (const unit of existingUnits.filter((entry: any) => !desiredIds.has(entry.id))) {
+        await fetchJSON(`/api/inventory/items/${unit.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            quantityOnHand: 0,
+            quantityReserved: 0,
+            status: "DAMAGED",
+            notes: "Removed from active inventory in product editor",
+          }),
+        });
+      }
+
+      const newUnits = desiredUnits.filter((entry: any) => !entry.id);
+      if (firstVariant?.id && newUnits.length > 0) {
+        await fetchJSON("/api/inventory/items", {
+          method: "POST",
+          body: JSON.stringify({
+            variantId: firstVariant.id,
+            trackingType: "SERIALIZED",
+            costPrice:
+              typeof data?.costPrice === "number" ? data.costPrice : undefined,
+            units: newUnits.map((unit: any) => ({
+              serialNumber: unit.serialNumber,
+              partNumber: unit.partNumber,
+            })),
+          }),
+        });
+      }
+
+      await Promise.all([catalog.refreshProducts(), inventory.refreshInventory()]);
     },
-    [catalog],
+    [catalog, inventory],
   );
 
   const legacyDeleteProduct = useCallback(

@@ -1,8 +1,8 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
-import { X, Trash2, AlertOctagon, CheckCircle2, AlertTriangle, CreditCard, Save, ShoppingBag } from 'lucide-react';
+import { X, Trash2, AlertOctagon, CheckCircle2, AlertTriangle, CreditCard, ShoppingBag } from 'lucide-react';
 import { CompatibilityCheck, CompatibilitySeverity } from '@/types';
 import Link from 'next/link';
 
@@ -21,11 +21,7 @@ const CartDrawer: React.FC = () => {
     overallStatus,
     compatibilityErrors,
     compatibilityWarnings,
-    createBuild,
   } = useBuild();
-
-  const [isNaming, setIsNaming] = useState(false);
-  const [buildName, setBuildName] = useState('');
 
   useEffect(() => {
     if (isCartOpen) {
@@ -43,16 +39,6 @@ const CartDrawer: React.FC = () => {
   const isCompatible = overallStatus === 'COMPATIBLE';
   const isFatal = overallStatus === 'INCOMPATIBLE';
   const issues = [...compatibilityErrors, ...compatibilityWarnings];
-
-  const handleSaveBuild = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (buildName.trim()) {
-      await createBuild(buildName);
-      setIsNaming(false);
-      setBuildName('');
-      alert('Build Saved Successfully!');
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -179,30 +165,6 @@ const CartDrawer: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  {isNaming ? (
-                    <form onSubmit={handleSaveBuild} className="flex flex-col gap-1.5 mb-1">
-                      <input
-                        autoFocus
-                        type="text"
-                        placeholder="Build Name..."
-                        className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
-                        value={buildName}
-                        onChange={(e) => setBuildName(e.target.value)}
-                      />
-                      <div className="flex gap-1.5">
-                        <button type="submit" className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-xs font-bold">Save</button>
-                        <button type="button" onClick={() => setIsNaming(false)} className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-md text-xs font-medium">Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <button
-                      onClick={() => setIsNaming(true)}
-                      className="w-full flex justify-center items-center gap-2 px-3 py-2 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50 active:scale-95 transition-all"
-                    >
-                      <Save size={14} /> Save Build
-                    </button>
-                  )}
-
                   <Link
                     href="/checkout"
                     onClick={() => setCartOpen(false)}

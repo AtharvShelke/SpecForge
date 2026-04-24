@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState, lazy, Suspense } from "react";
+import { useMemo, lazy, Suspense } from "react";
 
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useShop } from "@/context/ShopContext";
@@ -35,10 +35,10 @@ const ScrollTopButton = lazy(() => import("@/components/ui/ScrollTopButton"));
 function SectionSkeleton() {
   return (
     <div
-      className="w-full py-24 flex items-center justify-center"
+      className="flex w-full items-center justify-center py-24"
       aria-hidden="true"
     >
-      <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white/40 animate-spin" />
+      <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-slate-900 animate-spin" />
     </div>
   );
 }
@@ -47,12 +47,12 @@ function SectionSkeleton() {
 
 function StoreLoadingScreen() {
   return (
-    <PageLayout bgClass="bg-zinc-950">
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4">
+    <PageLayout bgClass="bg-transparent">
+      <div className="flex min-h-[80vh] flex-col items-center justify-center gap-4">
         <div className="relative">
-          <div className="w-12 h-12 rounded-full border-2 border-white/10 border-t-white/60 animate-spin" />
+          <div className="h-12 w-12 rounded-full border-2 border-slate-200 border-t-slate-900 animate-spin" />
         </div>
-        <p className="text-zinc-500 text-sm font-medium">Loading Store...</p>
+        <p className="text-sm font-medium text-slate-500">Loading store...</p>
       </div>
     </PageLayout>
   );
@@ -63,8 +63,8 @@ function StoreLoadingScreen() {
 export default function StorefrontPage() {
   const { products, categories, brands, addToCart, isLoading } = useShop();
 
-  const { builds } = useBuild();
-  const featuredBuilds = builds.slice(0, 4);
+  const { buildGuides } = useBuild();
+  const featuredBuilds = buildGuides.slice(0, 4);
 
   const productCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -85,7 +85,7 @@ export default function StorefrontPage() {
     sortOrder: index,
   }));
   return (
-    <PageLayout bgClass="bg-zinc-950">
+    <PageLayout bgClass="bg-transparent">
       {/* Above fold — no Suspense boundary needed */}
       <HeroSection />
       <CategorySection

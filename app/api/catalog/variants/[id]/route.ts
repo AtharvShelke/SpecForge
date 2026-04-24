@@ -1,13 +1,23 @@
-import { NextResponse } from 'next/server';
-import { CatalogService } from '@/lib/services/catalog.service';
+import { NextRequest, NextResponse } from "next/server";
+import { ServiceError, updateVariant } from "@/lib/services/catalog.service";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
-    const variant = await CatalogService.getVariantById(id);
-    if (!variant) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const body = await req.json();
+    const variant = await updateVariant(id, body);
     return NextResponse.json(variant);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to update variant." },
+      { status: 500 },
+    );
   }
 }

@@ -3,15 +3,24 @@ import "./globals.css";
 import { ShopProvider } from "@/context/ShopContext";
 import { BuildProvider } from "@/context/BuildContext";
 import { OrderProvider } from "@/context/OrderContext";
-import Navbar from "@/components/Navbar";
-
 import { Toaster } from "@/components/ui/toaster";
-import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
+import { Cormorant_Garamond, Manrope } from "next/font/google";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
+
+const sansFont = Manrope({
+  subsets: ["latin"],
+  variable: "--font-sans-modern",
+});
+
+const displayFont = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: {
@@ -41,8 +50,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-         <NextSSRPlugin
+      <body
+        className={`${sansFont.variable} ${displayFont.variable} app-shell antialiased`}
+      >
+        <NextSSRPlugin
           /**
            * The `extractRouterConfig` will extract **only** the route configs
            * from the router to prevent additional information from being
@@ -54,12 +65,10 @@ export default function RootLayout({
         <ShopProvider>
           <OrderProvider>
             <BuildProvider>
-
               <main className="min-h-screen pb-16 md:pb-0">
                 {children}
               </main>
               <CartDrawer />
-
               <Toaster />
             </BuildProvider>
           </OrderProvider>

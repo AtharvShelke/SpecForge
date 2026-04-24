@@ -1,14 +1,14 @@
-// components/dashboard/AdminSidebar.tsx
 "use client";
+
 import React, { memo, useCallback } from "react";
 import {
-  LayoutDashboard,
-  ShoppingBag,
-  Package,
-  Layers,
-  Tag,
   Bookmark,
-  Megaphone,
+  Layers,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  ShoppingBag,
+  Tag,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,82 +21,56 @@ interface NavItem {
   group?: "primary" | "secondary";
 }
 
-// Defined outside component — never reallocated on render
 const NAV_ITEMS: NavItem[] = [
-  {
-    label: "Overview",
-    icon: LayoutDashboard,
-    key: "overview",
-    group: "primary",
-  },
+  { label: "Overview", icon: LayoutDashboard, key: "overview", group: "primary" },
   { label: "Orders", icon: ShoppingBag, key: "orders", group: "primary" },
   { label: "Products", icon: Package, key: "products", group: "primary" },
   { label: "Inventory", icon: Layers, key: "inventory", group: "primary" },
-  // { label: 'Procurement', icon: Truck, key: 'procurement', group: 'primary' },
   { label: "Categories", icon: Tag, key: "categories", group: "secondary" },
   { label: "Brands", icon: Bookmark, key: "brands", group: "secondary" },
-  {
-    label: "Saved Builds",
-    icon: Layers,
-    key: "saved-builds",
-    group: "secondary",
-  },
-  // { label: 'Billing & Invoices', icon: CreditCard, key: 'billing', group: 'secondary' },
+  { label: "Saved Builds", icon: Layers, key: "saved-builds", group: "secondary" },
 ];
 
-// Pre-split at module load — .filter() never runs inside the component
-const PRIMARY_NAV = NAV_ITEMS.filter((i) => i.group === "primary");
-const SECONDARY_NAV = NAV_ITEMS.filter((i) => i.group === "secondary");
+const PRIMARY_NAV = NAV_ITEMS.filter((item) => item.group === "primary");
+const SECONDARY_NAV = NAV_ITEMS.filter((item) => item.group === "secondary");
 
 interface AdminSidebarProps {
   activeTab: string;
-  setActiveTab: (tab: any) => void;
+  setActiveTab: (tab: string) => void;
   onLogout: () => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
 
-/* ─── Single nav button — memo prevents re-render of unchanged items ──────── */
-interface NavButtonProps {
+const NavButton = memo(function NavButton({
+  item,
+  isActive,
+  onClick,
+}: {
   item: NavItem;
   isActive: boolean;
   onClick: (key: string) => void;
-}
-
-const NavButton = memo<NavButtonProps>(({ item, isActive, onClick }) => {
+}) {
   const Icon = item.icon;
-  // Stable per-item handler — only re-created when `onClick` identity changes
-  const handleClick = useCallback(() => onClick(item.key), [item.key, onClick]);
 
   return (
     <button
-      onClick={handleClick}
+      onClick={() => onClick(item.key)}
       className={cn(
-        "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 group",
+        "flex w-full items-center gap-3 rounded-[1.2rem] px-4 py-3 text-left text-sm font-semibold transition-all duration-300",
         isActive
-          ? "bg-indigo-600 text-white shadow-sm"
-          : "text-stone-500 hover:text-stone-900 hover:bg-stone-100/80",
+          ? "bg-slate-950 text-white shadow-[0_22px_40px_-30px_rgba(15,23,42,0.95)]"
+          : "text-slate-600 hover:bg-white hover:text-slate-950",
       )}
     >
-      <Icon
-        className={cn(
-          "w-3.5 h-3.5 shrink-0 transition-colors",
-          isActive
-            ? "text-white/90"
-            : "text-stone-400 group-hover:text-stone-700",
-        )}
-        strokeWidth={isActive ? 2.5 : 1.75}
-      />
-      <span className="tracking-tight truncate">{item.label}</span>
+      <Icon className="size-4 shrink-0" />
+      <span>{item.label}</span>
     </button>
   );
 });
-NavButton.displayName = "NavButton";
 
-/* ─── Sidebar ─────────────────────────────────────────────────────────────── */
 export const AdminSidebar = memo<AdminSidebarProps>(
-  ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
-    // Stable callback — closes sidebar on mobile after navigation
+  ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }) => {
     const handleNavClick = useCallback(
       (key: string) => {
         setActiveTab(key);
@@ -105,91 +79,106 @@ export const AdminSidebar = memo<AdminSidebarProps>(
       [setActiveTab, setIsOpen],
     );
 
-    const handleOverlayClick = useCallback(() => setIsOpen(false), [setIsOpen]);
-
     return (
       <>
-        {/* Mobile overlay */}
         {isOpen && (
           <div
-            className="fixed inset-0 bg-stone-900/20 backdrop-blur-[2px] z-40 lg:hidden"
-            onClick={handleOverlayClick}
+            className="fixed inset-0 z-40 bg-slate-950/18 backdrop-blur-sm lg:hidden"
+            onClick={() => setIsOpen(false)}
           />
         )}
 
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-56 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 h-screen",
-            "bg-white border-r border-stone-100",
-            isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full",
+            "fixed inset-y-3 left-3 z-50 w-[300px] rounded-[2rem] border border-white/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(245,244,240,0.92))] p-4 shadow-[0_34px_90px_-60px_rgba(20,30,59,0.5)] transition-transform duration-300 lg:static lg:inset-auto lg:h-[calc(100vh-2rem)] lg:w-[290px]",
+            isOpen ? "translate-x-0" : "-translate-x-[110%] lg:translate-x-0",
           )}
         >
-          {/* Brand */}
-          <div className="px-5 h-[60px] flex items-center gap-3 shrink-0 border-b border-stone-100">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
-              <Layers className="w-3.5 h-3.5 text-white" strokeWidth={2} />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-sm font-bold text-stone-900 tracking-tight leading-none">
-                Nexus OS
-              </h1>
-              <p className="text-[10px] text-stone-400 mt-0.5 font-bold tracking-[0.12em] uppercase">
-                Admin Hub
-              </p>
-            </div>
-            <button
-              className="ml-auto lg:hidden p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
-              onClick={handleOverlayClick}
-            >
-              <X className="w-3.5 h-3.5 text-stone-400" />
-            </button>
-          </div>
-
-          <ScrollArea className="flex-1">
-            <div className="px-3 py-4 space-y-5">
-              {/* Operations group */}
-              <div>
-                <p className="px-3 mb-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                  Operations
-                </p>
-                <div className="space-y-0.5">
-                  {PRIMARY_NAV.map((item) => (
-                    <NavButton
-                      key={item.key}
-                      item={item}
-                      isActive={activeTab === item.key}
-                      onClick={handleNavClick}
-                    />
-                  ))}
+          <div className="flex h-full flex-col">
+            <div className="hairline pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                  <Layers className="size-5" />
                 </div>
+                <div>
+                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                    MD
+                  </p>
+                  <h1 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">
+                    Control
+                  </h1>
+                </div>
+                <button
+                  className="ml-auto flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-white hover:text-slate-950 lg:hidden"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <X className="size-4" />
+                </button>
               </div>
 
-              <div className="mx-3 h-px bg-stone-100" />
-
-              {/* Management group */}
-              <div>
-                <p className="px-3 mb-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                  Management
+              <div className="mt-5 rounded-[1.5rem] border border-white/80 bg-white/72 p-4">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                  Workspace
                 </p>
-                <div className="space-y-0.5">
-                  {SECONDARY_NAV.map((item) => (
-                    <NavButton
-                      key={item.key}
-                      item={item}
-                      isActive={activeTab === item.key}
-                      onClick={handleNavClick}
-                    />
-                  ))}
-                </div>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  Cleaner operations, calmer hierarchy, and faster access to high-frequency admin tasks.
+                </p>
               </div>
             </div>
-          </ScrollArea>
 
-          {/* Version tag */}
-          <div className="px-5 py-3 border-t border-stone-100 shrink-0">
-            <p className="text-[10px] font-mono text-stone-300 tabular-nums">
-              v1.0.0 · Admin
-            </p>
+            <ScrollArea className="flex-1 py-4">
+              <div className="space-y-6 pr-1">
+                <div>
+                  <p className="mb-3 px-2 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Operations
+                  </p>
+                  <div className="space-y-2">
+                    {PRIMARY_NAV.map((item) => (
+                      <NavButton
+                        key={item.key}
+                        item={item}
+                        isActive={activeTab === item.key}
+                        onClick={handleNavClick}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-3 px-2 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Catalog
+                  </p>
+                  <div className="space-y-2">
+                    {SECONDARY_NAV.map((item) => (
+                      <NavButton
+                        key={item.key}
+                        item={item}
+                        isActive={activeTab === item.key}
+                        onClick={handleNavClick}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+
+            <div className="mt-4 rounded-[1.5rem] border border-white/85 bg-white/78 p-4">
+              <div className="mb-4">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  Session
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Admin workspace is ready.
+                </p>
+              </div>
+              <button
+                onClick={onLogout}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-950 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
+              >
+                <LogOut className="size-4" />
+                Sign out
+              </button>
+            </div>
           </div>
         </aside>
       </>

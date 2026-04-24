@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
-import { Build, CompatibilityLevel } from '@/types';
+import { BuildGuide } from '@/types';
 import { CATEGORY_NAMES } from '@/lib/categoryUtils';
 import {
     Upload,
@@ -12,12 +12,13 @@ import {
     HardDrive,
     Zap,
     Box,
-    CheckCircle2,
     AlertTriangle,
-    AlertOctagon,
     ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
+
+type GuideItem = NonNullable<BuildGuide['items']>[number];
+type GuideSpec = NonNullable<NonNullable<GuideItem['variant']>['variantSpecs']>[number];
 
 // Category Icon Map
 const CATEGORY_ICON: Record<string, ReactNode> = {
@@ -41,7 +42,7 @@ export default function SharedBuildPage() {
     const buildId = params?.buildId as string;
     const { loadCart, setCartOpen } = useShop();
 
-    const [build, setBuild] = useState<Build | null>(null);
+    const [build, setBuild] = useState<BuildGuide | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -49,14 +50,14 @@ export default function SharedBuildPage() {
         async function fetchBuild() {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/builds/${buildId}`);
+                const res = await fetch(`/api/build-guides/${buildId}`);
                 if (!res.ok) {
                     throw new Error(res.status === 404 ? 'Build not found' : 'Failed to load build');
                 }
                 const data = await res.json();
                 setBuild(data);
-            } catch (err: any) {
-                setError(err.message || 'An error occurred while loading the build.');
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'An error occurred while loading the build.');
             } finally {
                 setLoading(false);
             }
@@ -69,34 +70,21 @@ export default function SharedBuildPage() {
     const handleLoadCart = () => {
         if (!build) return;
         const newCart = (build.items ?? [])
-            .filter((item: any) => item.variant?.product)
-            .map((item: any) => ({ ...item.variant.product, quantity: 1, selectedVariant: item.variant }));
+            .filter((item: GuideItem) => Boolean(item.variant?.product))
+            .map((item: GuideItem) => ({ ...item.variant!.product!, quantity: item.quantity ?? 1, selectedVariant: item.variant }));
         loadCart(newCart);
         setCartOpen(true);
         router.push('/products?mode=build');
     };
 
-    const cartItems = useMemo(() => {
-        if (!build) return [];
-        return (build.items ?? [])
-            .map((i: any) => (i.variant?.product ? { ...i.variant.product, quantity: 1, selectedVariant: i.variant } : null))
-            .filter(Boolean);
-    }, [build]);
-
-    // Read compatibility from the build object returned by the API
-    const report = useMemo(() => {
-        if (!build || !build.buildCompatibilityResults || build.buildCompatibilityResults.length === 0) {
-             return { status: CompatibilityLevel.COMPATIBLE, issues: [] };
-        }
-        const lastResult = build.buildCompatibilityResults[build.buildCompatibilityResults.length - 1];
-        
-        let status = CompatibilityLevel.COMPATIBLE;
-        if (!lastResult.isCompatible) status = CompatibilityLevel.INCOMPATIBLE;
-        else if (lastResult.checks?.some((c: any) => !c.passed && c.severity === 'WARNING')) status = CompatibilityLevel.WARNING;
-
-        const issues = lastResult.checks?.filter((c: any) => !c.passed) || [];
-        return { status, issues };
-    }, [build]);
+    const buildItems = useMemo(() => build?.items ?? [], [build]);
+    const totalValue = useMemo(
+        () => buildItems.reduce(
+            (sum, item: GuideItem) => sum + Number(item.variant?.price ?? 0) * Number(item.quantity ?? 1),
+            0,
+        ),
+        [buildItems],
+    );
 
     if (loading) {
         return (
@@ -117,7 +105,7 @@ export default function SharedBuildPage() {
                     <h1 className="text-2xl font-bold text-zinc-900 mb-2">Build Not Found</h1>
                     <p className="text-zinc-500 mb-6">{error || "The build you're looking for doesn't exist or has been deleted."}</p>
                     <Link
-                        href="/builds"
+                        href="/build-guides"
                         className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-xl font-medium transition-colors"
                     >
                         <ArrowLeft size={18} /> Go back to Builds
@@ -127,35 +115,26 @@ export default function SharedBuildPage() {
         );
     }
 
-    const isIncompat = report.status === CompatibilityLevel.INCOMPATIBLE;
-    const isWarning = report.status === CompatibilityLevel.WARNING;
-
-    const compatCfg = isIncompat
-        ? { bg: 'bg-red-50 border-red-200 text-red-700', label: 'Incompatible', Icon: AlertOctagon }
-        : isWarning
-            ? { bg: 'bg-yellow-50 border-yellow-200 text-yellow-700', label: 'Minor Issues', Icon: AlertTriangle }
-            : { bg: 'bg-emerald-50 border-emerald-200 text-emerald-700', label: 'Fully Compatible', Icon: CheckCircle2 };
-
-    const { Icon: CompatIcon } = compatCfg;
-    const buildItems = build.items ?? [];
-
     return (
         <div className="min-h-screen bg-zinc-50 py-10">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <Link
-                    href="/builds"
+                    href="/build-guides"
                     className="inline-flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-800 transition-colors mb-6"
                 >
-                    <ArrowLeft size={16} /> Back to My Builds
+                    <ArrowLeft size={16} /> Back to Build Guides
                 </Link>
                 <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
                     {/* Header */}
                     <div className="p-6 sm:p-8 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{build.name}</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{build.title}</h1>
                             <p className="text-zinc-500 mt-1">
                                 {new Date(build.createdAt).toLocaleDateString()} · {buildItems.length} components
                             </p>
+                            {build.description && (
+                                <p className="text-zinc-500 mt-3 max-w-2xl">{build.description}</p>
+                            )}
                         </div>
                         <button
                             onClick={handleLoadCart}
@@ -166,20 +145,18 @@ export default function SharedBuildPage() {
                         </button>
                     </div>
 
-                    {/* Compat Banner */}
+                    {/* Guide Banner */}
                     <div className="px-6 sm:px-8 py-4 bg-zinc-50/50 border-b border-zinc-100 flex items-center gap-2 text-sm font-medium">
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${compatCfg.bg}`}>
-                            <CompatIcon size={16} />
-                            {compatCfg.label}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-blue-50 border-blue-200 text-blue-700">
+                            <AlertTriangle size={16} />
+                            Admin-curated guide
                         </div>
-                        {report.issues.length > 0 && (
-                            <span className="text-zinc-500 ml-2">— {report.issues[0].message}</span>
-                        )}
+                        <span className="text-zinc-500 ml-2">Load it into the builder to customize, continue, and order.</span>
                     </div>
 
                     {/* Build Items */}
                     <div className="p-6 sm:p-8 space-y-4">
-                        {buildItems.map((item: any) => (
+                        {buildItems.map((item: GuideItem) => (
                             <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 border border-zinc-100 rounded-xl p-4 hover:bg-zinc-50 transition-colors">
                                 <div className="w-16 h-16 bg-white border border-zinc-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden self-start sm:self-auto">
                                     <img src={item.variant?.product?.media?.[0]?.url || '/placeholder.png'} alt={item.variant?.product?.name} className="w-full h-full object-contain p-1.5" />
@@ -191,7 +168,7 @@ export default function SharedBuildPage() {
                                         {item.variant?.product?.subCategory?.category?.name || item.variant?.product?.subCategory?.name}
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {item.variant?.variantSpecs && Array.isArray(item.variant.variantSpecs) && item.variant.variantSpecs.slice(0, 4).map((spec: any) => (
+                                        {item.variant?.variantSpecs?.slice(0, 4).map((spec: GuideSpec) => (
                                             <span key={spec.id} className="text-[11px] font-medium bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md">
                                                 {spec.spec?.name}: {spec.valueString || spec.valueNumber || spec.valueBool}
                                             </span>
@@ -200,9 +177,14 @@ export default function SharedBuildPage() {
                                 </div>
                                 <div className="sm:text-right flex-shrink-0 mt-2 sm:mt-0">
                                     <p className="font-bold text-zinc-900 text-lg">₹{item.variant?.price?.toLocaleString('en-IN')}</p>
+                                    <p className="text-xs text-zinc-400">Qty {item.quantity ?? 1}</p>
                                 </div>
                             </div>
                         ))}
+                    </div>
+                    <div className="px-6 sm:px-8 py-5 border-t border-zinc-100 bg-zinc-50/60 flex items-center justify-between">
+                        <span className="text-sm font-medium text-zinc-500">Estimated total</span>
+                        <span className="text-xl font-bold text-zinc-900">₹{(build.total || totalValue).toLocaleString('en-IN')}</span>
                     </div>
                 </div>
             </div>

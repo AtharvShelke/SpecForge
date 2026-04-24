@@ -17,7 +17,29 @@ export async function GET(req: NextRequest) {
     });
 
     const normalized = serializeInventoryItems(items as any[]);
-    const filtered = normalized.filter((item: any) => {
+    const grouped = Array.from(
+      normalized.reduce((map, item: any) => {
+        const key = item.variantId ?? item.sku ?? item.id;
+        const existing = map.get(key);
+
+        if (!existing) {
+          map.set(key, { ...item });
+          return map;
+        }
+
+        existing.quantityOnHand = Number(existing.quantityOnHand ?? 0) + Number(item.quantityOnHand ?? 0);
+        existing.quantityReserved = Number(existing.quantityReserved ?? 0) + Number(item.quantityReserved ?? 0);
+        existing.quantity = Number(existing.quantity ?? 0) + Number(item.quantity ?? 0);
+        existing.reserved = Number(existing.reserved ?? 0) + Number(item.reserved ?? 0);
+        existing.costPrice =
+          Number(existing.costPrice ?? 0) > 0
+            ? Number(existing.costPrice ?? 0)
+            : Number(item.costPrice ?? 0);
+        return map;
+      }, new Map<string, any>()),
+    ).map(([, value]) => value);
+
+    const filtered = grouped.filter((item: any) => {
       const productCategory =
         item?.variant?.product?.subCategory?.category?.name ??
         item?.variant?.product?.category ??
