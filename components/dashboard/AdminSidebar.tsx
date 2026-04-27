@@ -22,13 +22,23 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Overview", icon: LayoutDashboard, key: "overview", group: "primary" },
+  {
+    label: "Overview",
+    icon: LayoutDashboard,
+    key: "overview",
+    group: "primary",
+  },
   { label: "Orders", icon: ShoppingBag, key: "orders", group: "primary" },
   { label: "Products", icon: Package, key: "products", group: "primary" },
   { label: "Inventory", icon: Layers, key: "inventory", group: "primary" },
   { label: "Categories", icon: Tag, key: "categories", group: "secondary" },
   { label: "Brands", icon: Bookmark, key: "brands", group: "secondary" },
-  { label: "Saved Builds", icon: Layers, key: "saved-builds", group: "secondary" },
+  {
+    label: "Saved Builds",
+    icon: Layers,
+    key: "saved-builds",
+    group: "secondary",
+  },
 ];
 
 const PRIMARY_NAV = NAV_ITEMS.filter((item) => item.group === "primary");
@@ -115,15 +125,6 @@ export const AdminSidebar = memo<AdminSidebarProps>(
                   <X className="size-4" />
                 </button>
               </div>
-
-              <div className="mt-5 rounded-[1.5rem] border border-white/80 bg-white/72 p-4">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  Workspace
-                </p>
-                <p className="mt-2 text-sm leading-7 text-slate-600">
-                  Cleaner operations, calmer hierarchy, and faster access to high-frequency admin tasks.
-                </p>
-              </div>
             </div>
 
             <ScrollArea className="flex-1 py-4">
@@ -162,15 +163,7 @@ export const AdminSidebar = memo<AdminSidebarProps>(
               </div>
             </ScrollArea>
 
-            <div className="mt-4 rounded-[1.5rem] border border-white/85 bg-white/78 p-4">
-              <div className="mb-4">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  Session
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  Admin workspace is ready.
-                </p>
-              </div>
+            <div className=" rounded-[1.5rem] border border-white/85 bg-white/78 p-4">
               <button
                 onClick={onLogout}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-950 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800"

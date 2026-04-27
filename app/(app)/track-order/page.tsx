@@ -1,30 +1,45 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, memo, Fragment } from 'react';
+import Image from 'next/image';
 import { useShop } from '@/context/ShopContext';
-// Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
-const validateBuild = (_items: any[]): { status: CompatibilityLevel; issues: any[] } => ({
-    status: CompatibilityLevel.COMPATIBLE,
-    issues: [],
-});
+
+type CompatibilityIssue = { message: string };
+
 import {
-    Package, Search, Clock, CheckCircle2, Truck, PackageCheck,
-    XCircle, MapPin, CreditCard, MessageCircle, ShoppingCart,
-    AlertOctagon, AlertTriangle, CheckCircle, FileDown, RefreshCw,
+    Package,
+    Search,
+    Clock,
+    CheckCircle2,
+    Truck,
+    PackageCheck,
+    XCircle,
+    MapPin,
+    CreditCard,
+    MessageCircle,
+    ShoppingCart,
+    AlertOctagon,
+    AlertTriangle,
+    CheckCircle,
+    FileDown,
+    RefreshCw,
     type LucideIcon,
 } from 'lucide-react';
 import { Order, OrderStatus, CompatibilityLevel, CartItem } from '@/types';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
 
-// ── Constants (module scope — never recreated) ────────────────────────────────
+const validateBuild = (): { status: CompatibilityLevel; issues: CompatibilityIssue[] } => ({
+    status: CompatibilityLevel.COMPATIBLE,
+    issues: [],
+});
 
 const TIMELINE_STEPS: { status: OrderStatus; label: string; icon: LucideIcon }[] = [
-    { status: OrderStatus.PENDING,    label: 'Order Placed',       icon: Clock        },
-    { status: OrderStatus.PAID,       label: 'Payment Confirmed',  icon: CreditCard   },
-    { status: OrderStatus.PROCESSING, label: 'Being Packed',       icon: PackageCheck },
-    { status: OrderStatus.SHIPPED,    label: 'Shipped',            icon: Truck        },
-    { status: OrderStatus.DELIVERED,  label: 'Delivered',          icon: CheckCircle2 },
+    { status: OrderStatus.PENDING, label: 'Order Placed', icon: Clock },
+    { status: OrderStatus.PAID, label: 'Payment Confirmed', icon: CreditCard },
+    { status: OrderStatus.PROCESSING, label: 'Being Packed', icon: PackageCheck },
+    { status: OrderStatus.SHIPPED, label: 'Shipped', icon: Truck },
+    { status: OrderStatus.DELIVERED, label: 'Delivered', icon: CheckCircle2 },
 ];
 
 const STATUS_ORDER: OrderStatus[] = [
@@ -39,40 +54,48 @@ const CANCEL_STATUSES = new Set([OrderStatus.CANCELLED, OrderStatus.RETURNED]);
 
 const COMPAT_CONFIG = {
     [CompatibilityLevel.INCOMPATIBLE]: {
-        bg: 'bg-red-50 border-red-200', text: 'text-red-700',
-        icon: AlertOctagon, label: 'Incompatible Build',
+        chip: 'bg-rose-50 border-rose-200 text-rose-700',
+        icon: AlertOctagon,
+        label: 'Incompatible build',
     },
     [CompatibilityLevel.WARNING]: {
-        bg: 'bg-yellow-50 border-yellow-200', text: 'text-yellow-700',
-        icon: AlertTriangle, label: 'Minor Issues',
+        chip: 'bg-amber-50 border-amber-200 text-amber-700',
+        icon: AlertTriangle,
+        label: 'Needs review',
     },
     [CompatibilityLevel.COMPATIBLE]: {
-        bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700',
-        icon: CheckCircle, label: 'Fully Compatible',
+        chip: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+        icon: CheckCircle,
+        label: 'Fully compatible',
     },
 } as const;
 
-const statusIndex = (s: OrderStatus) => STATUS_ORDER.indexOf(s);
+const statusIndex = (status: OrderStatus) => STATUS_ORDER.indexOf(status);
 
-// ── CompatBadge ───────────────────────────────────────────────────────────────
-
-const CompatBadge = memo(function CompatBadge({ items }: { items: CartItem[] }) {
-    const report = useMemo(() => validateBuild(items), [items]);
-    const cfg    = COMPAT_CONFIG[report.status] ?? COMPAT_CONFIG[CompatibilityLevel.COMPATIBLE];
-    const { icon: Icon } = cfg;
+const CompatBadge = memo(function CompatBadge({ items: _items }: { items: CartItem[] }) {
+    void _items;
+    const report = useMemo(() => validateBuild(), []);
+    const config = COMPAT_CONFIG[report.status] ?? COMPAT_CONFIG[CompatibilityLevel.COMPATIBLE];
+    const Icon = config.icon;
 
     return (
-        <div className={`${cfg.bg} ${cfg.text} border rounded-2xl p-4 shadow-sm`}>
-            <div className="flex items-center gap-2 font-bold text-sm mb-2 uppercase tracking-wide">
-                <Icon size={18} />
-                Compatibility Snapshot — {cfg.label}
+        <div className={`rounded-[1.6rem] border p-5 ${config.chip}`}>
+            <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em]">
+                <Icon size={16} />
+                Compatibility snapshot
             </div>
+            <p className="mt-3 text-base font-semibold">{config.label}</p>
             {report.issues.length === 0 ? (
-                <p className="text-sm font-medium opacity-80">All components were compatible at the time of purchase.</p>
+                <p className="mt-2 text-sm leading-7 opacity-85">
+                    All components were compatible at the time of purchase.
+                </p>
             ) : (
-                <ul className="space-y-1.5 mt-2 text-sm font-medium">
-                    {report.issues.map((issue, i) => (
-                        <li key={i} className="opacity-90">• {issue.message}</li>
+                <ul className="mt-3 space-y-2 text-sm leading-7">
+                    {report.issues.map((issue, index) => (
+                        <li key={`${issue.message}-${index}`} className="flex items-start gap-2">
+                            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-current" />
+                            <span>{issue.message}</span>
+                        </li>
                     ))}
                 </ul>
             )}
@@ -80,67 +103,79 @@ const CompatBadge = memo(function CompatBadge({ items }: { items: CartItem[] }) 
     );
 });
 
-// ── OrderFinancials — extracted to avoid IIFE in JSX ─────────────────────────
-
 const OrderFinancials = memo(function OrderFinancials({ order }: { order: Order }) {
     const subtotal = order.subtotal ?? Math.round(order.total / 1.18);
-    const gst      = order.gstAmount ?? (order.total - subtotal);
+    const gst = order.gstAmount ?? (order.total - subtotal);
 
     return (
-        <>
-            <div className="flex justify-between items-center">
-                <span className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Subtotal</span>
-                <span className="text-base font-bold text-zinc-700">₹{subtotal.toLocaleString('en-IN')}</span>
+        <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm text-slate-600">
+                <span>Subtotal</span>
+                <span className="font-semibold text-slate-900">₹{subtotal.toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between items-center">
-                <span className="text-sm text-zinc-500 font-bold uppercase tracking-wider">GST (18%)</span>
-                <span className="text-base font-bold text-zinc-700">₹{gst.toLocaleString('en-IN')}</span>
+            <div className="flex items-center justify-between text-sm text-slate-600">
+                <span>GST (18%)</span>
+                <span className="font-semibold text-slate-900">₹{gst.toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between items-center pt-3 mt-3 border-t border-zinc-200">
-                <span className="text-lg text-zinc-950 font-black uppercase tracking-wider">Order Total</span>
-                <span className="text-2xl font-black text-indigo-600">₹{order.total.toLocaleString('en-IN')}</span>
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                <span className="text-base font-semibold text-slate-950">Order total</span>
+                <span className="text-2xl font-semibold tracking-[-0.03em] text-slate-950">₹{order.total.toLocaleString('en-IN')}</span>
             </div>
-        </>
+        </div>
     );
 });
 
-// ── TimelineStep — extracted to prevent re-renders on unrelated state ─────────
-
 interface TimelineStepProps {
-    step:          typeof TIMELINE_STEPS[number]
-    idx:           number
-    currentIdx:    number
-    logs:          Order['logs']
-    isLast:        boolean
-    mobile?:       boolean
+    step: typeof TIMELINE_STEPS[number];
+    idx: number;
+    currentIdx: number;
+    logs: Order['logs'];
+    isLast: boolean;
+    mobile?: boolean;
 }
 
 const TimelineStep = memo(function TimelineStep({
-    step, idx, currentIdx, logs, isLast, mobile = false,
+    step,
+    idx,
+    currentIdx,
+    logs,
+    isLast,
+    mobile = false,
 }: TimelineStepProps) {
     const isCompleted = idx <= currentIdx;
-    const isActive    = idx === currentIdx;
-    const logEntry    = logs?.find(l => l.status === step.status);
-    const Icon        = step.icon;
+    const isActive = idx === currentIdx;
+    const logEntry = logs?.find((log) => log.status === step.status);
+    const Icon = step.icon;
 
     if (mobile) {
         return (
             <div className="flex gap-4">
                 <div className="flex flex-col items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${isCompleted ? isActive ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 shadow-md shadow-indigo-600/20' : 'bg-indigo-600 text-white' : 'bg-zinc-100 text-zinc-400'}`}>
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-full ${
+                        isCompleted
+                            ? isActive
+                                ? 'bg-slate-950 text-white ring-4 ring-slate-200'
+                                : 'bg-slate-950 text-white'
+                            : 'bg-slate-100 text-slate-400'
+                    }`}>
                         <Icon size={16} />
                     </div>
                     {!isLast && (
-                        <div className={`w-0.5 flex-1 min-h-[32px] my-1 rounded-full ${idx < currentIdx ? 'bg-indigo-500' : 'bg-zinc-200'}`} />
+                        <div className={`my-1 min-h-[36px] w-px flex-1 ${idx < currentIdx ? 'bg-slate-900' : 'bg-slate-200'}`} />
                     )}
                 </div>
                 <div className="pb-6 pt-1">
-                    <p className={`text-sm font-bold leading-tight ${isCompleted ? 'text-zinc-950' : 'text-zinc-400'}`}>
+                    <p className={`text-sm font-semibold ${isCompleted ? 'text-slate-950' : 'text-slate-400'}`}>
                         {step.label}
                     </p>
                     {logEntry && (
-                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mt-1">
-                            {new Date(logEntry.timestamp).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        <p className="mt-1 text-xs text-slate-500">
+                            {new Date(logEntry.timestamp).toLocaleString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
                         </p>
                     )}
                 </div>
@@ -150,65 +185,66 @@ const TimelineStep = memo(function TimelineStep({
 
     return (
         <Fragment>
-            <div className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0 w-20">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${isCompleted ? isActive ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 shadow-lg shadow-indigo-600/30' : 'bg-indigo-600 text-white' : 'bg-zinc-100 text-zinc-400'}`}>
-                    <Icon size={20} />
+            <div className="flex w-28 flex-shrink-0 flex-col items-center gap-3">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                    isCompleted
+                        ? isActive
+                            ? 'bg-slate-950 text-white ring-4 ring-slate-200'
+                            : 'bg-slate-950 text-white'
+                        : 'bg-slate-100 text-slate-400'
+                }`}>
+                    <Icon size={18} />
                 </div>
-                <p className={`text-xs font-bold text-center leading-tight mt-1 ${isCompleted ? 'text-zinc-900' : 'text-zinc-400'}`}>
-                    {step.label}
-                </p>
-                {logEntry && (
-                    <p className="text-[10px] font-semibold text-zinc-400 text-center uppercase tracking-wide">
-                        {new Date(logEntry.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                <div className="text-center">
+                    <p className={`text-sm font-semibold ${isCompleted ? 'text-slate-950' : 'text-slate-400'}`}>
+                        {step.label}
                     </p>
-                )}
+                    {logEntry && (
+                        <p className="mt-1 text-xs text-slate-500">
+                            {new Date(logEntry.timestamp).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                            })}
+                        </p>
+                    )}
+                </div>
             </div>
             {!isLast && (
-                <div className="flex-1 px-1 mt-6">
-                    <div className={`h-1 w-full rounded-full transition-all duration-500 ${idx < currentIdx ? 'bg-indigo-500' : 'bg-zinc-200'}`} />
+                <div className="flex-1 px-2 pt-6">
+                    <div className={`h-px w-full ${idx < currentIdx ? 'bg-slate-900' : 'bg-slate-200'}`} />
                 </div>
             )}
         </Fragment>
     );
 });
 
-// ── TrackOrderPage ────────────────────────────────────────────────────────────
-
 export default function TrackOrderPage() {
     const { orders, refreshOrders, addToCart, clearCart, setCartOpen } = useShop();
 
     useEffect(() => { refreshOrders(); }, [refreshOrders]);
 
-    const [orderId,       setOrderId]       = useState('');
-    const [contact,       setContact]       = useState('');
-    const [searched,      setSearched]      = useState(false);
-    const [foundOrder,    setFoundOrder]    = useState<Order | null>(null);
+    const [orderId, setOrderId] = useState('');
+    const [contact, setContact] = useState('');
+    const [searched, setSearched] = useState(false);
+    const [foundOrder, setFoundOrder] = useState<Order | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    const handleSearch = useCallback((e: React.FormEvent) => {
-        e.preventDefault();
-        const trimId      = orderId.trim().toUpperCase();
+    const handleSearch = useCallback((event: React.FormEvent) => {
+        event.preventDefault();
+        const trimId = orderId.trim().toUpperCase();
         const trimContact = contact.trim().toLowerCase();
-        const match = orders.find((o: Order) =>
-            o.id.toUpperCase() === trimId &&
-            (o.email.toLowerCase() === trimContact || (o as any).phone?.toLowerCase() === trimContact)
+        const match = orders.find((order) =>
+            order.id.toUpperCase() === trimId &&
+            (order.email.toLowerCase() === trimContact || order.phone?.toLowerCase() === trimContact)
         );
         setFoundOrder(match ?? null);
         setSearched(true);
     }, [orderId, contact, orders]);
 
-    const handleOrderIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setOrderId(e.target.value); setSearched(false);
-    }, []);
-
-    const handleContactChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setContact(e.target.value); setSearched(false);
-    }, []);
-
     const handleReorder = useCallback(() => {
         if (!foundOrder) return;
         clearCart();
-        (foundOrder.items ?? []).forEach(item => addToCart(item as any));
+        (foundOrder.items ?? []).forEach((item) => addToCart(item as any));
         setCartOpen(true);
     }, [foundOrder, clearCart, addToCart, setCartOpen]);
 
@@ -216,16 +252,16 @@ export default function TrackOrderPage() {
         if (!foundOrder || isDownloading) return;
         try {
             setIsDownloading(true);
-            const res = await fetch(`/api/orders/${foundOrder.id}/invoice/pdf`);
-            if (!res.ok) throw new Error('Failed to download invoice');
-            const blob = await res.blob();
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href     = url;
-            a.download = `Invoice-${foundOrder.id}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const response = await fetch(`/api/orders/${foundOrder.id}/invoice/pdf`);
+            if (!response.ok) throw new Error('Failed to download invoice');
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `Invoice-${foundOrder.id}.pdf`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
             URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Error downloading invoice:', error);
@@ -243,109 +279,109 @@ export default function TrackOrderPage() {
     const isCancelled = foundOrder ? CANCEL_STATUSES.has(foundOrder.status) : false;
 
     return (
-        <PageLayout bgClass="bg-zinc-50">
-            <PageLayout.Header>
+        <PageLayout bgClass="bg-transparent">
+            <PageLayout.Header className="mx-3 mt-3 rounded-[2rem] sm:mx-5 sm:mt-4">
                 <PageTitle
                     alignment="center"
-                    title="Track Your Order"
-                    subtitle="Enter your Order ID and the email address you used during checkout to get real-time status updates."
+                    title="Track your order"
+                    subtitle="A clearer tracking experience with stronger status hierarchy, cleaner order details, and faster support actions."
                     badge={
-                        <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">
-                            <Package size={14} /> Order Tracking
+                        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/84 px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                            <Package size={14} />
+                            Order tracking
                         </div>
                     }
                 />
             </PageLayout.Header>
 
-            <PageLayout.Content className="max-w-3xl mx-auto w-full space-y-8" padding="lg">
-                {/* Lookup Form */}
+            <PageLayout.Content className="mx-auto w-full max-w-5xl space-y-6" padding="lg">
                 <form
                     onSubmit={handleSearch}
-                    className="bg-white rounded-3xl border border-zinc-200 shadow-xl shadow-zinc-200/40 p-6 sm:p-10 space-y-6"
+                    className="app-card rounded-[2rem] p-6 sm:p-7"
                 >
-                    <div className="grid sm:grid-cols-2 gap-6">
+                    <div className="grid gap-5 sm:grid-cols-2">
                         <div>
-                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Order ID</label>
+                            <label className="mb-2 block text-sm font-medium text-slate-600">Order ID</label>
                             <input
                                 required
                                 value={orderId}
-                                onChange={handleOrderIdChange}
+                                onChange={(event) => {
+                                    setOrderId(event.target.value);
+                                    setSearched(false);
+                                }}
                                 placeholder="e.g. ORD-1234567890"
-                                className="w-full h-12 px-4 border border-zinc-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all bg-zinc-50 focus:bg-white"
+                                className="h-12 w-full rounded-[1rem] border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-slate-300"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Email Address</label>
+                            <label className="mb-2 block text-sm font-medium text-slate-600">Email or phone</label>
                             <input
                                 required
                                 value={contact}
-                                onChange={handleContactChange}
-                                placeholder="email@example.com"
-                                className="w-full h-12 px-4 border border-zinc-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all bg-zinc-50 focus:bg-white"
+                                onChange={(event) => {
+                                    setContact(event.target.value);
+                                    setSearched(false);
+                                }}
+                                placeholder="email@example.com or phone"
+                                className="h-12 w-full rounded-[1rem] border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-slate-300"
                             />
                         </div>
                     </div>
                     <button
                         type="submit"
-                        className="w-full h-12 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl text-sm transition-all shadow-xl shadow-indigo-600/20 hover:scale-[1.01] active:scale-[0.99] uppercase tracking-wide"
+                        className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-slate-950 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
                     >
-                        <Search size={18} /> Track Order
+                        <Search size={16} />
+                        Track order
                     </button>
                 </form>
 
-                {/* Not Found */}
                 {searched && !foundOrder && (
-                    <div className="bg-white rounded-3xl border border-red-100 p-12 text-center shadow-lg shadow-red-100/50">
-                        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <XCircle className="text-red-400" size={36} />
+                    <div className="app-card rounded-[2rem] p-10 text-center sm:p-12">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-500">
+                            <XCircle size={28} />
                         </div>
-                        <h3 className="text-2xl font-bold text-zinc-900 mb-2 heading-font">Order Not Found</h3>
-                        <p className="text-base text-zinc-500 max-w-sm mx-auto font-medium">
-                            Please double-check your Order ID and the email address used during checkout.
+                        <h3 className="mt-6 text-3xl text-slate-950">Order not found</h3>
+                        <p className="mx-auto mt-3 max-w-md text-base leading-8 text-slate-500">
+                            Double-check your order ID and the contact detail used during checkout.
                         </p>
                     </div>
                 )}
 
-                {/* Order Found */}
                 {foundOrder && (
                     <div className="space-y-6">
-                        {/* Order Header */}
-                        <div className="bg-white rounded-3xl border border-zinc-200 shadow-xl shadow-zinc-200/40 overflow-hidden">
-                            <div className="bg-zinc-50 px-6 py-5 border-b border-zinc-100 flex flex-wrap justify-between items-start gap-4">
-                                <div className="space-y-1">
-                                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Order ID</p>
-                                    <p className="font-mono font-bold text-zinc-950 text-base">{foundOrder.id}</p>
+                        <div className="app-card overflow-hidden rounded-[2rem]">
+                            <div className="grid gap-4 border-b border-slate-100 p-6 sm:grid-cols-2 xl:grid-cols-4">
+                                <div>
+                                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">Order ID</p>
+                                    <p className="mt-2 font-mono text-sm font-semibold text-slate-900">{foundOrder.id}</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Date</p>
-                                    <p className="text-base font-semibold text-zinc-900">
+                                <div>
+                                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">Placed on</p>
+                                    <p className="mt-2 text-sm font-semibold text-slate-900">
                                         {new Date(foundOrder.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                                     </p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Total</p>
-                                    <p className="text-base font-black text-zinc-950">₹{foundOrder.total.toLocaleString('en-IN')}</p>
+                                <div>
+                                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">Total</p>
+                                    <p className="mt-2 text-sm font-semibold text-slate-900">₹{foundOrder.total.toLocaleString('en-IN')}</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Payment</p>
-                                    <p className="text-base font-semibold text-zinc-900">{foundOrder.paymentMethod}</p>
+                                <div>
+                                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">Payment</p>
+                                    <p className="mt-2 text-sm font-semibold text-slate-900">{foundOrder.paymentMethod}</p>
                                 </div>
                             </div>
 
-                            {/* Timeline */}
                             {isCancelled ? (
-                                <div className="px-6 py-8 flex items-center gap-4 text-red-600 bg-red-50/30">
-                                    <XCircle size={28} />
+                                <div className="flex items-start gap-3 bg-rose-50/60 px-6 py-6 text-rose-700">
+                                    <XCircle size={22} className="mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="text-lg font-bold">Order {foundOrder.status}</p>
-                                        <p className="text-sm font-medium opacity-80 mt-1">
-                                            {foundOrder.logs?.at(-1)?.note}
-                                        </p>
+                                        <p className="text-lg font-semibold">Order {foundOrder.status.toLowerCase()}</p>
+                                        <p className="mt-2 text-sm leading-7 opacity-90">{foundOrder.logs?.at(-1)?.note}</p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="px-6 py-10">
-                                    {/* Desktop */}
+                                <div className="px-6 py-8">
                                     <div className="hidden sm:flex items-start gap-0">
                                         {TIMELINE_STEPS.map((step, idx) => (
                                             <TimelineStep
@@ -358,8 +394,7 @@ export default function TrackOrderPage() {
                                             />
                                         ))}
                                     </div>
-                                    {/* Mobile */}
-                                    <div className="sm:hidden space-y-0">
+                                    <div className="space-y-0 sm:hidden">
                                         {TIMELINE_STEPS.map((step, idx) => (
                                             <TimelineStep
                                                 key={step.status}
@@ -375,123 +410,111 @@ export default function TrackOrderPage() {
                                 </div>
                             )}
 
-                            {/* Shipping address */}
-                            <div className="px-6 py-5 border-t border-zinc-100 bg-zinc-50 flex items-start sm:items-center gap-3 text-sm text-zinc-600 font-medium">
-                                <MapPin size={20} className="text-zinc-400 flex-shrink-0 mt-0.5 sm:mt-0" />
-                                <span>
-                                    <strong className="text-zinc-900">Shipping Address:</strong>{' '}
-                                    {foundOrder.shippingStreet}, {foundOrder.shippingCity}, {foundOrder.shippingState} – {foundOrder.shippingZip}
-                                </span>
+                            <div className="border-t border-slate-100 bg-slate-50/60 px-6 py-5 text-sm text-slate-600">
+                                <div className="flex items-start gap-3">
+                                    <MapPin size={18} className="mt-0.5 shrink-0 text-slate-400" />
+                                    <span>
+                                        <strong className="text-slate-950">Shipping address:</strong>{' '}
+                                        {foundOrder.shippingStreet}, {foundOrder.shippingCity}, {foundOrder.shippingState} - {foundOrder.shippingZip}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Product List */}
-                        <div className="bg-white rounded-3xl border border-zinc-200 shadow-xl shadow-zinc-200/40 overflow-hidden">
-                            <div className="px-6 py-5 border-b border-zinc-100 bg-zinc-50">
-                                <h2 className="font-bold text-zinc-950 text-lg heading-font">Items in This Order</h2>
+                        <div className="app-card overflow-hidden rounded-[2rem]">
+                            <div className="border-b border-slate-100 px-6 py-5">
+                                <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950">Items in this order</h2>
                             </div>
-                            <ul className="divide-y divide-zinc-100">
+                            <ul className="divide-y divide-slate-100">
                                 {(foundOrder.items ?? []).map((item) => (
-                                    <li key={item.id} className="flex items-center gap-4 px-6 py-5 hover:bg-zinc-50/50 transition-colors">
-                                        <div className="w-20 h-20 bg-zinc-50 rounded-2xl border border-zinc-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                            <img
-                                                src={item.image ?? '/placeholder.png'}
-                                                alt={item.name}
-                                                loading="lazy"
-                                                decoding="async"
-                                                className="w-full h-full object-contain p-2 hover:scale-110 transition-transform duration-500"
-                                            />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-zinc-950 text-base truncate">{item.name}</p>
-                                            <p className="text-sm font-semibold text-zinc-500 mt-1 uppercase tracking-wider">{item.category} · Qty {item.quantity}</p>
-                                        </div>
-                                        <div className="text-right flex-shrink-0">
-                                            <p className="font-black text-zinc-950 text-lg">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
-                                            {item.quantity > 1 && (
-                                                <p className="text-xs font-semibold text-zinc-400 line-through">₹{item.price.toLocaleString('en-IN')} each</p>
-                                            )}
+                                    <li key={item.id} className="px-6 py-5">
+                                        <div className="flex items-center gap-4">
+                                            <div className="relative h-20 w-20 overflow-hidden rounded-[1.2rem] border border-slate-100 bg-slate-50">
+                                                <Image
+                                                    src={item.image ?? '/placeholder.png'}
+                                                    alt={item.name}
+                                                    fill
+                                                    sizes="80px"
+                                                    className="object-contain p-2"
+                                                />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-base font-semibold text-slate-950">{item.name}</p>
+                                                <p className="mt-1 text-sm text-slate-500">
+                                                    {item.category} • Qty {item.quantity}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-semibold text-slate-950">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
+                                                <p className="mt-1 text-xs text-slate-400">₹{item.price.toLocaleString('en-IN')} each</p>
+                                            </div>
                                         </div>
                                     </li>
                                 ))}
                             </ul>
-                            <div className="px-6 py-5 border-t border-zinc-100 bg-zinc-50 space-y-2">
+                            <div className="border-t border-slate-100 bg-slate-50/60 px-6 py-5">
                                 <OrderFinancials order={foundOrder} />
                             </div>
                         </div>
 
-                        {/* Compatibility Snapshot */}
-                        <div>
-                            <h2 className="font-bold text-zinc-950 text-lg heading-font mb-4">Build Compatibility Snapshot</h2>
-                            <CompatBadge items={(foundOrder.items ?? []) as any} />
-                        </div>
+                        <CompatBadge items={(foundOrder.items ?? []) as CartItem[]} />
 
-                        {/* Desktop Actions */}
-                        <div className="hidden sm:flex gap-4">
+                        <div className="grid gap-3 sm:grid-cols-3">
                             <button
                                 onClick={handleReorder}
-                                className="flex-1 flex items-center justify-center gap-2 h-14 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl text-sm transition-all shadow-xl shadow-indigo-600/20 hover:-translate-y-0.5 active:translate-y-0 uppercase tracking-widest"
+                                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-slate-950 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
                             >
-                                <RefreshCw size={18} /> Reorder This Build
+                                <RefreshCw size={16} />
+                                Reorder
                             </button>
                             <a
                                 href={`https://wa.me/919999999999?text=Hi%2C%20I%20need%20support%20for%20my%20order%20%23${encodeURIComponent(foundOrder.id)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center gap-2 h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl text-sm transition-all shadow-xl shadow-emerald-600/20 hover:-translate-y-0.5 active:translate-y-0 uppercase tracking-widest"
+                                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950"
                             >
-                                <MessageCircle size={18} /> WhatsApp Support
+                                <MessageCircle size={16} />
+                                WhatsApp support
                             </a>
                             <button
                                 onClick={handleDownloadInvoice}
                                 disabled={isDownloading}
-                                className="px-6 h-14 flex items-center justify-center min-w-[140px] gap-2 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 font-bold rounded-2xl text-sm transition-all shadow-sm uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950 disabled:opacity-50"
                             >
-                                {isDownloading ? (
-                                    <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-700 rounded-full animate-spin" />
-                                ) : (
-                                    <><FileDown size={18} /> Download</>
-                                )}
+                                <FileDown size={16} />
+                                {isDownloading ? 'Downloading...' : 'Download invoice'}
                             </button>
                         </div>
                     </div>
                 )}
 
                 {!searched && (
-                    <p className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-widest mt-8">
-                        Demo: use any Order ID from the admin panel with its associated email.
+                    <p className="text-center text-sm text-slate-500">
+                        Use any order ID from the admin panel together with the checkout email or phone number.
                     </p>
                 )}
             </PageLayout.Content>
 
-            {/* Mobile Sticky Footer */}
             {foundOrder && (
-                <div className="sm:hidden fixed bottom-14 left-0 right-0 z-40 bg-white/80 backdrop-blur-lg border-t border-zinc-200 px-4 py-3 flex gap-2">
-                    <button
-                        onClick={handleReorder}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-12 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md shadow-indigo-600/20"
-                    >
-                        <ShoppingCart size={16} /> Reorder
-                    </button>
-                    <a
-                        href={`https://wa.me/919999999999?text=Order%20%23${encodeURIComponent(foundOrder.id)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 h-12 bg-emerald-600 text-white font-bold rounded-xl text-sm shadow-md shadow-emerald-600/20"
-                    >
-                        <MessageCircle size={16} /> WhatsApp
-                    </a>
-                    <button
-                        onClick={handleDownloadInvoice}
-                        disabled={isDownloading}
-                        className="h-12 w-12 flex-shrink-0 border border-zinc-200 bg-white rounded-xl flex items-center justify-center text-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isDownloading ? (
-                            <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-700 rounded-full animate-spin" />
-                        ) : (
-                            <FileDown size={18} />
-                        )}
-                    </button>
+                <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-2xl sm:hidden">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleReorder}
+                            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-slate-950 text-sm font-semibold text-white"
+                        >
+                            <ShoppingCart size={15} />
+                            Reorder
+                        </button>
+                        <a
+                            href={`https://wa.me/919999999999?text=Order%20%23${encodeURIComponent(foundOrder.id)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700"
+                        >
+                            <MessageCircle size={15} />
+                            Support
+                        </a>
+                    </div>
                 </div>
             )}
         </PageLayout>

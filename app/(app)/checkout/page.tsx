@@ -1,25 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useShop } from "@/context/ShopContext";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Building2, CreditCard, Lock, Smartphone } from "lucide-react";
+
 import { processCheckout } from "@/app/actions/checkout";
+import ImageUploader from "@/components/uploadthing/ImageUploader";
+import { Button } from "@/components/ui/button";
+import { useShop } from "@/context/ShopContext";
 import { calculateOrderFinancials } from "@/lib/gst";
 import { PaymentMethodType, PaymentStatus } from "@/types";
-import {
-  ArrowLeft,
-  BadgePercent,
-  Building2,
-  CheckCircle2,
-  CreditCard,
-  IndianRupee,
-  QrCode,
-  ShieldAlert,
-  ShoppingBag,
-  Smartphone,
-} from "lucide-react";
-import Link from "next/link";
-import ImageUploader from "@/components/uploadthing/ImageUploader";
 
 type PaymentMethod = PaymentMethodType;
 
@@ -62,22 +53,22 @@ const MANUAL_DISCOUNT_RATE = 0.02;
 
 const PAYMENT_METHODS = [
   {
+    id: PaymentMethodType.RAZORPAY,
+    title: "Pay online",
+    description: "Card, UPI, wallet, or netbanking.",
+    icon: CreditCard,
+  },
+  {
     id: PaymentMethodType.UPI,
-    title: "UPI Payment",
-    description: "Upload your UPI screenshot for admin verification.",
+    title: "UPI transfer",
+    description: "Pay first, then upload proof.",
     icon: Smartphone,
   },
   {
     id: PaymentMethodType.BANK_TRANSFER,
-    title: "Direct Bank Transfer",
-    description: "Transfer to the store account and upload proof.",
+    title: "Bank transfer",
+    description: "Share your payment reference after transfer.",
     icon: Building2,
-  },
-  {
-    id: PaymentMethodType.RAZORPAY,
-    title: "Razorpay",
-    description: "Pay instantly with UPI, card, netbanking, or wallet.",
-    icon: CreditCard,
   },
 ] as const;
 
@@ -88,7 +79,9 @@ function loadRazorpayScript() {
       return;
     }
 
-    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    const existing = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
     if (existing) {
       existing.addEventListener("load", () => resolve(true), { once: true });
       existing.addEventListener("error", () => resolve(false), { once: true });
@@ -104,21 +97,55 @@ function loadRazorpayScript() {
   });
 }
 
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border border-gray-200 bg-white p-6">
+      <h2 className="text-base font-medium text-gray-900">{title}</h2>
+      {description ? <p className="mt-1 text-sm text-gray-500">{description}</p> : null}
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={htmlFor} className="mb-2 block text-sm text-gray-700">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const { cart, clearCart, setCartOpen } = useShop();
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [formData, setFormData] = useState(INITIAL_FORM);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethodType.RAZORPAY);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    PaymentMethodType.RAZORPAY,
+  );
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfigResponse | null>(null);
-
-  useEffect(() => {
-    setIsAdmin(new URLSearchParams(window.location.search).get("admin") === "true");
-  }, []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     setCartOpen(false);
@@ -126,29 +153,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     fetch("/api/payments/config")
-      .then((res) => res.json())
+      .then((response) => response.json())
       .then((data: PaymentConfigResponse) => setPaymentConfig(data))
-      .catch((error) => {
-        console.error("Failed to load payment config", error);
+      .catch(() => {
+        setPaymentConfig(null);
       });
-  }, []);
-
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    if (name === "phone") {
-      let inputVal = value;
-      if (inputVal.startsWith("+91 ")) inputVal = inputVal.slice(4);
-      else if (inputVal.startsWith("+91")) inputVal = inputVal.slice(3);
-      else if (inputVal.startsWith("+9")) inputVal = inputVal.slice(2);
-      else if (inputVal.startsWith("+")) inputVal = inputVal.slice(1);
-
-      const digits = inputVal.replace(/\D/g, "").slice(0, 10);
-      setFormData((prev) => ({ ...prev, phone: "+91 " + digits }));
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
   const financials = useMemo(
@@ -163,30 +172,56 @@ export default function CheckoutPage() {
   );
 
   const isManualPayment =
-    paymentMethod === PaymentMethodType.UPI || paymentMethod === PaymentMethodType.BANK_TRANSFER;
-  const discountAmount = isManualPayment ? Number((financials.total * MANUAL_DISCOUNT_RATE).toFixed(2)) : 0;
+    paymentMethod === PaymentMethodType.UPI ||
+    paymentMethod === PaymentMethodType.BANK_TRANSFER;
+  const discountAmount = isManualPayment
+    ? Number((financials.total * MANUAL_DISCOUNT_RATE).toFixed(2))
+    : 0;
   const payableTotal = Number((financials.total - discountAmount).toFixed(2));
 
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = event.target;
+      setFormError("");
+
+      if (name === "phone") {
+        let nextValue = value;
+        if (nextValue.startsWith("+91 ")) nextValue = nextValue.slice(4);
+        else if (nextValue.startsWith("+91")) nextValue = nextValue.slice(3);
+        else if (nextValue.startsWith("+9")) nextValue = nextValue.slice(2);
+        else if (nextValue.startsWith("+")) nextValue = nextValue.slice(1);
+
+        const digits = nextValue.replace(/\D/g, "").slice(0, 10);
+        setFormData((current) => ({ ...current, phone: `+91 ${digits}` }));
+        return;
+      }
+
+      setFormData((current) => ({ ...current, [name]: value }));
+    },
+    [],
+  );
+
   const validateCheckoutForm = useCallback(() => {
+    if (!formData.customerName || !formData.email) {
+      return "Please complete your contact information.";
+    }
+
     if (formData.phone.length !== 14) {
-      alert("Please enter a valid 10-digit phone number.");
-      return false;
+      return "Please enter a valid 10-digit phone number.";
     }
 
     if (isManualPayment && !paymentProofUrl) {
-      alert("Please upload the payment screenshot before placing the order.");
-      return false;
+      return "Upload your payment proof before placing the order.";
     }
 
-    return true;
-  }, [formData.phone, isManualPayment, paymentProofUrl]);
+    return "";
+  }, [formData, isManualPayment, paymentProofUrl]);
 
   const handleManualCheckout = useCallback(async () => {
-    const res = await processCheckout({
+    const response = await processCheckout({
       ...formData,
-      isPosOverride: isAdmin,
       paymentMethod,
-      paymentStatus: isAdmin ? PaymentStatus.COMPLETED : PaymentStatus.PENDING,
+      paymentStatus: PaymentStatus.PENDING,
       paymentTransactionId: paymentReference || undefined,
       paymentReference: paymentReference || undefined,
       paymentProofUrl: paymentProofUrl || undefined,
@@ -197,21 +232,18 @@ export default function CheckoutPage() {
       })),
     });
 
-    if (!res.success) {
-      throw new Error(res.error ?? "Failed to place order.");
+    if (!response.success) {
+      throw new Error(response.error ?? "We could not place your order.");
     }
 
     clearCart?.();
     setSuccessMessage(
-      isAdmin
-        ? `Order #${res.orderId} has been created and inventory was reserved successfully.`
-        : `Order #${res.orderId} has been placed. Our admin team will verify your payment proof shortly.`,
+      `Order #${response.orderId} has been placed. We will verify your payment and email you the next steps.`,
     );
   }, [
     cart,
     clearCart,
     formData,
-    isAdmin,
     paymentMethod,
     paymentProofUrl,
     paymentReference,
@@ -221,7 +253,7 @@ export default function CheckoutPage() {
     const scriptLoaded = await loadRazorpayScript();
     const RazorpayCheckout = window.Razorpay;
     if (!scriptLoaded || !RazorpayCheckout) {
-      throw new Error("Unable to load Razorpay checkout.");
+      throw new Error("Online payment is unavailable right now.");
     }
 
     const createRes = await fetch("/api/payments/razorpay/create-order", {
@@ -239,7 +271,7 @@ export default function CheckoutPage() {
 
     const createPayload = await createRes.json();
     if (!createRes.ok) {
-      throw new Error(createPayload.error || "Unable to initialize Razorpay payment.");
+      throw new Error(createPayload.error || "Unable to start online payment.");
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -256,7 +288,7 @@ export default function CheckoutPage() {
           contact: formData.phone.replace(/\s+/g, ""),
         },
         theme: {
-          color: "#2563eb",
+          color: "#000000",
         },
         handler: async (response: Record<string, string>) => {
           try {
@@ -279,7 +311,7 @@ export default function CheckoutPage() {
 
             clearCart?.();
             setSuccessMessage(
-              `Order #${createPayload.orderId} has been paid successfully through Razorpay.`,
+              `Order #${createPayload.orderId} has been paid successfully.`,
             );
             resolve();
           } catch (error) {
@@ -287,56 +319,56 @@ export default function CheckoutPage() {
           }
         },
         modal: {
-          ondismiss: () => reject(new Error("Razorpay checkout was closed before payment completed.")),
+          ondismiss: () => reject(new Error("Payment was cancelled before completion.")),
         },
       });
-
-      if (!instance) {
-        reject(new Error("Unable to initialize Razorpay checkout."));
-        return;
-      }
 
       instance.open();
     });
   }, [cart, clearCart, formData]);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!validateCheckoutForm()) return;
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const validationError = validateCheckoutForm();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
 
-      setIsSubmitting(true);
-      try {
-        if (isAdmin || isManualPayment) {
-          await handleManualCheckout();
-        } else {
-          await handleRazorpayCheckout();
-        }
-      } catch (error: unknown) {
-        console.error(error);
-        alert(error instanceof Error ? error.message : "An unexpected error occurred during checkout.");
-      } finally {
-        setIsSubmitting(false);
+    setFormError("");
+    setIsSubmitting(true);
+
+    try {
+      if (isManualPayment) {
+        await handleManualCheckout();
+      } else {
+        await handleRazorpayCheckout();
       }
-    },
-    [handleManualCheckout, handleRazorpayCheckout, isAdmin, isManualPayment, validateCheckoutForm],
-  );
+    } catch (error: unknown) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "We could not complete checkout. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (successMessage) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full text-center space-y-8 bg-white p-10 rounded-2xl shadow-xl">
-          <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-500" />
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            {paymentMethod === PaymentMethodType.RAZORPAY ? "Payment Successful!" : "Order Received!"}
-          </h2>
-          <p className="text-gray-600 text-sm">{successMessage}</p>
-          <Link
-            href="/"
-            className="mt-6 w-full inline-flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Continue Shopping
-          </Link>
+      <div className="min-h-screen bg-white">
+        <div className="mx-auto flex min-h-screen max-w-2xl items-center px-4 py-12 sm:px-6 lg:px-8">
+          <div className="w-full border border-gray-200 bg-white p-8 text-center">
+            <p className="text-sm uppercase tracking-[0.16em] text-gray-500">Order confirmed</p>
+            <h1 className="mt-4 text-3xl font-semibold text-gray-900">
+              Checkout complete
+            </h1>
+            <p className="mt-4 text-sm leading-7 text-gray-600">{successMessage}</p>
+            <Button asChild className="mt-8 h-12 px-6">
+              <Link href="/products">Continue shopping</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -344,269 +376,343 @@ export default function CheckoutPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <ShoppingBag className="h-16 w-16 text-gray-400 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900">Your cart is empty</h2>
-        <p className="text-gray-500 mt-2 mb-6">Add some products to your cart before checking out.</p>
-        <Link href="/products" className="flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700">
-          <ArrowLeft size={16} /> Back to Products
-        </Link>
+      <div className="min-h-screen bg-white">
+        <div className="mx-auto flex min-h-screen max-w-2xl items-center px-4 py-12 sm:px-6 lg:px-8">
+          <div className="w-full border border-gray-200 bg-white p-8 text-center">
+            <h1 className="text-2xl font-semibold text-gray-900">Your cart is empty</h1>
+            <p className="mt-3 text-sm text-gray-500">
+              Add a few products before heading to checkout.
+            </p>
+            <Button asChild variant="outline" className="mt-8 h-12 px-6">
+              <Link href="/products">Back to products</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+    <div className="min-h-screen bg-gray-50">
+      <div className="border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-900"
           >
-            <ArrowLeft size={16} className="mr-1" /> Back
-          </button>
-          <h1 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">Checkout</h1>
+            <ArrowLeft className="size-4" />
+            Back
+          </Link>
+          <div className="inline-flex items-center gap-2 text-sm text-gray-500">
+            <Lock className="size-4" />
+            Secure checkout
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Guest checkout</p>
+          <h1 className="mt-3 text-3xl font-semibold text-gray-900">Checkout</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Complete your order as a guest, or{" "}
+            <Link href="/login" className="text-gray-900 underline underline-offset-4">
+              log in
+            </Link>{" "}
+            to use an existing account.
+          </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1">
-            <form id="checkout-form" onSubmit={handleSubmit} className="bg-white shadow-sm rounded-2xl p-6 sm:p-8 border border-gray-100 space-y-8">
-              <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Contact Information</h2>
-                <div className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label htmlFor="customerName" className="block text-sm font-medium text-gray-700">Full Name *</label>
-                    <input type="text" name="customerName" id="customerName" required value={formData.customerName} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" placeholder="John Doe" />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address *</label>
-                    <input type="email" name="email" id="email" required value={formData.email} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" placeholder="john@example.com" />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number (WhatsApp) *</label>
-                    <input type="tel" name="phone" id="phone" required value={formData.phone} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" placeholder="+91 9876543210" minLength={14} maxLength={14} />
-                  </div>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+          <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
+            <Section
+              title="Contact information"
+              description="We will use these details for order updates and delivery communication."
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Field label="Full name" htmlFor="customerName">
+                    <input
+                      id="customerName"
+                      name="customerName"
+                      value={formData.customerName}
+                      onChange={handleInputChange}
+                      className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                      required
+                    />
+                  </Field>
                 </div>
-              </section>
+                <Field label="Email address" htmlFor="email">
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                    required
+                  />
+                </Field>
+                <Field label="Phone number" htmlFor="phone">
+                  <input
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    minLength={14}
+                    maxLength={14}
+                    className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                    required
+                  />
+                </Field>
+              </div>
+            </Section>
 
-              <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Shipping Details</h2>
-                <div className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label htmlFor="shippingStreet" className="block text-sm font-medium text-gray-700">Street Address</label>
-                    <input type="text" name="shippingStreet" id="shippingStreet" value={formData.shippingStreet} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" />
-                  </div>
-                  <div>
-                    <label htmlFor="shippingCity" className="block text-sm font-medium text-gray-700">City</label>
-                    <input type="text" name="shippingCity" id="shippingCity" value={formData.shippingCity} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" />
-                  </div>
-                  <div>
-                    <label htmlFor="shippingState" className="block text-sm font-medium text-gray-700">State / Province</label>
-                    <input type="text" name="shippingState" id="shippingState" value={formData.shippingState} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" />
-                  </div>
-                  <div>
-                    <label htmlFor="shippingZip" className="block text-sm font-medium text-gray-700">ZIP / Postal Code</label>
-                    <input type="text" name="shippingZip" id="shippingZip" value={formData.shippingZip} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" />
-                  </div>
-                  <div>
-                    <label htmlFor="shippingCountry" className="block text-sm font-medium text-gray-700">Country</label>
-                    <input type="text" name="shippingCountry" id="shippingCountry" value={formData.shippingCountry} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-gray-50" />
-                  </div>
+            <Section
+              title="Shipping and billing"
+              description="Billing is assumed to be the same as shipping unless we hear otherwise."
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Field label="Street address" htmlFor="shippingStreet">
+                    <input
+                      id="shippingStreet"
+                      name="shippingStreet"
+                      value={formData.shippingStreet}
+                      onChange={handleInputChange}
+                      className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                    />
+                  </Field>
                 </div>
-              </section>
+                <Field label="City" htmlFor="shippingCity">
+                  <input
+                    id="shippingCity"
+                    name="shippingCity"
+                    value={formData.shippingCity}
+                    onChange={handleInputChange}
+                    className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                  />
+                </Field>
+                <Field label="State" htmlFor="shippingState">
+                  <input
+                    id="shippingState"
+                    name="shippingState"
+                    value={formData.shippingState}
+                    onChange={handleInputChange}
+                    className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                  />
+                </Field>
+                <Field label="PIN / ZIP" htmlFor="shippingZip">
+                  <input
+                    id="shippingZip"
+                    name="shippingZip"
+                    value={formData.shippingZip}
+                    onChange={handleInputChange}
+                    className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                  />
+                </Field>
+                <Field label="Country" htmlFor="shippingCountry">
+                  <input
+                    id="shippingCountry"
+                    name="shippingCountry"
+                    value={formData.shippingCountry}
+                    onChange={handleInputChange}
+                    className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                  />
+                </Field>
+              </div>
+            </Section>
 
-              {!isAdmin && (
-                <section className="space-y-5">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
+            <Section
+              title="Payment method"
+              description="Choose the fastest way to complete your order."
+            >
+              <div className="space-y-3">
+                {PAYMENT_METHODS.map((method) => {
+                  const Icon = method.icon;
+                  const active = paymentMethod === method.id;
+                  const disabled =
+                    method.id === PaymentMethodType.RAZORPAY &&
+                    paymentConfig?.razorpay?.enabled === false;
+
+                  return (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod(method.id);
+                        setFormError("");
+                      }}
+                      disabled={disabled || isSubmitting}
+                      className={`flex w-full items-start gap-4 border p-4 text-left transition-colors ${
+                        active
+                          ? "border-black bg-black text-white"
+                          : "border-gray-200 bg-white text-gray-900 hover:border-gray-900"
+                      } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                    >
+                      <span
+                        className={`inline-flex size-10 items-center justify-center border ${
+                          active ? "border-white/20 bg-white/10 text-white" : "border-gray-200 bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        <Icon className="size-4" />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-medium">{method.title}</span>
+                        <span className={`mt-1 block text-sm ${active ? "text-gray-200" : "text-gray-500"}`}>
+                          {method.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isManualPayment ? (
+                <div className="mt-6 space-y-5 border-t border-gray-200 pt-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="border border-gray-200 p-4 text-sm text-gray-600">
+                      <p className="font-medium text-gray-900">UPI details</p>
+                      <p className="mt-3">UPI ID: {paymentConfig?.manualPaymentDetails?.upiId || "Not configured"}</p>
+                      <p className="mt-1">Payee: {paymentConfig?.manualPaymentDetails?.upiName || "Not configured"}</p>
+                    </div>
+                    <div className="border border-gray-200 p-4 text-sm text-gray-600">
+                      <p className="font-medium text-gray-900">Bank details</p>
+                      <p className="mt-3">Account: {paymentConfig?.manualPaymentDetails?.bankAccountName || "Not configured"}</p>
+                      <p className="mt-1">Number: {paymentConfig?.manualPaymentDetails?.bankAccountNumber || "Not configured"}</p>
+                      <p className="mt-1">IFSC: {paymentConfig?.manualPaymentDetails?.bankIfsc || "Not configured"}</p>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    Pay manually to unlock a 2% discount. Your payable total is{" "}
+                    <span className="font-medium text-gray-900">
+                      Rs. {payableTotal.toLocaleString("en-IN")}
+                    </span>
+                    .
+                  </div>
+
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Payment Method</h2>
-                      <p className="text-sm text-gray-500 mt-1">Choose how you want to complete this order.</p>
+                      <p className="mb-2 text-sm text-gray-700">Payment proof</p>
+                      <ImageUploader
+                        endpoint="paymentProofUploader"
+                        previewUrl={paymentProofUrl || undefined}
+                        onUploadComplete={(url) => {
+                          setPaymentProofUrl(url);
+                          setFormError("");
+                        }}
+                        onUploadError={(error) => setFormError(error.message)}
+                      />
                     </div>
-                    {isManualPayment && (
-                      <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 text-xs font-semibold">
-                        <BadgePercent size={14} />
-                        2% discount applied for UPI / bank transfer
-                      </div>
-                    )}
+                    <Field label="UTR / reference number" htmlFor="paymentReference">
+                      <input
+                        id="paymentReference"
+                        value={paymentReference}
+                        onChange={(event) => setPaymentReference(event.target.value)}
+                        className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
+                        placeholder={
+                          paymentMethod === PaymentMethodType.UPI
+                            ? "Enter UPI reference"
+                            : "Enter bank reference"
+                        }
+                      />
+                    </Field>
                   </div>
+                </div>
+              ) : null}
+            </Section>
+          </form>
 
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {PAYMENT_METHODS.map((method) => {
-                      const Icon = method.icon;
-                      const active = paymentMethod === method.id;
-                      const disabled = method.id === PaymentMethodType.RAZORPAY && paymentConfig?.razorpay?.enabled === false;
+          <aside className="lg:sticky lg:top-24">
+            <div className="border border-gray-200 bg-white">
+              <div className="border-b border-gray-200 p-6">
+                <h2 className="text-base font-medium text-gray-900">Order summary</h2>
+              </div>
 
-                      return (
-                        <button
-                          key={method.id}
-                          type="button"
-                          disabled={disabled || isSubmitting}
-                          onClick={() => setPaymentMethod(method.id)}
-                          className={`rounded-2xl border p-4 text-left transition-all ${active ? "border-blue-500 bg-blue-50 shadow-sm" : "border-gray-200 bg-white hover:border-gray-300"} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`rounded-xl p-2 ${active ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>
-                              <Icon size={18} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">{method.title}</p>
-                              <p className="text-xs text-gray-500 mt-1">{method.description}</p>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {isManualPayment && (
-                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 space-y-5">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-2xl bg-white border border-gray-200 p-4">
-                          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                            <QrCode size={16} className="text-blue-600" />
-                            UPI Details
-                          </div>
-                          <div className="mt-3 space-y-2 text-sm text-gray-600">
-                            <p><span className="font-medium text-gray-900">UPI ID:</span> {paymentConfig?.manualPaymentDetails?.upiId || "Add NEXT_PUBLIC_STORE_UPI_ID"}</p>
-                            <p><span className="font-medium text-gray-900">Payee:</span> {paymentConfig?.manualPaymentDetails?.upiName || "Add NEXT_PUBLIC_STORE_UPI_NAME"}</p>
-                          </div>
-                        </div>
-                        <div className="rounded-2xl bg-white border border-gray-200 p-4">
-                          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                            <Building2 size={16} className="text-blue-600" />
-                            Bank Transfer Details
-                          </div>
-                          <div className="mt-3 space-y-2 text-sm text-gray-600">
-                            <p><span className="font-medium text-gray-900">Account Name:</span> {paymentConfig?.manualPaymentDetails?.bankAccountName || "Add NEXT_PUBLIC_STORE_BANK_ACCOUNT_NAME"}</p>
-                            <p><span className="font-medium text-gray-900">Account Number:</span> {paymentConfig?.manualPaymentDetails?.bankAccountNumber || "Add NEXT_PUBLIC_STORE_BANK_ACCOUNT_NUMBER"}</p>
-                            <p><span className="font-medium text-gray-900">IFSC:</span> {paymentConfig?.manualPaymentDetails?.bankIfsc || "Add NEXT_PUBLIC_STORE_BANK_IFSC"}</p>
-                            <p><span className="font-medium text-gray-900">Bank:</span> {paymentConfig?.manualPaymentDetails?.bankName || "Add NEXT_PUBLIC_STORE_BANK_NAME"}</p>
-                            <p><span className="font-medium text-gray-900">Branch:</span> {paymentConfig?.manualPaymentDetails?.bankBranch || "Add NEXT_PUBLIC_STORE_BANK_BRANCH"}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                        <p className="text-sm font-semibold text-emerald-800">
-                          Payable after 2% discount: Rs. {payableTotal.toLocaleString("en-IN")}
-                        </p>
-                        <p className="text-xs text-emerald-700 mt-1">
-                          Complete the payment first, then upload the screenshot below so the admin can verify it.
-                        </p>
-                      </div>
-
-                      <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Screenshot *</label>
-                          <ImageUploader
-                            endpoint="paymentProofUploader"
-                            previewUrl={paymentProofUrl || undefined}
-                            onUploadComplete={(url) => setPaymentProofUrl(url)}
-                            onUploadError={(error) => alert(error.message)}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="paymentReference" className="block text-sm font-medium text-gray-700">UTR / Reference Number</label>
-                          <input
-                            type="text"
-                            id="paymentReference"
-                            value={paymentReference}
-                            onChange={(e) => setPaymentReference(e.target.value)}
-                            className="mt-2 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-3 bg-white"
-                            placeholder={paymentMethod === PaymentMethodType.UPI ? "Enter UPI UTR" : "Enter bank reference"}
-                          />
-                          <p className="mt-2 text-xs text-gray-500">
-                            This helps the admin match your screenshot faster during verification.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </section>
-              )}
-            </form>
-          </div>
-
-          <div className="lg:w-[420px]">
-            <div className="bg-white shadow-sm rounded-2xl border border-gray-100 sticky top-8 overflow-hidden">
-              <div className="p-6 sm:p-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Order Summary</h2>
-                <ul className="divide-y divide-gray-100 flex-1 overflow-y-auto max-h-[40vh] pr-2">
-                  {cart.map((product) => (
-                    <li key={product.id} className="py-4 flex gap-4">
-                      <div className="h-16 w-16 flex-shrink-0 bg-gray-50 rounded-lg p-1 border border-gray-100">
-                        <img
-                          src={product.media?.[0]?.url ?? "/placeholder.png"}
-                          alt={product.name}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-contain"
+              <div className="max-h-[320px] overflow-y-auto p-6">
+                <ul className="space-y-4">
+                  {cart.map((item) => (
+                    <li key={`${item.id}-${item.selectedVariant?.id ?? "default"}`} className="flex gap-3">
+                      <div className="relative size-16 shrink-0 overflow-hidden border border-gray-200 bg-gray-50">
+                        <Image
+                          src={item.media?.[0]?.url ?? "/placeholder.png"}
+                          alt={item.name}
+                          fill
+                          sizes="64px"
+                          className="object-contain p-2"
                         />
                       </div>
-                      <div className="flex-1 flex flex-col justify-center">
-                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2">{product.name}</h3>
-                        <p className="mt-1 text-sm text-gray-500">Qty: {product.quantity}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm text-gray-900">{item.name}</p>
+                        <p className="mt-1 text-xs text-gray-500">Qty {item.quantity}</p>
                       </div>
-                      <div className="flex-shrink-0 text-sm font-medium text-gray-900 mt-0.5">
-                        Rs. {((product.selectedVariant?.price ?? 0) * product.quantity).toLocaleString("en-IN")}
-                      </div>
+                      <p className="text-sm font-medium text-gray-900">
+                        Rs. {((item.selectedVariant?.price ?? 0) * item.quantity).toLocaleString("en-IN")}
+                      </p>
                     </li>
                   ))}
                 </ul>
+              </div>
 
-                <div className="border-t border-gray-100 mt-6 pt-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">Subtotal</p>
-                    <p className="text-sm font-medium text-gray-900">Rs. {financials.subtotal.toLocaleString("en-IN")}</p>
+              <div className="border-t border-gray-200 p-6">
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between text-gray-600">
+                    <span>Subtotal</span>
+                    <span className="text-gray-900">Rs. {financials.subtotal.toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">GST (18%)</p>
-                    <p className="text-sm font-medium text-gray-900">Rs. {financials.gstAmount.toLocaleString("en-IN")}</p>
+                  <div className="flex items-center justify-between text-gray-600">
+                    <span>GST</span>
+                    <span className="text-gray-900">Rs. {financials.gstAmount.toLocaleString("en-IN")}</span>
                   </div>
-                  {discountAmount > 0 && (
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-emerald-700">Manual payment discount (2%)</p>
-                      <p className="text-sm font-semibold text-emerald-700">- Rs. {discountAmount.toLocaleString("en-IN")}</p>
+                  <div className="flex items-center justify-between text-gray-600">
+                    <span>Shipping</span>
+                    <span className="text-gray-900">Free</span>
+                  </div>
+                  {discountAmount > 0 ? (
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span>Manual payment discount</span>
+                      <span className="text-gray-900">- Rs. {discountAmount.toLocaleString("en-IN")}</span>
                     </div>
-                  )}
+                  ) : null}
+                </div>
+
+                <div className="mt-5 border-t border-gray-200 pt-5">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">Shipping</p>
-                    <p className="text-sm font-medium text-green-600">Free</p>
+                    <span className="text-base font-medium text-gray-900">Total</span>
+                    <span className="text-2xl font-semibold text-gray-900">
+                      Rs. {payableTotal.toLocaleString("en-IN")}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                    <p className="text-base font-bold text-gray-900">Total</p>
-                    <p className="text-xl font-bold text-gray-900">Rs. {payableTotal.toLocaleString("en-IN")}</p>
-                  </div>
+
+                  {formError ? (
+                    <p className="mt-4 text-sm text-red-600">{formError}</p>
+                  ) : null}
+
+                  <Button
+                    type="submit"
+                    form="checkout-form"
+                    className="mt-5 h-12 w-full"
+                    disabled={
+                      isSubmitting ||
+                      (paymentMethod === PaymentMethodType.RAZORPAY &&
+                        paymentConfig?.razorpay?.enabled === false)
+                    }
+                  >
+                    {isSubmitting
+                      ? "Processing..."
+                      : paymentMethod === PaymentMethodType.RAZORPAY
+                        ? `Pay Rs. ${payableTotal.toLocaleString("en-IN")}`
+                        : `Place order for Rs. ${payableTotal.toLocaleString("en-IN")}`}
+                  </Button>
+
+                  <p className="mt-3 text-xs leading-6 text-gray-500">
+                    By placing your order, you agree to complete payment and receive order updates by email or phone.
+                  </p>
                 </div>
               </div>
-
-              <div className="bg-gray-50 p-6 sm:p-8 border-t border-gray-100">
-                <button
-                  type="submit"
-                  form="checkout-form"
-                  disabled={isSubmitting || (!isAdmin && paymentMethod === PaymentMethodType.RAZORPAY && paymentConfig?.razorpay?.enabled === false)}
-                  className={`w-full flex items-center justify-center gap-2 py-4 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-75 disabled:cursor-wait transition-all ${isAdmin ? "bg-amber-600 hover:bg-amber-700 focus:ring-amber-500" : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"}`}
-                >
-                  {isSubmitting ? (
-                    "Processing..."
-                  ) : isAdmin ? (
-                    <><ShieldAlert size={20} /> Admin Manual Reserve</>
-                  ) : paymentMethod === PaymentMethodType.RAZORPAY ? (
-                    <><CreditCard size={20} /> Pay Rs. {payableTotal.toLocaleString("en-IN")} with Razorpay</>
-                  ) : (
-                    <><IndianRupee size={20} /> Submit Proof for Rs. {payableTotal.toLocaleString("en-IN")}</>
-                  )}
-                </button>
-                <p className="mt-4 text-xs text-center text-gray-500">
-                  {isAdmin
-                    ? "This bypasses customer gateway payment and directly reserves inventory."
-                    : paymentMethod === PaymentMethodType.RAZORPAY
-                      ? "Razorpay will complete the payment instantly and mark the order as paid."
-                      : "Your order is created immediately and moves to paid after the admin verifies your screenshot."}
-                </p>
-              </div>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

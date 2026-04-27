@@ -56,7 +56,7 @@ async function allocateInventoryForOrderItem(
   });
 
   if (serializedItems.length === item.quantity) {
-    return serializedItems.map((inventoryItem) => ({
+    return serializedItems.map((inventoryItem: any) => ({
       inventoryItemId: inventoryItem.id,
       quantity: 1,
     }));

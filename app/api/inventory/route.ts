@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
             ? Number(existing.costPrice ?? 0)
             : Number(item.costPrice ?? 0);
         return map;
-      }, new Map<string, any>()),
-    ).map(([, value]) => value);
+      }, new Map<string, any>()).values(),
+    );
 
     const filtered = grouped.filter((item: any) => {
       const productCategory =

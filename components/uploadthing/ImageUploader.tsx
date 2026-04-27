@@ -1,7 +1,7 @@
 "use client";
 
 import { useUploadThing } from "@/lib/uploadthing";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,31 +23,39 @@ export default function ImageUploader({
   onUploadComplete,
   onUploadError,
   previewUrl,
-  endpoint = "imageUploader"
+  endpoint = "imageUploader",
 }: ImageUploaderProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const onUploadProgress = useCallback((progress: number) => {
     setUploadProgress(progress);
   }, []);
-
+  const onUploadCompleteRef = useRef(onUploadComplete);
+  useEffect(() => {
+    onUploadCompleteRef.current = onUploadComplete;
+  }, [onUploadComplete]);
   const onClientUploadComplete = useCallback((res: UploadResponse[]) => {
     const url = res[0].ufsUrl || res[0].url;
+
     if (!url) {
       onUploadError?.(new Error("Upload completed without a file URL."));
       setUploadProgress(0);
       return;
     }
-    setUploadProgress(100);
-    onUploadComplete?.(url);
-    // Reset progress after a short delay to clear the bar
-    setTimeout(() => setUploadProgress(0), 1000);
-  }, [onUploadComplete]);
 
-  const onUploadErrorCallback = useCallback((error: Error) => {
-    onUploadError?.(error);
-    setUploadProgress(0);
-  }, [onUploadError]);
+    setUploadProgress(100);
+    onUploadCompleteRef.current?.(url); // ✅ stable reference
+
+    setTimeout(() => setUploadProgress(0), 1000);
+  }, []);
+
+  const onUploadErrorCallback = useCallback(
+    (error: Error) => {
+      onUploadError?.(error);
+      setUploadProgress(0);
+    },
+    [onUploadError],
+  );
 
   const { startUpload, isUploading } = useUploadThing(endpoint, {
     onUploadProgress,
@@ -56,6 +64,7 @@ export default function ImageUploader({
   });
 
   const handleFile = async (file: File) => {
+    if (isUploading) return;
     if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
       alert(`File too large. Max size is ${MAX_IMAGE_SIZE_MB}MB.`);
       return;
@@ -83,14 +92,18 @@ export default function ImageUploader({
           "p-4 sm:p-6 text-center",
           isUploading
             ? "border-indigo-300 bg-indigo-50/30 cursor-not-allowed"
-            : "border-stone-200 bg-stone-50/50 hover:border-indigo-400 hover:bg-indigo-50/50 cursor-pointer group"
+            : "border-stone-200 bg-stone-50/50 hover:border-indigo-400 hover:bg-indigo-50/50 cursor-pointer group",
         )}
       >
         {isUploading ? (
           <div className="flex flex-col items-center">
             <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-2" />
-            <p className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest">Uploading...</p>
-            <p className="text-[10px] font-mono text-indigo-500 mt-1">{uploadProgress}%</p>
+            <p className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest">
+              Uploading...
+            </p>
+            <p className="text-[10px] font-mono text-indigo-500 mt-1">
+              {uploadProgress}%
+            </p>
           </div>
         ) : (
           <>
@@ -99,7 +112,8 @@ export default function ImageUploader({
             </div>
             <p className="text-xs font-bold text-stone-700">
               <span className="hidden xs:inline text-indigo-600">Click</span>
-              <span className="xs:hidden text-indigo-600">Tap</span> or drag to upload
+              <span className="xs:hidden text-indigo-600">Tap</span> or drag to
+              upload
             </p>
             <p className="text-[10px] text-stone-400 mt-1 font-medium">
               PNG, JPG, WEBP · Max {MAX_IMAGE_SIZE_MB}MB

@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, {
     useState, useMemo, useEffect, useCallback, useRef, memo,
 } from 'react';
@@ -10,7 +12,7 @@ import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
 // Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
 type BuildIssue = { componentIds: string[]; level: CompatibilityLevel; message: string };
-const validateBuild = (): { status: CompatibilityLevel; issues: BuildIssue[] } => ({
+const validateBuild = (_items?: unknown[]): { status: CompatibilityLevel; issues: BuildIssue[] } => ({
     status: CompatibilityLevel.COMPATIBLE,
     issues: [],
 });

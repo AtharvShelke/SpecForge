@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { calculateOrderFinancials } from "@/lib/tax-engine"; // Fixed import
+import { calculateOrderFinancials } from "@/lib/tax-engine";
 import { PaymentMethodType, PaymentStatus } from "@/types";
 
 const orderItemSchema = z.object({
@@ -53,6 +53,9 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
             const variant = product.variants.find(v => v.id === item.variantId) || product.variants[0];
             if (!variant) throw new Error(`Product variant missing for ${product.name}`);
+            if (variant.status === "OUT_OF_STOCK") {
+                return { success: false, error: `${product.name} is out of stock.` };
+            }
 
             calculationItems.push({ price: Number(variant.price), quantity: item.quantity });
 
@@ -137,7 +140,13 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
         if (!response.ok) {
             console.error("Orders API returned error:", responseData);
-            return { success: false, error: responseData.error || "Failed to process order via API." };
+            return {
+                success: false,
+                error:
+                    typeof responseData.error === "string"
+                        ? responseData.error
+                        : "We could not place your order. Please review your cart and try again.",
+            };
         }
 
         // 5. MOCK EXTERNAL NOTIFICATIONS
@@ -158,7 +167,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         console.error("Checkout action error:", error);
 
         if (error instanceof z.ZodError) {
-            return { success: false, error: "Invalid checkout data provided", details: error.issues };
+            return { success: false, error: "Please complete all required checkout fields.", details: error.issues };
         }
 
         return {

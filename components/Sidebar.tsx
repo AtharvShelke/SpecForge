@@ -1,9 +1,19 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
-import { ChevronDown, X, Check, Filter, SlidersHorizontal, Search } from 'lucide-react';
-import { CategoryNode } from '../data/categoryTree';
-import { DynamicCatalogFilter, Product } from '../types';
+import React, { useState, useMemo, useRef } from "react";
+import {
+  ChevronDown,
+  X,
+  Check,
+  Filter,
+  SlidersHorizontal,
+  Search,
+  RotateCcw,
+} from "lucide-react";
+import { CategoryNode } from "../data/categoryTree";
+import { DynamicCatalogFilter, Product } from "../types";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
   nodes: CategoryNode[];
@@ -23,7 +33,8 @@ interface SidebarProps {
   onSidebarSearchChange: (value: string) => void;
 }
 
-// ─── FilterGroup ─────────────────────────────────────────────────────────────
+// ── FilterGroup ───────────────────────────────────────────────────────────────
+
 const FilterGroup: React.FC<{
   filter: DynamicCatalogFilter;
   selectedValues: string[];
@@ -32,85 +43,110 @@ const FilterGroup: React.FC<{
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAll, setShowAll] = useState(false);
 
-  const options = useMemo(() => {
-    return (filter.options ?? []).filter((option) => option.enabled !== false || selectedValues.includes(option.value));
-  }, [filter.options, selectedValues]);
+  const options = useMemo(
+    () =>
+      (filter.options ?? []).filter(
+        (o) => o.enabled !== false || selectedValues.includes(o.value),
+      ),
+    [filter.options, selectedValues],
+  );
 
-  const visibleOptions = showAll ? options : options.slice(0, 5);
+  const VISIBLE_LIMIT = 6;
+  const visibleOptions = showAll ? options : options.slice(0, VISIBLE_LIMIT);
 
   if (options.length === 0) return null;
 
   return (
-    <div className="mb-4 pb-4 border-b border-border/50 last:border-0 last:mb-0 last:pb-0">
+    <div className="py-4 border-b border-zinc-100 last:border-b-0 last:pb-0">
+      {/* Section header */}
       <button
-        className="flex items-center justify-between w-full text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 hover:text-foreground transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => setIsExpanded((v) => !v)}
         aria-expanded={isExpanded}
+        className="flex w-full items-center justify-between group mb-0"
       >
-        <span>{filter.label}</span>
-        <ChevronDown
-          size={13}
-          strokeWidth={2.5}
-          className={`transition-transform duration-200 text-muted-foreground ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-        />
+        <span className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-zinc-400 group-hover:text-zinc-600 transition-colors">
+          {filter.label}
+        </span>
+        <span
+          className={`flex items-center justify-center w-5 h-5 rounded-full text-zinc-300 group-hover:text-zinc-500 group-hover:bg-zinc-100 transition-all ${
+            isExpanded ? "" : "rotate-[-90deg]"
+          }`}
+        >
+          <ChevronDown size={12} strokeWidth={2.5} />
+        </span>
       </button>
 
       {isExpanded && (
-        <div className="space-y-1.5">
-          {visibleOptions.map(option => {
+        <div className="mt-3 space-y-0.5">
+          {visibleOptions.map((option) => {
             const checked = selectedValues.includes(option.value);
-            // Use a stable unique id so <label htmlFor> wires to the input,
-            // and the click reaches onChange exactly ONCE (not twice).
-            const inputId = `filter-${filter.key}-${option.value}`;
+            const id = `filter-${filter.key}-${option.value}`;
+            const disabled = option.enabled === false;
+
             return (
-              <div key={option.value} className="flex items-center gap-2.5 group/opt">
-                {/* BUG FIX: previously had both a div onClick AND a label→input onChange.
-                    Both fired on every click → double-toggle → net effect = nothing checked.
-                    Now: single native input, label linked by htmlFor, no duplicate handler. */}
+              <label
+                key={option.value}
+                htmlFor={id}
+                className={`flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer group transition-colors select-none
+                  ${checked ? "bg-zinc-50" : "hover:bg-zinc-50/70"}
+                  ${disabled ? "opacity-40 pointer-events-none" : ""}`}
+              >
+                {/* Custom checkbox */}
                 <input
                   type="checkbox"
-                  id={inputId}
+                  id={id}
                   checked={checked}
+                  disabled={disabled}
                   onChange={() => onChange(option.value)}
                   className="sr-only"
                 />
-                {/* Visual custom checkbox — clicking this label fires the input once */}
-                <label
-                  htmlFor={inputId}
-                  className={`
-                    w-4 h-4 rounded border flex items-center justify-center flex-shrink-0
-                    transition-all cursor-pointer
-                    ${checked
-                      ? 'bg-primary border-primary'
-                      : 'border-input bg-background group-hover/opt:border-primary/60'
-                    }
-                  `}
+                <span
+                  className={`flex-shrink-0 flex items-center justify-center w-[18px] h-[18px] rounded-[5px] border transition-all
+                    ${
+                      checked
+                        ? "bg-zinc-900 border-zinc-900"
+                        : "border-zinc-200 bg-white group-hover:border-zinc-300"
+                    }`}
                 >
-                  {checked && <Check size={10} strokeWidth={3} className="text-primary-foreground" />}
-                </label>
-                <label
-                  htmlFor={inputId}
-                  className="flex-1 flex justify-between items-center min-w-0 cursor-pointer"
-                >
-                  <span className={`text-[13px] truncate transition-colors ${checked ? 'text-foreground font-medium' : 'text-foreground/75 group-hover/opt:text-foreground'} ${option.enabled === false ? 'opacity-50' : ''}`}>
-                    {option.label}
-                  </span>
-                  {typeof option.count === 'number' && (
-                    <span className={`text-[11px] ml-1.5 tabular-nums flex-shrink-0 ${checked ? 'text-primary/70' : 'text-muted-foreground'}`}>
-                      {option.count}
-                    </span>
+                  {checked && (
+                    <Check size={10} strokeWidth={3} className="text-white" />
                   )}
-                </label>
-              </div>
+                </span>
+
+                {/* Label */}
+                <span
+                  className={`flex-1 text-[0.85rem] leading-none transition-colors truncate
+                    ${checked ? "text-zinc-900 font-medium" : "text-zinc-600 group-hover:text-zinc-800"}`}
+                >
+                  {option.label}
+                </span>
+
+                {/* Count badge */}
+                {typeof option.count === "number" && (
+                  <span
+                    className={`flex-shrink-0 text-[0.65rem] font-semibold tabular-nums px-1.5 py-0.5 rounded-full
+                      ${checked ? "bg-zinc-200 text-zinc-700" : "bg-zinc-100 text-zinc-400"}`}
+                  >
+                    {option.count}
+                  </span>
+                )}
+              </label>
             );
           })}
 
-          {options.length > 5 && (
+          {options.length > VISIBLE_LIMIT && (
             <button
-              onClick={() => setShowAll(!showAll)}
-              className="text-[12px] text-primary font-medium hover:text-primary/80 pt-1 transition-colors"
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-1 flex items-center gap-1 pl-2 py-1 text-[0.78rem] font-semibold text-zinc-400 hover:text-zinc-700 transition-colors"
             >
-              {showAll ? '↑ Show less' : `+ ${options.length - 5} more`}
+              <ChevronDown
+                size={12}
+                strokeWidth={2.5}
+                className={`transition-transform ${showAll ? "rotate-180" : ""}`}
+              />
+              {showAll
+                ? "Show less"
+                : `+${options.length - VISIBLE_LIMIT} more`}
             </button>
           )}
         </div>
@@ -119,7 +155,24 @@ const FilterGroup: React.FC<{
   );
 };
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
+function NoMatchingSpecs() {
+  return (
+    <div className="py-10 flex flex-col items-center text-center">
+      <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center mb-3">
+        <Filter size={15} strokeWidth={1.75} className="text-zinc-300" />
+      </div>
+      <p className="text-[0.82rem] font-medium text-zinc-400 leading-relaxed">
+        No matching specs found
+      </p>
+      <p className="mt-1 text-[0.72rem] text-zinc-300">
+        Try a different search term.
+      </p>
+    </div>
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+
 const Sidebar: React.FC<SidebarProps> = ({
   nodes,
   onSelect,
@@ -128,8 +181,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   priceRange,
   onPriceChange,
   activeCategory,
-  onBuildStepChange,
-  currentProducts,
   dynamicFilters,
   selectedFilters,
   onFilterChange,
@@ -137,255 +188,306 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarSearchTerm,
   onSidebarSearchChange,
 }) => {
-  const visibleFilters = useMemo(() => {
-    return (dynamicFilters ?? []).filter((filter) => {
-      if (!filter.dependencies || filter.dependencies.length === 0) return true;
-      return filter.dependencies.every((dependency) => {
-        const parentSelection = selectedFilters[dependency.filterId] || [];
-        if (parentSelection.length === 0) return true;
-        return dependency.values.some((value) => parentSelection.includes(value));
-      });
-    });
-  }, [dynamicFilters, selectedFilters]);
+  // ── Derived state ──────────────────────────────────────────────────────────
+  const normalizedSidebarSearchTerm = sidebarSearchTerm.trim().toLowerCase();
 
-  const activeFilterCount = useMemo(() => {
-    return Object.values(selectedFilters).reduce((acc, vals) => acc + vals.length, 0);
-  }, [selectedFilters]);
+  const visibleFilters = useMemo(
+    () =>
+      (dynamicFilters ?? []).filter((filter) => {
+        const passesDependency =
+          !filter.dependencies?.length ||
+          filter.dependencies.every((dep) => {
+            const sel = selectedFilters[dep.filterId] ?? [];
+            return sel.length === 0 || dep.values.some((v) => sel.includes(v));
+          });
 
+        if (!passesDependency) return false;
+        if (!normalizedSidebarSearchTerm) return true;
+        if (filter.label.toLowerCase().includes(normalizedSidebarSearchTerm)) {
+          return true;
+        }
 
+        return (filter.options ?? []).some((option) =>
+          option.label.toLowerCase().includes(normalizedSidebarSearchTerm),
+        );
+      }),
+    [dynamicFilters, selectedFilters, normalizedSidebarSearchTerm],
+  );
+
+  const hasDynamicFilters = (dynamicFilters?.length ?? 0) > 0;
+  const hasMatchingVisibleFilters = visibleFilters.length > 0;
+  const hasSpecSearch = normalizedSidebarSearchTerm.length > 0;
+
+  const activeFilterCount = useMemo(
+    () => Object.values(selectedFilters).reduce((acc, v) => acc + v.length, 0),
+    [selectedFilters],
+  );
+
+  const hasAnyFilter = activeFilterCount > 0 || sidebarSearchTerm.length > 0;
+
+  // Auto-focus search on mount if it was pre-populated
+  const searchRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="h-full flex flex-col bg-card border border-border rounded-lg overflow-hidden">
-      {/* ── Scrollbar styles ── */}
-      <style>{`
-        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); }
-      `}</style>
-
-      {/* ── Mobile header ── */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-        <span className="font-semibold text-sm text-foreground flex items-center gap-2">
-          <SlidersHorizontal size={15} strokeWidth={2} />
-          Filters
-          {activeFilterCount > 0 && (
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-              {activeFilterCount}
-            </span>
-          )}
-        </span>
-        <button
-          onClick={onCloseMobile}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          aria-label="Close filters"
-        >
-          <X size={16} strokeWidth={2} />
-        </button>
-      </div>
-
-      {/* ── Mode toggle: Browse / Build ── */}
-      {/* <div className="px-3 pt-3 pb-2.5 border-b border-border flex-shrink-0">
-        <div className={`
-          relative flex p-1 rounded-lg border transition-colors
-          ${isBuildMode ? 'bg-primary/5 border-primary/20' : 'bg-muted/50 border-border'}
-        `}>
-         
-          <div
-            className={`
-              absolute inset-1 w-[calc(50%-2px)] rounded-md bg-background shadow-sm border border-border/50
-              transition-transform duration-200
-              ${isBuildMode ? 'translate-x-[calc(100%+2px)]' : 'translate-x-0'}
-            `}
-          />
-          <button
-            onClick={() => isBuildMode && toggleBuildMode()}
-            className={`
-              relative flex-1 py-2 text-xs font-medium rounded-md z-10 transition-colors
-              ${!isBuildMode ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/70'}
-            `}
-          >
-            Browse
-          </button>
-          <button
-            onClick={() => !isBuildMode && toggleBuildMode()}
-            className={`
-              relative flex-1 py-2 text-xs font-medium rounded-md z-10 transition-colors flex items-center justify-center gap-1.5
-              ${isBuildMode ? 'text-primary' : 'text-muted-foreground hover:text-foreground/70'}
-            `}
-          >
-            <Wrench size={12} strokeWidth={2.5} />
-            Build
-          </button>
-        </div>
-      </div> */}
-
-      {/* ── Scrollable body ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
-        <div className="p-3">
-          {/* Category and subcategory */}
-          <div className="mb-5 rounded-2xl border border-border/60 bg-gradient-to-br from-background via-background to-muted/30 p-3.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Browsing
-            </p>
-            <div className="mt-2 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-[15px] font-semibold leading-tight text-foreground">
-                  {activeCategory || 'All Products'}
-                </h3>
-                <p className="mt-1 text-[12px] text-muted-foreground">
-                  Pick a subcategory first, then fine-tune with filters.
-                </p>
-              </div>
-              {nodes.length > 0 && (
-                <span className="shrink-0 rounded-full bg-primary/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                  {nodes.length} options
+    /*
+     * KEY LAYOUT DECISION:
+     * The sidebar uses `sticky top-4 h-[calc(100vh-2rem)]` so it stays
+     * in the viewport while the product grid scrolls. Internally it uses
+     * a flex-col layout: fixed header + independently scrollable body.
+     * This eliminates the "scroll the whole page" problem.
+     */
+    <aside className="sticky top-4 flex flex-col h-[calc(100vh-2rem)] w-full">
+      {/* ── Outer shell ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col h-full overflow-hidden rounded-2xl bg-white border border-zinc-200/80 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.12)]">
+        {/* ── HEADER (non-scrolling) ─────────────────────────────────────────── */}
+        <div className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-zinc-100">
+          {/* Title row */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal
+                size={14}
+                strokeWidth={2.25}
+                className="text-zinc-400"
+              />
+              <span className="text-[0.8rem] font-bold text-zinc-800 tracking-[-0.01em]">
+                Filters
+              </span>
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-zinc-900 text-white text-[0.6rem] font-bold tabular-nums">
+                  {activeFilterCount}
                 </span>
               )}
             </div>
 
-            {nodes.length > 0 && (
-              <div className="relative mt-3">
-                <select
-                  value={selectedNode?.subCategoryId ?? ''}
-                  onChange={(e) => {
-                    const nextNode = nodes.find((node) => node.subCategoryId === e.target.value) ?? null;
-                    onSelect(nextNode);
+            <div className="flex items-center gap-2">
+              {hasAnyFilter && (
+                <button
+                  onClick={() => {
+                    onClearFilters();
+                    onSidebarSearchChange("");
                   }}
-                  className="h-11 w-full appearance-none rounded-xl border border-input bg-background px-3 pr-10 text-[13px] font-medium text-foreground shadow-sm transition-colors focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex items-center gap-1 text-[0.72rem] font-semibold text-zinc-400 hover:text-rose-500 transition-colors"
+                  title="Clear all filters"
+                >
+                  <RotateCcw size={11} strokeWidth={2.5} />
+                  Reset
+                </button>
+              )}
+              {/* Mobile close */}
+              <button
+                onClick={onCloseMobile}
+                className="md:hidden flex items-center justify-center w-7 h-7 rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors"
+                aria-label="Close filters"
+              >
+                <X size={14} strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+
+          {/* Context chip */}
+          <div className="flex items-center gap-2">
+            <span className="text-[0.72rem] text-zinc-400 font-medium">
+              Browsing
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-[0.72rem] font-semibold text-zinc-700 truncate max-w-[140px]">
+              {activeCategory || "All Products"}
+            </span>
+          </div>
+        </div>
+
+        {/* ── SCROLLABLE BODY ──────────────────────────────────────────────────
+            This is the critical fix: only THIS section scrolls, not the page.
+        ──────────────────────────────────────────────────────────────────── */}
+        <div
+          className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-5"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "#e4e4e7 transparent",
+          }}
+        >
+          {/* ── Subcategory selector ─────────────────────────────────────────── */}
+          {nodes.length > 0 && (
+            <section>
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-zinc-400 mb-2">
+                Subcategory
+              </p>
+              <div className="relative">
+                <select
+                  value={selectedNode?.subCategoryId ?? ""}
+                  onChange={(e) => {
+                    const next =
+                      nodes.find((n) => n.subCategoryId === e.target.value) ??
+                      null;
+                    onSelect(next);
+                  }}
+                  className="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 pr-9 text-[0.85rem] font-medium text-zinc-800 outline-none transition-all focus:border-zinc-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] cursor-pointer"
                 >
                   <option value="">All subcategories</option>
-                  {nodes.map((node) => (
-                    <option key={node.subCategoryId ?? node.label} value={node.subCategoryId ?? ''}>
-                      {node.label}
+                  {nodes.map((n) => (
+                    <option
+                      key={n.subCategoryId ?? n.label}
+                      value={n.subCategoryId ?? ""}
+                    >
+                      {n.label}
                     </option>
                   ))}
                 </select>
                 <ChevronDown
-                  size={15}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  size={14}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
                 />
               </div>
-            )}
-          </div>
+            </section>
+          )}
 
-          {/* Category-Scoped Search */}
-          <div className="mb-5">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 px-1">
-              Search within {activeCategory || 'this category'}
+          {/* ── Search within category ──────────────────────────────────────── */}
+          <section>
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-zinc-400 mb-2">
+              Search here
             </p>
             <div className="relative">
               <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                size={13}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300"
               />
               <input
+                ref={searchRef}
                 type="text"
                 value={sidebarSearchTerm}
-                onChange={e => onSidebarSearchChange(e.target.value)}
-                placeholder="Search category..."
-                className="
-                      w-full rounded-md border border-input bg-background pl-8 pr-3 py-2
-                      text-[13px] text-foreground placeholder:text-muted-foreground
-                      focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring
-                      transition-colors
-                    "
+                onChange={(e) => onSidebarSearchChange(e.target.value)}
+                placeholder="e.g. RTX 4070, DDR5…"
+                className="h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-9 text-[0.85rem] text-zinc-800 placeholder:text-zinc-300 outline-none transition-all focus:border-zinc-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)]"
               />
               {sidebarSearchTerm && (
                 <button
-                  onClick={() => onSidebarSearchChange('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => onSidebarSearchChange("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-full text-zinc-300 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+                  aria-label="Clear search"
                 >
-                  <X size={14} />
+                  <X size={11} />
                 </button>
               )}
             </div>
-          </div>
+          </section>
 
-          {/* Divider before filters */}
-          <div className="border-t border-border/50 mb-5" />
+          {/* ── Divider ─────────────────────────────────────────────────────── */}
+          <div className="border-t border-zinc-100" />
 
-          {/* Filters header */}
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-[13px] font-semibold text-foreground flex items-center gap-1.5">
-              <Filter size={13} strokeWidth={2.5} className="text-muted-foreground" />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="ml-0.5 inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-                  {activeFilterCount}
-                </span>
-              )}
-            </span>
-            {activeFilterCount > 0 && (
-              <button
-                onClick={onClearFilters}
-                className="text-[11px] text-muted-foreground hover:text-destructive transition-colors font-medium"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-
-          {/* Price Range */}
-          <div className="mb-4 pb-4 border-b border-border/50">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">
-              Price Range
+          {/* ── Price range ─────────────────────────────────────────────────── */}
+          <section>
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-zinc-400 mb-3">
+              Price range
             </p>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                value={priceRange.min}
-                onChange={e => onPriceChange(Number(e.target.value), priceRange.max)}
-                className="
-                      w-full rounded-md border border-input bg-background px-2.5 py-1.5
-                      text-[13px] text-foreground placeholder:text-muted-foreground
-                      focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring
-                      transition-colors
-                    "
-                placeholder="Min"
-              />
-              <span className="text-muted-foreground text-sm flex-shrink-0">—</span>
-              <input
-                type="number"
-                min={0}
-                value={priceRange.max}
-                onChange={e => onPriceChange(priceRange.min, Number(e.target.value))}
-                className="
-                      w-full rounded-md border border-input bg-background px-2.5 py-1.5
-                      text-[13px] text-foreground placeholder:text-muted-foreground
-                      focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring
-                      transition-colors
-                    "
-                placeholder="Max"
-              />
-            </div>
-          </div>
-
-          {/* Dynamic category filters (checkbox, dropdown, etc.) */}
-          {visibleFilters.map((filter, index) => (
-            <FilterGroup
-              key={`${filter.id}-${index}`}
-              filter={filter}
-              selectedValues={selectedFilters[filter.id] || []}
-              onChange={val => onFilterChange(filter.id, val)}
-            />
-          ))}
-
-          {/* Empty state */}
-          {visibleFilters.length === 0 && (
-            <div className="py-8 text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-3">
-                <Filter size={16} className="text-muted-foreground" strokeWidth={1.5} />
+            <div className="grid grid-cols-[1fr_16px_1fr] items-center gap-1">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[0.75rem] text-zinc-400 font-medium pointer-events-none">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={priceRange.min || ""}
+                  onChange={(e) =>
+                    onPriceChange(Number(e.target.value), priceRange.max)
+                  }
+                  placeholder="Min"
+                  className="h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-6 pr-2 text-[0.85rem] text-zinc-800 outline-none transition-all focus:border-zinc-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
               </div>
-              <p className="text-[12px] text-muted-foreground">
+              <span className="text-center text-zinc-300 text-sm font-light select-none">
+                –
+              </span>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[0.75rem] text-zinc-400 font-medium pointer-events-none">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={priceRange.max || ""}
+                  onChange={(e) =>
+                    onPriceChange(priceRange.min, Number(e.target.value))
+                  }
+                  placeholder="Max"
+                  className="h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-6 pr-2 text-[0.85rem] text-zinc-800 outline-none transition-all focus:border-zinc-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Dynamic filter groups ────────────────────────────────────────── */}
+          {hasMatchingVisibleFilters ? (
+            <section>
+              {visibleFilters.map((filter, i) => (
+                <FilterGroup
+                  key={`${filter.id}-${i}`}
+                  filter={filter}
+                  selectedValues={selectedFilters[filter.id] ?? []}
+                  onChange={(value) => onFilterChange(filter.id, value)}
+                />
+              ))}
+            </section>
+          ) : hasDynamicFilters && hasSpecSearch ? (
+            <NoMatchingSpecs />
+          ) : (
+            /* Empty state — only shown when no filters exist at all */
+            <div className="py-10 flex flex-col items-center text-center">
+              <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center mb-3">
+                <Filter
+                  size={15}
+                  strokeWidth={1.75}
+                  className="text-zinc-300"
+                />
+              </div>
+              <p className="text-[0.82rem] text-zinc-400 leading-relaxed">
                 No filters available
+                <br />
+                for this category yet.
               </p>
             </div>
           )}
+
+          {/* Bottom padding buffer so last item doesn't sit flush at scroll end */}
+          <div className="h-2" />
         </div>
+
+        {/* ── FOOTER — active filter summary (non-scrolling) ──────────────────
+            Appears only when filters are active. Shows quick-remove chips
+            so the user can see what's applied without scrolling back up.
+        ──────────────────────────────────────────────────────────────────── */}
+        {activeFilterCount > 0 && (
+          <div className="flex-shrink-0 border-t border-zinc-100 px-4 py-3 bg-zinc-50/80">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                Active filters
+              </p>
+              <button
+                onClick={onClearFilters}
+                className="text-[0.7rem] font-semibold text-zinc-400 hover:text-rose-500 transition-colors"
+              >
+                Clear all
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(selectedFilters).map(([key, values]) =>
+                values.map((val) => (
+                  <button
+                    key={`${key}-${val}`}
+                    onClick={() => onFilterChange(key, val)}
+                    className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full bg-zinc-900 text-white text-[0.68rem] font-medium transition-colors hover:bg-zinc-700 group"
+                  >
+                    <span className="max-w-[90px] truncate">{val}</span>
+                    <span className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white/20 group-hover:bg-white/30 transition-colors">
+                      <X size={8} strokeWidth={2.5} />
+                    </span>
+                  </button>
+                )),
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </aside>
   );
 };
 

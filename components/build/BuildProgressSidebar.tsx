@@ -3,19 +3,18 @@
 import React, { useMemo } from 'react';
 import { useShop } from '../../context/ShopContext';
 import { useBuild } from '../../context/BuildContext';
-import { Check, XCircle, AlertTriangle, ChevronRight, Monitor, Cpu, HardDrive, Keyboard, Mouse, Headphones, ShieldQuestion } from 'lucide-react';
+import { Check, XCircle, AlertTriangle, ChevronRight, Monitor, Cpu, HardDrive, Keyboard, ShieldQuestion } from 'lucide-react';
 import Image from 'next/image';
 import { BUILD_SEQUENCE } from '../../data/categoryTree';
 import { CATEGORY_NAMES, sameCategory } from '../../lib/categoryUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface BuildProgressSidebarProps {
     activeCategory?: string;
     onStepClick: (category: string) => void;
 }
 
-import { motion, AnimatePresence } from 'framer-motion';
-
-const CATEGORY_ICONS: Record<string, any> = {
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
     [CATEGORY_NAMES.PROCESSOR]: Cpu,
     [CATEGORY_NAMES.MOTHERBOARD]: ShieldQuestion,
     [CATEGORY_NAMES.RAM]: HardDrive,
@@ -33,13 +32,14 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
     const { isBuildMode, compatibilityReport } = useBuild();
 
     const buildSteps = useMemo(() => {
-        return BUILD_SEQUENCE.map((cat, index) => {
-            const item = cart.find(i => sameCategory(i.category, cat));
+        return BUILD_SEQUENCE.map((category, index) => {
+            const item = cart.find((cartItem) => sameCategory(cartItem.category, category));
             return {
-                category: cat,
-                label: cat.charAt(0) + cat.slice(1).toLowerCase().replace('_', ' '),
+                category,
+                label: category.charAt(0) + category.slice(1).toLowerCase().replace('_', ' '),
                 item,
-                step: index + 1
+                step: index + 1,
+                icon: CATEGORY_ICONS[category] ?? ShieldQuestion,
             };
         });
     }, [cart]);
@@ -49,103 +49,122 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
             {isBuildMode && (
                 <motion.div
                     initial={{ width: 0, opacity: 0, marginLeft: 0 }}
-                    animate={{ width: 320, opacity: 1, marginLeft: 24 }}
+                    animate={{ width: 336, opacity: 1, marginLeft: 24 }}
                     exit={{ width: 0, opacity: 0, marginLeft: 0 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className="flex-shrink-0 h-full hidden xl:block overflow-hidden"
+                    className="hidden h-full flex-shrink-0 overflow-hidden xl:block"
                 >
-                    <div className="w-80 h-full bg-zinc-50 border-l border-zinc-200 overflow-y-auto scrollbar-thin rounded-xl shadow-inner">
-                        <div className="p-4 bg-white border-b border-zinc-200 sticky top-0 z-10">
-                            <h3 className="font-bold text-zinc-900 heading-font mb-1 flex items-center justify-between">
-                                <span>Your Build</span>
-                                <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
-                                    {cart.length} / {BUILD_SEQUENCE.length} Parts
+                    <div className="h-full w-84 overflow-y-auto rounded-[1.9rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,246,242,0.88))] p-4 shadow-[0_24px_60px_-44px_rgba(20,30,59,0.3)]">
+                        <div className="rounded-[1.5rem] border border-white/90 bg-white/82 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                        Custom build
+                                    </p>
+                                    <h3 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">
+                                        Your configuration
+                                    </h3>
+                                </div>
+                                <span className="rounded-full bg-slate-950 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white">
+                                    {cart.length}/{BUILD_SEQUENCE.length}
                                 </span>
-                            </h3>
+                            </div>
 
-                            {/* Compatibility Status Mini-Banner */}
                             {cart.length > 0 && (
-                                <div className={`mt-3 p-2.5 rounded-lg border text-xs font-medium flex items-start gap-2 ${compatibilityReport.status === 'INCOMPATIBLE' ? 'bg-red-50 border-red-200 text-red-800' :
-                                    compatibilityReport.status === 'WARNING' ? 'bg-amber-50 border-amber-200 text-amber-800' :
-                                        'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                    }`}>
-                                    {compatibilityReport.status === 'INCOMPATIBLE' ? <XCircle size={14} className="mt-0.5" /> :
-                                        compatibilityReport.status === 'WARNING' ? <AlertTriangle size={14} className="mt-0.5" /> :
-                                            <Check size={14} className="mt-0.5" />}
-                                    <span>
-                                        {compatibilityReport.status === 'COMPATIBLE' ? 'All selected components are compatible.' :
-                                            `${compatibilityReport.issues.length} compatibility issue(s) detected.`}
+                                <div className={`mt-4 flex items-start gap-3 rounded-[1.2rem] border px-4 py-3 text-sm ${
+                                    compatibilityReport.status === 'INCOMPATIBLE'
+                                        ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                        : compatibilityReport.status === 'WARNING'
+                                            ? 'border-amber-200 bg-amber-50 text-amber-700'
+                                            : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                }`}>
+                                    {compatibilityReport.status === 'INCOMPATIBLE' ? (
+                                        <XCircle size={16} className="mt-0.5 shrink-0" />
+                                    ) : compatibilityReport.status === 'WARNING' ? (
+                                        <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                                    ) : (
+                                        <Check size={16} className="mt-0.5 shrink-0" />
+                                    )}
+                                    <span className="leading-6">
+                                        {compatibilityReport.status === 'COMPATIBLE'
+                                            ? 'All selected components currently work together.'
+                                            : `${compatibilityReport.issues.length} compatibility issue(s) need attention.`}
                                     </span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="p-4 space-y-2 relative">
-                            {buildSteps.map((step, idx) => {
-                const isActive = sameCategory(step.category, activeCategory);
+                        <div className="mt-4 space-y-3">
+                            {buildSteps.map((step, index) => {
+                                const isActive = sameCategory(step.category, activeCategory);
                                 const isCompleted = !!step.item;
+                                const Icon = step.icon;
 
                                 return (
                                     <button
                                         key={step.category}
                                         onClick={() => onStepClick(step.category)}
-                                        className={`
-                            w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all relative
-                            ${isActive
-                                                ? 'border-blue-300 bg-blue-50/50 shadow-sm ring-1 ring-blue-100'
-                                                : isCompleted
-                                                    ? 'border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm'
-                                                    : 'border-zinc-200 border-dashed bg-zinc-50/50 hover:bg-zinc-100'
-                                            }
-                          `}
+                                        className={`relative w-full rounded-[1.5rem] border p-4 text-left transition-all duration-300 ${
+                                            isActive
+                                                ? 'border-slate-950 bg-slate-950 text-white shadow-[0_24px_48px_-36px_rgba(15,23,42,0.88)]'
+                                                : 'border-white/90 bg-white/84 text-slate-700 hover:-translate-y-0.5 hover:border-slate-200'
+                                        }`}
                                     >
-                                        {/* Step indicator */}
-                                        <div className={`
-                            w-6 h-6 mt-0.5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold transition-colors z-10
-                            ${isCompleted
-                                                ? 'bg-zinc-900 text-white'
-                                                : isActive
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-zinc-200 text-zinc-500'
-                                            }
-                          `}>
-                                            {isCompleted ? <Check size={12} strokeWidth={3} /> : step.step}
-                                        </div>
-
-                                        {/* Connecting line (if not last) */}
-                                        {idx < buildSteps.length - 1 && (
-                                            <div className={`absolute top-9 left-[1.125rem] w-px h-[calc(100%-8px)] rounded-full -translate-x-1/2 z-0
-                                ${isCompleted ? 'bg-zinc-300' : 'bg-zinc-200 border-dashed border-l'}
-                              `} />
-                                        )}
-
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                                <p className={`text-xs font-bold uppercase tracking-wider ${isActive ? 'text-blue-700' : isCompleted ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                                                    {step.label}
-                                                </p>
-                                                {isActive && <ChevronRight size={14} className="text-blue-400" />}
+                                        <div className="flex items-start gap-3">
+                                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                                                isActive
+                                                    ? 'bg-white text-slate-950'
+                                                    : isCompleted
+                                                        ? 'bg-slate-950 text-white'
+                                                        : 'bg-slate-100 text-slate-500'
+                                            }`}>
+                                                {isCompleted ? <Check size={16} strokeWidth={3} /> : <Icon size={16} />}
                                             </div>
 
-                                            {step.item ? (
-                                                <div className="mt-1.5 flex gap-2 items-center">
-                                                    <div className="w-8 h-8 rounded-md bg-zinc-50 border border-zinc-100 flex items-center justify-center overflow-hidden relative flex-shrink-0">
-                                                        <Image src={step.item.media?.[0]?.url || '/placeholder.png'} alt={step.item.name} fill className="object-contain p-1 mix-blend-multiply" sizes="32px" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-[13px] font-medium text-zinc-900 truncate leading-tight">
-                                                            {step.item.name}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className={`text-[0.68rem] font-semibold uppercase tracking-[0.2em] ${isActive ? 'text-white/55' : 'text-slate-400'}`}>
+                                                            Step {step.step}
                                                         </p>
-                                                        <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">
-                                                            ₹{(step.item.variants?.[0]?.price || 0).toLocaleString('en-IN')}
+                                                        <p className={`mt-1 text-sm font-semibold tracking-[-0.02em] ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                                                            {step.label}
                                                         </p>
                                                     </div>
+                                                    <ChevronRight size={15} className={isActive ? 'text-white/60' : 'text-slate-300'} />
                                                 </div>
-                                            ) : (
-                                                <p className="text-[11px] text-zinc-500 mt-1">Select a component</p>
-                                            )}
+
+                                                {step.item ? (
+                                                    <div className="mt-3 flex items-center gap-3 rounded-[1rem] bg-black/4 p-2.5">
+                                                        <div className={`relative h-11 w-11 overflow-hidden rounded-[0.9rem] border ${isActive ? 'border-white/15 bg-white/10' : 'border-slate-100 bg-slate-50'}`}>
+                                                            <Image
+                                                                src={step.item.media?.[0]?.url || '/placeholder.png'}
+                                                                alt={step.item.name}
+                                                                fill
+                                                                sizes="44px"
+                                                                className="object-contain p-1.5"
+                                                            />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className={`truncate text-sm font-medium ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                                                                {step.item.name}
+                                                            </p>
+                                                            <p className={`mt-1 text-xs font-semibold ${isActive ? 'text-white/55' : 'text-slate-500'}`}>
+                                                                ₹{(step.item.variants?.[0]?.price || 0).toLocaleString('en-IN')}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className={`mt-3 text-sm ${isActive ? 'text-white/65' : 'text-slate-500'}`}>
+                                                        Select a component to continue.
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {index < buildSteps.length - 1 && (
+                                            <div className={`absolute -bottom-3 left-8 h-3 w-px ${isCompleted ? 'bg-slate-300' : 'bg-slate-200'}`} />
+                                        )}
                                     </button>
                                 );
                             })}

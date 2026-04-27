@@ -1027,6 +1027,7 @@ export interface CatalogListingResult {
   products: Product[]
   total: number
   filters: DynamicCatalogFilter[]
+  nextCursor?: string | null
 }
 
 export interface SpecDependencyInput {

@@ -97,6 +97,10 @@ const CATEGORY_TREE: SeedCategory[] = [
         slotName: "CPU",
         specDefs: [
           {
+            name: "Manufacturer", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "General",
+            options: ["AMD", "Intel"],
+          },
+          {
             name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
             options: ["LGA1700", "LGA1851", "AM4", "AM5", "sTR5", "LGA1200", "LGA1151"],
           },
@@ -161,6 +165,7 @@ const CATEGORY_TREE: SeedCategory[] = [
         description: "High-end desktop / workstation processors",
         slotName: "CPU",
         specDefs: [
+          { name: "Manufacturer", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "General", options: ["AMD", "Intel"] },
           { name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["sTR5", "LGA4677", "SP5"] },
           { name: "Core Count", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
           { name: "TDP (W)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Power", options: [] },
@@ -180,6 +185,10 @@ const CATEGORY_TREE: SeedCategory[] = [
         description: "Full-size ATX motherboards",
         slotName: "MOTHERBOARD",
         specDefs: [
+          {
+            name: "Manufacturer", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "General",
+            options: ["AMD", "Intel"],
+          },
           {
             name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility",
             options: ["LGA1700", "LGA1851", "AM4", "AM5", "sTR5"],
@@ -244,6 +253,7 @@ const CATEGORY_TREE: SeedCategory[] = [
         description: "Compact Micro-ATX motherboards",
         slotName: "MOTHERBOARD",
         specDefs: [
+          { name: "Manufacturer", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "General", options: ["AMD", "Intel"] },
           { name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["LGA1700", "LGA1851", "AM4", "AM5"] },
           { name: "Chipset", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["B650", "A620", "B550", "B450", "B760", "H610"] },
           { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Micro-ATX"] },
@@ -260,6 +270,7 @@ const CATEGORY_TREE: SeedCategory[] = [
         description: "Small form factor Mini-ITX motherboards",
         slotName: "MOTHERBOARD",
         specDefs: [
+          { name: "Manufacturer", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "General", options: ["AMD", "Intel"] },
           { name: "Socket", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Compatibility", options: ["LGA1700", "AM5", "AM4"] },
           { name: "Chipset", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["B650", "B760", "Z790", "Z690"] },
           { name: "Form Factor", valueType: SpecValueType.STRING, isFilterable: true, filterGroup: "Specs", options: ["Mini-ITX"] },
@@ -1267,6 +1278,30 @@ const PRODUCTS: ProductSeed[] = [
 
   // ── GPUs — NVIDIA ────────────────────────────────────────────────────────────
   {
+    id: "mobo-07", sku: "MB-ASUS-Z890E-STRIX",
+    name: "ASUS ROG Strix Z890-E Gaming WiFi 7",
+    description: "Flagship LGA1851 ATX motherboard with Z890 chipset, DDR5 support, WiFi 7, PCIe 5.0, USB4, and premium power delivery for next-gen Intel builds.",
+    subCategoryName: "ATX Motherboard", brandName: "ASUS", price: 46500, image: "https://placeholder.asus.com/rog-strix-z890-e.jpg", stock: 7,
+    specs: [
+      { specName: "Socket", valueString: "LGA1851", optionValue: "LGA1851" },
+      { specName: "Chipset", valueString: "Z890", optionValue: "Z890" },
+      { specName: "Form Factor", valueString: "ATX", optionValue: "ATX" },
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Memory Slots", valueNumber: 4 },
+      { specName: "Max Memory (GB)", valueNumber: 256 },
+      { specName: "PCIe x16 Slots", valueNumber: 2 },
+      { specName: "M.2 Slots", valueNumber: 5 },
+      { specName: "USB 3.2 Gen2 Ports", valueNumber: 6 },
+      { specName: "USB4/Thunderbolt", valueBool: true },
+      { specName: "WiFi", valueString: "WiFi 7", optionValue: "WiFi 7" },
+      { specName: "Bluetooth", valueString: "5.3" },
+      { specName: "LAN Speed", valueString: "5GbE", optionValue: "5GbE" },
+      { specName: "PCIe Gen (Primary)", valueString: "PCIe 5.0", optionValue: "PCIe 5.0" },
+      { specName: "VRM Phases", valueNumber: 18 },
+      { specName: "SATA Ports", valueNumber: 4 },
+    ],
+  },
+  {
     id: "gpu-01", sku: "GPU-ASUS-4090-ROG",
     name: "ASUS ROG Strix GeForce RTX 4090 24GB OC",
     description: "NVIDIA's flagship Ada Lovelace GPU with 24GB GDDR6X, triple 80mm fans, and top-of-class rasterization and ray-tracing performance for 4K gaming.",
@@ -1495,6 +1530,24 @@ const PRODUCTS: ProductSeed[] = [
   },
 
   // ── STORAGE — NVMe SSDs ─────────────────────────────────────────────────────
+  {
+    id: "ram-06", sku: "RAM-GSK-TZ5-96DDR5",
+    name: "G.Skill Trident Z5 RGB 96GB DDR5-8400 (2x48GB)",
+    description: "Ultra-premium DDR5-8400 kit with 96GB capacity, tuned for halo-class Intel and AM5 showcase builds where fast filter matches like 8400 and 96GB are easy to demo.",
+    subCategoryName: "DDR5 RAM", brandName: "G.Skill", price: 48900, image: "https://placeholder.gskill.com/trident-z5-96gb-8400.jpg", stock: 5,
+    specs: [
+      { specName: "Memory Type", valueString: "DDR5", optionValue: "DDR5" },
+      { specName: "Capacity", valueString: "96GB (48GBx2)", optionValue: "96GB (48GBx2)" },
+      { specName: "Speed (MT/s)", valueNumber: 8400 },
+      { specName: "CAS Latency", valueNumber: 40 },
+      { specName: "Timings", valueString: "40-52-52-134" },
+      { specName: "Voltage", valueNumber: 1.45 },
+      { specName: "RGB", valueBool: true },
+      { specName: "Heat Spreader", valueString: "Tall Heatsink" },
+      { specName: "XMP/EXPO Profile", valueString: "XMP 3.0", optionValue: "XMP 3.0" },
+      { specName: "ECC", valueBool: false },
+    ],
+  },
   {
     id: "ssd-01", sku: "SSD-SAM-990PRO-1T",
     name: "Samsung 990 Pro 1TB NVMe Gen4",

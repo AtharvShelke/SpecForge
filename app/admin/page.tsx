@@ -40,13 +40,13 @@ const SKELETON_STYLE = {
 const TabSkeleton = memo(function TabSkeleton() {
   return (
     <div className="space-y-4 animate-pulse" style={SKELETON_STYLE}>
-      <div className="h-6 w-40 rounded-full bg-slate-200" />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="h-8 w-56 rounded-full bg-stone-200/80" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {SKELETON_KEYS.map((i) => (
-          <div key={i} className="h-28 rounded-[1.5rem] bg-slate-200" />
+          <div key={i} className="h-32 rounded-[1.75rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(237,233,227,0.92))]" />
         ))}
       </div>
-      <div className="h-64 rounded-[1.75rem] bg-slate-200" />
+      <div className="h-72 rounded-[2rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(237,233,227,0.94))]" />
     </div>
   );
 });

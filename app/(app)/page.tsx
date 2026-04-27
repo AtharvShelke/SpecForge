@@ -1,125 +1,126 @@
-"use client";
+import Image from "next/image";
+import Link from "next/link";
 
-import { useMemo, lazy, Suspense } from "react";
+import ProductCard from "@/components/cards/ProductCard";
+import { Button } from "@/components/ui/button";
+import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
+import { Product } from "@/types";
 
-import { PageLayout } from "@/components/layout/PageLayout";
-import { useShop } from "@/context/ShopContext";
+export const dynamic = "force-dynamic";
 
-// Above-fold sections — eagerly imported (critical path)
-import HeroSection from "@/components/storefront/HeroSection";
-import CategorySection from "@/components/storefront/CategorySection";
-import BrandShowcase from "@/components/storefront/BrandShowcase";
-import { useBuild } from "@/context/BuildContext";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-// Below-fold sections — lazily imported (deferred bundle chunks)
-const FeaturedProductsSection = lazy(
-  () => import("@/components/storefront/FeaturedProductsSection"),
-);
-const GpuTierSection = lazy(
-  () => import("@/components/storefront/GpuTierSection"),
-);
-const FeaturedBuildsSection = lazy(
-  () => import("@/components/storefront/FeaturedBuildsSection"),
-);
-const CustomBuilderSection = lazy(
-  () => import("@/components/storefront/CustomBuilderSection"),
-);
-const TrustSection = lazy(() => import("@/components/storefront/TrustSection"));
-const StorefrontFooter = lazy(
-  () => import("@/components/storefront/StorefrontFooter"),
-);
-const ScrollTopButton = lazy(() => import("@/components/ui/ScrollTopButton"));
-
-// ── Shared loading skeleton ───────────────────────────────────────────────────
-
-function SectionSkeleton() {
-  return (
-    <div
-      className="flex w-full items-center justify-center py-24"
-      aria-hidden="true"
-    >
-      <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-slate-900 animate-spin" />
-    </div>
-  );
+async function getNewArrivals() {
+  const res = await fetch(`${baseUrl}/api/storefront/new-arrivals`, {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return [];
+  const products = await res.json();
+  return products.map((product: any) => normalizeCatalogProduct(product));
 }
 
-// ── Loading screen ────────────────────────────────────────────────────────────
+async function getBestSellers() {
+  const res = await fetch(`${baseUrl}/api/storefront/best-sellers`, {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return [];
+  const products = await res.json();
+  return products.map((product: any) => normalizeCatalogProduct(product));
+}
 
-function StoreLoadingScreen() {
+function ProductSection({
+  title,
+  description,
+  products,
+}: {
+  title: string;
+  description: string;
+  products: Product[];
+}) {
+  if (products.length === 0) {
+    return null;
+  }
+
   return (
-    <PageLayout bgClass="bg-transparent">
-      <div className="flex min-h-[80vh] flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="h-12 w-12 rounded-full border-2 border-slate-200 border-t-slate-900 animate-spin" />
+    <section className="border-t border-gray-200 py-12 sm:py-16">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] text-gray-500">{title}</p>
+          <p className="mt-2 text-sm text-gray-500">{description}</p>
         </div>
-        <p className="text-sm font-medium text-slate-500">Loading store...</p>
+        <Button asChild variant="outline">
+          <Link href="/products">Shop all products</Link>
+        </Button>
       </div>
-    </PageLayout>
+
+      <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
+        {products.map((product, index) => (
+          <ProductCard key={product.id} product={product} priority={index < 4} />
+        ))}
+      </div>
+    </section>
   );
 }
 
-// ── StorefrontPage ────────────────────────────────────────────────────────────
+export default async function StorefrontPage() {
+  const [newArrivals, bestSellers] = await Promise.all([
+    getNewArrivals(),
+    getBestSellers(),
+  ]);
 
-export default function StorefrontPage() {
-  const { products, categories, brands, addToCart, isLoading } = useShop();
-
-  const { buildGuides } = useBuild();
-  const featuredBuilds = buildGuides.slice(0, 4);
-
-  const productCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-
-    for (const p of products) {
-      const categoryName = p.subCategory?.category?.name ?? "Unknown";
-      counts[categoryName] = (counts[categoryName] ?? 0) + 1;
-    }
-    return counts;
-  }, [products]);
-
-  if (isLoading) return <StoreLoadingScreen />;
-  const mappedCategories = categories.map((c, index) => ({
-    id: c.id,
-    label: c.name,
-    categoryId: c.id,
-    parentId: null,
-    sortOrder: index,
-  }));
   return (
-    <PageLayout bgClass="bg-transparent">
-      {/* Above fold — no Suspense boundary needed */}
-      <HeroSection />
-      <CategorySection
-        categories={mappedCategories}
-        productCounts={productCounts}
-      />
-      <BrandShowcase brands={brands} />
+    <div className="bg-white">
+      <section className="border-b border-gray-200">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] lg:items-center lg:px-8 lg:py-10">
+          <div className="max-w-xl">
+            <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
+              Performance hardware
+            </p>
+            <h1 className="mt-4 text-3xl font-semibold text-gray-900 sm:text-5xl">
+              PC components presented with less friction and more clarity.
+            </h1>
+            <p className="mt-4 text-base leading-7 text-gray-600">
+              Shop processors, graphics cards, motherboards, memory, storage,
+              and accessories in a storefront designed to help you compare faster
+              and check out with confidence.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/products">Shop products</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/build-guides">Browse build guides</Link>
+              </Button>
+            </div>
+          </div>
 
-      {/* Below fold — lazy loaded, each in its own Suspense boundary
-          so one slow section never blocks the others */}
-      <Suspense fallback={<SectionSkeleton />}>
-        <FeaturedProductsSection products={products} addToCart={addToCart} />
-      </Suspense>
+          <div className="relative overflow-hidden border border-gray-200 bg-gray-50">
+            <div className="relative aspect-[4/3]">
+              <Image
+                src="/images/hero3.jpg"
+                alt="Custom gaming PC"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 55vw"
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <Suspense fallback={<SectionSkeleton />}>
-        <GpuTierSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <FeaturedBuildsSection builds={featuredBuilds} />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <CustomBuilderSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <TrustSection />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <StorefrontFooter />
-        <ScrollTopButton />
-      </Suspense>
-    </PageLayout>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <ProductSection
+          title="New Arrivals"
+          description="The latest additions across the catalog."
+          products={newArrivals}
+        />
+        <ProductSection
+          title="Best Sellers"
+          description="Products customers are buying most often."
+          products={bestSellers}
+        />
+      </div>
+    </div>
   );
 }

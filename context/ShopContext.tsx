@@ -10,7 +10,7 @@ import React, {
   ReactNode,
 } from 'react';
 
-import { Product, SubCategory, SpecDefinition, Category, Brand, Order } from '../types';
+import { Product, ProductVariant, SubCategory, SpecDefinition, Category, Brand, Order } from '../types';
 import { sameCategory } from '../lib/categoryUtils';
 import { FILTER_CONFIG } from '../data/filterConfig';
 
@@ -24,7 +24,7 @@ interface ShopContextType {
   cart: any[];
   isCartOpen: boolean;
   setCartOpen: (open: boolean) => void;
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, selectedVariant?: ProductVariant) => void;
   loadCart: (items: any[]) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, qty: number) => void;
@@ -141,19 +141,21 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   const refreshFilterConfigs = useCallback(async () => {}, []);
 
   // Cart Actions
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product, selectedVariant?: ProductVariant) => {
     setCart((prev) => {
+      const variantToUse = selectedVariant ?? product.variants?.[0];
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1, selectedVariant: variantToUse }
+            : item
         );
       }
-      // Add product with quantity 1 and default selected variant
       return [...prev, { 
         ...product, 
         quantity: 1, 
-        selectedVariant: product.variants?.[0] 
+        selectedVariant: variantToUse 
       }];
     });
     setCartOpen(true);

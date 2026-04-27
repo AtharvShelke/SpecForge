@@ -9,10 +9,15 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { AdvancedFilter, CreateProduct, CreateSpecWithOptions, CreateVariant, CreateVariantSpec } from "@/types";
+import {
+  AdvancedFilter,
+  CreateProduct,
+  CreateSpecWithOptions,
+  CreateVariant,
+  CreateVariantSpec,
+} from "@/types";
 import { serializeProducts } from "@/lib/api/adminSerializers";
 import { buildDynamicCatalogResult } from "@/lib/dynamicCatalogFilters";
-
 
 export class CatalogService {
   // =====================================================
@@ -44,11 +49,12 @@ export class CatalogService {
     }
 
     // Advanced Filtering
-    const { subCategoryId, filters, priceMin, priceMax, brandId, status } = filter;
+    const { subCategoryId, filters, priceMin, priceMax, brandId, status } =
+      filter;
 
     // Build Prisma query dynamically
     const where: any = { deletedAt: null };
-    
+
     if (subCategoryId) where.subCategoryId = subCategoryId;
     if (brandId) where.brandId = brandId;
     if (status) where.status = status;
@@ -130,13 +136,14 @@ export class CatalogService {
       const product = await tx.product.create({
         data: {
           name: data.name,
-          slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          slug:
+            data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
           subCategoryId: data.subCategoryId,
           brandId: data.brandId,
           metaTitle: data.metaTitle,
           metaDescription: data.metaDescription,
           description: data.description,
-          status: (data.status as any) || 'ACTIVE',
+          status: (data.status as any) || "ACTIVE",
         },
       });
 
@@ -150,7 +157,7 @@ export class CatalogService {
               price: variantData.price,
               compareAtPrice: variantData.compareAtPrice,
               attributes: variantData.attributes || {},
-              status: (variantData.status as any) || 'IN_STOCK',
+              status: (variantData.status as any) || "IN_STOCK",
             },
           });
 
@@ -212,7 +219,7 @@ export class CatalogService {
           price: data.price,
           compareAtPrice: data.compareAtPrice,
           attributes: data.attributes || {},
-          status: (data.status as any) || 'IN_STOCK',
+          status: (data.status as any) || "IN_STOCK",
         },
       });
 
@@ -272,7 +279,7 @@ export class CatalogService {
       orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
       include: {
         options: {
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
           include: {
             childOptionDeps: {
               include: {
@@ -328,7 +335,7 @@ export class CatalogService {
   static async getSpecOptions(specId: string) {
     return prisma.specOption.findMany({
       where: { specId },
-      orderBy: { order: 'asc' },
+      orderBy: { order: "asc" },
     });
   }
 
@@ -401,15 +408,12 @@ export class CatalogService {
 export class ServiceError extends Error {
   constructor(
     message: string,
-    public statusCode: number = 400
+    public statusCode: number = 400,
   ) {
     super(message);
     this.name = "ServiceError";
   }
 }
-
-
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BRANDS
@@ -480,7 +484,7 @@ export async function createCategory(data: {
 
 export async function updateCategory(
   id: string,
-  data: { name?: string; description?: string }
+  data: { name?: string; description?: string },
 ) {
   try {
     return await prisma.category.update({
@@ -488,8 +492,7 @@ export async function updateCategory(
       data: { name: data.name, description: data.description },
     });
   } catch (err: any) {
-    if (err.code === "P2025")
-      throw new ServiceError("Category not found", 404);
+    if (err.code === "P2025") throw new ServiceError("Category not found", 404);
     throw err;
   }
 }
@@ -501,8 +504,7 @@ export async function deleteCategory(id: string) {
       data: { deletedAt: new Date() },
     });
   } catch (err: any) {
-    if (err.code === "P2025")
-      throw new ServiceError("Category not found", 404);
+    if (err.code === "P2025") throw new ServiceError("Category not found", 404);
     throw err;
   }
 }
@@ -536,10 +538,7 @@ export async function createSubCategory(data: {
     },
   });
   if (existing)
-    throw new ServiceError(
-      "Subcategory already exists in this category",
-      409
-    );
+    throw new ServiceError("Subcategory already exists in this category", 409);
 
   return prisma.subCategory.create({
     data: {
@@ -581,7 +580,7 @@ export async function createSpec(data: CreateSpecWithOptions) {
   if (existing)
     throw new ServiceError(
       "Spec definition already exists for this subcategory",
-      409
+      409,
     );
 
   const createData: any = {
@@ -622,7 +621,12 @@ export async function updateSpec(
     isMulti?: boolean;
     filterGroup?: string | null;
     filterOrder?: number | null;
-    options?: Array<{ id?: string; value: string; label?: string; order?: number }>;
+    options?: Array<{
+      id?: string;
+      value: string;
+      label?: string;
+      order?: number;
+    }>;
     dependencies?: Array<{
       parentSpecId: string;
       parentOptionValue: string;
@@ -690,7 +694,9 @@ export async function updateSpec(
           },
         });
       } else {
-        const existingByValue = currentOptions.find((current) => current.value === option.value);
+        const existingByValue = currentOptions.find(
+          (current) => current.value === option.value,
+        );
         if (existingByValue) {
           seenOptionIds.add(existingByValue.id);
           saved = await tx.specOption.update({
@@ -717,7 +723,9 @@ export async function updateSpec(
       nextOptionIdsByValue.set(saved.value, saved.id);
     }
 
-    const removableOptions = currentOptions.filter((option) => !seenOptionIds.has(option.id));
+    const removableOptions = currentOptions.filter(
+      (option) => !seenOptionIds.has(option.id),
+    );
     for (const option of removableOptions) {
       if (
         option.variantSpecs.length > 0 ||
@@ -756,7 +764,8 @@ export async function updateSpec(
 
       let childOptionId: string | null = null;
       if (dependency.childOptionValue) {
-        childOptionId = nextOptionIdsByValue.get(dependency.childOptionValue) ?? null;
+        childOptionId =
+          nextOptionIdsByValue.get(dependency.childOptionValue) ?? null;
         if (!childOptionId) {
           const childOption = await tx.specOption.findFirst({
             where: { specId: id, value: dependency.childOptionValue },
@@ -964,8 +973,7 @@ export async function createProduct(data: CreateProduct) {
     where: { id: data.subCategoryId },
     include: { specDefinitions: true },
   });
-  if (!subCategory)
-    throw new ServiceError("SubCategory not found", 404);
+  if (!subCategory) throw new ServiceError("SubCategory not found", 404);
 
   // Generate unique slug
   let productSlug =
@@ -992,7 +1000,7 @@ export async function createProduct(data: CreateProduct) {
     if (duplicateSkus.length > 0) {
       throw new ServiceError(
         `SKU(s) already exist: ${duplicateSkus.map((d) => d.sku).join(", ")}`,
-        409
+        409,
       );
     }
 
@@ -1004,7 +1012,7 @@ export async function createProduct(data: CreateProduct) {
           if (!validSpecIds.has(spec.specId)) {
             throw new ServiceError(
               `SpecDefinition "${spec.specId}" does not belong to SubCategory "${subCategory.name}"`,
-              400
+              400,
             );
           }
         }
@@ -1073,7 +1081,7 @@ export async function updateProduct(
     metaDescription?: string;
     description?: string;
     status?: string;
-  }
+  },
 ) {
   const patch: any = {};
   if (data.name !== undefined) patch.name = data.name;
@@ -1090,8 +1098,7 @@ export async function updateProduct(
   try {
     return await prisma.product.update({ where: { id }, data: patch });
   } catch (err: any) {
-    if (err.code === "P2025")
-      throw new ServiceError("Product not found", 404);
+    if (err.code === "P2025") throw new ServiceError("Product not found", 404);
     throw err;
   }
 }
@@ -1110,8 +1117,7 @@ export async function deleteProduct(id: string) {
 
     return product;
   } catch (err: any) {
-    if (err.code === "P2025")
-      throw new ServiceError("Product not found", 404);
+    if (err.code === "P2025") throw new ServiceError("Product not found", 404);
     throw err;
   }
 }
@@ -1126,8 +1132,7 @@ export async function deleteProduct(id: string) {
  * Flow: SubCategory → SpecDefinition(isFilterable) → SpecOption
  */
 export async function getFilterSchema(subCategoryId: string) {
-  if (!subCategoryId)
-    throw new ServiceError("subCategoryId is required");
+  if (!subCategoryId) throw new ServiceError("subCategoryId is required");
 
   return prisma.specDefinition.findMany({
     where: { subCategoryId, isFilterable: true },
@@ -1197,8 +1202,7 @@ export async function getCatalogListing(query: AdvancedFilter) {
  * Flow: SubCategory → SpecDefinition → SpecOption → VariantSpec → Variant → Product
  */
 export async function filterProducts(query: AdvancedFilter) {
-  if (!query.subCategoryId)
-    throw new ServiceError("subCategoryId is required");
+  if (!query.subCategoryId) throw new ServiceError("subCategoryId is required");
 
   const where: any = {
     deletedAt: null,
@@ -1224,8 +1228,8 @@ export async function filterProducts(query: AdvancedFilter) {
                 specId: filter.specId,
                 OR: [
                   { option: { value: { in: filter.values } } },
-                  { valueString: { in: filter.values } }
-                ]
+                  { valueString: { in: filter.values } },
+                ],
               },
             },
           },
@@ -1279,10 +1283,7 @@ export async function filterProducts(query: AdvancedFilter) {
  * Creates a variant with optional nested specs in one call.
  * Flow: Variant → VariantSpec → (SpecDefinition + SpecOption)
  */
-export async function createVariant(
-  productId: string,
-  data: CreateVariant
-) {
+export async function createVariant(productId: string, data: CreateVariant) {
   if (!data.sku || data.price === undefined)
     throw new ServiceError("SKU and price are required");
 
@@ -1329,7 +1330,7 @@ export async function updateVariant(
     compareAtPrice?: number;
     attributes?: any;
     status?: string;
-  }
+  },
 ) {
   const patch: any = {};
   if (data.sku !== undefined) patch.sku = data.sku;
@@ -1342,10 +1343,8 @@ export async function updateVariant(
   try {
     return await prisma.productVariant.update({ where: { id }, data: patch });
   } catch (err: any) {
-    if (err.code === "P2002")
-      throw new ServiceError("SKU must be unique", 409);
-    if (err.code === "P2025")
-      throw new ServiceError("Variant not found", 404);
+    if (err.code === "P2002") throw new ServiceError("SKU must be unique", 409);
+    if (err.code === "P2025") throw new ServiceError("Variant not found", 404);
     throw err;
   }
 }
@@ -1356,7 +1355,7 @@ export async function updateVariant(
 
 export async function upsertVariantSpec(
   variantId: string,
-  data: CreateVariantSpec
+  data: CreateVariantSpec,
 ) {
   if (!data.specId) throw new ServiceError("specId is required");
 

@@ -33,7 +33,15 @@ export async function createBuildGuide(data: {
       price: true,
       product: {
         select: {
-          category: true,
+          subCategory: {
+            select: {
+              category: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -54,7 +62,7 @@ export async function createBuildGuide(data: {
 
   const category =
     data.category?.trim() ||
-    variantMap.get(items[0].variantId)?.product.category ||
+    variantMap.get(items[0].variantId)?.product.subCategory?.category?.name ||
     "Custom";
 
   return prisma.buildGuide.create({

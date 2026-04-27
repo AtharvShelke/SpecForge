@@ -84,15 +84,24 @@ function toCamelCase(value: string) {
 
   if (cleaned.length === 0) return "";
 
-  return cleaned[0] + cleaned.slice(1).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("");
+  return (
+    cleaned[0] +
+    cleaned
+      .slice(1)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("")
+  );
 }
 
 function getSpecValue(spec: RawVariantSpec) {
   if (spec.option?.label) return spec.option.label;
   if (spec.option?.value) return spec.option.value;
-  if (spec.valueString !== undefined && spec.valueString !== null) return spec.valueString;
-  if (spec.valueNumber !== undefined && spec.valueNumber !== null) return spec.valueNumber;
-  if (spec.valueBool !== undefined && spec.valueBool !== null) return spec.valueBool;
+  if (spec.valueString !== undefined && spec.valueString !== null)
+    return spec.valueString;
+  if (spec.valueNumber !== undefined && spec.valueNumber !== null)
+    return spec.valueNumber;
+  if (spec.valueBool !== undefined && spec.valueBool !== null)
+    return spec.valueBool;
   return "";
 }
 
@@ -103,16 +112,16 @@ function normalizeSpecs(product: RawProduct): SpecEntry[] {
   const specs: SpecEntry[] = [];
 
   for (const entry of variantSpecs) {
-      const name = entry.spec?.name?.trim();
-      if (!name) continue;
+    const name = entry.spec?.name?.trim();
+    if (!name) continue;
 
-      const specEntry = {
-        key: toCamelCase(name),
-        value: getSpecValue(entry),
-        name,
-      } satisfies SpecEntry;
+    const specEntry = {
+      key: toCamelCase(name),
+      value: getSpecValue(entry),
+      name,
+    } satisfies SpecEntry;
 
-      if (specEntry.key) specs.push(specEntry);
+    if (specEntry.key) specs.push(specEntry);
   }
 
   if (product.brand?.name && !specs.some((entry) => entry.key === "brand")) {
@@ -139,7 +148,9 @@ export function normalizeCatalogProduct(product: RawProduct): Product {
   const normalizedVariants = (product.variants ?? []).map((v) => ({
     ...v,
     price: v.price ? Number(v.price.toString()) : 0,
-    compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice.toString()) : null,
+    compareAtPrice: v.compareAtPrice
+      ? Number(v.compareAtPrice.toString())
+      : null,
   }));
 
   return {
@@ -148,7 +159,10 @@ export function normalizeCatalogProduct(product: RawProduct): Product {
     category: normalizeCategory(product),
     image: sanitizeImageUrl(product.image),
     media: normalizedMedia,
-    specs: product.specs && product.specs.length > 0 ? product.specs : normalizeSpecs(product),
+    specs:
+      product.specs && product.specs.length > 0
+        ? product.specs
+        : normalizeSpecs(product),
   } as unknown as Product;
 }
 
@@ -156,7 +170,8 @@ function matchesSearch(product: Product, query: string) {
   if (!query) return true;
   const q = query.toLowerCase();
   const specs = (product as Product & { specs?: SpecEntry[] }).specs ?? [];
-  const brand = (product as Product & { brand?: { name?: string } }).brand?.name ?? "";
+  const brand =
+    (product as Product & { brand?: { name?: string } }).brand?.name ?? "";
 
   return [
     product.name,
@@ -171,8 +186,13 @@ function matchesSearch(product: Product, query: string) {
 
 function matchesCategory(product: Product, category?: string | null) {
   if (!category) return true;
-  const productCategory = ((product as Product & { category?: string }).category ?? "").toLowerCase();
-  const subCategory = ((product as Product & { subCategory?: { name?: string | null } }).subCategory?.name ?? "").toLowerCase();
+  const productCategory = (
+    (product as Product & { category?: string }).category ?? ""
+  ).toLowerCase();
+  const subCategory = (
+    (product as Product & { subCategory?: { name?: string | null } })
+      .subCategory?.name ?? ""
+  ).toLowerCase();
   const expected = category.toLowerCase();
   return productCategory === expected || subCategory === expected;
 }
@@ -184,7 +204,10 @@ function matchesSubCategory(product: Product, subCategoryId?: string | null) {
 
 function matchesNodeBrand(product: Product, brand?: string | null) {
   if (!brand) return true;
-  const productBrand = ((product as Product & { brand?: { name?: string | null } }).brand?.name ?? "").toLowerCase();
+  const productBrand = (
+    (product as Product & { brand?: { name?: string | null } }).brand?.name ??
+    ""
+  ).toLowerCase();
   return productBrand === brand.toLowerCase();
 }
 
@@ -196,7 +219,10 @@ function matchesNodeQuery(product: Product, query?: string | null) {
 function matchesStock(product: Product, stockStatus?: string | null) {
   if (!stockStatus || stockStatus === "all") return true;
   const variants = (product.variants ?? []) as Array<{
-    inventoryItems?: Array<{ quantityOnHand?: number; quantityReserved?: number }>;
+    inventoryItems?: Array<{
+      quantityOnHand?: number;
+      quantityReserved?: number;
+    }>;
     status?: string | null;
   }>;
   const quantity = variants.reduce((sum, variant) => {
@@ -213,17 +239,26 @@ function matchesStock(product: Product, stockStatus?: string | null) {
   }, 0);
 
   if (stockStatus === "In Stock") {
-    return quantity > 0 || variants.some((variant) => variant.status === "IN_STOCK");
+    return (
+      quantity > 0 || variants.some((variant) => variant.status === "IN_STOCK")
+    );
   }
 
   if (stockStatus === "Out of Stock") {
-    return quantity <= 0 || variants.every((variant) => variant.status === "OUT_OF_STOCK");
+    return (
+      quantity <= 0 ||
+      variants.every((variant) => variant.status === "OUT_OF_STOCK")
+    );
   }
 
   return true;
 }
 
-function matchesPrice(product: Product, minPrice?: string | null, maxPrice?: string | null) {
+function matchesPrice(
+  product: Product,
+  minPrice?: string | null,
+  maxPrice?: string | null,
+) {
   const price = Number(product.variants?.[0]?.price ?? 0);
   const min = minPrice ? Number(minPrice) : null;
   const max = maxPrice ? Number(maxPrice) : null;
@@ -234,7 +269,9 @@ function matchesPrice(product: Product, minPrice?: string | null, maxPrice?: str
 }
 
 function matchesSpecFilters(product: Product, params: URLSearchParams) {
-  const specs = ((product as Product & { specs?: SpecEntry[] }).specs ?? []).reduce<Record<string, string>>((acc, spec) => {
+  const specs = (
+    (product as Product & { specs?: SpecEntry[] }).specs ?? []
+  ).reduce<Record<string, string>>((acc, spec) => {
     acc[spec.key] = String(spec.value).toLowerCase();
     return acc;
   }, {});
@@ -254,7 +291,11 @@ function sortProducts(products: Product[], sort?: string | null) {
 
   switch (sort) {
     case "price-desc":
-      next.sort((a, b) => Number(b.variants?.[0]?.price ?? 0) - Number(a.variants?.[0]?.price ?? 0));
+      next.sort(
+        (a, b) =>
+          Number(b.variants?.[0]?.price ?? 0) -
+          Number(a.variants?.[0]?.price ?? 0),
+      );
       break;
     case "name-asc":
       next.sort((a, b) => a.name.localeCompare(b.name));
@@ -263,11 +304,23 @@ function sortProducts(products: Product[], sort?: string | null) {
       next.sort((a, b) => b.name.localeCompare(a.name));
       break;
     case "newest":
-      next.sort((a, b) => new Date((b as Product & { createdAt?: string }).createdAt ?? 0).getTime() - new Date((a as Product & { createdAt?: string }).createdAt ?? 0).getTime());
+      next.sort(
+        (a, b) =>
+          new Date(
+            (b as Product & { createdAt?: string }).createdAt ?? 0,
+          ).getTime() -
+          new Date(
+            (a as Product & { createdAt?: string }).createdAt ?? 0,
+          ).getTime(),
+      );
       break;
     case "price-asc":
     default:
-      next.sort((a, b) => Number(a.variants?.[0]?.price ?? 0) - Number(b.variants?.[0]?.price ?? 0));
+      next.sort(
+        (a, b) =>
+          Number(a.variants?.[0]?.price ?? 0) -
+          Number(b.variants?.[0]?.price ?? 0),
+      );
       break;
   }
 
@@ -279,7 +332,10 @@ function buildFilterOptions(products: Product[]): DynamicCatalogFilter[] {
   const specsMap = new Map<string, Set<string>>();
 
   for (const product of products) {
-    const brandName = ((product as Product & { brand?: { name?: string | null } }).brand?.name ?? "").trim();
+    const brandName = (
+      (product as Product & { brand?: { name?: string | null } }).brand?.name ??
+      ""
+    ).trim();
     if (brandName) brandSet.add(brandName);
 
     const specs = (product as Product & { specs?: SpecEntry[] }).specs ?? [];
@@ -303,18 +359,23 @@ function buildFilterOptions(products: Product[]): DynamicCatalogFilter[] {
       options: brands.map((value) => ({
         value,
         label: value,
-        count: products.filter((product) => product.brand?.name === value).length,
+        count: products.filter((product) => product.brand?.name === value)
+          .length,
         enabled: true,
       })),
     });
   }
 
-  for (const [key, values] of [...specsMap.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [key, values] of [...specsMap.entries()].sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
     const sortedValues = [...values].sort((a, b) => a.localeCompare(b));
     filters.push({
       id: key,
       key,
-      label: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
+      label: key
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (char) => char.toUpperCase()),
       type: "checkbox",
       group: "General",
       order: 0,
@@ -334,7 +395,9 @@ function buildFilterOptions(products: Product[]): DynamicCatalogFilter[] {
   return filters;
 }
 
-export async function fetchCatalogProducts(paramsInput?: CatalogQueryInput): Promise<CatalogResult> {
+export async function fetchCatalogProducts(
+  paramsInput?: CatalogQueryInput,
+): Promise<CatalogResult> {
   const params = toSearchParams(paramsInput);
   const response = await fetch("/api/catalog/products", { cache: "no-store" });
 
@@ -342,10 +405,12 @@ export async function fetchCatalogProducts(paramsInput?: CatalogQueryInput): Pro
     throw new Error("Failed to fetch catalog products");
   }
 
-  const rawProducts = (await response.json()) as RawProduct[];
-  const normalizedProducts = rawProducts.map(normalizeCatalogProduct);
+  const data = await response.json();
 
-  const filtered = normalizedProducts.filter((product) => {
+  const rawProducts = Array.isArray(data) ? data : (data?.products ?? []);
+  const normalizedProducts: Product[] = rawProducts.map(normalizeCatalogProduct);
+
+  const filtered = normalizedProducts.filter((product: Product) => {
     return (
       matchesCategory(product, params.get("category")) &&
       matchesSubCategory(product, params.get("subCategoryId")) &&
