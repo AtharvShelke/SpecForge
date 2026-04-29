@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Check, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, Search, X } from "lucide-react";
 
 import { DynamicCatalogFilter } from "@/types";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,12 @@ interface CatalogFiltersSidebarProps {
   onClear: () => void;
 }
 
+interface PriceRangeSectionProps {
+  minPrice: number | null;
+  maxPrice: number | null;
+  onPriceChange: (minPrice: number | null, maxPrice: number | null) => void;
+}
+
 function FilterGroup({
   filter,
   selectedValues,
@@ -31,63 +37,187 @@ function FilterGroup({
   selectedValues: string[];
   onToggle: (value: string) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const [showAll, setShowAll] = useState(false);
-  const options = showAll ? filter.options : filter.options.slice(0, 8);
+  const options = showAll ? filter.options : filter.options.slice(0, 6);
 
   if (filter.options.length === 0) {
     return null;
   }
 
+  const selectedCount = selectedValues.length;
+
   return (
-    <section className="border-b border-slate-200 py-5 last:border-b-0">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-medium text-slate-900">{filter.label}</h3>
-        <span className="text-xs text-slate-400">{filter.options.length}</span>
-      </div>
+    <div className="border-b border-gray-100 py-5 last:border-b-0">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex w-full items-center justify-between group"
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-gray-900">{filter.label}</h3>
+          {selectedCount > 0 && (
+            <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+              {selectedCount}
+            </span>
+          )}
+        </div>
+        <ChevronDown
+          className={cn(
+            "size-4 text-gray-400 transition-transform duration-200",
+            isExpanded && "rotate-180"
+          )}
+        />
+      </button>
 
-      <div className="space-y-2.5">
-        {options.map((option) => {
-          const checked = selectedValues.includes(option.value);
-          const id = `filter-${filter.id}-${option.value}`;
+      {isExpanded && (
+        <div className="mt-3 space-y-1.5">
+          {options.map((option) => {
+            const checked = selectedValues.includes(option.value);
+            const id = `filter-${filter.id}-${option.value}`;
 
-          return (
-            <label
-              key={option.value}
-              htmlFor={id}
-              className={cn(
-                "flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors",
-                checked ? "bg-slate-100 text-slate-950" : "text-slate-700 hover:bg-slate-50",
-              )}
-            >
-              <span className="relative flex size-4 shrink-0 items-center justify-center">
-                <input
-                  id={id}
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => onToggle(option.value)}
-                  className="peer size-4 appearance-none rounded-[4px] border border-slate-300 bg-white checked:border-slate-900 checked:bg-slate-900"
-                />
-                <Check className="pointer-events-none absolute hidden size-3 text-white peer-checked:block" />
-              </span>
-              <span className="min-w-0 flex-1 truncate">{option.label}</span>
-              {typeof option.count === "number" ? (
-                <span className="text-xs text-slate-400">{option.count}</span>
-              ) : null}
-            </label>
-          );
-        })}
-      </div>
+            return (
+              <label
+                key={option.value}
+                htmlFor={id}
+                className={cn(
+                  "flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors",
+                  checked
+                    ? "bg-gray-50 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                <div className="relative flex size-4 shrink-0 items-center justify-center">
+                  <input
+                    id={id}
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onToggle(option.value)}
+                    className="peer size-4 appearance-none rounded border border-gray-300 bg-white checked:border-gray-900 checked:bg-gray-900"
+                  />
+                  <Check className="pointer-events-none absolute hidden size-3 text-white peer-checked:block" />
+                </div>
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                {typeof option.count === "number" && (
+                  <span className="text-xs text-gray-400">{option.count}</span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      )}
 
-      {filter.options.length > 8 ? (
+      {filter.options.length > 6 && (
         <button
           type="button"
-          onClick={() => setShowAll((current) => !current)}
-          className="mt-3 text-sm font-medium text-slate-600 hover:text-slate-950"
+          onClick={() => setShowAll(!showAll)}
+          className="mt-3 text-xs font-medium text-gray-500 hover:text-gray-900"
         >
-          {showAll ? "Show less" : `Show ${filter.options.length - 8} more`}
+          {showAll ? "Show less" : `Show ${filter.options.length - 6} more`}
         </button>
-      ) : null}
-    </section>
+      )}
+    </div>
+  );
+}
+
+function PriceRangeSection({
+  minPrice,
+  maxPrice,
+  onPriceChange,
+}: PriceRangeSectionProps) {
+  const [localMinPrice, setLocalMinPrice] = useState<string>(
+    minPrice?.toString() ?? ""
+  );
+  const [localMaxPrice, setLocalMaxPrice] = useState<string>(
+    maxPrice?.toString() ?? ""
+  );
+
+  const applyPrice = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onPriceChange(
+      localMinPrice ? Number(localMinPrice) : null,
+      localMaxPrice ? Number(localMaxPrice) : null
+    );
+  };
+
+  return (
+    <div className="border-b border-gray-100 pb-5">
+      <h3 className="mb-3 text-sm font-medium text-gray-900">Price range</h3>
+      <form onSubmit={applyPrice} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">Min (₹)</label>
+            <input
+              type="number"
+              min={0}
+              step={100}
+              value={localMinPrice}
+              onChange={(e) => setLocalMinPrice(e.target.value)}
+              placeholder="0"
+              className="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">Max (₹)</label>
+            <input
+              type="number"
+              min={0}
+              step={100}
+              value={localMaxPrice}
+              onChange={(e) => setLocalMaxPrice(e.target.value)}
+              placeholder="Any"
+              className="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="submit"
+            variant="outline"
+            size="sm"
+            className="w-full border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+          >
+            Apply
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+            onClick={() => {
+              setLocalMinPrice("");
+              setLocalMaxPrice("");
+              onPriceChange(null, null);
+            }}
+          >
+            Reset
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { label: "Under ₹25k", max: 25000 },
+            { label: "Under ₹50k", max: 50000 },
+            { label: "₹50k - ₹1L", min: 50000, max: 100000 },
+          ].map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => {
+                setLocalMinPrice(
+                  typeof preset.min === "number" ? String(preset.min) : ""
+                );
+                setLocalMaxPrice(
+                  typeof preset.max === "number" ? String(preset.max) : ""
+                );
+                onPriceChange(preset.min ?? null, preset.max ?? null);
+              }}
+              className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -105,103 +235,72 @@ export default function CatalogFiltersSidebar({
   const activeChips = useMemo(
     () =>
       Object.entries(selectedFilters).flatMap(([filterId, values]) =>
-        values.map((value) => ({ filterId, value })),
+        values.map((value) => {
+          const filter = filters.find((f) => f.id === filterId);
+          const option = filter?.options.find((o) => o.value === value);
+          return {
+            filterId,
+            value,
+            label: option?.label ?? value,
+          };
+        })
       ),
-    [selectedFilters],
+    [selectedFilters, filters]
   );
 
-  const applyPrice = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const nextMin = String(formData.get("minPrice") ?? "").trim();
-    const nextMax = String(formData.get("maxPrice") ?? "").trim();
-
-    onPriceChange(
-      nextMin ? Number(nextMin) : null,
-      nextMax ? Number(nextMax) : null,
-    );
-  };
-
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="size-4 text-slate-500" />
-            <div>
-              <p className="text-sm font-semibold text-slate-950">Filters</p>
-              <p className="text-xs text-slate-500">{activeCount} active</p>
-            </div>
+    <div className="border border-gray-200 bg-white shadow-sm">
+      {/* Header */}
+      <div className="border-b border-gray-100 px-4 py-4 xl:px-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Filters</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {activeCount} {activeCount === 1 ? "filter" : "filters"} active
+            </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClear} className="h-8 px-2 text-slate-600">
-            Reset
-          </Button>
+          {activeCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              className="h-8 text-xs text-gray-500 hover:text-gray-900"
+            >
+              Clear all
+            </Button>
+          )}
         </div>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="space-y-5 px-5 py-5">
-          <section className="border-b border-slate-200 pb-5">
-            <h3 className="mb-3 text-sm font-medium text-slate-900">Price</h3>
-            <form
-              key={`${minPrice ?? ""}-${maxPrice ?? ""}`}
-              onSubmit={applyPrice}
-              className="space-y-3"
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <label className="space-y-2">
-                  <span className="text-xs text-slate-500">Min</span>
-                  <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    name="minPrice"
-                    defaultValue={minPrice ?? ""}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-colors focus:border-slate-900"
-                    placeholder="0"
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-xs text-slate-500">Max</span>
-                  <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    name="maxPrice"
-                    defaultValue={maxPrice ?? ""}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-colors focus:border-slate-900"
-                    placeholder="50000"
-                  />
-                </label>
-              </div>
-              <Button type="submit" variant="outline" className="h-10 w-full">
-                Apply price
-              </Button>
-            </form>
-          </section>
+      <ScrollArea className="h-[calc(100vh-170px)]">
+        <div className="px-4 py-4 xl:px-5">
+          <PriceRangeSection
+            key={`${minPrice ?? ""}-${maxPrice ?? ""}`}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            onPriceChange={onPriceChange}
+          />
 
-          {activeChips.length > 0 ? (
-            <section className="border-b border-slate-200 pb-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-medium text-slate-900">Active filters</h3>
-                <span className="text-xs text-slate-400">{activeChips.length}</span>
-              </div>
+          {/* Active Filters Chips */}
+          {activeChips.length > 0 && (
+            <div className="border-b border-gray-100 pb-5 mb-2">
+              <h3 className="mb-3 text-sm font-medium text-gray-900">Active filters</h3>
               <div className="flex flex-wrap gap-2">
                 {activeChips.map((chip) => (
                   <button
                     key={`${chip.filterId}-${chip.value}`}
-                    type="button"
                     onClick={() => onFilterToggle(chip.filterId, chip.value)}
-                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
                   >
-                    <span>{chip.value}</span>
+                    {chip.label}
                     <X className="size-3" />
                   </button>
                 ))}
               </div>
-            </section>
-          ) : null}
+            </div>
+          )}
 
+          {/* Dynamic Filters */}
           {filters.length > 0 ? (
             filters.map((filter) => (
               <FilterGroup
@@ -212,26 +311,22 @@ export default function CatalogFiltersSidebar({
               />
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
-              <Search className="mb-3 size-4 text-slate-400" />
-              <p className="text-sm font-medium text-slate-900">No filters available</p>
-              <p className="mt-1 text-xs text-slate-500">
-                This selection does not expose spec-based filters yet.
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50/30 px-4 py-8 text-center">
+              <Search className="mb-2 size-5 text-gray-300" />
+              <p className="text-sm font-medium text-gray-500">No filters available</p>
+              <p className="mt-1 text-xs text-gray-400">
+                Select a category to see filters
               </p>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-slate-500">Showing results</p>
-            <p className="text-sm font-semibold text-slate-950">{total.toLocaleString()} products</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={onClear} className="h-9">
-            Reset all
-          </Button>
+      {/* Footer */}
+      <div className="border-t border-gray-100 bg-gray-50/50 px-4 py-3 xl:px-5">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-600">Total products</span>
+          <span className="font-semibold text-gray-900">{total.toLocaleString()}</span>
         </div>
       </div>
     </div>

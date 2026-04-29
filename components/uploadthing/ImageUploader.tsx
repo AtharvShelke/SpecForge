@@ -1,6 +1,5 @@
 "use client";
 
-import { useUploadThing } from "@/lib/uploadthing";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +25,7 @@ export default function ImageUploader({
   endpoint = "imageUploader",
 }: ImageUploaderProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const onUploadProgress = useCallback((progress: number) => {
     setUploadProgress(progress);
@@ -34,34 +34,14 @@ export default function ImageUploader({
   useEffect(() => {
     onUploadCompleteRef.current = onUploadComplete;
   }, [onUploadComplete]);
-  const onClientUploadComplete = useCallback((res: UploadResponse[]) => {
-    const url = res[0].ufsUrl || res[0].url;
-
-    if (!url) {
-      onUploadError?.(new Error("Upload completed without a file URL."));
-      setUploadProgress(0);
-      return;
-    }
-
-    setUploadProgress(100);
-    onUploadCompleteRef.current?.(url); // ✅ stable reference
-
-    setTimeout(() => setUploadProgress(0), 1000);
-  }, []);
-
   const onUploadErrorCallback = useCallback(
     (error: Error) => {
       onUploadError?.(error);
       setUploadProgress(0);
+      setIsUploading(false);
     },
     [onUploadError],
   );
-
-  const { startUpload, isUploading } = useUploadThing(endpoint, {
-    onUploadProgress,
-    onClientUploadComplete,
-    onUploadError: onUploadErrorCallback,
-  });
 
   const handleFile = async (file: File) => {
     if (isUploading) return;
@@ -71,9 +51,60 @@ export default function ImageUploader({
     }
 
     try {
-      await startUpload([file]);
+      setIsUploading(true);
+      onUploadProgress(0);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("endpoint", endpoint);
+
+      const response = await new Promise<UploadResponse>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/uploads");
+        xhr.responseType = "json";
+
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onUploadProgress(progress);
+        };
+
+        xhr.onerror = () => reject(new Error("Network error while uploading file."));
+        xhr.onabort = () => reject(new Error("Upload was cancelled."));
+        xhr.onload = () => {
+          const data =
+            (xhr.response as UploadResponse | { error?: string } | null) ??
+            JSON.parse(xhr.responseText || "{}");
+
+          if (xhr.status < 200 || xhr.status >= 300) {
+            const errorMessage =
+              typeof data === "object" && data && "error" in data
+                ? data.error
+                : "Upload failed.";
+            reject(new Error(errorMessage || "Upload failed."));
+            return;
+          }
+
+          resolve(data as UploadResponse);
+        };
+
+        xhr.send(formData);
+      });
+
+      const url = response.ufsUrl || response.url;
+      if (!url) {
+        throw new Error("Upload completed without a file URL.");
+      }
+
+      setUploadProgress(100);
+      onUploadCompleteRef.current?.(url);
+      setTimeout(() => setUploadProgress(0), 1000);
     } catch (err) {
-      console.error("Error starting upload:", err);
+      onUploadErrorCallback(
+        err instanceof Error ? err : new Error("Failed to upload file."),
+      );
+    } finally {
+      setIsUploading(false);
     }
   };
 

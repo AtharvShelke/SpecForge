@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
-import { Cpu, Home, MapPin, ShoppingCart, Sparkles, User2, Wrench } from "lucide-react";
+import { Cpu, Home, MapPin, Search, ShoppingCart, Sparkles, User2, Wrench } from "lucide-react";
 import { useState } from "react";
 import { useShop } from "@/context/ShopContext";
 import { cn } from "@/lib/utils";
@@ -83,6 +83,18 @@ export default function Navbar() {
                 })}
               </nav>
 
+              <form action="/products" className="hidden flex-1 max-w-md xl:block">
+                <label className="relative block">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="search"
+                    name="q"
+                    placeholder="Search products"
+                    className="h-10 w-full rounded-full border border-slate-200 bg-white/90 pl-10 pr-4 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
+                  />
+                </label>
+              </form>
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCartOpen(true)}
@@ -103,6 +115,14 @@ export default function Navbar() {
                     )}
                   </AnimatePresence>
                 </button>
+
+                <Link
+                  href="/products"
+                  className="flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white/85 text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950 xl:hidden"
+                  aria-label="Search products"
+                >
+                  <Search className="size-4" />
+                </Link>
 
                 <Link
                   href="/admin"

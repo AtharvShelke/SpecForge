@@ -23,7 +23,13 @@ const checkoutSchema = z.object({
     paymentMethod: z.nativeEnum(PaymentMethodType).optional(),
     paymentTransactionId: z.string().optional(),
     paymentStatus: z.nativeEnum(PaymentStatus).optional(),
-    paymentProofUrl: z.string().url().optional(),
+    paymentProofUrl: z
+        .string()
+        .refine(
+            (value) => value.startsWith("/uploads/") || z.url().safeParse(value).success,
+            "Invalid URL",
+        )
+        .optional(),
     paymentReference: z.string().optional(),
     isPosOverride: z.boolean().optional(),
     items: z.array(orderItemSchema).min(1),

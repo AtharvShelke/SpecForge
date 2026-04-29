@@ -133,8 +133,10 @@ function normalizeSpecs(product: RawProduct): SpecEntry[] {
 
 function normalizeCategory(product: RawProduct) {
   return (
-    product.category ||
+    // Prefer the parent category (e.g. "Processor") over stored subcategory labels
+    // (e.g. "Desktop CPU") so category-based UIs like PC Builder can match reliably.
     product.subCategory?.category?.name ||
+    product.category ||
     product.subCategory?.name ||
     "Uncategorized"
   );
@@ -399,7 +401,9 @@ export async function fetchCatalogProducts(
   paramsInput?: CatalogQueryInput,
 ): Promise<CatalogResult> {
   const params = toSearchParams(paramsInput);
-  const response = await fetch("/api/catalog/products", { cache: "no-store" });
+  const qs = params.toString();
+  const endpoint = qs ? `/api/catalog/products?${qs}` : "/api/catalog/products";
+  const response = await fetch(endpoint, { cache: "no-store" });
 
   if (!response.ok) {
     throw new Error("Failed to fetch catalog products");

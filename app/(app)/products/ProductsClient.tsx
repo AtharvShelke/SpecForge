@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, ArrowUpDown, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import ProductCard from "@/components/cards/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -12,14 +16,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useShop } from "@/context/ShopContext";
 import { useProductFilters } from "@/hooks/useProductFilters";
 import { CatalogListingResult, Category, DynamicCatalogFilter, Product } from "@/types";
@@ -34,17 +30,17 @@ type CatalogResponse = CatalogListingResult & {
 
 function LoadingGrid() {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6">
       {Array.from({ length: 12 }).map((_, index) => (
         <div
           key={index}
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+          className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
         >
-          <div className="aspect-square animate-pulse bg-slate-100" />
+          <div className="aspect-square animate-pulse bg-gradient-to-br from-gray-50 to-gray-100" />
           <div className="space-y-3 p-4">
-            <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-28 animate-pulse rounded bg-slate-100" />
+            <div className="h-3 w-16 animate-pulse rounded bg-gray-100" />
+            <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
+            <div className="h-4 w-24 animate-pulse rounded bg-gray-100" />
           </div>
         </div>
       ))}
@@ -54,16 +50,21 @@ function LoadingGrid() {
 
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
-    <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 text-center">
-      <div>
-        <p className="text-lg font-semibold text-slate-950">No products found</p>
-        <p className="mt-2 text-sm text-slate-500">
-          Try removing a few filters or broadening your selection.
-        </p>
-        <Button variant="outline" className="mt-6" onClick={onClear}>
-          Reset filters
-        </Button>
+    <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/30 px-6 text-center">
+      <div className="rounded-full bg-gray-100 p-4">
+        <SlidersHorizontal className="size-6 text-gray-400" />
       </div>
+      <p className="mt-4 text-lg font-medium text-gray-900">No products found</p>
+      <p className="mt-1 text-sm text-gray-500">
+        Try adjusting your filters or search term
+      </p>
+      <Button
+        variant="outline"
+        className="mt-6 border-gray-200 bg-white hover:bg-gray-50"
+        onClick={onClear}
+      >
+        Clear all filters
+      </Button>
     </div>
   );
 }
@@ -109,6 +110,7 @@ export default function ProductsClient() {
     selectedSubCategoryId,
     setCategory,
     setPriceRange,
+    setSearchQuery,
     setSort,
     setSubCategoryId,
     sort,
@@ -121,6 +123,7 @@ export default function ProductsClient() {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState(query);
 
   const searchKey = searchParams.toString();
   const activeCategory = useMemo(
@@ -135,6 +138,10 @@ export default function ProductsClient() {
   useEffect(() => {
     setPage(1);
   }, [searchKey]);
+
+  useEffect(() => {
+    setSearchInput(query);
+  }, [query]);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,28 +199,43 @@ export default function ProductsClient() {
   }, [page, totalPages]);
 
   return (
-    <section className="bg-slate-100 [--products-shell-offset:7.75rem] md:[--products-shell-offset:4.75rem]">
-      <div className="h-[calc(100dvh-var(--products-shell-offset))] overflow-hidden">
-        <div className="flex h-full min-h-0 flex-col">
-          <div className="sticky top-0 z-10 shrink-0 bg-white">
-            <CatalogCategoryTabs
-              categories={categories}
-              selectedCategory={activeCategory?.name ?? null}
-              selectedCategoryLabel={activeCategoryLabel}
-              total={total}
-              query={query}
-              onCategoryChange={setCategory}
-            />
-            <CatalogSubcategoryNav
-              category={activeCategory}
-              selectedSubCategoryId={selectedSubCategoryId}
-              onSubCategoryChange={setSubCategoryId}
-            />
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <div className="w-full px-4 py-4 sm:px-5 lg:px-6">
+        <CatalogCategoryTabs
+          categories={categories}
+          selectedCategory={activeCategory?.name ?? null}
+          selectedCategoryLabel={activeCategoryLabel}
+          total={total}
+          query={query}
+          searchInput={searchInput}
+          sort={sort}
+          activeFilterCount={activeFilterCount}
+          pageStart={pageStart}
+          pageEnd={pageEnd}
+          onSearchChange={(value) => {
+            setSearchInput(value);
+            setSearchQuery(value);
+          }}
+          onSearchClear={() => {
+            setSearchInput("");
+            setSearchQuery("");
+          }}
+          onSortChange={setSort}
+          onOpenMobileFilters={() => setIsMobileFiltersOpen(true)}
+          onCategoryChange={setCategory}
+        />
 
-          <div className="min-h-0 flex-1 overflow-hidden px-4 py-4 sm:px-6 lg:px-8 lg:py-5">
-            <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[304px_minmax(0,1fr)]">
-              <aside className="hidden h-full min-h-0 lg:block">
+        <CatalogSubcategoryNav
+          category={activeCategory}
+          selectedSubCategoryId={selectedSubCategoryId}
+          onSubCategoryChange={setSubCategoryId}
+        />
+
+        <div className="mt-3 lg:mt-4">
+          <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
+            {/* Desktop Filters Sidebar */}
+            <aside className="hidden lg:block">
+              <div className="sticky top-20">
                 <CatalogFiltersSidebar
                   filters={filters}
                   selectedFilters={selectedFilters}
@@ -225,107 +247,78 @@ export default function ProductsClient() {
                   onFilterToggle={toggleFilterValue}
                   onClear={clearFilters}
                 />
-              </aside>
+              </div>
+            </aside>
 
-              <main className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                <div className="flex shrink-0 flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                  <div>
-                    <p className="text-sm font-medium text-slate-950">
-                      {pageStart}-{pageEnd} of {total.toLocaleString()} products
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Filters stay isolated on the left so product browsing remains uninterrupted.
-                    </p>
+            {/* Main Content */}
+            <main className="min-w-0">
+              {/* Products Grid */}
+              {isLoading ? (
+                <LoadingGrid />
+              ) : products.length === 0 ? (
+                <EmptyState onClear={clearFilters} />
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                    {products.map((product, index) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        priority={index < 4}
+                      />
+                    ))}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-10 lg:hidden"
-                      onClick={() => setIsMobileFiltersOpen(true)}
-                    >
-                      <SlidersHorizontal className="mr-2 size-4" />
-                      Filters
-                      {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-                    </Button>
-
-                    <div className="flex items-center gap-2">
-                      <ArrowUpDown className="size-4 text-slate-400" />
-                      <Select value={sort} onValueChange={setSort}>
-                        <SelectTrigger className="h-10 w-[180px] rounded-lg border-slate-200">
-                          <SelectValue placeholder="Sort products" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="featured">Featured</SelectItem>
-                          <SelectItem value="newest">Newest</SelectItem>
-                          <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                          <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                          <SelectItem value="name-asc">Name: A to Z</SelectItem>
-                          <SelectItem value="name-desc">Name: Z to A</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <ScrollArea className="min-h-0 flex-1">
-                  <div className="px-4 py-4 sm:px-5 sm:py-5">
-                    {isLoading ? (
-                      <LoadingGrid />
-                    ) : products.length === 0 ? (
-                      <EmptyState onClear={clearFilters} />
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
-                        {products.map((product, index) => (
-                          <ProductCard
-                            key={product.id}
-                            product={product}
-                            priority={index < 4}
-                          />
-                        ))}
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
+                      <p className="text-sm text-gray-500">
+                        Page {page} of {totalPages}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          disabled={page <= 1 || isLoading}
+                          className="border-gray-200 bg-white hover:bg-gray-50"
+                        >
+                          <ArrowLeft className="mr-1 size-3.5" />
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={page >= totalPages || isLoading}
+                          className="border-gray-200 bg-white hover:bg-gray-50"
+                        >
+                          Next
+                          <ArrowRight className="ml-1 size-3.5" />
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                </ScrollArea>
-
-                <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:px-5">
-                  <p className="text-sm text-slate-500">
-                    Page {Math.min(page, totalPages)} of {totalPages}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((current) => Math.max(1, current - 1))}
-                      disabled={page <= 1 || isLoading}
-                    >
-                      <ArrowLeft className="mr-2 size-4" />
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPage((current) => Math.min(totalPages, current + 1))
-                      }
-                      disabled={page >= totalPages || isLoading}
-                    >
-                      Next
-                      <ArrowRight className="ml-2 size-4" />
-                    </Button>
-                  </div>
-                </div>
-              </main>
-            </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </main>
           </div>
         </div>
       </div>
 
+      {/* Mobile Filters Sheet */}
       <Sheet open={isMobileFiltersOpen} onOpenChange={setIsMobileFiltersOpen}>
-        <SheetContent side="left" className="w-full max-w-md p-0">
-          <SheetHeader className="border-b border-slate-200 px-5 py-4 text-left">
-            <SheetTitle>Filters</SheetTitle>
+        <SheetContent side="left" className="w-full max-w-sm p-0">
+          <SheetHeader className="border-b border-gray-100 px-5 py-4">
+            <SheetTitle className="flex items-center gap-2">
+              <SlidersHorizontal className="size-4" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  {activeFilterCount}
+                </span>
+              )}
+            </SheetTitle>
           </SheetHeader>
           <div className="h-[calc(100dvh-65px)]">
             <CatalogFiltersSidebar
@@ -342,6 +335,6 @@ export default function ProductsClient() {
           </div>
         </SheetContent>
       </Sheet>
-    </section>
+    </div>
   );
 }

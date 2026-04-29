@@ -33,8 +33,8 @@ export default function ProductsPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 xl:grid-cols-4">
+        <div className="w-full px-4 py-8 sm:px-5 lg:px-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <div key={index}>
                 <div className="aspect-square animate-pulse bg-gray-100" />

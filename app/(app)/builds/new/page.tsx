@@ -10,12 +10,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
-// Legacy client-side compatibility engine removed. Use BuildContext.checkCompatibility() for real API-based checks.
-type BuildIssue = { componentIds: string[]; level: CompatibilityLevel; message: string };
-const validateBuild = (_items?: unknown[]): { status: CompatibilityLevel; issues: BuildIssue[] } => ({
-    status: CompatibilityLevel.COMPATIBLE,
-    issues: [],
-});
 import {
     Product, CartItem, CompatibilityLevel, Role, specsToFlat,
 } from '@/types';
@@ -30,6 +24,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { fetchCatalogProducts } from '@/lib/catalogFrontend';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+
+type BuildIssue = {
+    level: CompatibilityLevel;
+    message: string;
+};
 
 /* ─────────────────────────────── Styles ─────────────────────────────────── */
 const PAGE_STYLES = `
@@ -47,10 +47,11 @@ const PAGE_STYLES = `
 
   .pcb-layout {
     display: grid;
-    grid-template-columns: 72px 1fr 296px;
+    grid-template-columns: 260px minmax(0, 1fr) 300px;
     grid-template-rows: 1fr;
     height: 100%;
     overflow: hidden;
+    column-gap: 16px;
   }
   @media (max-width: 1279px) {
     .pcb-layout { grid-template-columns: 1fr; }
@@ -111,14 +112,13 @@ const PAGE_STYLES = `
 
   .product-grid {
     display: grid;
-    gap: 12px;
+    gap: 10px;
     grid-template-columns: repeat(2, 1fr);
   }
-  @media (min-width: 480px)  { .product-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 640px)  { .product-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (min-width: 900px)  { .product-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (min-width: 1100px) { .product-grid { grid-template-columns: repeat(4, 1fr); } }
-  @media (min-width: 1400px) { .product-grid { grid-template-columns: repeat(5, 1fr); } }
+  @media (min-width: 700px)  { .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1180px) { .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (min-width: 1520px) { .product-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  @media (min-width: 1820px) { .product-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 
   .mobile-bar {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
@@ -199,6 +199,231 @@ function estimateWattage(cart: CartItem[]): number {
     return estimatePowerStats(cart).wattage;
 }
 
+type BuilderFilterState = {
+    brands: string[];
+    sockets: string[];
+    coreTiers: string[];
+    integratedGraphics: Array<'yes' | 'no'>;
+    tdpBands: string[];
+    priceRange: [number, number] | null;
+};
+
+type ProductFacts = {
+    brand: string;
+    price: number;
+    socket: string;
+    coreCount: number | null;
+    coreTier: string;
+    integratedGraphics: 'yes' | 'no' | '';
+    tdp: number | null;
+    tdpBand: string;
+    generation: string;
+};
+
+const DEFAULT_FILTERS: BuilderFilterState = {
+    brands: [],
+    sockets: [],
+    coreTiers: [],
+    integratedGraphics: [],
+    tdpBands: [],
+    priceRange: null,
+};
+
+const CORE_TIER_LABELS: Record<string, string> = {
+    entry: 'Entry (up to 6 cores)',
+    mainstream: 'Mainstream (8-10 cores)',
+    enthusiast: 'Enthusiast (12-16 cores)',
+    workstation: 'Workstation (18+ cores)',
+};
+
+const TDP_BAND_LABELS: Record<string, string> = {
+    low: 'Low power (up to 65W)',
+    balanced: 'Balanced (66W-120W)',
+    high: 'High power (121W+)',
+};
+
+type PricePreset = {
+    id: string;
+    label: string;
+    min?: number;
+    max?: number;
+};
+
+const PRICE_PRESETS: PricePreset[] = [
+    { id: 'budget', label: 'Under 10k', max: 10000 },
+    { id: 'mid', label: '10k - 25k', min: 10000, max: 25000 },
+    { id: 'upper', label: '25k - 50k', min: 25000, max: 50000 },
+    { id: 'premium', label: '50k+', min: 50000 },
+];
+
+function getPrice(product: Product): number {
+    return Number(product.variants?.[0]?.price ?? 0);
+}
+
+function getSpecText(product: Product, ...keys: string[]): string {
+    const flat = specsToFlat(product.specs);
+    for (const key of keys) {
+        const value = flat[key];
+        if (value === null || value === undefined || value === '') continue;
+        return Array.isArray(value) ? value.join(', ') : String(value);
+    }
+    return '';
+}
+
+function getNumericSpec(product: Product, ...keys: string[]): number | null {
+    const text = getSpecText(product, ...keys);
+    if (!text) return null;
+    const match = text.replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+    return match ? Number(match[0]) : null;
+}
+
+function getBooleanLikeSpec(product: Product, ...keys: string[]): 'yes' | 'no' | '' {
+    const raw = getSpecText(product, ...keys).trim().toLowerCase();
+    if (!raw) return '';
+    if (['yes', 'true', 'supported', 'available', 'included'].includes(raw)) return 'yes';
+    if (['no', 'false', 'none', 'na', 'n/a', 'not supported'].includes(raw)) return 'no';
+    if (raw.includes('yes') || raw.includes('intel uhd') || raw.includes('radeon graphics')) return 'yes';
+    if (raw.includes('no')) return 'no';
+    return '';
+}
+
+function deriveCoreTier(coreCount: number | null): string {
+    if (!coreCount || coreCount <= 0) return '';
+    if (coreCount <= 6) return 'entry';
+    if (coreCount <= 10) return 'mainstream';
+    if (coreCount <= 16) return 'enthusiast';
+    return 'workstation';
+}
+
+function deriveTdpBand(tdp: number | null): string {
+    if (!tdp || tdp <= 0) return '';
+    if (tdp <= 65) return 'low';
+    if (tdp <= 120) return 'balanced';
+    return 'high';
+}
+
+function deriveProductFacts(product: Product): ProductFacts {
+    const coreCount = getNumericSpec(product, 'cores', 'coreCount', 'cpuCores');
+    const tdp = getNumericSpec(product, 'tdp', 'wattage', 'powerDraw');
+    return {
+        brand: product.brand?.name ?? getSpecText(product, 'brand'),
+        price: getPrice(product),
+        socket: getSpecText(product, 'socket', 'cpuSocket', 'supportedSocket'),
+        coreCount,
+        coreTier: deriveCoreTier(coreCount),
+        integratedGraphics: getBooleanLikeSpec(product, 'integratedGraphics', 'igpu', 'integratedGpu'),
+        tdp,
+        tdpBand: deriveTdpBand(tdp),
+        generation: getSpecText(product, 'generation', 'series', 'platform', 'architecture'),
+    };
+}
+
+function matchesBuilderFilters(facts: ProductFacts, filters: BuilderFilterState): boolean {
+    const [minPrice, maxPrice] = filters.priceRange ?? [null, null];
+    if (minPrice !== null && maxPrice !== null) {
+        if (facts.price < minPrice || facts.price > maxPrice) return false;
+    }
+
+    if (filters.brands.length > 0) {
+        if (!facts.brand || !filters.brands.includes(facts.brand)) return false;
+    }
+
+    if (filters.sockets.length > 0) {
+        if (!facts.socket || !filters.sockets.includes(facts.socket)) return false;
+    }
+
+    if (filters.coreTiers.length > 0) {
+        if (!facts.coreTier || !filters.coreTiers.includes(facts.coreTier)) return false;
+    }
+
+    if (filters.integratedGraphics.length > 0) {
+        if (!facts.integratedGraphics) return false;
+        if (!filters.integratedGraphics.includes(facts.integratedGraphics)) return false;
+    }
+
+    if (filters.tdpBands.length > 0) {
+        if (!facts.tdpBand || !filters.tdpBands.includes(facts.tdpBand)) return false;
+    }
+
+    return true;
+}
+
+function normalizeSpecText(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.join(',').toLowerCase();
+    return String(value).trim().toLowerCase();
+}
+
+function getMemoryTypeFromSpecs(specs: CartItem['specs']): string {
+    const flat = specsToFlat(specs);
+    return normalizeSpecText(flat.memoryType ?? flat.ramType);
+}
+
+function validateBuild(items: CartItem[] = []): { status: CompatibilityLevel; issues: BuildIssue[] } {
+    const issues: BuildIssue[] = [];
+    const cpu = items.find(i => sameCategory(i.category, CATEGORY_NAMES.PROCESSOR));
+    const mobo = items.find(i => sameCategory(i.category, CATEGORY_NAMES.MOTHERBOARD));
+    const ram = items.find(i => sameCategory(i.category, CATEGORY_NAMES.RAM));
+    const { wattage, psuCap } = estimatePowerStats(items);
+
+    if (cpu && mobo) {
+        const cpuSocket = normalizeSpecText(specsToFlat(cpu.specs).socket);
+        const moboSocket = normalizeSpecText(specsToFlat(mobo.specs).socket);
+        if (cpuSocket && moboSocket && cpuSocket !== moboSocket) {
+            issues.push({
+                level: CompatibilityLevel.INCOMPATIBLE,
+                message: 'CPU socket does not match motherboard socket.',
+            });
+        }
+    }
+
+    if (ram && (mobo || cpu)) {
+        const ramType = getMemoryTypeFromSpecs(ram.specs);
+        const moboRamType = mobo ? getMemoryTypeFromSpecs(mobo.specs) : '';
+        const cpuRamType = cpu ? getMemoryTypeFromSpecs(cpu.specs) : '';
+        const expectedRamType = moboRamType || cpuRamType;
+        if (ramType && expectedRamType && ramType !== expectedRamType) {
+            issues.push({
+                level: CompatibilityLevel.INCOMPATIBLE,
+                message: 'RAM type does not match motherboard/CPU supported type.',
+            });
+        }
+    }
+
+    if (psuCap !== null) {
+        if (wattage > psuCap) {
+            issues.push({
+                level: CompatibilityLevel.INCOMPATIBLE,
+                message: `Estimated ${wattage}W exceeds PSU capacity (${psuCap}W).`,
+            });
+        } else if (wattage > psuCap * 0.8) {
+            issues.push({
+                level: CompatibilityLevel.WARNING,
+                message: `Estimated ${wattage}W is close to PSU capacity (${psuCap}W).`,
+            });
+        }
+    }
+
+    const status = issues.some(i => i.level === CompatibilityLevel.INCOMPATIBLE)
+        ? CompatibilityLevel.INCOMPATIBLE
+        : issues.length > 0
+            ? CompatibilityLevel.WARNING
+            : CompatibilityLevel.COMPATIBLE;
+
+    return { status, issues };
+}
+
+async function fetchViewerRole(signal?: AbortSignal): Promise<Role | null> {
+    try {
+        const res = await fetch('/api/auth/session', { signal, cache: 'no-store' });
+        if (!res.ok) return null;
+        const data: unknown = await res.json();
+        return (data as { user?: { role?: Role | null } })?.user?.role ?? null;
+    } catch {
+        return null;
+    }
+}
+
 /* ─────────────────────────────── AnimatedPrice ──────────────────────────── */
 const AnimatedPrice: React.FC<{ value: number }> = memo(({ value }) => {
     const [display, setDisplay] = useState(value);
@@ -223,14 +448,14 @@ AnimatedPrice.displayName = 'AnimatedPrice';
 /* ─────────────────────────────── SkeletonCard ───────────────────────────── */
 // Pure static component — no props, no re-render risk
 const SkeletonCard = memo(() => (
-    <div className="bg-white border border-zinc-100 rounded-2xl overflow-hidden">
+    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
         <div className="aspect-[4/3] pcb-skeleton" />
-        <div className="p-3 space-y-2.5">
+        <div className="p-3 space-y-2">
             <div className="h-2 pcb-skeleton rounded-full w-1/4" />
             <div className="h-3 pcb-skeleton rounded-full w-full" />
             <div className="h-3 pcb-skeleton rounded-full w-3/4" />
             <div className="h-2 pcb-skeleton rounded-full w-1/2" />
-            <div className="pt-1.5 flex justify-between items-center gap-2">
+            <div className="pt-1 flex justify-between items-center gap-2">
                 <div className="h-4 pcb-skeleton rounded-full w-1/3" />
                 <div className="h-7 w-16 pcb-skeleton rounded-xl" />
             </div>
@@ -253,17 +478,22 @@ const ProductCard: React.FC<{
     const price = product.variants?.[0]?.price || 0;
     const compareAt = product.variants?.[0]?.compareAtPrice;
     const status = String(product.variants?.[0]?.status ?? '');
+    const coreCount = getNumericSpec(product, 'cores', 'coreCount', 'cpuCores');
+    const socket = getSpecText(product, 'socket', 'cpuSocket', 'supportedSocket');
+    const generation = getSpecText(product, 'generation', 'series', 'platform', 'architecture');
 
     const isOos = status === 'OUT_OF_STOCK';
     const isLowStock = status === 'LOW_STOCK';
     const isIncompat = compatibility === CompatibilityLevel.INCOMPATIBLE;
     const isWarning = compatibility === CompatibilityLevel.WARNING;
 
-    // Memoize spec entries — only re-computed when product changes
-    const specEntries = useMemo(
-        () => Object.entries(specsToFlat(product.specs)).slice(0, 3),
-        [product.specs],
-    );
+    const keySpecsLine = useMemo(() => {
+        const coresLabel =
+            typeof coreCount === 'number' && !Number.isNaN(coreCount) ? `${coreCount} cores` : 'Cores —';
+        const socketLabel = socket ? socket : 'Socket —';
+        const generationLabel = generation ? generation : 'Gen —';
+        return `${coresLabel} · ${socketLabel} · ${generationLabel}`;
+    }, [coreCount, socket, generation]);
 
     const discount = useMemo(
         () => compareAt && compareAt > price ? Math.round((1 - price / compareAt) * 100) : null,
@@ -297,14 +527,14 @@ const ProductCard: React.FC<{
 
     return (
         <article
-            className={`pcb-card card-enter bg-white border rounded-lg sm:rounded-2xl overflow-hidden flex flex-col h-full relative cursor-pointer
-                ${isInCart ? 'selected border-indigo-200' : 'border-zinc-100 hover:border-zinc-200'}
+            className={`pcb-card card-enter bg-white border rounded-lg overflow-hidden flex flex-col h-full relative cursor-pointer
+                ${isInCart ? 'selected border-indigo-200' : 'border-zinc-200 hover:border-zinc-300'}
                 ${isIncompat && !isInCart ? 'opacity-50' : ''}`}
             style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
             onClick={handleCardClick}
         >
             {/* IMAGE */}
-            <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-50 to-stone-50 flex items-center justify-center p-1 sm:p-3 overflow-hidden flex-shrink-0">
+            <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-50 to-stone-100 flex items-center justify-center p-2 overflow-hidden flex-shrink-0">
                 <Link
                     href={`/products/${product.id}`}
                     className="absolute inset-0 z-0"
@@ -353,8 +583,8 @@ const ProductCard: React.FC<{
             </div>
 
             {/* CONTENT */}
-            <div className="p-1 sm:p-3 flex flex-col flex-1 min-h-0">
-                <p className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate ${
+            <div className="p-3 flex flex-col flex-1 min-h-0">
+                <p className={`text-[9px] font-bold uppercase tracking-widest mb-1 truncate ${
                     isInCart ? 'text-indigo-500' : 'text-zinc-400'
                 }`}>
                     {CATEGORY_LABELS[product.category] || product.category}
@@ -363,24 +593,16 @@ const ProductCard: React.FC<{
                 <Link
                     href={`/products/${product.id}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="block mb-0.5 sm:mb-1"
+                    className="block mb-1"
                 >
-                    <h3 className="font-semibold text-zinc-900 text-[10px] sm:text-[12px] leading-snug line-clamp-2 min-h-[30px] hover:text-indigo-600">
+                    <h3 className="font-semibold text-zinc-900 text-[12px] leading-snug line-clamp-2 min-h-[34px] hover:text-indigo-600">
                         {product.name}
                     </h3>
                 </Link>
 
-                {specEntries.length > 0 && (
-                    <p className="text-[9px] sm:text-[10px] text-zinc-400 truncate mb-0.5 sm:mb-1 leading-none">
-                        {specEntries
-                            .map(([, v]) =>
-                                Array.isArray(v) ? v.join(', ')
-                                : typeof v === 'object' ? JSON.stringify(v)
-                                : String(v)
-                            )
-                            .join(' · ')}
-                    </p>
-                )}
+                <p className="text-[9px] sm:text-[10px] text-zinc-400 truncate mb-0.5 sm:mb-1 leading-none">
+                    {keySpecsLine}
+                </p>
 
                 {compatMessage && !isInCart && (isIncompat || isWarning) && (
                     <p className={`text-[8px] pt-1 sm:text-[9px] leading-snug px-2 py-1 rounded-lg mb-0.5 sm:mb-1 ${
@@ -727,6 +949,446 @@ NavItem.displayName = 'NavItem';
 ═══════════════════════════════════════════════════════════════════════════ */
 const SKELETON_ITEMS = Array.from({ length: 12 }, (_, i) => i);
 
+/* ─────────────────────────────── Filters Sidebar ────────────────────────── */
+type BuilderFiltersSidebarProps = {
+    facts: ProductFacts[];
+    filters: BuilderFilterState;
+    onChangeFilters: (next: BuilderFilterState) => void;
+    onClearAll: () => void;
+    priceBounds: { min: number; max: number };
+    resultCount: number;
+};
+
+function BuilderFiltersSidebar({
+    facts,
+    filters,
+    onChangeFilters,
+    onClearAll,
+    priceBounds,
+    resultCount,
+}: BuilderFiltersSidebarProps) {
+    const countMatches = useCallback(
+        (next: BuilderFilterState) =>
+            facts.reduce((acc, f) => acc + (matchesBuilderFilters(f, next) ? 1 : 0), 0),
+        [facts],
+    );
+
+    const availableBrands = useMemo(() => {
+        const set = new Set<string>();
+        for (const f of facts) if (f.brand) set.add(f.brand);
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [facts]);
+
+    const availableSockets = useMemo(() => {
+        const set = new Set<string>();
+        for (const f of facts) if (f.socket) set.add(f.socket);
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [facts]);
+
+    const availableCoreTiers = useMemo(() => {
+        const set = new Set<string>();
+        for (const f of facts) if (f.coreTier) set.add(f.coreTier);
+        return Array.from(set);
+    }, [facts]);
+
+    const availableTdpBands = useMemo(() => {
+        const set = new Set<string>();
+        for (const f of facts) if (f.tdpBand) set.add(f.tdpBand);
+        return Array.from(set);
+    }, [facts]);
+
+    const sliderMin = filters.priceRange?.[0] ?? priceBounds.min;
+    const sliderMax = filters.priceRange?.[1] ?? priceBounds.max;
+    const priceStep = Math.max(100, Math.round((priceBounds.max - priceBounds.min) / 20 / 100) * 100);
+
+    const applyPriceRange = useCallback(
+        (nextMin: number, nextMax: number) => {
+            const clear =
+                nextMin <= priceBounds.min && Math.max(nextMin, nextMax) >= priceBounds.max;
+
+            onChangeFilters({
+                ...filters,
+                priceRange: clear ? null : [nextMin, nextMax] as [number, number],
+            });
+        },
+        [filters, onChangeFilters, priceBounds.max, priceBounds.min],
+    );
+
+    const toggleArrayValue = useCallback(
+        <T extends string>(
+            key: keyof BuilderFilterState,
+            value: T,
+            current: T[],
+        ) => {
+            const isSelected = current.includes(value);
+            const nextValues = isSelected ? current.filter((v) => v !== value) : [...current, value];
+            onChangeFilters({ ...filters, [key]: nextValues } as BuilderFilterState);
+        },
+        [filters, onChangeFilters],
+    );
+
+    const setIntegrated = useCallback(
+        (value: 'yes' | 'no') => {
+            const current = filters.integratedGraphics;
+            const isSelected = current.includes(value);
+            const nextValues = isSelected
+                ? current.filter((v) => v !== value)
+                : [...current, value];
+            onChangeFilters({ ...filters, integratedGraphics: nextValues });
+        },
+        [filters, onChangeFilters],
+    );
+
+    return (
+        <div className="h-full flex flex-col bg-white">
+            <div className="px-4 py-3 border-b border-zinc-100 flex-shrink-0">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                            Filters
+                        </p>
+                        <p className="text-xs font-semibold text-zinc-700">
+                            {resultCount.toLocaleString()} results
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClearAll}
+                        className="text-[11px] font-semibold text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 border border-zinc-200 rounded-lg px-2 py-1 transition-colors"
+                    >
+                        Clear all
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-2 py-3">
+                <div className="space-y-2">
+                    {/* Price range */}
+                    <details className="border border-zinc-100 rounded-xl bg-white" open>
+                        <summary className="cursor-pointer px-3 py-3 flex items-center justify-between gap-3 select-none">
+                            <span className="text-xs font-bold text-zinc-800">Price range</span>
+                            <span className="text-[11px] text-zinc-400 font-semibold">
+                                {filters.priceRange ? `₹${filters.priceRange[0] / 1000}k - ₹${filters.priceRange[1] / 1000}k` : 'Any'}
+                            </span>
+                        </summary>
+                        <div className="px-3 pb-3 pt-1">
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                        <input
+                                            aria-label="Minimum price"
+                                            type="range"
+                                            min={priceBounds.min}
+                                            max={priceBounds.max}
+                                            step={priceStep}
+                                            value={sliderMin}
+                                            onChange={(e) => {
+                                                const nextMin = Math.min(Number(e.target.value), sliderMax);
+                                                applyPriceRange(nextMin, sliderMax);
+                                            }}
+                                            className="w-full accent-indigo-600"
+                                        />
+                                    </div>
+                                    <div className="w-16 text-[11px] font-bold text-zinc-800 text-right tabular-nums">
+                                        {sliderMin === priceBounds.min && !filters.priceRange
+                                            ? 'Any'
+                                            : `₹${sliderMin.toLocaleString('en-IN')}`}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                        <input
+                                            aria-label="Maximum price"
+                                            type="range"
+                                            min={priceBounds.min}
+                                            max={priceBounds.max}
+                                            step={priceStep}
+                                            value={sliderMax}
+                                            onChange={(e) => {
+                                                const nextMax = Math.max(Number(e.target.value), sliderMin);
+                                                applyPriceRange(sliderMin, nextMax);
+                                            }}
+                                            className="w-full accent-indigo-600"
+                                        />
+                                    </div>
+                                    <div className="w-16 text-[11px] font-bold text-zinc-800 text-right tabular-nums">
+                                        {sliderMax === priceBounds.max && !filters.priceRange
+                                            ? 'Any'
+                                            : `₹${sliderMax.toLocaleString('en-IN')}`}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {PRICE_PRESETS.map((preset) => {
+                                        const presetMin =
+                                            typeof preset.min === 'number' ? preset.min : priceBounds.min;
+                                        const presetMax =
+                                            typeof preset.max === 'number' ? preset.max : priceBounds.max;
+                                        const nextMin = Math.max(priceBounds.min, presetMin);
+                                        const nextMax = Math.min(priceBounds.max, presetMax);
+                                        const nextRange: [number, number] = [nextMin, nextMax];
+                                        const nextPriceState =
+                                            nextMin <= priceBounds.min && nextMax >= priceBounds.max
+                                                ? null
+                                                : nextRange;
+                                        const isActive =
+                                            filters.priceRange
+                                                ? filters.priceRange[0] === nextMin &&
+                                                  filters.priceRange[1] === nextMax
+                                                : nextPriceState === null;
+                                        const count = countMatches({
+                                            ...filters,
+                                            priceRange: nextPriceState,
+                                        });
+                                        return (
+                                            <button
+                                                key={preset.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (nextPriceState === null) {
+                                                        onChangeFilters({ ...filters, priceRange: null });
+                                                    } else {
+                                                        applyPriceRange(nextMin, nextMax);
+                                                    }
+                                                }}
+                                                className={`rounded-lg border px-2 py-1 text-[11px] font-bold transition-colors flex items-center justify-between gap-2 ${
+                                                    isActive
+                                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                                        : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                                                }`}
+                                            >
+                                                <span className="truncate">{preset.label}</span>
+                                                <span className="text-[11px] text-zinc-500 tabular-nums">
+                                                    {count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    {/* Brand */}
+                    <details className="border border-zinc-100 rounded-xl bg-white" open>
+                        <summary className="cursor-pointer px-3 py-3 flex items-center justify-between gap-3 select-none">
+                            <span className="text-xs font-bold text-zinc-800">Brand</span>
+                            <span className="text-[11px] text-zinc-400 font-semibold">
+                                {filters.brands.length > 0 ? `${filters.brands.length} selected` : 'Any'}
+                            </span>
+                        </summary>
+                        <div className="px-3 pb-3 pt-1 space-y-1.5">
+                            {availableBrands.length === 0 ? (
+                                <p className="text-[11px] text-zinc-400 px-1">
+                                    No brands available for this selection.
+                                </p>
+                            ) : (
+                                availableBrands.map((brand) => {
+                                    const selected = filters.brands.includes(brand);
+                                    const nextBrands = selected
+                                        ? filters.brands
+                                        : [...filters.brands, brand];
+                                    const count = countMatches({ ...filters, brands: nextBrands });
+                                    return (
+                                        <label
+                                            key={brand}
+                                            className="flex items-center justify-between gap-3 text-[11px] font-semibold rounded-lg px-2 py-1.5 hover:bg-zinc-50 cursor-pointer border border-transparent"
+                                        >
+                                            <span className="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() => toggleArrayValue('brands', brand, filters.brands)}
+                                                    className="accent-indigo-600"
+                                                />
+                                                <span className="truncate">{brand}</span>
+                                            </span>
+                                            <span className="text-[11px] text-zinc-400 tabular-nums">
+                                                {count}
+                                            </span>
+                                        </label>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </details>
+
+                    {/* Socket / Compatibility */}
+                    <details className="border border-zinc-100 rounded-xl bg-white">
+                        <summary className="cursor-pointer px-3 py-3 flex items-center justify-between gap-3 select-none">
+                            <span className="text-xs font-bold text-zinc-800">Socket / compatibility</span>
+                            <span className="text-[11px] text-zinc-400 font-semibold">
+                                {filters.sockets.length > 0 ? `${filters.sockets.length} selected` : 'Any'}
+                            </span>
+                        </summary>
+                        <div className="px-3 pb-3 pt-1 space-y-1.5">
+                            {availableSockets.length === 0 ? (
+                                <p className="text-[11px] text-zinc-400 px-1">
+                                    No sockets available for this selection.
+                                </p>
+                            ) : (
+                                availableSockets.slice(0, 26).map((socket) => {
+                                    const selected = filters.sockets.includes(socket);
+                                    const nextSockets = selected
+                                        ? filters.sockets
+                                        : [...filters.sockets, socket];
+                                    const count = countMatches({ ...filters, sockets: nextSockets });
+                                    return (
+                                        <label
+                                            key={socket}
+                                            className="flex items-center justify-between gap-3 text-[11px] font-semibold rounded-lg px-2 py-1.5 hover:bg-zinc-50 cursor-pointer border border-transparent"
+                                        >
+                                            <span className="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() => toggleArrayValue('sockets', socket, filters.sockets)}
+                                                    className="accent-indigo-600"
+                                                />
+                                                <span className="truncate">{socket}</span>
+                                            </span>
+                                            <span className="text-[11px] text-zinc-400 tabular-nums">
+                                                {count}
+                                            </span>
+                                        </label>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </details>
+
+                    {/* Core count / performance tier */}
+                    <details className="border border-zinc-100 rounded-xl bg-white">
+                        <summary className="cursor-pointer px-3 py-3 flex items-center justify-between gap-3 select-none">
+                            <span className="text-xs font-bold text-zinc-800">Core count / performance tier</span>
+                            <span className="text-[11px] text-zinc-400 font-semibold">
+                                {filters.coreTiers.length > 0 ? `${filters.coreTiers.length} selected` : 'Any'}
+                            </span>
+                        </summary>
+                        <div className="px-3 pb-3 pt-1 space-y-1.5">
+                            {Object.entries(CORE_TIER_LABELS)
+                                .filter(([tier]) => availableCoreTiers.includes(tier))
+                                .map(([tier, label]) => {
+                                    const selected = filters.coreTiers.includes(tier);
+                                    const nextCoreTiers = selected
+                                        ? filters.coreTiers
+                                        : [...filters.coreTiers, tier];
+                                    const count = countMatches({ ...filters, coreTiers: nextCoreTiers });
+                                    return (
+                                        <label
+                                            key={tier}
+                                            className="flex items-center justify-between gap-3 text-[11px] font-semibold rounded-lg px-2 py-1.5 hover:bg-zinc-50 cursor-pointer border border-transparent"
+                                        >
+                                            <span className="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() =>
+                                                        toggleArrayValue('coreTiers', tier, filters.coreTiers)
+                                                    }
+                                                    className="accent-indigo-600"
+                                                />
+                                                <span className="truncate">{label}</span>
+                                            </span>
+                                            <span className="text-[11px] text-zinc-400 tabular-nums">
+                                                {count}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                        </div>
+                    </details>
+
+                    {/* Integrated graphics */}
+                    <details className="border border-zinc-100 rounded-xl bg-white">
+                        <summary className="cursor-pointer px-3 py-3 flex items-center justify-between gap-3 select-none">
+                            <span className="text-xs font-bold text-zinc-800">Integrated graphics</span>
+                            <span className="text-[11px] text-zinc-400 font-semibold">
+                                {filters.integratedGraphics.length > 0
+                                    ? `${filters.integratedGraphics.length} selected`
+                                    : 'Any'}
+                            </span>
+                        </summary>
+                        <div className="px-3 pb-3 pt-1 space-y-1.5">
+                            {(['yes', 'no'] as const).map((value) => {
+                                const selected = filters.integratedGraphics.includes(value);
+                                const nextValues = selected
+                                    ? filters.integratedGraphics
+                                    : [...filters.integratedGraphics, value];
+                                const count = countMatches({ ...filters, integratedGraphics: nextValues });
+                                return (
+                                    <label
+                                        key={value}
+                                        className="flex items-center justify-between gap-3 text-[11px] font-semibold rounded-lg px-2 py-1.5 hover:bg-zinc-50 cursor-pointer border border-transparent"
+                                    >
+                                        <span className="flex items-center gap-2 min-w-0">
+                                            <input
+                                                type="checkbox"
+                                                checked={selected}
+                                                onChange={() => setIntegrated(value)}
+                                                className="accent-indigo-600"
+                                            />
+                                            <span className="truncate">
+                                                {value === 'yes' ? 'Yes' : 'No'}
+                                            </span>
+                                        </span>
+                                        <span className="text-[11px] text-zinc-400 tabular-nums">
+                                            {count}
+                                        </span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    </details>
+
+                    {/* TDP / power usage */}
+                    <details className="border border-zinc-100 rounded-xl bg-white">
+                        <summary className="cursor-pointer px-3 py-3 flex items-center justify-between gap-3 select-none">
+                            <span className="text-xs font-bold text-zinc-800">TDP / power usage</span>
+                            <span className="text-[11px] text-zinc-400 font-semibold">
+                                {filters.tdpBands.length > 0 ? `${filters.tdpBands.length} selected` : 'Any'}
+                            </span>
+                        </summary>
+                        <div className="px-3 pb-3 pt-1 space-y-1.5">
+                            {Object.entries(TDP_BAND_LABELS)
+                                .filter(([band]) => availableTdpBands.includes(band))
+                                .map(([band, label]) => {
+                                    const selected = filters.tdpBands.includes(band);
+                                    const nextTdpBands = selected
+                                        ? filters.tdpBands
+                                        : [...filters.tdpBands, band];
+                                    const count = countMatches({ ...filters, tdpBands: nextTdpBands });
+                                    return (
+                                        <label
+                                            key={band}
+                                            className="flex items-center justify-between gap-3 text-[11px] font-semibold rounded-lg px-2 py-1.5 hover:bg-zinc-50 cursor-pointer border border-transparent"
+                                        >
+                                            <span className="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() =>
+                                                        toggleArrayValue('tdpBands', band, filters.tdpBands)
+                                                    }
+                                                    className="accent-indigo-600"
+                                                />
+                                                <span className="truncate">{label}</span>
+                                            </span>
+                                            <span className="text-[11px] text-zinc-400 tabular-nums">
+                                                {count}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -743,6 +1405,11 @@ export default function PCBuilderPage() {
     const [debounced, setDebounced] = useState('');
     const [showIncompat, setShowIncompat] = useState(false);
     const [sortOption, setSortOption] = useState('popularity');
+    const [builderFilters, setBuilderFilters] = useState<BuilderFilterState>(
+        DEFAULT_FILTERS,
+    );
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+    const [isBuildSummaryOpen, setIsBuildSummaryOpen] = useState(false);
     const [saveOpen, setSaveOpen] = useState(false);
     const [viewerRole, setViewerRole] = useState<Role | null>(null);
     const prevParams = useRef('');
@@ -751,24 +1418,17 @@ export default function PCBuilderPage() {
     useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
+        const controller = new AbortController();
         let active = true;
 
         (async () => {
-            try {
-                const res = await fetch('/api/auth/session');
-                if (!res.ok) return;
-
-                const data = await res.json();
-                if (active) {
-                    setViewerRole(data?.user?.role ?? null);
-                }
-            } catch {
-                if (active) setViewerRole(null);
-            }
+            const role = await fetchViewerRole(controller.signal);
+            if (active) setViewerRole(role);
         })();
 
         return () => {
             active = false;
+            controller.abort();
         };
     }, []);
 
@@ -785,8 +1445,8 @@ export default function PCBuilderPage() {
         return {
             cpuSocket: cpu ? String(specsToFlat(cpu.specs).socket ?? '') : '',
             moboSocket: mobo ? String(specsToFlat(mobo.specs).socket ?? '') : '',
-            moboRamType: mobo ? String(specsToFlat(mobo.specs).ramType ?? '') : '',
-            cpuRamType: cpu ? String(specsToFlat(cpu.specs).ramType ?? '') : '',
+            moboRamType: mobo ? getMemoryTypeFromSpecs(mobo.specs) : '',
+            cpuRamType: cpu ? getMemoryTypeFromSpecs(cpu.specs) : '',
         };
     }, [cart]);
 
@@ -808,7 +1468,7 @@ export default function PCBuilderPage() {
                     if (sameCategory(activeStep, CATEGORY_NAMES.PROCESSOR) && moboSocket) p.set('f_specs.socket', moboSocket);
                     if (sameCategory(activeStep, CATEGORY_NAMES.RAM)) {
                         const type = moboRamType || cpuRamType;
-                        if (type) p.set('f_specs.ramType', type);
+                        if (type) p.set('f_specs.memoryType', type);
                     }
                 }
 
@@ -848,7 +1508,10 @@ export default function PCBuilderPage() {
         setActiveStep(cat);
         setSearchTerm('');
         prevParams.current = '';
-    }, []);
+        setBuilderFilters(DEFAULT_FILTERS);
+        setIsFiltersOpen(false);
+        setIsBuildSummaryOpen(false);
+    }, [setBuilderFilters, setIsFiltersOpen, setIsBuildSummaryOpen]);
 
     // Build compat map once per cart change, keyed by product id — avoids calling validateBuild per card
     const cartCompatMap = useMemo<Map<string, { level: CompatibilityLevel; message: string }>>(() => {
@@ -869,14 +1532,13 @@ export default function PCBuilderPage() {
             { ...product, quantity: 1, selectedVariant: product.variants?.[0] },
         ];
         const rep = validateBuild(hypo);
-        const rel = rep.issues.filter(iss => iss.componentIds.includes(product.id));
         const result = {
-            level: rel.length > 0
-                ? rel.some(i => i.level === CompatibilityLevel.INCOMPATIBLE)
+            level: rep.issues.length > 0
+                ? rep.issues.some(i => i.level === CompatibilityLevel.INCOMPATIBLE)
                     ? CompatibilityLevel.INCOMPATIBLE
                     : CompatibilityLevel.WARNING
                 : CompatibilityLevel.COMPATIBLE,
-            message: rel[0]?.message || '',
+            message: rep.issues[0]?.message || '',
         };
         cartCompatMap.set(product.id, result);
         return result;
@@ -911,6 +1573,19 @@ export default function PCBuilderPage() {
     );
     const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
 
+    const productFacts = useMemo(() => products.map(deriveProductFacts), [products]);
+
+    const priceBounds = useMemo(() => {
+        const prices = productFacts.map((f) => f.price).filter((p) => p > 0);
+        if (prices.length === 0) return { min: 0, max: 0 };
+        return { min: Math.min(...prices), max: Math.max(...prices) };
+    }, [productFacts]);
+
+    const visibleProducts = useMemo(() => {
+        if (productFacts.length === 0) return [];
+        return products.filter((_, idx) => matchesBuilderFilters(productFacts[idx], builderFilters));
+    }, [products, productFacts, builderFilters]);
+
     const compatStatus = useMemo(() => {
         if (compatReport.status === CompatibilityLevel.INCOMPATIBLE) {
             return { text: `${compatReport.issues.length} incompatibility`, color: 'text-red-500', dot: 'bg-red-500' };
@@ -939,7 +1614,7 @@ export default function PCBuilderPage() {
             <style>{PAGE_STYLES}</style>
 
             {/* ── STICKY HEADER ──────────────────────────────────────────── */}
-            <header className="flex items-center justify-between whitespace-nowrap border-b border-zinc-100 bg-white px-4 sm:px-5 lg:px-8 h-14 z-50 flex-shrink-0 gap-3">
+            <header className="flex items-center justify-between whitespace-nowrap border-b border-zinc-100 bg-white px-4 sm:px-5 lg:px-6 h-14 z-50 flex-shrink-0 gap-3">
                 {/* Left */}
                 <div className="flex items-center gap-3 sm:gap-5 min-w-0">
                     <button
@@ -992,17 +1667,16 @@ export default function PCBuilderPage() {
             {/* ── 3-COL BODY ─────────────────────────────────────────────── */}
             <div className="pcb-layout flex-1 min-h-0">
 
-                {/* ── LEFT NAV (desktop only) ─────────────────────────────── */}
-                <aside className="hidden xl:flex flex-col items-center py-4 px-2 gap-0.5 border-r border-zinc-100 bg-white overflow-y-auto">
-                    {CORE_CATEGORIES.map(cat => (
-                        <NavItem
-                            key={cat}
-                            cat={cat}
-                            isActive={sameCategory(activeStep, cat)}
-                            isCompleted={cart.some(i => sameCategory(i.category, cat))}
-                            onClick={navClickHandlers[cat]}
-                        />
-                    ))}
+                {/* ── LEFT FILTERS (desktop only) ────────────────────────── */}
+                <aside className="hidden xl:flex flex-col h-full w-[260px] sticky top-0 border-r border-zinc-100 bg-white overflow-hidden">
+                    <BuilderFiltersSidebar
+                        facts={productFacts}
+                        filters={builderFilters}
+                        onChangeFilters={setBuilderFilters}
+                        onClearAll={() => setBuilderFilters(DEFAULT_FILTERS)}
+                        priceBounds={priceBounds}
+                        resultCount={visibleProducts.length}
+                    />
                 </aside>
 
                 {/* ── MAIN CONTENT ─────────────────────────────────────────── */}
@@ -1051,9 +1725,20 @@ export default function PCBuilderPage() {
                             >
                                 <div className="flex items-start sm:items-center justify-between gap-3 mb-2.5 flex-wrap sm:flex-nowrap">
                                     <div className="flex items-center gap-2">
-                                        <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none">
+                                        <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none xl:hidden">
                                             {CATEGORY_LABELS[activeStep] || activeStep}
                                         </h2>
+                                        <select
+                                            value={activeStep}
+                                            onChange={e => handleStepClick(e.target.value)}
+                                            className="hidden xl:flex h-9 px-2 bg-white border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                                        >
+                                            {CORE_CATEGORIES.map(cat => (
+                                                <option key={cat} value={cat}>
+                                                    {CATEGORY_LABELS[cat] || cat}
+                                                </option>
+                                            ))}
+                                        </select>
                                         {cart.some(i => sameCategory(i.category, activeStep)) && (
                                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex-shrink-0">
                                                 <Check size={9} strokeWidth={2.5} /> Selected
@@ -1088,6 +1773,15 @@ export default function PCBuilderPage() {
                                             </button>
                                         )}
                                     </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFiltersOpen(true)}
+                                        className="xl:hidden flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 flex-shrink-0"
+                                    >
+                                        <SlidersHorizontal size={12} className="text-zinc-400" />
+                                        Filters
+                                    </button>
 
                                     <div className="flex items-center bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 h-8 gap-1.5 flex-shrink-0">
                                         <SlidersHorizontal size={12} className="text-zinc-400 flex-shrink-0" />
@@ -1128,14 +1822,14 @@ export default function PCBuilderPage() {
                             <div className="product-grid">
                                 {SKELETON_ITEMS.map(i => <SkeletonCard key={i} />)}
                             </div>
-                        ) : products.length === 0 ? (
+                        ) : visibleProducts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24 text-center">
                                 <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center mb-4">
                                     <Box size={22} className="text-zinc-300" />
                                 </div>
                                 <p className="text-sm font-bold text-zinc-700 mb-1">No products found</p>
                                 <p className="text-xs text-zinc-400 mb-5">
-                                    Try adjusting your search or showing incompatible parts
+                                    Try adjusting your search, toggles, or filters
                                 </p>
                                 {!showIncompat && (
                                     <button
@@ -1152,7 +1846,7 @@ export default function PCBuilderPage() {
                             // full-grid layout recalculation on every product list update.
                             // CSS card-enter animation handles entrance visuals without JS overhead.
                             <div className="product-grid">
-                                {products.map((product, index) => {
+                                {visibleProducts.map((product, index) => {
                                     const inCart = cart.some(i => i.id === product.id);
                                     const compat = checkCompat(product);
                                     return (
@@ -1194,7 +1888,7 @@ export default function PCBuilderPage() {
                 </main>
 
                 {/* ── RIGHT SIDEBAR ─────────────────────────────────────── */}
-                <aside className="hidden xl:flex flex-col overflow-hidden">
+                <aside className="hidden xl:flex flex-col overflow-hidden w-[300px] sticky top-0 self-start">
                     <BuildSummaryPanel
                         cart={cart}
                         onRemove={handleRemove}
@@ -1206,6 +1900,45 @@ export default function PCBuilderPage() {
                     />
                 </aside>
             </div>
+
+            {/* ── Mobile filters drawer ─────────────────────────────────── */}
+            <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                <SheetContent
+                    side="left"
+                    className="p-0 w-full max-w-[320px] overflow-hidden"
+                >
+                    <div className="h-full">
+                        <BuilderFiltersSidebar
+                            facts={productFacts}
+                            filters={builderFilters}
+                            onChangeFilters={setBuilderFilters}
+                            onClearAll={() => setBuilderFilters(DEFAULT_FILTERS)}
+                            priceBounds={priceBounds}
+                            resultCount={visibleProducts.length}
+                        />
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* ── Mobile build summary drawer ───────────────────────────── */}
+            <Sheet open={isBuildSummaryOpen} onOpenChange={setIsBuildSummaryOpen}>
+                <SheetContent side="right" className="p-0 w-full max-w-[320px] overflow-hidden">
+                    <div className="h-full">
+                        <BuildSummaryPanel
+                            cart={cart}
+                            onRemove={handleRemove}
+                            onStepClick={handleStepClick}
+                            activeStep={activeStep}
+                            onSave={isAdmin ? handleOpenSave : undefined}
+                            onShare={undefined}
+                            onCheckout={() => {
+                                setIsBuildSummaryOpen(false);
+                                handleCartOpen();
+                            }}
+                        />
+                    </div>
+                </SheetContent>
+            </Sheet>
 
             {/* ── MOBILE BOTTOM BAR ──────────────────────────────────────── */}
             <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md  px-4 pt-3 mobile-bar flex items-center justify-between gap-3 mb-20 sm:mb-0">
@@ -1230,7 +1963,7 @@ export default function PCBuilderPage() {
                     </span>
                     <button
                         type="button"
-                        onClick={handleCartOpen}
+                        onClick={() => setIsBuildSummaryOpen(true)}
                         disabled={cart.length === 0}
                         className="flex items-center gap-1.5 px-5 py-2.5 bg-zinc-900 text-white text-xs font-bold rounded-2xl hover:bg-indigo-600 transition-colors disabled:opacity-40 shadow-sm"
                     >

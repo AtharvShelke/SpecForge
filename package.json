@@ -35,7 +35,6 @@
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "@react-pdf/renderer": "^4.3.2",
     "@types/nodemailer": "^7.0.11",
-    "@uploadthing/react": "^7.3.3",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -55,7 +54,6 @@
     "recharts": "^3.7.0",
     "resize-observer-polyfill": "^1.5.1",
     "tailwind-merge": "^3.5.0",
-    "uploadthing": "^7.7.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {

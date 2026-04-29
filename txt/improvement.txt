@@ -1,0 +1,4 @@
+1. add categories section in home page 
+2. fix the timing issue, takes too much time to load
+3. a long log appears in console when uploading an image, image uploader shows 100% download but doesn't show (preview) the uploaded image
+4. 

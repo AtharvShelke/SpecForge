@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
-import { extractRouterConfig } from "uploadthing/server";
-
 import CartDrawer from "@/components/CartDrawer";
 import { Toaster } from "@/components/ui/toaster";
-import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { BuildProvider } from "@/context/BuildContext";
 import { OrderProvider } from "@/context/OrderContext";
 import { ShopProvider } from "@/context/ShopContext";
@@ -42,9 +38,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="app-shell antialiased">
-        <NextSSRPlugin
-          routerConfig={extractRouterConfig(ourFileRouter)}
-        />
         <ShopProvider>
           <OrderProvider>
             <BuildProvider>
