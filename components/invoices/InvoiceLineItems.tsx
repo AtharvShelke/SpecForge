@@ -26,6 +26,9 @@ export const InvoiceLineItems: React.FC<InvoiceLineItemsProps> = ({ lineItems })
           <thead>
             <tr className="bg-white border-b border-zinc-100">
               <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Item</th>
+              <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Product #</th>
+              <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Part #</th>
+              <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide">Serial #</th>
               <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-center">Qty</th>
               <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-right">Unit Price</th>
               <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wide text-right">Tax Rate %</th>
@@ -43,7 +46,11 @@ export const InvoiceLineItems: React.FC<InvoiceLineItemsProps> = ({ lineItems })
                   <td className="px-6 py-4">
                     <p className="text-sm font-semibold text-zinc-900">{item.name}</p>
                     {item.description && <p className="text-xs text-zinc-400 mt-0.5">{item.description}</p>}
+                    {item.lineReference && <p className="text-[11px] text-zinc-500 mt-1 font-mono">{item.lineReference}</p>}
                   </td>
+                  <td className="px-6 py-4 text-sm font-mono text-zinc-600">{item.productNumber || '-'}</td>
+                  <td className="px-6 py-4 text-sm font-mono text-zinc-600">{item.partNumber || '-'}</td>
+                  <td className="px-6 py-4 text-sm font-mono text-zinc-600">{item.serialNumber || '-'}</td>
                   <td className="px-6 py-4 text-center">
                     <span className="inline-flex items-center justify-center min-w-[32px] h-7 px-2 rounded-md bg-zinc-100 text-zinc-900 font-semibold text-xs tabular-nums border border-zinc-200">
                       {item.quantity}
@@ -58,7 +65,7 @@ export const InvoiceLineItems: React.FC<InvoiceLineItemsProps> = ({ lineItems })
             })}
             {safeItems.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-zinc-500 text-sm">
+                <td colSpan={9} className="px-6 py-8 text-center text-zinc-500 text-sm">
                   No line items available
                 </td>
               </tr>
@@ -67,7 +74,7 @@ export const InvoiceLineItems: React.FC<InvoiceLineItemsProps> = ({ lineItems })
           {safeItems.length > 0 && (
             <tfoot className="bg-zinc-50 border-t border-zinc-100">
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-right text-sm font-semibold text-zinc-900">Total</td>
+                <td colSpan={8} className="px-6 py-4 text-right text-sm font-semibold text-zinc-900">Total</td>
                 <td className="px-6 py-4 text-right font-semibold text-zinc-900 tabular-nums">
                   {fmtINR(safeItems.reduce((acc, item) => {
                     const lineTotal = item.quantity * item.unitPrice;

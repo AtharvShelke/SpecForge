@@ -12,9 +12,14 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(serializeOrders(orders as any[]));
   } catch (error: any) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error("[GET_ORDERS]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -24,8 +29,13 @@ export async function POST(req: NextRequest) {
     const order = await createOrder(body);
     return NextResponse.json(serializeOrder(order), { status: 201 });
   } catch (error: any) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error("[POST_ORDERS]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal error" },
+      { status: 500 },
+    );
   }
 }

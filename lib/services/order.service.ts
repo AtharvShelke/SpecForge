@@ -27,10 +27,23 @@ async function allocateInventoryForOrderItem(
 
     const inventoryItem = await tx.inventoryItem.findUnique({
       where: { id: item.inventoryItemId },
+      include: {
+        variant: {
+          select: {
+            sku: true,
+          },
+        },
+      },
     });
 
     if (!inventoryItem || inventoryItem.variantId !== item.variantId) {
       throw new ServiceError("Requested inventory item is not available for this variant.", 400);
+    }
+    if (inventoryItem.trackingType !== "SERIALIZED") {
+      throw new ServiceError("Traceable order items must be allocated from serialized inventory.", 400);
+    }
+    if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
+      throw new ServiceError("Serialized inventory item is missing part or serial number.", 400);
     }
 
     const available =
@@ -40,7 +53,13 @@ async function allocateInventoryForOrderItem(
       throw new ServiceError("Requested inventory item is no longer available.", 409);
     }
 
-    return [{ inventoryItemId: inventoryItem.id, quantity: 1 }];
+    return [{
+      inventoryItemId: inventoryItem.id,
+      quantity: 1,
+      productNumber: inventoryItem.variant?.sku || item.productNumber || item.sku || item.variantId,
+      partNumber: inventoryItem.partNumber,
+      serialNumber: inventoryItem.serialNumber,
+    }];
   }
 
   const serializedItems = await tx.inventoryItem.findMany({
@@ -51,32 +70,49 @@ async function allocateInventoryForOrderItem(
       quantityReserved: 0,
       status: { in: ["IN_STOCK", "RETURNED"] },
     },
+    include: {
+      variant: {
+        select: {
+          sku: true,
+        },
+      },
+    },
     orderBy: [{ receivedAt: "asc" }, { createdAt: "asc" }],
     take: item.quantity,
   });
 
   if (serializedItems.length === item.quantity) {
-    return serializedItems.map((inventoryItem: any) => ({
-      inventoryItemId: inventoryItem.id,
-      quantity: 1,
-    }));
+    const seenSerial = new Set<string>();
+    const seenPart = new Set<string>();
+
+    return serializedItems.map((inventoryItem: any) => {
+      if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
+        throw new ServiceError("Serialized inventory item is missing part or serial number.", 400);
+      }
+      if (seenSerial.has(inventoryItem.serialNumber) || seenPart.has(inventoryItem.partNumber)) {
+        throw new ServiceError(
+          `Inventory allocation conflict detected for variant ${item.variantId}.`,
+          409,
+        );
+      }
+
+      seenSerial.add(inventoryItem.serialNumber);
+      seenPart.add(inventoryItem.partNumber);
+
+      return {
+        inventoryItemId: inventoryItem.id,
+        quantity: 1,
+        productNumber: inventoryItem.variant?.sku || item.productNumber || item.sku || item.variantId,
+        partNumber: inventoryItem.partNumber,
+        serialNumber: inventoryItem.serialNumber,
+      };
+    });
   }
 
-  const bulkItem = await tx.inventoryItem.findFirst({
-    where: {
-      variantId: item.variantId,
-      trackingType: "BULK",
-      quantityOnHand: { gte: item.quantity },
-      status: { in: ["IN_STOCK", "RETURNED"] },
-    },
-    orderBy: { quantityOnHand: "desc" },
-  });
-
-  if (bulkItem) {
-    return [{ inventoryItemId: bulkItem.id, quantity: item.quantity }];
-  }
-
-  throw new ServiceError(`Insufficient stock for variant ${item.variantId}`, 409);
+  throw new ServiceError(
+    `Insufficient serialized stock for variant ${item.variantId}. Each ordered unit must map to a unique serial and part number.`,
+    409,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -218,8 +254,15 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
     }
 
     const normalizedItems = data.items ?? [];
-    const reservedInventory = [];
-    const orderLineItems = [];
+    const reservedInventory: Array<{
+      inventoryItemId: string;
+      quantity: number;
+      productNumber: string;
+      partNumber: string;
+      serialNumber: string;
+    }> = [];
+    const orderLineItems: Array<Record<string, unknown>> = [];
+    let lineCounter = 1;
 
     for (const item of normalizedItems) {
       const allocations = await allocateInventoryForOrderItem(tx, item);
@@ -227,8 +270,12 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
       for (const allocation of allocations) {
         reservedInventory.push(allocation);
         orderLineItems.push({
+          lineReference: `${orderId}-LI-${String(lineCounter).padStart(4, "0")}`,
           variantId: item.variantId,
           inventoryItemId: allocation.inventoryItemId,
+          productNumber: allocation.productNumber,
+          partNumber: allocation.partNumber,
+          serialNumber: allocation.serialNumber,
           name: item.name,
           category: item.category || "General",
           price: item.price,
@@ -236,6 +283,7 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
           image: item.image,
           sku: item.sku,
         });
+        lineCounter += 1;
       }
     }
 
@@ -302,11 +350,12 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
         const reservationWhere: any = {
           id: item.inventoryItemId,
           quantityOnHand: { gte: item.quantity },
+          trackingType: "SERIALIZED",
+          serialNumber: item.serialNumber,
+          partNumber: item.partNumber,
+          quantityReserved: 0,
+          status: { in: ["IN_STOCK", "RETURNED"] },
         };
-
-        if (item.quantity === 1) {
-          reservationWhere.quantityReserved = 0;
-        }
 
         const reserved = await tx.inventoryItem.updateMany({
           where: reservationWhere,
@@ -534,13 +583,30 @@ export async function cancelOrder(id: string, note?: string) {
       });
     }
 
+    const convertedReservations = order.reservations.filter(
+      (r) => r.status === "CONVERTED"
+    );
+    for (const res of convertedReservations) {
+      await tx.reservation.update({
+        where: { id: res.id },
+        data: { status: "RELEASED" },
+      });
+      await tx.inventoryItem.update({
+        where: { id: res.inventoryItemId },
+        data: {
+          quantityOnHand: { increment: res.quantity },
+          status: "IN_STOCK",
+        },
+      });
+    }
+
     // 4. Log reservation release
-    if (activeReservations.length > 0) {
+    if (activeReservations.length > 0 || convertedReservations.length > 0) {
       await tx.orderLog.create({
         data: {
           orderId: id,
           status: "CANCELLED",
-          note: `Released ${activeReservations.length} reservation(s) and restored inventory`,
+          note: `Released ${activeReservations.length} active reservation(s) and restored ${convertedReservations.length} converted allocation(s)`,
         },
       });
     }

@@ -9,9 +9,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const order = await getOrderById(id);
     return NextResponse.json(serializeOrder(order));
   } catch (error: any) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error("[GET_ORDER_ID]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -22,8 +27,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const order = await updateOrder(id, body);
     return NextResponse.json(serializeOrder(order));
   } catch (error: any) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error("[PATCH_ORDER_ID]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal error" },
+      { status: 500 },
+    );
   }
 }

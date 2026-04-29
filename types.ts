@@ -450,9 +450,13 @@ export interface Customer {
 
 export interface OrderItem {
   id: string
+  lineReference: string
   orderId: string
   variantId: string
   inventoryItemId?: string | null
+  productNumber: string
+  partNumber: string
+  serialNumber: string
 
   name: string
   category: string
@@ -684,8 +688,14 @@ export interface BillingProfile {
 export interface InvoiceLineItem {
   id: string
   invoiceId: string
+  orderItemId?: string | null
+  inventoryItemId?: string | null
+  lineReference?: string | null
   name: string
   description?: string | null
+  productNumber?: string | null
+  partNumber?: string | null
+  serialNumber?: string | null
 
   quantity: number
   unitPrice: number
@@ -1163,6 +1173,12 @@ export function flatToSpecs(specs?: ProductSpecsFlat | null): ProductSpec[] {
 export interface CreateInvoiceLineItem {
   name: string;
   description?: string;
+  orderItemId?: string;
+  inventoryItemId?: string;
+  lineReference?: string;
+  productNumber?: string;
+  partNumber?: string;
+  serialNumber?: string;
   quantity: number;
   unitPrice: number;
   taxRatePct?: number;
@@ -1209,6 +1225,7 @@ export interface CreateCreditNoteInput {
 export interface CreateOrderItem {
   variantId: string;
   inventoryItemId?: string;
+  productNumber?: string;
   name: string;
   category?: string;
   price: number;

@@ -324,9 +324,13 @@ export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof Or
 
 export const OrderItemScalarFieldEnum = {
   id: 'id',
+  lineReference: 'lineReference',
   orderId: 'orderId',
   variantId: 'variantId',
   inventoryItemId: 'inventoryItemId',
+  productNumber: 'productNumber',
+  partNumber: 'partNumber',
+  serialNumber: 'serialNumber',
   name: 'name',
   category: 'category',
   price: 'price',
@@ -447,8 +451,14 @@ export type InvoiceScalarFieldEnum = (typeof InvoiceScalarFieldEnum)[keyof typeo
 export const InvoiceLineItemScalarFieldEnum = {
   id: 'id',
   invoiceId: 'invoiceId',
+  orderItemId: 'orderItemId',
+  inventoryItemId: 'inventoryItemId',
+  lineReference: 'lineReference',
   name: 'name',
   description: 'description',
+  productNumber: 'productNumber',
+  partNumber: 'partNumber',
+  serialNumber: 'serialNumber',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   taxRatePct: 'taxRatePct',

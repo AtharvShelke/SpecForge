@@ -211,7 +211,11 @@ const buildInvoiceHtml = (invoice: Invoice, profile: BillingProfile): string => 
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">
           <strong style="color:#1e293b">${i.name}</strong>
           ${i.description ? `<br/><small style="color:#94a3b8">${i.description}</small>` : ''}
+          ${i.lineReference ? `<br/><small style="color:#64748b;font-family:monospace">${i.lineReference}</small>` : ''}
         </td>
+        <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-family:monospace">${i.productNumber || '-'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-family:monospace">${i.partNumber || '-'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-family:monospace">${i.serialNumber || '-'}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center">${i.quantity}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right">${fmtINR(i.unitPrice)}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;color:#6366f1">${i.taxRatePct ?? 18}%</td>
@@ -234,7 +238,8 @@ const buildInvoiceHtml = (invoice: Invoice, profile: BillingProfile): string => 
   .sec-val{font-size:13px;line-height:1.75;color:#475569}
   table{width:100%;border-collapse:collapse;margin-bottom:24px}
   thead{background:#f8fafc}thead th{padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;text-align:left;border-bottom:2px solid #e2e8f0}
-  thead th:not(:first-child){text-align:right}thead th:nth-child(2){text-align:center}
+  thead th:nth-child(5){text-align:center}
+  thead th:nth-child(6),thead th:nth-child(7),thead th:nth-child(8){text-align:right}
   .totals{margin-left:auto;max-width:280px;background:#f8fafc;border-radius:12px;padding:16px 20px}
   .tot-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#64748b}
   .tot-final{font-size:17px;font-weight:900;color:#1e293b;border-top:2px solid #e2e8f0;padding-top:10px;margin-top:8px;display:flex;justify-content:space-between}
@@ -281,7 +286,7 @@ const buildInvoiceHtml = (invoice: Invoice, profile: BillingProfile): string => 
     </div>
   </div>
   <table><thead><tr>
-    <th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Tax</th><th style="text-align:right">Amount</th>
+    <th>Description</th><th>Product #</th><th>Part #</th><th>Serial #</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Tax</th><th style="text-align:right">Amount</th>
   </tr></thead><tbody>${rows}</tbody></table>
   <div class="totals">
     <div class="tot-row"><span>Subtotal</span><span>${fmtINR(subtotal)}</span></div>

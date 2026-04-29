@@ -2966,15 +2966,19 @@ async function main() {
     // Order items
     const existingItems = await prisma.orderItem.count({ where: { orderId: order.id } });
     if (existingItems === 0) {
-      for (const item of o.items) {
+      for (const [index, item] of o.items.entries()) {
         const prod = PRODUCTS.find(p => p.id === item.productId);
         const variantId = variantMap.get(item.productId);
         if (!prod || !variantId) continue;
 
         await prisma.orderItem.create({
           data: {
+            lineReference: `${order.id}-LI-${String(index + 1).padStart(4, "0")}`,
             orderId: order.id,
             variantId,
+            productNumber: prod.sku,
+            partNumber: `SEED-PART-${order.id}-${index + 1}`,
+            serialNumber: `SEED-SERIAL-${order.id}-${index + 1}`,
             name: prod.name,
             category: prod.subCategoryName,
             price: prod.price,

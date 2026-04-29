@@ -480,10 +480,14 @@ model Order {
 
 model OrderItem {
   id              String  @id @default(uuid())
+  lineReference   String  @unique
   orderId         String
   variantId       String
   // FIX: inventoryItemId now has explicit relation
   inventoryItemId String?
+  productNumber   String
+  partNumber      String
+  serialNumber    String
   name            String
   // FIX: category was typed as Category — now a plain string label for display
   category        String
@@ -499,6 +503,8 @@ model OrderItem {
 
   @@index([orderId])
   @@index([variantId])
+  @@index([inventoryItemId])
+  @@index([productNumber])
 }
 
 model OrderLog {
@@ -628,8 +634,14 @@ model Invoice {
 model InvoiceLineItem {
   id          String  @id @default(uuid())
   invoiceId   String
+  orderItemId String?
+  inventoryItemId String?
+  lineReference String?
   name        String
   description String?
+  productNumber String?
+  partNumber String?
+  serialNumber String?
   quantity    Int
   unitPrice   Decimal // FIX: Float -> Decimal
   taxRatePct  Decimal @default(18)
@@ -638,6 +650,8 @@ model InvoiceLineItem {
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
+  @@index([orderItemId])
+  @@index([inventoryItemId])
 }
 
 model InvoiceAuditEvent {

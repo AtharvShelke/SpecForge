@@ -9,8 +9,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const order = await cancelOrder(id, body.note);
     return NextResponse.json(order);
   } catch (error: any) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error("[POST_ORDER_CANCEL]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal error" },
+      { status: 500 },
+    );
   }
 }

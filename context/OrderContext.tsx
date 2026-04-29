@@ -92,12 +92,19 @@ async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T
     headers: { ...options?.headers, 'Content-Type': 'application/json' },
   });
   if (!res.ok) {
-    let msg = 'Request failed';
+    let msg = `Request failed (${res.status})`;
     try {
-      const errData = await res.json();
-      msg = errData.error || errData.message || (await res.text());
+      const raw = await res.text();
+      if (raw) {
+        try {
+          const errData = JSON.parse(raw);
+          msg = errData.error || errData.message || raw;
+        } catch {
+          msg = raw;
+        }
+      }
     } catch {
-      try { msg = await res.text(); } catch {}
+      // Keep default message if the body cannot be read.
     }
     throw new Error(msg);
   }

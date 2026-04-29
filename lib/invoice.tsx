@@ -29,6 +29,9 @@ export const generateInvoiceHTML = (order: Order): string => {
           <strong style="color:#1e293b">${item.name}</strong>
           <br/><small style="color:#94a3b8">${item.category || item.sku || ''}</small>
         </td>
+        <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-family:monospace">${item.productNumber || '-'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-family:monospace">${item.partNumber || '-'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-family:monospace">${item.serialNumber || '-'}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center">${item.quantity}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right">${fmtINR(item.price)}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;color:#6366f1">18%</td>
@@ -55,11 +58,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;color:#334155;background:#f8faf
 .sec-val strong{color:#1e293b;font-weight:600}
 table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:12px}
 thead th{padding:7px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;background:#f8fafc;border-bottom:1px solid #e2e8f0;text-align:left}
-thead th:not(:first-child){text-align:right}
-thead th:nth-child(2){text-align:center}
+thead th:nth-child(5){text-align:center}
+thead th:nth-child(6),thead th:nth-child(7),thead th:nth-child(8){text-align:right}
 tbody td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top;color:#334155}
-tbody td:not(:first-child){text-align:right}
-tbody td:nth-child(2){text-align:center}
+tbody td:nth-child(5){text-align:center}
+tbody td:nth-child(6),tbody td:nth-child(7),tbody td:nth-child(8){text-align:right}
 tbody tr:last-child td{border-bottom:none}
 .item-name{font-weight:600;color:#1e293b;font-size:12px;margin-bottom:1px}
 .item-sku{font-size:11px;color:#94a3b8}
@@ -107,6 +110,9 @@ tbody tr:last-child td{border-bottom:none}
 <table>
   <thead><tr>
     <th>Description</th>
+    <th>Product #</th>
+    <th>Part #</th>
+    <th>Serial #</th>
     <th style="text-align:center">Qty</th>
     <th style="text-align:right">Unit price</th>
     <th style="text-align:right">Tax (GST)</th>

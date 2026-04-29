@@ -132,7 +132,10 @@ const s = StyleSheet.create({
   tdSku: { fontSize: 9, color: C.label, marginTop: 1 },
 
   /* Column widths (flex basis) */
-  colDesc: { flex: 3 },
+  colDesc: { flex: 2.6 },
+  colProduct: { flex: 1.4 },
+  colPart: { flex: 1.4 },
+  colSerial: { flex: 1.6 },
   colQty: { flex: 1, textAlign: 'center' },
   colPrice: { flex: 1.5, textAlign: 'right' },
   colTax: { flex: 1, textAlign: 'right' },
@@ -246,6 +249,9 @@ const InvoiceDocument: React.FC<InvoiceDocProps> = ({ order }) => {
         {/* ── Items table ─────────────────── */}
         <View style={s.tableHead}>
           <Text style={[s.th, s.colDesc]}>Description</Text>
+          <Text style={[s.th, s.colProduct]}>Product #</Text>
+          <Text style={[s.th, s.colPart]}>Part #</Text>
+          <Text style={[s.th, s.colSerial]}>Serial #</Text>
           <Text style={[s.th, s.colQty]}>Qty</Text>
           <Text style={[s.th, s.colPrice]}>Unit price</Text>
           <Text style={[s.th, s.colTax]}>Tax (GST)</Text>
@@ -259,6 +265,9 @@ const InvoiceDocument: React.FC<InvoiceDocProps> = ({ order }) => {
                 <Text style={s.tdSku}>{item.category || item.sku}</Text>
               )}
             </View>
+            <Text style={[s.td, s.colProduct]}>{item.productNumber || '-'}</Text>
+            <Text style={[s.td, s.colPart]}>{item.partNumber || '-'}</Text>
+            <Text style={[s.td, s.colSerial]}>{item.serialNumber || '-'}</Text>
             <Text style={[s.td, s.colQty]}>{item.quantity}</Text>
             <Text style={[s.td, s.colPrice]}>{fmtINR(item.price)}</Text>
             <Text style={[s.td, s.colTax, { color: C.accentLight }]}>18%</Text>

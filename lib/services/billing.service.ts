@@ -66,7 +66,11 @@ export async function getInvoiceById(id: string) {
     include: {
       customer: true,
       lineItems: true,
-      order: true,
+      order: {
+        include: {
+          items: true,
+        },
+      },
       audit: { orderBy: { createdAt: "desc" } },
     },
   });
@@ -94,6 +98,12 @@ export async function createInvoice(data: {
   lineItems?: Array<{
     name: string;
     description?: string;
+    orderItemId?: string;
+    inventoryItemId?: string;
+    lineReference?: string;
+    productNumber?: string;
+    partNumber?: string;
+    serialNumber?: string;
     quantity: number;
     unitPrice: number;
     taxRatePct?: number;
@@ -106,6 +116,40 @@ export async function createInvoice(data: {
     throw new ServiceError("Due Date is required");
 
   return prisma.$transaction(async (tx) => {
+    let resolvedLineItems = data.lineItems;
+    if ((!resolvedLineItems || resolvedLineItems.length === 0) && data.orderId) {
+      const order = await tx.order.findUnique({
+        where: { id: data.orderId },
+        include: {
+          items: {
+            orderBy: { id: "asc" },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new ServiceError("Order not found for invoice creation", 404);
+      }
+
+      if (order.customerId !== data.customerId) {
+        throw new ServiceError("Invoice customer does not match the linked order", 400);
+      }
+
+      resolvedLineItems = (order.items as any[]).map((item) => ({
+        name: item.name,
+        description: [item.category, item.lineReference].filter(Boolean).join(" · "),
+        orderItemId: item.id,
+        inventoryItemId: item.inventoryItemId ?? undefined,
+        lineReference: item.lineReference,
+        productNumber: item.productNumber,
+        partNumber: item.partNumber,
+        serialNumber: item.serialNumber,
+        quantity: item.quantity,
+        unitPrice: Number(item.price),
+        taxRatePct: 18,
+      }));
+    }
+
     // 1. Atomically increment sequence
     const sequence = await tx.invoiceSequence.upsert({
       where: { id: "invoice_seq" },
@@ -119,12 +163,12 @@ export async function createInvoice(data: {
     let subtotal = data.subtotal ?? 0;
     let taxTotal = data.taxTotal ?? 0;
 
-    if (data.lineItems && data.lineItems.length > 0 && !data.subtotal) {
-      subtotal = data.lineItems.reduce(
+    if (resolvedLineItems && resolvedLineItems.length > 0 && !data.subtotal) {
+      subtotal = resolvedLineItems.reduce(
         (sum, li) => sum + li.quantity * li.unitPrice,
         0
       );
-      taxTotal = data.lineItems.reduce(
+      taxTotal = resolvedLineItems.reduce(
         (sum, li) =>
           sum +
           li.quantity * li.unitPrice * ((li.taxRatePct ?? 18) / 100),
@@ -158,11 +202,17 @@ export async function createInvoice(data: {
       notes: data.notes,
     };
 
-    if (data.lineItems && data.lineItems.length > 0) {
+    if (resolvedLineItems && resolvedLineItems.length > 0) {
       invoiceData.lineItems = {
-        create: data.lineItems.map((item) => ({
+        create: resolvedLineItems.map((item) => ({
           name: item.name,
           description: item.description,
+          orderItemId: item.orderItemId,
+          inventoryItemId: item.inventoryItemId,
+          lineReference: item.lineReference,
+          productNumber: item.productNumber,
+          partNumber: item.partNumber,
+          serialNumber: item.serialNumber,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           taxRatePct: item.taxRatePct ?? 18,
@@ -419,6 +469,12 @@ export async function createCreditNote(
     lineItems?: Array<{
       name: string;
       description?: string;
+      orderItemId?: string;
+      inventoryItemId?: string;
+      lineReference?: string;
+      productNumber?: string;
+      partNumber?: string;
+      serialNumber?: string;
       quantity: number;
       unitPrice: number;
       taxRatePct?: number;
@@ -440,9 +496,15 @@ export async function createCreditNote(
   const creditLineItems =
     data.lineItems && data.lineItems.length > 0
       ? data.lineItems
-      : original.lineItems.map((li) => ({
+      : (original.lineItems as any[]).map((li) => ({
           name: `[CREDIT] ${li.name}`,
           description: li.description || undefined,
+          orderItemId: li.orderItemId || undefined,
+          inventoryItemId: li.inventoryItemId || undefined,
+          lineReference: li.lineReference || undefined,
+          productNumber: li.productNumber || undefined,
+          partNumber: li.partNumber || undefined,
+          serialNumber: li.serialNumber || undefined,
           quantity: li.quantity,
           unitPrice: Number(li.unitPrice),
           taxRatePct: Number(li.taxRatePct),
@@ -494,6 +556,12 @@ export async function createCreditNote(
           create: creditLineItems.map((item) => ({
             name: item.name,
             description: item.description,
+            orderItemId: item.orderItemId,
+            inventoryItemId: item.inventoryItemId,
+            lineReference: item.lineReference,
+            productNumber: item.productNumber,
+            partNumber: item.partNumber,
+            serialNumber: item.serialNumber,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             taxRatePct: item.taxRatePct ?? 18,
