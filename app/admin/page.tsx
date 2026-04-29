@@ -25,6 +25,9 @@ const SavedBuildsManager = lazy(
 const BillingInvoices = lazy(
   () => import("@/components/dashboard/BillingInvoices"),
 );
+const BuilderConfigManager = lazy(
+  () => import("@/components/dashboard/builder-config/BuilderConfigManager"),
+);
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -66,6 +69,7 @@ const AdminDashboardContent = memo(function AdminDashboardContent() {
       {activeTab === "brands" && <BrandManager />}
       {activeTab === "saved-builds" && <SavedBuildsManager />}
       {activeTab === "billing" && <BillingInvoices />}
+      {activeTab === "builder-config" && <BuilderConfigManager />}
     </div>
   );
 });

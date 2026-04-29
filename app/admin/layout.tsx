@@ -15,6 +15,7 @@ const TAB_LABELS: Record<string, string> = {
   brands: "Brands",
   "saved-builds": "Saved Builds",
   billing: "Billing & Invoices",
+  "builder-config": "Builder Config",
 } as const;
 
 const AdminShell = memo(function AdminShell({

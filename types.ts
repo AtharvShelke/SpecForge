@@ -935,6 +935,87 @@ export interface VariantCompatibilityCache {
   updatedAt: string
 }
 
+// =====================================================
+// BUILDER CONFIGURATION (Admin-managed)
+// =====================================================
+
+export interface BuilderSettings {
+  defaultExpandedCategory: string | null
+  autoOpenNextCategory: boolean
+  enforceCompatibility: boolean
+  showWarnings: boolean
+  allowIncompatibleCheckout: boolean
+  powerCalculationMode: 'static' | 'spec_based' | 'rule_based'
+}
+
+export const DEFAULT_BUILDER_SETTINGS: BuilderSettings = {
+  defaultExpandedCategory: null,
+  autoOpenNextCategory: true,
+  enforceCompatibility: true,
+  showWarnings: true,
+  allowIncompatibleCheckout: false,
+  powerCalculationMode: 'static',
+}
+
+export interface BuilderConfig {
+  id: string
+  settings: BuilderSettings
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BuilderCategoryConfig {
+  id: string
+  categoryName: string
+  enabled: boolean
+  isCore: boolean
+  required: boolean
+  allowMultiple: boolean
+  displayOrder: number
+  icon: string | null
+  shortLabel: string | null
+  description: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export enum BuilderRuleAction {
+  HIGHLIGHT = 'HIGHLIGHT',
+  HIDE_FILTER = 'HIDE_FILTER',
+  LOCK_CATEGORY = 'LOCK_CATEGORY',
+  AUTO_SELECT = 'AUTO_SELECT',
+  SHOW_WARNING = 'SHOW_WARNING',
+}
+
+export interface BuilderUIRule {
+  id: string
+  name: string
+  category: string
+  specKey: string
+  operator: string
+  value: string
+  action: BuilderRuleAction
+  priority: number
+  enabled: boolean
+  metadata: Record<string, any> | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FilterOverrideItem {
+  id: string
+  specDefinitionId: string
+  categoryName: string
+  labelOverride: string | null
+  hidden: boolean
+  displayOrder: number
+  groupOverride: string | null
+  specDefinition?: SpecDefinition
+  createdAt: string
+  updatedAt: string
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  — typed inputs for deep relational creates
 // ─────────────────────────────────────────────────────────────────────────────

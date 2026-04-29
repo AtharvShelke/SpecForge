@@ -261,6 +261,7 @@ model SpecDefinition {
   targetRules      CompatibilityRule[]    @relation("ruleTarget")
 
   derivedSpecs DerivedSpec[]
+  filterOverrides FilterOverride[]
 
   @@unique([subCategoryId, name])
 }
@@ -924,4 +925,79 @@ model SubCategorySlot {
   slot        PartSlot    @relation(fields: [slotId], references: [id])
 
   @@unique([subCategoryId, slotId])
+}
+
+// ─────────────────────────────────────────────────
+// BUILDER CONFIGURATION (Admin-managed, replaces hardcoded constants)
+// ─────────────────────────────────────────────────
+
+model BuilderConfig {
+  id        String   @id @default("default")
+  settings  Json     // Global builder settings (JSON blob)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BuilderCategoryConfig {
+  id            String  @id @default(uuid())
+  categoryName  String  @unique // Matches Category.name or SubCategory.name
+  enabled       Boolean @default(true)
+  isCore        Boolean @default(false) // Core build categories (CPU, GPU, etc.)
+  required      Boolean @default(false) // Must be selected in build
+  allowMultiple Boolean @default(false) // e.g. RAM, Storage can have multiple
+  displayOrder  Int     @default(0)
+  icon          String? // Lucide icon name string e.g. "cpu", "hard-drive"
+  shortLabel    String? // Short label e.g. "CPU", "GPU"
+  description   String? // Helper text shown in build wizard
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([displayOrder])
+  @@index([enabled, isCore])
+}
+
+enum BuilderRuleAction {
+  HIGHLIGHT
+  HIDE_FILTER
+  LOCK_CATEGORY
+  AUTO_SELECT
+  SHOW_WARNING
+}
+
+model BuilderUIRule {
+  id        String            @id @default(uuid())
+  name      String
+  category  String            // Target category name
+  specKey   String            // Spec key to evaluate
+  operator  String            // equals, notEquals, contains, greaterThan, lessThan, in
+  value     String            // Condition value (JSON-encoded for complex values)
+  action    BuilderRuleAction // What to do when condition matches
+  priority  Int               @default(0) // Higher = evaluated first
+  enabled   Boolean           @default(true)
+  metadata  Json?             // Additional action config (e.g. which filter to hide)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([enabled, priority])
+}
+
+model FilterOverride {
+  id              String  @id @default(uuid())
+  specDefinitionId String
+  categoryName    String  // Which category this override applies to
+  labelOverride   String? // Override the display label
+  hidden          Boolean @default(false)
+  displayOrder    Int     @default(0)
+  groupOverride   String? // Override the filter group
+
+  specDefinition SpecDefinition @relation(fields: [specDefinitionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([specDefinitionId, categoryName])
+  @@index([categoryName])
 }

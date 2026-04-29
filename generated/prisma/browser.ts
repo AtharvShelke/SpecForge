@@ -217,3 +217,23 @@ export type VariantCompatibilityCache = Prisma.VariantCompatibilityCacheModel
  * 
  */
 export type SubCategorySlot = Prisma.SubCategorySlotModel
+/**
+ * Model BuilderConfig
+ * 
+ */
+export type BuilderConfig = Prisma.BuilderConfigModel
+/**
+ * Model BuilderCategoryConfig
+ * 
+ */
+export type BuilderCategoryConfig = Prisma.BuilderCategoryConfigModel
+/**
+ * Model BuilderUIRule
+ * 
+ */
+export type BuilderUIRule = Prisma.BuilderUIRuleModel
+/**
+ * Model FilterOverride
+ * 
+ */
+export type FilterOverride = Prisma.FilterOverrideModel

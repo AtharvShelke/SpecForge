@@ -3,6 +3,7 @@
 import React, { memo, useCallback } from "react";
 import {
   Bookmark,
+  Hammer,
   Layers,
   LayoutDashboard,
   LogOut,
@@ -37,6 +38,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Saved Builds",
     icon: Layers,
     key: "saved-builds",
+    group: "secondary",
+  },
+  {
+    label: "Builder Config",
+    icon: Hammer,
+    key: "builder-config",
     group: "secondary",
   },
 ];

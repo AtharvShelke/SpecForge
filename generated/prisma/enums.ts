@@ -185,3 +185,14 @@ export const ReservationStatus = {
 } as const
 
 export type ReservationStatus = (typeof ReservationStatus)[keyof typeof ReservationStatus]
+
+
+export const BuilderRuleAction = {
+  HIGHLIGHT: 'HIGHLIGHT',
+  HIDE_FILTER: 'HIDE_FILTER',
+  LOCK_CATEGORY: 'LOCK_CATEGORY',
+  AUTO_SELECT: 'AUTO_SELECT',
+  SHOW_WARNING: 'SHOW_WARNING'
+} as const
+
+export type BuilderRuleAction = (typeof BuilderRuleAction)[keyof typeof BuilderRuleAction]

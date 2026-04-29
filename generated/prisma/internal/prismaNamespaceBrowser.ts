@@ -90,7 +90,11 @@ export const ModelName = {
   CompatibilityCheck: 'CompatibilityCheck',
   SlotConstraint: 'SlotConstraint',
   VariantCompatibilityCache: 'VariantCompatibilityCache',
-  SubCategorySlot: 'SubCategorySlot'
+  SubCategorySlot: 'SubCategorySlot',
+  BuilderConfig: 'BuilderConfig',
+  BuilderCategoryConfig: 'BuilderCategoryConfig',
+  BuilderUIRule: 'BuilderUIRule',
+  FilterOverride: 'FilterOverride'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -661,6 +665,67 @@ export const SubCategorySlotScalarFieldEnum = {
 export type SubCategorySlotScalarFieldEnum = (typeof SubCategorySlotScalarFieldEnum)[keyof typeof SubCategorySlotScalarFieldEnum]
 
 
+export const BuilderConfigScalarFieldEnum = {
+  id: 'id',
+  settings: 'settings',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BuilderConfigScalarFieldEnum = (typeof BuilderConfigScalarFieldEnum)[keyof typeof BuilderConfigScalarFieldEnum]
+
+
+export const BuilderCategoryConfigScalarFieldEnum = {
+  id: 'id',
+  categoryName: 'categoryName',
+  enabled: 'enabled',
+  isCore: 'isCore',
+  required: 'required',
+  allowMultiple: 'allowMultiple',
+  displayOrder: 'displayOrder',
+  icon: 'icon',
+  shortLabel: 'shortLabel',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BuilderCategoryConfigScalarFieldEnum = (typeof BuilderCategoryConfigScalarFieldEnum)[keyof typeof BuilderCategoryConfigScalarFieldEnum]
+
+
+export const BuilderUIRuleScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  category: 'category',
+  specKey: 'specKey',
+  operator: 'operator',
+  value: 'value',
+  action: 'action',
+  priority: 'priority',
+  enabled: 'enabled',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BuilderUIRuleScalarFieldEnum = (typeof BuilderUIRuleScalarFieldEnum)[keyof typeof BuilderUIRuleScalarFieldEnum]
+
+
+export const FilterOverrideScalarFieldEnum = {
+  id: 'id',
+  specDefinitionId: 'specDefinitionId',
+  categoryName: 'categoryName',
+  labelOverride: 'labelOverride',
+  hidden: 'hidden',
+  displayOrder: 'displayOrder',
+  groupOverride: 'groupOverride',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FilterOverrideScalarFieldEnum = (typeof FilterOverrideScalarFieldEnum)[keyof typeof FilterOverrideScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -675,6 +740,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
