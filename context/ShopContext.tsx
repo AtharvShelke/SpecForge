@@ -12,7 +12,6 @@ import React, {
 
 import { Product, ProductVariant, SubCategory, SpecDefinition, Category, Brand, Order } from '../types';
 import { sameCategory } from '../lib/categoryUtils';
-import { FILTER_CONFIG } from '../data/filterConfig';
 
 interface ShopContextType {
   products: Product[];
@@ -41,7 +40,7 @@ interface ShopContextType {
 
   selectedSubCategory: string | null;
   filters: Record<string, string[]>;
-  filterConfigs: typeof FILTER_CONFIG;
+  filterConfigs: [];
 
   setSubCategory: (id: string) => void;
   setFilter: (specId: string, values: string[]) => void;
@@ -276,7 +275,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
         clearCompare,
         selectedSubCategory,
         filters,
-        filterConfigs: FILTER_CONFIG,
+        filterConfigs: [],
         setSubCategory,
         setFilter,
         clearFilters,

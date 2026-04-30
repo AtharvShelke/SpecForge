@@ -29,6 +29,11 @@ type RawVariant = {
   price?: number | string | any | null;
   compareAtPrice?: number | string | any | null;
   variantSpecs?: RawVariantSpec[];
+  inventoryItems?: Array<{
+    quantityOnHand?: number | null;
+    quantityReserved?: number | null;
+  }>;
+  status?: string | null;
   [key: string]: any;
 };
 
@@ -142,18 +147,38 @@ function normalizeCategory(product: RawProduct) {
   );
 }
 
+function variantAvailableQuantity(variant: RawVariant): number {
+  if (Array.isArray(variant.inventoryItems) && variant.inventoryItems.length > 0) {
+    return variant.inventoryItems.reduce(
+      (sum, item) =>
+        sum +
+        Math.max(
+          0,
+          Number(item?.quantityOnHand ?? 0) - Number(item?.quantityReserved ?? 0),
+        ),
+      0,
+    );
+  }
+
+  return 0;
+}
+
 export function normalizeCatalogProduct(product: RawProduct): Product {
   const normalizedMedia = (product.media ?? [])
     .map((media) => ({ ...media, url: sanitizeImageUrl(media.url) }))
     .filter((media) => Boolean(media.url));
 
-  const normalizedVariants = (product.variants ?? []).map((v) => ({
-    ...v,
-    price: v.price ? Number(v.price.toString()) : 0,
-    compareAtPrice: v.compareAtPrice
-      ? Number(v.compareAtPrice.toString())
-      : null,
-  }));
+  const normalizedVariants = (product.variants ?? []).map((v) => {
+    const availableQty = variantAvailableQuantity(v);
+    return {
+      ...v,
+      price: v.price ? Number(v.price.toString()) : 0,
+      compareAtPrice: v.compareAtPrice
+        ? Number(v.compareAtPrice.toString())
+        : null,
+      status: availableQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK",
+    };
+  });
 
   return {
     ...product,
@@ -220,37 +245,17 @@ function matchesNodeQuery(product: Product, query?: string | null) {
 
 function matchesStock(product: Product, stockStatus?: string | null) {
   if (!stockStatus || stockStatus === "all") return true;
-  const variants = (product.variants ?? []) as Array<{
-    inventoryItems?: Array<{
-      quantityOnHand?: number;
-      quantityReserved?: number;
-    }>;
-    status?: string | null;
-  }>;
+  const variants = (product.variants ?? []) as RawVariant[];
   const quantity = variants.reduce((sum, variant) => {
-    const itemQuantity = (variant.inventoryItems ?? []).reduce(
-      (inner, item) =>
-        inner +
-        Math.max(
-          0,
-          Number(item.quantityOnHand ?? 0) - Number(item.quantityReserved ?? 0),
-        ),
-      0,
-    );
-    return sum + itemQuantity;
+    return sum + variantAvailableQuantity(variant);
   }, 0);
 
   if (stockStatus === "In Stock") {
-    return (
-      quantity > 0 || variants.some((variant) => variant.status === "IN_STOCK")
-    );
+    return quantity > 0;
   }
 
   if (stockStatus === "Out of Stock") {
-    return (
-      quantity <= 0 ||
-      variants.every((variant) => variant.status === "OUT_OF_STOCK")
-    );
+    return quantity <= 0;
   }
 
   return true;

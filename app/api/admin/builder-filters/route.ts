@@ -69,6 +69,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const sourceCategory = await prisma.category.findFirst({
+      where: { name: categoryName, deletedAt: null },
+      select: { id: true },
+    });
+    if (!sourceCategory) {
+      return NextResponse.json(
+        { error: 'categoryName must map to an existing Category.name' },
+        { status: 400 },
+      );
+    }
+
+    const spec = await prisma.specDefinition.findUnique({
+      where: { id: specDefinitionId },
+      select: {
+        id: true,
+        subCategory: {
+          select: {
+            category: { select: { name: true } },
+          },
+        },
+      },
+    });
+    if (!spec) {
+      return NextResponse.json(
+        { error: 'specDefinitionId must reference an existing SpecDefinition' },
+        { status: 400 },
+      );
+    }
+    if (spec.subCategory.category.name !== categoryName) {
+      return NextResponse.json(
+        { error: 'specDefinitionId must belong to the provided categoryName' },
+        { status: 400 },
+      );
+    }
+
     const override = await prisma.filterOverride.upsert({
       where: {
         specDefinitionId_categoryName: { specDefinitionId, categoryName },

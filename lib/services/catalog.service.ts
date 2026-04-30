@@ -274,8 +274,25 @@ export class CatalogService {
   // =====================================================
 
   static async getSpecs(subCategoryId?: string) {
+    if (!subCategoryId) {
+      return prisma.specDefinition.findMany({
+        orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          subCategoryId: true,
+          name: true,
+          valueType: true,
+          isFilterable: true,
+          isRange: true,
+          isMulti: true,
+          filterGroup: true,
+          filterOrder: true,
+        },
+      });
+    }
+
     return prisma.specDefinition.findMany({
-      where: subCategoryId ? { subCategoryId } : undefined,
+      where: { subCategoryId },
       orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
       include: {
         options: {
@@ -346,7 +363,28 @@ export class CatalogService {
   static async getCategories() {
     return prisma.category.findMany({
       where: { deletedAt: null },
-      include: { subCategories: true },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+        subCategories: {
+          where: { deletedAt: null },
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            categoryId: true,
+            createdAt: true,
+            updatedAt: true,
+            deletedAt: true,
+          },
+        },
+      },
     });
   }
 
@@ -358,21 +396,52 @@ export class CatalogService {
   }
 
   static async getBrands() {
-    return prisma.brand.findMany({
+    const brands = await prisma.brand.findMany({
       where: { deletedAt: null },
-      include: {
-        products: {
-          where: { deletedAt: null },
-          include: {
-            subCategory: {
-              include: {
-                category: true,
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+      },
+    });
+
+    if (brands.length === 0) return brands;
+
+    const categoriesByBrandId = (
+      await prisma.product.findMany({
+        where: {
+          deletedAt: null,
+          brandId: { in: brands.map((brand) => brand.id) },
+        },
+        select: {
+          brandId: true,
+          subCategory: {
+            select: {
+              category: {
+                select: { name: true },
               },
             },
           },
         },
-      },
-    });
+      })
+    ).reduce<Map<string, Set<string>>>((map, product) => {
+      if (!product.brandId) return map;
+      const categoryName = product.subCategory?.category?.name;
+      if (!categoryName) return map;
+      const set = map.get(product.brandId) ?? new Set<string>();
+      set.add(categoryName);
+      map.set(product.brandId, set);
+      return map;
+    }, new Map<string, Set<string>>());
+
+    return brands.map((brand) => ({
+      ...brand,
+      categories: Array.from(categoriesByBrandId.get(brand.id) ?? []),
+    }));
   }
 
   /**

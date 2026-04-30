@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback, useRef, FormEvent, memo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, FormEvent, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { StockMovementType } from '@/types';
 import {
@@ -10,13 +10,9 @@ import {
     DollarSign,
     Package,
     Search,
-    TrendingDown,
-    TrendingUp,
-    Filter,
     ChevronLeft,
     ChevronRight,
     RefreshCw,
-    MoveHorizontal,
     History,
     Warehouse,
     BarChart3,
@@ -28,7 +24,7 @@ import {
     SlidersHorizontal,
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { WarehouseInventory } from '@/types';
+import { InventorySkuSummary } from '@/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import {
@@ -58,7 +54,6 @@ const MOV_TYPE_MAP: Record<string, { label: string; cls: string; icon: React.Rea
     INWARD:     { label: 'In',       cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: <ArrowDownRight size={10} /> },
     OUTWARD:    { label: 'Out',      cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200',          icon: <ArrowUpRight size={10} /> },
     ADJUSTMENT: { label: 'Adj',      cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',    icon: <RefreshCw size={10} /> },
-    TRANSFER:   { label: 'Transfer', cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200',    icon: <MoveHorizontal size={10} /> },
 };
 
 type StockMovementRecord = {
@@ -68,6 +63,16 @@ type StockMovementRecord = {
     type: StockMovementType | string;
     quantity: number;
     reason?: string | null;
+};
+
+type AuditLogRecord = {
+    id: string;
+    action?: string | null;
+    actor?: string | null;
+    entityType?: string | null;
+    entityId?: string | null;
+    createdAt: string;
+    metadata?: unknown;
 };
 const MOV_TYPE_FALLBACK = { label: '', cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200', icon: null };
 
@@ -170,20 +175,18 @@ const InventoryManager = () => {
         inventory,
         stockMovements,
         adjustStock,
-        transferStock,
         refreshInventory,
         refreshAuditLogs,
         fetchInventoryPage,
         syncData,
         isLoading,
     } = useAdmin() as unknown as {
-        inventory: WarehouseInventory[];
+        inventory: InventorySkuSummary[];
         stockMovements: StockMovementRecord[];
         adjustStock: (sku: string, quantity: number, type: StockMovementType, reason?: string) => Promise<void>;
-        transferStock: (sourceWarehouseId: string, targetWarehouseId: string, variantId: string, quantity: number, reason?: string) => Promise<void>;
         refreshInventory: () => Promise<void>;
-        refreshAuditLogs: () => Promise<any[]>;
-        fetchInventoryPage: (query?: URLSearchParams | string) => Promise<{ items: WarehouseInventory[]; total: number; page: number; limit: number }>;
+        refreshAuditLogs: () => Promise<AuditLogRecord[]>;
+        fetchInventoryPage: (query?: URLSearchParams | string) => Promise<{ items: InventorySkuSummary[]; total: number; page: number; limit: number }>;
         syncData: () => Promise<void>;
         isLoading: boolean;
     };
@@ -192,19 +195,12 @@ const InventoryManager = () => {
         isOpen: boolean; sku: string; currentQty: number;
     } | null>(null);
 
-    const [transferModal, setTransferModal] = useState<{
-        isOpen: boolean; sku: string; variantId: string; sourceWarehouseId: string; currentQty: number;
-    } | null>(null);
-
-    const [transferTarget, setTransferTarget] = useState<string>('');
-    const [transferQty, setTransferQty] = useState<number>(0);
-    const [transferReason, setTransferReason] = useState<string>('');
     const [adjType, setAdjType] = useState<StockMovementType>(StockMovementType.INWARD);
     const [adjQty, setAdjQty] = useState(0);
     const [adjReason, setAdjReason] = useState('');
 
     const [auditLogModal, setAuditLogModal] = useState(false);
-    const [auditLogs, setAuditLogs] = useState<any[]>([]);
+    const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
     const [isLoadingAudit, setIsLoadingAudit] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
 
@@ -222,7 +218,7 @@ const InventoryManager = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const [paginatedInventory, setPaginatedInventory] = useState<WarehouseInventory[]>([]);
+    const [paginatedInventory, setPaginatedInventory] = useState<InventorySkuSummary[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [isLoadingInventory, setIsLoadingInventory] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(false);
@@ -272,9 +268,9 @@ const InventoryManager = () => {
                 if (signal.aborted) return;
                 setPaginatedInventory(data.items);
                 setTotalItems(data.total || 0);
-            } catch (err: any) {
+            } catch (err) {
                 // Ignore aborted requests — not a real error
-                if (err.name !== 'AbortError') {
+                if (err instanceof Error && (err as { name?: string }).name !== 'AbortError') {
                     console.error("Failed to fetch paginated inventory:", err);
                     setPaginatedInventory([]); setTotalItems(0);
                 }
@@ -292,7 +288,7 @@ const InventoryManager = () => {
             controller.abort();       // cancel in-flight request on param change
             clearInterval(interval);  // clear stale polling interval
         };
-    }, [searchParams, refreshTrigger]);
+    }, [searchParams, refreshTrigger, fetchInventoryPage]);
 
     const handleAdjustment = useCallback((e: FormEvent) => {
         e.preventDefault();
@@ -303,19 +299,7 @@ const InventoryManager = () => {
         }
     }, [adjustmentModal, adjQty, adjType, adjReason, adjustStock]);
 
-    const handleTransfer = useCallback(async (e: FormEvent) => {
-        e.preventDefault();
-        if (transferModal && transferQty > 0 && transferTarget) {
-            try {
-                await transferStock(transferModal.sourceWarehouseId, transferTarget, transferModal.variantId, transferQty, transferReason);
-                setTransferModal(null); setTransferQty(0); setTransferTarget(''); setTransferReason('');
-                setRefreshTrigger(prev => !prev);
-            } catch (err) { console.error("Transfer failed", err); }
-        }
-    }, [transferModal, transferQty, transferTarget, transferReason, transferStock]);
-
     const handleCloseAdjustment = useCallback(() => setAdjustmentModal(null), []);
-    const handleCloseTransfer = useCallback(() => setTransferModal(null), []);
     const handleToggleFilters = useCallback(() => setShowFilters(f => !f), []);
 
     const handleRefreshSync = useCallback(async () => {
@@ -450,7 +434,7 @@ const InventoryManager = () => {
 
     return (
         <div
-            className="space-y-3"
+            className="space-y-2.5"
             style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
         >
             {/* ─── HEADER ─── */}
@@ -514,7 +498,7 @@ const InventoryManager = () => {
             </div>
 
             {/* ─── SECONDARY STATS ROW ─── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
 
                 {/* Critical Alerts */}
                 <CollapsibleSection
@@ -678,7 +662,6 @@ const InventoryManager = () => {
                             <tr className="border-b border-stone-100 bg-stone-50/30">
                                 <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
                                 <th className="px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">SKU</th>
-                                <th className="hidden md:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Location</th>
                                 <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Available</th>
                                 <th className="hidden md:table-cell px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Reserved</th>
                                 <th className="hidden lg:table-cell px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Cost Value</th>
@@ -689,11 +672,11 @@ const InventoryManager = () => {
                         <tbody className="divide-y divide-stone-50">
                             {isLoadingInventory ? (
                                 <tr>
-                                    <td colSpan={8} className="px-5 py-10 text-center text-xs text-stone-400">Loading inventory…</td>
+                                    <td colSpan={7} className="px-5 py-10 text-center text-xs text-stone-400">Loading inventory…</td>
                                 </tr>
                             ) : paginatedInventory.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="px-5 py-12 text-center">
+                                    <td colSpan={7} className="px-5 py-12 text-center">
                                         <Package size={24} className="mx-auto text-stone-300 mb-2" />
                                         <p className="text-xs text-stone-400">
                                             {currentSearch || currentStockStatus !== 'all' || currentCategory !== 'all'
@@ -702,7 +685,7 @@ const InventoryManager = () => {
                                         </p>
                                     </td>
                                 </tr>
-                            ) : paginatedInventory.map((item: WarehouseInventory) => {
+                            ) : paginatedInventory.map((item: InventorySkuSummary) => {
                                 const variant = item.variant;
                                 const product = variant?.product;
                                 const costValue = item.quantity * item.costPrice;
@@ -731,9 +714,6 @@ const InventoryManager = () => {
                                         <td className="px-3 py-3 whitespace-nowrap text-xs font-mono font-semibold text-stone-500">
                                             {variant?.sku || 'N/A'}
                                         </td>
-                                        <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap text-xs font-mono text-stone-400 uppercase">
-                                            {item.location || 'WH-01'}
-                                        </td>
                                         <td className="px-3 py-3 whitespace-nowrap text-right">
                                             <span className={cn(
                                                 'text-sm font-bold tabular-nums font-mono',
@@ -755,18 +735,6 @@ const InventoryManager = () => {
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-right">
                                             <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-[11px] font-semibold transition-colors"
-                                                    onClick={() => setTransferModal({
-                                                        isOpen: true,
-                                                        sku: variant?.sku || item.variantId,
-                                                        variantId: item.variantId,
-                                                        sourceWarehouseId: item.warehouseId ?? '',
-                                                        currentQty: item.quantity,
-                                                    })}
-                                                >
-                                                    <MoveHorizontal size={11} /> Transfer
-                                                </button>
                                                 <button
                                                     className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition-colors"
                                                     onClick={() => setAdjustmentModal({
@@ -798,7 +766,7 @@ const InventoryManager = () => {
                                     ? 'No items match filters' : 'Inventory is empty'}
                             </p>
                         </div>
-                    ) : paginatedInventory.map((item: WarehouseInventory) => {
+                    ) : paginatedInventory.map((item: InventorySkuSummary) => {
                         const variant = item.variant;
                         const product = variant?.product;
                         const isLow = item.quantity > 0 && item.quantity <= item.reorderLevel;
@@ -832,18 +800,6 @@ const InventoryManager = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 mt-2.5">
-                                    <button
-                                        className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white text-stone-600 border border-stone-200 text-xs font-semibold transition-colors active:bg-stone-50"
-                                        onClick={() => setTransferModal({
-                                            isOpen: true,
-                                            sku: variant?.sku || item.variantId,
-                                            variantId: item.variantId,
-                                            sourceWarehouseId: item.warehouseId ?? '',
-                                            currentQty: item.quantity,
-                                        })}
-                                    >
-                                        <MoveHorizontal size={12} /> Transfer
-                                    </button>
                                     <button
                                         className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold transition-colors active:bg-indigo-700"
                                         onClick={() => setAdjustmentModal({
@@ -975,7 +931,7 @@ const InventoryManager = () => {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Type</label>
-                                <Select value={adjType} onValueChange={(val: any) => setAdjType(val)}>
+                                <Select value={adjType} onValueChange={(val) => setAdjType(val as StockMovementType)}>
                                     <SelectTrigger className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -1019,57 +975,6 @@ const InventoryManager = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* ─── TRANSFER DIALOG ─── */}
-            <Dialog open={!!transferModal} onOpenChange={handleCloseTransfer}>
-                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md bg-white border-stone-200 shadow-xl rounded-xl">
-                    <div className="h-0.5 w-full bg-gradient-to-r from-violet-400 to-indigo-400 -mt-6 mb-4 rounded-t-xl" />
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-bold text-stone-900 tracking-tight">Warehouse Transfer</DialogTitle>
-                        <DialogDescription className="text-xs text-stone-400">
-                            SKU: <span className="font-mono font-semibold text-stone-600">{transferModal?.sku}</span>
-                        </DialogDescription>
-                    </DialogHeader>
-                    {transferModal && (
-                        <div className="space-y-3 py-1">
-                            <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg flex items-center justify-between gap-2">
-                                <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex-shrink-0">Available at Source</span>
-                                <span className="text-sm font-bold text-stone-900 font-mono truncate">
-                                    {transferModal.currentQty} units · <span className="text-stone-400 text-xs">{transferModal.sourceWarehouseId}</span>
-                                </span>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Destination Warehouse</label>
-                                <Input className="h-9 text-xs border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                    value={transferTarget} onChange={e => setTransferTarget(e.target.value)} placeholder="Facility ID…" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Quantity</label>
-                                <Input type="number" max={transferModal.currentQty}
-                                    className="h-9 text-sm font-bold border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                    value={transferQty} onChange={e => setTransferQty(Number(e.target.value))} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Reason</label>
-                                <textarea
-                                    className="w-full min-h-[72px] px-3 py-2 text-xs border border-stone-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none bg-white resize-none text-stone-700 placeholder:text-stone-400"
-                                    value={transferReason} onChange={e => setTransferReason(e.target.value)}
-                                    placeholder="Reason for transfer…" />
-                            </div>
-                        </div>
-                    )}
-                    <DialogFooter className="gap-2 pt-1 flex-row">
-                        <button onClick={handleCloseTransfer}
-                            className="flex-1 h-10 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
-                            Cancel
-                        </button>
-                        <button onClick={handleTransfer} disabled={!transferQty || !transferTarget}
-                            className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
-                            Confirm Transfer
-                        </button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
             {/* ─── AUDIT LOG DIALOG ─── */}
             <Dialog open={auditLogModal} onOpenChange={setAuditLogModal}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 shadow-xl rounded-xl">
@@ -1085,7 +990,7 @@ const InventoryManager = () => {
                             <div className="text-center text-xs text-stone-400 mt-8">No audit logs found.</div>
                         ) : (
                             <div className="space-y-2">
-                                {auditLogs.map((log: any) => (
+                                {auditLogs.map((log) => (
                                     <div key={log.id} className="bg-white border border-stone-100 rounded-lg px-3 py-2.5">
                                         <div className="flex items-start justify-between gap-2 mb-0.5">
                                             <span className="text-xs font-bold text-stone-800">{log.action || 'Action'}</span>
@@ -1094,7 +999,7 @@ const InventoryManager = () => {
                                             </span>
                                         </div>
                                         <p className="text-[11px] text-stone-500">by <span className="font-semibold text-stone-700">{log.actor}</span> · {log.entityType} <span className="font-mono text-stone-400 text-[10px]">({log.entityId})</span></p>
-                                        {log.metadata && (
+                                        {Boolean(log.metadata) && (
                                             <pre className="text-[10px] mt-1.5 bg-stone-50 border border-stone-100 p-2 rounded break-all whitespace-pre-wrap text-stone-500 font-mono">
                                                 {JSON.stringify(log.metadata, null, 2)}
                                             </pre>

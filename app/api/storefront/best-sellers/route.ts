@@ -26,6 +26,14 @@ const PRODUCT_SELECT = {
       deletedAt: null,
     },
     include: {
+      inventoryItems: {
+        select: {
+          quantityOnHand: true,
+          quantityReserved: true,
+          status: true,
+          trackingType: true,
+        },
+      },
       variantSpecs: {
         include: {
           spec: true,

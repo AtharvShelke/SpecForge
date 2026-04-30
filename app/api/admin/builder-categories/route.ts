@@ -10,7 +10,18 @@ export async function GET() {
     const categories = await prisma.builderCategoryConfig.findMany({
       orderBy: { displayOrder: 'asc' },
     });
-    return NextResponse.json(categories);
+    const validCategoryNames = new Set(
+      (
+        await prisma.category.findMany({
+          where: { deletedAt: null },
+          select: { name: true },
+        })
+      ).map((category) => category.name),
+    );
+
+    return NextResponse.json(
+      categories.filter((category) => validCategoryNames.has(category.categoryName)),
+    );
   } catch (error) {
     console.error('[builder-categories] GET error:', error);
     return NextResponse.json(
@@ -43,6 +54,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'categoryName is required' },
         { status: 400 }
+      );
+    }
+
+    const sourceCategory = await prisma.category.findFirst({
+      where: { name: categoryName, deletedAt: null },
+      select: { id: true },
+    });
+    if (!sourceCategory) {
+      return NextResponse.json(
+        { error: 'categoryName must map to an existing Category.name' },
+        { status: 400 },
       );
     }
 
@@ -90,6 +112,19 @@ export async function PUT(req: NextRequest) {
         { error: 'id is required' },
         { status: 400 }
       );
+    }
+
+    if (data.categoryName !== undefined) {
+      const sourceCategory = await prisma.category.findFirst({
+        where: { name: data.categoryName, deletedAt: null },
+        select: { id: true },
+      });
+      if (!sourceCategory) {
+        return NextResponse.json(
+          { error: 'categoryName must map to an existing Category.name' },
+          { status: 400 },
+        );
+      }
     }
 
     const updated = await prisma.builderCategoryConfig.update({

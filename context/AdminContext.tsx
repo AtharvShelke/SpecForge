@@ -6,6 +6,8 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useEffect,
+  useRef,
   ReactNode,
 } from "react";
 import { CatalogProvider, useCatalog } from "./CatalogContext";
@@ -13,8 +15,7 @@ import { InventoryProvider, useInventory } from "./InventoryContext";
 import { OrderProvider, useOrder } from "./OrderContext";
 import { BillingProvider, useBilling } from "./BillingContext";
 import { BuildProvider, useBuild } from "./BuildContext";
-import { FILTER_CONFIG } from "@/data/filterConfig";
-import type { CategoryFilterConfig, CategoryNode, FilterDefinition } from "@/types";
+import type { CategoryNode } from "@/types";
 
 interface AdminContextType {
   activeTab: string;
@@ -65,8 +66,7 @@ async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T
 
 const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
   const [activeTab, setActiveTab] = useState<string>("overview");
-  const [filterConfigs, setFilterConfigs] =
-    useState<CategoryFilterConfig[]>(FILTER_CONFIG);
+  const hydratedTabsRef = useRef<Set<string>>(new Set());
 
   const catalog = useCatalog();
   const inventory = useInventory();
@@ -98,6 +98,40 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
     ]);
   }, [catalog, inventory, orders, billing, builds]);
 
+  useEffect(() => {
+    if (hydratedTabsRef.current.has(activeTab)) return;
+
+    hydratedTabsRef.current.add(activeTab);
+
+    const loaders: Record<string, Array<() => Promise<unknown>>> = {
+      overview: [orders.refreshOrders, inventory.refreshInventory],
+      orders: [orders.refreshOrders, inventory.refreshInventory],
+      products: [
+        catalog.refreshProducts,
+        catalog.refreshCategories,
+        catalog.refreshSubCategories,
+        catalog.refreshBrands,
+      ],
+      inventory: [inventory.refreshInventory, inventory.refreshReservations],
+      categories: [
+        catalog.refreshCategories,
+        catalog.refreshSubCategories,
+        catalog.refreshCategoryHierarchy,
+        catalog.refreshSpecs,
+      ],
+      brands: [catalog.refreshBrands, catalog.refreshCategories],
+      "saved-builds": [builds.refreshBuildGuides],
+      billing: [
+        billing.refreshInvoices,
+        billing.refreshCustomers,
+        billing.refreshBillingProfile,
+      ],
+      "builder-config": [],
+    };
+
+    void Promise.allSettled((loaders[activeTab] ?? []).map((loader) => loader()));
+  }, [activeTab, billing, builds, catalog, inventory, orders]);
+
   const inventoryFacade = useMemo(
     () => Object.assign([...inventory.inventory], inventory),
     [inventory],
@@ -113,25 +147,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       await catalog.updateCategoryHierarchy(categories);
     },
     [catalog],
-  );
-
-  const updateFilterConfig = useCallback(
-    async (category: string, filters: FilterDefinition[]) => {
-      setFilterConfigs((prev) => {
-        const next = [...prev];
-        const existingIndex = next.findIndex((item) => item.category === category);
-        const updated = { category, filters };
-
-        if (existingIndex >= 0) {
-          next[existingIndex] = updated;
-          return next;
-        }
-
-        next.push(updated);
-        return next;
-      });
-    },
-    [],
   );
 
   const addBrand = useCallback(
@@ -173,7 +188,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(`Unable to resolve a sub-category for "${data?.category ?? "this product"}".`);
       }
 
-      const createdProduct = await fetchJSON("/api/catalog/products", {
+      await fetchJSON("/api/catalog/products", {
         method: "POST",
         body: JSON.stringify({
           name: data.name,
@@ -191,29 +206,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
           ],
         }),
       });
-
-      const variantId = createdProduct?.variants?.[0]?.id;
-      const inventoryUnits = Array.isArray(data?.inventoryUnits)
-        ? data.inventoryUnits
-            .map((unit: any) => ({
-              serialNumber: String(unit?.serialNumber ?? "").trim(),
-              partNumber: String(unit?.partNumber ?? "").trim(),
-            }))
-            .filter((unit: any) => unit.serialNumber && unit.partNumber)
-        : [];
-
-      if (variantId && inventoryUnits.length > 0) {
-        await fetchJSON("/api/inventory/items", {
-          method: "POST",
-          body: JSON.stringify({
-            variantId,
-            trackingType: "SERIALIZED",
-            costPrice:
-              typeof data?.costPrice === "number" ? data.costPrice : undefined,
-            units: inventoryUnits,
-          }),
-        });
-      }
 
       await Promise.all([catalog.refreshProducts(), inventory.refreshInventory()]);
     },
@@ -268,65 +260,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
             price: data.price ?? firstVariant.price,
             status:
               data.status === "ARCHIVED" ? "DISCONTINUED" : firstVariant.status,
-          }),
-        });
-      }
-
-      const desiredUnits = Array.isArray(data?.inventoryUnits)
-        ? data.inventoryUnits
-            .map((unit: any) => ({
-              id: unit?.id,
-              serialNumber: String(unit?.serialNumber ?? "").trim(),
-              partNumber: String(unit?.partNumber ?? "").trim(),
-            }))
-            .filter((unit: any) => unit.serialNumber && unit.partNumber)
-        : [];
-
-      const existingUnits = Array.isArray(firstVariant?.inventoryItems)
-        ? firstVariant.inventoryItems
-        : [];
-
-      for (const unit of desiredUnits.filter((entry: any) => entry.id)) {
-        await fetchJSON(`/api/inventory/items/${unit.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            serialNumber: unit.serialNumber,
-            partNumber: unit.partNumber,
-            costPrice:
-              typeof data?.costPrice === "number" ? data.costPrice : undefined,
-          }),
-        });
-      }
-
-      const desiredIds = new Set(
-        desiredUnits.filter((entry: any) => entry.id).map((entry: any) => entry.id),
-      );
-
-      for (const unit of existingUnits.filter((entry: any) => !desiredIds.has(entry.id))) {
-        await fetchJSON(`/api/inventory/items/${unit.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            quantityOnHand: 0,
-            quantityReserved: 0,
-            status: "DAMAGED",
-            notes: "Removed from active inventory in product editor",
-          }),
-        });
-      }
-
-      const newUnits = desiredUnits.filter((entry: any) => !entry.id);
-      if (firstVariant?.id && newUnits.length > 0) {
-        await fetchJSON("/api/inventory/items", {
-          method: "POST",
-          body: JSON.stringify({
-            variantId: firstVariant.id,
-            trackingType: "SERIALIZED",
-            costPrice:
-              typeof data?.costPrice === "number" ? data.costPrice : undefined,
-            units: newUnits.map((unit: any) => ({
-              serialNumber: unit.serialNumber,
-              partNumber: unit.partNumber,
-            })),
           }),
         });
       }
@@ -387,14 +320,11 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       addBrand,
       deleteBrand,
       updateCategories,
-      filterConfigs,
-      updateFilterConfig,
 
       stockMovements: [],
       auditLogs: inventory.auditLogs,
       reservations: inventory.reservations,
       adjustStock: legacyAdjustStock,
-      transferStock: noop,
       refreshInventory: inventory.refreshInventory,
       refreshAuditLogs: inventory.refreshAuditLogs,
       fetchInventoryPage: inventory.fetchInventoryPage,
@@ -431,8 +361,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       addBrand,
       deleteBrand,
       updateCategories,
-      filterConfigs,
-      updateFilterConfig,
       legacyAddProduct,
       legacyUpdateProduct,
       legacyDeleteProduct,
@@ -451,11 +379,11 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
  */
 export const AdminProvider = ({ children }: { children: ReactNode }) => {
   return (
-    <CatalogProvider>
-      <InventoryProvider>
-        <OrderProvider>
-          <BillingProvider>
-            <BuildProvider>
+    <CatalogProvider autoLoad={false}>
+      <InventoryProvider autoLoad={false}>
+        <OrderProvider autoLoad={false}>
+          <BillingProvider autoLoad={false}>
+            <BuildProvider autoLoad={false}>
               <AdminInnerProvider>{children}</AdminInnerProvider>
             </BuildProvider>
           </BillingProvider>

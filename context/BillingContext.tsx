@@ -109,7 +109,13 @@ async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T
 // Provider
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const BillingProvider = ({ children }: { children: ReactNode }) => {
+export const BillingProvider = ({
+  children,
+  autoLoad = true,
+}: {
+  children: ReactNode;
+  autoLoad?: boolean;
+}) => {
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -297,11 +303,12 @@ export const BillingProvider = ({ children }: { children: ReactNode }) => {
   // ── Initial Load ─────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (!autoLoad) return;
     refreshInvoices();
     refreshCustomers();
     refreshBillingProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoLoad]);
 
   // ── Provider Value ───────────────────────────────────────────────────
 

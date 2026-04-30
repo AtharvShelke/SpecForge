@@ -67,7 +67,7 @@ interface OrderContextType {
   getNextStatuses: (orderId: string) => OrderStatus[];
 
   // ── Data Fetching ────────────────────────────────────────────────────
-  refreshOrders: (filters?: { status?: string; customerId?: string }) => Promise<void>;
+  refreshOrders: (filters?: { status?: string; customerId?: string; page?: number; limit?: number }) => Promise<void>;
   getOrderDetail: (id: string) => Promise<void>;
   clearSelectedOrder: () => void;
 
@@ -115,7 +115,13 @@ async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T
 // Provider
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const OrderProvider = ({ children }: { children: ReactNode }) => {
+export const OrderProvider = ({
+  children,
+  autoLoad = true,
+}: {
+  children: ReactNode;
+  autoLoad?: boolean;
+}) => {
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -158,12 +164,14 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   // ── Data Fetching ────────────────────────────────────────────────────
 
   const refreshOrders = useCallback(
-    async (filters?: { status?: string; customerId?: string }) => {
+    async (filters?: { status?: string; customerId?: string; page?: number; limit?: number }) => {
       setLoading(true);
       try {
         const params = new URLSearchParams();
         if (filters?.status) params.set('status', filters.status);
         if (filters?.customerId) params.set('customerId', filters.customerId);
+        params.set('page', String(filters?.page ?? 1));
+        params.set('limit', String(filters?.limit ?? 25));
         const qs = params.toString();
         const url = qs ? `/api/orders?${qs}` : '/api/orders';
         const data = await fetchJSON<Order[]>(url);
@@ -281,9 +289,10 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   // ── Initial Load ─────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (!autoLoad) return;
     refreshOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoLoad]);
 
   // ── Provider Value ───────────────────────────────────────────────────
 

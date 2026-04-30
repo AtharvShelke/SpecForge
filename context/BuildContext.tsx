@@ -155,7 +155,13 @@ async function fetchJSON<T = unknown>(url: string, options?: RequestInit): Promi
 // Provider
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const BuildProvider = ({ children }: { children: ReactNode }) => {
+export const BuildProvider = ({
+  children,
+  autoLoad = true,
+}: {
+  children: ReactNode;
+  autoLoad?: boolean;
+}) => {
   const [build, setBuild] = useState<Build | null>(null);
   const [builds, setBuilds] = useState<Build[]>([]);
   const [buildGuides, setBuildGuides] = useState<BuildGuide[]>([]);
@@ -384,8 +390,9 @@ export const BuildProvider = ({ children }: { children: ReactNode }) => {
   // ── Initial Load ────────────────────────────────────────────────────
 
   React.useEffect(() => {
+    if (!autoLoad) return;
     refreshBuildGuides();
-  }, [refreshBuildGuides]);
+  }, [autoLoad, refreshBuildGuides]);
 
   // ── Provider Value ──────────────────────────────────────────────────
 

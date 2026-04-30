@@ -1,77 +1,133 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
+import { measureRoute } from "@/lib/performance";
+import { prisma } from "@/lib/prisma";
 import { CatalogService } from "@/lib/services/catalog.service";
 import { DynamicCatalogFilter, Product } from "@/types";
 
-function matchesSearch(product: Product, query: string) {
-  if (!query) return true;
-  const needle = query.toLowerCase();
-  const specs = (product.specs ?? []).map(
-    (spec) => `${spec.name ?? spec.key} ${String(spec.value ?? "")}`,
-  );
+function hasInventoryUnitFields(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const data = payload as Record<string, unknown>;
 
-  return [
-    product.name,
-    product.brand?.name ?? "",
-    product.category,
-    product.subCategory?.name ?? "",
-    ...specs,
-  ]
-    .join(" ")
-    .toLowerCase()
-    .includes(needle);
-}
-
-function matchesSubCategory(product: Product, subCategoryId: string | null) {
-  if (!subCategoryId) return true;
-  return product.subCategoryId === subCategoryId;
-}
-
-function matchesCategory(product: Product, category: string | null) {
-  if (!category) return true;
-  return product.category?.toLowerCase() === category.toLowerCase();
-}
-
-function matchesPrice(
-  product: Product,
-  minPrice: number | null,
-  maxPrice: number | null,
-) {
-  const price = Number(product.variants?.[0]?.price ?? 0);
-  if (minPrice !== null && price < minPrice) return false;
-  if (maxPrice !== null && price > maxPrice) return false;
-  return true;
-}
-
-function matchesFilters(
-  product: Product,
-  selectedFilters: Map<string, string[]>,
-) {
-  if (selectedFilters.size === 0) return true;
-
-  const specs = (product.specs ?? []).reduce<Record<string, string>>((acc, spec) => {
-    acc[spec.key] = String(spec.value ?? "").toLowerCase();
-    return acc;
-  }, {});
-
-  for (const [filterId, values] of selectedFilters.entries()) {
-    if (filterId === "brand") {
-      const brandName = (product.brand?.name ?? "").toLowerCase();
-      if (!values.some((value) => brandName === value.toLowerCase())) {
-        return false;
-      }
-      continue;
-    }
-
-    const currentValue = specs[filterId]?.toLowerCase();
-    if (!currentValue) return false;
-    if (!values.some((value) => currentValue.includes(value.toLowerCase()))) {
-      return false;
-    }
+  if (
+    "inventoryUnits" in data ||
+    "serialNumber" in data ||
+    "partNumber" in data
+  ) {
+    return true;
   }
 
-  return true;
+  const variants = Array.isArray(data.variants) ? data.variants : [];
+  return variants.some((variant) => {
+    if (!variant || typeof variant !== "object") return false;
+    const v = variant as Record<string, unknown>;
+    return "serialNumber" in v || "partNumber" in v || "inventoryUnits" in v;
+  });
+}
+
+function toSpecKey(value: string) {
+  const cleaned = value
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.toLowerCase());
+
+  if (cleaned.length === 0) return "";
+
+  return (
+    cleaned[0] +
+    cleaned
+      .slice(1)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("")
+  );
+}
+
+const PRODUCT_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  description: true,
+  status: true,
+  subCategoryId: true,
+  createdAt: true,
+  updatedAt: true,
+  brand: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  },
+  subCategory: {
+    select: {
+      id: true,
+      name: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+  media: {
+    orderBy: { sortOrder: "asc" as const },
+    select: {
+      id: true,
+      url: true,
+      altText: true,
+      sortOrder: true,
+    },
+  },
+  variants: {
+    where: { deletedAt: null },
+    orderBy: [{ price: "asc" as const }, { createdAt: "asc" as const }],
+    select: {
+      id: true,
+      productId: true,
+      sku: true,
+      price: true,
+      compareAtPrice: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      inventoryItems: {
+        select: {
+          id: true,
+          quantityOnHand: true,
+          quantityReserved: true,
+          status: true,
+        },
+      },
+      variantSpecs: {
+        select: {
+          id: true,
+          valueString: true,
+          valueNumber: true,
+          valueBool: true,
+          spec: { select: { id: true, name: true } },
+          option: { select: { id: true, value: true, label: true } },
+        },
+      },
+    },
+  },
+};
+
+function buildSort(sort: string) {
+  switch (sort) {
+    case "name-asc":
+      return [{ name: "asc" as const }];
+    case "name-desc":
+      return [{ name: "desc" as const }];
+    case "price-asc":
+    case "price-desc":
+    case "newest":
+    case "featured":
+    default:
+      return [{ createdAt: "desc" as const }];
+  }
 }
 
 function sortProducts(products: Product[], sort: string) {
@@ -92,18 +148,13 @@ function sortProducts(products: Product[], sort: string) {
           Number(left.variants?.[0]?.price ?? 0),
       );
       break;
-    case "newest":
-      next.sort(
-        (left, right) =>
-          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-      );
-      break;
     case "name-asc":
       next.sort((left, right) => left.name.localeCompare(right.name));
       break;
     case "name-desc":
       next.sort((left, right) => right.name.localeCompare(left.name));
       break;
+    case "newest":
     case "featured":
     default:
       next.sort(
@@ -116,9 +167,34 @@ function sortProducts(products: Product[], sort: string) {
   return next;
 }
 
-function buildFilters(products: Product[]): DynamicCatalogFilter[] {
+async function buildFilters(products: Product[]): Promise<DynamicCatalogFilter[]> {
   const brandCounts = new Map<string, number>();
-  const specMap = new Map<string, { label: string; counts: Map<string, number> }>();
+  const specMap = new Map<
+    string,
+    { label: string; group: string | null; order: number | null; counts: Map<string, number> }
+  >();
+  const subCategoryIds = Array.from(
+    new Set(products.map((product) => product.subCategoryId).filter(Boolean)),
+  );
+  const filterableSpecs = await prisma.specDefinition.findMany({
+    where: {
+      isFilterable: true,
+      subCategoryId: { in: subCategoryIds },
+    },
+    select: {
+      id: true,
+      name: true,
+      filterGroup: true,
+      filterOrder: true,
+      subCategoryId: true,
+    },
+  });
+  const specNameBySubCategory = new Map<string, Set<string>>();
+  for (const spec of filterableSpecs) {
+    const specSet = specNameBySubCategory.get(spec.subCategoryId) ?? new Set<string>();
+    specSet.add(spec.name.toLowerCase());
+    specNameBySubCategory.set(spec.subCategoryId, specSet);
+  }
 
   for (const product of products) {
     const brandName = product.brand?.name?.trim();
@@ -130,10 +206,19 @@ function buildFilters(products: Product[]): DynamicCatalogFilter[] {
       const filterId = spec.key;
       const optionValue = String(spec.value ?? "").trim();
       if (!filterId || !optionValue || filterId === "brand") continue;
+      const allowedSpecNames = specNameBySubCategory.get(product.subCategoryId);
+      const specName = (spec.name ?? "").toLowerCase();
+      if (allowedSpecNames && !allowedSpecNames.has(specName)) continue;
+
+      const schemaSpec = filterableSpecs.find(
+        (entry) => entry.subCategoryId === product.subCategoryId && entry.name.toLowerCase() === specName,
+      );
 
       if (!specMap.has(filterId)) {
         specMap.set(filterId, {
-          label: spec.name ?? filterId,
+          label: schemaSpec?.name ?? spec.name ?? filterId,
+          group: schemaSpec?.filterGroup ?? null,
+          order: schemaSpec?.filterOrder ?? null,
           counts: new Map<string, number>(),
         });
       }
@@ -163,14 +248,19 @@ function buildFilters(products: Product[]): DynamicCatalogFilter[] {
     });
   }
 
-  for (const [filterId, entry] of Array.from(specMap.entries()).sort(([left], [right]) =>
-    left.localeCompare(right),
-  )) {
+  for (const [filterId, entry] of Array.from(specMap.entries()).sort(([, left], [, right]) => {
+    const leftOrder = left.order ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER;
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+    return left.label.localeCompare(right.label);
+  })) {
     filters.push({
       id: filterId,
       key: filterId,
       label: entry.label,
       type: "checkbox",
+      group: entry.group,
+      order: entry.order,
       options: Array.from(entry.counts.entries())
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([value, count]) => ({
@@ -198,56 +288,233 @@ function selectedFilterMap(searchParams: URLSearchParams) {
 }
 
 export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const allProducts = await CatalogService.getProducts();
-    const normalizedProducts = allProducts.map((product) =>
-      normalizeCatalogProduct(product as any),
-    );
+  return measureRoute("GET /api/catalog/products", async () => {
+    try {
+      const searchParams = request.nextUrl.searchParams;
+      const subCategoryId = searchParams.get("subCategoryId");
+      const category = searchParams.get("category");
+      const query = searchParams.get("q")?.trim() ?? "";
+      const minPrice = searchParams.get("minPrice");
+      const maxPrice = searchParams.get("maxPrice");
+      const sort = searchParams.get("sort") ?? "featured";
+      const limitParam = searchParams.get("limit");
+      const limit = limitParam ? Math.min(60, Math.max(1, Number(limitParam))) : null;
+      const cursor = Math.max(0, Number(searchParams.get("cursor") ?? 0));
+      const stockStatus = searchParams.get("f_stock_status");
+      const filters = selectedFilterMap(searchParams);
+      const requiresInMemorySort = sort === "price-asc" || sort === "price-desc";
 
-    const subCategoryId = searchParams.get("subCategoryId");
-    const category = searchParams.get("category");
-    const query = searchParams.get("q")?.trim() ?? "";
-    const minPrice = searchParams.get("minPrice");
-    const maxPrice = searchParams.get("maxPrice");
-    const sort = searchParams.get("sort") ?? "featured";
-    const limit = Math.max(1, Number(searchParams.get("limit") ?? 12));
-    const cursor = Math.max(0, Number(searchParams.get("cursor") ?? 0));
-    const filters = selectedFilterMap(searchParams);
+      const where: Record<string, unknown> = { deletedAt: null };
+      const andClauses: Array<Record<string, unknown>> = [];
 
-    const filtered = normalizedProducts.filter((product) => {
-      return (
-        matchesCategory(product, category) &&
-        matchesSubCategory(product, subCategoryId) &&
-        matchesSearch(product, query) &&
-        matchesPrice(
-          product,
-          minPrice ? Number(minPrice) : null,
-          maxPrice ? Number(maxPrice) : null,
-        ) &&
-        matchesFilters(product, filters)
+      if (subCategoryId) {
+        where.subCategoryId = subCategoryId;
+      }
+
+      if (category) {
+        andClauses.push({
+          subCategory: {
+            category: {
+              name: {
+                equals: category,
+                mode: "insensitive",
+              },
+            },
+          },
+        });
+      }
+
+      if (query) {
+        andClauses.push({
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { slug: { contains: query, mode: "insensitive" } },
+            { brand: { name: { contains: query, mode: "insensitive" } } },
+            {
+              variants: {
+                some: {
+                  deletedAt: null,
+                  sku: { contains: query, mode: "insensitive" },
+                },
+              },
+            },
+          ],
+        });
+      }
+
+      const variantClause: Record<string, unknown> = { deletedAt: null };
+      let hasVariantFilters = false;
+
+      if (minPrice || maxPrice) {
+        variantClause.price = {
+          ...(minPrice ? { gte: Number(minPrice) } : {}),
+          ...(maxPrice ? { lte: Number(maxPrice) } : {}),
+        };
+        hasVariantFilters = true;
+      }
+
+      if (stockStatus === "In Stock") {
+        variantClause.inventoryItems = {
+          some: {
+            quantityOnHand: { gt: 0 },
+            status: { in: ["IN_STOCK", "RETURNED", "RESERVED"] },
+          },
+        };
+        hasVariantFilters = true;
+      }
+
+      if (stockStatus === "Out of Stock") {
+        andClauses.push({
+          variants: {
+            none: {
+              deletedAt: null,
+              inventoryItems: {
+                some: {
+                  quantityOnHand: { gt: 0 },
+                  status: { in: ["IN_STOCK", "RETURNED", "RESERVED"] },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      const specFilterIds = Array.from(filters.keys()).filter((key) => key !== "brand");
+      if (filters.get("brand")?.length) {
+        andClauses.push({
+          brand: {
+            name: {
+              in: filters.get("brand"),
+            },
+          },
+        });
+      }
+
+      if (specFilterIds.length > 0) {
+        const filterableSpecs = await prisma.specDefinition.findMany({
+          where: {
+            isFilterable: true,
+            ...(subCategoryId ? { subCategoryId } : {}),
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+
+        const specIdsByKey = filterableSpecs.reduce<Map<string, string[]>>((map, spec) => {
+          const key = toSpecKey(spec.name);
+          map.set(key, [...(map.get(key) ?? []), spec.id]);
+          return map;
+        }, new Map<string, string[]>());
+
+        for (const filterId of specFilterIds) {
+          const values = filters.get(filterId) ?? [];
+          const specIds = specIdsByKey.get(filterId) ?? [];
+          if (values.length === 0 || specIds.length === 0) continue;
+
+          const numericValues = values
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value));
+
+          andClauses.push({
+            variants: {
+              some: {
+                deletedAt: null,
+                variantSpecs: {
+                  some: {
+                    specId: { in: specIds },
+                    OR: [
+                      { option: { value: { in: values } } },
+                      { option: { label: { in: values } } },
+                      { valueString: { in: values } },
+                      ...(numericValues.length > 0
+                        ? [{ valueNumber: { in: numericValues } }]
+                        : []),
+                    ],
+                  },
+                },
+              },
+            },
+          });
+        }
+      }
+
+      if (hasVariantFilters) {
+        andClauses.push({
+          variants: {
+            some: variantClause,
+          },
+        });
+      }
+
+      if (andClauses.length > 0) {
+        where.AND = andClauses;
+      }
+
+      const [products, total, filterSeed] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          orderBy: buildSort(sort),
+          ...(limit !== null && !requiresInMemorySort ? { skip: cursor, take: limit } : {}),
+          select: PRODUCT_SELECT,
+        }),
+        prisma.product.count({ where }),
+        prisma.product.findMany({
+          where,
+          orderBy: buildSort(sort),
+          take: 200,
+          select: PRODUCT_SELECT,
+        }),
+      ]);
+
+      const sortedProducts = sortProducts(
+        products.map((product) => normalizeCatalogProduct(product as any)),
+        sort,
       );
-    });
+      const normalizedProducts =
+        limit !== null && requiresInMemorySort
+          ? sortedProducts.slice(cursor, cursor + limit)
+          : sortedProducts;
+      const normalizedFilterSeed = sortProducts(
+        filterSeed.map((product) => normalizeCatalogProduct(product as any)),
+        sort,
+      );
+      const nextCursor =
+        limit !== null && cursor + limit < total ? String(cursor + limit) : null;
 
-    const sorted = sortProducts(filtered, sort);
-    const paginated = sorted.slice(cursor, cursor + limit);
-    const nextCursor = cursor + limit < sorted.length ? String(cursor + limit) : null;
-
-    return NextResponse.json({
-      products: paginated,
-      total: sorted.length,
-      filters: buildFilters(filtered),
-      nextCursor,
-    });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load products";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+      return NextResponse.json(
+        {
+          products: normalizedProducts,
+          total,
+          filters: await buildFilters(normalizedFilterSeed),
+          nextCursor,
+        },
+        {
+          headers: {
+            "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+          },
+        },
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load products";
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  });
 }
 
 export async function POST(request: Request) {
   try {
     const data = await request.json();
+    if (hasInventoryUnitFields(data)) {
+      return NextResponse.json(
+        {
+          error:
+            "serialNumber and partNumber are inventory-level fields. Use inventory APIs/pages to manage physical units.",
+        },
+        { status: 400 },
+      );
+    }
     const product = await CatalogService.createProduct(data);
     return NextResponse.json(product, { status: 201 });
   } catch (error: unknown) {

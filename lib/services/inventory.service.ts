@@ -28,8 +28,63 @@ export async function getInventoryItems(filters?: {
   const items = await prisma.inventoryItem.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: {
-      variant: { include: { product: true } },
+    select: {
+      id: true,
+      variantId: true,
+      trackingType: true,
+      serialNumber: true,
+      partNumber: true,
+      quantityOnHand: true,
+      quantityReserved: true,
+      status: true,
+      costPrice: true,
+      batchNumber: true,
+      receivedAt: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
+      variant: {
+        select: {
+          id: true,
+          productId: true,
+          sku: true,
+          price: true,
+          compareAtPrice: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              subCategoryId: true,
+              media: {
+                orderBy: { sortOrder: "asc" },
+                take: 1,
+                select: {
+                  id: true,
+                  url: true,
+                  altText: true,
+                  sortOrder: true,
+                },
+              },
+              subCategory: {
+                select: {
+                  id: true,
+                  name: true,
+                  category: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
   return items as unknown as InventoryItem[];

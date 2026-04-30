@@ -28,6 +28,22 @@ async function getBestSellers() {
   return products.map((product: any) => normalizeCatalogProduct(product));
 }
 
+type HomepageCategory = {
+  id: string;
+  name: string;
+  displayName: string;
+  sortOrder: number;
+  subCategories: Array<{ id: string; name: string }>;
+};
+
+async function getHomepageCategories(): Promise<HomepageCategory[]> {
+  const res = await fetch(`${baseUrl}/api/storefront/categories`, {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
 function ProductSection({
   title,
   description,
@@ -63,9 +79,10 @@ function ProductSection({
 }
 
 export default async function StorefrontPage() {
-  const [newArrivals, bestSellers] = await Promise.all([
+  const [newArrivals, bestSellers, homepageCategories] = await Promise.all([
     getNewArrivals(),
     getBestSellers(),
+    getHomepageCategories(),
   ]);
 
   return (
@@ -110,6 +127,55 @@ export default async function StorefrontPage() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {homepageCategories.length > 0 && (
+          <section className="border-t border-gray-200 py-12 sm:py-16">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Categories</p>
+                <p className="mt-2 text-sm text-gray-500">
+                  Explore the catalog by category and jump directly into relevant product filters.
+                </p>
+              </div>
+              <Button asChild variant="outline">
+                <Link href="/products">Browse all products</Link>
+              </Button>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {homepageCategories.map((category) => (
+                <div
+                  key={category.id}
+                  className="group rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300 hover:shadow-sm"
+                >
+                  <Link
+                    href={`/products?category=${encodeURIComponent(category.name)}`}
+                    className="text-lg font-semibold text-gray-900 transition group-hover:text-black"
+                  >
+                    {category.displayName}
+                  </Link>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {category.subCategories.length} subcategories
+                  </p>
+
+                  {category.subCategories.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2 opacity-100 transition duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                      {category.subCategories.map((subCategory) => (
+                        <Link
+                          key={subCategory.id}
+                          href={`/products?category=${encodeURIComponent(category.name)}&subCategoryId=${encodeURIComponent(subCategory.id)}`}
+                          className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700 transition hover:bg-gray-100"
+                        >
+                          {subCategory.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <ProductSection
           title="New Arrivals"
           description="The latest additions across the catalog."

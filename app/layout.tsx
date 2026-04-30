@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import CartDrawer from "@/components/CartDrawer";
+import { PerformanceVitalsReporter } from "@/components/PerformanceVitalsReporter";
 import { Toaster } from "@/components/ui/toaster";
 import { BuildProvider } from "@/context/BuildContext";
 import { OrderProvider } from "@/context/OrderContext";
@@ -41,6 +42,7 @@ export default function RootLayout({
         <ShopProvider>
           <OrderProvider>
             <BuildProvider>
+              <PerformanceVitalsReporter />
               <main className="min-h-screen">{children}</main>
               <CartDrawer />
               <Toaster />

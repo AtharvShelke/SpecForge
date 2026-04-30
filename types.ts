@@ -377,7 +377,6 @@ export interface ProductVariant {
   buildGuideItems?: BuildGuideItem[]
   buildItems?: BuildItem[]
   inventoryItems?: InventoryItem[]
-  warehouseInventories?: WarehouseInventory[]
 }
 
 export interface Product {
@@ -599,15 +598,20 @@ export interface InventoryUnitInput {
   partNumber: string
 }
 
-export interface WarehouseInventory extends InventoryItem {
+export interface InventorySkuSummary {
+  id: string
+  variantId: string
   sku?: string
-  location?: string
+
+  quantityOnHand?: number
+  quantityReserved?: number
+
   quantity: number
   reserved?: number
   reorderLevel: number
   costPrice: number
-  warehouseId?: string
-  warehouseName?: string
+
+  variant?: ProductVariant & { product?: Product }
 }
 
 export type PurchaseOrderStatus = 'PENDING' | 'PARTIAL' | 'COMPLETED' | 'CANCELLED'
@@ -1058,7 +1062,6 @@ export interface CreateProduct {
   status?: string;
   variants?: CreateVariant[];
   images?: string[];
-  inventoryUnits?: InventoryUnitInput[];
 }
 
 export interface CreateSpecWithOptions {

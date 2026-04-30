@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Layers, Plus, GripVertical, Pencil, X, Check, Save, ToggleLeft, ToggleRight } from 'lucide-react';
 import type { BuilderCategoryConfig } from '@/types';
 
@@ -74,6 +74,7 @@ const CategoryRow = memo(function CategoryRow({
 
 const BuilderCategoriesTab = memo(function BuilderCategoriesTab() {
   const [categories, setCategories] = useState<BuilderCategoryConfig[]>([]);
+  const [catalogCategories, setCatalogCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -82,8 +83,16 @@ const BuilderCategoriesTab = memo(function BuilderCategoriesTab() {
 
   const loadCategories = useCallback(async () => {
     try {
-      const data = await fetchJSON<BuilderCategoryConfig[]>('/api/admin/builder-categories');
+      const [data, catalog] = await Promise.all([
+        fetchJSON<BuilderCategoryConfig[]>('/api/admin/builder-categories'),
+        fetchJSON<Array<{ name: string }>>('/api/catalog/categories'),
+      ]);
       setCategories(data);
+      setCatalogCategories(
+        (Array.isArray(catalog) ? catalog : [])
+          .map((entry) => entry.name)
+          .sort((a, b) => a.localeCompare(b)),
+      );
     } catch {} finally { setLoading(false); }
   }, []);
 
@@ -141,6 +150,11 @@ const BuilderCategoriesTab = memo(function BuilderCategoriesTab() {
     } catch {}
   }, [newName, categories.length]);
 
+  const availableCategories = useMemo(
+    () => catalogCategories.filter((name) => !categories.some((item) => item.categoryName === name)),
+    [catalogCategories, categories],
+  );
+
   const handleDragStart = useCallback((_e: React.DragEvent, id: string) => setDragId(id), []);
   const handleDragOver = useCallback((e: React.DragEvent) => e.preventDefault(), []);
 
@@ -180,7 +194,16 @@ const BuilderCategoriesTab = memo(function BuilderCategoriesTab() {
 
       {showAdd && (
         <div className="flex gap-2 p-3 border border-indigo-100 bg-indigo-50/50 rounded-xl">
-          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Category name…" className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200" onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+          <select
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
+          >
+            <option value="">Select category...</option>
+            {availableCategories.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
           <button onClick={handleAdd} className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg"><Check size={12} /></button>
           <button onClick={() => setShowAdd(false)} className="px-3 py-1.5 text-xs font-semibold text-zinc-500 border border-zinc-200 rounded-lg"><X size={12} /></button>
         </div>

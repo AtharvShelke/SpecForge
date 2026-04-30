@@ -113,13 +113,24 @@ const FieldLabel = memo(
 FieldLabel.displayName = "FieldLabel";
 
 // Compute stock once outside render — avoids repeated reduce in render
-function getVariantStock(variant: any): number {
-  return (
-    variant?.warehouseInventories?.reduce(
-      (a: number, inv: any) => a + inv.quantity,
-      0,
-    ) || 0
-  );
+function getVariantStock(variant: unknown): number {
+  const rawInventoryItems =
+    variant && typeof variant === "object" && "inventoryItems" in variant
+      ? (variant as { inventoryItems?: unknown }).inventoryItems
+      : undefined;
+
+  const items: Array<{ quantityOnHand?: number | null; quantityReserved?: number | null }> =
+    Array.isArray(rawInventoryItems)
+      ? (rawInventoryItems as Array<{
+          quantityOnHand?: number | null;
+          quantityReserved?: number | null;
+        }>)
+      : [];
+  return items.reduce((sum: number, item) => {
+    const onHand = Number(item?.quantityOnHand ?? 0);
+    const reserved = Number(item?.quantityReserved ?? 0);
+    return sum + Math.max(0, onHand - reserved);
+  }, 0);
 }
 
 const StockPill = memo(
@@ -428,11 +439,6 @@ interface ProductFormState extends Omit<Partial<Product>, "specs"> {
   stock?: number;
   sku?: string;
   images: string[];
-  inventoryUnits: Array<{
-    id?: string;
-    serialNumber: string;
-    partNumber: string;
-  }>;
 }
 
 type ProductSchemaAttribute = {
@@ -461,7 +467,6 @@ const EMPTY_FORM: ProductFormState = {
   images: ["https://picsum.photos/300/300"],
   specs: { brand: "" },
   description: "",
-  inventoryUnits: [{ serialNumber: "", partNumber: "" }],
 };
 const ProductMediaUploader = React.memo(function ProductMediaUploader({
   onUploadComplete,
@@ -518,7 +523,7 @@ const ProductManager = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(false);
 
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
-  const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
+  const currentLimit = parseInt(searchParams.get("limit") || "0", 10);
   const currentCategory = searchParams.get("category") || "all";
   const currentSearchQuery = searchParams.get("q") || "";
   const [searchTerm, setSearchTerm] = useState(currentSearchQuery);
@@ -553,7 +558,6 @@ const ProductManager = () => {
       setIsLoadingProducts(true);
       try {
         const query = new URLSearchParams(searchParamsStr);
-        if (!query.has("limit")) query.set("limit", "10");
         if (!query.has("page")) query.set("page", "1");
         const data = await fetchCatalogProducts(query);
         if (!cancelled) {
@@ -649,24 +653,6 @@ const ProductManager = () => {
     return `${catPrefix}-${brandPrefix}-${Date.now().toString().slice(-6)}`;
   }, []);
 
-  const normalizedInventoryUnits = useMemo(
-    () =>
-      currentProduct.inventoryUnits.map((unit) => ({
-        ...unit,
-        serialNumber: unit.serialNumber.trim(),
-        partNumber: unit.partNumber.trim(),
-      })),
-    [currentProduct.inventoryUnits],
-  );
-
-  const filledInventoryUnits = useMemo(
-    () =>
-      normalizedInventoryUnits.filter(
-        (unit) => unit.serialNumber || unit.partNumber,
-      ),
-    [normalizedInventoryUnits],
-  );
-
   const handleSave = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -678,18 +664,8 @@ const ProductManager = () => {
         alert("Brand is required");
         return;
       }
-      if (filledInventoryUnits.length === 0) {
-        alert("Add at least one inventory unit with serial and part number");
-        return;
-      }
-      const incompleteUnit = filledInventoryUnits.find(
-        (unit) => !unit.serialNumber || !unit.partNumber,
-      );
-      if (incompleteUnit) {
-        alert("Every unit must include both serial number and part number");
-        return;
-      }
       const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
+      const parsedStock = Math.max(0, Number(currentProduct.stock ?? 0));
       if (
         currentProduct.id &&
         products.find((p) => p.id === currentProduct.id)
@@ -698,9 +674,8 @@ const ProductManager = () => {
           ...currentProduct,
           specs: apiSpecs,
           price: currentProduct.price,
-          stock: filledInventoryUnits.length,
+          stock: parsedStock,
           images: currentProduct.images,
-          inventoryUnits: filledInventoryUnits,
           costPrice: newProductCost,
         } as any);
       } else {
@@ -710,7 +685,7 @@ const ProductManager = () => {
           sku: generateSKU(currentProduct),
           name: currentProduct.name || "",
           price: currentProduct.price || 0,
-          stock: filledInventoryUnits.length,
+          stock: parsedStock,
           category:
             currentProduct.category ||
             categoryOptions[0] ||
@@ -721,12 +696,11 @@ const ProductManager = () => {
               : ["https://picsum.photos/300/300"],
           description: currentProduct.description || "",
           specs: apiSpecs,
-          inventoryUnits: filledInventoryUnits,
           costPrice: newProductCost,
         } as Product;
         await addProduct(
           newProduct,
-          filledInventoryUnits.length,
+          parsedStock,
           newProductCost,
         );
       }
@@ -741,19 +715,13 @@ const ProductManager = () => {
       addProduct,
       newProductCost,
       generateSKU,
-      filledInventoryUnits,
       categoryOptions,
     ],
   );
 
   const handleEdit = useCallback((product: Product) => {
     const firstVariant = product.variants?.[0];
-    const mainStock =
-      firstVariant?.warehouseInventories?.find(
-        (inv: any) => inv.warehouse?.code === "MAIN",
-      )?.quantity ||
-      firstVariant?.warehouseInventories?.[0]?.quantity ||
-      0;
+    const mainStock = getVariantStock(firstVariant);
     setCurrentProduct({
       ...product,
       sku: firstVariant?.sku || "",
@@ -763,22 +731,6 @@ const ProductManager = () => {
         ? product.media.map((m: any) => m.url)
         : [product.image || "https://picsum.photos/300/300"],
       specs: specsToFlat(product.specs),
-      inventoryUnits: (() => {
-        const units = (firstVariant?.inventoryItems ?? [])
-          .filter(
-            (item: any) =>
-              Number(item?.quantityOnHand ?? 0) > 0 ||
-              Number(item?.quantityReserved ?? 0) > 0,
-          )
-          .map((item: any) => ({
-            id: item.id,
-            serialNumber: item.serialNumber || "",
-            partNumber: item.partNumber || "",
-          }));
-        return units.length > 0
-          ? units
-          : [{ serialNumber: "", partNumber: "" }];
-      })(),
     });
     setPreviewUrl(product.media?.[0]?.url || product.image || null);
     setIsEditing(true);
@@ -922,10 +874,7 @@ const ProductManager = () => {
       if (price > 0) prices.push(price);
 
       const stock =
-        firstVar?.warehouseInventories?.reduce(
-          (a: number, inv: any) => a + (inv.quantity || 0),
-          0,
-        ) ?? 0;
+        getVariantStock(firstVar);
       if (!firstVar || stock <= 0) outOfStock++;
 
       const cat = p.category || "Other";
@@ -1356,18 +1305,19 @@ const ProductManager = () => {
                     </div>
                   </div>
                   <div>
-                    <FieldLabel>Tracked Units</FieldLabel>
-                    <div className="mt-1 flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3 py-3">
-                      <div className="flex items-center gap-2">
-                        <Package size={14} className="text-stone-400" />
-                        <span className="text-xs text-stone-500">
-                          Serialized units ready for sale
-                        </span>
-                      </div>
-                      <span className="text-base md:text-sm font-mono font-bold text-stone-900">
-                        {filledInventoryUnits.length}
-                      </span>
-                    </div>
+                    <FieldLabel>Stock Hint</FieldLabel>
+                    <Input
+                      type="number"
+                      min={0}
+                      className="h-11 md:h-10 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm"
+                      value={currentProduct.stock ?? 0}
+                      onChange={(e) =>
+                        setCurrentProduct((prev) => ({
+                          ...prev,
+                          stock: Number(e.target.value),
+                        }))
+                      }
+                    />
                   </div>
                 </div>
                 {profitMargin !== null && (
@@ -1383,88 +1333,11 @@ const ProductManager = () => {
                     </span>
                   </div>
                 )}
-                <div className="space-y-3 border-t border-stone-100 pt-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <FieldLabel required>Inventory Units</FieldLabel>
-                      <p className="text-[11px] text-stone-400">
-                        Each physical unit needs its own serial number and part
-                        number.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCurrentProduct((prev) => ({
-                          ...prev,
-                          inventoryUnits: [
-                            ...prev.inventoryUnits,
-                            { serialNumber: "", partNumber: "" },
-                          ],
-                        }))
-                      }
-                      className="h-9 px-3 rounded-lg bg-white border border-stone-200 text-xs font-bold text-stone-600 active:bg-stone-50"
-                    >
-                      Add Unit
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {currentProduct.inventoryUnits.map((unit, index) => (
-                      <div
-                        key={unit.id || `unit-${index}`}
-                        className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 rounded-xl border border-stone-100 bg-stone-50/60 p-2.5"
-                      >
-                        <Input
-                          value={unit.serialNumber}
-                          onChange={(e) =>
-                            setCurrentProduct((prev) => ({
-                              ...prev,
-                              inventoryUnits: prev.inventoryUnits.map(
-                                (entry, entryIndex) =>
-                                  entryIndex === index
-                                    ? { ...entry, serialNumber: e.target.value }
-                                    : entry,
-                              ),
-                            }))
-                          }
-                          placeholder="Serial number"
-                          className="h-9 text-xs font-mono border-stone-200 rounded-lg bg-white"
-                        />
-                        <Input
-                          value={unit.partNumber}
-                          onChange={(e) =>
-                            setCurrentProduct((prev) => ({
-                              ...prev,
-                              inventoryUnits: prev.inventoryUnits.map(
-                                (entry, entryIndex) =>
-                                  entryIndex === index
-                                    ? { ...entry, partNumber: e.target.value }
-                                    : entry,
-                              ),
-                            }))
-                          }
-                          placeholder="Part number"
-                          className="h-9 text-xs font-mono border-stone-200 rounded-lg bg-white"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setCurrentProduct((prev) => ({
-                              ...prev,
-                              inventoryUnits:
-                                prev.inventoryUnits.length > 1
-                                  ? prev.inventoryUnits.filter(
-                                      (_, entryIndex) => entryIndex !== index,
-                                    )
-                                  : [{ serialNumber: "", partNumber: "" }],
-                            }))
-                          }
-                          className="h-9 w-9 rounded-lg border border-stone-200 bg-white text-stone-400 active:bg-stone-50 active:text-rose-500"
-                        >
-                          <Trash size={13} className="mx-auto" />
-                        </button>
-                      </div>
-                    ))}
+                <div className="border-t border-stone-100 pt-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-[11px] text-amber-800">
+                    Serial numbers and part numbers are managed only in Inventory.
+                    Create the product here, then add physical units from the
+                    inventory page.
                   </div>
                 </div>
               </div>
@@ -1480,7 +1353,7 @@ const ProductManager = () => {
   // ─────────────────────────────────────────────────────────
   return (
     <div
-      className="space-y-3"
+      className="space-y-2.5"
       style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
     >
       {/* ─── HEADER ─── */}
@@ -1939,7 +1812,10 @@ const ProductManager = () => {
               </span>
               –
               <span className="text-stone-600 font-semibold">
-                {Math.min(currentPage * currentLimit, totalProducts)}
+                {Math.min(
+                  currentPage * (currentLimit > 0 ? currentLimit : totalProducts),
+                  totalProducts,
+                )}
               </span>
               <span className="hidden sm:inline">
                 {" "}
@@ -1961,11 +1837,21 @@ const ProductManager = () => {
               </button>
               <span className="px-3 h-8 flex items-center text-xs font-mono font-bold text-stone-600 border border-stone-200 rounded-lg bg-white tabular-nums">
                 {currentPage} /{" "}
-                {Math.max(1, Math.ceil(totalProducts / currentLimit))}
+                {Math.max(
+                  1,
+                  Math.ceil(
+                    totalProducts /
+                      (currentLimit > 0 ? currentLimit : Math.max(totalProducts, 1)),
+                  ),
+                )}
               </span>
               <button
                 disabled={
-                  currentPage >= Math.ceil(totalProducts / currentLimit)
+                  currentPage >=
+                  Math.ceil(
+                    totalProducts /
+                      (currentLimit > 0 ? currentLimit : Math.max(totalProducts, 1)),
+                  )
                 }
                 onClick={() =>
                   updateQueryParams({ page: String(currentPage + 1) })

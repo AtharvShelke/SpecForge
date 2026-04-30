@@ -73,7 +73,13 @@ async function fetchJSON(url: string, options?: RequestInit) {
   return res.json();
 }
 
-export const CatalogProvider = ({ children }: { children: ReactNode }) => {
+export const CatalogProvider = ({
+  children,
+  autoLoad = true,
+}: {
+  children: ReactNode;
+  autoLoad?: boolean;
+}) => {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -219,8 +225,9 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
   ]);
 
   useEffect(() => {
+    if (!autoLoad) return;
     loadAll();
-  }, [loadAll]);
+  }, [autoLoad, loadAll]);
 
   return (
     <CatalogContext.Provider

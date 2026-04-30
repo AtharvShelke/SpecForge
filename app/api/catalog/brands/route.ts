@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import { CatalogService, ServiceError, createBrand } from '@/lib/services/catalog.service';
 import { serializeBrand, serializeBrands } from '@/lib/api/adminSerializers';
+import { measureRoute } from '@/lib/performance';
 
 export async function GET() {
-  try {
-    const brands = await CatalogService.getBrands();
-    return NextResponse.json(serializeBrands(brands));
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  return measureRoute("GET /api/catalog/brands", async () => {
+    try {
+      const brands = await CatalogService.getBrands();
+      return NextResponse.json(serializeBrands(brands), {
+        headers: {
+          "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1800",
+        },
+      });
+    } catch (error: any) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  });
 }
 
 export async function POST(request: Request) {

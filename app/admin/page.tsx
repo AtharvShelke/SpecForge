@@ -1,8 +1,9 @@
 // app/admin/page.tsx
 "use client";
 
-import { lazy, Suspense, memo } from "react";
+import { lazy, Suspense, memo, type ReactNode } from "react";
 import { useAdmin } from "@/context/AdminContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ── Lazy-loaded tab components ────────────────────────────────────────────────
 // Each tab becomes its own JS chunk — only downloaded when first visited.
@@ -42,7 +43,7 @@ const SKELETON_STYLE = {
 
 const TabSkeleton = memo(function TabSkeleton() {
   return (
-    <div className="space-y-4 animate-pulse" style={SKELETON_STYLE}>
+    <div className="space-y-3.5 animate-pulse" style={SKELETON_STYLE}>
       <div className="h-8 w-56 rounded-full bg-stone-200/80" />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {SKELETON_KEYS.map((i) => (
@@ -54,22 +55,36 @@ const TabSkeleton = memo(function TabSkeleton() {
   );
 });
 
+const TabViewport = memo(function TabViewport({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className="admin-panel h-full min-h-0 overflow-hidden">
+      <ScrollArea className="admin-scroll">
+        <div className="admin-module">{children}</div>
+      </ScrollArea>
+    </div>
+  );
+});
+
 // ── AdminDashboardContent ─────────────────────────────────────────────────────
 
 const AdminDashboardContent = memo(function AdminDashboardContent() {
   const { activeTab } = useAdmin();
 
   return (
-    <div className="space-y-5">
-      {activeTab === "overview" && <Overview />}
-      {activeTab === "orders" && <OrderManager />}
-      {activeTab === "products" && <ProductManager />}
-      {activeTab === "inventory" && <InventoryManager />}
-      {activeTab === "categories" && <CategoryManager />}
-      {activeTab === "brands" && <BrandManager />}
-      {activeTab === "saved-builds" && <SavedBuildsManager />}
-      {activeTab === "billing" && <BillingInvoices />}
-      {activeTab === "builder-config" && <BuilderConfigManager />}
+    <div className="h-full min-h-0">
+      {activeTab === "overview" && <TabViewport><Overview /></TabViewport>}
+      {activeTab === "orders" && <TabViewport><OrderManager /></TabViewport>}
+      {activeTab === "products" && <TabViewport><ProductManager /></TabViewport>}
+      {activeTab === "inventory" && <TabViewport><InventoryManager /></TabViewport>}
+      {activeTab === "categories" && <TabViewport><CategoryManager /></TabViewport>}
+      {activeTab === "brands" && <TabViewport><BrandManager /></TabViewport>}
+      {activeTab === "saved-builds" && <TabViewport><SavedBuildsManager /></TabViewport>}
+      {activeTab === "billing" && <TabViewport><BillingInvoices /></TabViewport>}
+      {activeTab === "builder-config" && <TabViewport><BuilderConfigManager /></TabViewport>}
     </div>
   );
 });

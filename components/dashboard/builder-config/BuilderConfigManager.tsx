@@ -20,13 +20,13 @@ const BuilderConfigManager = memo(function BuilderConfigManager() {
   const [activeTab, setActiveTab] = useState<TabKey>('settings');
 
   return (
-    <div className="space-y-5">
+    <div className="flex h-full min-h-0 flex-col space-y-4">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Builder Configuration</h2>
+        <h2 className="text-xl font-bold tracking-tight text-zinc-900">Builder Configuration</h2>
         <p className="text-sm text-zinc-400 mt-1">Manage PC builder categories, behavior, UI rules, and filters — all from one place.</p>
       </div>
 
-      <div className="flex gap-1 p-1 bg-zinc-100/80 rounded-xl w-fit">
+      <div className="flex flex-wrap gap-1 rounded-xl bg-zinc-100/80 p-1">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -47,7 +47,7 @@ const BuilderConfigManager = memo(function BuilderConfigManager() {
         })}
       </div>
 
-      <div className="min-h-[400px]">
+      <div className="min-h-0 flex-1">
         {activeTab === 'settings' && <BuilderSettingsTab />}
         {activeTab === 'categories' && <BuilderCategoriesTab />}
         {activeTab === 'rules' && <BuilderRulesTab />}

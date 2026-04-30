@@ -2,7 +2,7 @@
 
 import React, { memo, useCallback, useMemo } from "react";
 import { useAdmin } from "@/context/AdminContext";
-import { Order, OrderStatus, Product, WarehouseInventory } from "@/types";
+import { InventorySkuSummary, Order, OrderStatus } from "@/types";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -49,10 +49,6 @@ type OrderItemSnapshot = {
   category?: string;
   price: number;
   quantity: number;
-};
-
-type InventorySnapshot = {
-  quantity?: number;
 };
 
 const STRIPE_CLASSES: Record<string, string> = {
@@ -108,6 +104,7 @@ const Surface = memo(
     <div
       className={cn(
         "app-card overflow-hidden border-white/70 bg-white/80 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl",
+        "min-w-0",
         className,
       )}
     >
@@ -251,11 +248,10 @@ const DesktopOrderRow = memo(({ order }: { order: OverviewOrderRow }) => (
 DesktopOrderRow.displayName = "DesktopOrderRow";
 
 const Overview = () => {
-  const { orders, inventory, products, syncData, isLoading, setActiveTab } =
+  const { orders, inventory, syncData, isLoading, setActiveTab } =
     useAdmin() as unknown as {
       orders: Order[];
-      inventory: WarehouseInventory[];
-      products: Product[];
+      inventory: InventorySkuSummary[];
       syncData: () => Promise<void>;
       isLoading: boolean;
       setActiveTab: (tab: string) => void;
@@ -342,24 +338,18 @@ const Overview = () => {
     };
   }, [orders]);
 
-  const lowStockProducts = useMemo(
-    () =>
-      (Array.isArray(products) ? products : []).filter((product) => {
-        const stock =
-          (
-            product.variants?.[0]?.warehouseInventories as
-              | InventorySnapshot[]
-              | undefined
-          )?.reduce((total: number, inv) => total + (inv.quantity || 0), 0) ??
-          0;
-        return stock <= 5;
-      }),
-    [products],
-  );
-
   const inventoryArray = useMemo(
     () => (Array.isArray(inventory) ? inventory : []),
     [inventory],
+  );
+
+  const criticalInventoryItems = useMemo(
+    () =>
+      [...inventoryArray]
+        .filter((item) => item.quantity <= item.reorderLevel)
+        .sort((left, right) => left.quantity - right.quantity)
+        .slice(0, 3),
+    [inventoryArray],
   );
 
   const fulfilmentRate =
@@ -590,8 +580,8 @@ const Overview = () => {
   );
 
   return (
-    <div className="space-y-5">
-      <section className="app-card relative overflow-hidden border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(244,241,235,0.88))] px-5 py-5 shadow-[0_28px_90px_rgba(15,23,42,0.10)] sm:px-7 sm:py-6">
+    <div className="space-y-4">
+      <section className="app-card relative overflow-hidden border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(244,241,235,0.88))] px-4 py-4 shadow-[0_28px_90px_rgba(15,23,42,0.10)] sm:px-5 sm:py-5">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
         <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-100/60 blur-3xl" />
         <div className="absolute -bottom-20 left-1/3 h-40 w-40 rounded-full bg-amber-100/50 blur-3xl" />
@@ -631,10 +621,10 @@ const Overview = () => {
             {orders.length.toLocaleString("en-IN")} orders indexed
           </span>
           <span className="rounded-full border border-stone-200/80 bg-white/80 px-3 py-1.5">
-            {(Array.isArray(products) ? products.length : 0).toLocaleString(
+            {inventoryArray.length.toLocaleString(
               "en-IN",
             )}{" "}
-            products in catalog
+            inventory lines tracked
           </span>
         </div>
       </section>
@@ -683,7 +673,7 @@ const Overview = () => {
         ))}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-3">
+      <section className="grid gap-3 xl:grid-cols-3">
         <Surface className="xl:col-span-2" stripe="sky">
           <SurfaceHeader
             icon={<TrendingUp size={14} />}
@@ -834,7 +824,7 @@ const Overview = () => {
         </Surface>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-3">
+      <section className="grid gap-3 xl:grid-cols-3">
         <Surface className="xl:col-span-2" stripe="slate">
           <SurfaceHeader
             icon={<ShoppingCart size={14} />}
@@ -977,28 +967,21 @@ const Overview = () => {
               </div>
 
               <div className="space-y-2">
-                {lowStockProducts.slice(0, 3).map((product) => {
-                  const stock =
-                    (
-                      product.variants?.[0]?.warehouseInventories as
-                        | InventorySnapshot[]
-                        | undefined
-                    )?.reduce(
-                      (total: number, inv) => total + (inv.quantity || 0),
-                      0,
-                    ) ?? 0;
-
+                {criticalInventoryItems.map((item) => {
+                  const product = item.variant?.product;
+                  const sku = item.variant?.sku || item.sku || item.variantId;
+                  const stock = item.quantity;
                   return (
                     <div
-                      key={product.id}
+                      key={item.id}
                       className="flex items-center justify-between gap-3 rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-3"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-stone-800">
-                          {product.name}
+                          {product?.name || sku}
                         </p>
                         <p className="mt-1 text-[11px] text-stone-500">
-                          {product.variants?.[0]?.sku || "No SKU"}
+                          {sku}
                         </p>
                       </div>
                       <span
@@ -1014,7 +997,7 @@ const Overview = () => {
                     </div>
                   );
                 })}
-                {lowStockProducts.length === 0 && (
+                {criticalInventoryItems.length === 0 && (
                   <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
                     <CheckCircle2 size={16} className="text-emerald-600" />
                     <p className="text-sm font-medium text-emerald-800">
@@ -1028,7 +1011,7 @@ const Overview = () => {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-3 md:grid-cols-2">
         <Surface stripe="gold">
           <SurfaceHeader
             icon={<BarChart3 size={14} />}

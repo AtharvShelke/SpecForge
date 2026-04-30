@@ -58,9 +58,11 @@ const prismaClientSingleton = () => {
 // Logs slow queries so you can spot missing indexes early.
 function attachDevLogging(client: PrismaClient) {
   // @ts-expect-error — $on is typed on the base client; events are valid at runtime
-  client.$on("query", (e: { query: string; duration: number }) => {
-    if (e.duration > 200) {
-      console.warn(`[prisma] slow query (${e.duration}ms): ${e.query}`);
+  client.$on("query", (e: { query: string; duration: number; params?: string }) => {
+    if (e.duration > 100) {
+      console.warn(
+        `[perf:db] slow query (${e.duration}ms) threshold=100ms: ${e.query}`,
+      );
     }
   });
 }

@@ -9,54 +9,12 @@ function toNumber(value: unknown): number {
   return Number(value ?? 0);
 }
 
-function mainWarehouseInventory(variant: any) {
-  const inventoryItems = Array.isArray(variant?.inventoryItems)
-    ? variant.inventoryItems
-    : [];
-
-  const totalOnHand = inventoryItems.reduce(
-    (sum: number, item: any) => sum + Number(item?.quantityOnHand ?? 0),
-    0,
-  );
-  const reserved = inventoryItems.reduce(
-    (sum: number, item: any) => sum + Number(item?.quantityReserved ?? 0),
-    0,
-  );
-  const quantity = Math.max(0, totalOnHand - reserved);
-  const avgCost =
-    inventoryItems.length > 0
-      ? inventoryItems.reduce(
-          (sum: number, item: any) => sum + Number(item?.costPrice ?? 0),
-          0,
-        ) / inventoryItems.length
-      : 0;
-
-  return [
-    {
-      id: `main-${variant.id}`,
-      quantity,
-      reserved,
-      reorderLevel: 5,
-      costPrice: avgCost,
-      location: "Main Warehouse",
-      warehouseId: "MAIN",
-      warehouseName: "Main Warehouse",
-      warehouse: {
-        id: "MAIN",
-        code: "MAIN",
-        name: "Main Warehouse",
-      },
-    },
-  ];
-}
-
 function serializeVariant(variant: any) {
   return {
     ...variant,
     price: toNumber(variant?.price),
     compareAtPrice:
       variant?.compareAtPrice == null ? null : toNumber(variant.compareAtPrice),
-    warehouseInventories: mainWarehouseInventory(variant),
   };
 }
 
@@ -104,9 +62,6 @@ export function serializeInventoryItem(item: any) {
     reserved: quantityReserved,
     reorderLevel: 5,
     sku: item?.variant?.sku ?? item?.variantId ?? "",
-    location: "Main Warehouse",
-    warehouseId: "MAIN",
-    warehouseName: "Main Warehouse",
   };
 }
 

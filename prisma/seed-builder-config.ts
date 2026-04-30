@@ -15,19 +15,30 @@ const DEFAULT_SETTINGS = {
   powerCalculationMode: 'static',
 };
 
-const CATEGORY_CONFIGS = [
-  { categoryName: 'Processor',     enabled: true, isCore: true,  required: true,  allowMultiple: false, displayOrder: 0, icon: 'cpu',          shortLabel: 'CPU',    description: 'The brain of your build — AMD or Intel.' },
-  { categoryName: 'Motherboard',   enabled: true, isCore: true,  required: true,  allowMultiple: false, displayOrder: 1, icon: 'layers',       shortLabel: 'Mobo',   description: 'Connects everything. Must match your CPU socket.' },
-  { categoryName: 'RAM',           enabled: true, isCore: true,  required: true,  allowMultiple: true,  displayOrder: 2, icon: 'memory-stick', shortLabel: 'RAM',    description: 'System memory. Must match your motherboard DDR type.' },
-  { categoryName: 'Graphics Card', enabled: true, isCore: true,  required: false, allowMultiple: false, displayOrder: 3, icon: 'monitor',      shortLabel: 'GPU',    description: 'Graphics card for gaming and creative work.' },
-  { categoryName: 'Storage',       enabled: true, isCore: true,  required: true,  allowMultiple: true,  displayOrder: 4, icon: 'hard-drive',   shortLabel: 'SSD',    description: 'NVMe SSDs for fast load times.' },
-  { categoryName: 'Power Supply',  enabled: true, isCore: true,  required: true,  allowMultiple: false, displayOrder: 5, icon: 'zap',          shortLabel: 'PSU',    description: 'Power supply — must handle your total wattage.' },
-  { categoryName: 'Cabinet',       enabled: true, isCore: true,  required: true,  allowMultiple: false, displayOrder: 6, icon: 'box',          shortLabel: 'Case',   description: 'The case. Must fit your motherboard and GPU.' },
-  { categoryName: 'Cooler',        enabled: true, isCore: true,  required: false, allowMultiple: false, displayOrder: 7, icon: 'fan',          shortLabel: 'Cooler', description: 'Keep your CPU cool under load.' },
-  { categoryName: 'Monitor',       enabled: true, isCore: false, required: false, allowMultiple: false, displayOrder: 8, icon: 'monitor',      shortLabel: 'Mon',    description: 'Display for your setup.' },
-  { categoryName: 'Peripheral',    enabled: true, isCore: false, required: false, allowMultiple: true,  displayOrder: 9, icon: 'keyboard',     shortLabel: 'Periph', description: 'Keyboards, mice, headsets, and more.' },
-  { categoryName: 'Networking',    enabled: true, isCore: false, required: false, allowMultiple: false, displayOrder: 10, icon: 'wifi',        shortLabel: 'Net',    description: 'Routers, switches, and adapters.' },
-];
+const CATEGORY_METADATA: Record<
+  string,
+  {
+    isCore?: boolean;
+    required?: boolean;
+    allowMultiple?: boolean;
+    icon?: string;
+    shortLabel?: string;
+    description?: string;
+    displayOrder?: number;
+  }
+> = {
+  Processor: { isCore: true, required: true, icon: 'cpu', shortLabel: 'CPU', description: 'The brain of your build - AMD or Intel.', displayOrder: 0 },
+  Motherboard: { isCore: true, required: true, icon: 'layers', shortLabel: 'Mobo', description: 'Connects everything. Must match your CPU socket.', displayOrder: 1 },
+  RAM: { isCore: true, required: true, allowMultiple: true, icon: 'memory-stick', shortLabel: 'RAM', description: 'System memory. Must match your motherboard DDR type.', displayOrder: 2 },
+  'Graphics Card': { isCore: true, icon: 'monitor', shortLabel: 'GPU', description: 'Graphics card for gaming and creative work.', displayOrder: 3 },
+  Storage: { isCore: true, required: true, allowMultiple: true, icon: 'hard-drive', shortLabel: 'SSD', description: 'NVMe SSDs for fast load times.', displayOrder: 4 },
+  'Power Supply': { isCore: true, required: true, icon: 'zap', shortLabel: 'PSU', description: 'Power supply - must handle your total wattage.', displayOrder: 5 },
+  Cabinet: { isCore: true, required: true, icon: 'box', shortLabel: 'Case', description: 'The case. Must fit your motherboard and GPU.', displayOrder: 6 },
+  Cooler: { isCore: true, icon: 'fan', shortLabel: 'Cooler', description: 'Keep your CPU cool under load.', displayOrder: 7 },
+  Monitor: { icon: 'monitor', shortLabel: 'Mon', description: 'Display for your setup.', displayOrder: 8 },
+  Peripheral: { allowMultiple: true, icon: 'keyboard', shortLabel: 'Periph', description: 'Keyboards, mice, headsets, and more.', displayOrder: 9 },
+  Networking: { icon: 'wifi', shortLabel: 'Net', description: 'Routers, switches, and adapters.', displayOrder: 10 },
+};
 
 const DEFAULT_RULES = [
   {
@@ -64,15 +75,32 @@ async function main() {
   });
   console.log('  ✓ Global builder settings');
 
-  // 2. Category configs
-  for (const config of CATEGORY_CONFIGS) {
+  // 2. Category configs (source of truth = Category model)
+  const categories = await prisma.category.findMany({
+    where: { deletedAt: null },
+    orderBy: { name: 'asc' },
+    select: { name: true },
+  });
+  for (const category of categories) {
+    const metadata = CATEGORY_METADATA[category.name] ?? {};
+    const config = {
+      categoryName: category.name,
+      enabled: true,
+      isCore: metadata.isCore ?? false,
+      required: metadata.required ?? false,
+      allowMultiple: metadata.allowMultiple ?? false,
+      displayOrder: metadata.displayOrder ?? Number.MAX_SAFE_INTEGER,
+      icon: metadata.icon ?? null,
+      shortLabel: metadata.shortLabel ?? null,
+      description: metadata.description ?? null,
+    };
     await prisma.builderCategoryConfig.upsert({
       where: { categoryName: config.categoryName },
       update: config,
       create: config,
     });
   }
-  console.log(`  ✓ ${CATEGORY_CONFIGS.length} category configs`);
+  console.log(`  ✓ ${categories.length} category configs (from Category table)`);
 
   // 3. Default UI rules
   for (const rule of DEFAULT_RULES) {

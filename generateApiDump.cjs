@@ -1,8 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT_DIR = path.join(__dirname, "components"); 
-const OUTPUT_FILE = path.join(__dirname, "txt/components.txt");
+const ROOT_DIR = path.join(__dirname, "app"); 
+const OUTPUT_FILE = path.join(__dirname, "txt/frontend.txt");
 
 // 👇 ignore rule
 function shouldIgnore(p) {

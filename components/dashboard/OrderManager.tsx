@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
-import { Order, OrderItem, OrderLog, OrderStatus, PaymentStatus, WarehouseInventory } from '@/types';
+import { InventorySkuSummary, Order, OrderItem, OrderLog, OrderStatus, PaymentStatus } from '@/types';
 import {
   ArrowLeft,
   Clock,
@@ -21,8 +21,11 @@ import {
   MapPin,
   User,
   Mail,
+  Phone,
   CreditCard,
   AlertCircle,
+  CalendarRange,
+  FilterX,
 } from 'lucide-react';
 import {
   Select,
@@ -51,7 +54,6 @@ import { cn } from '@/lib/utils';
 import { NEXT_STATUS_BUTTON, STATUS_CONFIG, STATUS_FLOW } from '@/data/constants';
 import { generateInvoiceHTML } from '@/lib/invoice';
 import OrderPayments from '@/components/orders/OrderPayments';
-import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
 import { ConfirmStatusDialog, DeleteOrderDialog } from '../helper-components/OrderManagerDialogs';
 
 /* ─────────────────────────────────────────────────────────────
@@ -78,9 +80,11 @@ const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
 
 // Pure function at module scope — called inside useMemo, never re-declared
 function computeFinancials(order: Order) {
-  const subtotal = (order.items ?? []).reduce((s, i) => s + i.price * i.quantity, 0);
-  const tax = Math.round(subtotal * 0.18);
-  return { subtotal, tax, total: subtotal + tax };
+  const subtotal = order.subtotal ?? (order.items ?? []).reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const tax = (order.gstAmount ?? 0) + (order.taxAmount ?? 0);
+  const discount = order.discountAmount ?? 0;
+  const total = order.total ?? subtotal + tax - discount;
+  return { subtotal, tax, discount, total };
 }
 
 // Date formatting helpers — avoid repeated option objects in hot render paths
@@ -96,6 +100,45 @@ const TIME_OPTS: Intl.DateTimeFormatOptions = {
 const TIMELINE_DATE_OPTS: Intl.DateTimeFormatOptions = {
   day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
 };
+
+const DATE_FILTER_OPTIONS = [
+  { value: 'ALL', label: 'Any date' },
+  { value: 'TODAY', label: 'Today' },
+  { value: 'LAST_7_DAYS', label: 'Last 7 days' },
+  { value: 'LAST_30_DAYS', label: 'Last 30 days' },
+  { value: 'LAST_90_DAYS', label: 'Last 90 days' },
+] as const;
+
+type DateFilterValue = (typeof DATE_FILTER_OPTIONS)[number]['value'];
+
+const formatCurrency = (value: number) => `Rs. ${value.toLocaleString('en-IN')}`;
+
+function matchesDateFilter(orderDate: string, dateFilter: DateFilterValue) {
+  if (dateFilter === 'ALL') return true;
+
+  const orderTime = new Date(orderDate).getTime();
+  if (Number.isNaN(orderTime)) return false;
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  if (dateFilter === 'TODAY') {
+    return orderTime >= todayStart;
+  }
+
+  const days = dateFilter === 'LAST_7_DAYS' ? 7 : dateFilter === 'LAST_30_DAYS' ? 30 : 90;
+  const windowStart = todayStart - (days - 1) * 24 * 60 * 60 * 1000;
+  return orderTime >= windowStart;
+}
+
+function getPaymentTone(paymentStatus?: PaymentStatus | null) {
+  if (paymentStatus === PaymentStatus.COMPLETED) return 'bg-emerald-50 text-emerald-700';
+  if (paymentStatus === PaymentStatus.PENDING || paymentStatus === PaymentStatus.INITIATED) {
+    return 'bg-amber-50 text-amber-700';
+  }
+  if (paymentStatus === PaymentStatus.FAILED) return 'bg-rose-50 text-rose-600';
+  return 'bg-stone-100 text-stone-600';
+}
 
 /* ─────────────────────────────────────────────────────────────
    STATUS PILL — memo prevents re-render when parent re-renders
@@ -176,6 +219,7 @@ interface OrderRowProps {
 const OrderRow = memo(({ order, isSelected, onClick }: OrderRowProps) => {
   const needsAction = order.status === OrderStatus.PENDING || order.status === OrderStatus.PAID;
   const handleClick = useCallback(() => onClick(order.id), [order.id, onClick]);
+  const itemCount = order.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   // Memoize formatted date per row — avoids re-formatting on every parent render
   const formattedDate = useMemo(
@@ -211,10 +255,29 @@ const OrderRow = memo(({ order, isSelected, onClick }: OrderRowProps) => {
       )}>
         {order.customerName}
       </p>
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] text-stone-400 font-mono tabular-nums">
-          {formattedDate}
+      <p className="mb-2 truncate text-[11px] text-stone-500">{order.email}</p>
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+          {itemCount} item{itemCount !== 1 ? 's' : ''}
         </span>
+        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide', getPaymentTone(order.paymentStatus))}>
+          {order.paymentStatus ?? 'Unpaid'}
+        </span>
+        {order.phone && (
+          <span className="truncate rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500">
+            {order.phone}
+          </span>
+        )}
+      </div>
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <span className="text-[10px] text-stone-400 font-mono tabular-nums">
+            {formattedDate}
+          </span>
+          <p className="truncate text-[11px] text-stone-400">
+            {order.paymentMethod ?? 'Payment method pending'}
+          </p>
+        </div>
         <span className={cn(
           'text-sm font-bold tabular-nums font-mono',
           isSelected ? 'text-stone-900' : 'text-stone-700'
@@ -238,7 +301,7 @@ const OrderManager = () => {
     orders: Order[];
     updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
     deleteOrder: (id: string) => Promise<void>;
-    inventory: WarehouseInventory[];
+    inventory: InventorySkuSummary[];
     syncData: () => Promise<void>;
     isLoading: boolean;
   };
@@ -280,7 +343,9 @@ const OrderManager = () => {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterOrderQuery, setFilterOrderQuery] = useState('');
+  const [filterDate, setFilterDate] = useState<DateFilterValue>('ALL');
   const [showMobileDetail, setShowMobileDetail] = useState(false);
 
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -301,16 +366,30 @@ const OrderManager = () => {
   }, [sortedOrders, selectedId]);
 
   const filteredOrders = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
+    const customerQuery = filterCustomer.toLowerCase().trim();
+    const orderQuery = filterOrderQuery.toLowerCase().trim();
+
     return sortedOrders.filter(o => {
       const matchStatus = filterStatus === 'All' || o.status === filterStatus;
-      const matchSearch = !q ||
-        o.id.toLowerCase().includes(q) ||
-        o.customerName.toLowerCase().includes(q) ||
-        o.email.toLowerCase().includes(q);
-      return matchStatus && matchSearch;
+      const matchCustomer = !customerQuery ||
+        o.customerName.toLowerCase().includes(customerQuery) ||
+        o.email.toLowerCase().includes(customerQuery) ||
+        (o.phone ?? '').toLowerCase().includes(customerQuery);
+      const matchOrder = !orderQuery ||
+        o.id.toLowerCase().includes(orderQuery) ||
+        (o.paymentTransactionId ?? '').toLowerCase().includes(orderQuery);
+      const matchDate = matchesDateFilter(o.date, filterDate);
+
+      return matchStatus && matchCustomer && matchOrder && matchDate;
     });
-  }, [sortedOrders, filterStatus, searchQuery]);
+  }, [sortedOrders, filterCustomer, filterDate, filterOrderQuery, filterStatus]);
+
+  useEffect(() => {
+    if (filteredOrders.length === 0) return;
+    if (!selectedId || !filteredOrders.some(order => order.id === selectedId)) {
+      setSelectedId(filteredOrders[0].id);
+    }
+  }, [filteredOrders, selectedId]);
 
   const selectedOrder = useMemo(
     () => orders.find((o: Order) => o.id === selectedId) ?? sortedOrders[0] ?? null,
@@ -385,16 +464,6 @@ const OrderManager = () => {
     if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 500); }
   }, [selectedOrder]);
 
-  const handleDownloadInvoice = useCallback(() => {
-    if (!selectedOrder) return;
-    const html = generateInvoiceHTML(selectedOrder);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `Invoice-${selectedOrder.id}.html`; a.click();
-    URL.revokeObjectURL(url);
-  }, [selectedOrder]);
-
   const handleRowClick = useCallback((id: string) => {
     setSelectedId(id);
     setShowMobileDetail(true);
@@ -456,15 +525,24 @@ const OrderManager = () => {
   return (
     <TooltipProvider>
       <div
-        className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden rounded-xl bg-white border border-stone-200 shadow-sm"
+        className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.2rem] bg-white border border-stone-200 shadow-sm"
         style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
       >
 
         {/* ─── HEADER ─── */}
-        <div className="flex-shrink-0 border-b border-stone-100 px-3 sm:px-6 py-3 bg-white">
+        <div className="flex-shrink-0 border-b border-stone-100 bg-white px-3 py-3 sm:px-5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="relative">
+                <User size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <Input
+                  placeholder="Filter by customer, email, phone"
+                  value={filterCustomer}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCustomer(e.target.value)}
+                  className="pl-7 h-8 text-xs bg-stone-50 border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 shadow-none rounded-lg"
+                />
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2">
                 <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
                 <h1 className="text-sm font-bold text-stone-900 tracking-tight">Orders</h1>
               </div>
@@ -510,13 +588,32 @@ const OrderManager = () => {
           )}>
 
             {/* Search + Filter */}
-            <div className="px-3 py-2.5 space-y-2 border-b border-stone-100 bg-white">
+            <div className="px-3 py-3 space-y-2.5 border-b border-stone-100 bg-white">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
+                  <CalendarRange size={12} />
+                  Filters
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterStatus('All');
+                    setFilterCustomer('');
+                    setFilterOrderQuery('');
+                    setFilterDate('ALL');
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500 transition-colors hover:bg-stone-50"
+                >
+                  <FilterX size={11} />
+                  Reset
+                </button>
+              </div>
               <div className="relative">
                 <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
                 <Input
                   placeholder="Search ID, name, email…"
-                  value={searchQuery}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                  value={filterOrderQuery}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterOrderQuery(e.target.value)}
                   className="pl-7 h-8 text-xs bg-stone-50 border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 shadow-none rounded-lg"
                 />
               </div>
@@ -533,6 +630,18 @@ const OrderManager = () => {
                           <span className={cn('w-1.5 h-1.5 rounded-full', STATUS_CONFIG[s].dotClass)} />
                           {STATUS_CONFIG[s].label}
                         </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={filterDate} onValueChange={(value) => setFilterDate(value as DateFilterValue)}>
+                  <SelectTrigger className="h-8 text-xs bg-stone-50 border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
+                    <SelectValue placeholder="Any date" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-stone-200 text-stone-800 shadow-md">
+                    {DATE_FILTER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="text-xs focus:bg-stone-50">
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -678,28 +787,29 @@ const OrderManager = () => {
                     </div>
 
                     {/* Customer Meta — 2-col grid on mobile, 4-col on sm+ */}
-                    <div className="mt-3 pt-3 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="mt-3 pt-3 border-t border-stone-100 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
                       {[
                         { icon: <User size={11} />, label: 'Customer', value: selectedOrder.customerName },
                         { icon: <Mail size={11} />, label: 'Email', value: selectedOrder.email },
+                        { icon: <Phone size={11} />, label: 'Phone', value: selectedOrder.phone ?? 'Not provided' },
                         {
                           icon: <CreditCard size={11} />, label: 'Payment',
                           value: (
                             <span className="flex items-center gap-1 flex-wrap">
-                              <span>{selectedOrder.paymentMethod}</span>
-                              <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide', {
-                                'bg-emerald-50 text-emerald-700': String(selectedOrder.paymentStatus) === PaymentStatus.COMPLETED,
-                                'bg-amber-50 text-amber-700': String(selectedOrder.paymentStatus) === PaymentStatus.PENDING || String(selectedOrder.paymentStatus) === PaymentStatus.INITIATED,
-                                'bg-rose-50 text-rose-600': String(selectedOrder.paymentStatus) === PaymentStatus.FAILED,
-                              })}>
-                                {selectedOrder.paymentStatus}
+                              <span>{selectedOrder.paymentMethod ?? 'Pending'}</span>
+                              <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide', getPaymentTone(selectedOrder.paymentStatus))}>
+                                {selectedOrder.paymentStatus ?? 'UNPAID'}
                               </span>
                             </span>
                           ),
                         },
                         {
                           icon: <Hash size={11} />, label: 'Items',
-                          value: `${selectedOrderItems.length} item${selectedOrderItems.length !== 1 ? 's' : ''}`,
+                          value: `${selectedOrderItems.reduce((sum, item) => sum + item.quantity, 0)} unit${selectedOrderItems.reduce((sum, item) => sum + item.quantity, 0) !== 1 ? 's' : ''}`,
+                        },
+                        {
+                          icon: <Package size={11} />, label: 'Subtotal',
+                          value: formatCurrency(selectedFinancials?.subtotal ?? selectedOrder.subtotal ?? 0),
                         },
                       ].map(({ icon, label, value }) => (
                         <div key={label}>
@@ -739,6 +849,7 @@ const OrderManager = () => {
                           <thead>
                             <tr className="border-b border-stone-100 bg-stone-50/30">
                               <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
+                              <th className="px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Traceability</th>
                               <th className="px-3 py-2.5 text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">Qty</th>
                               <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Unit</th>
                               <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total</th>
@@ -763,12 +874,31 @@ const OrderManager = () => {
                                       <div className="min-w-0">
                                         <p className="font-semibold text-stone-800 text-xs leading-tight line-clamp-1 tracking-tight">{item.name}</p>
                                         <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                                        <p className="mt-0.5 text-[10px] text-stone-400">
+                                          {item.category} · Ref {item.lineReference}
+                                        </p>
                                         {isLow && (
                                           <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 mt-0.5">
                                             <AlertTriangle size={9} /> Low: {inv.quantity} left
                                           </span>
                                         )}
                                       </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-3">
+                                    <div className="space-y-1">
+                                      {[
+                                        ['Product', item.productNumber],
+                                        ['Part', item.partNumber],
+                                        ['Serial', item.serialNumber],
+                                      ].map(([label, value]) => (
+                                        <div key={label} className="flex items-center gap-2 text-[10px]">
+                                          <span className="w-11 rounded bg-stone-100 px-1.5 py-0.5 text-center font-semibold uppercase tracking-wide text-stone-500">
+                                            {label}
+                                          </span>
+                                          <span className="truncate font-mono text-stone-700">{value || '-'}</span>
+                                        </div>
+                                      ))}
                                     </div>
                                   </td>
                                   <td className="px-3 py-3 text-center">
@@ -804,6 +934,21 @@ const OrderManager = () => {
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-stone-800 text-xs tracking-tight leading-tight">{item.name}</p>
                               <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                              <p className="mt-0.5 text-[10px] text-stone-400">
+                                {item.category} · Ref {item.lineReference}
+                              </p>
+                              <div className="mt-2 grid grid-cols-1 gap-1 rounded-lg border border-stone-100 bg-stone-50/70 p-2">
+                                {[
+                                  ['Product', item.productNumber],
+                                  ['Part', item.partNumber],
+                                  ['Serial', item.serialNumber],
+                                ].map(([label, value]) => (
+                                  <div key={label} className="flex items-center justify-between gap-2 text-[10px]">
+                                    <span className="font-semibold uppercase tracking-wide text-stone-400">{label}</span>
+                                    <span className="truncate font-mono text-stone-700">{value || '-'}</span>
+                                  </div>
+                                ))}
+                              </div>
                               <div className="flex items-center justify-between mt-1.5">
                                 <span className="text-xs text-stone-400">×<strong className="text-stone-700">{item.quantity}</strong> · ₹{item.price.toLocaleString('en-IN')}</span>
                                 <span className="font-bold text-stone-900 text-sm font-mono">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>

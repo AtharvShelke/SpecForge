@@ -423,12 +423,10 @@ const EMPTY_SPEC_FORM: UpdateSpecInput = {
 // ─────────────────────────────────────────────────────────────
 
 const CategoryManager = () => {
-    const { categoryHierarchy, refreshCategoryHierarchy, updateCategories, filterConfigs, updateFilterConfig, syncData, isLoading, subCategories, specs, refreshSpecs, createSpec, updateSpec, deleteSpec } = useAdmin() as unknown as {
+    const admin = useAdmin() as unknown as {
         categoryHierarchy: CategoryNode[];
         refreshCategoryHierarchy: () => Promise<void>;
         updateCategories: (categories: CategoryNode[]) => Promise<void>;
-        filterConfigs: CategoryFilterConfig[];
-        updateFilterConfig: (category: string, filters: FilterDefinition[]) => Promise<void>;
         syncData: () => Promise<void>;
         isLoading: boolean;
         subCategories: SubCategory[];
@@ -437,7 +435,13 @@ const CategoryManager = () => {
         createSpec: (data: any) => Promise<void>;
         updateSpec: (id: string, data: UpdateSpecInput) => Promise<void>;
         deleteSpec: (id: string, subCategoryId?: string) => Promise<void>;
+    } & {
+        filterConfigs?: CategoryFilterConfig[];
+        updateFilterConfig?: (category: string, filters: FilterDefinition[]) => Promise<void>;
     };
+    const { categoryHierarchy, refreshCategoryHierarchy, updateCategories, syncData, isLoading, subCategories, specs, refreshSpecs, createSpec, updateSpec, deleteSpec } = admin;
+    const filterConfigs = Array.isArray(admin.filterConfigs) ? admin.filterConfigs : [];
+    const updateFilterConfig = admin.updateFilterConfig ?? (async () => {});
     const categories = Array.isArray(categoryHierarchy) ? categoryHierarchy : [];
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>('');
 
@@ -791,7 +795,7 @@ const CategoryManager = () => {
 
     return (
         <div
-            className="space-y-3"
+            className="space-y-2.5"
             style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
         >
 

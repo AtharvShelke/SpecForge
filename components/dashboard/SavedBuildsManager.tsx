@@ -462,7 +462,7 @@ export default function SavedBuildsManager() {
 
     return (
         <div
-            className="space-y-3"
+            className="space-y-2.5"
             style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
         >
 
@@ -498,7 +498,7 @@ export default function SavedBuildsManager() {
             </div>
 
             {/* ── KPI STRIP ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 px-0.5">
+            <div className="grid grid-cols-2 gap-2.5 px-0.5 lg:grid-cols-4">
                 <KpiCard
                     label="Builds"
                     value={builds.length}

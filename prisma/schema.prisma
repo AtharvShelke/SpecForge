@@ -264,6 +264,7 @@ model SpecDefinition {
   filterOverrides FilterOverride[]
 
   @@unique([subCategoryId, name])
+  @@index([subCategoryId, isFilterable, filterOrder])
 }
 
 model VariantSpec {
@@ -368,6 +369,7 @@ model Product {
   @@index([subCategoryId])
   @@index([deletedAt])
   @@index([status, name])
+  @@index([deletedAt, status, createdAt])
 }
 
 model ProductVariant {
@@ -397,6 +399,9 @@ model ProductVariant {
   @@index([price])
   @@index([status])
   @@index([productId, status])
+  @@index([deletedAt])
+  @@index([productId, deletedAt])
+  @@index([status, deletedAt])
 }
 
 // ─────────────────────────────────────────────────
@@ -476,6 +481,7 @@ model Order {
   @@index([date])
   @@index([status, date])
   @@index([customerId])
+  @@index([deletedAt, status, date])
 }
 
 model OrderItem {
@@ -546,6 +552,7 @@ model BuildGuide {
   items BuildGuideItem[]
 
   @@index([createdAt])
+  @@index([category, createdAt])
 }
 
 model BuildGuideItem {
@@ -756,6 +763,8 @@ model InventoryItem {
   @@index([variantId, status])
   @@index([serialNumber])
   @@index([trackingType, status])
+  @@index([variantId, trackingType])
+  @@index([status, variantId])
 }
 
 // ─────────────────────────────────────────────────

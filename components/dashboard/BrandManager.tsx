@@ -307,7 +307,7 @@ const BrandManager = () => {
 
     return (
         <div
-            className="space-y-3"
+            className="space-y-2.5"
             style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
         >
 
@@ -338,7 +338,7 @@ const BrandManager = () => {
             </div>
 
             {/* ── MAIN LAYOUT ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
 
                 {/* ── LEFT: ADD BRAND FORM ── */}
                 <div className="lg:col-span-4">

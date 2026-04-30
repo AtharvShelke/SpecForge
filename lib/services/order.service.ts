@@ -147,28 +147,88 @@ function assertStatusTransition(from: string, to: string) {
 export async function listOrders(filters?: {
   status?: string;
   customerId?: string;
+  page?: number;
+  limit?: number;
 }): Promise<Order[]> {
   const where: any = { deletedAt: null };
   if (filters?.status) where.status = filters.status;
   if (filters?.customerId) where.customerId = filters.customerId;
+  const page = Math.max(1, Number(filters?.page ?? 1));
+  const limit = Math.min(100, Math.max(1, Number(filters?.limit ?? 25)));
 
   const orders = await prisma.order.findMany({
     where,
     orderBy: { date: "desc" },
-    include: {
-      items: true,
-      customer: true,
+    skip: (page - 1) * limit,
+    take: limit,
+    select: {
+      id: true,
+      customerName: true,
+      email: true,
+      phone: true,
+      date: true,
+      subtotal: true,
+      gstAmount: true,
+      taxAmount: true,
+      discountAmount: true,
+      total: true,
+      status: true,
+      version: true,
+      deletedAt: true,
+      customerId: true,
+      shippingStreet: true,
+      shippingCity: true,
+      shippingState: true,
+      shippingZip: true,
+      shippingCountry: true,
+      paymentMethod: true,
+      paymentTransactionId: true,
+      paymentStatus: true,
+      idempotencyKey: true,
+      source: true,
+      createdAt: true,
+      updatedAt: true,
+      items: {
+        take: 3,
+        orderBy: { id: "asc" },
+        select: {
+          id: true,
+          lineReference: true,
+          orderId: true,
+          variantId: true,
+          inventoryItemId: true,
+          productNumber: true,
+          partNumber: true,
+          serialNumber: true,
+          name: true,
+          category: true,
+          price: true,
+          quantity: true,
+          image: true,
+          sku: true,
+          variantSnapshot: true,
+        },
+      },
       logs: { orderBy: { timestamp: "desc" } },
       shipments: { orderBy: { createdAt: "desc" } },
       payments: {
-        include: { paymentProofs: true },
+        select: {
+          id: true,
+          orderId: true,
+          method: true,
+          gatewayTxnId: true,
+          amount: true,
+          status: true,
+          idempotencyKey: true,
+          metadata: true,
+          createdAt: true,
+          updatedAt: true,
+          paymentProofs: true,
+        },
         orderBy: { createdAt: "desc" },
       },
-      invoices: {
-        include: { lineItems: true },
-        orderBy: { createdAt: "desc" },
-      },
-      reservations: true,
+      invoices: false,
+      reservations: false,
     },
   });
   return orders as any as Order[];

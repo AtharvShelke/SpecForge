@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
-import { InventoryItem, Reservation } from '../types';
+import { InventoryItem, InventorySkuSummary, Reservation } from '../types';
 
 export interface InventorySummary {
   available: number;
@@ -24,7 +24,7 @@ interface InventoryContextType {
   refreshReservations: () => Promise<void>;
   refreshAuditLogs: () => Promise<any[]>;
   fetchInventoryPage: (query?: URLSearchParams | string) => Promise<{
-    items: InventoryItem[];
+    items: InventorySkuSummary[];
     total: number;
     page: number;
     limit: number;
@@ -55,7 +55,13 @@ async function fetchJSON(url: string, options?: RequestInit) {
   return res.json();
 }
 
-export const InventoryProvider = ({ children }: { children: ReactNode }) => {
+export const InventoryProvider = ({
+  children,
+  autoLoad = true,
+}: {
+  children: ReactNode;
+  autoLoad?: boolean;
+}) => {
   const [loading, setLoading] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -105,8 +111,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, [inventory]);
 
   const refreshInventory = useCallback(async () => {
-    const data = await fetchJSON('/api/inventory/items');
-    setInventory(data);
+    const data = await fetchJSON('/api/inventory?limit=200&page=1');
+    setInventory(Array.isArray(data?.items) ? data.items : []);
   }, []);
 
   const refreshReservations = useCallback(async () => {
@@ -171,8 +177,9 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshInventory, refreshReservations]);
 
   useEffect(() => {
+    if (!autoLoad) return;
     loadAll();
-  }, [loadAll]);
+  }, [autoLoad, loadAll]);
 
   return (
     <InventoryContext.Provider value={{

@@ -1168,7 +1168,7 @@ const BillingInvoices: React.FC = () => {
   // ── POS view ──
   if (view === 'pos') {
     return (
-      <div className="flex flex-col h-full min-h-0 bg-white -m-8">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.2rem] border border-zinc-200 bg-white shadow-sm">
         <PosCounter
           products={enrichedProducts}
           customers={customers}
@@ -1182,7 +1182,7 @@ const BillingInvoices: React.FC = () => {
   // ── List view ──
   return (
     <TooltipProvider>
-      <div className="flex flex-col lg:flex-row h-full min-h-0 bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-sm -m-8">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.2rem] border border-zinc-200 bg-white shadow-sm lg:flex-row">
 
         {/* LEFT: Master List */}
         <div className={cn(
@@ -1191,7 +1191,7 @@ const BillingInvoices: React.FC = () => {
           showMobileDetail ? 'hidden lg:flex' : 'flex'
         )}>
           {/* List Header */}
-          <div className="px-5 py-4 border-b border-zinc-200 bg-white shrink-0">
+          <div className="shrink-0 border-b border-zinc-200 bg-white px-4 py-4">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-xl font-semibold text-zinc-900">Billing & Invoices</h1>
@@ -1219,7 +1219,7 @@ const BillingInvoices: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="relative group">
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-zinc-900" />
                 <Input
@@ -1262,7 +1262,7 @@ const BillingInvoices: React.FC = () => {
                 <p className="text-xs text-zinc-400 mt-2">Try adjusting your search or filter criteria.</p>
               </div>
             ) : (
-              <div className="p-4 space-y-2">
+              <div className="space-y-2 p-3">
                 {filteredInvoices.map(inv => {
                   const isSelected = selectedId === inv.id;
                   const isOverdue = inv.status === InvoiceStatus.OVERDUE;

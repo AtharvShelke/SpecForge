@@ -46,6 +46,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const sourceCategory = await prisma.category.findFirst({
+      where: { name: category, deletedAt: null },
+      select: { id: true },
+    });
+    if (!sourceCategory) {
+      return NextResponse.json(
+        { error: 'category must map to an existing Category.name' },
+        { status: 400 },
+      );
+    }
+
     const rule = await prisma.builderUIRule.create({
       data: {
         name,
@@ -84,6 +95,19 @@ export async function PUT(req: NextRequest) {
         { error: 'id is required' },
         { status: 400 }
       );
+    }
+
+    if (data.category !== undefined) {
+      const sourceCategory = await prisma.category.findFirst({
+        where: { name: data.category, deletedAt: null },
+        select: { id: true },
+      });
+      if (!sourceCategory) {
+        return NextResponse.json(
+          { error: 'category must map to an existing Category.name' },
+          { status: 400 },
+        );
+      }
     }
 
     const updated = await prisma.builderUIRule.update({
