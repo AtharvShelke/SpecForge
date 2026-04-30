@@ -5,6 +5,7 @@ import ProductCard from "@/components/cards/ProductCard";
 import { Button } from "@/components/ui/button";
 import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
 import { Product } from "@/types";
+import CategoriesSection from "@/components/storefront/CategoriesSection";
 
 export const dynamic = "force-dynamic";
 
@@ -87,93 +88,11 @@ export default async function StorefrontPage() {
 
   return (
     <div className="bg-white">
-      <section className="border-b border-gray-200">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] lg:items-center lg:px-8 lg:py-10">
-          <div className="max-w-xl">
-            <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
-              Performance hardware
-            </p>
-            <h1 className="mt-4 text-3xl font-semibold text-gray-900 sm:text-5xl">
-              PC components presented with less friction and more clarity.
-            </h1>
-            <p className="mt-4 text-base leading-7 text-gray-600">
-              Shop processors, graphics cards, motherboards, memory, storage,
-              and accessories in a storefront designed to help you compare faster
-              and check out with confidence.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href="/products">Shop products</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/build-guides">Browse build guides</Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden border border-gray-200 bg-gray-50">
-            <div className="relative aspect-[4/3]">
-              <Image
-                src="/images/hero3.jpg"
-                alt="Custom gaming PC"
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 55vw"
-                className="object-cover"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {homepageCategories.length > 0 && (
-          <section className="border-t border-gray-200 py-12 sm:py-16">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Categories</p>
-                <p className="mt-2 text-sm text-gray-500">
-                  Explore the catalog by category and jump directly into relevant product filters.
-                </p>
-              </div>
-              <Button asChild variant="outline">
-                <Link href="/products">Browse all products</Link>
-              </Button>
-            </div>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {homepageCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="group rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300 hover:shadow-sm"
-                >
-                  <Link
-                    href={`/products?category=${encodeURIComponent(category.name)}`}
-                    className="text-lg font-semibold text-gray-900 transition group-hover:text-black"
-                  >
-                    {category.displayName}
-                  </Link>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {category.subCategories.length} subcategories
-                  </p>
-
-                  {category.subCategories.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2 opacity-100 transition duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-                      {category.subCategories.map((subCategory) => (
-                        <Link
-                          key={subCategory.id}
-                          href={`/products?category=${encodeURIComponent(category.name)}&subCategoryId=${encodeURIComponent(subCategory.id)}`}
-                          className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700 transition hover:bg-gray-100"
-                        >
-                          {subCategory.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
+          <CategoriesSection categories={homepageCategories} />
         )}
 
         <ProductSection

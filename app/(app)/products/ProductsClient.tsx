@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  ArrowLeft,
-  ArrowRight,
-  SlidersHorizontal,
-} from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
 import ProductCard from "@/components/cards/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -18,56 +14,16 @@ import {
 } from "@/components/ui/sheet";
 import { useShop } from "@/context/ShopContext";
 import { useProductFilters } from "@/hooks/useProductFilters";
-import { CatalogListingResult, Category, DynamicCatalogFilter, Product } from "@/types";
+import { useCatalogListing } from "@/hooks/useCatalogListing";
+import { Category } from "@/types";
+
+import CatalogEmptyState from "@/components/storefront/catalog/CatalogEmptyState";
+import CatalogLoadingGrid from "@/components/storefront/catalog/CatalogLoadingGrid";
+import CatalogPagination from "@/components/storefront/catalog/CatalogPagination";
 
 import CatalogCategoryTabs from "./components/CatalogCategoryTabs";
 import CatalogSubcategoryNav from "./components/CatalogSubcategoryNav";
 import CatalogFiltersSidebar from "./components/CatalogFiltersSidebar";
-
-type CatalogResponse = CatalogListingResult & {
-  nextCursor?: string | null;
-};
-
-function LoadingGrid() {
-  return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6">
-      {Array.from({ length: 12 }).map((_, index) => (
-        <div
-          key={index}
-          className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
-        >
-          <div className="aspect-square animate-pulse bg-gradient-to-br from-gray-50 to-gray-100" />
-          <div className="space-y-3 p-4">
-            <div className="h-3 w-16 animate-pulse rounded bg-gray-100" />
-            <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
-            <div className="h-4 w-24 animate-pulse rounded bg-gray-100" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ onClear }: { onClear: () => void }) {
-  return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/30 px-6 text-center">
-      <div className="rounded-full bg-gray-100 p-4">
-        <SlidersHorizontal className="size-6 text-gray-400" />
-      </div>
-      <p className="mt-4 text-lg font-medium text-gray-900">No products found</p>
-      <p className="mt-1 text-sm text-gray-500">
-        Try adjusting your filters or search term
-      </p>
-      <Button
-        variant="outline"
-        className="mt-6 border-gray-200 bg-white hover:bg-gray-50"
-        onClick={onClear}
-      >
-        Clear all filters
-      </Button>
-    </div>
-  );
-}
 
 function getActiveCategory(
   categories: Category[],
@@ -118,10 +74,6 @@ export default function ProductsClient() {
   } = useProductFilters();
 
   const [page, setPage] = useState(1);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filters, setFilters] = useState<DynamicCatalogFilter[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [searchInput, setSearchInput] = useState(query);
 
@@ -131,7 +83,13 @@ export default function ProductsClient() {
     [categories, category, selectedSubCategoryId],
   );
   const activeCategoryLabel = activeCategory?.name ?? "All products";
-  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const { products, filters, total, isLoading, totalPages } = useCatalogListing({
+    searchKey,
+    limit,
+    page,
+  });
+
   const pageStart = total === 0 ? 0 : (page - 1) * limit + 1;
   const pageEnd = Math.min(page * limit, total);
 
@@ -142,55 +100,6 @@ export default function ProductsClient() {
   useEffect(() => {
     setSearchInput(query);
   }, [query]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchProducts = async () => {
-      setIsLoading(true);
-
-      try {
-        const params = new URLSearchParams(searchKey);
-        params.set("limit", String(limit));
-        params.set("cursor", String((page - 1) * limit));
-
-        const response = await fetch(`/api/catalog/products?${params.toString()}`, {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to load catalog");
-        }
-
-        const payload = (await response.json()) as CatalogResponse;
-        if (cancelled) {
-          return;
-        }
-
-        setProducts(payload.products);
-        setFilters(payload.filters);
-        setTotal(payload.total);
-      } catch {
-        if (cancelled) {
-          return;
-        }
-
-        setProducts([]);
-        setFilters([]);
-        setTotal(0);
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchProducts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [limit, page, searchKey]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -206,12 +115,9 @@ export default function ProductsClient() {
           selectedCategory={activeCategory?.name ?? null}
           selectedCategoryLabel={activeCategoryLabel}
           total={total}
-          query={query}
           searchInput={searchInput}
           sort={sort}
           activeFilterCount={activeFilterCount}
-          pageStart={pageStart}
-          pageEnd={pageEnd}
           onSearchChange={(value) => {
             setSearchInput(value);
             setSearchQuery(value);
@@ -254,9 +160,9 @@ export default function ProductsClient() {
             <main className="min-w-0">
               {/* Products Grid */}
               {isLoading ? (
-                <LoadingGrid />
+                <CatalogLoadingGrid />
               ) : products.length === 0 ? (
-                <EmptyState onClear={clearFilters} />
+                <CatalogEmptyState onClear={clearFilters} />
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
@@ -270,35 +176,13 @@ export default function ProductsClient() {
                   </div>
 
                   {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
-                      <p className="text-sm text-gray-500">
-                        Page {page} of {totalPages}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage((p) => Math.max(1, p - 1))}
-                          disabled={page <= 1 || isLoading}
-                          className="border-gray-200 bg-white hover:bg-gray-50"
-                        >
-                          <ArrowLeft className="mr-1 size-3.5" />
-                          Previous
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                          disabled={page >= totalPages || isLoading}
-                          className="border-gray-200 bg-white hover:bg-gray-50"
-                        >
-                          Next
-                          <ArrowRight className="ml-1 size-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  <CatalogPagination
+                    page={page}
+                    totalPages={totalPages}
+                    isLoading={isLoading}
+                    onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                    onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  />
                 </>
               )}
             </main>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-const DEFAULT_LIMIT = 12;
+const DEFAULT_LIMIT = 15;
 
 export function useProductFilters() {
   const pathname = usePathname();

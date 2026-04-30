@@ -1550,8 +1550,8 @@ import { cn } from '@/lib/utils';
 
 const BILLING_PROFILE: BillingProfile = {
   id: 'prof_default',
-  companyName: 'Nexus Hardware Store',
-  legalName: 'Nexus Hardware Private Limited',
+  companyName: 'Computer Store Store',
+  legalName: 'Computer Store Private Limited',
   email: 'billing@nexushardware.com',
   phone: '+91 80000 12345',
   addressLine1: '123, Tech Park',
@@ -11556,7 +11556,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <p>© {new Date().getFullYear()} MD Computers. Secure hardware shopping.</p>
+        <p>© {new Date().getFullYear()} Computer Store. Secure hardware shopping.</p>
         <div className="flex items-center gap-4">
           <Link href="/products" className="transition-colors hover:text-gray-900">
             Catalog
@@ -15706,7 +15706,7 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
       <div className="flex w-full items-center gap-4 px-4 py-3 sm:px-5 lg:px-6">
         <Link href="/" className="shrink-0 text-base font-semibold text-gray-900">
-          MD Computers
+          Computer Store
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -16233,7 +16233,7 @@ export default memo(function StorefrontFooter() {
                                 <div className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-white text-slate-950">
                                     <Cpu className="size-5" />
                                 </div>
-                                <p className="text-xl font-semibold tracking-[-0.03em]">MD Computers</p>
+                                <p className="text-xl font-semibold tracking-[-0.03em]">Computer Store</p>
                                 <p className="mt-3 text-sm leading-7 text-white/62">
                                     Refined storefront design for serious hardware buyers and a clearer admin experience for the team behind it.
                                 </p>
@@ -16289,7 +16289,7 @@ export default memo(function StorefrontFooter() {
                                 <Wrench className="size-4" />
                                 <span>Designed & built by Atharv Shelke</span>
                             </div>
-                            <p>© {CURRENT_YEAR} MD Computers. All rights reserved.</p>
+                            <p>© {CURRENT_YEAR} Computer Store. All rights reserved.</p>
                         </div>
                     </div>
                 </div>
@@ -16353,7 +16353,7 @@ export default function StorefrontNavbar() {
                         </div>
 
                         <span className="font-semibold text-white text-xs sm:text-lg tracking-tight">
-                            Nexus Hardware
+                            Computer Store
                         </span>
                     </Link>
 

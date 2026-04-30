@@ -31,9 +31,9 @@ export async function generateMetadata({
   }
 
   const imageUrl = product.media[0]?.url ?? "";
-  const title = product.metaTitle || `${product.name} | MD Computers`;
+  const title = product.metaTitle || `${product.name} | Computer Store`;
   const description =
-    product.metaDescription || product.description || `Buy ${product.name} from MD Computers.`;
+    product.metaDescription || product.description || `Buy ${product.name} from Computer Store.`;
 
   return {
     title,

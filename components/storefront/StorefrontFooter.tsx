@@ -65,7 +65,7 @@ export default memo(function StorefrontFooter() {
                                 <div className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-white text-slate-950">
                                     <Cpu className="size-5" />
                                 </div>
-                                <p className="text-xl font-semibold tracking-[-0.03em]">MD Computers</p>
+                                <p className="text-xl font-semibold tracking-[-0.03em]">Computer Store</p>
                                 <p className="mt-3 text-sm leading-7 text-white/62">
                                     Refined storefront design for serious hardware buyers and a clearer admin experience for the team behind it.
                                 </p>
@@ -121,7 +121,7 @@ export default memo(function StorefrontFooter() {
                                 <Wrench className="size-4" />
                                 <span>Designed & built by Atharv Shelke</span>
                             </div>
-                            <p>© {CURRENT_YEAR} MD Computers. All rights reserved.</p>
+                            <p>© {CURRENT_YEAR} Computer Store. All rights reserved.</p>
                         </div>
                     </div>
                 </div>

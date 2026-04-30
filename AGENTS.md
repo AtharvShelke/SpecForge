@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-MD Computers is a Next.js 16 e-commerce platform for PC components with a custom PC builder, compatibility checking, inventory management, and billing/invoicing system.
+Computer Store is a Next.js 16 e-commerce platform for PC components with a custom PC builder, compatibility checking, inventory management, and billing/invoicing system.
 
 ## Commands
 

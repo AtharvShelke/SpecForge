@@ -1,8 +1,8 @@
-# MD Computers Architecture
+# Computer Store Architecture
 
 ## Overview
 
-MD Computers is a single Next.js 16 application that combines:
+Computer Store is a single Next.js 16 application that combines:
 
 - a customer storefront
 - an authenticated admin dashboard

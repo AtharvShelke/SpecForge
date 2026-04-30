@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
 import { useBuild } from '@/context/BuildContext';
 import {
@@ -23,8 +23,14 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import { fetchCatalogProducts } from '@/lib/catalogFrontend';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useProductFilters } from '@/hooks/useProductFilters';
+import { useCatalogListing } from '@/hooks/useCatalogListing';
+import CatalogFiltersSidebar from '@/app/(app)/products/components/CatalogFiltersSidebar';
+import CatalogEmptyState from '@/components/storefront/catalog/CatalogEmptyState';
+import CatalogLoadingGrid from '@/components/storefront/catalog/CatalogLoadingGrid';
+import CatalogPagination from '@/components/storefront/catalog/CatalogPagination';
+import CatalogTopBar from '@/app/(app)/products/components/CatalogCategoryTabs';
 
 type BuildIssue = {
     level: CompatibilityLevel;
@@ -199,6 +205,9 @@ function estimateWattage(cart: CartItem[]): number {
     return estimatePowerStats(cart).wattage;
 }
 
+// Legacy builder-specific filters (kept for internal compatibility helpers).
+// The UI now uses the shared dynamic catalog filters, but these are still referenced
+// by some internal utilities/components in this module.
 type BuilderFilterState = {
     brands: string[];
     sockets: string[];
@@ -444,25 +453,6 @@ const AnimatedPrice: React.FC<{ value: number }> = memo(({ value }) => {
     return <>₹{display.toLocaleString('en-IN')}</>;
 });
 AnimatedPrice.displayName = 'AnimatedPrice';
-
-/* ─────────────────────────────── SkeletonCard ───────────────────────────── */
-// Pure static component — no props, no re-render risk
-const SkeletonCard = memo(() => (
-    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-        <div className="aspect-[4/3] pcb-skeleton" />
-        <div className="p-3 space-y-2">
-            <div className="h-2 pcb-skeleton rounded-full w-1/4" />
-            <div className="h-3 pcb-skeleton rounded-full w-full" />
-            <div className="h-3 pcb-skeleton rounded-full w-3/4" />
-            <div className="h-2 pcb-skeleton rounded-full w-1/2" />
-            <div className="pt-1 flex justify-between items-center gap-2">
-                <div className="h-4 pcb-skeleton rounded-full w-1/3" />
-                <div className="h-7 w-16 pcb-skeleton rounded-xl" />
-            </div>
-        </div>
-    </div>
-));
-SkeletonCard.displayName = 'SkeletonCard';
 
 /* ─────────────────────────────── ProductCard ────────────────────────────── */
 // memo prevents re-render when unrelated cart items change
@@ -947,8 +937,6 @@ NavItem.displayName = 'NavItem';
 /* ═══════════════════════════════════════════════════════════════════════════
    SKELETON LIST — stable reference, never re-created
 ═══════════════════════════════════════════════════════════════════════════ */
-const SKELETON_ITEMS = Array.from({ length: 12 }, (_, i) => i);
-
 /* ─────────────────────────────── Filters Sidebar ────────────────────────── */
 type BuilderFiltersSidebarProps = {
     facts: ProductFacts[];
@@ -1394,25 +1382,43 @@ function BuilderFiltersSidebar({
 ═══════════════════════════════════════════════════════════════════════════ */
 export default function PCBuilderPage() {
     const router = useRouter();
-    const { cart, addToCart, removeFromCart, setCartOpen } = useShop();
+    const searchParams = useSearchParams();
+    const { cart, addToCart, removeFromCart, setCartOpen, categories } = useShop();
     const { isBuildMode, toggleBuildMode, saveCurrentBuild } = useBuild();
     const { toast } = useToast();
 
     const [activeStep, setActiveStep] = useState<string>(CORE_CATEGORIES[0]);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debounced, setDebounced] = useState('');
     const [showIncompat, setShowIncompat] = useState(false);
-    const [sortOption, setSortOption] = useState('popularity');
-    const [builderFilters, setBuilderFilters] = useState<BuilderFilterState>(
-        DEFAULT_FILTERS,
-    );
-    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
     const [isBuildSummaryOpen, setIsBuildSummaryOpen] = useState(false);
     const [saveOpen, setSaveOpen] = useState(false);
     const [viewerRole, setViewerRole] = useState<Role | null>(null);
-    const prevParams = useRef('');
+    const [page, setPage] = useState(1);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+
+    const {
+        activeFilterCount,
+        clearFilters,
+        limit,
+        maxPrice,
+        minPrice,
+        query,
+        selectedFilters,
+        setCategory,
+        setPriceRange,
+        setSearchQuery,
+        setSort,
+        sort,
+        toggleFilterValue,
+    } = useProductFilters();
+
+    const searchKey = searchParams.toString();
+    const [searchInput, setSearchInput] = useState(query);
+
+    const { products, filters, total, isLoading, totalPages } = useCatalogListing({
+        searchKey,
+        limit,
+        page,
+    });
 
     // Only run once on mount — stable empty dep array
     useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1432,11 +1438,13 @@ export default function PCBuilderPage() {
         };
     }, []);
 
-    // Debounce search
     useEffect(() => {
-        const t = setTimeout(() => setDebounced(searchTerm), 300);
-        return () => clearTimeout(t);
-    }, [searchTerm]);
+        setSearchInput(query);
+    }, [query]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchKey]);
 
     // Cache CPU/mobo specs from cart to avoid repeated specsToFlat calls inside fetch effect
     const cartSpecsCache = useMemo(() => {
@@ -1451,46 +1459,13 @@ export default function PCBuilderPage() {
     }, [cart]);
 
     useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            setIsLoading(true);
-            try {
-                const p = new URLSearchParams();
-                p.set('category', activeStep);
-                p.set('limit', '48');
-                p.set('page', '1');
-                if (debounced) p.set('q', debounced);
-                if (sortOption !== 'popularity') p.set('sort', sortOption);
-
-                if (!showIncompat) {
-                    const { cpuSocket, moboSocket, moboRamType, cpuRamType } = cartSpecsCache;
-                    if (sameCategory(activeStep, CATEGORY_NAMES.MOTHERBOARD) && cpuSocket) p.set('f_specs.socket', cpuSocket);
-                    if (sameCategory(activeStep, CATEGORY_NAMES.PROCESSOR) && moboSocket) p.set('f_specs.socket', moboSocket);
-                    if (sameCategory(activeStep, CATEGORY_NAMES.RAM)) {
-                        const type = moboRamType || cpuRamType;
-                        if (type) p.set('f_specs.memoryType', type);
-                    }
-                }
-
-                p.sort();
-                const qs = p.toString();
-                if (prevParams.current === qs && products.length > 0) { setIsLoading(false); return; }
-                prevParams.current = qs;
-
-                const data = await fetchCatalogProducts(qs);
-                if (cancelled) return;
-                if (!cancelled) setProducts(data.products);
-            } catch (e) {
-                if (!cancelled) console.error(e);
-            } finally {
-                if (!cancelled) setIsLoading(false);
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [activeStep, debounced, sortOption, cartSpecsCache, showIncompat, products.length]);
+        // Keep the builder step in sync with the shared catalog query params.
+        setCategory(activeStep);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeStep]);
 
     const handleAdd = useCallback((product: Product) => {
-        addToCart(product);
+        addToCart(product, undefined, true);
         // Defer step advance to avoid blocking the current render
         setTimeout(() => {
             setActiveStep(prev => {
@@ -1506,12 +1481,12 @@ export default function PCBuilderPage() {
 
     const handleStepClick = useCallback((cat: string) => {
         setActiveStep(cat);
-        setSearchTerm('');
-        prevParams.current = '';
-        setBuilderFilters(DEFAULT_FILTERS);
-        setIsFiltersOpen(false);
+        setSearchInput('');
+        setSearchQuery('');
+        setPage(1);
+        setIsMobileFiltersOpen(false);
         setIsBuildSummaryOpen(false);
-    }, [setBuilderFilters, setIsFiltersOpen, setIsBuildSummaryOpen]);
+    }, [setIsBuildSummaryOpen, setIsMobileFiltersOpen, setPage, setSearchQuery, setSearchInput]);
 
     // Build compat map once per cart change, keyed by product id — avoids calling validateBuild per card
     const cartCompatMap = useMemo<Map<string, { level: CompatibilityLevel; message: string }>>(() => {
@@ -1573,18 +1548,10 @@ export default function PCBuilderPage() {
     );
     const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
 
-    const productFacts = useMemo(() => products.map(deriveProductFacts), [products]);
-
-    const priceBounds = useMemo(() => {
-        const prices = productFacts.map((f) => f.price).filter((p) => p > 0);
-        if (prices.length === 0) return { min: 0, max: 0 };
-        return { min: Math.min(...prices), max: Math.max(...prices) };
-    }, [productFacts]);
-
     const visibleProducts = useMemo(() => {
-        if (productFacts.length === 0) return [];
-        return products.filter((_, idx) => matchesBuilderFilters(productFacts[idx], builderFilters));
-    }, [products, productFacts, builderFilters]);
+        if (showIncompat) return products;
+        return products.filter((product) => checkCompat(product).level === CompatibilityLevel.COMPATIBLE);
+    }, [checkCompat, products, showIncompat]);
 
     const compatStatus = useMemo(() => {
         if (compatReport.status === CompatibilityLevel.INCOMPATIBLE) {
@@ -1613,234 +1580,89 @@ export default function PCBuilderPage() {
         >
             <style>{PAGE_STYLES}</style>
 
-            {/* ── STICKY HEADER ──────────────────────────────────────────── */}
-            <header className="flex items-center justify-between whitespace-nowrap border-b border-zinc-100 bg-white px-4 sm:px-5 lg:px-6 h-14 z-50 flex-shrink-0 gap-3">
-                {/* Left */}
-                <div className="flex items-center gap-3 sm:gap-5 min-w-0">
-                    <button
-                        type="button"
-                        onClick={() => router.push('/build-guides')}
-                        className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-900 transition-colors group flex-shrink-0"
-                    >
-                        <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
-                        <span className="hidden sm:inline text-sm">Builds</span>
-                    </button>
-
-                    <div className="h-5 w-px bg-zinc-100 hidden sm:block flex-shrink-0" />
-
-                    <div className="flex items-center gap-2 min-w-0">
-                        <Hammer size={16} className="text-indigo-500 flex-shrink-0" strokeWidth={2} />
-                        <h1 className="text-sm sm:text-base font-bold text-zinc-900 truncate">PC Builder</h1>
-                    </div>
-
-                    <div className={`hidden md:flex items-center gap-1.5 text-xs font-semibold ${compatStatus.color} flex-shrink-0`}>
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${compatStatus.dot}`} />
-                        {compatStatus.text}
-                    </div>
-                </div>
-
-                {/* Right */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                    <div className="text-right hidden sm:block">
-                        <p className="text-[9px] text-zinc-400 uppercase font-bold tracking-widest leading-none mb-0.5">Total</p>
-                        <p className="text-base font-bold text-zinc-900 leading-none tabular-nums">
-                            <AnimatedPrice value={totalPrice} />
-                        </p>
-                    </div>
-                    {isAdmin && (
-                        <>
-                            <div className="h-5 w-px bg-zinc-100 hidden sm:block" />
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    onClick={handleOpenSave}
-                                    className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                                    title="Save"
-                                >
-                                    <Save size={14} />
-                                </button>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </header>
+            {/* ── CATALOG TOP BAR ──────────────────────────────────────────── */}
+            <CatalogTopBar
+                categories={categories}
+                selectedCategory={activeStep ? (CATEGORY_LABELS[activeStep] || activeStep) : null}
+                selectedCategoryLabel={activeStep ? (CATEGORY_LABELS[activeStep] || activeStep) : 'All Components'}
+                total={total}
+                searchInput={searchInput}
+                sort={sort}
+                activeFilterCount={activeFilterCount}
+                onSearchChange={(value) => {
+                    setSearchInput(value);
+                    setSearchQuery(value);
+                }}
+                onSearchClear={() => {
+                    setSearchInput('');
+                    setSearchQuery('');
+                }}
+                onSortChange={setSort}
+                onOpenMobileFilters={() => setIsMobileFiltersOpen(true)}
+                onCategoryChange={(val) => {
+                    if (val) {
+                        const coreCat = CORE_CATEGORIES.find(c => CATEGORY_LABELS[c] === val) || val;
+                        handleStepClick(coreCat);
+                    } else {
+                        handleStepClick('');
+                    }
+                }}
+            />
 
             {/* ── 3-COL BODY ─────────────────────────────────────────────── */}
             <div className="pcb-layout flex-1 min-h-0">
 
                 {/* ── LEFT FILTERS (desktop only) ────────────────────────── */}
-                <aside className="hidden xl:flex flex-col h-full w-[260px] sticky top-0 border-r border-zinc-100 bg-white overflow-hidden">
-                    <BuilderFiltersSidebar
-                        facts={productFacts}
-                        filters={builderFilters}
-                        onChangeFilters={setBuilderFilters}
-                        onClearAll={() => setBuilderFilters(DEFAULT_FILTERS)}
-                        priceBounds={priceBounds}
-                        resultCount={visibleProducts.length}
-                    />
+                <aside className="hidden xl:block">
+                    <div className="sticky top-20">
+                        <CatalogFiltersSidebar
+                            filters={filters}
+                            selectedFilters={selectedFilters}
+                            minPrice={minPrice}
+                            maxPrice={maxPrice}
+                            activeCount={activeFilterCount}
+                            total={total}
+                            onPriceChange={setPriceRange}
+                            onFilterToggle={toggleFilterValue}
+                            onClear={clearFilters}
+                        />
+                    </div>
                 </aside>
 
                 {/* ── MAIN CONTENT ─────────────────────────────────────────── */}
                 <main className="flex flex-col overflow-hidden bg-stone-50 min-w-0">
 
-                    {/* Mobile step strip */}
-                    <div className="xl:hidden border-b border-zinc-100 bg-white flex-shrink-0">
-                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide px-3 sm:px-4 py-2.5">
-                            {CORE_CATEGORIES.map(cat => {
-                                const CatIcon = CAT_ICONS[cat] || Box;
-                                const isActive = sameCategory(activeStep, cat);
-                                const isDone = cart.some(i => sameCategory(i.category, cat));
-                                return (
-                                    <button
-                                        key={cat}
-                                        type="button"
-                                        onClick={navClickHandlers[cat]}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full whitespace-nowrap flex-shrink-0 transition-all ${
-                                            isActive
-                                                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
-                                                : isDone
-                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                    : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 border border-zinc-100'
-                                        }`}
-                                    >
-                                        {isDone && !isActive
-                                            ? <Check size={10} strokeWidth={2.5} />
-                                            : <CatIcon size={10} />
-                                        }
-                                        {CAT_SHORT[cat] || CATEGORY_LABELS[cat]}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Sub-header: category title + controls */}
-                    <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-white border-b border-zinc-100 z-20">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={activeStep}
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 4 }}
-                                transition={MOTION_FAST}
-                            >
-                                <div className="flex items-start sm:items-center justify-between gap-3 mb-2.5 flex-wrap sm:flex-nowrap">
-                                    <div className="flex items-center gap-2">
-                                        <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none xl:hidden">
-                                            {CATEGORY_LABELS[activeStep] || activeStep}
-                                        </h2>
-                                        <select
-                                            value={activeStep}
-                                            onChange={e => handleStepClick(e.target.value)}
-                                            className="hidden xl:flex h-9 px-2 bg-white border border-zinc-200 rounded-xl text-xs font-bold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
-                                        >
-                                            {CORE_CATEGORIES.map(cat => (
-                                                <option key={cat} value={cat}>
-                                                    {CATEGORY_LABELS[cat] || cat}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {cart.some(i => sameCategory(i.category, activeStep)) && (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex-shrink-0">
-                                                <Check size={9} strokeWidth={2.5} /> Selected
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-zinc-400 hidden sm:block text-right leading-snug max-w-xs">
-                                        {CAT_DESCRIPTIONS[activeStep] || `Select your ${CATEGORY_LABELS[activeStep]}.`}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <div className="relative group flex-1 min-w-0 sm:flex-none sm:w-52">
-                                        <Search
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 group-focus-within:text-indigo-500 transition-colors"
-                                            strokeWidth={2}
-                                        />
-                                        <input
-                                            type="text"
-                                            value={searchTerm}
-                                            onChange={e => setSearchTerm(e.target.value)}
-                                            placeholder={`Search ${CATEGORY_LABELS[activeStep]}…`}
-                                            className="w-full h-8 pl-9 pr-8 bg-zinc-50 border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
-                                        />
-                                        {searchTerm && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setSearchTerm('')}
-                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
-                                            >
-                                                <X size={13} />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsFiltersOpen(true)}
-                                        className="xl:hidden flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 flex-shrink-0"
-                                    >
-                                        <SlidersHorizontal size={12} className="text-zinc-400" />
-                                        Filters
-                                    </button>
-
-                                    <div className="flex items-center bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 h-8 gap-1.5 flex-shrink-0">
-                                        <SlidersHorizontal size={12} className="text-zinc-400 flex-shrink-0" />
-                                        <select
-                                            value={sortOption}
-                                            onChange={e => setSortOption(e.target.value)}
-                                            className="bg-transparent text-xs text-zinc-700 focus:outline-none cursor-pointer appearance-none"
-                                        >
-                                            <option value="popularity">Popular</option>
-                                            <option value="price-asc">Price ↑</option>
-                                            <option value="price-desc">Price ↓</option>
-                                            <option value="newest">Newest</option>
-                                        </select>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleIncompat}
-                                        className={`flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-xl border transition-all flex-shrink-0 ${
-                                            showIncompat
-                                                ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                                                : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100'
-                                        }`}
-                                    >
-                                        {showIncompat ? <Eye size={12} /> : <EyeOff size={12} />}
-                                        <span className="hidden sm:inline">
-                                            {showIncompat ? 'All parts' : 'Compatible only'}
-                                        </span>
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
+                    {/* Sub-header: Description and Compat Toggle */}
+                    <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-white border-b border-zinc-100 z-20 flex items-center justify-between gap-4">
+                        <p className="text-xs text-zinc-500 leading-snug">
+                            {CAT_DESCRIPTIONS[activeStep] || `Select your ${CATEGORY_LABELS[activeStep]}.`}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={handleToggleIncompat}
+                            className={`flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-xl border transition-all flex-shrink-0 ${
+                                showIncompat
+                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                                    : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100'
+                            }`}
+                        >
+                            {showIncompat ? <Eye size={12} /> : <EyeOff size={12} />}
+                            <span className="hidden sm:inline">
+                                {showIncompat ? 'All parts' : 'Compatible only'}
+                            </span>
+                        </button>
                     </div>
 
                     {/* ── PRODUCT GRID ── */}
                     <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 pb-20 xl:pb-4">
                         {isLoading ? (
-                            <div className="product-grid">
-                                {SKELETON_ITEMS.map(i => <SkeletonCard key={i} />)}
-                            </div>
+                            <CatalogLoadingGrid />
                         ) : visibleProducts.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-24 text-center">
-                                <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center mb-4">
-                                    <Box size={22} className="text-zinc-300" />
-                                </div>
-                                <p className="text-sm font-bold text-zinc-700 mb-1">No products found</p>
-                                <p className="text-xs text-zinc-400 mb-5">
-                                    Try adjusting your search, toggles, or filters
-                                </p>
-                                {!showIncompat && (
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleIncompat}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-zinc-200 rounded-xl text-zinc-600 hover:bg-zinc-50 transition-colors"
-                                    >
-                                        <Eye size={12} /> Show all parts
-                                    </button>
-                                )}
-                            </div>
+                            <CatalogEmptyState
+                                title="No products found"
+                                description="Try adjusting your filters or search term"
+                                onClear={clearFilters}
+                            />
                         ) : (
                             // Removed motion.div layout + AnimatePresence from grid — was causing
                             // full-grid layout recalculation on every product list update.
@@ -1864,6 +1686,14 @@ export default function PCBuilderPage() {
                                 })}
                             </div>
                         )}
+
+                        <CatalogPagination
+                            page={page}
+                            totalPages={totalPages}
+                            isLoading={isLoading}
+                            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        />
                     </div>
 
                     {/* Desktop status bar */}
@@ -1902,19 +1732,33 @@ export default function PCBuilderPage() {
             </div>
 
             {/* ── Mobile filters drawer ─────────────────────────────────── */}
-            <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+            <Sheet open={isMobileFiltersOpen} onOpenChange={setIsMobileFiltersOpen}>
                 <SheetContent
                     side="left"
                     className="p-0 w-full max-w-[320px] overflow-hidden"
                 >
-                    <div className="h-full">
-                        <BuilderFiltersSidebar
-                            facts={productFacts}
-                            filters={builderFilters}
-                            onChangeFilters={setBuilderFilters}
-                            onClearAll={() => setBuilderFilters(DEFAULT_FILTERS)}
-                            priceBounds={priceBounds}
-                            resultCount={visibleProducts.length}
+                    <SheetHeader className="border-b border-gray-100 px-5 py-4">
+                        <SheetTitle className="flex items-center gap-2">
+                            <SlidersHorizontal className="size-4" />
+                            Filters
+                            {activeFilterCount > 0 && (
+                                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </SheetTitle>
+                    </SheetHeader>
+                    <div className="h-[calc(100dvh-65px)]">
+                        <CatalogFiltersSidebar
+                            filters={filters}
+                            selectedFilters={selectedFilters}
+                            minPrice={minPrice}
+                            maxPrice={maxPrice}
+                            activeCount={activeFilterCount}
+                            total={total}
+                            onPriceChange={setPriceRange}
+                            onFilterToggle={toggleFilterValue}
+                            onClear={clearFilters}
                         />
                     </div>
                 </SheetContent>

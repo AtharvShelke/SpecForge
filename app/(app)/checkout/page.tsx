@@ -280,7 +280,7 @@ export default function CheckoutPage() {
         amount: createPayload.amount,
         currency: createPayload.currency,
         order_id: createPayload.razorpayOrderId,
-        name: "MD Computers",
+        name: "Computer Store",
         description: `Order ${createPayload.orderId}`,
         prefill: {
           name: formData.customerName,

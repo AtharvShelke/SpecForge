@@ -117,8 +117,8 @@ import { cn } from '@/lib/utils';
 
 const BILLING_PROFILE: BillingProfile = {
   id: 'prof_default',
-  companyName: 'Nexus Hardware Store',
-  legalName: 'Nexus Hardware Private Limited',
+  companyName: 'Computer Store Store',
+  legalName: 'Computer Store Private Limited',
   email: 'billing@nexushardware.com',
   phone: '+91 80000 12345',
   addressLine1: '123, Tech Park',

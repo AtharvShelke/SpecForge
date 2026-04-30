@@ -10,23 +10,23 @@ import { ShopProvider } from "@/context/ShopContext";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | MD Computers",
-    default: "MD Computers - Best PC Components & Custom Builds",
+    template: "%s | Computer Store",
+    default: "Computer Store - Best PC Components & Custom Builds",
   },
   description:
-    "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with MD Computers.",
+    "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with Computer Store.",
   openGraph: {
     type: "website",
     locale: "en_IN",
     url: "https://mdcomputers.example.com",
-    title: "MD Computers - Best PC Components",
+    title: "Computer Store - Best PC Components",
     description:
-      "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with MD Computers.",
-    siteName: "MD Computers",
+      "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with Computer Store.",
+    siteName: "Computer Store",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MD Computers",
+    title: "Computer Store",
     description: "Shop for the best PC components at the best prices.",
   },
 };

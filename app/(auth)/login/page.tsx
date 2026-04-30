@@ -64,7 +64,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Cpu className="w-6 h-6 text-zinc-950" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">Nexus Hardware</span>
+            <span className="text-2xl font-bold tracking-tight">Computer Store</span>
           </Link>
         </div>
 
@@ -78,7 +78,7 @@ export default function LoginPage() {
             </h1>
           </div>
           <p className="text-lg text-zinc-400 leading-relaxed">
-            The professional command center for monitoring and scaling Nexus hardware clusters with millisecond latency.
+            The professional command center for monitoring and scaling Computer Store clusters with millisecond latency.
           </p>
         </div>
 

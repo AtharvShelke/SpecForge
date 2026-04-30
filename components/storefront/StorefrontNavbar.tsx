@@ -49,7 +49,7 @@ export default function StorefrontNavbar() {
                         </div>
 
                         <span className="font-semibold text-white text-xs sm:text-lg tracking-tight">
-                            Nexus Hardware
+                            Computer Store
                         </span>
                     </Link>
 

@@ -205,7 +205,7 @@ export function CheckoutForm({ dbOrderId, totalAmount }) {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Use NEXT_PUBLIC variable containing your key ID
       amount: orderData.amount,
       currency: orderData.currency,
-      name: "Nexus Hardware",
+      name: "Computer Store",
       description: "Order Payment",
       order_id: orderData.orderId,
       handler: async function (response: any) {

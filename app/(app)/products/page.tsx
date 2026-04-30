@@ -13,10 +13,10 @@ export async function generateMetadata({
   const params = await searchParams;
   const q = Array.isArray(params.q) ? params.q[0] : params.q;
 
-  const title = q ? `Search results for "${q}" | MD Computers` : "Products | MD Computers";
+  const title = q ? `Search results for "${q}" | Computer Store` : "Products | Computer Store";
   const description = q
-    ? `Browse products matching "${q}" from MD Computers.`
-    : "Browse PC components and accessories from MD Computers.";
+    ? `Browse products matching "${q}" from Computer Store.`
+    : "Browse PC components and accessories from Computer Store.";
 
   return {
     title,

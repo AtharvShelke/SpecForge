@@ -25,7 +25,7 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
       <div className="flex w-full items-center gap-4 px-4 py-3 sm:px-5 lg:px-6">
         <Link href="/" className="shrink-0 text-base font-semibold text-gray-900">
-          MD Computers
+          Computer Store
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

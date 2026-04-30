@@ -2786,7 +2786,7 @@ export default function CheckoutPage() {
         amount: createPayload.amount,
         currency: createPayload.currency,
         order_id: createPayload.razorpayOrderId,
-        name: "MD Computers",
+        name: "Computer Store",
         description: `Order ${createPayload.orderId}`,
         prefill: {
           name: formData.customerName,
@@ -4891,10 +4891,10 @@ export async function generateMetadata({
   const params = await searchParams;
   const q = Array.isArray(params.q) ? params.q[0] : params.q;
 
-  const title = q ? `Search results for "${q}" | MD Computers` : "Products | MD Computers";
+  const title = q ? `Search results for "${q}" | Computer Store` : "Products | Computer Store";
   const description = q
-    ? `Browse products matching "${q}" from MD Computers.`
-    : "Browse PC components and accessories from MD Computers.";
+    ? `Browse products matching "${q}" from Computer Store.`
+    : "Browse PC components and accessories from Computer Store.";
 
   return {
     title,
@@ -5310,9 +5310,9 @@ export async function generateMetadata({
   }
 
   const imageUrl = product.media[0]?.url ?? "";
-  const title = product.metaTitle || `${product.name} | MD Computers`;
+  const title = product.metaTitle || `${product.name} | Computer Store`;
   const description =
-    product.metaDescription || product.description || `Buy ${product.name} from MD Computers.`;
+    product.metaDescription || product.description || `Buy ${product.name} from Computer Store.`;
 
   return {
     title,
@@ -6204,7 +6204,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Cpu className="w-6 h-6 text-zinc-950" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">Nexus Hardware</span>
+            <span className="text-2xl font-bold tracking-tight">Computer Store</span>
           </Link>
         </div>
 
@@ -6218,7 +6218,7 @@ export default function LoginPage() {
             </h1>
           </div>
           <p className="text-lg text-zinc-400 leading-relaxed">
-            The professional command center for monitoring and scaling Nexus hardware clusters with millisecond latency.
+            The professional command center for monitoring and scaling Computer Store clusters with millisecond latency.
           </p>
         </div>
 
@@ -7243,23 +7243,23 @@ import { ShopProvider } from "@/context/ShopContext";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | MD Computers",
-    default: "MD Computers - Best PC Components & Custom Builds",
+    template: "%s | Computer Store",
+    default: "Computer Store - Best PC Components & Custom Builds",
   },
   description:
-    "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with MD Computers.",
+    "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with Computer Store.",
   openGraph: {
     type: "website",
     locale: "en_IN",
     url: "https://mdcomputers.example.com",
-    title: "MD Computers - Best PC Components",
+    title: "Computer Store - Best PC Components",
     description:
-      "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with MD Computers.",
-    siteName: "MD Computers",
+      "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with Computer Store.",
+    siteName: "Computer Store",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MD Computers",
+    title: "Computer Store",
     description: "Shop for the best PC components at the best prices.",
   },
 };

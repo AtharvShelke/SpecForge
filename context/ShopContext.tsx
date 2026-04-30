@@ -23,7 +23,7 @@ interface ShopContextType {
   cart: any[];
   isCartOpen: boolean;
   setCartOpen: (open: boolean) => void;
-  addToCart: (product: Product, selectedVariant?: ProductVariant) => void;
+  addToCart: (product: Product, selectedVariant?: ProductVariant, preventOpenDrawer?: boolean) => void;
   loadCart: (items: any[]) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, qty: number) => void;
@@ -140,7 +140,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   const refreshFilterConfigs = useCallback(async () => {}, []);
 
   // Cart Actions
-  const addToCart = useCallback((product: Product, selectedVariant?: ProductVariant) => {
+  const addToCart = useCallback((product: Product, selectedVariant?: ProductVariant, preventOpenDrawer?: boolean) => {
     setCart((prev) => {
       const variantToUse = selectedVariant ?? product.variants?.[0];
       const existing = prev.find((item) => item.id === product.id);
@@ -157,7 +157,9 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
         selectedVariant: variantToUse 
       }];
     });
-    setCartOpen(true);
+    if (!preventOpenDrawer) {
+      setCartOpen(true);
+    }
   }, []);
 
   const removeFromCart = useCallback((id: string) => {
