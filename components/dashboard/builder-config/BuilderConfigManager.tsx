@@ -1,15 +1,13 @@
 'use client';
 
 import React, { useState, memo } from 'react';
-import { Settings, Layers, Sparkles, Filter } from 'lucide-react';
+import { Settings, Sparkles, Filter } from 'lucide-react';
 import BuilderSettingsTab from './BuilderSettingsTab';
-import BuilderCategoriesTab from './BuilderCategoriesTab';
 import BuilderRulesTab from './BuilderRulesTab';
 import BuilderFiltersTab from './BuilderFiltersTab';
 
 const TABS = [
   { key: 'settings', label: 'Builder Settings', icon: Settings },
-  { key: 'categories', label: 'Categories', icon: Layers },
   { key: 'rules', label: 'Rules Engine', icon: Sparkles },
   { key: 'filters', label: 'Filter Manager', icon: Filter },
 ] as const;
@@ -49,7 +47,6 @@ const BuilderConfigManager = memo(function BuilderConfigManager() {
 
       <div className="min-h-0 flex-1">
         {activeTab === 'settings' && <BuilderSettingsTab />}
-        {activeTab === 'categories' && <BuilderCategoriesTab />}
         {activeTab === 'rules' && <BuilderRulesTab />}
         {activeTab === 'filters' && <BuilderFiltersTab />}
       </div>

@@ -29,9 +29,10 @@ const prismaClientSingleton = () => {
     // ── SSL ───────────────────────────────────────────────────────
     // rejectUnauthorized: false accepts self-signed certs (e.g. Supabase, RDS).
     // Set to true + supply a CA cert in production if your provider supports it.
-    ssl: process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : false,
+    ssl:
+      process.env.NODE_ENV === "production"
+        ? { rejectUnauthorized: false }
+        : false,
   });
 
   // Surface pool-level errors so they don't become silent failures
@@ -46,26 +47,13 @@ const prismaClientSingleton = () => {
     log:
       process.env.NODE_ENV === "development"
         ? [
-            { emit: "event", level: "query" },   // subscribe below for timing
+            { emit: "event", level: "query" }, // subscribe below for timing
             { emit: "stdout", level: "warn" },
             { emit: "stdout", level: "error" },
           ]
-        : [{ emit: "stdout", level: "error" }],  // only errors in production
+        : [{ emit: "stdout", level: "error" }], // only errors in production
   });
 };
-
-// ── Dev-only query timing (zero overhead in production) ──────────────
-// Logs slow queries so you can spot missing indexes early.
-function attachDevLogging(client: PrismaClient) {
-  // @ts-expect-error — $on is typed on the base client; events are valid at runtime
-  client.$on("query", (e: { query: string; duration: number; params?: string }) => {
-    if (e.duration > 100) {
-      console.warn(
-        `[perf:db] slow query (${e.duration}ms) threshold=100ms: ${e.query}`,
-      );
-    }
-  });
-}
 
 // ── Global singleton ─────────────────────────────────────────────────
 declare global {
@@ -77,7 +65,6 @@ const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.prismaGlobal = prisma;
-  attachDevLogging(prisma);
 }
 
 export { prisma };

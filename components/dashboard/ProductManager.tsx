@@ -45,6 +45,7 @@ import {
   RefreshCw,
   ChevronDown,
   SlidersHorizontal,
+  Loader2,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ImageUploader from "../uploadthing/ImageUploader";
@@ -119,13 +120,15 @@ function getVariantStock(variant: unknown): number {
       ? (variant as { inventoryItems?: unknown }).inventoryItems
       : undefined;
 
-  const items: Array<{ quantityOnHand?: number | null; quantityReserved?: number | null }> =
-    Array.isArray(rawInventoryItems)
-      ? (rawInventoryItems as Array<{
-          quantityOnHand?: number | null;
-          quantityReserved?: number | null;
-        }>)
-      : [];
+  const items: Array<{
+    quantityOnHand?: number | null;
+    quantityReserved?: number | null;
+  }> = Array.isArray(rawInventoryItems)
+    ? (rawInventoryItems as Array<{
+        quantityOnHand?: number | null;
+        quantityReserved?: number | null;
+      }>)
+    : [];
   return items.reduce((sum: number, item) => {
     const onHand = Number(item?.quantityOnHand ?? 0);
     const reserved = Number(item?.quantityReserved ?? 0);
@@ -470,13 +473,22 @@ const EMPTY_FORM: ProductFormState = {
 };
 const ProductMediaUploader = React.memo(function ProductMediaUploader({
   onUploadComplete,
+  minimal = false,
+  onUploadStart,
+  onProgress,
 }: {
   onUploadComplete: (url: string) => void;
+  minimal?: boolean;
+  onUploadStart?: () => void;
+  onProgress?: (p: number) => void;
 }) {
   return (
     <ImageUploader
       onUploadComplete={onUploadComplete}
       endpoint="imageUploader"
+      minimal={minimal}
+      onUploadStart={onUploadStart}
+      onProgress={onProgress}
     />
   );
 });
@@ -512,6 +524,8 @@ const ProductManager = () => {
   const [newSpecKey, setNewSpecKey] = useState("");
   const [newSpecValue, setNewSpecValue] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -698,11 +712,7 @@ const ProductManager = () => {
           specs: apiSpecs,
           costPrice: newProductCost,
         } as Product;
-        await addProduct(
-          newProduct,
-          parsedStock,
-          newProductCost,
-        );
+        await addProduct(newProduct, parsedStock, newProductCost);
       }
       setRefreshTrigger((p) => !p);
       setIsEditing(false);
@@ -873,8 +883,7 @@ const ProductManager = () => {
       totalVal += price;
       if (price > 0) prices.push(price);
 
-      const stock =
-        getVariantStock(firstVar);
+      const stock = getVariantStock(firstVar);
       if (!firstVar || stock <= 0) outOfStock++;
 
       const cat = p.category || "Other";
@@ -1207,24 +1216,26 @@ const ProductManager = () => {
               icon={<ImageIcon size={14} />}
               title="Product Media"
             >
-              <div className="p-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
+              <div className="p-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
                   {currentProduct.images.map((img, index) => (
                     <div
                       key={index}
                       className={cn(
-                        "relative aspect-square rounded-2xl border-2 overflow-hidden bg-white group transition-all",
+                        "relative aspect-square rounded-2xl border-2 overflow-hidden bg-white group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:z-10",
                         index === 0
-                          ? "border-indigo-200 shadow-md"
-                          : "border-stone-100 shadow-sm",
+                          ? "border-indigo-200 shadow-indigo-100/50"
+                          : "border-stone-100 shadow-sm hover:border-indigo-100",
                       )}
                     >
                       <img
                         src={img}
-                        className="w-full h-full object-contain p-2"
+                        className="w-full h-full object-contain p-2.5 transition-transform duration-500 group-hover:scale-110"
                         alt={`Product view ${index + 1}`}
                         loading="lazy"
                       />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+
                       <button
                         type="button"
                         onClick={() => {
@@ -1236,34 +1247,83 @@ const ProductManager = () => {
                             images: newImages.length > 0 ? newImages : [],
                           }));
                         }}
-                        className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-md border border-rose-100 text-rose-500 rounded-xl shadow-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all active:scale-90"
+                        className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-md border border-rose-100 text-rose-500 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all active:scale-90 hover:bg-rose-500 hover:text-white"
                       >
                         <Trash size={14} />
                       </button>
+
                       {index === 0 && (
-                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-indigo-600 text-[9px] font-black uppercase tracking-widest text-white rounded-lg shadow-sm">
-                          Primary Cover
+                        <div className="absolute bottom-2 left-2 px-2.5 py-1 bg-indigo-600 text-[9px] font-black uppercase tracking-[0.15em] text-white rounded-lg shadow-lg flex items-center gap-1.5 animate-in slide-in-from-left duration-500">
+                          <Star size={10} fill="currentColor" />
+                          Primary
                         </div>
                       )}
                     </div>
                   ))}
                   <div
                     className={cn(
-                      "aspect-square border-2 border-dashed rounded-2xl flex items-center justify-center transition-all",
-                      "border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50 hover:border-indigo-400 active:scale-[0.98]",
-                      "relative overflow-hidden group/uploader",
+                      "aspect-square rounded-2xl border-2 border-dashed transition-all duration-500",
+                      "border-indigo-200/60 bg-indigo-50/20 hover:bg-white hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-100",
+                      "relative overflow-hidden group/uploader flex flex-col items-center justify-center text-center p-4",
+                      isMediaUploading &&
+                        "border-indigo-300 bg-indigo-50/40 cursor-wait",
                     )}
                   >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="p-3 bg-white rounded-full shadow-sm border border-indigo-100 group-hover/uploader:scale-110 transition-transform">
-                        <Plus size={20} className="text-indigo-600" />
+                    {/* Background decoration */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.06),transparent)] opacity-0 group-hover/uploader:opacity-100 transition-opacity duration-700" />
+
+                    {isMediaUploading ? (
+                      <div className="relative z-10 flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-300">
+                        <div className="relative">
+                          <Loader2
+                            size={32}
+                            className="text-indigo-600 animate-spin"
+                          />
+                          <div className="absolute inset-0 blur-lg bg-indigo-500/20 animate-pulse" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">
+                            Uploading
+                          </p>
+                          <p className="text-xs font-mono font-bold text-indigo-500 mt-1">
+                            {uploadProgress}%
+                          </p>
+                        </div>
+                        <div className="w-24 h-1 bg-indigo-100 rounded-full overflow-hidden shadow-inner">
+                          <div
+                            className="h-full bg-indigo-600 transition-all duration-300 shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">
-                        Add Media
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="relative z-10 flex flex-col items-center gap-3">
+                        <div className="relative group-hover/uploader:-translate-y-1 transition-transform duration-300">
+                          <div className="absolute -inset-4 bg-indigo-500/10 rounded-full blur-xl scale-0 group-hover/uploader:scale-100 transition-transform duration-500" />
+                          <div className="p-4 bg-white rounded-2xl shadow-sm border border-indigo-100 group-hover/uploader:border-indigo-200 group-hover/uploader:shadow-md transition-all duration-300">
+                            <Plus size={24} className="text-indigo-600" />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="block text-[11px] font-black text-indigo-600 uppercase tracking-[0.15em]">
+                            Add Media
+                          </span>
+                          <span className="block text-[9px] text-stone-400 font-bold uppercase tracking-widest">
+                            Max 4MB
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     <ProductMediaUploader
-                      onUploadComplete={handleUploadComplete}
+                      minimal
+                      onUploadStart={() => setIsMediaUploading(true)}
+                      onProgress={(p) => setUploadProgress(p)}
+                      onUploadComplete={(url) => {
+                        setIsMediaUploading(false);
+                        setUploadProgress(0);
+                        handleUploadComplete(url);
+                      }}
                     />
                   </div>
                 </div>
@@ -1335,9 +1395,9 @@ const ProductManager = () => {
                 )}
                 <div className="border-t border-stone-100 pt-4">
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-[11px] text-amber-800">
-                    Serial numbers and part numbers are managed only in Inventory.
-                    Create the product here, then add physical units from the
-                    inventory page.
+                    Serial numbers and part numbers are managed only in
+                    Inventory. Create the product here, then add physical units
+                    from the inventory page.
                   </div>
                 </div>
               </div>
@@ -1813,7 +1873,8 @@ const ProductManager = () => {
               –
               <span className="text-stone-600 font-semibold">
                 {Math.min(
-                  currentPage * (currentLimit > 0 ? currentLimit : totalProducts),
+                  currentPage *
+                    (currentLimit > 0 ? currentLimit : totalProducts),
                   totalProducts,
                 )}
               </span>
@@ -1841,7 +1902,9 @@ const ProductManager = () => {
                   1,
                   Math.ceil(
                     totalProducts /
-                      (currentLimit > 0 ? currentLimit : Math.max(totalProducts, 1)),
+                      (currentLimit > 0
+                        ? currentLimit
+                        : Math.max(totalProducts, 1)),
                   ),
                 )}
               </span>
@@ -1850,7 +1913,9 @@ const ProductManager = () => {
                   currentPage >=
                   Math.ceil(
                     totalProducts /
-                      (currentLimit > 0 ? currentLimit : Math.max(totalProducts, 1)),
+                      (currentLimit > 0
+                        ? currentLimit
+                        : Math.max(totalProducts, 1)),
                   )
                 }
                 onClick={() =>

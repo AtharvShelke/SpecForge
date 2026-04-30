@@ -562,10 +562,6 @@ export type EnumSpecValueTypeFieldUpdateOperationsInput = {
   set?: $Enums.SpecValueType
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
   increment?: number

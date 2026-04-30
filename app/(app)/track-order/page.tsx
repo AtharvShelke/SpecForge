@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, memo, Fragment } from 'react';
 import Image from 'next/image';
 import { useShop } from '@/context/ShopContext';
+import { useOrder } from '@/context/OrderContext';
 
 type CompatibilityIssue = { message: string };
 
@@ -219,9 +220,8 @@ const TimelineStep = memo(function TimelineStep({
 });
 
 export default function TrackOrderPage() {
-    const { orders, refreshOrders, addToCart, clearCart, setCartOpen } = useShop();
-
-    useEffect(() => { refreshOrders(); }, [refreshOrders]);
+    const { addToCart, clearCart, setCartOpen } = useShop();
+    const { trackOrder } = useOrder();
 
     const [orderId, setOrderId] = useState('');
     const [contact, setContact] = useState('');
@@ -229,17 +229,19 @@ export default function TrackOrderPage() {
     const [foundOrder, setFoundOrder] = useState<Order | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    const handleSearch = useCallback((event: React.FormEvent) => {
+    const handleSearch = useCallback(async (event: React.FormEvent) => {
         event.preventDefault();
-        const trimId = orderId.trim().toUpperCase();
-        const trimContact = contact.trim().toLowerCase();
-        const match = orders.find((order) =>
-            order.id.toUpperCase() === trimId &&
-            (order.email.toLowerCase() === trimContact || order.phone?.toLowerCase() === trimContact)
-        );
-        setFoundOrder(match ?? null);
-        setSearched(true);
-    }, [orderId, contact, orders]);
+        setSearched(false);
+        try {
+            const order = await trackOrder(orderId, contact);
+            setFoundOrder(order);
+        } catch (error) {
+            console.error('Track order error:', error);
+            setFoundOrder(null);
+        } finally {
+            setSearched(true);
+        }
+    }, [orderId, contact, trackOrder]);
 
     const handleReorder = useCallback(() => {
         if (!foundOrder) return;

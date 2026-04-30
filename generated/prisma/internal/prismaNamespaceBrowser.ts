@@ -92,7 +92,6 @@ export const ModelName = {
   VariantCompatibilityCache: 'VariantCompatibilityCache',
   SubCategorySlot: 'SubCategorySlot',
   BuilderConfig: 'BuilderConfig',
-  BuilderCategoryConfig: 'BuilderCategoryConfig',
   BuilderUIRule: 'BuilderUIRule',
   FilterOverride: 'FilterOverride'
 } as const
@@ -157,7 +156,14 @@ export const SubCategoryScalarFieldEnum = {
   categoryId: 'categoryId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
+  deletedAt: 'deletedAt',
+  isBuilderEnabled: 'isBuilderEnabled',
+  isCore: 'isCore',
+  isRequired: 'isRequired',
+  allowMultiple: 'allowMultiple',
+  builderOrder: 'builderOrder',
+  icon: 'icon',
+  shortLabel: 'shortLabel'
 } as const
 
 export type SubCategoryScalarFieldEnum = (typeof SubCategoryScalarFieldEnum)[keyof typeof SubCategoryScalarFieldEnum]
@@ -683,24 +689,6 @@ export const BuilderConfigScalarFieldEnum = {
 } as const
 
 export type BuilderConfigScalarFieldEnum = (typeof BuilderConfigScalarFieldEnum)[keyof typeof BuilderConfigScalarFieldEnum]
-
-
-export const BuilderCategoryConfigScalarFieldEnum = {
-  id: 'id',
-  categoryName: 'categoryName',
-  enabled: 'enabled',
-  isCore: 'isCore',
-  required: 'required',
-  allowMultiple: 'allowMultiple',
-  displayOrder: 'displayOrder',
-  icon: 'icon',
-  shortLabel: 'shortLabel',
-  description: 'description',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type BuilderCategoryConfigScalarFieldEnum = (typeof BuilderCategoryConfigScalarFieldEnum)[keyof typeof BuilderCategoryConfigScalarFieldEnum]
 
 
 export const BuilderUIRuleScalarFieldEnum = {

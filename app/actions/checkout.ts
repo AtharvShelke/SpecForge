@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateOrderFinancials } from "@/lib/tax-engine";
 import { PaymentMethodType, PaymentStatus } from "@/types";
+import { createOrder } from "@/lib/services/order.service";
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
@@ -125,37 +126,11 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             items: orderItemsPayload,
         };
 
-        // 4. Fire API Wrapper call
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-        const response = await fetch(`${baseUrl}/api/orders`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(apiPayload),
-            cache: "no-store" // Ensure it bypasses fetch cache
-        });
-
-        let responseData;
-        try {
-            responseData = await response.json();
-        } catch (e) {
-            console.error("Failed to parse API response", e);
-            throw new Error("Invalid response from Orders API");
-        }
-
-        if (!response.ok) {
-            console.error("Orders API returned error:", responseData);
-            return {
-                success: false,
-                error:
-                    typeof responseData.error === "string"
-                        ? responseData.error
-                        : "We could not place your order. Please review your cart and try again.",
-            };
-        }
+        // 4. Call Service directly (Avoiding internal HTTP hop)
+        const order = await createOrder(apiPayload as any);
 
         // 5. MOCK EXTERNAL NOTIFICATIONS
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
         const invoiceLink = `${baseUrl}/api/orders/${orderId}/invoice`;
         const trackingLink = `${baseUrl}/track-order`;
 
@@ -167,7 +142,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         console.log(`and here's the link for your order ${trackingLink}`);
         console.log(`========================================\n`);
 
-        return { success: true, orderId, order: responseData };
+        return { success: true, orderId, order: order };
 
     } catch (error: unknown) {
         console.error("Checkout action error:", error);

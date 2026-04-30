@@ -223,11 +223,6 @@ export type SubCategorySlot = Prisma.SubCategorySlotModel
  */
 export type BuilderConfig = Prisma.BuilderConfigModel
 /**
- * Model BuilderCategoryConfig
- * 
- */
-export type BuilderCategoryConfig = Prisma.BuilderCategoryConfigModel
-/**
  * Model BuilderUIRule
  * 
  */

@@ -4,11 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Lock, ShieldCheck, Truck } from "lucide-react";
-
-import VariantSelector from "@/components/storefront/VariantSelector";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/context/ShopContext";
 import { Product, ProductVariant, specsToFlat } from "@/types";
+import VariantSelector from "@/components/storefront/VariantSelector";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -16,11 +15,19 @@ interface ProductDetailClientProps {
 
 function getAvailableQuantity(variant?: ProductVariant) {
   return (variant?.inventoryItems ?? []).reduce((total, item) => {
-    return total + Math.max(0, Number(item.quantityOnHand ?? 0) - Number(item.quantityReserved ?? 0));
+    return (
+      total +
+      Math.max(
+        0,
+        Number(item.quantityOnHand ?? 0) - Number(item.quantityReserved ?? 0),
+      )
+    );
   }, 0);
 }
 
-export default function ProductDetailClient({ product }: ProductDetailClientProps) {
+export default function ProductDetailClient({
+  product,
+}: ProductDetailClientProps) {
   const { addToCart, cart } = useShop();
   const images =
     product.media?.map((media) => media.url) ??
@@ -28,7 +35,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const flatSpecs = useMemo(() => specsToFlat(product.specs), [product.specs]);
   const variants = product.variants ?? [];
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
+  const [selectedVariantId, setSelectedVariantId] = useState(
+    variants[0]?.id ?? "",
+  );
   const [showStickyBar, setShowStickyBar] = useState(false);
   const galleryRef = useRef<HTMLDivElement | null>(null);
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -41,7 +50,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const availableQuantity = getAvailableQuantity(selectedVariant);
   const isOutOfStock =
     selectedVariant?.status === "OUT_OF_STOCK" ||
-    (availableQuantity === 0 && (selectedVariant?.inventoryItems?.length ?? 0) > 0);
+    (availableQuantity === 0 &&
+      (selectedVariant?.inventoryItems?.length ?? 0) > 0);
   const isLowStock = availableQuantity > 0 && availableQuantity < 5;
   const inCart = cart.some((item) => item.id === product.id);
 
@@ -139,7 +149,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                       type="button"
                       onClick={() => setSelectedImageIndex(index)}
                       className={`relative aspect-square overflow-hidden border bg-gray-50 ${
-                        index === selectedImageIndex ? "border-gray-900" : "border-gray-200"
+                        index === selectedImageIndex
+                          ? "border-gray-900"
+                          : "border-gray-200"
                       }`}
                     >
                       <Image
@@ -185,7 +197,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 <VariantSelector
                   variants={variants}
                   selectedVariantId={selectedVariant?.id ?? ""}
-                  onVariantChange={(variant) => setSelectedVariantId(variant.id)}
+                  onVariantChange={(variant) =>
+                    setSelectedVariantId(variant.id)
+                  }
                 />
               </div>
             ) : null}
@@ -198,7 +212,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
               >
-                {isOutOfStock ? "Out of stock" : inCart ? "Add another to cart" : "Add to cart"}
+                {isOutOfStock
+                  ? "Out of stock"
+                  : inCart
+                    ? "Add another to cart"
+                    : "Add to cart"}
               </Button>
 
               <div className="mt-4 grid gap-3 text-sm text-gray-500">
@@ -211,8 +229,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   Free delivery
                 </div>
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="size-4" />
-                  1 year warranty
+                  <ShieldCheck className="size-4" />1 year warranty
                 </div>
               </div>
             </div>
@@ -225,12 +242,19 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             </div>
 
             <div className="mt-8 border-t border-gray-200 pt-8">
-              <h2 className="text-sm font-medium text-gray-900">Specifications</h2>
+              <h2 className="text-sm font-medium text-gray-900">
+                Specifications
+              </h2>
               <div className="mt-4 divide-y divide-gray-200 border border-gray-200">
                 {Object.entries(flatSpecs).map(([key, value]) => (
-                  <div key={key} className="grid grid-cols-[140px_minmax(0,1fr)] gap-4 px-4 py-3 text-sm">
+                  <div
+                    key={key}
+                    className="grid grid-cols-[140px_minmax(0,1fr)] gap-4 px-4 py-3 text-sm"
+                  >
                     <span className="text-gray-500">
-                      {key.replace(/([A-Z])/g, " $1").replace(/^./, (entry) => entry.toUpperCase())}
+                      {key
+                        .replace(/([A-Z])/g, " $1")
+                        .replace(/^./, (entry) => entry.toUpperCase())}
                     </span>
                     <span className="text-gray-900">{String(value)}</span>
                   </div>
@@ -245,8 +269,12 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white p-4 lg:hidden">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-900">{product.name}</p>
-              <p className="text-sm text-gray-500">Rs. {price.toLocaleString("en-IN")}</p>
+              <p className="truncate text-sm font-medium text-gray-900">
+                {product.name}
+              </p>
+              <p className="text-sm text-gray-500">
+                Rs. {price.toLocaleString("en-IN")}
+              </p>
             </div>
             <Button className="h-12 min-w-36" onClick={handleAddToCart}>
               Add to cart

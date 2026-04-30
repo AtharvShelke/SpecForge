@@ -425,7 +425,6 @@ export const ModelName = {
   VariantCompatibilityCache: 'VariantCompatibilityCache',
   SubCategorySlot: 'SubCategorySlot',
   BuilderConfig: 'BuilderConfig',
-  BuilderCategoryConfig: 'BuilderCategoryConfig',
   BuilderUIRule: 'BuilderUIRule',
   FilterOverride: 'FilterOverride'
 } as const
@@ -443,7 +442,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "brand" | "category" | "subCategory" | "categoryHierarchy" | "specDefinition" | "variantSpec" | "specOptionDependency" | "specOption" | "productMedia" | "product" | "productVariant" | "customer" | "order" | "orderItem" | "orderLog" | "shipmentTracking" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentProof" | "auditLog" | "inventoryItem" | "reservation" | "build" | "buildItem" | "partSlot" | "compatibilityRule" | "compatibilityScope" | "derivedSpec" | "buildCompatibilityResult" | "compatibilityCheck" | "slotConstraint" | "variantCompatibilityCache" | "subCategorySlot" | "builderConfig" | "builderCategoryConfig" | "builderUIRule" | "filterOverride"
+    modelProps: "user" | "brand" | "category" | "subCategory" | "categoryHierarchy" | "specDefinition" | "variantSpec" | "specOptionDependency" | "specOption" | "productMedia" | "product" | "productVariant" | "customer" | "order" | "orderItem" | "orderLog" | "shipmentTracking" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentProof" | "auditLog" | "inventoryItem" | "reservation" | "build" | "buildItem" | "partSlot" | "compatibilityRule" | "compatibilityScope" | "derivedSpec" | "buildCompatibilityResult" | "compatibilityCheck" | "slotConstraint" | "variantCompatibilityCache" | "subCategorySlot" | "builderConfig" | "builderUIRule" | "filterOverride"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3481,80 +3480,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    BuilderCategoryConfig: {
-      payload: Prisma.$BuilderCategoryConfigPayload<ExtArgs>
-      fields: Prisma.BuilderCategoryConfigFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.BuilderCategoryConfigFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.BuilderCategoryConfigFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>
-        }
-        findFirst: {
-          args: Prisma.BuilderCategoryConfigFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.BuilderCategoryConfigFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>
-        }
-        findMany: {
-          args: Prisma.BuilderCategoryConfigFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>[]
-        }
-        create: {
-          args: Prisma.BuilderCategoryConfigCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>
-        }
-        createMany: {
-          args: Prisma.BuilderCategoryConfigCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.BuilderCategoryConfigCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>[]
-        }
-        delete: {
-          args: Prisma.BuilderCategoryConfigDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>
-        }
-        update: {
-          args: Prisma.BuilderCategoryConfigUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>
-        }
-        deleteMany: {
-          args: Prisma.BuilderCategoryConfigDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.BuilderCategoryConfigUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.BuilderCategoryConfigUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>[]
-        }
-        upsert: {
-          args: Prisma.BuilderCategoryConfigUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BuilderCategoryConfigPayload>
-        }
-        aggregate: {
-          args: Prisma.BuilderCategoryConfigAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateBuilderCategoryConfig>
-        }
-        groupBy: {
-          args: Prisma.BuilderCategoryConfigGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.BuilderCategoryConfigGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.BuilderCategoryConfigCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.BuilderCategoryConfigCountAggregateOutputType> | number
-        }
-      }
-    }
     BuilderUIRule: {
       payload: Prisma.$BuilderUIRulePayload<ExtArgs>
       fields: Prisma.BuilderUIRuleFieldRefs
@@ -3786,7 +3711,14 @@ export const SubCategoryScalarFieldEnum = {
   categoryId: 'categoryId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
+  deletedAt: 'deletedAt',
+  isBuilderEnabled: 'isBuilderEnabled',
+  isCore: 'isCore',
+  isRequired: 'isRequired',
+  allowMultiple: 'allowMultiple',
+  builderOrder: 'builderOrder',
+  icon: 'icon',
+  shortLabel: 'shortLabel'
 } as const
 
 export type SubCategoryScalarFieldEnum = (typeof SubCategoryScalarFieldEnum)[keyof typeof SubCategoryScalarFieldEnum]
@@ -4314,24 +4246,6 @@ export const BuilderConfigScalarFieldEnum = {
 export type BuilderConfigScalarFieldEnum = (typeof BuilderConfigScalarFieldEnum)[keyof typeof BuilderConfigScalarFieldEnum]
 
 
-export const BuilderCategoryConfigScalarFieldEnum = {
-  id: 'id',
-  categoryName: 'categoryName',
-  enabled: 'enabled',
-  isCore: 'isCore',
-  required: 'required',
-  allowMultiple: 'allowMultiple',
-  displayOrder: 'displayOrder',
-  icon: 'icon',
-  shortLabel: 'shortLabel',
-  description: 'description',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type BuilderCategoryConfigScalarFieldEnum = (typeof BuilderCategoryConfigScalarFieldEnum)[keyof typeof BuilderCategoryConfigScalarFieldEnum]
-
-
 export const BuilderUIRuleScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -4462,6 +4376,13 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -4486,13 +4407,6 @@ export type EnumSpecValueTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'SpecValueType[]'
  */
 export type ListEnumSpecValueTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SpecValueType[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -4855,7 +4769,6 @@ export type GlobalOmitConfig = {
   variantCompatibilityCache?: Prisma.VariantCompatibilityCacheOmit
   subCategorySlot?: Prisma.SubCategorySlotOmit
   builderConfig?: Prisma.BuilderConfigOmit
-  builderCategoryConfig?: Prisma.BuilderCategoryConfigOmit
   builderUIRule?: Prisma.BuilderUIRuleOmit
   filterOverride?: Prisma.FilterOverrideOmit
 }

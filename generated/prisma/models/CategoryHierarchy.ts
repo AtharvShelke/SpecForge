@@ -481,14 +481,6 @@ export type CategoryHierarchyUncheckedCreateNestedManyWithoutParentInput = {
   connect?: Prisma.CategoryHierarchyWhereUniqueInput | Prisma.CategoryHierarchyWhereUniqueInput[]
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type CategoryHierarchyUpdateOneWithoutChildrenNestedInput = {
   create?: Prisma.XOR<Prisma.CategoryHierarchyCreateWithoutChildrenInput, Prisma.CategoryHierarchyUncheckedCreateWithoutChildrenInput>
   connectOrCreate?: Prisma.CategoryHierarchyCreateOrConnectWithoutChildrenInput

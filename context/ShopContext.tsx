@@ -65,7 +65,13 @@ async function fetchJSON(url: string, options?: RequestInit) {
   return res.json();
 }
 
-export const ShopProvider = ({ children }: { children: ReactNode }) => {
+export const ShopProvider = ({ 
+  children,
+  autoLoad = false
+}: { 
+  children: ReactNode;
+  autoLoad?: boolean;
+}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -133,8 +139,14 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const refreshCategories = useCallback(async () => {
-    const data = await fetchJSON('/api/catalog/categories');
-    setCategories(Array.isArray(data) ? data : []);
+    const [subCats, cats, brnds] = await Promise.all([
+      fetchJSON('/api/catalog/subcategories'),
+      fetchJSON('/api/catalog/categories'),
+      fetchJSON('/api/catalog/brands')
+    ]);
+    setSubCategories(subCats);
+    setCategories(cats);
+    setBrands(brnds);
   }, []);
 
   const refreshFilterConfigs = useCallback(async () => {}, []);
@@ -205,22 +217,10 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   }, [cart]);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const [subCats, cats, brnds] = await Promise.all([
-          fetchJSON('/api/catalog/subcategories'),
-          fetchJSON('/api/catalog/categories'),
-          fetchJSON('/api/catalog/brands')
-        ]);
-        setSubCategories(subCats);
-        setCategories(cats);
-        setBrands(brnds);
-      } catch (err) {
-        console.error("Failed to load shop data", err);
-      }
-    };
-    loadInitialData();
-  }, []);
+    if (!autoLoad) return;
+    refreshCategories();
+  }, [autoLoad, refreshCategories]);
+
 
   useEffect(() => {
     try {

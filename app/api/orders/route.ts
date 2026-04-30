@@ -3,8 +3,14 @@ import { listOrders, createOrder } from "@/lib/services/order.service";
 import { ServiceError } from "@/lib/services/catalog.service";
 import { serializeOrder, serializeOrders } from "@/lib/api/adminSerializers";
 import { measureRoute } from "@/lib/performance";
+import { getSessionUser } from "@/lib/auth";
+import { Role } from "@/types";
 
 export async function GET(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (user.role !== Role.ADMIN) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   return measureRoute("GET /api/orders", async () => {
     try {
       const searchParams = req.nextUrl.searchParams;
@@ -29,6 +35,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (user.role !== Role.ADMIN) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     const body = await req.json();
     const order = await createOrder(body);

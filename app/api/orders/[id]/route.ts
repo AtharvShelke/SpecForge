@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrderById, updateOrder } from "@/lib/services/order.service";
 import { ServiceError } from "@/lib/services/catalog.service";
 import { serializeOrder } from "@/lib/api/adminSerializers";
+import { getSessionUser } from "@/lib/auth";
+import { Role } from "@/types";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (user.role !== Role.ADMIN) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     const { id } = await params;
     const order = await getOrderById(id);
@@ -21,6 +27,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (user.role !== Role.ADMIN) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     const { id } = await params;
     const body = await req.json();

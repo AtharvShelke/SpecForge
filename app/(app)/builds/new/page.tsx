@@ -1383,9 +1383,15 @@ function BuilderFiltersSidebar({
 export default function PCBuilderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { cart, addToCart, removeFromCart, setCartOpen, categories } = useShop();
+    const { cart, addToCart, removeFromCart, setCartOpen, categories, refreshCategories } = useShop();
     const { isBuildMode, toggleBuildMode, saveCurrentBuild } = useBuild();
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (categories.length === 0) {
+            refreshCategories();
+        }
+    }, [categories.length, refreshCategories]);
 
     const [activeStep, setActiveStep] = useState<string>(CORE_CATEGORIES[0]);
     const [showIncompat, setShowIncompat] = useState(false);

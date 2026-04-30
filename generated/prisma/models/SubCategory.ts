@@ -20,8 +20,18 @@ export type SubCategoryModel = runtime.Types.Result.DefaultSelection<Prisma.$Sub
 
 export type AggregateSubCategory = {
   _count: SubCategoryCountAggregateOutputType | null
+  _avg: SubCategoryAvgAggregateOutputType | null
+  _sum: SubCategorySumAggregateOutputType | null
   _min: SubCategoryMinAggregateOutputType | null
   _max: SubCategoryMaxAggregateOutputType | null
+}
+
+export type SubCategoryAvgAggregateOutputType = {
+  builderOrder: number | null
+}
+
+export type SubCategorySumAggregateOutputType = {
+  builderOrder: number | null
 }
 
 export type SubCategoryMinAggregateOutputType = {
@@ -32,6 +42,13 @@ export type SubCategoryMinAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   deletedAt: Date | null
+  isBuilderEnabled: boolean | null
+  isCore: boolean | null
+  isRequired: boolean | null
+  allowMultiple: boolean | null
+  builderOrder: number | null
+  icon: string | null
+  shortLabel: string | null
 }
 
 export type SubCategoryMaxAggregateOutputType = {
@@ -42,6 +59,13 @@ export type SubCategoryMaxAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   deletedAt: Date | null
+  isBuilderEnabled: boolean | null
+  isCore: boolean | null
+  isRequired: boolean | null
+  allowMultiple: boolean | null
+  builderOrder: number | null
+  icon: string | null
+  shortLabel: string | null
 }
 
 export type SubCategoryCountAggregateOutputType = {
@@ -52,9 +76,24 @@ export type SubCategoryCountAggregateOutputType = {
   createdAt: number
   updatedAt: number
   deletedAt: number
+  isBuilderEnabled: number
+  isCore: number
+  isRequired: number
+  allowMultiple: number
+  builderOrder: number
+  icon: number
+  shortLabel: number
   _all: number
 }
 
+
+export type SubCategoryAvgAggregateInputType = {
+  builderOrder?: true
+}
+
+export type SubCategorySumAggregateInputType = {
+  builderOrder?: true
+}
 
 export type SubCategoryMinAggregateInputType = {
   id?: true
@@ -64,6 +103,13 @@ export type SubCategoryMinAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
+  isBuilderEnabled?: true
+  isCore?: true
+  isRequired?: true
+  allowMultiple?: true
+  builderOrder?: true
+  icon?: true
+  shortLabel?: true
 }
 
 export type SubCategoryMaxAggregateInputType = {
@@ -74,6 +120,13 @@ export type SubCategoryMaxAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
+  isBuilderEnabled?: true
+  isCore?: true
+  isRequired?: true
+  allowMultiple?: true
+  builderOrder?: true
+  icon?: true
+  shortLabel?: true
 }
 
 export type SubCategoryCountAggregateInputType = {
@@ -84,6 +137,13 @@ export type SubCategoryCountAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
+  isBuilderEnabled?: true
+  isCore?: true
+  isRequired?: true
+  allowMultiple?: true
+  builderOrder?: true
+  icon?: true
+  shortLabel?: true
   _all?: true
 }
 
@@ -125,6 +185,18 @@ export type SubCategoryAggregateArgs<ExtArgs extends runtime.Types.Extensions.In
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: SubCategoryAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: SubCategorySumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: SubCategoryMinAggregateInputType
@@ -155,6 +227,8 @@ export type SubCategoryGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   _count?: SubCategoryCountAggregateInputType | true
+  _avg?: SubCategoryAvgAggregateInputType
+  _sum?: SubCategorySumAggregateInputType
   _min?: SubCategoryMinAggregateInputType
   _max?: SubCategoryMaxAggregateInputType
 }
@@ -167,7 +241,16 @@ export type SubCategoryGroupByOutputType = {
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
+  isBuilderEnabled: boolean
+  isCore: boolean
+  isRequired: boolean
+  allowMultiple: boolean
+  builderOrder: number
+  icon: string | null
+  shortLabel: string | null
   _count: SubCategoryCountAggregateOutputType | null
+  _avg: SubCategoryAvgAggregateOutputType | null
+  _sum: SubCategorySumAggregateOutputType | null
   _min: SubCategoryMinAggregateOutputType | null
   _max: SubCategoryMaxAggregateOutputType | null
 }
@@ -198,6 +281,13 @@ export type SubCategoryWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"SubCategory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SubCategory"> | Date | string
   deletedAt?: Prisma.DateTimeNullableFilter<"SubCategory"> | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFilter<"SubCategory"> | boolean
+  isCore?: Prisma.BoolFilter<"SubCategory"> | boolean
+  isRequired?: Prisma.BoolFilter<"SubCategory"> | boolean
+  allowMultiple?: Prisma.BoolFilter<"SubCategory"> | boolean
+  builderOrder?: Prisma.IntFilter<"SubCategory"> | number
+  icon?: Prisma.StringNullableFilter<"SubCategory"> | string | null
+  shortLabel?: Prisma.StringNullableFilter<"SubCategory"> | string | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
   products?: Prisma.ProductListRelationFilter
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeListRelationFilter
@@ -214,6 +304,13 @@ export type SubCategoryOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isBuilderEnabled?: Prisma.SortOrder
+  isCore?: Prisma.SortOrder
+  isRequired?: Prisma.SortOrder
+  allowMultiple?: Prisma.SortOrder
+  builderOrder?: Prisma.SortOrder
+  icon?: Prisma.SortOrderInput | Prisma.SortOrder
+  shortLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   category?: Prisma.CategoryOrderByWithRelationInput
   products?: Prisma.ProductOrderByRelationAggregateInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeOrderByRelationAggregateInput
@@ -234,6 +331,13 @@ export type SubCategoryWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"SubCategory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SubCategory"> | Date | string
   deletedAt?: Prisma.DateTimeNullableFilter<"SubCategory"> | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFilter<"SubCategory"> | boolean
+  isCore?: Prisma.BoolFilter<"SubCategory"> | boolean
+  isRequired?: Prisma.BoolFilter<"SubCategory"> | boolean
+  allowMultiple?: Prisma.BoolFilter<"SubCategory"> | boolean
+  builderOrder?: Prisma.IntFilter<"SubCategory"> | number
+  icon?: Prisma.StringNullableFilter<"SubCategory"> | string | null
+  shortLabel?: Prisma.StringNullableFilter<"SubCategory"> | string | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
   products?: Prisma.ProductListRelationFilter
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeListRelationFilter
@@ -250,9 +354,18 @@ export type SubCategoryOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isBuilderEnabled?: Prisma.SortOrder
+  isCore?: Prisma.SortOrder
+  isRequired?: Prisma.SortOrder
+  allowMultiple?: Prisma.SortOrder
+  builderOrder?: Prisma.SortOrder
+  icon?: Prisma.SortOrderInput | Prisma.SortOrder
+  shortLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.SubCategoryCountOrderByAggregateInput
+  _avg?: Prisma.SubCategoryAvgOrderByAggregateInput
   _max?: Prisma.SubCategoryMaxOrderByAggregateInput
   _min?: Prisma.SubCategoryMinOrderByAggregateInput
+  _sum?: Prisma.SubCategorySumOrderByAggregateInput
 }
 
 export type SubCategoryScalarWhereWithAggregatesInput = {
@@ -266,6 +379,13 @@ export type SubCategoryScalarWhereWithAggregatesInput = {
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SubCategory"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SubCategory"> | Date | string
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"SubCategory"> | Date | string | null
+  isBuilderEnabled?: Prisma.BoolWithAggregatesFilter<"SubCategory"> | boolean
+  isCore?: Prisma.BoolWithAggregatesFilter<"SubCategory"> | boolean
+  isRequired?: Prisma.BoolWithAggregatesFilter<"SubCategory"> | boolean
+  allowMultiple?: Prisma.BoolWithAggregatesFilter<"SubCategory"> | boolean
+  builderOrder?: Prisma.IntWithAggregatesFilter<"SubCategory"> | number
+  icon?: Prisma.StringNullableWithAggregatesFilter<"SubCategory"> | string | null
+  shortLabel?: Prisma.StringNullableWithAggregatesFilter<"SubCategory"> | string | null
 }
 
 export type SubCategoryCreateInput = {
@@ -275,6 +395,13 @@ export type SubCategoryCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
@@ -291,6 +418,13 @@ export type SubCategoryUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
@@ -305,6 +439,13 @@ export type SubCategoryUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
@@ -321,6 +462,13 @@ export type SubCategoryUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
@@ -336,6 +484,13 @@ export type SubCategoryCreateManyInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
 }
 
 export type SubCategoryUpdateManyMutationInput = {
@@ -345,6 +500,13 @@ export type SubCategoryUpdateManyMutationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type SubCategoryUncheckedUpdateManyInput = {
@@ -355,6 +517,13 @@ export type SubCategoryUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type SubCategoryListRelationFilter = {
@@ -380,6 +549,17 @@ export type SubCategoryCountOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
+  isBuilderEnabled?: Prisma.SortOrder
+  isCore?: Prisma.SortOrder
+  isRequired?: Prisma.SortOrder
+  allowMultiple?: Prisma.SortOrder
+  builderOrder?: Prisma.SortOrder
+  icon?: Prisma.SortOrder
+  shortLabel?: Prisma.SortOrder
+}
+
+export type SubCategoryAvgOrderByAggregateInput = {
+  builderOrder?: Prisma.SortOrder
 }
 
 export type SubCategoryMaxOrderByAggregateInput = {
@@ -390,6 +570,13 @@ export type SubCategoryMaxOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
+  isBuilderEnabled?: Prisma.SortOrder
+  isCore?: Prisma.SortOrder
+  isRequired?: Prisma.SortOrder
+  allowMultiple?: Prisma.SortOrder
+  builderOrder?: Prisma.SortOrder
+  icon?: Prisma.SortOrder
+  shortLabel?: Prisma.SortOrder
 }
 
 export type SubCategoryMinOrderByAggregateInput = {
@@ -400,6 +587,17 @@ export type SubCategoryMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
+  isBuilderEnabled?: Prisma.SortOrder
+  isCore?: Prisma.SortOrder
+  isRequired?: Prisma.SortOrder
+  allowMultiple?: Prisma.SortOrder
+  builderOrder?: Prisma.SortOrder
+  icon?: Prisma.SortOrder
+  shortLabel?: Prisma.SortOrder
+}
+
+export type SubCategorySumOrderByAggregateInput = {
+  builderOrder?: Prisma.SortOrder
 }
 
 export type SubCategoryScalarRelationFilter = {
@@ -447,6 +645,18 @@ export type SubCategoryUncheckedUpdateManyWithoutCategoryNestedInput = {
   update?: Prisma.SubCategoryUpdateWithWhereUniqueWithoutCategoryInput | Prisma.SubCategoryUpdateWithWhereUniqueWithoutCategoryInput[]
   updateMany?: Prisma.SubCategoryUpdateManyWithWhereWithoutCategoryInput | Prisma.SubCategoryUpdateManyWithWhereWithoutCategoryInput[]
   deleteMany?: Prisma.SubCategoryScalarWhereInput | Prisma.SubCategoryScalarWhereInput[]
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type SubCategoryCreateNestedOneWithoutSpecDefinitionsInput = {
@@ -526,6 +736,13 @@ export type SubCategoryCreateWithoutCategoryInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
@@ -540,6 +757,13 @@ export type SubCategoryUncheckedCreateWithoutCategoryInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
@@ -584,6 +808,13 @@ export type SubCategoryScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"SubCategory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SubCategory"> | Date | string
   deletedAt?: Prisma.DateTimeNullableFilter<"SubCategory"> | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFilter<"SubCategory"> | boolean
+  isCore?: Prisma.BoolFilter<"SubCategory"> | boolean
+  isRequired?: Prisma.BoolFilter<"SubCategory"> | boolean
+  allowMultiple?: Prisma.BoolFilter<"SubCategory"> | boolean
+  builderOrder?: Prisma.IntFilter<"SubCategory"> | number
+  icon?: Prisma.StringNullableFilter<"SubCategory"> | string | null
+  shortLabel?: Prisma.StringNullableFilter<"SubCategory"> | string | null
 }
 
 export type SubCategoryCreateWithoutSpecDefinitionsInput = {
@@ -593,6 +824,13 @@ export type SubCategoryCreateWithoutSpecDefinitionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
@@ -608,6 +846,13 @@ export type SubCategoryUncheckedCreateWithoutSpecDefinitionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
@@ -637,6 +882,13 @@ export type SubCategoryUpdateWithoutSpecDefinitionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
@@ -652,6 +904,13 @@ export type SubCategoryUncheckedUpdateWithoutSpecDefinitionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
@@ -665,6 +924,13 @@ export type SubCategoryCreateWithoutProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
@@ -680,6 +946,13 @@ export type SubCategoryUncheckedCreateWithoutProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
@@ -709,6 +982,13 @@ export type SubCategoryUpdateWithoutProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
@@ -724,6 +1004,13 @@ export type SubCategoryUncheckedUpdateWithoutProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
@@ -737,6 +1024,13 @@ export type SubCategoryCreateWithoutSourceCompatibilityScopesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
@@ -752,6 +1046,13 @@ export type SubCategoryUncheckedCreateWithoutSourceCompatibilityScopesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
@@ -770,6 +1071,13 @@ export type SubCategoryCreateWithoutTargetCompatibilityScopesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
@@ -785,6 +1093,13 @@ export type SubCategoryUncheckedCreateWithoutTargetCompatibilityScopesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
@@ -814,6 +1129,13 @@ export type SubCategoryUpdateWithoutSourceCompatibilityScopesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
@@ -829,6 +1151,13 @@ export type SubCategoryUncheckedUpdateWithoutSourceCompatibilityScopesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
@@ -853,6 +1182,13 @@ export type SubCategoryUpdateWithoutTargetCompatibilityScopesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
@@ -868,6 +1204,13 @@ export type SubCategoryUncheckedUpdateWithoutTargetCompatibilityScopesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
@@ -881,6 +1224,13 @@ export type SubCategoryCreateWithoutSubCategorySlotsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
@@ -896,6 +1246,13 @@ export type SubCategoryUncheckedCreateWithoutSubCategorySlotsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
@@ -925,6 +1282,13 @@ export type SubCategoryUpdateWithoutSubCategorySlotsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
@@ -940,6 +1304,13 @@ export type SubCategoryUncheckedUpdateWithoutSubCategorySlotsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
@@ -953,6 +1324,13 @@ export type SubCategoryCreateManyCategoryInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: number
+  icon?: string | null
+  shortLabel?: string | null
 }
 
 export type SubCategoryUpdateWithoutCategoryInput = {
@@ -962,6 +1340,13 @@ export type SubCategoryUpdateWithoutCategoryInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
@@ -976,6 +1361,13 @@ export type SubCategoryUncheckedUpdateWithoutCategoryInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
@@ -990,6 +1382,13 @@ export type SubCategoryUncheckedUpdateManyWithoutCategoryInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBuilderEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCore?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  allowMultiple?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -1067,6 +1466,13 @@ export type SubCategorySelect<ExtArgs extends runtime.Types.Extensions.InternalA
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: boolean
+  icon?: boolean
+  shortLabel?: boolean
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   products?: boolean | Prisma.SubCategory$productsArgs<ExtArgs>
   sourceCompatibilityScopes?: boolean | Prisma.SubCategory$sourceCompatibilityScopesArgs<ExtArgs>
@@ -1084,6 +1490,13 @@ export type SubCategorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: boolean
+  icon?: boolean
+  shortLabel?: boolean
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["subCategory"]>
 
@@ -1095,6 +1508,13 @@ export type SubCategorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: boolean
+  icon?: boolean
+  shortLabel?: boolean
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["subCategory"]>
 
@@ -1106,9 +1526,16 @@ export type SubCategorySelectScalar = {
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
+  isBuilderEnabled?: boolean
+  isCore?: boolean
+  isRequired?: boolean
+  allowMultiple?: boolean
+  builderOrder?: boolean
+  icon?: boolean
+  shortLabel?: boolean
 }
 
-export type SubCategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "categoryId" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["subCategory"]>
+export type SubCategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "categoryId" | "createdAt" | "updatedAt" | "deletedAt" | "isBuilderEnabled" | "isCore" | "isRequired" | "allowMultiple" | "builderOrder" | "icon" | "shortLabel", ExtArgs["result"]["subCategory"]>
 export type SubCategoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   products?: boolean | Prisma.SubCategory$productsArgs<ExtArgs>
@@ -1143,6 +1570,13 @@ export type $SubCategoryPayload<ExtArgs extends runtime.Types.Extensions.Interna
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
+    isBuilderEnabled: boolean
+    isCore: boolean
+    isRequired: boolean
+    allowMultiple: boolean
+    builderOrder: number
+    icon: string | null
+    shortLabel: string | null
   }, ExtArgs["result"]["subCategory"]>
   composites: {}
 }
@@ -1579,6 +2013,13 @@ export interface SubCategoryFieldRefs {
   readonly createdAt: Prisma.FieldRef<"SubCategory", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SubCategory", 'DateTime'>
   readonly deletedAt: Prisma.FieldRef<"SubCategory", 'DateTime'>
+  readonly isBuilderEnabled: Prisma.FieldRef<"SubCategory", 'Boolean'>
+  readonly isCore: Prisma.FieldRef<"SubCategory", 'Boolean'>
+  readonly isRequired: Prisma.FieldRef<"SubCategory", 'Boolean'>
+  readonly allowMultiple: Prisma.FieldRef<"SubCategory", 'Boolean'>
+  readonly builderOrder: Prisma.FieldRef<"SubCategory", 'Int'>
+  readonly icon: Prisma.FieldRef<"SubCategory", 'String'>
+  readonly shortLabel: Prisma.FieldRef<"SubCategory", 'String'>
 }
     
 

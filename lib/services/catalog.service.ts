@@ -144,6 +144,12 @@ export class CatalogService {
           metaDescription: data.metaDescription,
           description: data.description,
           status: (data.status as any) || "ACTIVE",
+          media: data.images && data.images.length > 0 ? {
+            create: data.images.map((url, index) => ({
+              url,
+              sortOrder: index
+            }))
+          } : undefined
         },
       });
 
@@ -184,18 +190,35 @@ export class CatalogService {
   }
 
   static async updateProduct(id: string, data: Partial<CreateProduct>) {
-    return prisma.product.update({
-      where: { id },
-      data: {
-        name: data.name,
-        subCategoryId: data.subCategoryId,
-        brandId: data.brandId,
-        metaTitle: data.metaTitle,
-        metaDescription: data.metaDescription,
-        description: data.description,
-        status: data.status as any,
-        slug: data.slug,
-      },
+    return prisma.$transaction(async (tx) => {
+      const product = await tx.product.update({
+        where: { id },
+        data: {
+          name: data.name,
+          subCategoryId: data.subCategoryId,
+          brandId: data.brandId,
+          metaTitle: data.metaTitle,
+          metaDescription: data.metaDescription,
+          description: data.description,
+          status: data.status as any,
+          slug: data.slug,
+        },
+      });
+
+      if (data.images !== undefined) {
+        await tx.productMedia.deleteMany({ where: { productId: id } });
+        if (data.images.length > 0) {
+          await tx.productMedia.createMany({
+            data: data.images.map((url, index) => ({
+              productId: id,
+              url,
+              sortOrder: index,
+            })),
+          });
+        }
+      }
+
+      return product;
     });
   }
 
@@ -616,6 +639,28 @@ export async function createSubCategory(data: {
       categoryId: data.categoryId,
     },
   });
+}
+
+export async function updateSubCategory(id: string, data: {
+  name?: string;
+  description?: string;
+  isBuilderEnabled?: boolean;
+  isCore?: boolean;
+  isRequired?: boolean;
+  allowMultiple?: boolean;
+  builderOrder?: number;
+  icon?: string | null;
+  shortLabel?: string | null;
+}) {
+  try {
+    return await prisma.subCategory.update({
+      where: { id },
+      data,
+    });
+  } catch (err: any) {
+    if (err.code === "P2025") throw new ServiceError("SubCategory not found", 404);
+    throw err;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1099,6 +1144,12 @@ export async function createProduct(data: CreateProduct) {
     metaDescription: data.metaDescription,
     description: data.description,
     status: (data.status as any) || "DRAFT",
+    media: data.images && data.images.length > 0 ? {
+      create: data.images.map((url, index) => ({
+        url,
+        sortOrder: index
+      }))
+    } : undefined
   };
 
   if (data.variants && data.variants.length > 0) {
@@ -1150,6 +1201,7 @@ export async function updateProduct(
     metaDescription?: string;
     description?: string;
     status?: string;
+    images?: string[];
   },
 ) {
   const patch: any = {};
@@ -1165,7 +1217,24 @@ export async function updateProduct(
   if (data.status !== undefined) patch.status = data.status;
 
   try {
-    return await prisma.product.update({ where: { id }, data: patch });
+    return await prisma.$transaction(async (tx) => {
+      const product = await tx.product.update({ where: { id }, data: patch });
+
+      if (data.images !== undefined) {
+        await tx.productMedia.deleteMany({ where: { productId: id } });
+        if (data.images.length > 0) {
+          await tx.productMedia.createMany({
+            data: data.images.map((url, index) => ({
+              productId: id,
+              url,
+              sortOrder: index,
+            })),
+          });
+        }
+      }
+
+      return product;
+    });
   } catch (err: any) {
     if (err.code === "P2025") throw new ServiceError("Product not found", 404);
     throw err;

@@ -12,6 +12,7 @@ import type {
   BuilderSettings,
   BuilderCategoryConfig,
   BuilderUIRule,
+  SubCategory,
 } from '@/types';
 import { DEFAULT_BUILDER_SETTINGS } from '@/types';
 
@@ -113,7 +114,7 @@ export function useBuilderConfig(): UseBuilderConfigReturn {
     try {
       const [configRes, categoriesRes, rulesRes] = await Promise.allSettled([
         fetchJSON<{ settings: BuilderSettings }>('/api/admin/builder-config'),
-        fetchJSON<BuilderCategoryConfig[]>('/api/admin/builder-categories'),
+        fetchJSON<SubCategory[]>('/api/catalog/subcategories'),
         fetchJSON<BuilderUIRule[]>('/api/admin/builder-rules'),
       ]);
 
@@ -124,8 +125,26 @@ export function useBuilderConfig(): UseBuilderConfigReturn {
       }
 
       if (categoriesRes.status === 'fulfilled' && Array.isArray(categoriesRes.value)) {
-        setCategories(categoriesRes.value);
-        setSessionCache(CACHE_KEY_CATEGORIES, categoriesRes.value);
+        const mappedCategories: BuilderCategoryConfig[] = categoriesRes.value
+          .filter(sub => sub.isBuilderEnabled)
+          .map(sub => ({
+            id: sub.id,
+            categoryName: sub.name,
+            enabled: sub.isBuilderEnabled ?? false,
+            isCore: sub.isCore ?? false,
+            required: sub.isRequired ?? false,
+            allowMultiple: sub.allowMultiple ?? false,
+            displayOrder: sub.builderOrder ?? 0,
+            icon: sub.icon ?? null,
+            shortLabel: sub.shortLabel ?? null,
+            description: sub.description ?? null,
+            createdAt: sub.createdAt,
+            updatedAt: sub.updatedAt,
+          }))
+          .sort((a, b) => a.displayOrder - b.displayOrder);
+
+        setCategories(mappedCategories);
+        setSessionCache(CACHE_KEY_CATEGORIES, mappedCategories);
       }
 
       if (rulesRes.status === 'fulfilled' && Array.isArray(rulesRes.value)) {

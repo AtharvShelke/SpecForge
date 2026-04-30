@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Order, OrderStatus } from '@/types';
-import { STATUS_CONFIG } from '@/data/constants';
-import { cn } from '@/lib/utils';
-import OrderLogs from '@/components/orders/OrderLogs';
-import OrderShipments from '@/components/orders/OrderShipments';
-import OrderPayments from '@/components/orders/OrderPayments';
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Order, OrderStatus } from "@/types";
+import { STATUS_CONFIG } from "@/data/constants";
+import { cn } from "@/lib/utils";
+import OrderLogs from "@/components/orders/OrderLogs";
+import OrderShipments from "@/components/orders/OrderShipments";
+import OrderPayments from "@/components/orders/OrderPayments";
 import {
   ArrowLeft,
   Clock,
@@ -20,53 +20,97 @@ import {
   Hash,
   Loader2,
   ChevronDown,
-} from 'lucide-react';
-import Link from 'next/link';
+} from "lucide-react";
+import Link from "next/link";
 
 /* ─────────────────────────────────────────────────────────────
    STATUS PILL (same pattern as OrderManager)
 ───────────────────────────────────────────────────────────────*/
 const STATUS_PILL_MAP: Record<string, { label: string; cls: string }> = {
-  [OrderStatus.PENDING]:    { label: 'Pending',    cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
-  [OrderStatus.PAID]:       { label: 'Paid',       cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
-  [OrderStatus.PROCESSING]: { label: 'Processing', cls: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' },
-  [OrderStatus.SHIPPED]:    { label: 'Shipped',    cls: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
-  [OrderStatus.DELIVERED]:  { label: 'Delivered',  cls: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200' },
-  [OrderStatus.CANCELLED]:  { label: 'Cancelled',  cls: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' },
-  [OrderStatus.RETURNED]:   { label: 'Returned',   cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' },
+  [OrderStatus.PENDING]: {
+    label: "Pending",
+    cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+  },
+  [OrderStatus.PAID]: {
+    label: "Paid",
+    cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+  },
+  [OrderStatus.PROCESSING]: {
+    label: "Processing",
+    cls: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200",
+  },
+  [OrderStatus.SHIPPED]: {
+    label: "Shipped",
+    cls: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
+  },
+  [OrderStatus.DELIVERED]: {
+    label: "Delivered",
+    cls: "bg-teal-50 text-teal-700 ring-1 ring-teal-200",
+  },
+  [OrderStatus.CANCELLED]: {
+    label: "Cancelled",
+    cls: "bg-rose-50 text-rose-600 ring-1 ring-rose-200",
+  },
+  [OrderStatus.RETURNED]: {
+    label: "Returned",
+    cls: "bg-stone-100 text-stone-600 ring-1 ring-stone-200",
+  },
 };
 
-const DATE_OPTS: Intl.DateTimeFormatOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-const TIME_OPTS: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
-const FALLBACK_IMG = 'https://picsum.photos/300/300';
+const DATE_OPTS: Intl.DateTimeFormatOptions = {
+  weekday: "short",
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+};
+const TIME_OPTS: Intl.DateTimeFormatOptions = {
+  hour: "2-digit",
+  minute: "2-digit",
+};
+
 const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-  (e.target as HTMLImageElement).src = FALLBACK_IMG;
+  (e.target as HTMLImageElement).src = "";
 };
 
 /* ─────────────────────────────────────────────────────────────
    COLLAPSIBLE SECTION
 ───────────────────────────────────────────────────────────────*/
 const CollapsibleSection = ({
-  icon, title, badge, children, defaultOpen = true,
+  icon,
+  title,
+  badge,
+  children,
+  defaultOpen = true,
 }: {
-  icon: React.ReactNode; title: string; badge?: React.ReactNode;
-  children: React.ReactNode; defaultOpen?: boolean;
+  icon: React.ReactNode;
+  title: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
       <button
         className="w-full px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
       >
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <span className="text-stone-400">{icon}</span>
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">{title}</span>
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
+              {title}
+            </span>
           </div>
           {badge}
         </div>
-        <ChevronDown size={14} className={cn('text-stone-400 transition-transform duration-200', open && 'rotate-180')} />
+        <ChevronDown
+          size={14}
+          className={cn(
+            "text-stone-400 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
       </button>
       {open && <div>{children}</div>}
     </div>
@@ -91,7 +135,10 @@ export default function OrderDetailPage() {
     setError(null);
     fetch(`/api/orders/${orderId}`)
       .then(async (res) => {
-        if (!res.ok) throw new Error(res.status === 404 ? 'Order not found' : 'Failed to load order');
+        if (!res.ok)
+          throw new Error(
+            res.status === 404 ? "Order not found" : "Failed to load order",
+          );
         return res.json();
       })
       .then((data: Order) => {
@@ -112,16 +159,22 @@ export default function OrderDetailPage() {
     if (!order) return null;
     const items = order.items ?? [];
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-    return { subtotal, tax: order.gstAmount ?? Math.round(subtotal * 0.18), total: order.total };
+    return {
+      subtotal,
+      tax: order.gstAmount ?? Math.round(subtotal * 0.18),
+      total: order.total,
+    };
   }, [order]);
 
   const formattedDate = useMemo(
-    () => order ? new Date(order.date).toLocaleDateString('en-IN', DATE_OPTS) : '',
-    [order]
+    () =>
+      order ? new Date(order.date).toLocaleDateString("en-IN", DATE_OPTS) : "",
+    [order],
   );
   const formattedTime = useMemo(
-    () => order ? new Date(order.date).toLocaleTimeString('en-IN', TIME_OPTS) : '',
-    [order]
+    () =>
+      order ? new Date(order.date).toLocaleTimeString("en-IN", TIME_OPTS) : "",
+    [order],
   );
 
   // Loading state
@@ -144,9 +197,17 @@ export default function OrderDetailPage() {
           <div className="w-12 h-12 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-center mx-auto mb-4">
             <Package size={22} className="text-rose-400" />
           </div>
-          <h3 className="text-sm font-semibold text-stone-800 mb-1">{error ?? 'Order not found'}</h3>
-          <p className="text-xs text-stone-400 mb-4">The order you&apos;re looking for doesn&apos;t exist or couldn&apos;t be loaded.</p>
-          <Link href="/orders" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+          <h3 className="text-sm font-semibold text-stone-800 mb-1">
+            {error ?? "Order not found"}
+          </h3>
+          <p className="text-xs text-stone-400 mb-4">
+            The order you&apos;re looking for doesn&apos;t exist or
+            couldn&apos;t be loaded.
+          </p>
+          <Link
+            href="/orders"
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+          >
             ← Back to Orders
           </Link>
         </div>
@@ -154,7 +215,10 @@ export default function OrderDetailPage() {
     );
   }
 
-  const pillCfg = STATUS_PILL_MAP[order.status] ?? { label: order.status, cls: 'bg-stone-100 text-stone-600 ring-1 ring-stone-200' };
+  const pillCfg = STATUS_PILL_MAP[order.status] ?? {
+    label: order.status,
+    cls: "bg-stone-100 text-stone-600 ring-1 ring-stone-200",
+  };
   const items = order.items ?? [];
   const logs = order.logs ?? [];
   const shipments = order.shipments ?? [];
@@ -163,7 +227,6 @@ export default function OrderDetailPage() {
   return (
     <div className="min-h-screen bg-stone-50/40 py-6 sm:py-10">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-
         {/* Back link */}
         <Link
           href="/orders"
@@ -183,10 +246,12 @@ export default function OrderDetailPage() {
                   <h1 className="text-lg sm:text-xl font-bold text-stone-900 tracking-tight font-mono truncate">
                     {order.id}
                   </h1>
-                  <span className={cn(
-                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap',
-                    pillCfg.cls
-                  )}>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap",
+                      pillCfg.cls,
+                    )}
+                  >
                     <span className="w-1 h-1 rounded-full bg-current opacity-60" />
                     {pillCfg.label}
                   </span>
@@ -200,9 +265,11 @@ export default function OrderDetailPage() {
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">Total</p>
+                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">
+                  Total
+                </p>
                 <p className="text-lg font-extrabold text-stone-900 font-mono tabular-nums">
-                  ₹{order.total.toLocaleString('en-IN')}
+                  ₹{order.total.toLocaleString("en-IN")}
                 </p>
               </div>
             </div>
@@ -210,17 +277,37 @@ export default function OrderDetailPage() {
             {/* Customer meta grid */}
             <div className="mt-3 pt-3 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { icon: <User size={11} />, label: 'Customer', value: order.customerName },
-                { icon: <Mail size={11} />, label: 'Email', value: order.email },
-                { icon: <CreditCard size={11} />, label: 'Payment', value: order.paymentMethod ?? '—' },
-                { icon: <Hash size={11} />, label: 'Items', value: `${items.length} item${items.length !== 1 ? 's' : ''}` },
+                {
+                  icon: <User size={11} />,
+                  label: "Customer",
+                  value: order.customerName,
+                },
+                {
+                  icon: <Mail size={11} />,
+                  label: "Email",
+                  value: order.email,
+                },
+                {
+                  icon: <CreditCard size={11} />,
+                  label: "Payment",
+                  value: order.paymentMethod ?? "—",
+                },
+                {
+                  icon: <Hash size={11} />,
+                  label: "Items",
+                  value: `${items.length} item${items.length !== 1 ? "s" : ""}`,
+                },
               ].map(({ icon, label, value }) => (
                 <div key={label}>
                   <div className="flex items-center gap-1 mb-0.5">
                     <span className="text-stone-400">{icon}</span>
-                    <span className="text-[9px] uppercase tracking-widest font-bold text-stone-400">{label}</span>
+                    <span className="text-[9px] uppercase tracking-widest font-bold text-stone-400">
+                      {label}
+                    </span>
                   </div>
-                  <div className="text-xs font-semibold text-stone-800 truncate">{value}</div>
+                  <div className="text-xs font-semibold text-stone-800 truncate">
+                    {value}
+                  </div>
                 </div>
               ))}
             </div>
@@ -232,106 +319,185 @@ export default function OrderDetailPage() {
           icon={<Package size={12} />}
           title="Order Items"
           badge={
-            <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-stone-200/60 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
               {items.length}
             </span>
           }
         >
           {items.length > 0 ? (
-            <>
+            <div className="flex flex-col">
               <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-stone-100 bg-stone-50/30">
-                      <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">Qty</th>
-                      <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Unit</th>
-                      <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total</th>
+                    <tr className="border-b border-stone-200/60 bg-stone-50/50">
+                      <th className="px-5 py-3.5 text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em]">
+                        Product
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em]">
+                        Qty
+                      </th>
+                      <th className="px-4 py-3.5 text-right text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em]">
+                        Unit Price
+                      </th>
+                      <th className="px-5 py-3.5 text-right text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em]">
+                        Total
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-stone-50">
-                    {items.map(item => (
-                      <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
-                              <img src={item.image ?? FALLBACK_IMG} alt={item.name} className="h-full w-full object-contain" onError={handleImgError} />
+                  <tbody className="divide-y divide-stone-100/80">
+                    {items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="group hover:bg-stone-50/40 transition-colors duration-200"
+                      >
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-4">
+                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-stone-200/60 bg-white p-1.5 shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:shadow-md">
+                              <img
+                                src={item.image ?? ""}
+                                alt={item.name}
+                                className="h-full w-full object-contain"
+                                onError={handleImgError}
+                              />
                             </div>
-                            <div className="min-w-0">
-                              <p className="font-semibold text-stone-800 text-xs leading-tight line-clamp-1 tracking-tight">{item.name}</p>
-                              {item.sku && <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>}
+                            <div className="flex min-w-0 flex-col">
+                              <p className="font-semibold text-stone-800 text-sm tracking-tight truncate">
+                                {item.name}
+                              </p>
+                              {item.sku && (
+                                <p className="text-[10px] text-stone-400 font-mono mt-1 uppercase tracking-widest">
+                                  {item.sku}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-center">
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-stone-100 text-stone-700 font-bold text-xs border border-stone-200">{item.quantity}</span>
+                        <td className="px-4 py-4 text-center">
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100/80 border border-stone-200/60 text-xs font-bold text-stone-700 shadow-sm">
+                            {item.quantity}
+                          </span>
                         </td>
-                        <td className="px-3 py-3 text-right text-stone-500 text-xs font-mono tabular-nums">₹{item.price.toLocaleString('en-IN')}</td>
-                        <td className="px-4 py-3 text-right font-bold text-stone-900 text-xs font-mono tabular-nums">₹{(item.price * item.quantity).toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-4 text-right">
+                          <span className="font-mono text-xs font-medium text-stone-500 tabular-nums">
+                            ₹{item.price.toLocaleString("en-IN")}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <span className="font-mono text-sm font-bold text-stone-900 tabular-nums">
+                            ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="sm:hidden divide-y divide-stone-100">
-                {items.map(item => (
-                  <div key={item.id} className="p-3 flex gap-3">
-                    <div className="h-12 w-12 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
-                      <img src={item.image ?? FALLBACK_IMG} alt={item.name} className="h-full w-full object-contain" onError={handleImgError} />
+              <div className="sm:hidden flex flex-col divide-y divide-stone-100/80">
+                {items.map((item) => (
+                  <div key={item.id} className="p-4 flex gap-4 group">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-stone-200/60 bg-white p-2 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                      <img
+                        src={item.image ?? ""}
+                        alt={item.name}
+                        className="h-full w-full object-contain"
+                        onError={handleImgError}
+                      />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-stone-800 text-xs tracking-tight leading-tight">{item.name}</p>
-                      {item.sku && <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>}
-                      <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-xs text-stone-400">×<strong className="text-stone-700">{item.quantity}</strong> · ₹{item.price.toLocaleString('en-IN')}</span>
-                        <span className="font-bold text-stone-900 text-sm font-mono">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+                    <div className="flex flex-1 flex-col justify-center min-w-0">
+                      <p className="font-semibold text-stone-800 text-sm tracking-tight leading-snug line-clamp-2">
+                        {item.name}
+                      </p>
+                      {item.sku && (
+                        <p className="text-[10px] text-stone-400 font-mono mt-1 uppercase tracking-widest">
+                          {item.sku}
+                        </p>
+                      )}
+                      <div className="mt-2.5 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-stone-100 border border-stone-200/60 text-[11px] font-bold text-stone-700 shadow-sm">
+                            {item.quantity}
+                          </span>
+                          <span className="text-xs text-stone-400 font-medium">×</span>
+                          <span className="font-mono text-xs font-medium text-stone-500 tabular-nums">
+                            ₹{item.price.toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <span className="font-mono text-sm font-bold text-stone-900 tabular-nums">
+                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                        </span>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
               {financials && (
-                <div className="px-4 py-3 border-t border-stone-100 bg-stone-50/50">
-                  <div className="ml-auto max-w-[200px] space-y-1">
-                    <div className="flex justify-between text-xs font-mono tabular-nums">
-                      <span className="text-stone-400">Subtotal</span>
-                      <span className="text-stone-600">₹{financials.subtotal.toLocaleString('en-IN')}</span>
+                <div className="border-t border-stone-200/60 bg-[linear-gradient(180deg,rgba(250,250,249,0.4),rgba(245,245,244,0.8))] p-5 sm:p-6">
+                  <div className="ml-auto w-full max-w-[240px] space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-stone-500 uppercase tracking-widest text-[10px]">
+                        Subtotal
+                      </span>
+                      <span className="font-mono font-medium text-stone-700 tabular-nums">
+                        ₹{financials.subtotal.toLocaleString("en-IN")}
+                      </span>
                     </div>
-                    <div className="flex justify-between text-xs font-mono tabular-nums">
-                      <span className="text-stone-400">GST</span>
-                      <span className="text-stone-600">₹{financials.tax.toLocaleString('en-IN')}</span>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-stone-500 uppercase tracking-widest text-[10px]">
+                        GST
+                      </span>
+                      <span className="font-mono font-medium text-stone-700 tabular-nums">
+                        ₹{financials.tax.toLocaleString("en-IN")}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-stone-200 mt-1">
-                      <span className="font-bold text-stone-700 text-xs">Total</span>
-                      <span className="text-sm font-extrabold text-stone-900 font-mono tabular-nums">₹{financials.total.toLocaleString('en-IN')}</span>
+                    <div className="my-1.5 border-t border-stone-200/80 border-dashed" />
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-stone-900 uppercase tracking-widest text-[11px]">
+                        Total
+                      </span>
+                      <span className="font-mono text-base font-black text-stone-900 tabular-nums tracking-tight">
+                        ₹{financials.total.toLocaleString("en-IN")}
+                      </span>
                     </div>
                   </div>
                 </div>
               )}
-            </>
+            </div>
           ) : (
-            <div className="p-8 text-center">
-              <Package size={22} className="mx-auto text-stone-300 mb-2" />
-              <p className="text-xs text-stone-400">No items in this order</p>
+            <div className="flex flex-col items-center justify-center py-12 px-4">
+              <div className="h-12 w-12 rounded-2xl bg-white border border-stone-200 flex items-center justify-center mb-3 shadow-sm">
+                <Package size={20} className="text-stone-400" />
+              </div>
+              <p className="text-sm font-medium text-stone-600">No items found</p>
+              <p className="text-xs text-stone-400 mt-1">This order appears to be empty.</p>
             </div>
           )}
         </CollapsibleSection>
 
         {/* ── BOTTOM GRID: Shipping, Timeline, Shipments, Payments ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
           {/* Shipping Address */}
-          <CollapsibleSection icon={<MapPin size={12} />} title="Shipping Address">
+          <CollapsibleSection
+            icon={<MapPin size={12} />}
+            title="Shipping Address"
+          >
             <div className="px-4 py-3">
               {order.shippingStreet ? (
                 <div className="text-xs text-stone-500 leading-relaxed space-y-0.5">
-                  <p className="font-bold text-stone-800 text-sm tracking-tight">{order.customerName}</p>
+                  <p className="font-bold text-stone-800 text-sm tracking-tight">
+                    {order.customerName}
+                  </p>
                   <p>{order.shippingStreet}</p>
-                  <p>{order.shippingCity}, {order.shippingState}</p>
-                  <p className="font-mono text-[10px] text-stone-400 pt-0.5">{order.shippingZip} · {order.shippingCountry}</p>
+                  <p>
+                    {order.shippingCity}, {order.shippingState}
+                  </p>
+                  <p className="font-mono text-[10px] text-stone-400 pt-0.5">
+                    {order.shippingZip} · {order.shippingCountry}
+                  </p>
                 </div>
               ) : (
-                <p className="text-xs text-stone-400 italic">No address provided</p>
+                <p className="text-xs text-stone-400 italic">
+                  No address provided
+                </p>
               )}
             </div>
           </CollapsibleSection>
@@ -376,7 +542,6 @@ export default function OrderDetailPage() {
           >
             <OrderPayments payments={payments} />
           </CollapsibleSection>
-
         </div>
       </div>
     </div>

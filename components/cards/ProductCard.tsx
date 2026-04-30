@@ -13,7 +13,8 @@ export default function ProductCard({
   product,
   priority = false,
 }: ProductCardProps) {
-  const primaryImage = product.media?.[0]?.url ?? product.image ?? "/placeholder.png";
+  const primaryImage =
+    product.media?.[0]?.url ?? product.image ?? "/placeholder.png";
   const secondaryImage = product.media?.[1]?.url;
   const brand = product.brand?.name;
   const variant = product.variants?.[0];
@@ -57,7 +58,9 @@ export default function ProductCard({
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className={cn(
             "object-contain p-4 transition-all duration-500",
-            secondaryImage ? "group-hover:opacity-0 group-hover:scale-105" : "group-hover:scale-105"
+            secondaryImage
+              ? "group-hover:opacity-0 group-hover:scale-105"
+              : "group-hover:scale-105",
           )}
         />
         {secondaryImage && (
@@ -95,7 +98,7 @@ export default function ProductCard({
         </div>
 
         {/* Quick Action Hint */}
-        <div className="mt-2.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="mt-2.5">
           <span className="text-xs text-gray-400">Click to view details →</span>
         </div>
       </div>

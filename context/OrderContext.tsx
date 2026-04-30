@@ -76,6 +76,7 @@ interface OrderContextType {
   updateOrder: (id: string, data: Partial<Order> & { version: number }) => Promise<void>;
   updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
   cancelOrder: (id: string, note?: string) => Promise<void>;
+  trackOrder: (orderId: string, contact: string) => Promise<Order>;
 
   loading: boolean;
 }
@@ -286,6 +287,22 @@ export const OrderProvider = ({
     [refreshOrders, getOrderDetail, selectedOrder?.id]
   );
 
+  const trackOrder = useCallback(
+    async (orderId: string, contact: string): Promise<Order> => {
+      setLoading(true);
+      try {
+        const order = await fetchJSON<Order>('/api/storefront/track-order', {
+          method: 'POST',
+          body: JSON.stringify({ orderId, contact }),
+        });
+        return order;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   // ── Initial Load ─────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -311,6 +328,7 @@ export const OrderProvider = ({
       updateOrder,
       updateOrderStatus,
       cancelOrder,
+      trackOrder,
       loading,
     }),
     [
@@ -327,6 +345,7 @@ export const OrderProvider = ({
       updateOrder,
       updateOrderStatus,
       cancelOrder,
+      trackOrder,
       loading,
     ]
   );

@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 
 import ProductCard from "@/components/cards/ProductCard";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -33,7 +32,8 @@ function getActiveCategory(
   if (categoryName) {
     return (
       categories.find(
-        (category) => category.name.toLowerCase() === categoryName.toLowerCase(),
+        (category) =>
+          category.name.toLowerCase() === categoryName.toLowerCase(),
       ) ?? null
     );
   }
@@ -53,7 +53,14 @@ function getActiveCategory(
 
 export default function ProductsClient() {
   const searchParams = useSearchParams();
-  const { categories } = useShop();
+  const { categories, refreshCategories } = useShop();
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      refreshCategories();
+    }
+  }, [categories.length, refreshCategories]);
+
   const {
     activeFilterCount,
     category,
@@ -84,14 +91,13 @@ export default function ProductsClient() {
   );
   const activeCategoryLabel = activeCategory?.name ?? "All products";
 
-  const { products, filters, total, isLoading, totalPages } = useCatalogListing({
-    searchKey,
-    limit,
-    page,
-  });
-
-  const pageStart = total === 0 ? 0 : (page - 1) * limit + 1;
-  const pageEnd = Math.min(page * limit, total);
+  const { products, filters, total, isLoading, totalPages } = useCatalogListing(
+    {
+      searchKey,
+      limit,
+      page,
+    },
+  );
 
   useEffect(() => {
     setPage(1);

@@ -20,6 +20,7 @@ import {
     CheckCircle2,
     FolderOpen,
     RefreshCw,
+    Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -480,6 +481,11 @@ const CategoryManager = () => {
     const [editingSpecId, setEditingSpecId] = useState<string | null>(null);
     const [specForm, setSpecForm] = useState<UpdateSpecInput>(EMPTY_SPEC_FORM);
 
+    // ── Builder state ──
+    const [showBuilderModal, setShowBuilderModal] = useState(false);
+    const [builderForm, setBuilderForm] = useState<Partial<SubCategory>>({});
+    const [isSavingBuilder, setIsSavingBuilder] = useState(false);
+
     // ── Delete confirm state ──
     const [deleteConfirm, setDeleteConfirm] = useState<{
         type: 'filter' | 'node';
@@ -558,6 +564,39 @@ const CategoryManager = () => {
         () => subCategories.find((subCategory) => subCategory.id === selectedSubCategoryId) ?? null,
         [selectedSubCategoryId, subCategories],
     );
+
+    const openBuilderConfig = useCallback(() => {
+        if (!selectedSubCategory) return;
+        setBuilderForm({
+            isBuilderEnabled: selectedSubCategory.isBuilderEnabled ?? false,
+            isCore: selectedSubCategory.isCore ?? false,
+            isRequired: selectedSubCategory.isRequired ?? false,
+            allowMultiple: selectedSubCategory.allowMultiple ?? false,
+            builderOrder: selectedSubCategory.builderOrder ?? 0,
+            icon: selectedSubCategory.icon ?? '',
+            shortLabel: selectedSubCategory.shortLabel ?? '',
+        });
+        setShowBuilderModal(true);
+    }, [selectedSubCategory]);
+
+    const saveBuilderConfig = useCallback(async () => {
+        if (!selectedSubCategoryId) return;
+        setIsSavingBuilder(true);
+        try {
+            const response = await fetch(`/api/catalog/subcategories/${selectedSubCategoryId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(builderForm)
+            });
+            if (!response.ok) throw new Error("Failed to save");
+            await admin.syncData();
+            setShowBuilderModal(false);
+        } catch (error) {
+            console.error('Failed to save builder config', error);
+        } finally {
+            setIsSavingBuilder(false);
+        }
+    }, [selectedSubCategoryId, builderForm, admin]);
 
     const activeSpecs = useMemo(
         () => specs.filter((spec) => spec.subCategoryId === selectedSubCategoryId),
@@ -942,6 +981,15 @@ const CategoryManager = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <button
+                                type="button"
+                                onClick={openBuilderConfig}
+                                className="flex items-center gap-1.5 h-8 px-3 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
+                                disabled={!selectedSubCategory}
+                            >
+                                <Settings size={13} />
+                                PC Builder
+                            </button>
                             <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md flex-shrink-0">
                                 {activeSpecs.length} filter{activeSpecs.length !== 1 ? 's' : ''}
                             </span>
@@ -1252,6 +1300,151 @@ const CategoryManager = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* ══════════════════════════════════════ */}
+            {/*  BUILDER CONFIG MODAL                  */}
+            {/* ══════════════════════════════════════ */}
+            {showBuilderModal && selectedSubCategory && (
+            <Dialog 
+                open={showBuilderModal} 
+                onOpenChange={(open) => {
+                    if (!open && !isSavingBuilder) setShowBuilderModal(false);
+                }}
+            >
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-xl bg-white border-stone-200 rounded-2xl shadow-xl">
+                    <DialogHeader className="pb-2 border-b border-stone-100 mb-2">
+                        <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                                <Settings size={14} className="text-indigo-600" />
+                            </div>
+                            <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
+                                PC Builder Settings: {selectedSubCategory?.name}
+                            </DialogTitle>
+                        </div>
+                    </DialogHeader>
+                    
+                    <div className="py-2 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                    Enabled in PC Builder
+                                </label>
+                                <Select
+                                    value={builderForm.isBuilderEnabled ? "true" : "false"}
+                                    onValueChange={(val) => setBuilderForm(prev => ({ ...prev, isBuilderEnabled: val === "true" }))}
+                                >
+                                    <SelectTrigger className="h-9 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="true">Yes</SelectItem>
+                                        <SelectItem value="false">No</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                    Display Order
+                                </label>
+                                <Input
+                                    type="number"
+                                    value={builderForm.builderOrder ?? 0}
+                                    onChange={(e) => setBuilderForm(prev => ({ ...prev, builderOrder: parseInt(e.target.value) || 0 }))}
+                                    className="h-9 text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                    Short Label
+                                </label>
+                                <Input
+                                    value={builderForm.shortLabel ?? ''}
+                                    onChange={(e) => setBuilderForm(prev => ({ ...prev, shortLabel: e.target.value }))}
+                                    placeholder="e.g. CPU, RAM"
+                                    className="h-9 text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                    Lucide Icon Name
+                                </label>
+                                <Input
+                                    value={builderForm.icon ?? ''}
+                                    onChange={(e) => setBuilderForm(prev => ({ ...prev, icon: e.target.value }))}
+                                    placeholder="cpu, memory"
+                                    className="h-9 text-sm"
+                                />
+                            </div>
+                            
+                            <div className="col-span-2 space-y-2 mt-2">
+                                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1 border-b border-stone-100 pb-2">
+                                    Builder Rules
+                                </label>
+                                
+                                <label className="flex items-center gap-3 p-2 hover:bg-stone-50 rounded-lg cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="h-4 w-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-600"
+                                        checked={builderForm.isCore ?? false}
+                                        onChange={(e) => setBuilderForm(prev => ({ ...prev, isCore: e.target.checked }))}
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-stone-800">Core Component</span>
+                                        <span className="text-xs text-stone-500">Essential for a functioning PC</span>
+                                    </div>
+                                </label>
+                                
+                                <label className="flex items-center gap-3 p-2 hover:bg-stone-50 rounded-lg cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="h-4 w-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-600"
+                                        checked={builderForm.isRequired ?? false}
+                                        onChange={(e) => setBuilderForm(prev => ({ ...prev, isRequired: e.target.checked }))}
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-stone-800">Required Selection</span>
+                                        <span className="text-xs text-stone-500">User must pick an item from this category</span>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-center gap-3 p-2 hover:bg-stone-50 rounded-lg cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="h-4 w-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-600"
+                                        checked={builderForm.allowMultiple ?? false}
+                                        onChange={(e) => setBuilderForm(prev => ({ ...prev, allowMultiple: e.target.checked }))}
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-stone-800">Allow Multiple</span>
+                                        <span className="text-xs text-stone-500">Users can pick multiple items (e.g. RAM, Storage)</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 pt-2 flex-row">
+                        <button
+                            type="button"
+                            onClick={() => setShowBuilderModal(false)}
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50"
+                            disabled={isSavingBuilder}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={saveBuilderConfig}
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            disabled={isSavingBuilder}
+                        >
+                            {isSavingBuilder ? <RefreshCw className="animate-spin" size={12} /> : <Save size={12} />}
+                            {isSavingBuilder ? 'Saving...' : 'Save Settings'}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            )}
         </div>
     );
 };

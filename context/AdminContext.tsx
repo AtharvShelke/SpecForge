@@ -204,6 +204,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
               status: "IN_STOCK",
             },
           ],
+          images: data.images,
         }),
       });
 
@@ -249,6 +250,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
           brandId: brand?.id,
           description: data.description,
           status: data.status || existingProduct?.status,
+          images: data.images,
         }),
       });
 
