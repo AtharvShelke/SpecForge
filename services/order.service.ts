@@ -11,12 +11,9 @@
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "./catalog.service";
 import { Order, CreateOrder, CreateOrderItem } from "@/types";
-import { createPaymentTransaction } from "@/services/paymentService";
+import { createPaymentTransaction } from "../lib/payments";
 
-async function allocateInventoryForOrderItem(
-  tx: any,
-  item: CreateOrderItem,
-) {
+async function allocateInventoryForOrderItem(tx: any, item: CreateOrderItem) {
   if (item.inventoryItemId) {
     if (item.quantity !== 1) {
       throw new ServiceError(
@@ -37,29 +34,47 @@ async function allocateInventoryForOrderItem(
     });
 
     if (!inventoryItem || inventoryItem.variantId !== item.variantId) {
-      throw new ServiceError("Requested inventory item is not available for this variant.", 400);
+      throw new ServiceError(
+        "Requested inventory item is not available for this variant.",
+        400,
+      );
     }
     if (inventoryItem.trackingType !== "SERIALIZED") {
-      throw new ServiceError("Traceable order items must be allocated from serialized inventory.", 400);
+      throw new ServiceError(
+        "Traceable order items must be allocated from serialized inventory.",
+        400,
+      );
     }
     if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
-      throw new ServiceError("Serialized inventory item is missing part or serial number.", 400);
+      throw new ServiceError(
+        "Serialized inventory item is missing part or serial number.",
+        400,
+      );
     }
 
     const available =
       Number(inventoryItem.quantityOnHand ?? 0) -
       Number(inventoryItem.quantityReserved ?? 0);
     if (available < 1 || inventoryItem.status === "SOLD") {
-      throw new ServiceError("Requested inventory item is no longer available.", 409);
+      throw new ServiceError(
+        "Requested inventory item is no longer available.",
+        409,
+      );
     }
 
-    return [{
-      inventoryItemId: inventoryItem.id,
-      quantity: 1,
-      productNumber: inventoryItem.variant?.sku || item.productNumber || item.sku || item.variantId,
-      partNumber: inventoryItem.partNumber,
-      serialNumber: inventoryItem.serialNumber,
-    }];
+    return [
+      {
+        inventoryItemId: inventoryItem.id,
+        quantity: 1,
+        productNumber:
+          inventoryItem.variant?.sku ||
+          item.productNumber ||
+          item.sku ||
+          item.variantId,
+        partNumber: inventoryItem.partNumber,
+        serialNumber: inventoryItem.serialNumber,
+      },
+    ];
   }
 
   const serializedItems = await tx.inventoryItem.findMany({
@@ -87,9 +102,15 @@ async function allocateInventoryForOrderItem(
 
     return serializedItems.map((inventoryItem: any) => {
       if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
-        throw new ServiceError("Serialized inventory item is missing part or serial number.", 400);
+        throw new ServiceError(
+          "Serialized inventory item is missing part or serial number.",
+          400,
+        );
       }
-      if (seenSerial.has(inventoryItem.serialNumber) || seenPart.has(inventoryItem.partNumber)) {
+      if (
+        seenSerial.has(inventoryItem.serialNumber) ||
+        seenPart.has(inventoryItem.partNumber)
+      ) {
         throw new ServiceError(
           `Inventory allocation conflict detected for variant ${item.variantId}.`,
           409,
@@ -102,7 +123,11 @@ async function allocateInventoryForOrderItem(
       return {
         inventoryItemId: inventoryItem.id,
         quantity: 1,
-        productNumber: inventoryItem.variant?.sku || item.productNumber || item.sku || item.variantId,
+        productNumber:
+          inventoryItem.variant?.sku ||
+          item.productNumber ||
+          item.sku ||
+          item.variantId,
         partNumber: inventoryItem.partNumber,
         serialNumber: inventoryItem.serialNumber,
       };
@@ -135,7 +160,7 @@ function assertStatusTransition(from: string, to: string) {
   if (!allowed || !allowed.includes(to)) {
     throw new ServiceError(
       `Invalid order status transition: ${from} → ${to}`,
-      400
+      400,
     );
   }
 }
@@ -389,7 +414,8 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
         amount: data.total,
         gatewayTxnId: data.paymentTransactionId || undefined,
         idempotencyKey:
-          data.paymentIdempotencyKey || `${newOrder.id}-${data.paymentMethod}-${Date.now()}`,
+          data.paymentIdempotencyKey ||
+          `${newOrder.id}-${data.paymentMethod}-${Date.now()}`,
         metadata: data.paymentMetadata,
         status: data.paymentStatus,
       });
@@ -426,7 +452,10 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
         });
 
         if (reserved.count === 0) {
-          throw new ServiceError("One or more inventory units became unavailable during checkout.", 409);
+          throw new ServiceError(
+            "One or more inventory units became unavailable during checkout.",
+            409,
+          );
         }
 
         await tx.reservation.create({
@@ -460,7 +489,7 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
 
 export async function updateOrder(
   id: string,
-  data: Partial<Order> & { version: number }
+  data: Partial<Order> & { version: number },
 ): Promise<Order> {
   const patch: any = {};
   for (const [key, value] of Object.entries(data)) {
@@ -475,7 +504,10 @@ export async function updateOrder(
     })) as any as Order;
   } catch (err: any) {
     if (err.code === "P2025") {
-      throw new ServiceError("Order was modified by another user, please refresh.", 409);
+      throw new ServiceError(
+        "Order was modified by another user, please refresh.",
+        409,
+      );
     }
     throw err;
   }
@@ -488,7 +520,7 @@ export async function updateOrder(
 export async function updateOrderStatus(
   id: string,
   status: string,
-  note?: string
+  note?: string,
 ) {
   if (!status) throw new ServiceError("Status is required");
 
@@ -526,7 +558,7 @@ export async function updateOrderStatus(
     // PAID: Convert reservations from ACTIVE → CONVERTED, deduct on-hand
     if (status === "PAID") {
       const activeReservations = order.reservations.filter(
-        (r) => r.status === "ACTIVE"
+        (r) => r.status === "ACTIVE",
       );
       for (const res of activeReservations) {
         await tx.reservation.update({
@@ -544,7 +576,9 @@ export async function updateOrderStatus(
             quantityReserved: { decrement: res.quantity },
             quantityOnHand: { decrement: res.quantity },
             status:
-              Number(inventoryItem?.quantityOnHand ?? 0) - Number(res.quantity) <= 0
+              Number(inventoryItem?.quantityOnHand ?? 0) -
+                Number(res.quantity) <=
+              0
                 ? "SOLD"
                 : "IN_STOCK",
           },
@@ -627,7 +661,7 @@ export async function cancelOrder(id: string, note?: string) {
 
     // 3. Release active reservations and restore inventory
     const activeReservations = order.reservations.filter(
-      (r) => r.status === "ACTIVE"
+      (r) => r.status === "ACTIVE",
     );
     for (const res of activeReservations) {
       await tx.reservation.update({
@@ -644,7 +678,7 @@ export async function cancelOrder(id: string, note?: string) {
     }
 
     const convertedReservations = order.reservations.filter(
-      (r) => r.status === "CONVERTED"
+      (r) => r.status === "CONVERTED",
     );
     for (const res of convertedReservations) {
       await tx.reservation.update({

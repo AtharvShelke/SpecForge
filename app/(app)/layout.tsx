@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import Footer from "@/components/Footer";
 import Header from "@/components/storefront/Header";
+import { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: {
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
 export default function Layout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <>

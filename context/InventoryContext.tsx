@@ -1,7 +1,15 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
-import { InventoryItem, InventorySkuSummary, Reservation } from '../types';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+  useMemo,
+} from "react";
+import { InventoryItem, InventorySkuSummary, Reservation } from "../types";
 
 export interface InventorySummary {
   available: number;
@@ -16,7 +24,7 @@ interface InventoryContextType {
   inventory: InventoryItem[];
   reservations: Reservation[];
   auditLogs: any[];
-  
+
   // O(1) lookup map (sku -> summary)
   inventoryBySku: Map<string, InventorySummary>;
 
@@ -30,8 +38,16 @@ interface InventoryContextType {
     limit: number;
   }>;
 
-  adjustStock: (variantId: string, quantity: number, type: string) => Promise<void>;
-  createReservation: (orderId: string, variantId: string, quantity: number) => Promise<void>;
+  adjustStock: (
+    variantId: string,
+    quantity: number,
+    type: string,
+  ) => Promise<void>;
+  createReservation: (
+    orderId: string,
+    variantId: string,
+    quantity: number,
+  ) => Promise<void>;
   releaseReservation: (id: string) => Promise<void>;
 
   loading: boolean;
@@ -44,12 +60,14 @@ async function fetchJSON(url: string, options?: RequestInit) {
     ...options,
     headers: {
       ...options?.headers,
-      'Content-Type': 'application/json'
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
-    let msg = 'Request failed';
-    try { msg = await res.text(); } catch(e) {}
+    let msg = "Request failed";
+    try {
+      msg = await res.text();
+    } catch (e) {}
     throw new Error(msg);
   }
   return res.json();
@@ -69,8 +87,8 @@ export const InventoryProvider = ({
 
   const inventoryBySku = useMemo(() => {
     const map = new Map<string, InventorySummary>();
-    
-    inventory.forEach(item => {
+
+    inventory.forEach((item) => {
       const sku = item.variant?.sku || item.variantId;
       if (!map.has(sku)) {
         map.set(sku, {
@@ -82,22 +100,22 @@ export const InventoryProvider = ({
           trackingType: item.trackingType,
         });
       }
-      
+
       const summary = map.get(sku)!;
       summary.items.push(item);
       summary.totalOnHand += item.quantityOnHand || 0;
       summary.reserved += item.quantityReserved || 0;
-      
+
       switch (item.status) {
-        case 'SOLD':
-          summary.sold += (item.trackingType === 'SERIALIZED' ? 1 : 0);
+        case "SOLD":
+          summary.sold += item.trackingType === "SERIALIZED" ? 1 : 0;
           break;
-        case 'IN_STOCK':
-        case 'RESERVED':
-        case 'DAMAGED':
-        case 'RMA':
-        case 'IN_TRANSIT':
-        case 'RETURNED':
+        case "IN_STOCK":
+        case "RESERVED":
+        case "DAMAGED":
+        case "RMA":
+        case "IN_TRANSIT":
+        case "RETURNED":
           break;
       }
     });
@@ -111,45 +129,62 @@ export const InventoryProvider = ({
   }, [inventory]);
 
   const refreshInventory = useCallback(async () => {
-    const data = await fetchJSON('/api/inventory?limit=200&page=1');
+    const data = await fetchJSON("/api/inventory?limit=200&page=1");
     setInventory(Array.isArray(data?.items) ? data.items : []);
   }, []);
 
   const refreshReservations = useCallback(async () => {
-    const data = await fetchJSON('/api/inventory/reservations');
+    const data = await fetchJSON("/api/inventory/reservations");
     setReservations(data);
   }, []);
 
   const refreshAuditLogs = useCallback(async () => {
-    const data = await fetchJSON('/api/audit-logs');
+    const data = await fetchJSON("/api/audit-logs");
     const logs = Array.isArray(data) ? data : [];
     setAuditLogs(logs);
     return logs;
   }, []);
 
-  const fetchInventoryPage = useCallback(async (query?: URLSearchParams | string) => {
-    const qs = query?.toString();
-    const data = await fetchJSON(qs ? `/api/inventory?${qs}` : '/api/inventory');
-    return {
-      items: Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []),
-      total: Number(data?.total ?? 0),
-      page: Number(data?.page ?? 1),
-      limit: Number(data?.limit ?? 10),
-    };
-  }, []);
+  const fetchInventoryPage = useCallback(
+    async (query?: URLSearchParams | string) => {
+      const qs = query?.toString();
+      const data = await fetchJSON(
+        qs ? `/api/inventory?${qs}` : "/api/inventory",
+      );
+      return {
+        items: Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data)
+            ? data
+            : [],
+        total: Number(data?.total ?? 0),
+        page: Number(data?.page ?? 1),
+        limit: Number(data?.limit ?? 10),
+      };
+    },
+    [],
+  );
 
-  const adjustStock = async (variantId: string, quantity: number, type: string) => {
-    await fetchJSON('/api/inventory/items', {
-      method: 'POST',
-      body: JSON.stringify({ variantId, quantity, type, action: 'ADJUST' })
+  const adjustStock = async (
+    variantId: string,
+    quantity: number,
+    type: string,
+  ) => {
+    await fetchJSON("/api/inventory/items", {
+      method: "POST",
+      body: JSON.stringify({ variantId, quantity, type, action: "ADJUST" }),
     });
     await refreshInventory();
   };
 
-  const createReservation = async (orderId: string, variantId: string, quantity: number) => {
-    await fetchJSON('/api/inventory/reservations', {
-      method: 'POST',
-      body: JSON.stringify({ orderId, variantId, quantity })
+  const createReservation = async (
+    orderId: string,
+    variantId: string,
+    quantity: number,
+  ) => {
+    await fetchJSON("/api/inventory/reservations", {
+      method: "POST",
+      body: JSON.stringify({ orderId, variantId, quantity }),
     });
     await refreshReservations();
     await refreshInventory();
@@ -157,8 +192,8 @@ export const InventoryProvider = ({
 
   const releaseReservation = async (id: string) => {
     await fetchJSON(`/api/inventory/reservations/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'RELEASED' })
+      method: "PATCH",
+      body: JSON.stringify({ status: "RELEASED" }),
     });
     await refreshReservations();
     await refreshInventory();
@@ -167,10 +202,7 @@ export const InventoryProvider = ({
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      await Promise.all([
-        refreshInventory(),
-        refreshReservations()
-      ]);
+      await Promise.all([refreshInventory(), refreshReservations()]);
     } finally {
       setLoading(false);
     }
@@ -182,12 +214,22 @@ export const InventoryProvider = ({
   }, [autoLoad, loadAll]);
 
   return (
-    <InventoryContext.Provider value={{
-      inventory, reservations, auditLogs, inventoryBySku,
-      refreshInventory, refreshReservations, refreshAuditLogs, fetchInventoryPage,
-      adjustStock, createReservation, releaseReservation,
-      loading
-    }}>
+    <InventoryContext.Provider
+      value={{
+        inventory,
+        reservations,
+        auditLogs,
+        inventoryBySku,
+        refreshInventory,
+        refreshReservations,
+        refreshAuditLogs,
+        fetchInventoryPage,
+        adjustStock,
+        createReservation,
+        releaseReservation,
+        loading,
+      }}
+    >
       {children}
     </InventoryContext.Provider>
   );
@@ -195,20 +237,23 @@ export const InventoryProvider = ({
 
 export const useInventory = () => {
   const ctx = useContext(InventoryContext);
-  if (!ctx) throw new Error('useInventory must be used within InventoryProvider');
+  if (!ctx)
+    throw new Error("useInventory must be used within InventoryProvider");
   return ctx;
 };
 
 export const useInventoryStats = (skuOrVariantId: string) => {
   const { inventoryBySku } = useInventory();
   return useMemo(() => {
-    return inventoryBySku.get(skuOrVariantId) || {
-      available: 0,
-      reserved: 0,
-      sold: 0,
-      totalOnHand: 0,
-      items: [],
-      trackingType: 'BULK'
-    };
+    return (
+      inventoryBySku.get(skuOrVariantId) || {
+        available: 0,
+        reserved: 0,
+        sold: 0,
+        totalOnHand: 0,
+        items: [],
+        trackingType: "BULK",
+      }
+    );
   }, [inventoryBySku, skuOrVariantId]);
 };

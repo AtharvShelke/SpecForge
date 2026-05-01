@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { BuildProvider } from "@/context/BuildContext";
 import { OrderProvider } from "@/context/OrderContext";
 import { ShopProvider } from "@/context/ShopContext";
+import { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: {
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <html lang="en">

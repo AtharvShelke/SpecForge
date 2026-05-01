@@ -16,7 +16,7 @@ import {
   CreateVariant,
   CreateVariantSpec,
 } from "@/types";
-import { serializeProducts } from "@/lib/api/adminSerializers";
+import { serializeProducts } from "@/lib/adminSerializers";
 import { buildDynamicCatalogResult } from "@/lib/dynamicCatalogFilters";
 
 export class CatalogService {
@@ -144,12 +144,15 @@ export class CatalogService {
           metaDescription: data.metaDescription,
           description: data.description,
           status: (data.status as any) || "ACTIVE",
-          media: data.images && data.images.length > 0 ? {
-            create: data.images.map((url, index) => ({
-              url,
-              sortOrder: index
-            }))
-          } : undefined
+          media:
+            data.images && data.images.length > 0
+              ? {
+                  create: data.images.map((url, index) => ({
+                    url,
+                    sortOrder: index,
+                  })),
+                }
+              : undefined,
         },
       });
 
@@ -641,24 +644,28 @@ export async function createSubCategory(data: {
   });
 }
 
-export async function updateSubCategory(id: string, data: {
-  name?: string;
-  description?: string;
-  isBuilderEnabled?: boolean;
-  isCore?: boolean;
-  isRequired?: boolean;
-  allowMultiple?: boolean;
-  builderOrder?: number;
-  icon?: string | null;
-  shortLabel?: string | null;
-}) {
+export async function updateSubCategory(
+  id: string,
+  data: {
+    name?: string;
+    description?: string;
+    isBuilderEnabled?: boolean;
+    isCore?: boolean;
+    isRequired?: boolean;
+    allowMultiple?: boolean;
+    builderOrder?: number;
+    icon?: string | null;
+    shortLabel?: string | null;
+  },
+) {
   try {
     return await prisma.subCategory.update({
       where: { id },
       data,
     });
   } catch (err: any) {
-    if (err.code === "P2025") throw new ServiceError("SubCategory not found", 404);
+    if (err.code === "P2025")
+      throw new ServiceError("SubCategory not found", 404);
     throw err;
   }
 }
@@ -1144,12 +1151,15 @@ export async function createProduct(data: CreateProduct) {
     metaDescription: data.metaDescription,
     description: data.description,
     status: (data.status as any) || "DRAFT",
-    media: data.images && data.images.length > 0 ? {
-      create: data.images.map((url, index) => ({
-        url,
-        sortOrder: index
-      }))
-    } : undefined
+    media:
+      data.images && data.images.length > 0
+        ? {
+            create: data.images.map((url, index) => ({
+              url,
+              sortOrder: index,
+            })),
+          }
+        : undefined,
   };
 
   if (data.variants && data.variants.length > 0) {

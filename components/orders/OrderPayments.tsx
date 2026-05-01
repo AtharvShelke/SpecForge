@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import Image from "next/image";
 import { PaymentMethodType, PaymentStatus, PaymentTransaction } from "@/types";
 import { cn } from "@/lib/utils";

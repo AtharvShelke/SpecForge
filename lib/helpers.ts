@@ -1,5 +1,5 @@
 import { HomepageCategory } from "@/types";
-import { normalizeCatalogProduct } from "../catalogFrontend";
+import { normalizeCatalogProduct } from "./catalogFrontend";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 

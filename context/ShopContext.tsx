@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
@@ -8,10 +8,18 @@ import React, {
   useCallback,
   useMemo,
   ReactNode,
-} from 'react';
+} from "react";
 
-import { Product, ProductVariant, SubCategory, SpecDefinition, Category, Brand, Order } from '../types';
-import { sameCategory } from '../lib/categoryUtils';
+import {
+  Product,
+  ProductVariant,
+  SubCategory,
+  SpecDefinition,
+  Category,
+  Brand,
+  Order,
+} from "../types";
+import { sameCategory } from "../lib/categoryUtils";
 
 interface ShopContextType {
   products: Product[];
@@ -23,7 +31,11 @@ interface ShopContextType {
   cart: any[];
   isCartOpen: boolean;
   setCartOpen: (open: boolean) => void;
-  addToCart: (product: Product, selectedVariant?: ProductVariant, preventOpenDrawer?: boolean) => void;
+  addToCart: (
+    product: Product,
+    selectedVariant?: ProductVariant,
+    preventOpenDrawer?: boolean,
+  ) => void;
   loadCart: (items: any[]) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, qty: number) => void;
@@ -58,17 +70,17 @@ const ShopContext = createContext<ShopContextType | null>(null);
 async function fetchJSON(url: string, options?: RequestInit) {
   const res = await fetch(url, {
     ...options,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-export const ShopProvider = ({ 
+export const ShopProvider = ({
   children,
-  autoLoad = false
-}: { 
+  autoLoad = false,
+}: {
   children: ReactNode;
   autoLoad?: boolean;
 }) => {
@@ -77,7 +89,9 @@ export const ShopProvider = ({
   const [brands, setBrands] = useState<Brand[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [specs, setSpecs] = useState<SpecDefinition[]>([]);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
+    null,
+  );
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -106,17 +120,22 @@ export const ShopProvider = ({
 
   const clearFilters = () => setFilters({});
 
-  const fetchProducts = async (subCategoryId?: string, filtersObj?: Record<string, string[]>) => {
+  const fetchProducts = async (
+    subCategoryId?: string,
+    filtersObj?: Record<string, string[]>,
+  ) => {
     setLoading(true);
     try {
       // Transform Record<string, string[]> to Array<{ specId: string, values: string[] }>
-      const formattedFilters = Object.entries(filtersObj || {}).map(([specId, values]) => ({
-        specId,
-        values
-      }));
+      const formattedFilters = Object.entries(filtersObj || {}).map(
+        ([specId, values]) => ({
+          specId,
+          values,
+        }),
+      );
 
-      const data = await fetchJSON('/api/catalog/products/filter', {
-        method: 'POST',
+      const data = await fetchJSON("/api/catalog/products/filter", {
+        method: "POST",
         body: JSON.stringify({
           subCategoryId,
           filters: formattedFilters,
@@ -134,15 +153,15 @@ export const ShopProvider = ({
   }, [selectedSubCategory, filters]);
 
   const refreshOrders = useCallback(async () => {
-    const data = await fetchJSON('/api/orders');
+    const data = await fetchJSON("/api/orders");
     setOrders(Array.isArray(data) ? data : []);
   }, []);
 
   const refreshCategories = useCallback(async () => {
     const [subCats, cats, brnds] = await Promise.all([
-      fetchJSON('/api/catalog/subcategories'),
-      fetchJSON('/api/catalog/categories'),
-      fetchJSON('/api/catalog/brands')
+      fetchJSON("/api/catalog/subcategories"),
+      fetchJSON("/api/catalog/categories"),
+      fetchJSON("/api/catalog/brands"),
     ]);
     setSubCategories(subCats);
     setCategories(cats);
@@ -152,27 +171,41 @@ export const ShopProvider = ({
   const refreshFilterConfigs = useCallback(async () => {}, []);
 
   // Cart Actions
-  const addToCart = useCallback((product: Product, selectedVariant?: ProductVariant, preventOpenDrawer?: boolean) => {
-    setCart((prev) => {
-      const variantToUse = selectedVariant ?? product.variants?.[0];
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, selectedVariant: variantToUse }
-            : item
-        );
+  const addToCart = useCallback(
+    (
+      product: Product,
+      selectedVariant?: ProductVariant,
+      preventOpenDrawer?: boolean,
+    ) => {
+      setCart((prev) => {
+        const variantToUse = selectedVariant ?? product.variants?.[0];
+        const existing = prev.find((item) => item.id === product.id);
+        if (existing) {
+          return prev.map((item) =>
+            item.id === product.id
+              ? {
+                  ...item,
+                  quantity: item.quantity + 1,
+                  selectedVariant: variantToUse,
+                }
+              : item,
+          );
+        }
+        return [
+          ...prev,
+          {
+            ...product,
+            quantity: 1,
+            selectedVariant: variantToUse,
+          },
+        ];
+      });
+      if (!preventOpenDrawer) {
+        setCartOpen(true);
       }
-      return [...prev, { 
-        ...product, 
-        quantity: 1, 
-        selectedVariant: variantToUse 
-      }];
-    });
-    if (!preventOpenDrawer) {
-      setCartOpen(true);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const removeFromCart = useCallback((id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
@@ -182,15 +215,20 @@ export const ShopProvider = ({
     setCart(Array.isArray(items) ? items : []);
   }, []);
 
-  const updateQuantity = useCallback((id: string, qty: number) => {
-    if (qty < 1) {
-      removeFromCart(id);
-      return;
-    }
-    setCart((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity: qty } : item))
-    );
-  }, [removeFromCart]);
+  const updateQuantity = useCallback(
+    (id: string, qty: number) => {
+      if (qty < 1) {
+        removeFromCart(id);
+        return;
+      }
+      setCart((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, quantity: qty } : item,
+        ),
+      );
+    },
+    [removeFromCart],
+  );
 
   const clearCart = useCallback(() => setCart([]), []);
 
@@ -198,7 +236,9 @@ export const ShopProvider = ({
     setCompareItems((prev) => {
       if (prev.some((item) => item.id === product.id)) return prev;
 
-      const sameGroupItems = prev.filter((item) => sameCategory(item.category, product.category));
+      const sameGroupItems = prev.filter((item) =>
+        sameCategory(item.category, product.category),
+      );
       return [...sameGroupItems, product].slice(-4);
     });
   }, []);
@@ -211,7 +251,8 @@ export const ShopProvider = ({
 
   const cartTotal = useMemo(() => {
     return cart.reduce((acc, item) => {
-      const price = item.selectedVariant?.price || item.variants?.[0]?.price || 0;
+      const price =
+        item.selectedVariant?.price || item.variants?.[0]?.price || 0;
       return acc + Number(price) * item.quantity;
     }, 0);
   }, [cart]);
@@ -221,11 +262,10 @@ export const ShopProvider = ({
     refreshCategories();
   }, [autoLoad, refreshCategories]);
 
-
   useEffect(() => {
     try {
-      const savedCart = window.localStorage.getItem('md-cart');
-      const savedCompare = window.localStorage.getItem('md-compare');
+      const savedCart = window.localStorage.getItem("md-cart");
+      const savedCompare = window.localStorage.getItem("md-compare");
 
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
@@ -236,16 +276,16 @@ export const ShopProvider = ({
         setCompareItems(Array.isArray(parsed) ? parsed : []);
       }
     } catch (err) {
-      console.error('Failed to restore persisted shop state', err);
+      console.error("Failed to restore persisted shop state", err);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem('md-cart', JSON.stringify(cart));
+    window.localStorage.setItem("md-cart", JSON.stringify(cart));
   }, [cart]);
 
   useEffect(() => {
-    window.localStorage.setItem('md-compare', JSON.stringify(compareItems));
+    window.localStorage.setItem("md-compare", JSON.stringify(compareItems));
   }, [compareItems]);
 
   useEffect(() => {
@@ -294,7 +334,6 @@ export const ShopProvider = ({
 
 export const useShop = () => {
   const ctx = useContext(ShopContext);
-  if (!ctx) throw new Error('useShop must be used within ShopProvider');
+  if (!ctx) throw new Error("useShop must be used within ShopProvider");
   return ctx;
 };
-

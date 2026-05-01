@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
-import { measureRoute } from "@/lib/performance";
 import { prisma } from "@/lib/prisma";
-import { CatalogService } from "@/lib/services/catalog.service";
+import { CatalogService } from "@/services/catalog.service";
 import { DynamicCatalogFilter, Product } from "@/types";
 
 function hasInventoryUnitFields(payload: unknown): boolean {
@@ -159,7 +158,8 @@ function sortProducts(products: Product[], sort: string) {
     default:
       next.sort(
         (left, right) =>
-          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+          new Date(right.createdAt).getTime() -
+          new Date(left.createdAt).getTime(),
       );
       break;
   }
@@ -167,11 +167,18 @@ function sortProducts(products: Product[], sort: string) {
   return next;
 }
 
-async function buildFilters(products: Product[]): Promise<DynamicCatalogFilter[]> {
+async function buildFilters(
+  products: Product[],
+): Promise<DynamicCatalogFilter[]> {
   const brandCounts = new Map<string, number>();
   const specMap = new Map<
     string,
-    { label: string; group: string | null; order: number | null; counts: Map<string, number> }
+    {
+      label: string;
+      group: string | null;
+      order: number | null;
+      counts: Map<string, number>;
+    }
   >();
   const subCategoryIds = Array.from(
     new Set(products.map((product) => product.subCategoryId).filter(Boolean)),
@@ -191,7 +198,8 @@ async function buildFilters(products: Product[]): Promise<DynamicCatalogFilter[]
   });
   const specNameBySubCategory = new Map<string, Set<string>>();
   for (const spec of filterableSpecs) {
-    const specSet = specNameBySubCategory.get(spec.subCategoryId) ?? new Set<string>();
+    const specSet =
+      specNameBySubCategory.get(spec.subCategoryId) ?? new Set<string>();
     specSet.add(spec.name.toLowerCase());
     specNameBySubCategory.set(spec.subCategoryId, specSet);
   }
@@ -211,7 +219,9 @@ async function buildFilters(products: Product[]): Promise<DynamicCatalogFilter[]
       if (allowedSpecNames && !allowedSpecNames.has(specName)) continue;
 
       const schemaSpec = filterableSpecs.find(
-        (entry) => entry.subCategoryId === product.subCategoryId && entry.name.toLowerCase() === specName,
+        (entry) =>
+          entry.subCategoryId === product.subCategoryId &&
+          entry.name.toLowerCase() === specName,
       );
 
       if (!specMap.has(filterId)) {
@@ -248,12 +258,14 @@ async function buildFilters(products: Product[]): Promise<DynamicCatalogFilter[]
     });
   }
 
-  for (const [filterId, entry] of Array.from(specMap.entries()).sort(([, left], [, right]) => {
-    const leftOrder = left.order ?? Number.MAX_SAFE_INTEGER;
-    const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER;
-    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
-    return left.label.localeCompare(right.label);
-  })) {
+  for (const [filterId, entry] of Array.from(specMap.entries()).sort(
+    ([, left], [, right]) => {
+      const leftOrder = left.order ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER;
+      if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+      return left.label.localeCompare(right.label);
+    },
+  )) {
     filters.push({
       id: filterId,
       key: filterId,
@@ -288,219 +300,228 @@ function selectedFilterMap(searchParams: URLSearchParams) {
 }
 
 export async function GET(request: NextRequest) {
-  return measureRoute("GET /api/catalog/products", async () => {
-    try {
-      const searchParams = request.nextUrl.searchParams;
-      const subCategoryId = searchParams.get("subCategoryId");
-      const category = searchParams.get("category");
-      const query = searchParams.get("q")?.trim() ?? "";
-      const minPrice = searchParams.get("minPrice");
-      const maxPrice = searchParams.get("maxPrice");
-      const sort = searchParams.get("sort") ?? "featured";
-      const limitParam = searchParams.get("limit");
-      const limit = limitParam ? Math.min(60, Math.max(1, Number(limitParam))) : null;
-      const cursor = Math.max(0, Number(searchParams.get("cursor") ?? 0));
-      const stockStatus = searchParams.get("f_stock_status");
-      const filters = selectedFilterMap(searchParams);
-      const requiresInMemorySort = sort === "price-asc" || sort === "price-desc";
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const subCategoryId = searchParams.get("subCategoryId");
+    const category = searchParams.get("category");
+    const query = searchParams.get("q")?.trim() ?? "";
+    const minPrice = searchParams.get("minPrice");
+    const maxPrice = searchParams.get("maxPrice");
+    const sort = searchParams.get("sort") ?? "featured";
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam
+      ? Math.min(60, Math.max(1, Number(limitParam)))
+      : null;
+    const cursor = Math.max(0, Number(searchParams.get("cursor") ?? 0));
+    const stockStatus = searchParams.get("f_stock_status");
+    const filters = selectedFilterMap(searchParams);
+    const requiresInMemorySort = sort === "price-asc" || sort === "price-desc";
 
-      const where: Record<string, unknown> = { deletedAt: null };
-      const andClauses: Array<Record<string, unknown>> = [];
+    const where: Record<string, unknown> = { deletedAt: null };
+    const andClauses: Array<Record<string, unknown>> = [];
 
-      if (subCategoryId) {
-        where.subCategoryId = subCategoryId;
-      }
+    if (subCategoryId) {
+      where.subCategoryId = subCategoryId;
+    }
 
-      if (category) {
-        andClauses.push({
-          subCategory: {
-            category: {
-              name: {
-                equals: category,
-                mode: "insensitive",
-              },
-            },
-          },
-        });
-      }
-
-      if (query) {
-        andClauses.push({
-          OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { slug: { contains: query, mode: "insensitive" } },
-            { brand: { name: { contains: query, mode: "insensitive" } } },
-            {
-              variants: {
-                some: {
-                  deletedAt: null,
-                  sku: { contains: query, mode: "insensitive" },
-                },
-              },
-            },
-          ],
-        });
-      }
-
-      const variantClause: Record<string, unknown> = { deletedAt: null };
-      let hasVariantFilters = false;
-
-      if (minPrice || maxPrice) {
-        variantClause.price = {
-          ...(minPrice ? { gte: Number(minPrice) } : {}),
-          ...(maxPrice ? { lte: Number(maxPrice) } : {}),
-        };
-        hasVariantFilters = true;
-      }
-
-      if (stockStatus === "In Stock") {
-        variantClause.inventoryItems = {
-          some: {
-            quantityOnHand: { gt: 0 },
-            status: { in: ["IN_STOCK", "RETURNED", "RESERVED"] },
-          },
-        };
-        hasVariantFilters = true;
-      }
-
-      if (stockStatus === "Out of Stock") {
-        andClauses.push({
-          variants: {
-            none: {
-              deletedAt: null,
-              inventoryItems: {
-                some: {
-                  quantityOnHand: { gt: 0 },
-                  status: { in: ["IN_STOCK", "RETURNED", "RESERVED"] },
-                },
-              },
-            },
-          },
-        });
-      }
-
-      const specFilterIds = Array.from(filters.keys()).filter((key) => key !== "brand");
-      if (filters.get("brand")?.length) {
-        andClauses.push({
-          brand: {
+    if (category) {
+      andClauses.push({
+        subCategory: {
+          category: {
             name: {
-              in: filters.get("brand"),
+              equals: category,
+              mode: "insensitive",
             },
           },
-        });
-      }
+        },
+      });
+    }
 
-      if (specFilterIds.length > 0) {
-        const filterableSpecs = await prisma.specDefinition.findMany({
-          where: {
-            isFilterable: true,
-            ...(subCategoryId ? { subCategoryId } : {}),
-          },
-          select: {
-            id: true,
-            name: true,
-          },
-        });
-
-        const specIdsByKey = filterableSpecs.reduce<Map<string, string[]>>((map, spec) => {
-          const key = toSpecKey(spec.name);
-          map.set(key, [...(map.get(key) ?? []), spec.id]);
-          return map;
-        }, new Map<string, string[]>());
-
-        for (const filterId of specFilterIds) {
-          const values = filters.get(filterId) ?? [];
-          const specIds = specIdsByKey.get(filterId) ?? [];
-          if (values.length === 0 || specIds.length === 0) continue;
-
-          const numericValues = values
-            .map((value) => Number(value))
-            .filter((value) => Number.isFinite(value));
-
-          andClauses.push({
+    if (query) {
+      andClauses.push({
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { slug: { contains: query, mode: "insensitive" } },
+          { brand: { name: { contains: query, mode: "insensitive" } } },
+          {
             variants: {
               some: {
                 deletedAt: null,
-                variantSpecs: {
-                  some: {
-                    specId: { in: specIds },
-                    OR: [
-                      { option: { value: { in: values } } },
-                      { option: { label: { in: values } } },
-                      { valueString: { in: values } },
-                      ...(numericValues.length > 0
-                        ? [{ valueNumber: { in: numericValues } }]
-                        : []),
-                    ],
-                  },
+                sku: { contains: query, mode: "insensitive" },
+              },
+            },
+          },
+        ],
+      });
+    }
+
+    const variantClause: Record<string, unknown> = { deletedAt: null };
+    let hasVariantFilters = false;
+
+    if (minPrice || maxPrice) {
+      variantClause.price = {
+        ...(minPrice ? { gte: Number(minPrice) } : {}),
+        ...(maxPrice ? { lte: Number(maxPrice) } : {}),
+      };
+      hasVariantFilters = true;
+    }
+
+    if (stockStatus === "In Stock") {
+      variantClause.inventoryItems = {
+        some: {
+          quantityOnHand: { gt: 0 },
+          status: { in: ["IN_STOCK", "RETURNED", "RESERVED"] },
+        },
+      };
+      hasVariantFilters = true;
+    }
+
+    if (stockStatus === "Out of Stock") {
+      andClauses.push({
+        variants: {
+          none: {
+            deletedAt: null,
+            inventoryItems: {
+              some: {
+                quantityOnHand: { gt: 0 },
+                status: { in: ["IN_STOCK", "RETURNED", "RESERVED"] },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    const specFilterIds = Array.from(filters.keys()).filter(
+      (key) => key !== "brand",
+    );
+    if (filters.get("brand")?.length) {
+      andClauses.push({
+        brand: {
+          name: {
+            in: filters.get("brand"),
+          },
+        },
+      });
+    }
+
+    if (specFilterIds.length > 0) {
+      const filterableSpecs = await prisma.specDefinition.findMany({
+        where: {
+          isFilterable: true,
+          ...(subCategoryId ? { subCategoryId } : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      const specIdsByKey = filterableSpecs.reduce<Map<string, string[]>>(
+        (map, spec) => {
+          const key = toSpecKey(spec.name);
+          map.set(key, [...(map.get(key) ?? []), spec.id]);
+          return map;
+        },
+        new Map<string, string[]>(),
+      );
+
+      for (const filterId of specFilterIds) {
+        const values = filters.get(filterId) ?? [];
+        const specIds = specIdsByKey.get(filterId) ?? [];
+        if (values.length === 0 || specIds.length === 0) continue;
+
+        const numericValues = values
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value));
+
+        andClauses.push({
+          variants: {
+            some: {
+              deletedAt: null,
+              variantSpecs: {
+                some: {
+                  specId: { in: specIds },
+                  OR: [
+                    { option: { value: { in: values } } },
+                    { option: { label: { in: values } } },
+                    { valueString: { in: values } },
+                    ...(numericValues.length > 0
+                      ? [{ valueNumber: { in: numericValues } }]
+                      : []),
+                  ],
                 },
               },
             },
-          });
-        }
-      }
-
-      if (hasVariantFilters) {
-        andClauses.push({
-          variants: {
-            some: variantClause,
           },
         });
       }
-
-      if (andClauses.length > 0) {
-        where.AND = andClauses;
-      }
-
-      const [products, total, filterSeed] = await Promise.all([
-        prisma.product.findMany({
-          where,
-          orderBy: buildSort(sort),
-          ...(limit !== null && !requiresInMemorySort ? { skip: cursor, take: limit } : {}),
-          select: PRODUCT_SELECT,
-        }),
-        prisma.product.count({ where }),
-        prisma.product.findMany({
-          where,
-          orderBy: buildSort(sort),
-          take: 200,
-          select: PRODUCT_SELECT,
-        }),
-      ]);
-
-      const sortedProducts = sortProducts(
-        products.map((product) => normalizeCatalogProduct(product as any)),
-        sort,
-      );
-      const normalizedProducts =
-        limit !== null && requiresInMemorySort
-          ? sortedProducts.slice(cursor, cursor + limit)
-          : sortedProducts;
-      const normalizedFilterSeed = sortProducts(
-        filterSeed.map((product) => normalizeCatalogProduct(product as any)),
-        sort,
-      );
-      const nextCursor =
-        limit !== null && cursor + limit < total ? String(cursor + limit) : null;
-
-      return NextResponse.json(
-        {
-          products: normalizedProducts,
-          total,
-          filters: await buildFilters(normalizedFilterSeed),
-          nextCursor,
-        },
-        {
-          headers: {
-            "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
-          },
-        },
-      );
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to load products";
-      return NextResponse.json({ error: message }, { status: 500 });
     }
-  });
+
+    if (hasVariantFilters) {
+      andClauses.push({
+        variants: {
+          some: variantClause,
+        },
+      });
+    }
+
+    if (andClauses.length > 0) {
+      where.AND = andClauses;
+    }
+
+    const [products, total, filterSeed] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy: buildSort(sort),
+        ...(limit !== null && !requiresInMemorySort
+          ? { skip: cursor, take: limit }
+          : {}),
+        select: PRODUCT_SELECT,
+      }),
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        orderBy: buildSort(sort),
+        take: 200,
+        select: PRODUCT_SELECT,
+      }),
+    ]);
+
+    const sortedProducts = sortProducts(
+      products.map((product) => normalizeCatalogProduct(product as any)),
+      sort,
+    );
+    const normalizedProducts =
+      limit !== null && requiresInMemorySort
+        ? sortedProducts.slice(cursor, cursor + limit)
+        : sortedProducts;
+    const normalizedFilterSeed = sortProducts(
+      filterSeed.map((product) => normalizeCatalogProduct(product as any)),
+      sort,
+    );
+    const nextCursor =
+      limit !== null && cursor + limit < total ? String(cursor + limit) : null;
+
+    return NextResponse.json(
+      {
+        products: normalizedProducts,
+        total,
+        filters: await buildFilters(normalizedFilterSeed),
+        nextCursor,
+      },
+      {
+        headers: {
+          "Cache-Control":
+            "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+        },
+      },
+    );
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load products";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -518,7 +539,8 @@ export async function POST(request: Request) {
     const product = await CatalogService.createProduct(data);
     return NextResponse.json(product, { status: 201 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to create product";
+    const message =
+      error instanceof Error ? error.message : "Failed to create product";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

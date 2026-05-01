@@ -4,20 +4,25 @@ import {
   PayInvoiceInput,
   InvoiceActionInput,
   CreateCreditNoteInput,
-} from '../types';
+} from "../types";
 
-async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T> {
+async function fetchJSON<T = any>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
   const res = await fetch(url, {
     ...options,
-    headers: { ...options?.headers, 'Content-Type': 'application/json' },
+    headers: { ...options?.headers, "Content-Type": "application/json" },
   });
   if (!res.ok) {
-    let msg = 'Request failed';
+    let msg = "Request failed";
     try {
       const errData = await res.json();
       msg = errData.error || errData.message || (await res.text());
     } catch {
-      try { msg = await res.text(); } catch {}
+      try {
+        msg = await res.text();
+      } catch {}
     }
     throw new Error(msg);
   }
@@ -27,13 +32,17 @@ async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T
 /**
  * Fetch all invoices with optional filtering.
  */
-export async function getInvoices(filters?: { status?: string; customerId?: string; orderId?: string }): Promise<Invoice[]> {
+export async function getInvoices(filters?: {
+  status?: string;
+  customerId?: string;
+  orderId?: string;
+}): Promise<Invoice[]> {
   const params = new URLSearchParams();
-  if (filters?.status) params.set('status', filters.status);
-  if (filters?.customerId) params.set('customerId', filters.customerId);
-  if (filters?.orderId) params.set('orderId', filters.orderId);
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.customerId) params.set("customerId", filters.customerId);
+  if (filters?.orderId) params.set("orderId", filters.orderId);
   const qs = params.toString();
-  const url = qs ? `/api/billing/invoices?${qs}` : '/api/billing/invoices';
+  const url = qs ? `/api/billing/invoices?${qs}` : "/api/billing/invoices";
   return fetchJSON<Invoice[]>(url);
 }
 
@@ -51,8 +60,8 @@ export async function getInvoice(id: string): Promise<Invoice> {
  * Create a new invoice.
  */
 export async function createInvoice(data: CreateInvoice): Promise<Invoice> {
-  return fetchJSON<Invoice>('/api/billing/invoices', {
-    method: 'POST',
+  return fetchJSON<Invoice>("/api/billing/invoices", {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -60,9 +69,12 @@ export async function createInvoice(data: CreateInvoice): Promise<Invoice> {
 /**
  * Pay an invoice.
  */
-export async function payInvoice(id: string, data: PayInvoiceInput): Promise<Invoice> {
+export async function payInvoice(
+  id: string,
+  data: PayInvoiceInput,
+): Promise<Invoice> {
   return fetchJSON<Invoice>(`/api/billing/invoices/${id}/pay`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -70,9 +82,12 @@ export async function payInvoice(id: string, data: PayInvoiceInput): Promise<Inv
 /**
  * Send an invoice to the customer.
  */
-export async function sendInvoice(id: string, data: InvoiceActionInput): Promise<Invoice> {
+export async function sendInvoice(
+  id: string,
+  data: InvoiceActionInput,
+): Promise<Invoice> {
   return fetchJSON<Invoice>(`/api/billing/invoices/${id}/send`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -80,9 +95,12 @@ export async function sendInvoice(id: string, data: InvoiceActionInput): Promise
 /**
  * Cancel an invoice.
  */
-export async function cancelInvoice(id: string, data: InvoiceActionInput): Promise<Invoice> {
+export async function cancelInvoice(
+  id: string,
+  data: InvoiceActionInput,
+): Promise<Invoice> {
   return fetchJSON<Invoice>(`/api/billing/invoices/${id}/cancel`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -90,9 +108,12 @@ export async function cancelInvoice(id: string, data: InvoiceActionInput): Promi
 /**
  * Void an invoice.
  */
-export async function voidInvoice(id: string, data: InvoiceActionInput): Promise<Invoice> {
+export async function voidInvoice(
+  id: string,
+  data: InvoiceActionInput,
+): Promise<Invoice> {
   return fetchJSON<Invoice>(`/api/billing/invoices/${id}/void`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
@@ -100,9 +121,12 @@ export async function voidInvoice(id: string, data: InvoiceActionInput): Promise
 /**
  * Create a credit note against an invoice.
  */
-export async function createCreditNote(id: string, data: CreateCreditNoteInput): Promise<Invoice> {
+export async function createCreditNote(
+  id: string,
+  data: CreateCreditNoteInput,
+): Promise<Invoice> {
   return fetchJSON<Invoice>(`/api/billing/invoices/${id}/credit-note`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
 }

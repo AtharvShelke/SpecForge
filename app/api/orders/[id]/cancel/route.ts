@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cancelOrder } from "@/lib/services/order.service";
-import { ServiceError } from "@/lib/services/catalog.service";
+import { cancelOrder } from "@/services/order.service";
+import { ServiceError } from "@/services/catalog.service";
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
     const body = await req.json();
@@ -10,7 +13,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json(order);
   } catch (error: any) {
     if (error instanceof ServiceError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
     }
     console.error("[POST_ORDER_CANCEL]", error);
     return NextResponse.json(

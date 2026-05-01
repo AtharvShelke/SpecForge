@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Order, OrderStatus } from "@/types";
 import { STATUS_CONFIG } from "@/data/constants";
@@ -384,7 +384,10 @@ export default function OrderDetailPage() {
                         </td>
                         <td className="px-5 py-4 text-right">
                           <span className="font-mono text-sm font-bold text-stone-900 tabular-nums">
-                            ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                            ₹
+                            {(item.price * item.quantity).toLocaleString(
+                              "en-IN",
+                            )}
                           </span>
                         </td>
                       </tr>
@@ -417,13 +420,16 @@ export default function OrderDetailPage() {
                           <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-stone-100 border border-stone-200/60 text-[11px] font-bold text-stone-700 shadow-sm">
                             {item.quantity}
                           </span>
-                          <span className="text-xs text-stone-400 font-medium">×</span>
+                          <span className="text-xs text-stone-400 font-medium">
+                            ×
+                          </span>
                           <span className="font-mono text-xs font-medium text-stone-500 tabular-nums">
                             ₹{item.price.toLocaleString("en-IN")}
                           </span>
                         </div>
                         <span className="font-mono text-sm font-bold text-stone-900 tabular-nums">
-                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                          ₹
+                          {(item.price * item.quantity).toLocaleString("en-IN")}
                         </span>
                       </div>
                     </div>
@@ -467,8 +473,12 @@ export default function OrderDetailPage() {
               <div className="h-12 w-12 rounded-2xl bg-white border border-stone-200 flex items-center justify-center mb-3 shadow-sm">
                 <Package size={20} className="text-stone-400" />
               </div>
-              <p className="text-sm font-medium text-stone-600">No items found</p>
-              <p className="text-xs text-stone-400 mt-1">This order appears to be empty.</p>
+              <p className="text-sm font-medium text-stone-600">
+                No items found
+              </p>
+              <p className="text-xs text-stone-400 mt-1">
+                This order appears to be empty.
+              </p>
             </div>
           )}
         </CollapsibleSection>

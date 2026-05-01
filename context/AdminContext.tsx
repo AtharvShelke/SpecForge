@@ -1,6 +1,6 @@
 "use client";
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
@@ -35,7 +35,10 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | null>(null);
 
-async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T> {
+async function fetchJSON<T = any>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -129,7 +132,9 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       "builder-config": [],
     };
 
-    void Promise.allSettled((loaders[activeTab] ?? []).map((loader) => loader()));
+    void Promise.allSettled(
+      (loaders[activeTab] ?? []).map((loader) => loader()),
+    );
   }, [activeTab, billing, builds, catalog, inventory, orders]);
 
   const inventoryFacade = useMemo(
@@ -171,12 +176,11 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
   const legacyAddProduct = useCallback(
     async (data: any) => {
       const brandName =
-        data?.specs?.brand ||
-        data?.brand?.name ||
-        data?.brandName;
+        data?.specs?.brand || data?.brand?.name || data?.brandName;
       const brand = catalog.brands.find((entry) => entry.name === brandName);
       const directSubCategory = catalog.subCategories.find(
-        (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+        (entry) =>
+          entry.id === data?.subCategoryId || entry.name === data?.category,
       );
       const categoryMatch = catalog.categories.find(
         (entry) => entry.name === data?.category,
@@ -185,7 +189,9 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         directSubCategory?.id || categoryMatch?.subCategories?.[0]?.id;
 
       if (!subCategoryId) {
-        throw new Error(`Unable to resolve a sub-category for "${data?.category ?? "this product"}".`);
+        throw new Error(
+          `Unable to resolve a sub-category for "${data?.category ?? "this product"}".`,
+        );
       }
 
       await fetchJSON("/api/catalog/products", {
@@ -208,7 +214,10 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         }),
       });
 
-      await Promise.all([catalog.refreshProducts(), inventory.refreshInventory()]);
+      await Promise.all([
+        catalog.refreshProducts(),
+        inventory.refreshInventory(),
+      ]);
     },
     [catalog, inventory],
   );
@@ -222,15 +231,16 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
 
       if (!data?.id) return;
 
-      const existingProduct = catalog.products.find((entry) => entry.id === data.id);
+      const existingProduct = catalog.products.find(
+        (entry) => entry.id === data.id,
+      );
       const firstVariant = existingProduct?.variants?.[0];
       const brandName =
-        data?.specs?.brand ||
-        data?.brand?.name ||
-        existingProduct?.brand?.name;
+        data?.specs?.brand || data?.brand?.name || existingProduct?.brand?.name;
       const brand = catalog.brands.find((entry) => entry.name === brandName);
       const directSubCategory = catalog.subCategories.find(
-        (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+        (entry) =>
+          entry.id === data?.subCategoryId || entry.name === data?.category,
       );
       const categoryMatch = catalog.categories.find(
         (entry) => entry.name === data?.category,
@@ -266,7 +276,10 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         });
       }
 
-      await Promise.all([catalog.refreshProducts(), inventory.refreshInventory()]);
+      await Promise.all([
+        catalog.refreshProducts(),
+        inventory.refreshInventory(),
+      ]);
     },
     [catalog, inventory],
   );
@@ -282,7 +295,8 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
     async (skuOrVariantId: string, quantity: number, type: string) => {
       const matchedItem = inventory.inventory.find(
         (item: any) =>
-          item.variantId === skuOrVariantId || item.variant?.sku === skuOrVariantId,
+          item.variantId === skuOrVariantId ||
+          item.variant?.sku === skuOrVariantId,
       );
       const variantId = matchedItem?.variantId ?? skuOrVariantId;
       await inventory.adjustStock(variantId, quantity, type);

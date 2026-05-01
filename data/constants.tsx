@@ -1,55 +1,67 @@
-import {  OrderStatus, StatusConfig } from "@/types"
-import { Banknote, Box, CheckCheck, Clock, Cpu, Gamepad2, RotateCcw, Send, Truck, Video, XCircle } from "lucide-react";
+import { OrderStatus, StatusConfig } from "@/types";
+import {
+  Banknote,
+  Box,
+  CheckCheck,
+  Clock,
+  Cpu,
+  Gamepad2,
+  RotateCcw,
+  Send,
+  Truck,
+  Video,
+  XCircle,
+} from "lucide-react";
 
 export const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   [OrderStatus.PENDING]: {
-    label: 'Pending',
-    badgeClass: 'bg-zinc-50 text-zinc-600 border-zinc-200',
-    dotClass: 'bg-zinc-400',
+    label: "Pending",
+    badgeClass: "bg-zinc-50 text-zinc-600 border-zinc-200",
+    dotClass: "bg-zinc-400",
     icon: <Clock size={12} />,
-    description: 'Order placed, awaiting initial action',
+    description: "Order placed, awaiting initial action",
   },
   [OrderStatus.PAID]: {
-    label: 'Paid',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dotClass: 'bg-emerald-500',
+    label: "Paid",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    dotClass: "bg-emerald-500",
     icon: <Banknote size={12} />,
-    description: 'Payment verified successfully',
+    description: "Payment verified successfully",
   },
   [OrderStatus.PROCESSING]: {
-    label: 'Processing',
-    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
-    dotClass: 'bg-blue-500',
+    label: "Processing",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+    dotClass: "bg-blue-500",
     icon: <Box size={12} />,
-    description: 'Order being packed',
+    description: "Order being packed",
   },
   [OrderStatus.SHIPPED]: {
-    label: 'Shipped',
-    badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    dotClass: 'bg-indigo-500',
+    label: "Shipped",
+    badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    dotClass: "bg-indigo-500",
     icon: <Truck size={12} />,
-    description: 'In transit to customer',
+    description: "In transit to customer",
   },
   [OrderStatus.DELIVERED]: {
-    label: 'Delivered',
-    badgeClass: 'bg-zinc-900 text-white border-zinc-900',
-    dotClass: 'bg-white',
+    label: "Delivered",
+    badgeClass: "bg-zinc-900 text-white border-zinc-900",
+    dotClass: "bg-white",
     icon: <CheckCheck size={12} />,
-    description: 'Delivery confirmed',
+    description: "Delivery confirmed",
   },
   [OrderStatus.CANCELLED]: {
-    label: 'Cancelled',
-    badgeClass: 'bg-red-50 text-red-700 border-red-200',
-    dotClass: 'bg-red-400',
+    label: "Cancelled",
+    badgeClass: "bg-red-50 text-red-700 border-red-200",
+    dotClass: "bg-red-400",
     icon: <XCircle size={12} />,
-    description: 'Order cancelled',
+    description: "Order cancelled",
   },
   [OrderStatus.RETURNED]: {
-    label: 'Returned',
-    badgeClass: 'bg-zinc-50 text-zinc-500 border-zinc-200',
-    dotClass: 'bg-zinc-400',
+    label: "Returned",
+    badgeClass: "bg-zinc-50 text-zinc-500 border-zinc-200",
+    dotClass: "bg-zinc-400",
     icon: <RotateCcw size={12} />,
-    description: 'Return processed',
+    description: "Return processed",
   },
 };
 
@@ -63,78 +75,35 @@ export const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.RETURNED]: [],
 };
 
-export const NEXT_STATUS_BUTTON: Record<OrderStatus, { label: string; icon: React.ReactNode; variant: 'default' | 'destructive' | 'outline' | 'secondary' } | null> = {
-  [OrderStatus.PENDING]: { label: 'Confirm Payment', icon: <Banknote size={14} />, variant: 'default' },
-  [OrderStatus.PAID]: { label: 'Start Processing', icon: <Box size={14} />, variant: 'default' },
-  [OrderStatus.PROCESSING]: { label: 'Mark as Shipped', icon: <Send size={14} />, variant: 'default' },
-  [OrderStatus.SHIPPED]: { label: 'Mark Delivered', icon: <CheckCheck size={14} />, variant: 'default' },
+export const NEXT_STATUS_BUTTON: Record<
+  OrderStatus,
+  {
+    label: string;
+    icon: React.ReactNode;
+    variant: "default" | "destructive" | "outline" | "secondary";
+  } | null
+> = {
+  [OrderStatus.PENDING]: {
+    label: "Confirm Payment",
+    icon: <Banknote size={14} />,
+    variant: "default",
+  },
+  [OrderStatus.PAID]: {
+    label: "Start Processing",
+    icon: <Box size={14} />,
+    variant: "default",
+  },
+  [OrderStatus.PROCESSING]: {
+    label: "Mark as Shipped",
+    icon: <Send size={14} />,
+    variant: "default",
+  },
+  [OrderStatus.SHIPPED]: {
+    label: "Mark Delivered",
+    icon: <CheckCheck size={14} />,
+    variant: "default",
+  },
   [OrderStatus.DELIVERED]: null,
   [OrderStatus.CANCELLED]: null,
   [OrderStatus.RETURNED]: null,
 };
-
-export const HERO_SLIDES = [
-    {
-        badge: 'Built for Gamers',
-        icon: Gamepad2,
-        headline: 'Win Every',
-        highlight: 'Match',
-        sub: 'High-refresh builds with RTX 40-series GPUs. 4K, 240Hz, zero compromises — made for long sessions.',
-        cta: '/builds/gaming',
-        ctaText: 'Build My Gaming PC',
-        image: '/images/red-pc.jpg',
-        accentColor: 'from-red-500 via-orange-400 to-red-600',
-        accentGlow: 'rgba(239,68,68,0.35)',
-        badgeBg: 'bg-red-500/20 border-red-500/30',
-        badgeText: 'text-red-300',
-        sideLabel: 'Gaming',
-        sideLabelColor: 'text-red-400',
-        stats: [
-            { value: '240Hz', label: 'Max Refresh' },
-            { value: '4K',    label: 'Ready'       },
-            { value: '<1ms',  label: 'Latency'     },
-        ],
-    },
-    {
-        badge: 'Creator Ready',
-        icon: Video,
-        headline: 'Create Without',
-        highlight: 'Lag',
-        sub: 'Smooth timelines, fast renders, instant previews. Built for Premiere, After Effects, Blender and DaVinci.',
-        cta: '/builds/editing',
-        ctaText: 'Build My Creator PC',
-        image: '/images/white-pc.jpg',
-        accentColor: 'from-blue-400 via-cyan-300 to-indigo-500',
-        accentGlow: 'rgba(99,102,241,0.35)',
-        badgeBg: 'bg-indigo-500/20 border-indigo-500/30',
-        badgeText: 'text-indigo-300',
-        sideLabel: 'Creator',
-        sideLabelColor: 'text-indigo-400',
-        stats: [
-            { value: '8K',    label: 'Editing'  },
-            { value: '192GB', label: 'Max RAM'  },
-            { value: 'NVMe',  label: 'Speed'    },
-        ],
-    },
-    {
-        badge: 'Workstation Grade',
-        icon: Cpu,
-        headline: 'Power Without',
-        highlight: 'Limits',
-        sub: 'Run simulations, AI workloads and heavy projects without slowdowns. Built for professionals.',
-        cta: '/builds/workstation',
-        ctaText: 'Build My Workstation',
-        image: '/images/green-pc.jpg',
-        accentColor: 'from-emerald-400 via-teal-300 to-green-500',
-        accentGlow: 'rgba(16,185,129,0.3)',
-        badgeBg: 'bg-emerald-500/20 border-emerald-500/30',
-        badgeText: 'text-emerald-300',
-        sideLabel: 'Workstation',
-        sideLabelColor: 'text-emerald-400',
-        stats: [
-            { value: '128C', label: 'Threads'  },
-            { value: 'ECC',  label: 'Memory'   },
-            { value: 'HEDT', label: 'Platform' },
-        ],
-    },
-] as const

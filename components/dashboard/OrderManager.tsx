@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback, memo } from "react";
+import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import {
   InventorySkuSummary,
@@ -276,7 +276,7 @@ const CollapsibleSection = memo(
         <button
           className={cn(
             "w-full px-4 py-3 bg-stone-50/50 hover:bg-stone-50 flex items-center justify-between transition-colors",
-            open && "border-b border-stone-100"
+            open && "border-b border-stone-100",
           )}
           onClick={toggle}
         >
@@ -1334,61 +1334,98 @@ const OrderManager = () => {
 
                 {/* ── BOTTOM GRID: Shipping, Inventory, Timeline ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
                   {/* Shipping Address */}
-                  <CollapsibleSection icon={<MapPin size={12} />} title="Shipping">
+                  <CollapsibleSection
+                    icon={<MapPin size={12} />}
+                    title="Shipping"
+                  >
                     <div className="p-5">
                       {selectedOrder.shippingStreet ? (
                         <div className="bg-stone-50/60 rounded-xl p-4 border border-stone-200/50 shadow-sm flex flex-col space-y-1 relative overflow-hidden">
                           <div className="absolute top-0 left-0 w-1 h-full bg-indigo-400/50" />
-                          <p className="font-black text-stone-900 tracking-tight text-sm mb-1">{selectedOrder.customerName}</p>
-                          <p className="text-xs text-stone-600 font-medium">{selectedOrder.shippingStreet}</p>
-                          <p className="text-xs text-stone-600 font-medium">{selectedOrder.shippingCity}, {selectedOrder.shippingState}</p>
+                          <p className="font-black text-stone-900 tracking-tight text-sm mb-1">
+                            {selectedOrder.customerName}
+                          </p>
+                          <p className="text-xs text-stone-600 font-medium">
+                            {selectedOrder.shippingStreet}
+                          </p>
+                          <p className="text-xs text-stone-600 font-medium">
+                            {selectedOrder.shippingCity},{" "}
+                            {selectedOrder.shippingState}
+                          </p>
                           <p className="font-mono text-[11px] text-stone-500 font-bold tracking-widest uppercase mt-2 pt-2 border-t border-stone-200/50">
-                            {selectedOrder.shippingZip} <span className="opacity-40 mx-1">•</span> {selectedOrder.shippingCountry}
+                            {selectedOrder.shippingZip}{" "}
+                            <span className="opacity-40 mx-1">•</span>{" "}
+                            {selectedOrder.shippingCountry}
                           </p>
                         </div>
                       ) : (
                         <div className="bg-stone-50/50 rounded-xl p-6 border border-stone-200/40 border-dashed text-center">
-                          <p className="text-xs text-stone-400 font-semibold tracking-wide">No address provided</p>
+                          <p className="text-xs text-stone-400 font-semibold tracking-wide">
+                            No address provided
+                          </p>
                         </div>
                       )}
                     </div>
                   </CollapsibleSection>
 
                   {/* Inventory Snapshot */}
-                  <CollapsibleSection icon={<Warehouse size={12} />} title="Inventory Snapshot">
+                  <CollapsibleSection
+                    icon={<Warehouse size={12} />}
+                    title="Inventory Snapshot"
+                  >
                     <div className="p-5 flex flex-col gap-3">
                       {selectedOrderItems.map((item: OrderItem) => {
-                        const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
+                        const inv =
+                          aggregatedInventory.get(item.variantId) ||
+                          (item.sku
+                            ? aggregatedInventory.get(item.sku)
+                            : undefined);
                         const available = inv?.quantity ?? 0;
                         const reserved = inv?.reserved ?? 0;
                         const isLow = available <= (inv?.reorderLevel ?? 5);
                         return (
-                          <div key={item.id} className="flex items-center justify-between gap-3 bg-stone-50/40 border border-stone-100 p-3 rounded-xl hover:bg-stone-50/80 transition-colors">
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-3 bg-stone-50/40 border border-stone-100 p-3 rounded-xl hover:bg-stone-50/80 transition-colors"
+                          >
                             <div className="min-w-0 flex-1">
-                              <p className="text-[13px] font-bold text-stone-800 truncate tracking-tight">{item.name}</p>
-                              <p className="text-[10px] text-stone-400 font-mono font-bold mt-0.5">{item.sku}</p>
+                              <p className="text-[13px] font-bold text-stone-800 truncate tracking-tight">
+                                {item.name}
+                              </p>
+                              <p className="text-[10px] text-stone-400 font-mono font-bold mt-0.5">
+                                {item.sku}
+                              </p>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <Tooltip>
                                 <TooltipTrigger>
-                                  <span className={cn(
-                                    "text-xs font-bold px-2 py-1 rounded-md font-mono tabular-nums shadow-sm",
-                                    isLow
-                                      ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
-                                      : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                                  )}>
+                                  <span
+                                    className={cn(
+                                      "text-xs font-bold px-2 py-1 rounded-md font-mono tabular-nums shadow-sm",
+                                      isLow
+                                        ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+                                        : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+                                    )}
+                                  >
                                     {available}
                                   </span>
                                 </TooltipTrigger>
-                                <TooltipContent side="left" className="text-xs font-semibold px-2 py-1.5 shadow-xl rounded-lg border-stone-200">
-                                  {available} available <span className="text-stone-300 mx-1">•</span> {reserved} reserved
+                                <TooltipContent
+                                  side="left"
+                                  className="text-xs font-semibold px-2 py-1.5 shadow-xl rounded-lg border-stone-200"
+                                >
+                                  {available} available{" "}
+                                  <span className="text-stone-300 mx-1">•</span>{" "}
+                                  {reserved} reserved
                                 </TooltipContent>
                               </Tooltip>
                               {isLow && (
                                 <div className="bg-amber-100 p-1 rounded-md">
-                                  <AlertTriangle size={12} className="text-amber-600" />
+                                  <AlertTriangle
+                                    size={12}
+                                    className="text-amber-600"
+                                  />
                                 </div>
                               )}
                             </div>
@@ -1399,9 +1436,15 @@ const OrderManager = () => {
                   </CollapsibleSection>
 
                   {/* Order Timeline */}
-                  <CollapsibleSection icon={<Clock size={12} />} title="Timeline" defaultOpen={false}>
+                  <CollapsibleSection
+                    icon={<Clock size={12} />}
+                    title="Timeline"
+                    defaultOpen={false}
+                  >
                     <div className="p-5">
-                      {!(selectedOrder.logs && selectedOrder.logs.length > 0) ? (
+                      {!(
+                        selectedOrder.logs && selectedOrder.logs.length > 0
+                      ) ? (
                         <div className="bg-stone-50/50 rounded-xl p-6 border border-stone-200/40 border-dashed text-center">
                           <p className="text-xs text-stone-400 font-semibold tracking-wide">
                             No timeline data available
@@ -1409,42 +1452,58 @@ const OrderManager = () => {
                         </div>
                       ) : (
                         <div className="relative pl-5 border-l-2 border-indigo-100 space-y-6">
-                          {(selectedOrder.logs || []).map((log: OrderLog, idx: number) => {
-                            const isLatest = idx === (selectedOrder.logs || []).length - 1;
-                            const cfg = STATUS_CONFIG[log.status];
-                            return (
-                              <div key={idx} className="relative group">
-                                <div className={cn(
-                                  "absolute -left-[27px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white ring-4 transition-all duration-300",
-                                  isLatest ? `${cfg.dotClass} ring-indigo-100 scale-110 shadow-sm` : "bg-stone-300 ring-stone-50 group-hover:bg-stone-400 group-hover:scale-110"
-                                )} />
-                                <div className="bg-white/50">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className={cn(
-                                      "text-xs font-black tracking-widest uppercase",
-                                      isLatest ? "text-stone-900" : "text-stone-500"
-                                    )}>
-                                      {cfg.label}
-                                    </span>
-                                    {isLatest && (
-                                      <span className="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">Current</span>
+                          {(selectedOrder.logs || []).map(
+                            (log: OrderLog, idx: number) => {
+                              const isLatest =
+                                idx === (selectedOrder.logs || []).length - 1;
+                              const cfg = STATUS_CONFIG[log.status];
+                              return (
+                                <div key={idx} className="relative group">
+                                  <div
+                                    className={cn(
+                                      "absolute -left-[27px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white ring-4 transition-all duration-300",
+                                      isLatest
+                                        ? `${cfg.dotClass} ring-indigo-100 scale-110 shadow-sm`
+                                        : "bg-stone-300 ring-stone-50 group-hover:bg-stone-400 group-hover:scale-110",
+                                    )}
+                                  />
+                                  <div className="bg-white/50">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span
+                                        className={cn(
+                                          "text-xs font-black tracking-widest uppercase",
+                                          isLatest
+                                            ? "text-stone-900"
+                                            : "text-stone-500",
+                                        )}
+                                      >
+                                        {cfg.label}
+                                      </span>
+                                      {isLatest && (
+                                        <span className="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">
+                                          Current
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-stone-400 font-mono font-bold tracking-wide tabular-nums">
+                                      {new Date(log.timestamp).toLocaleString(
+                                        "en-IN",
+                                        TIMELINE_DATE_OPTS,
+                                      )}
+                                    </p>
+                                    {log.note && (
+                                      <div className="mt-2.5 relative">
+                                        <div className="absolute left-3 top-0 w-px h-full bg-stone-100" />
+                                        <p className="text-[11px] font-medium text-stone-600 bg-stone-50 pl-4 pr-3 py-2.5 rounded-r-xl rounded-l-md border border-stone-200/50 shadow-sm leading-relaxed border-l-4 border-l-indigo-300">
+                                          {log.note}
+                                        </p>
+                                      </div>
                                     )}
                                   </div>
-                                  <p className="text-[10px] text-stone-400 font-mono font-bold tracking-wide tabular-nums">
-                                    {new Date(log.timestamp).toLocaleString("en-IN", TIMELINE_DATE_OPTS)}
-                                  </p>
-                                  {log.note && (
-                                    <div className="mt-2.5 relative">
-                                      <div className="absolute left-3 top-0 w-px h-full bg-stone-100" />
-                                      <p className="text-[11px] font-medium text-stone-600 bg-stone-50 pl-4 pr-3 py-2.5 rounded-r-xl rounded-l-md border border-stone-200/50 shadow-sm leading-relaxed border-l-4 border-l-indigo-300">
-                                        {log.note}
-                                      </p>
-                                    </div>
-                                  )}
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            },
+                          )}
                         </div>
                       )}
                     </div>
@@ -1466,7 +1525,6 @@ const OrderManager = () => {
                       onReviewPayment={handleReviewPayment}
                     />
                   </CollapsibleSection>
-
                 </div>
               </div>
             </div>

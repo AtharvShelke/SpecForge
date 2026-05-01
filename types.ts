@@ -1,4 +1,5 @@
 import type React from "react";
+import { ReactNode } from "react";
 
 // =====================================================
 // ENUMS (STRICT MATCH WITH PRISMA)
@@ -59,7 +60,15 @@ export enum PaymentStatus {
   REFUNDED = "REFUNDED",
   PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED",
 }
-
+export interface CreatePaymentInput {
+  orderId: string;
+  method: PaymentMethodType;
+  amount: number;
+  gatewayTxnId?: string;
+  idempotencyKey: string;
+  metadata?: Record<string, any>;
+  status?: PaymentStatus;
+}
 export enum FilterType {
   checkbox = "checkbox",
   range = "range",
@@ -230,7 +239,7 @@ export interface StatusConfig {
   label: string;
   badgeClass: string;
   dotClass: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   description?: string;
 }
 

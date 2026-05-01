@@ -47,7 +47,10 @@ const TabSkeleton = memo(function TabSkeleton() {
       <div className="h-8 w-56 rounded-full bg-stone-200/80" />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {SKELETON_KEYS.map((i) => (
-          <div key={i} className="h-32 rounded-[1.75rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(237,233,227,0.92))]" />
+          <div
+            key={i}
+            className="h-32 rounded-[1.75rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(237,233,227,0.92))]"
+          />
         ))}
       </div>
       <div className="h-72 rounded-[2rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(237,233,227,0.94))]" />
@@ -76,15 +79,51 @@ const AdminDashboardContent = memo(function AdminDashboardContent() {
 
   return (
     <div className="h-full min-h-0">
-      {activeTab === "overview" && <TabViewport><Overview /></TabViewport>}
-      {activeTab === "orders" && <TabViewport><OrderManager /></TabViewport>}
-      {activeTab === "products" && <TabViewport><ProductManager /></TabViewport>}
-      {activeTab === "inventory" && <TabViewport><InventoryManager /></TabViewport>}
-      {activeTab === "categories" && <TabViewport><CategoryManager /></TabViewport>}
-      {activeTab === "brands" && <TabViewport><BrandManager /></TabViewport>}
-      {activeTab === "saved-builds" && <TabViewport><SavedBuildsManager /></TabViewport>}
-      {activeTab === "billing" && <TabViewport><BillingInvoices /></TabViewport>}
-      {activeTab === "builder-config" && <TabViewport><BuilderConfigManager /></TabViewport>}
+      {activeTab === "overview" && (
+        <TabViewport>
+          <Overview />
+        </TabViewport>
+      )}
+      {activeTab === "orders" && (
+        <TabViewport>
+          <OrderManager />
+        </TabViewport>
+      )}
+      {activeTab === "products" && (
+        <TabViewport>
+          <ProductManager />
+        </TabViewport>
+      )}
+      {activeTab === "inventory" && (
+        <TabViewport>
+          <InventoryManager />
+        </TabViewport>
+      )}
+      {activeTab === "categories" && (
+        <TabViewport>
+          <CategoryManager />
+        </TabViewport>
+      )}
+      {activeTab === "brands" && (
+        <TabViewport>
+          <BrandManager />
+        </TabViewport>
+      )}
+      {activeTab === "saved-builds" && (
+        <TabViewport>
+          <SavedBuildsManager />
+        </TabViewport>
+      )}
+      {activeTab === "billing" && (
+        <TabViewport>
+          <BillingInvoices />
+        </TabViewport>
+      )}
+      {activeTab === "builder-config" && (
+        <TabViewport>
+          <BuilderConfigManager />
+        </TabViewport>
+      )}
     </div>
   );
 });

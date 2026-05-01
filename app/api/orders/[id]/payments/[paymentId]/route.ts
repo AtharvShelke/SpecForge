@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { PaymentStatus } from "@/types";
-import { serializeOrder } from "@/lib/api/adminSerializers";
-import { updateOrderStatus } from "@/lib/services/order.service";
+import { serializeOrder } from "@/lib/adminSerializers";
+import { updateOrderStatus } from "@/services/order.service";
 
 const paymentStatusSchema = z.object({
   status: z.enum([PaymentStatus.COMPLETED, PaymentStatus.FAILED]),
@@ -23,9 +23,15 @@ export async function PATCH(
       include: {
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
-        payments: { include: { paymentProofs: true }, orderBy: { createdAt: "desc" } },
+        payments: {
+          include: { paymentProofs: true },
+          orderBy: { createdAt: "desc" },
+        },
         shipments: { orderBy: { createdAt: "desc" } },
-        invoices: { include: { lineItems: true }, orderBy: { createdAt: "desc" } },
+        invoices: {
+          include: { lineItems: true },
+          orderBy: { createdAt: "desc" },
+        },
         reservations: true,
       },
     });
@@ -35,7 +41,10 @@ export async function PATCH(
 
     const payment = order.payments.find((entry) => entry.id === paymentId);
     if (!payment) {
-      return NextResponse.json({ error: "Payment transaction not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Payment transaction not found." },
+        { status: 404 },
+      );
     }
 
     await prisma.paymentTransaction.update({
@@ -81,18 +90,31 @@ export async function PATCH(
       include: {
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
-        payments: { include: { paymentProofs: true }, orderBy: { createdAt: "desc" } },
+        payments: {
+          include: { paymentProofs: true },
+          orderBy: { createdAt: "desc" },
+        },
         shipments: { orderBy: { createdAt: "desc" } },
-        invoices: { include: { lineItems: true }, orderBy: { createdAt: "desc" } },
+        invoices: {
+          include: { lineItems: true },
+          orderBy: { createdAt: "desc" },
+        },
         reservations: true,
       },
     });
 
-    return NextResponse.json(updatedOrder ? serializeOrder(updatedOrder) : null);
+    return NextResponse.json(
+      updatedOrder ? serializeOrder(updatedOrder) : null,
+    );
   } catch (error: unknown) {
     console.error("[PATCH_ORDER_PAYMENT]", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to update payment status." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to update payment status.",
+      },
       { status: 500 },
     );
   }

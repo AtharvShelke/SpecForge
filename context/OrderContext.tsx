@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * OrderContext — Enterprise-grade order state management.
@@ -13,7 +13,7 @@
  *   • Strict enum-only status transitions
  */
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
@@ -21,13 +21,8 @@ import React, {
   useCallback,
   useMemo,
   ReactNode,
-} from 'react';
-import {
-  Order,
-  OrderLog,
-  OrderStatus,
-  CreateOrder,
-} from '../types';
+} from "react";
+import { Order, OrderLog, OrderStatus, CreateOrder } from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status Transition Map (client-side mirror of service DAG)
@@ -67,14 +62,26 @@ interface OrderContextType {
   getNextStatuses: (orderId: string) => OrderStatus[];
 
   // ── Data Fetching ────────────────────────────────────────────────────
-  refreshOrders: (filters?: { status?: string; customerId?: string; page?: number; limit?: number }) => Promise<void>;
+  refreshOrders: (filters?: {
+    status?: string;
+    customerId?: string;
+    page?: number;
+    limit?: number;
+  }) => Promise<void>;
   getOrderDetail: (id: string) => Promise<void>;
   clearSelectedOrder: () => void;
 
   // ── Mutations ────────────────────────────────────────────────────────
   createOrder: (data: CreateOrder) => Promise<Order>;
-  updateOrder: (id: string, data: Partial<Order> & { version: number }) => Promise<void>;
-  updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
+  updateOrder: (
+    id: string,
+    data: Partial<Order> & { version: number },
+  ) => Promise<void>;
+  updateOrderStatus: (
+    id: string,
+    status: OrderStatus,
+    note?: string,
+  ) => Promise<void>;
   cancelOrder: (id: string, note?: string) => Promise<void>;
   trackOrder: (orderId: string, contact: string) => Promise<Order>;
 
@@ -87,10 +94,13 @@ const OrderContext = createContext<OrderContextType | null>(null);
 // Fetch Utility
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchJSON<T = any>(url: string, options?: RequestInit): Promise<T> {
+async function fetchJSON<T = any>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
   const res = await fetch(url, {
     ...options,
-    headers: { ...options?.headers, 'Content-Type': 'application/json' },
+    headers: { ...options?.headers, "Content-Type": "application/json" },
   });
   if (!res.ok) {
     let msg = `Request failed (${res.status})`;
@@ -141,7 +151,7 @@ export const OrderProvider = ({
   const ordersByStatus = useMemo(() => {
     const groups = Object.values(OrderStatus).reduce(
       (acc, status) => ({ ...acc, [status]: [] }),
-      {} as Record<OrderStatus, Order[]>
+      {} as Record<OrderStatus, Order[]>,
     );
     orders.forEach((o) => {
       if (groups[o.status]) {
@@ -159,22 +169,27 @@ export const OrderProvider = ({
       if (!order) return [];
       return VALID_TRANSITIONS[order.status] || [];
     },
-    [orderById]
+    [orderById],
   );
 
   // ── Data Fetching ────────────────────────────────────────────────────
 
   const refreshOrders = useCallback(
-    async (filters?: { status?: string; customerId?: string; page?: number; limit?: number }) => {
+    async (filters?: {
+      status?: string;
+      customerId?: string;
+      page?: number;
+      limit?: number;
+    }) => {
       setLoading(true);
       try {
         const params = new URLSearchParams();
-        if (filters?.status) params.set('status', filters.status);
-        if (filters?.customerId) params.set('customerId', filters.customerId);
-        params.set('page', String(filters?.page ?? 1));
-        params.set('limit', String(filters?.limit ?? 25));
+        if (filters?.status) params.set("status", filters.status);
+        if (filters?.customerId) params.set("customerId", filters.customerId);
+        params.set("page", String(filters?.page ?? 1));
+        params.set("limit", String(filters?.limit ?? 25));
         const qs = params.toString();
-        const url = qs ? `/api/orders?${qs}` : '/api/orders';
+        const url = qs ? `/api/orders?${qs}` : "/api/orders";
         const data = await fetchJSON<Order[]>(url);
         const normalizedData = data.map((o) => ({
           ...o,
@@ -189,7 +204,7 @@ export const OrderProvider = ({
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   const getOrderDetail = useCallback(async (id: string) => {
@@ -222,8 +237,8 @@ export const OrderProvider = ({
     async (data: CreateOrder): Promise<Order> => {
       setLoading(true);
       try {
-        const order = await fetchJSON<Order>('/api/orders', {
-          method: 'POST',
+        const order = await fetchJSON<Order>("/api/orders", {
+          method: "POST",
           body: JSON.stringify(data),
         });
         await refreshOrders();
@@ -232,7 +247,7 @@ export const OrderProvider = ({
         setLoading(false);
       }
     },
-    [refreshOrders]
+    [refreshOrders],
   );
 
   const updateOrder = useCallback(
@@ -240,7 +255,7 @@ export const OrderProvider = ({
       setLoading(true);
       try {
         await fetchJSON(`/api/orders/${id}`, {
-          method: 'PATCH',
+          method: "PATCH",
           body: JSON.stringify(data),
         });
         await refreshOrders();
@@ -249,7 +264,7 @@ export const OrderProvider = ({
         setLoading(false);
       }
     },
-    [refreshOrders, getOrderDetail, selectedOrder?.id]
+    [refreshOrders, getOrderDetail, selectedOrder?.id],
   );
 
   const updateOrderStatus = useCallback(
@@ -257,7 +272,7 @@ export const OrderProvider = ({
       setLoading(true);
       try {
         await fetchJSON(`/api/orders/${id}/status`, {
-          method: 'POST',
+          method: "POST",
           body: JSON.stringify({ status, note }),
         });
         await refreshOrders();
@@ -267,7 +282,7 @@ export const OrderProvider = ({
         setLoading(false);
       }
     },
-    [refreshOrders, getOrderDetail, selectedOrder?.id]
+    [refreshOrders, getOrderDetail, selectedOrder?.id],
   );
 
   const cancelOrder = useCallback(
@@ -275,7 +290,7 @@ export const OrderProvider = ({
       setLoading(true);
       try {
         await fetchJSON(`/api/orders/${id}/cancel`, {
-          method: 'POST',
+          method: "POST",
           body: JSON.stringify({ note }),
         });
         await refreshOrders();
@@ -284,15 +299,15 @@ export const OrderProvider = ({
         setLoading(false);
       }
     },
-    [refreshOrders, getOrderDetail, selectedOrder?.id]
+    [refreshOrders, getOrderDetail, selectedOrder?.id],
   );
 
   const trackOrder = useCallback(
     async (orderId: string, contact: string): Promise<Order> => {
       setLoading(true);
       try {
-        const order = await fetchJSON<Order>('/api/storefront/track-order', {
-          method: 'POST',
+        const order = await fetchJSON<Order>("/api/storefront/track-order", {
+          method: "POST",
           body: JSON.stringify({ orderId, contact }),
         });
         return order;
@@ -300,7 +315,7 @@ export const OrderProvider = ({
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   // ── Initial Load ─────────────────────────────────────────────────────
@@ -347,13 +362,11 @@ export const OrderProvider = ({
       cancelOrder,
       trackOrder,
       loading,
-    ]
+    ],
   );
 
   return (
-    <OrderContext.Provider value={value}>
-      {children}
-    </OrderContext.Provider>
+    <OrderContext.Provider value={value}>{children}</OrderContext.Provider>
   );
 };
 
@@ -363,7 +376,7 @@ export const OrderProvider = ({
 
 export const useOrder = () => {
   const ctx = useContext(OrderContext);
-  if (!ctx) throw new Error('useOrder must be used within OrderProvider');
+  if (!ctx) throw new Error("useOrder must be used within OrderProvider");
   return ctx;
 };
 

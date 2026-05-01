@@ -3,8 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getRazorpayConfig, verifyRazorpaySignature } from "@/lib/payments";
 import { PaymentStatus } from "@/types";
-import { updateOrderStatus } from "@/lib/services/order.service";
-import { serializeOrder } from "@/lib/api/adminSerializers";
+import { updateOrderStatus } from "@/services/order.service";
+import { serializeOrder } from "@/lib/adminSerializers";
 
 const verifySchema = z.object({
   orderId: z.string().min(1),
@@ -19,7 +19,10 @@ export async function POST(req: NextRequest) {
     const { keySecret } = getRazorpayConfig();
 
     if (!keySecret) {
-      return NextResponse.json({ error: "Razorpay secret is not configured." }, { status: 500 });
+      return NextResponse.json(
+        { error: "Razorpay secret is not configured." },
+        { status: 500 },
+      );
     }
 
     const order = await prisma.order.findUnique({
@@ -27,7 +30,10 @@ export async function POST(req: NextRequest) {
       include: {
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
-        payments: { include: { paymentProofs: true }, orderBy: { createdAt: "desc" } },
+        payments: {
+          include: { paymentProofs: true },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
     if (!order) {
@@ -39,7 +45,10 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
     if (!payment) {
-      return NextResponse.json({ error: "Payment transaction not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Payment transaction not found." },
+        { status: 404 },
+      );
     }
 
     const isValid = verifyRazorpaySignature({
@@ -73,7 +82,10 @@ export async function POST(req: NextRequest) {
         });
       });
 
-      return NextResponse.json({ error: "Razorpay signature verification failed." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Razorpay signature verification failed." },
+        { status: 400 },
+      );
     }
 
     await prisma.paymentTransaction.update({
@@ -112,9 +124,15 @@ export async function POST(req: NextRequest) {
       include: {
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
-        payments: { include: { paymentProofs: true }, orderBy: { createdAt: "desc" } },
+        payments: {
+          include: { paymentProofs: true },
+          orderBy: { createdAt: "desc" },
+        },
         shipments: { orderBy: { createdAt: "desc" } },
-        invoices: { include: { lineItems: true }, orderBy: { createdAt: "desc" } },
+        invoices: {
+          include: { lineItems: true },
+          orderBy: { createdAt: "desc" },
+        },
         reservations: true,
       },
     });
@@ -126,7 +144,12 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error("[RAZORPAY_VERIFY]", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to verify Razorpay payment." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to verify Razorpay payment.",
+      },
       { status: 500 },
     );
   }

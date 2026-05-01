@@ -1,10 +1,15 @@
+import { PrismaClient } from "@/generated/prisma/client";
+import { CreatePaymentInput } from "@/types";
 import { createHmac } from "crypto";
 
 export const MANUAL_PAYMENT_DISCOUNT_RATE = 0.02;
 
 export function getRazorpayConfig() {
   return {
-    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "",
+    keyId:
+      process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+      process.env.RAZORPAY_KEY_ID ||
+      "",
     keySecret: process.env.RAZORPAY_KEY_SECRET || "",
   };
 }
@@ -22,7 +27,9 @@ export function getManualPaymentDetails() {
 }
 
 export function computeManualPaymentDiscount(total: number) {
-  const discountAmount = Number((total * MANUAL_PAYMENT_DISCOUNT_RATE).toFixed(2));
+  const discountAmount = Number(
+    (total * MANUAL_PAYMENT_DISCOUNT_RATE).toFixed(2),
+  );
   const payableTotal = Number((total - discountAmount).toFixed(2));
 
   return {
@@ -47,4 +54,32 @@ export function verifyRazorpaySignature({
     .digest("hex");
 
   return expectedSignature === razorpaySignature;
+}
+
+type PrismaTx = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
+
+export async function createPaymentTransaction(
+  tx: PrismaTx,
+  input: CreatePaymentInput,
+) {
+  // Idempotency check
+  const existing = await tx.paymentTransaction.findUnique({
+    where: { idempotencyKey: input.idempotencyKey },
+  });
+  if (existing) return existing;
+
+  return tx.paymentTransaction.create({
+    data: {
+      orderId: input.orderId,
+      method: input.method,
+      amount: input.amount,
+      gatewayTxnId: input.gatewayTxnId,
+      status: input.status ?? "COMPLETED",
+      idempotencyKey: input.idempotencyKey,
+      metadata: input.metadata,
+    },
+  });
 }

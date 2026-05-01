@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { CatalogService } from "@/lib/services/catalog.service";
+import { CatalogService } from "@/services/catalog.service";
 import type { CategoryNode } from "@/types";
 
 function serializeHierarchy(nodes: any[]): CategoryNode[] {
@@ -9,7 +9,9 @@ function serializeHierarchy(nodes: any[]): CategoryNode[] {
     category: node.category?.name ?? undefined,
     brand: node.brand ?? undefined,
     query: node.query ?? undefined,
-    children: Array.isArray(node.children) ? serializeHierarchy(node.children) : [],
+    children: Array.isArray(node.children)
+      ? serializeHierarchy(node.children)
+      : [],
   }));
 }
 
@@ -25,7 +27,7 @@ export async function GET() {
     console.error("[GET /api/catalog/categories/hierarchy]", error);
     return NextResponse.json(
       { error: error.message ?? "Failed to fetch category hierarchy" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -46,7 +48,9 @@ export async function PUT(request: Request) {
       where: { deletedAt: null },
       select: { id: true, name: true },
     });
-    const categoryIdByName = new Map(categories.map((category) => [category.name, category.id]));
+    const categoryIdByName = new Map(
+      categories.map((category) => [category.name, category.id]),
+    );
 
     await prisma.$transaction(async (tx) => {
       await tx.categoryHierarchy.deleteMany({});
@@ -63,7 +67,9 @@ export async function PUT(request: Request) {
               sortOrder: index,
               query: item.query ?? null,
               brand: item.brand ?? null,
-              categoryId: item.category ? categoryIdByName.get(item.category) ?? null : null,
+              categoryId: item.category
+                ? (categoryIdByName.get(item.category) ?? null)
+                : null,
             },
           });
 

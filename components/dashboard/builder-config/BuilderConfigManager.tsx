@@ -1,31 +1,36 @@
-'use client';
+"use client";
 
-import React, { useState, memo } from 'react';
-import { Settings, Sparkles, Filter } from 'lucide-react';
-import BuilderSettingsTab from './BuilderSettingsTab';
-import BuilderRulesTab from './BuilderRulesTab';
-import BuilderFiltersTab from './BuilderFiltersTab';
+import { useState, memo } from "react";
+import { Settings, Sparkles, Filter } from "lucide-react";
+import BuilderSettingsTab from "./BuilderSettingsTab";
+import BuilderRulesTab from "./BuilderRulesTab";
+import BuilderFiltersTab from "./BuilderFiltersTab";
 
 const TABS = [
-  { key: 'settings', label: 'Builder Settings', icon: Settings },
-  { key: 'rules', label: 'Rules Engine', icon: Sparkles },
-  { key: 'filters', label: 'Filter Manager', icon: Filter },
+  { key: "settings", label: "Builder Settings", icon: Settings },
+  { key: "rules", label: "Rules Engine", icon: Sparkles },
+  { key: "filters", label: "Filter Manager", icon: Filter },
 ] as const;
 
-type TabKey = (typeof TABS)[number]['key'];
+type TabKey = (typeof TABS)[number]["key"];
 
 const BuilderConfigManager = memo(function BuilderConfigManager() {
-  const [activeTab, setActiveTab] = useState<TabKey>('settings');
+  const [activeTab, setActiveTab] = useState<TabKey>("settings");
 
   return (
     <div className="flex h-full min-h-0 flex-col space-y-4">
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-zinc-900">Builder Configuration</h2>
-        <p className="text-sm text-zinc-400 mt-1">Manage PC builder categories, behavior, UI rules, and filters — all from one place.</p>
+        <h2 className="text-xl font-bold tracking-tight text-zinc-900">
+          Builder Configuration
+        </h2>
+        <p className="text-sm text-zinc-400 mt-1">
+          Manage PC builder categories, behavior, UI rules, and filters — all
+          from one place.
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-1 rounded-xl bg-zinc-100/80 p-1">
-        {TABS.map(tab => {
+        {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
@@ -34,8 +39,8 @@ const BuilderConfigManager = memo(function BuilderConfigManager() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
                 isActive
-                  ? 'bg-white text-zinc-900 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-700'
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
               <Icon size={13} />
@@ -46,9 +51,9 @@ const BuilderConfigManager = memo(function BuilderConfigManager() {
       </div>
 
       <div className="min-h-0 flex-1">
-        {activeTab === 'settings' && <BuilderSettingsTab />}
-        {activeTab === 'rules' && <BuilderRulesTab />}
-        {activeTab === 'filters' && <BuilderFiltersTab />}
+        {activeTab === "settings" && <BuilderSettingsTab />}
+        {activeTab === "rules" && <BuilderRulesTab />}
+        {activeTab === "filters" && <BuilderFiltersTab />}
       </div>
     </div>
   );

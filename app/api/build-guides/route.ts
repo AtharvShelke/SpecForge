@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import {
   createBuildGuide,
   listBuildGuides,
-} from "@/lib/services/build-guide.service";
-import { ServiceError } from "@/lib/services/catalog.service";
+} from "@/services/build-guide.service";
+import { ServiceError } from "@/services/catalog.service";
 import {
   serializeBuildGuide,
   serializeBuildGuides,
-} from "@/lib/api/adminSerializers";
+} from "@/lib/adminSerializers";
 import { getSessionUser } from "@/lib/auth";
 
 export async function GET() {
@@ -15,7 +15,8 @@ export async function GET() {
     const guides = await listBuildGuides();
     return NextResponse.json(serializeBuildGuides(guides));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError)
+      return new NextResponse(error.message, { status: error.statusCode });
     console.error("[GET_BUILD_GUIDES]", error);
     return new NextResponse("Internal error", { status: 500 });
   }

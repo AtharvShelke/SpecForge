@@ -1,4 +1,11 @@
 import { CATEGORY_NAMES } from "../lib/categoryUtils";
+import {
+  Monitor,
+  Cpu,
+  HardDrive,
+  Keyboard,
+  ShieldQuestion,
+} from "lucide-react";
 
 export interface CategoryNode {
   label: string;
@@ -23,3 +30,15 @@ export const BUILD_SEQUENCE = [
   CATEGORY_NAMES.MONITOR,
   CATEGORY_NAMES.PERIPHERAL,
 ];
+export const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  [CATEGORY_NAMES.PROCESSOR]: Cpu,
+  [CATEGORY_NAMES.MOTHERBOARD]: ShieldQuestion,
+  [CATEGORY_NAMES.RAM]: HardDrive,
+  [CATEGORY_NAMES.STORAGE]: HardDrive,
+  [CATEGORY_NAMES.GPU]: ShieldQuestion,
+  [CATEGORY_NAMES.PSU]: ShieldQuestion,
+  [CATEGORY_NAMES.CABINET]: ShieldQuestion,
+  [CATEGORY_NAMES.COOLER]: ShieldQuestion,
+  [CATEGORY_NAMES.MONITOR]: Monitor,
+  [CATEGORY_NAMES.PERIPHERAL]: Keyboard,
+};

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createOrder } from "@/lib/services/order.service";
+import { createOrder } from "@/services/order.service";
 import { PaymentMethodType, PaymentStatus } from "@/types";
 import { calculateOrderFinancials } from "@/lib/tax-engine";
 import { getRazorpayConfig } from "@/lib/payments";
@@ -42,7 +42,9 @@ export async function POST(req: NextRequest) {
       include: { variants: true, media: true, subCategory: true },
     });
 
-    const productMap = new Map(products.map((product) => [product.id, product]));
+    const productMap = new Map(
+      products.map((product) => [product.id, product]),
+    );
     const calculationItems: { price: number; quantity: number }[] = [];
     const orderItemsPayload = [];
 
@@ -55,7 +57,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const variant = product.variants.find((entry) => entry.id === item.variantId) || product.variants[0];
+      const variant =
+        product.variants.find((entry) => entry.id === item.variantId) ||
+        product.variants[0];
       if (!variant) {
         return NextResponse.json(
           { error: `Product variant missing for ${product.name}` },
@@ -63,7 +67,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      calculationItems.push({ price: Number(variant.price), quantity: item.quantity });
+      calculationItems.push({
+        price: Number(variant.price),
+        quantity: item.quantity,
+      });
       orderItemsPayload.push({
         variantId: variant.id,
         name: product.name,
@@ -75,7 +82,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
+    const { subtotal, gstAmount, total } =
+      calculateOrderFinancials(calculationItems);
     const localOrderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
     const gatewayResponse = await fetch("https://api.razorpay.com/v1/orders", {
@@ -100,7 +108,11 @@ export async function POST(req: NextRequest) {
     const gatewayPayload = await gatewayResponse.json();
     if (!gatewayResponse.ok) {
       return NextResponse.json(
-        { error: gatewayPayload?.error?.description || "Failed to create Razorpay order." },
+        {
+          error:
+            gatewayPayload?.error?.description ||
+            "Failed to create Razorpay order.",
+        },
         { status: gatewayResponse.status || 500 },
       );
     }
@@ -147,7 +159,12 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error("[RAZORPAY_CREATE_ORDER]", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to initialize Razorpay checkout." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to initialize Razorpay checkout.",
+      },
       { status: 500 },
     );
   }

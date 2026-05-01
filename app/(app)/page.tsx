@@ -3,7 +3,7 @@ import {
   getBestSellers,
   getHomepageCategories,
   getNewArrivals,
-} from "@/lib/storefront/utils";
+} from "@/lib/helpers";
 import { ProductSection } from "@/components/storefront/ProductSection";
 
 export default async function StorefrontPage() {

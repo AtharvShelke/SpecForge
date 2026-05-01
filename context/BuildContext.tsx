@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * BuildContext — Enterprise-grade PC Build state management.
@@ -13,14 +13,15 @@
  *   • Build CRUD lifecycle (create, load, list)
  */
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
   useCallback,
   useMemo,
   ReactNode,
-} from 'react';
+  useEffect,
+} from "react";
 import {
   Build,
   BuildItem,
@@ -28,7 +29,7 @@ import {
   CartItem,
   CompatibilityCheck,
   CompatibilitySeverity,
-} from '../types';
+} from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -61,7 +62,11 @@ export interface CompatibilityResult {
   }>;
 }
 
-export type OverallCompatibilityStatus = 'COMPATIBLE' | 'WARNING' | 'INCOMPATIBLE' | 'UNCHECKED';
+export type OverallCompatibilityStatus =
+  | "COMPATIBLE"
+  | "WARNING"
+  | "INCOMPATIBLE"
+  | "UNCHECKED";
 
 interface BuildContextType {
   /** Currently active build */
@@ -102,7 +107,10 @@ interface BuildContextType {
   loadBuild: (id: string) => Promise<void>;
   refreshBuilds: () => Promise<void>;
   refreshBuildGuides: () => Promise<void>;
-  updateBuildGuide: (id: string, data: Partial<BuildGuide>) => Promise<BuildGuide>;
+  updateBuildGuide: (
+    id: string,
+    data: Partial<BuildGuide>,
+  ) => Promise<BuildGuide>;
   deleteBuildGuide: (id: string) => Promise<void>;
   deleteBuild: (id: string) => Promise<void>;
 
@@ -131,18 +139,23 @@ const BuildContext = createContext<BuildContextType | null>(null);
 // Fetch Utility
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchJSON<T = unknown>(url: string, options?: RequestInit): Promise<T> {
+async function fetchJSON<T = unknown>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
   const res = await fetch(url, {
     ...options,
-    headers: { ...options?.headers, 'Content-Type': 'application/json' },
+    headers: { ...options?.headers, "Content-Type": "application/json" },
   });
   if (!res.ok) {
-    let msg = 'Request failed';
+    let msg = "Request failed";
     try {
       const errData = await res.json();
       msg = errData.error || errData.message || msg;
     } catch {
-      try { msg = await res.text(); } catch {}
+      try {
+        msg = await res.text();
+      } catch {}
     }
     throw new Error(msg);
   }
@@ -165,7 +178,8 @@ export const BuildProvider = ({
   const [build, setBuild] = useState<Build | null>(null);
   const [builds, setBuilds] = useState<Build[]>([]);
   const [buildGuides, setBuildGuides] = useState<BuildGuide[]>([]);
-  const [compatibilityResult, setCompatibilityResult] = useState<CompatibilityResult | null>(null);
+  const [compatibilityResult, setCompatibilityResult] =
+    useState<CompatibilityResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [isBuildMode, setIsBuildMode] = useState(false);
 
@@ -184,28 +198,28 @@ export const BuildProvider = ({
   // ── Compatibility Derived State ─────────────────────────────────────
 
   const overallStatus = useMemo<OverallCompatibilityStatus>(() => {
-    if (!compatibilityResult) return 'UNCHECKED';
+    if (!compatibilityResult) return "UNCHECKED";
     if (compatibilityResult.isCompatible) {
       // Check if there are warnings
       const hasWarnings = compatibilityResult.checks?.some(
-        (c) => !c.passed && c.severity === CompatibilitySeverity.WARNING
+        (c) => !c.passed && c.severity === CompatibilitySeverity.WARNING,
       );
-      return hasWarnings ? 'WARNING' : 'COMPATIBLE';
+      return hasWarnings ? "WARNING" : "COMPATIBLE";
     }
-    return 'INCOMPATIBLE';
+    return "INCOMPATIBLE";
   }, [compatibilityResult]);
 
   const compatibilityErrors = useMemo(() => {
     if (!compatibilityResult?.checks) return [];
     return compatibilityResult.checks.filter(
-      (c) => !c.passed && c.severity === CompatibilitySeverity.ERROR
+      (c) => !c.passed && c.severity === CompatibilitySeverity.ERROR,
     );
   }, [compatibilityResult]);
 
   const compatibilityWarnings = useMemo(() => {
     if (!compatibilityResult?.checks) return [];
     return compatibilityResult.checks.filter(
-      (c) => !c.passed && c.severity === CompatibilitySeverity.WARNING
+      (c) => !c.passed && c.severity === CompatibilitySeverity.WARNING,
     );
   }, [compatibilityResult]);
 
@@ -222,7 +236,7 @@ export const BuildProvider = ({
   }, []);
 
   const generateShareLink = useCallback(() => {
-    if (!build?.id || typeof window === 'undefined') return null;
+    if (!build?.id || typeof window === "undefined") return null;
     return `${window.location.origin}/builds/${build.id}`;
   }, [build?.id]);
 
@@ -231,8 +245,8 @@ export const BuildProvider = ({
   const createBuild = useCallback(async (name?: string) => {
     setLoading(true);
     try {
-      const data = await fetchJSON<Build>('/api/builds', {
-        method: 'POST',
+      const data = await fetchJSON<Build>("/api/builds", {
+        method: "POST",
         body: JSON.stringify({ name }),
       });
       setBuild(data);
@@ -242,36 +256,40 @@ export const BuildProvider = ({
     }
   }, []);
 
-  const saveCurrentBuild = useCallback(async (payload: {
-    title: string;
-    items: CartItem[];
-    category?: string;
-    description?: string;
-  }) => {
-    const items = payload.items
-      .filter((item) => item.selectedVariant?.id)
-      .map((item) => ({
-        variantId: item.selectedVariant!.id,
-        quantity: item.quantity,
-      }));
+  const saveCurrentBuild = useCallback(
+    async (payload: {
+      title: string;
+      items: CartItem[];
+      category?: string;
+      description?: string;
+    }) => {
+      const items = payload.items
+        .filter((item) => item.selectedVariant?.id)
+        .map((item) => ({
+          variantId: item.selectedVariant!.id,
+          quantity: item.quantity,
+        }));
 
-    const created = await fetchJSON<BuildGuide>('/api/build-guides', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: payload.title,
-        category: payload.category,
-        description: payload.description,
-        total: payload.items.reduce(
-          (sum, item) => sum + (item.selectedVariant?.price || 0) * item.quantity,
-          0,
-        ),
-        items,
-      }),
-    });
+      const created = await fetchJSON<BuildGuide>("/api/build-guides", {
+        method: "POST",
+        body: JSON.stringify({
+          title: payload.title,
+          category: payload.category,
+          description: payload.description,
+          total: payload.items.reduce(
+            (sum, item) =>
+              sum + (item.selectedVariant?.price || 0) * item.quantity,
+            0,
+          ),
+          items,
+        }),
+      });
 
-    setBuildGuides((prev) => [created, ...prev]);
-    return created;
-  }, []);
+      setBuildGuides((prev) => [created, ...prev]);
+      return created;
+    },
+    [],
+  );
 
   const loadBuild = useCallback(async (id: string) => {
     setLoading(true);
@@ -287,7 +305,7 @@ export const BuildProvider = ({
   const refreshBuilds = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchJSON<Build[]>('/api/builds');
+      const data = await fetchJSON<Build[]>("/api/builds");
       setBuilds(data);
     } catch {
       // Silently handle — builds list may not exist yet
@@ -298,98 +316,116 @@ export const BuildProvider = ({
 
   const refreshBuildGuides = useCallback(async () => {
     try {
-      const data = await fetchJSON<BuildGuide[]>('/api/build-guides');
+      const data = await fetchJSON<BuildGuide[]>("/api/build-guides");
       setBuildGuides(data);
     } catch (err) {
       console.error("Failed to fetch build guides", err);
     }
   }, []);
 
-  const updateBuildGuide = useCallback(async (id: string, data: Partial<BuildGuide>) => {
-    const updated = await fetchJSON<BuildGuide>(`/api/build-guides/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    setBuildGuides((prev) => prev.map((guide) => guide.id === id ? updated : guide));
-    return updated;
-  }, []);
+  const updateBuildGuide = useCallback(
+    async (id: string, data: Partial<BuildGuide>) => {
+      const updated = await fetchJSON<BuildGuide>(`/api/build-guides/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+      setBuildGuides((prev) =>
+        prev.map((guide) => (guide.id === id ? updated : guide)),
+      );
+      return updated;
+    },
+    [],
+  );
 
   const deleteBuildGuide = useCallback(async (id: string) => {
-    await fetchJSON(`/api/build-guides/${id}`, { method: 'DELETE' });
+    await fetchJSON(`/api/build-guides/${id}`, { method: "DELETE" });
     setBuildGuides((prev) => prev.filter((guide) => guide.id !== id));
   }, []);
 
-  const deleteBuild = useCallback(async (id: string) => {
-    setLoading(true);
-    try {
-      await fetchJSON(`/api/builds/${id}`, { method: 'DELETE' });
-      if (build?.id === id) {
-        setBuild(null);
-        setCompatibilityResult(null);
+  const deleteBuild = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      try {
+        await fetchJSON(`/api/builds/${id}`, { method: "DELETE" });
+        if (build?.id === id) {
+          setBuild(null);
+          setCompatibilityResult(null);
+        }
+        setBuilds((prev) => prev.filter((b) => b.id !== id));
+      } finally {
+        setLoading(false);
       }
-      setBuilds((prev) => prev.filter((b) => b.id !== id));
-    } finally {
-      setLoading(false);
-    }
-  }, [build?.id]);
+    },
+    [build?.id],
+  );
 
   // ── BuildItem Management ────────────────────────────────────────────
 
-  const addItem = useCallback(async (variantId: string, slotId: string) => {
-    if (!build) return;
-    setLoading(true);
-    try {
-      await fetchJSON(`/api/builds/${build.id}/items`, {
-        method: 'POST',
-        body: JSON.stringify({ variantId, slotId }),
-      });
-      // Reload build to get fresh state with variant details
-      const refreshed = await fetchJSON<Build>(`/api/builds/${build.id}`);
-      setBuild(refreshed);
-      // Invalidate previous compatibility result
-      setCompatibilityResult(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [build]);
+  const addItem = useCallback(
+    async (variantId: string, slotId: string) => {
+      if (!build) return;
+      setLoading(true);
+      try {
+        await fetchJSON(`/api/builds/${build.id}/items`, {
+          method: "POST",
+          body: JSON.stringify({ variantId, slotId }),
+        });
+        // Reload build to get fresh state with variant details
+        const refreshed = await fetchJSON<Build>(`/api/builds/${build.id}`);
+        setBuild(refreshed);
+        // Invalidate previous compatibility result
+        setCompatibilityResult(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [build],
+  );
 
-  const removeItem = useCallback(async (itemId: string) => {
-    if (!build) return;
-    setLoading(true);
-    try {
-      await fetchJSON(`/api/builds/${build.id}/items/${itemId}`, {
-        method: 'DELETE',
-      });
-      // Reload build
-      const refreshed = await fetchJSON<Build>(`/api/builds/${build.id}`);
-      setBuild(refreshed);
-      // Invalidate previous compatibility result
-      setCompatibilityResult(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [build]);
+  const removeItem = useCallback(
+    async (itemId: string) => {
+      if (!build) return;
+      setLoading(true);
+      try {
+        await fetchJSON(`/api/builds/${build.id}/items/${itemId}`, {
+          method: "DELETE",
+        });
+        // Reload build
+        const refreshed = await fetchJSON<Build>(`/api/builds/${build.id}`);
+        setBuild(refreshed);
+        // Invalidate previous compatibility result
+        setCompatibilityResult(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [build],
+  );
 
   // ── Compatibility Check ─────────────────────────────────────────────
 
-  const checkCompatibility = useCallback(async (): Promise<CompatibilityResult | null> => {
-    if (!build) return null;
-    setLoading(true);
-    try {
-      const result = await fetchJSON<CompatibilityResult>('/api/compatibility/check', {
-        method: 'POST',
-        body: JSON.stringify({ buildId: build.id }),
-      });
-      setCompatibilityResult(result);
-      return result;
-    } finally {
-      setLoading(false);
-    }
-  }, [build]);
+  const checkCompatibility =
+    useCallback(async (): Promise<CompatibilityResult | null> => {
+      if (!build) return null;
+      setLoading(true);
+      try {
+        const result = await fetchJSON<CompatibilityResult>(
+          "/api/compatibility/check",
+          {
+            method: "POST",
+            body: JSON.stringify({ buildId: build.id }),
+          },
+        );
+        setCompatibilityResult(result);
+        return result;
+      } finally {
+        setLoading(false);
+      }
+    }, [build]);
 
   // ── Initial Load ────────────────────────────────────────────────────
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!autoLoad) return;
     refreshBuildGuides();
   }, [autoLoad, refreshBuildGuides]);
@@ -448,13 +484,11 @@ export const BuildProvider = ({
       saveCurrentBuild,
       generateShareLink,
       loading,
-    ]
+    ],
   );
 
   return (
-    <BuildContext.Provider value={value}>
-      {children}
-    </BuildContext.Provider>
+    <BuildContext.Provider value={value}>{children}</BuildContext.Provider>
   );
 };
 
@@ -464,7 +498,7 @@ export const BuildProvider = ({
 
 export const useBuild = () => {
   const ctx = useContext(BuildContext);
-  if (!ctx) throw new Error('useBuild must be used within BuildProvider');
+  if (!ctx) throw new Error("useBuild must be used within BuildProvider");
   return ctx;
 };
 
@@ -476,9 +510,14 @@ export const useBuildSlot = (slotId: string) => {
 
 /** Convenience hook: get compatibility status without the full result object */
 export const useCompatibilityStatus = () => {
-  const { overallStatus, compatibilityErrors, compatibilityWarnings } = useBuild();
+  const { overallStatus, compatibilityErrors, compatibilityWarnings } =
+    useBuild();
   return useMemo(
-    () => ({ status: overallStatus, errors: compatibilityErrors, warnings: compatibilityWarnings }),
-    [overallStatus, compatibilityErrors, compatibilityWarnings]
+    () => ({
+      status: overallStatus,
+      errors: compatibilityErrors,
+      warnings: compatibilityWarnings,
+    }),
+    [overallStatus, compatibilityErrors, compatibilityWarnings],
   );
 };

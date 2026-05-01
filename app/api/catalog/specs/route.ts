@@ -1,24 +1,21 @@
-import { NextResponse } from 'next/server';
-import { CatalogService, ServiceError } from '@/lib/services/catalog.service';
-import { measureRoute } from '@/lib/performance';
+import { NextResponse } from "next/server";
+import { CatalogService, ServiceError } from "@/services/catalog.service";
 
 export async function GET(request: Request) {
-  return measureRoute("GET /api/catalog/specs", async () => {
-    try {
-      const { searchParams } = new URL(request.url);
-      const subCategoryId = searchParams.get('subCategoryId');
-      const specs = await CatalogService.getSpecs(subCategoryId || undefined);
-      return NextResponse.json(specs, {
-        headers: {
-          "Cache-Control": subCategoryId
-            ? "public, max-age=0, s-maxage=300, stale-while-revalidate=1800"
-            : "no-store",
-        },
-      });
-    } catch (error: any) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-  });
+  try {
+    const { searchParams } = new URL(request.url);
+    const subCategoryId = searchParams.get("subCategoryId");
+    const specs = await CatalogService.getSpecs(subCategoryId || undefined);
+    return NextResponse.json(specs, {
+      headers: {
+        "Cache-Control": subCategoryId
+          ? "public, max-age=0, s-maxage=300, stale-while-revalidate=1800"
+          : "no-store",
+      },
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

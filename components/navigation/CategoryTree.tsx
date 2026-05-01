@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronRight, Loader2, AlertCircle, FolderTree } from 'lucide-react';
-import { CategoryHierarchy } from '@/types';
-import { getCategoryHierarchy } from '@/services/categoryService';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { ChevronRight, Loader2, AlertCircle, FolderTree } from "lucide-react";
+import { CategoryHierarchy } from "@/types";
+import { getCategoryHierarchy } from "@/services/category.service";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ const TreeNode: React.FC<{
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (hasChildren) {
-      setIsExpanded(prev => !prev);
+      setIsExpanded((prev) => !prev);
     }
   };
 
@@ -58,7 +58,7 @@ const TreeNode: React.FC<{
     }
     // If it has children, also toggle on click
     if (hasChildren) {
-      setIsExpanded(prev => !prev);
+      setIsExpanded((prev) => !prev);
     }
   };
 
@@ -74,9 +74,10 @@ const TreeNode: React.FC<{
           className={`
             w-full flex items-center gap-1.5 text-left rounded-md px-2 py-1.5
             text-[13px] transition-all duration-150 group/node
-            ${isSelected
-              ? 'bg-primary/10 text-primary font-semibold'
-              : 'text-foreground/75 hover:bg-accent hover:text-foreground font-medium'
+            ${
+              isSelected
+                ? "bg-primary/10 text-primary font-semibold"
+                : "text-foreground/75 hover:bg-accent hover:text-foreground font-medium"
             }
           `}
           style={{ paddingLeft: `${paddingLeft + 8}px` }}
@@ -91,7 +92,7 @@ const TreeNode: React.FC<{
               <ChevronRight
                 size={12}
                 strokeWidth={2.5}
-                className={`transition-transform duration-200 text-muted-foreground ${isExpanded ? 'rotate-90' : ''}`}
+                className={`transition-transform duration-200 text-muted-foreground ${isExpanded ? "rotate-90" : ""}`}
               />
             </span>
           ) : (
@@ -106,7 +107,7 @@ const TreeNode: React.FC<{
           className={`
             flex items-center gap-1.5 px-2 py-1.5 rounded-md
             text-[11px] font-semibold text-muted-foreground uppercase tracking-widest
-            ${hasChildren ? 'cursor-pointer hover:bg-accent/50' : ''}
+            ${hasChildren ? "cursor-pointer hover:bg-accent/50" : ""}
             select-none transition-colors duration-150
           `}
           style={{ paddingLeft: `${paddingLeft + 8}px` }}
@@ -115,7 +116,7 @@ const TreeNode: React.FC<{
             <ChevronRight
               size={11}
               strokeWidth={2.5}
-              className={`transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+              className={`transition-transform duration-200 flex-shrink-0 ${isExpanded ? "rotate-90" : ""}`}
             />
           ) : (
             <span className="w-[15px] flex-shrink-0" />
@@ -127,7 +128,7 @@ const TreeNode: React.FC<{
       {/* Recursive children */}
       {hasChildren && isExpanded && (
         <div className="overflow-hidden">
-          {sortedChildren.map(child => (
+          {sortedChildren.map((child) => (
             <TreeNode
               key={child.id}
               node={child}
@@ -159,8 +160,8 @@ const CategoryTree: React.FC<CategoryTreeProps> = ({
       const data = await getCategoryHierarchy();
       setHierarchy(data);
     } catch (err: any) {
-      console.error('[CategoryTree] Failed to fetch hierarchy:', err);
-      setError(err.message ?? 'Failed to load categories');
+      console.error("[CategoryTree] Failed to fetch hierarchy:", err);
+      setError(err.message ?? "Failed to load categories");
     } finally {
       setLoading(false);
     }
@@ -209,7 +210,7 @@ const CategoryTree: React.FC<CategoryTreeProps> = ({
   // ── Tree render ────────────────────────────────────────────────────────────
   return (
     <div className="space-y-0.5">
-      {hierarchy.map(node => (
+      {hierarchy.map((node) => (
         <TreeNode
           key={node.id}
           node={node}

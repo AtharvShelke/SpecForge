@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { serializeOrder } from "@/lib/api/adminSerializers";
-import { ServiceError } from "@/lib/services/catalog.service";
-import { getOrderById } from "@/lib/services/order.service";
+import { serializeOrder } from "@/lib/adminSerializers";
+import { ServiceError } from "@/services/catalog.service";
+import { getOrderById } from "@/services/order.service";
 import { generateInvoicePdfBuffer } from "@/lib/invoicePdf";
 import type { Order } from "@/types";
 
@@ -27,7 +27,10 @@ export async function GET(
     });
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
     }
     console.error("[GET_ORDER_INVOICE_PDF]", error);
     return NextResponse.json(

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ServiceError, updateVariant } from "@/lib/services/catalog.service";
+import { ServiceError, updateVariant } from "@/services/catalog.service";
 
 export async function PATCH(
   req: NextRequest,
@@ -12,11 +12,17 @@ export async function PATCH(
     return NextResponse.json(variant);
   } catch (error: any) {
     if (error instanceof ServiceError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to update variant." },
+      {
+        error:
+          error instanceof Error ? error.message : "Unable to update variant.",
+      },
       { status: 500 },
     );
   }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listInvoices, createInvoice } from "@/lib/services/billing.service";
-import { ServiceError } from "@/lib/services/catalog.service";
-import { serializeInvoice, serializeInvoices } from "@/lib/api/adminSerializers";
+import { listInvoices, createInvoice } from "@/services/billing.service";
+import { ServiceError } from "@/services/catalog.service";
+import { serializeInvoice, serializeInvoices } from "@/lib/adminSerializers";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(serializeInvoices(invoices as any[]));
   } catch (error: any) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError)
+      return new NextResponse(error.message, { status: error.statusCode });
     console.error("[GET_INVOICES]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
     const invoice = await createInvoice(body);
     return NextResponse.json(serializeInvoice(invoice), { status: 201 });
   } catch (error: any) {
-    if (error instanceof ServiceError) return new NextResponse(error.message, { status: error.statusCode });
+    if (error instanceof ServiceError)
+      return new NextResponse(error.message, { status: error.statusCode });
     console.error("[POST_INVOICES]", error);
     return new NextResponse("Internal error", { status: 500 });
   }

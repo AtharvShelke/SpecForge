@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
-import { CatalogService } from '@/lib/services/catalog.service';
+import { NextResponse } from "next/server";
+import { CatalogService } from "@/services/catalog.service";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
     const variants = await CatalogService.getVariants(id);
@@ -11,7 +14,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
     const data = await request.json();

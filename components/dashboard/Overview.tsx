@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import { InventorySkuSummary, Order, OrderStatus } from "@/types";
 import {
@@ -621,10 +621,8 @@ const Overview = () => {
             {orders.length.toLocaleString("en-IN")} orders indexed
           </span>
           <span className="rounded-full border border-stone-200/80 bg-white/80 px-3 py-1.5">
-            {inventoryArray.length.toLocaleString(
-              "en-IN",
-            )}{" "}
-            inventory lines tracked
+            {inventoryArray.length.toLocaleString("en-IN")} inventory lines
+            tracked
           </span>
         </div>
       </section>
@@ -980,9 +978,7 @@ const Overview = () => {
                         <p className="truncate text-sm font-medium text-stone-800">
                           {product?.name || sku}
                         </p>
-                        <p className="mt-1 text-[11px] text-stone-500">
-                          {sku}
-                        </p>
+                        <p className="mt-1 text-[11px] text-stone-500">{sku}</p>
                       </div>
                       <span
                         className={cn(

@@ -3,9 +3,9 @@ import {
   deleteBuildGuide,
   getBuildGuideById,
   updateBuildGuide,
-} from "@/lib/services/build-guide.service";
-import { ServiceError } from "@/lib/services/catalog.service";
-import { serializeBuildGuide } from "@/lib/api/adminSerializers";
+} from "@/services/build-guide.service";
+import { ServiceError } from "@/services/catalog.service";
+import { serializeBuildGuide } from "@/lib/adminSerializers";
 import { getSessionUser } from "@/lib/auth";
 
 export async function GET(
@@ -18,7 +18,10 @@ export async function GET(
     return NextResponse.json(serializeBuildGuide(guide));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
     }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -43,7 +46,10 @@ export async function PUT(
     return NextResponse.json(serializeBuildGuide(guide));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
     }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -67,7 +73,10 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
     }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
