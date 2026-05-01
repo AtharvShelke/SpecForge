@@ -20,6 +20,7 @@ import {
   Order,
 } from "../types";
 import { sameCategory } from "../lib/categoryUtils";
+import { apiFetch, useLoadingCounter } from "@/lib/helpers";
 
 interface ShopContextType {
   products: Product[];
@@ -63,19 +64,10 @@ interface ShopContextType {
   refreshFilterConfigs: () => Promise<void>;
 
   isLoading: boolean;
+  error: Error | null;
 }
 
 const ShopContext = createContext<ShopContextType | null>(null);
-
-async function fetchJSON(url: string, options?: RequestInit) {
-  const res = await fetch(url, {
-    ...options,
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
 
 export const ShopProvider = ({
   children,
@@ -93,23 +85,63 @@ export const ShopProvider = ({
     null,
   );
   const [filters, setFilters] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(false);
+  const { loading, start, stop } = useLoadingCounter();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [error, setError] = useState<Error | null>(null);
 
   // Cart State
   const [cart, setCart] = useState<any[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
   const [compareItems, setCompareItems] = useState<Product[]>([]);
 
-  const setSubCategory = async (id: string) => {
-    setSelectedSubCategory(id);
-    setFilters({});
+  const fetchProducts = useCallback(
+    async (subCategoryId?: string, filtersObj?: Record<string, string[]>) => {
+      setError(null);
+      start();
+      try {
+        const formattedFilters = Object.entries(filtersObj ?? {}).map(
+          ([specId, values]) => ({ specId, values }),
+        );
 
-    const specData = await fetchJSON(`/api/catalog/specs?subCategoryId=${id}`);
-    setSpecs(specData);
+        const data = await apiFetch<any>("/api/catalog/products/filter", {
+          method: "POST",
+          body: JSON.stringify({
+            subCategoryId,
+            filters: formattedFilters,
+          }),
+        });
+        setProducts(Array.isArray(data) ? data : (data?.products ?? []));
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
+    },
+    [start, stop],
+  );
 
-    await fetchProducts(id, {});
-  };
+  const setSubCategory = useCallback(
+    async (id: string) => {
+      setSelectedSubCategory(id);
+      setFilters({});
+
+      setError(null);
+      start();
+      try {
+        const specData = await apiFetch<SpecDefinition[]>(
+          `/api/catalog/specs?subCategoryId=${id}`,
+        );
+        setSpecs(specData);
+
+        await fetchProducts(id, {});
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
+    },
+    [fetchProducts, start, stop],
+  );
 
   const setFilter = (specId: string, values: string[]) => {
     setFilters((prev) => ({
@@ -120,53 +152,42 @@ export const ShopProvider = ({
 
   const clearFilters = () => setFilters({});
 
-  const fetchProducts = async (
-    subCategoryId?: string,
-    filtersObj?: Record<string, string[]>,
-  ) => {
-    setLoading(true);
-    try {
-      // Transform Record<string, string[]> to Array<{ specId: string, values: string[] }>
-      const formattedFilters = Object.entries(filtersObj || {}).map(
-        ([specId, values]) => ({
-          specId,
-          values,
-        }),
-      );
-
-      const data = await fetchJSON("/api/catalog/products/filter", {
-        method: "POST",
-        body: JSON.stringify({
-          subCategoryId,
-          filters: formattedFilters,
-        }),
-      });
-      setProducts(Array.isArray(data) ? data : (data?.products ?? []));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const refreshProducts = useCallback(async () => {
     if (!selectedSubCategory) return;
     await fetchProducts(selectedSubCategory, filters);
-  }, [selectedSubCategory, filters]);
+  }, [selectedSubCategory, filters, fetchProducts]);
 
   const refreshOrders = useCallback(async () => {
-    const data = await fetchJSON("/api/orders");
-    setOrders(Array.isArray(data) ? data : []);
-  }, []);
+    setError(null);
+    start();
+    try {
+      const data = await apiFetch<any[]>("/api/orders");
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [start, stop]);
 
   const refreshCategories = useCallback(async () => {
-    const [subCats, cats, brnds] = await Promise.all([
-      fetchJSON("/api/catalog/subcategories"),
-      fetchJSON("/api/catalog/categories"),
-      fetchJSON("/api/catalog/brands"),
-    ]);
-    setSubCategories(subCats);
-    setCategories(cats);
-    setBrands(brnds);
-  }, []);
+    setError(null);
+    start();
+    try {
+      const [subCats, cats, brnds] = await Promise.all([
+        apiFetch<SubCategory[]>("/api/catalog/subcategories"),
+        apiFetch<Category[]>("/api/catalog/categories"),
+        apiFetch<Brand[]>("/api/catalog/brands"),
+      ]);
+      setSubCategories(subCats);
+      setCategories(cats);
+      setBrands(brnds);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [start, stop]);
 
   const refreshFilterConfigs = useCallback(async () => {}, []);
 
@@ -259,7 +280,7 @@ export const ShopProvider = ({
 
   useEffect(() => {
     if (!autoLoad) return;
-    refreshCategories();
+    void Promise.allSettled([refreshCategories()]);
   }, [autoLoad, refreshCategories]);
 
   useEffect(() => {
@@ -290,7 +311,7 @@ export const ShopProvider = ({
 
   useEffect(() => {
     refreshProducts();
-  }, [filters, refreshProducts]);
+  }, [refreshProducts]);
 
   return (
     <ShopContext.Provider
@@ -325,6 +346,7 @@ export const ShopProvider = ({
         refreshCategories,
         refreshFilterConfigs,
         isLoading: loading,
+        error,
       }}
     >
       {children}

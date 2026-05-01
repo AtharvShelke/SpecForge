@@ -3,7 +3,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { ServiceError } from "./catalog.service";
+import { ServiceError } from "@/lib/errors";
 import {
   InventoryItem,
   InventoryTrackingType,
@@ -132,7 +132,10 @@ export async function createInventoryItem(data: {
       (unit) => !unit.serialNumber || !unit.partNumber,
     );
     if (hasMissingValues) {
-      throw new ServiceError("Each unit must include serialNumber and partNumber", 400);
+      throw new ServiceError(
+        "Each unit must include serialNumber and partNumber",
+        400,
+      );
     }
 
     const duplicateSerials = normalizedUnits.filter(
@@ -194,18 +197,19 @@ export async function createInventoryItem(data: {
     const existing = await prisma.inventoryItem.findUnique({
       where: { serialNumber: data.serialNumber },
     });
-    if (existing)
-      throw new ServiceError("Serial number already exists", 409);
+    if (existing) throw new ServiceError("Serial number already exists", 409);
   }
 
   return prisma.inventoryItem.create({
     data: {
       variantId: data.variantId,
-      trackingType: (data.trackingType as any) || (data.serialNumber ? "SERIALIZED" : "BULK"),
+      trackingType:
+        (data.trackingType as any) ||
+        (data.serialNumber ? "SERIALIZED" : "BULK"),
       serialNumber: data.serialNumber,
       partNumber: data.partNumber,
       quantityOnHand:
-        data.quantityOnHand ?? ((data.serialNumber || data.partNumber) ? 1 : 0),
+        data.quantityOnHand ?? (data.serialNumber || data.partNumber ? 1 : 0),
       status: (data.status as any) || "IN_STOCK",
       costPrice: data.costPrice,
       batchNumber: data.batchNumber,
@@ -218,7 +222,7 @@ export async function createInventoryItem(data: {
 export async function adjustStockByVariant(
   variantId: string,
   quantity: number,
-  type: string
+  type: string,
 ) {
   const serializedCount = await prisma.inventoryItem.count({
     where: { variantId, trackingType: "SERIALIZED" },
@@ -273,7 +277,7 @@ export async function updateInventoryItem(
     costPrice?: number;
     batchNumber?: string;
     notes?: string;
-  }
+  },
 ) {
   if (data.serialNumber) {
     const existing = await prisma.inventoryItem.findUnique({
@@ -287,8 +291,10 @@ export async function updateInventoryItem(
   if (data.trackingType !== undefined) patch.trackingType = data.trackingType;
   if (data.serialNumber !== undefined) patch.serialNumber = data.serialNumber;
   if (data.partNumber !== undefined) patch.partNumber = data.partNumber;
-  if (data.quantityOnHand !== undefined) patch.quantityOnHand = data.quantityOnHand;
-  if (data.quantityReserved !== undefined) patch.quantityReserved = data.quantityReserved;
+  if (data.quantityOnHand !== undefined)
+    patch.quantityOnHand = data.quantityOnHand;
+  if (data.quantityReserved !== undefined)
+    patch.quantityReserved = data.quantityReserved;
   if (data.status !== undefined) patch.status = data.status;
   if (data.costPrice !== undefined) patch.costPrice = data.costPrice;
   if (data.batchNumber !== undefined) patch.batchNumber = data.batchNumber;
@@ -307,7 +313,9 @@ export async function updateInventoryItem(
 // RESERVATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getReservations(orderId?: string): Promise<Reservation[]> {
+export async function getReservations(
+  orderId?: string,
+): Promise<Reservation[]> {
   const where: any = {};
   if (orderId) where.orderId = orderId;
 
@@ -327,7 +335,9 @@ export async function createReservation(data: {
   expiresAt?: string;
 }) {
   if (!data.orderId || (!data.inventoryItemId && !data.variantId))
-    throw new ServiceError("orderId and either inventoryItemId or variantId are required");
+    throw new ServiceError(
+      "orderId and either inventoryItemId or variantId are required",
+    );
 
   let inventoryItemId = data.inventoryItemId;
 
@@ -371,13 +381,12 @@ export async function createReservation(data: {
 
 export async function updateReservation(
   id: string,
-  data: { status?: string; expiresAt?: string }
+  data: { status?: string; expiresAt?: string },
 ) {
   const currentReservation = await prisma.reservation.findUnique({
     where: { id },
   });
-  if (!currentReservation)
-    throw new ServiceError("Reservation not found", 404);
+  if (!currentReservation) throw new ServiceError("Reservation not found", 404);
 
   const patch: any = {};
   if (data.status !== undefined) patch.status = data.status;
@@ -394,17 +403,16 @@ export async function updateReservation(
         prisma.reservation.update({ where: { id }, data: patch }),
         prisma.inventoryItem.update({
           where: { id: currentReservation.inventoryItemId },
-          data: { quantityReserved: { decrement: currentReservation.quantity } },
+          data: {
+            quantityReserved: { decrement: currentReservation.quantity },
+          },
         }),
       ]);
       return prisma.reservation.findUnique({ where: { id } });
     }
 
     // ACTIVE → CONVERTED: deduct both reserved and on-hand
-    if (
-      currentReservation.status === "ACTIVE" &&
-      data.status === "CONVERTED"
-    ) {
+    if (currentReservation.status === "ACTIVE" && data.status === "CONVERTED") {
       await prisma.$transaction([
         prisma.reservation.update({ where: { id }, data: patch }),
         prisma.inventoryItem.update({
@@ -421,4 +429,27 @@ export async function updateReservation(
 
   // Default update — no inventory side‐effects
   return prisma.reservation.update({ where: { id }, data: patch });
+}
+
+
+export async function adjustStockBySku(
+  skuOrVariantId: string,
+  quantity: number,
+  type: string,
+) {
+  // Try to find the variant by SKU first, fall back to treating input as variantId
+  const variant = await prisma.productVariant.findFirst({
+    where: {
+      OR: [
+        { id: skuOrVariantId },
+        { sku: skuOrVariantId },
+      ],
+    },
+    select: { id: true },
+  });
+  
+  const variantId = variant?.id;
+  if (!variantId) throw new ServiceError(`Variant not found: ${skuOrVariantId}`, 404);
+  
+  return adjustStockByVariant(variantId, quantity, type);
 }

@@ -1,0 +1,4600 @@
+===== DIRECTORY STRUCTURE =====
+
+├── auth.service.ts
+├── billing.service.ts
+├── build-guide.service.ts
+├── build.service.ts
+├── catalog.service.ts
+├── category.service.ts
+├── compatibility.service.ts
+├── customer.service.ts
+├── inventory.service.ts
+├── invoice-client.service.ts
+├── order.service.ts
+└── product.service.ts
+
+
+===== FILE CONTENTS =====
+
+
+
+----- FILE: auth.service.ts -----
+
+// lib/services/auth.service.ts
+
+import { ServiceError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+
+export async function loginUser(email: string, password: string) {
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) throw new ServiceError("Invalid credentials", 401);
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) throw new ServiceError("Invalid credentials", 401);
+
+  return user;
+}
+
+export async function registerUser(data: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  const existing = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
+
+  if (existing) throw new ServiceError("User already exists", 409);
+
+  const hashed = await bcrypt.hash(data.password, 12);
+
+  return prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      password: hashed,
+    },
+  });
+}
+
+
+
+----- FILE: billing.service.ts -----
+
+// Server-only: uses Prisma. Do not import in client components.
+/**
+ * billing.service.ts — Enterprise-grade billing logic.
+ *
+ * Invoice lifecycle:  DRAFT → PENDING → PAID / OVERDUE
+ * Terminal states:    VOIDED, CANCELLED, REFUNDED
+ *
+ * Every mutation logs an InvoiceAuditEvent for traceability.
+ */
+
+import { ServiceError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
+import { UpdateInvoicePayload } from "@/types";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VALID STATUS TRANSITIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  DRAFT: ["PENDING", "VOIDED", "CANCELLED"],
+  PENDING: ["PAID", "OVERDUE", "VOIDED", "CANCELLED"],
+  OVERDUE: ["PAID", "VOIDED", "CANCELLED"],
+  PAID: ["REFUNDED"],
+  // Terminal states — no outbound transitions
+  VOIDED: [],
+  CANCELLED: [],
+  REFUNDED: [],
+};
+
+function assertTransition(from: string, to: string) {
+  const allowed = VALID_TRANSITIONS[from];
+  if (!allowed || !allowed.includes(to)) {
+    throw new ServiceError(`Invalid invoice transition: ${from} → ${to}`, 400);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIST
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listInvoices(filters?: {
+  status?: string;
+  customerId?: string;
+  orderId?: string;
+}) {
+  const where: any = {};
+  if (filters?.status) where.status = filters.status;
+  if (filters?.customerId) where.customerId = filters.customerId;
+  if (filters?.orderId) where.orderId = filters.orderId;
+
+  return prisma.invoice.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      customer: true,
+      lineItems: true,
+      audit: { orderBy: { createdAt: "desc" } },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET BY ID (with full audit trail)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getInvoiceById(id: string) {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id },
+    include: {
+      customer: true,
+      lineItems: true,
+      order: {
+        include: {
+          items: true,
+        },
+      },
+      audit: { orderBy: { createdAt: "desc" } },
+    },
+  });
+  if (!invoice) throw new ServiceError("Invoice not found", 404);
+  return invoice;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createInvoice(data: {
+  customerId: string;
+  orderId?: string;
+  type?: string;
+  subtotal?: number;
+  taxTotal?: number;
+  discountPct?: number;
+  shipping?: number;
+  total?: number;
+  amountPaid?: number;
+  amountDue?: number;
+  dueDate: string;
+  notes?: string;
+  lineItems?: Array<{
+    name: string;
+    description?: string;
+    orderItemId?: string;
+    inventoryItemId?: string;
+    lineReference?: string;
+    productNumber?: string;
+    partNumber?: string;
+    serialNumber?: string;
+    quantity: number;
+    unitPrice: number;
+    taxRatePct?: number;
+    hsnCode?: string;
+  }>;
+}) {
+  if (!data.customerId) throw new ServiceError("Customer ID is required");
+  if (!data.dueDate) throw new ServiceError("Due Date is required");
+
+  return prisma.$transaction(async (tx) => {
+    let resolvedLineItems = data.lineItems;
+    if (
+      (!resolvedLineItems || resolvedLineItems.length === 0) &&
+      data.orderId
+    ) {
+      const order = await tx.order.findUnique({
+        where: { id: data.orderId },
+        include: {
+          items: {
+            orderBy: { id: "asc" },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new ServiceError("Order not found for invoice creation", 404);
+      }
+
+      if (order.customerId !== data.customerId) {
+        throw new ServiceError(
+          "Invoice customer does not match the linked order",
+          400,
+        );
+      }
+
+      resolvedLineItems = (order.items as any[]).map((item) => ({
+        name: item.name,
+        description: [item.category, item.lineReference]
+          .filter(Boolean)
+          .join(" · "),
+        orderItemId: item.id,
+        inventoryItemId: item.inventoryItemId ?? undefined,
+        lineReference: item.lineReference,
+        productNumber: item.productNumber,
+        partNumber: item.partNumber,
+        serialNumber: item.serialNumber,
+        quantity: item.quantity,
+        unitPrice: Number(item.price),
+        taxRatePct: 18,
+      }));
+    }
+
+    // 1. Atomically increment sequence
+    const sequence = await tx.invoiceSequence.upsert({
+      where: { id: "invoice_seq" },
+      update: { currentValue: { increment: 1 } },
+      create: { id: "invoice_seq", currentValue: 1 },
+    });
+
+    const invoiceNumber = `INV-${String(sequence.currentValue).padStart(6, "0")}`;
+
+    // 2. Auto-compute totals from line items if not provided
+    let subtotal = data.subtotal ?? 0;
+    let taxTotal = data.taxTotal ?? 0;
+
+    if (resolvedLineItems && resolvedLineItems.length > 0 && !data.subtotal) {
+      subtotal = resolvedLineItems.reduce(
+        (sum, li) => sum + li.quantity * li.unitPrice,
+        0,
+      );
+      taxTotal = resolvedLineItems.reduce(
+        (sum, li) =>
+          sum + li.quantity * li.unitPrice * ((li.taxRatePct ?? 18) / 100),
+        0,
+      );
+    }
+
+    const shipping = data.shipping ?? 0;
+    const discountPct = data.discountPct ?? 0;
+    const discountAmount = subtotal * (discountPct / 100);
+    const total = data.total ?? subtotal + taxTotal + shipping - discountAmount;
+    const amountPaid = data.amountPaid ?? 0;
+    const amountDue = data.amountDue ?? total - amountPaid;
+
+    // 3. Build invoice payload
+    const invoiceData: any = {
+      invoiceNumber,
+      customerId: data.customerId,
+      orderId: data.orderId,
+      type: data.type || "STANDARD",
+      status: "DRAFT",
+      subtotal,
+      taxTotal,
+      discountPct,
+      shipping,
+      total,
+      amountPaid,
+      amountDue,
+      dueDate: new Date(data.dueDate),
+      notes: data.notes,
+    };
+
+    if (resolvedLineItems && resolvedLineItems.length > 0) {
+      invoiceData.lineItems = {
+        create: resolvedLineItems.map((item) => ({
+          name: item.name,
+          description: item.description,
+          orderItemId: item.orderItemId,
+          inventoryItemId: item.inventoryItemId,
+          lineReference: item.lineReference,
+          productNumber: item.productNumber,
+          partNumber: item.partNumber,
+          serialNumber: item.serialNumber,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRatePct: item.taxRatePct ?? 18,
+          hsnCode: item.hsnCode,
+        })),
+      };
+    }
+
+    // 4. Create invoice
+    const invoice = await tx.invoice.create({
+      data: invoiceData,
+      include: { lineItems: true, audit: true },
+    });
+
+    // 5. Audit event
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: invoice.id,
+        type: "CREATED",
+        actor: "System",
+        message: `Invoice ${invoiceNumber} created as DRAFT (Total: ₹${total.toFixed(2)})`,
+      },
+    });
+
+    return invoice;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPDATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function updateInvoice(id: string, data: UpdateInvoicePayload) {
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) throw new ServiceError("Invoice not found", 404);
+
+  const actor = data.actor ?? "System";
+
+  return prisma.$transaction(async (tx) => {
+    const { actor = "System", ...updateData } = data;
+    if (updateData.dueDate) {
+      (updateData as any).dueDate = new Date(updateData.dueDate);
+    }
+
+    const updated = await tx.invoice.update({
+      where: { id },
+      data: updateData,
+      include: { lineItems: true, audit: { orderBy: { createdAt: "desc" } } },
+    });
+
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: id,
+        type: "UPDATED",
+        actor,
+        message: `Invoice updated`,
+      },
+    });
+
+    return updated;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAY (partial payment support)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function payInvoice(
+  id: string,
+  data: { amount?: number; note?: string; actor?: string },
+) {
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) throw new ServiceError("Invoice not found", 404);
+  if (invoice.status === "PAID")
+    throw new ServiceError("Invoice is already fully paid", 400);
+  if (invoice.status === "VOIDED" || invoice.status === "CANCELLED")
+    throw new ServiceError(`Cannot pay a ${invoice.status} invoice`, 400);
+
+  const actor = data.actor ?? "System";
+  const paymentAmount =
+    data.amount !== undefined ? Number(data.amount) : Number(invoice.amountDue);
+
+  if (paymentAmount <= 0)
+    throw new ServiceError("Payment amount must be positive", 400);
+
+  const newAmountPaid = Number(invoice.amountPaid) + paymentAmount;
+  const newAmountDue = Math.max(0, Number(invoice.total) - newAmountPaid);
+  const isFullyPaid = newAmountDue <= 0;
+
+  // Determine next status
+  let newStatus = invoice.status as string;
+  if (isFullyPaid) {
+    newStatus = "PAID";
+  } else if (invoice.status === "DRAFT") {
+    newStatus = "PENDING";
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.invoice.update({
+      where: { id },
+      data: {
+        amountPaid: newAmountPaid,
+        amountDue: newAmountDue,
+        status: newStatus as any,
+        paidAt: isFullyPaid ? new Date() : undefined,
+      },
+      include: { lineItems: true, audit: { orderBy: { createdAt: "desc" } } },
+    });
+
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: id,
+        type: isFullyPaid ? "PAYMENT_COMPLETED" : "PARTIAL_PAYMENT",
+        actor,
+        message:
+          data.note ||
+          `Payment of ₹${paymentAmount.toFixed(2)} received. ${isFullyPaid ? "Invoice fully paid." : `Remaining due: ₹${newAmountDue.toFixed(2)}`}`,
+      },
+    });
+
+    return updated;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEND
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function sendInvoice(
+  id: string,
+  data: { note?: string; actor?: string },
+) {
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) throw new ServiceError("Invoice not found", 404);
+  if (["VOIDED", "CANCELLED"].includes(invoice.status))
+    throw new ServiceError(`Cannot send a ${invoice.status} invoice`, 400);
+
+  const actor = data.actor ?? "System";
+  const now = new Date();
+
+  let nextStatus = invoice.status as string;
+  if (invoice.status === "DRAFT") {
+    nextStatus = invoice.dueDate < now ? "OVERDUE" : "PENDING";
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.invoice.update({
+      where: { id },
+      data: { sentAt: now, status: nextStatus as any },
+      include: { lineItems: true, audit: { orderBy: { createdAt: "desc" } } },
+    });
+
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: id,
+        type: "SENT",
+        actor,
+        message:
+          data.note || `Invoice sent to customer. Status → ${nextStatus}`,
+      },
+    });
+
+    return updated;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VOID
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function voidInvoice(
+  id: string,
+  data: { reason?: string; actor?: string },
+) {
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) throw new ServiceError("Invoice not found", 404);
+
+  assertTransition(invoice.status, "VOIDED");
+
+  const actor = data.actor ?? "System";
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.invoice.update({
+      where: { id },
+      data: { status: "VOIDED", voidedAt: new Date() },
+      include: { lineItems: true, audit: { orderBy: { createdAt: "desc" } } },
+    });
+
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: id,
+        type: "VOIDED",
+        actor,
+        message: data.reason || `Invoice voided by ${actor}`,
+      },
+    });
+
+    return updated;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CANCEL
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function cancelInvoice(
+  id: string,
+  data: { reason?: string; actor?: string },
+) {
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) throw new ServiceError("Invoice not found", 404);
+
+  assertTransition(invoice.status, "CANCELLED");
+
+  const actor = data.actor ?? "System";
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.invoice.update({
+      where: { id },
+      data: { status: "CANCELLED", cancelledAt: new Date() },
+      include: { lineItems: true, audit: { orderBy: { createdAt: "desc" } } },
+    });
+
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: id,
+        type: "CANCELLED",
+        actor,
+        message: data.reason || `Invoice cancelled by ${actor}`,
+      },
+    });
+
+    return updated;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREDIT NOTE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createCreditNote(
+  originalInvoiceId: string,
+  data: {
+    reason?: string;
+    actor?: string;
+    lineItems?: Array<{
+      name: string;
+      description?: string;
+      orderItemId?: string;
+      inventoryItemId?: string;
+      lineReference?: string;
+      productNumber?: string;
+      partNumber?: string;
+      serialNumber?: string;
+      quantity: number;
+      unitPrice: number;
+      taxRatePct?: number;
+      hsnCode?: string;
+    }>;
+  },
+) {
+  const original = await prisma.invoice.findUnique({
+    where: { id: originalInvoiceId },
+    include: { lineItems: true },
+  });
+  if (!original) throw new ServiceError("Original invoice not found", 404);
+  if (original.status !== "PAID")
+    throw new ServiceError(
+      "Credit notes can only be issued against PAID invoices",
+      400,
+    );
+
+  const actor = data.actor ?? "System";
+
+  // Use provided line items or mirror the original invoice
+  const creditLineItems =
+    data.lineItems && data.lineItems.length > 0
+      ? data.lineItems
+      : (original.lineItems as any[]).map((li) => ({
+          name: `[CREDIT] ${li.name}`,
+          description: li.description || undefined,
+          orderItemId: li.orderItemId || undefined,
+          inventoryItemId: li.inventoryItemId || undefined,
+          lineReference: li.lineReference || undefined,
+          productNumber: li.productNumber || undefined,
+          partNumber: li.partNumber || undefined,
+          serialNumber: li.serialNumber || undefined,
+          quantity: li.quantity,
+          unitPrice: Number(li.unitPrice),
+          taxRatePct: Number(li.taxRatePct),
+          hsnCode: li.hsnCode || undefined,
+        }));
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Increment sequence
+    const sequence = await tx.invoiceSequence.upsert({
+      where: { id: "invoice_seq" },
+      update: { currentValue: { increment: 1 } },
+      create: { id: "invoice_seq", currentValue: 1 },
+    });
+
+    const invoiceNumber = `CN-${String(sequence.currentValue).padStart(6, "0")}`;
+
+    // 2. Compute credit totals
+    const subtotal = creditLineItems.reduce(
+      (sum, li) => sum + li.quantity * li.unitPrice,
+      0,
+    );
+    const taxTotal = creditLineItems.reduce(
+      (sum, li) =>
+        sum + li.quantity * li.unitPrice * ((li.taxRatePct ?? 18) / 100),
+      0,
+    );
+    const total = subtotal + taxTotal;
+
+    // 3. Create credit note invoice
+    const creditNote = await tx.invoice.create({
+      data: {
+        invoiceNumber,
+        customerId: original.customerId,
+        orderId: original.orderId,
+        type: "CREDIT_NOTE",
+        status: "PAID",
+        subtotal,
+        taxTotal,
+        discountPct: 0,
+        shipping: 0,
+        total,
+        amountPaid: total,
+        amountDue: 0,
+        dueDate: new Date(),
+        paidAt: new Date(),
+        notes: data.reason || `Credit note against ${original.invoiceNumber}`,
+        lineItems: {
+          create: creditLineItems.map((item) => ({
+            name: item.name,
+            description: item.description,
+            orderItemId: item.orderItemId,
+            inventoryItemId: item.inventoryItemId,
+            lineReference: item.lineReference,
+            productNumber: item.productNumber,
+            partNumber: item.partNumber,
+            serialNumber: item.serialNumber,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            taxRatePct: item.taxRatePct ?? 18,
+            hsnCode: item.hsnCode,
+          })),
+        },
+      },
+      include: { lineItems: true, audit: true },
+    });
+
+    // 4. Mark original as REFUNDED
+    await tx.invoice.update({
+      where: { id: originalInvoiceId },
+      data: { status: "REFUNDED", refundedAt: new Date() },
+    });
+
+    // 5. Audit both invoices
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: originalInvoiceId,
+        type: "REFUNDED",
+        actor,
+        message: `Refunded via credit note ${invoiceNumber}. Reason: ${data.reason || "N/A"}`,
+      },
+    });
+
+    await tx.invoiceAuditEvent.create({
+      data: {
+        invoiceId: creditNote.id,
+        type: "CREATED",
+        actor,
+        message: `Credit note ${invoiceNumber} created against invoice ${original.invoiceNumber}`,
+      },
+    });
+
+    return creditNote;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT TRAIL (standalone)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getInvoiceAuditTrail(invoiceId: string) {
+  return prisma.invoiceAuditEvent.findMany({
+    where: { invoiceId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BILLING PROFILE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getBillingProfile() {
+  return prisma.billingProfile.findFirst();
+}
+
+export async function upsertBillingProfile(data: any) {
+  const profile = await prisma.billingProfile.findFirst();
+
+  if (profile) {
+    return prisma.billingProfile.update({
+      where: { id: profile.id },
+      data,
+    });
+  }
+
+  return prisma.billingProfile.create({
+    data,
+  });
+}
+
+
+
+----- FILE: build-guide.service.ts -----
+
+/**
+ * build-guide.service.ts — Business logic for PC Build Guides.
+ */
+
+import { ServiceError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
+
+export async function createBuildGuide(data: {
+  title?: string;
+  description?: string | null;
+  category?: string;
+  total?: number;
+  items?: Array<{
+    variantId: string;
+    quantity?: number;
+  }>;
+}) {
+  const title = data.title?.trim();
+  const items = Array.isArray(data.items)
+    ? data.items.filter((item) => item?.variantId)
+    : [];
+
+  if (!title) throw new ServiceError("Title is required", 400);
+  if (items.length === 0) {
+    throw new ServiceError("At least one build item is required", 400);
+  }
+
+  const variantIds = [...new Set(items.map((item) => item.variantId))];
+  const variants = await prisma.productVariant.findMany({
+    where: { id: { in: variantIds } },
+    select: {
+      id: true,
+      price: true,
+      product: {
+        select: {
+          subCategory: {
+            select: {
+              category: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (variants.length !== variantIds.length) {
+    throw new ServiceError("One or more selected variants were not found", 400);
+  }
+
+  const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
+  const total =
+    data.total ??
+    items.reduce((sum, item) => {
+      const variant = variantMap.get(item.variantId);
+      const quantity = Math.max(1, Number(item.quantity ?? 1));
+      return sum + Number(variant?.price ?? 0) * quantity;
+    }, 0);
+
+  const category =
+    data.category?.trim() ||
+    variantMap.get(items[0].variantId)?.product.subCategory?.category?.name ||
+    "Custom";
+
+  return prisma.buildGuide.create({
+    data: {
+      title,
+      description: data.description ?? null,
+      category,
+      total,
+      items: {
+        create: items.map((item) => ({
+          variantId: item.variantId,
+          quantity: Math.max(1, Number(item.quantity ?? 1)),
+        })),
+      },
+    },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: {
+              product: {
+                include: {
+                  media: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function listBuildGuides() {
+  return prisma.buildGuide.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: {
+              product: {
+                include: {
+                  media: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function getBuildGuideById(id: string) {
+  const guide = await prisma.buildGuide.findUnique({
+    where: { id },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: {
+              product: {
+                include: {
+                  media: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!guide) throw new ServiceError("Build guide not found", 404);
+  return guide;
+}
+
+export async function updateBuildGuide(
+  id: string,
+  data: {
+    title?: string;
+    description?: string | null;
+    category?: string;
+    total?: number;
+  },
+) {
+  try {
+    return await prisma.buildGuide.update({
+      where: { id },
+      data: {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        total: data.total,
+      },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    media: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch (error: unknown) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
+      throw new ServiceError("Build guide not found", 404);
+    }
+    throw error;
+  }
+}
+
+export async function deleteBuildGuide(id: string) {
+  const guide = await prisma.buildGuide.findUnique({ where: { id } });
+  if (!guide) throw new ServiceError("Build guide not found", 404);
+
+  await prisma.buildGuide.delete({ where: { id } });
+}
+
+
+
+----- FILE: build.service.ts -----
+
+/**
+ * build.service.ts — Business logic for PC Builds and BuildItems.
+ */
+
+import { prisma } from "@/lib/prisma";
+import { ServiceError } from "@/lib/errors";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUILDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createBuild(data: { name?: string }) {
+  const buildName =
+    data.name || `Custom Build ${new Date().toLocaleDateString()}`;
+
+  return prisma.build.create({
+    data: { name: buildName },
+    include: { items: true },
+  });
+}
+
+export async function listBuilds() {
+  return prisma.build.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: {
+              product: true,
+            },
+          },
+          slot: true,
+        },
+      },
+    },
+  });
+}
+
+export async function getBuildById(id: string) {
+  const build = await prisma.build.findUnique({
+    where: { id },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: {
+              product: { include: { media: true } },
+            },
+          },
+          slot: true,
+        },
+      },
+      buildCompatibilityResults: true,
+    },
+  });
+  if (!build) throw new ServiceError("Build not found", 404);
+  return build;
+}
+
+export async function deleteBuild(id: string) {
+  const build = await prisma.build.findUnique({ where: { id } });
+  if (!build) throw new ServiceError("Build not found", 404);
+
+  await prisma.$transaction([
+    prisma.buildItem.deleteMany({ where: { buildId: id } }),
+    prisma.buildCompatibilityResult.deleteMany({ where: { buildId: id } }),
+    prisma.build.delete({ where: { id } }),
+  ]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUILD ITEMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function addBuildItem(
+  buildId: string,
+  data: { variantId: string; slotId: string },
+) {
+  if (!data.variantId || !data.slotId)
+    throw new ServiceError("variantId and slotId are required");
+
+  return prisma.buildItem.upsert({
+    where: {
+      buildId_slotId: { buildId, slotId: data.slotId },
+    },
+    update: { variantId: data.variantId },
+    create: {
+      buildId,
+      variantId: data.variantId,
+      slotId: data.slotId,
+    },
+    include: {
+      variant: { include: { product: true } },
+    },
+  });
+}
+
+export async function removeBuildItem(buildId: string, itemId: string) {
+  const buildItem = await prisma.buildItem.findUnique({
+    where: { id: itemId },
+  });
+
+  if (!buildItem || buildItem.buildId !== buildId)
+    throw new ServiceError(
+      "Build item not found or does not belong to this build",
+      404,
+    );
+
+  await prisma.buildItem.delete({ where: { id: itemId } });
+}
+
+
+
+----- FILE: catalog.service.ts -----
+
+/**
+ * catalog.service.ts — Business logic for Categories, SubCategories,
+ * SpecDefinitions, SpecOptions, Products, Variants, VariantSpecs, and Brands.
+ *
+ * 🔥 CRITICAL RELATION FLOWS
+ * 1. Product Creation:  Product → Variant → VariantSpec → SpecDefinition
+ * 2. Filtering:         SubCategory → SpecDefinition → SpecOption → VariantSpec
+ * 3. Compatibility:     SpecDefinition → CompatibilityRule → Build → Check
+ */
+
+import { prisma } from "@/lib/prisma";
+import {
+  AdvancedFilter,
+  CreateProduct,
+  CreateSpecWithOptions,
+  CreateVariant,
+  CreateVariantSpec,
+} from "@/types";
+import { serializeProducts } from "@/lib/adminSerializers";
+import { buildDynamicCatalogResult } from "@/lib/dynamicCatalogFilters";
+import { ServiceError } from "@/lib/errors";
+export class CatalogService {
+  // =====================================================
+  // PRODUCT
+  // =====================================================
+
+  static async getProducts(filter?: AdvancedFilter) {
+    if (!filter) {
+      return prisma.product.findMany({
+        include: {
+          variants: {
+            where: { deletedAt: null },
+            include: {
+              variantSpecs: {
+                include: {
+                  spec: true,
+                  option: true,
+                },
+              },
+              inventoryItems: true,
+            },
+          },
+          brand: true,
+          subCategory: { include: { category: true } },
+          media: { orderBy: { sortOrder: "asc" } },
+        },
+        where: { deletedAt: null },
+      });
+    }
+
+    // Advanced Filtering
+    const { subCategoryId, filters, priceMin, priceMax, brandId, status } =
+      filter;
+
+    // Build Prisma query dynamically
+    const where: any = { deletedAt: null };
+
+    if (subCategoryId) where.subCategoryId = subCategoryId;
+    if (brandId) where.brandId = brandId;
+    if (status) where.status = status;
+
+    // Filter by Price or Specs needs to be inside variants
+    let variantFilter: any = {};
+    if (priceMin !== undefined || priceMax !== undefined) {
+      variantFilter.price = {};
+      if (priceMin !== undefined) variantFilter.price.gte = priceMin;
+      if (priceMax !== undefined) variantFilter.price.lte = priceMax;
+    }
+
+    if (filters && filters.length > 0) {
+      // Must match ALL spec filters (AND)
+      variantFilter.AND = filters.map((f) => {
+        // If values array has items, they must match AT LEAST ONE value in the spec (OR logic within the specific spec)
+        // Since we are matching VariantSpec, we check if the variant has a VariantSpec with specId and optionId IN values
+        return {
+          variantSpecs: {
+            some: {
+              specId: f.specId,
+              optionId: { in: f.values },
+            },
+          },
+        };
+      });
+    }
+
+    if (Object.keys(variantFilter).length > 0) {
+      where.variants = { some: variantFilter };
+    }
+
+    return prisma.product.findMany({
+      where,
+      include: {
+        variants: {
+          include: {
+            variantSpecs: {
+              include: {
+                spec: true,
+                option: true,
+              },
+            },
+            inventoryItems: true,
+          },
+        },
+        brand: true,
+        subCategory: { include: { category: true } },
+        media: { orderBy: { sortOrder: "asc" } },
+      },
+    });
+  }
+
+  static async getProductById(id: string) {
+    return prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: {
+          include: {
+            variantSpecs: {
+              include: {
+                spec: true,
+                option: true,
+              },
+            },
+            inventoryItems: true,
+          },
+        },
+        brand: true,
+        subCategory: { include: { category: true } },
+        media: { orderBy: { sortOrder: "asc" } },
+      },
+    });
+  }
+
+  static async createProduct(data: CreateProduct) {
+    return prisma.$transaction(async (tx) => {
+      // Create Product
+      const product = await tx.product.create({
+        data: {
+          name: data.name,
+          slug:
+            data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          subCategoryId: data.subCategoryId,
+          brandId: data.brandId,
+          metaTitle: data.metaTitle,
+          metaDescription: data.metaDescription,
+          description: data.description,
+          status: (data.status as any) || "ACTIVE",
+          media:
+            data.images && data.images.length > 0
+              ? {
+                  create: data.images.map((url, index) => ({
+                    url,
+                    sortOrder: index,
+                  })),
+                }
+              : undefined,
+        },
+      });
+
+      // Attach Variants
+      if (data.variants && data.variants.length > 0) {
+        for (const variantData of data.variants) {
+          const variant = await tx.productVariant.create({
+            data: {
+              productId: product.id,
+              sku: variantData.sku,
+              price: variantData.price,
+              compareAtPrice: variantData.compareAtPrice,
+              attributes: variantData.attributes || {},
+              status: (variantData.status as any) || "IN_STOCK",
+            },
+          });
+
+          // Attach VariantSpecs
+          if (variantData.specs && variantData.specs.length > 0) {
+            for (const specData of variantData.specs) {
+              await tx.variantSpec.create({
+                data: {
+                  variantId: variant.id,
+                  specId: specData.specId,
+                  optionId: specData.optionId,
+                  valueString: specData.valueString,
+                  valueNumber: specData.valueNumber,
+                  valueBool: specData.valueBool,
+                },
+              });
+            }
+          }
+        }
+      }
+
+      return product;
+    });
+  }
+
+  static async updateProduct(id: string, data: Partial<CreateProduct>) {
+    return prisma.$transaction(async (tx) => {
+      const product = await tx.product.update({
+        where: { id },
+        data: {
+          name: data.name,
+          subCategoryId: data.subCategoryId,
+          brandId: data.brandId,
+          metaTitle: data.metaTitle,
+          metaDescription: data.metaDescription,
+          description: data.description,
+          status: data.status as any,
+          slug: data.slug,
+        },
+      });
+
+      if (data.images !== undefined) {
+        await tx.productMedia.deleteMany({ where: { productId: id } });
+        if (data.images.length > 0) {
+          await tx.productMedia.createMany({
+            data: data.images.map((url, index) => ({
+              productId: id,
+              url,
+              sortOrder: index,
+            })),
+          });
+        }
+      }
+
+      return product;
+    });
+  }
+
+  static async deleteProduct(id: string) {
+    return prisma.product.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  // =====================================================
+  // VARIANTS
+  // =====================================================
+
+  static async createVariant(productId: string, data: CreateVariant) {
+    return prisma.$transaction(async (tx) => {
+      const variant = await tx.productVariant.create({
+        data: {
+          productId,
+          sku: data.sku,
+          price: data.price,
+          compareAtPrice: data.compareAtPrice,
+          attributes: data.attributes || {},
+          status: (data.status as any) || "IN_STOCK",
+        },
+      });
+
+      if (data.specs && data.specs.length > 0) {
+        for (const specData of data.specs) {
+          await tx.variantSpec.create({
+            data: {
+              variantId: variant.id,
+              specId: specData.specId,
+              optionId: specData.optionId,
+              valueString: specData.valueString,
+              valueNumber: specData.valueNumber,
+              valueBool: specData.valueBool,
+            },
+          });
+        }
+      }
+      return variant;
+    });
+  }
+
+  static async getVariants(productId: string) {
+    return prisma.productVariant.findMany({
+      where: { productId, deletedAt: null },
+      include: {
+        variantSpecs: {
+          include: {
+            spec: true,
+            option: true,
+          },
+        },
+      },
+    });
+  }
+
+  static async getVariantById(id: string) {
+    return prisma.productVariant.findUnique({
+      where: { id },
+      include: {
+        variantSpecs: {
+          include: {
+            spec: true,
+            option: true,
+          },
+        },
+      },
+    });
+  }
+
+  // =====================================================
+  // SPECS
+  // =====================================================
+
+  static async getSpecs(subCategoryId?: string) {
+    if (!subCategoryId) {
+      return prisma.specDefinition.findMany({
+        orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          subCategoryId: true,
+          name: true,
+          valueType: true,
+          isFilterable: true,
+          isRange: true,
+          isMulti: true,
+          filterGroup: true,
+          filterOrder: true,
+        },
+      });
+    }
+
+    return prisma.specDefinition.findMany({
+      where: { subCategoryId },
+      orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
+      include: {
+        options: {
+          orderBy: { order: "asc" },
+          include: {
+            childOptionDeps: {
+              include: {
+                parentSpec: true,
+                parentOption: true,
+              },
+            },
+          },
+        },
+        childOptionDeps: {
+          include: {
+            parentSpec: true,
+            parentOption: true,
+            childOption: true,
+          },
+        },
+      },
+    });
+  }
+
+  static async createSpec(data: CreateSpecWithOptions) {
+    return prisma.$transaction(async (tx) => {
+      const spec = await tx.specDefinition.create({
+        data: {
+          subCategoryId: data.subCategoryId,
+          name: data.name,
+          valueType: data.valueType as any,
+          isFilterable: data.isFilterable ?? true,
+          isRange: data.isRange ?? false,
+          isMulti: data.isMulti ?? false,
+          filterGroup: data.filterGroup,
+          filterOrder: data.filterOrder,
+        },
+      });
+
+      if (data.options && data.options.length > 0) {
+        for (const [index, opt] of data.options.entries()) {
+          await tx.specOption.create({
+            data: {
+              specId: spec.id,
+              value: opt.value,
+              label: opt.label || opt.value,
+              order: opt.order ?? index,
+            },
+          });
+        }
+      }
+
+      return spec;
+    });
+  }
+
+  static async getSpecOptions(specId: string) {
+    return prisma.specOption.findMany({
+      where: { specId },
+      orderBy: { order: "asc" },
+    });
+  }
+
+  // =====================================================
+  // CATEGORIES & BRANDS (Helper for UI)
+  // =====================================================
+
+  static async getCategories() {
+    return prisma.category.findMany({
+      where: { deletedAt: null },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+        subCategories: {
+          where: { deletedAt: null },
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            categoryId: true,
+            createdAt: true,
+            updatedAt: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  static async getSubCategories(categoryId?: string) {
+    return prisma.subCategory.findMany({
+      where: categoryId ? { categoryId, deletedAt: null } : { deletedAt: null },
+      include: { category: true },
+    });
+  }
+
+  static async getBrands() {
+    const brands = await prisma.brand.findMany({
+      where: { deletedAt: null },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+      },
+    });
+
+    if (brands.length === 0) return brands;
+
+    const categoriesByBrandId = (
+      await prisma.product.findMany({
+        where: {
+          deletedAt: null,
+          brandId: { in: brands.map((brand) => brand.id) },
+        },
+        select: {
+          brandId: true,
+          subCategory: {
+            select: {
+              category: {
+                select: { name: true },
+              },
+            },
+          },
+        },
+      })
+    ).reduce<Map<string, Set<string>>>((map, product) => {
+      if (!product.brandId) return map;
+      const categoryName = product.subCategory?.category?.name;
+      if (!categoryName) return map;
+      const set = map.get(product.brandId) ?? new Set<string>();
+      set.add(categoryName);
+      map.set(product.brandId, set);
+      return map;
+    }, new Map<string, Set<string>>());
+
+    return brands.map((brand) => ({
+      ...brand,
+      categories: Array.from(categoriesByBrandId.get(brand.id) ?? []),
+    }));
+  }
+
+  /**
+   * Fetches the full CategoryHierarchy tree (root nodes with recursive children).
+   * Limited to 5 levels of nesting to prevent runaway rendering on malformed data.
+   * Returns nodes sorted by sortOrder at every level.
+   */
+  static async getCategoryHierarchy() {
+    // Build a 5-level deep include for recursive children
+    const childrenInclude = (depth: number): any => {
+      if (depth <= 0) return { category: true };
+      return {
+        category: true,
+        children: {
+          orderBy: { sortOrder: "asc" as const },
+          include: childrenInclude(depth - 1),
+        },
+      };
+    };
+
+    return prisma.categoryHierarchy.findMany({
+      where: { parentId: null },
+      orderBy: { sortOrder: "asc" },
+      include: childrenInclude(4), // 4 more levels below root = 5 total
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BRANDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listBrands() {
+  return prisma.brand.findMany({
+    where: { deletedAt: null },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function createBrand(data: { name: string; slug?: string }) {
+  if (!data.name) throw new ServiceError("Name is required");
+
+  const slug =
+    data.slug ||
+    data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+  try {
+    return await prisma.brand.create({ data: { name: data.name, slug } });
+  } catch (err: any) {
+    if (err.code === "P2002")
+      throw new ServiceError("Brand or slug already exists", 409);
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATEGORIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listCategories() {
+  return prisma.category.findMany({
+    where: { deletedAt: null },
+    orderBy: { createdAt: "desc" },
+    include: { subCategories: true },
+  });
+}
+
+export async function getCategoryById(id: string) {
+  const category = await prisma.category.findUnique({
+    where: { id, deletedAt: null },
+    include: { subCategories: true },
+  });
+  if (!category) throw new ServiceError("Category not found", 404);
+  return category;
+}
+
+export async function createCategory(data: {
+  name: string;
+  description?: string;
+}) {
+  if (!data.name) throw new ServiceError("Name is required");
+
+  const existing = await prisma.category.findUnique({
+    where: { name: data.name },
+  });
+  if (existing) throw new ServiceError("Category already exists", 409);
+
+  return prisma.category.create({
+    data: { name: data.name, description: data.description },
+  });
+}
+
+export async function updateCategory(
+  id: string,
+  data: { name?: string; description?: string },
+) {
+  try {
+    return await prisma.category.update({
+      where: { id },
+      data: { name: data.name, description: data.description },
+    });
+  } catch (err: any) {
+    if (err.code === "P2025") throw new ServiceError("Category not found", 404);
+    throw err;
+  }
+}
+
+export async function deleteCategory(id: string) {
+  try {
+    return await prisma.category.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  } catch (err: any) {
+    if (err.code === "P2025") throw new ServiceError("Category not found", 404);
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUBCATEGORIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listSubCategories(categoryId?: string) {
+  const where: any = { deletedAt: null };
+  if (categoryId) where.categoryId = categoryId;
+
+  return prisma.subCategory.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: { category: true },
+  });
+}
+
+export async function createSubCategory(data: {
+  name: string;
+  description?: string;
+  categoryId: string;
+}) {
+  if (!data.name || !data.categoryId)
+    throw new ServiceError("Name and categoryId are required");
+
+  const existing = await prisma.subCategory.findUnique({
+    where: {
+      categoryId_name: { categoryId: data.categoryId, name: data.name },
+    },
+  });
+  if (existing)
+    throw new ServiceError("Subcategory already exists in this category", 409);
+
+  return prisma.subCategory.create({
+    data: {
+      name: data.name,
+      description: data.description,
+      categoryId: data.categoryId,
+    },
+  });
+}
+
+export async function updateSubCategory(
+  id: string,
+  data: {
+    name?: string;
+    description?: string;
+    isBuilderEnabled?: boolean;
+    isCore?: boolean;
+    isRequired?: boolean;
+    allowMultiple?: boolean;
+    builderOrder?: number;
+    icon?: string | null;
+    shortLabel?: string | null;
+  },
+) {
+  try {
+    return await prisma.subCategory.update({
+      where: { id },
+      data,
+    });
+  } catch (err: any) {
+    if (err.code === "P2025")
+      throw new ServiceError("SubCategory not found", 404);
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC DEFINITIONS (with nested options create)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listSpecs(subCategoryId?: string) {
+  const query: any = {
+    include: { options: { orderBy: { order: "asc" } } },
+  };
+  if (subCategoryId) query.where = { subCategoryId };
+  return prisma.specDefinition.findMany(query);
+}
+
+/**
+ * Creates a SpecDefinition with optional nested SpecOptions in one call.
+ * Flow: SubCategory → SpecDefinition → SpecOption
+ */
+export async function createSpec(data: CreateSpecWithOptions) {
+  if (!data.subCategoryId || !data.name || !data.valueType)
+    throw new ServiceError("subCategoryId, name, and valueType are required");
+
+  const existing = await prisma.specDefinition.findUnique({
+    where: {
+      subCategoryId_name: {
+        subCategoryId: data.subCategoryId,
+        name: data.name,
+      },
+    },
+  });
+  if (existing)
+    throw new ServiceError(
+      "Spec definition already exists for this subcategory",
+      409,
+    );
+
+  const createData: any = {
+    subCategoryId: data.subCategoryId,
+    name: data.name,
+    valueType: data.valueType as any,
+    isFilterable: data.isFilterable ?? true,
+    isRange: data.isRange ?? false,
+    isMulti: data.isMulti ?? false,
+    filterGroup: data.filterGroup,
+    filterOrder: data.filterOrder,
+  };
+
+  // Nested create of options if provided
+  if (data.options && data.options.length > 0) {
+    createData.options = {
+      create: data.options.map((opt, idx) => ({
+        value: opt.value,
+        label: opt.label,
+        order: opt.order ?? idx,
+      })),
+    };
+  }
+
+  return prisma.specDefinition.create({
+    data: createData,
+    include: { options: true },
+  });
+}
+
+export async function updateSpec(
+  id: string,
+  data: {
+    name?: string;
+    valueType?: string;
+    isFilterable?: boolean;
+    isRange?: boolean;
+    isMulti?: boolean;
+    filterGroup?: string | null;
+    filterOrder?: number | null;
+    options?: Array<{
+      id?: string;
+      value: string;
+      label?: string;
+      order?: number;
+    }>;
+    dependencies?: Array<{
+      parentSpecId: string;
+      parentOptionValue: string;
+      childOptionValue?: string | null;
+    }>;
+  },
+) {
+  const existing = await prisma.specDefinition.findUnique({
+    where: { id },
+    include: {
+      options: {
+        orderBy: { order: "asc" },
+        include: {
+          variantSpecs: true,
+          childOptionDeps: true,
+          parentOptionDeps: true,
+        },
+      },
+      childOptionDeps: true,
+    },
+  });
+
+  if (!existing) {
+    throw new ServiceError("SpecDefinition not found", 404);
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.specDefinition.update({
+      where: { id },
+      data: {
+        name: data.name,
+        valueType: data.valueType as any,
+        isFilterable: data.isFilterable,
+        isRange: data.isRange,
+        isMulti: data.isMulti,
+        filterGroup: data.filterGroup,
+        filterOrder: data.filterOrder,
+      },
+    });
+
+    const currentOptions = await tx.specOption.findMany({
+      where: { specId: id },
+      orderBy: { order: "asc" },
+      include: {
+        variantSpecs: true,
+        childOptionDeps: true,
+        parentOptionDeps: true,
+      },
+    });
+
+    const submittedOptions = data.options ?? [];
+    const seenOptionIds = new Set<string>();
+    const nextOptionIdsByValue = new Map<string, string>();
+
+    for (const [index, option] of submittedOptions.entries()) {
+      let saved;
+      if (option.id) {
+        seenOptionIds.add(option.id);
+        saved = await tx.specOption.update({
+          where: { id: option.id },
+          data: {
+            value: option.value,
+            label: option.label ?? option.value,
+            order: option.order ?? index,
+          },
+        });
+      } else {
+        const existingByValue = currentOptions.find(
+          (current) => current.value === option.value,
+        );
+        if (existingByValue) {
+          seenOptionIds.add(existingByValue.id);
+          saved = await tx.specOption.update({
+            where: { id: existingByValue.id },
+            data: {
+              value: option.value,
+              label: option.label ?? option.value,
+              order: option.order ?? index,
+            },
+          });
+        } else {
+          saved = await tx.specOption.create({
+            data: {
+              specId: id,
+              value: option.value,
+              label: option.label ?? option.value,
+              order: option.order ?? index,
+            },
+          });
+          seenOptionIds.add(saved.id);
+        }
+      }
+
+      nextOptionIdsByValue.set(saved.value, saved.id);
+    }
+
+    const removableOptions = currentOptions.filter(
+      (option) => !seenOptionIds.has(option.id),
+    );
+    for (const option of removableOptions) {
+      if (
+        option.variantSpecs.length > 0 ||
+        option.childOptionDeps.length > 0 ||
+        option.parentOptionDeps.length > 0
+      ) {
+        throw new ServiceError(
+          `Cannot remove option "${option.value}" because it is already used by products or dependencies.`,
+          409,
+        );
+      }
+
+      await tx.specOption.delete({ where: { id: option.id } });
+    }
+
+    await tx.specOptionDependency.deleteMany({
+      where: {
+        OR: [{ childSpecId: id }, { childOption: { specId: id } }],
+      },
+    });
+
+    for (const dependency of data.dependencies ?? []) {
+      const parentOption = await tx.specOption.findFirst({
+        where: {
+          specId: dependency.parentSpecId,
+          value: dependency.parentOptionValue,
+        },
+      });
+
+      if (!parentOption) {
+        throw new ServiceError(
+          `Parent option "${dependency.parentOptionValue}" was not found.`,
+          400,
+        );
+      }
+
+      let childOptionId: string | null = null;
+      if (dependency.childOptionValue) {
+        childOptionId =
+          nextOptionIdsByValue.get(dependency.childOptionValue) ?? null;
+        if (!childOptionId) {
+          const childOption = await tx.specOption.findFirst({
+            where: { specId: id, value: dependency.childOptionValue },
+          });
+          childOptionId = childOption?.id ?? null;
+        }
+        if (!childOptionId) {
+          throw new ServiceError(
+            `Child option "${dependency.childOptionValue}" was not found.`,
+            400,
+          );
+        }
+      }
+
+      await tx.specOptionDependency.create({
+        data: {
+          parentSpecId: dependency.parentSpecId,
+          parentOptionId: parentOption.id,
+          childSpecId: id,
+          childOptionId,
+        },
+      });
+    }
+
+    return tx.specDefinition.findUnique({
+      where: { id },
+      include: {
+        options: {
+          orderBy: { order: "asc" },
+          include: {
+            childOptionDeps: {
+              include: {
+                parentSpec: true,
+                parentOption: true,
+              },
+            },
+          },
+        },
+        childOptionDeps: {
+          include: {
+            parentSpec: true,
+            parentOption: true,
+            childOption: true,
+          },
+        },
+      },
+    });
+  });
+}
+
+export async function deleteSpec(id: string) {
+  const existing = await prisma.specDefinition.findUnique({
+    where: { id },
+    include: {
+      options: {
+        include: {
+          variantSpecs: true,
+          childOptionDeps: true,
+          parentOptionDeps: true,
+        },
+      },
+      variantSpecs: true,
+      childOptionDeps: true,
+      parentOptionDeps: true,
+    },
+  });
+
+  if (!existing) {
+    throw new ServiceError("SpecDefinition not found", 404);
+  }
+
+  if (
+    existing.variantSpecs.length > 0 ||
+    existing.childOptionDeps.length > 0 ||
+    existing.parentOptionDeps.length > 0 ||
+    existing.options.some(
+      (option) =>
+        option.variantSpecs.length > 0 ||
+        option.childOptionDeps.length > 0 ||
+        option.parentOptionDeps.length > 0,
+    )
+  ) {
+    throw new ServiceError(
+      "This filter is already used by products or dependencies and cannot be deleted.",
+      409,
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.specOption.deleteMany({ where: { specId: id } });
+    await tx.specDefinition.delete({ where: { id } });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC OPTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createSpecOption(data: {
+  specId: string;
+  value: string;
+  label?: string;
+  order?: number;
+  parentOptionId?: string;
+}) {
+  if (!data.specId || !data.value)
+    throw new ServiceError("specId and value are required");
+
+  return prisma.specOption.create({
+    data: {
+      specId: data.specId,
+      value: data.value,
+      label: data.label,
+      order: data.order ?? 0,
+      parentOptionId: data.parentOptionId,
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔥 PRODUCTS — Deep relational create
+// Product → Variant → VariantSpec → SpecDefinition
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listProducts(filters?: {
+  subCategoryId?: string;
+  status?: string;
+}) {
+  const where: any = { deletedAt: null };
+  if (filters?.subCategoryId) where.subCategoryId = filters.subCategoryId;
+  if (filters?.status) where.status = filters.status;
+
+  return prisma.product.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      subCategory: { include: { category: true } },
+      brand: true,
+      variants: {
+        where: { deletedAt: null },
+        include: {
+          variantSpecs: {
+            include: { spec: true, option: true },
+          },
+        },
+      },
+      media: { orderBy: { sortOrder: "asc" } },
+    },
+  });
+}
+
+export async function getProductById(id: string) {
+  const product = await prisma.product.findUnique({
+    where: { id, deletedAt: null },
+    include: {
+      subCategory: {
+        include: {
+          category: true,
+          specDefinitions: {
+            include: { options: { orderBy: { order: "asc" } } },
+          },
+        },
+      },
+      brand: true,
+      variants: {
+        where: { deletedAt: null },
+        include: {
+          variantSpecs: { include: { spec: true, option: true } },
+        },
+      },
+      media: { orderBy: { sortOrder: "asc" } },
+    },
+  });
+  if (!product) throw new ServiceError("Product not found", 404);
+  return product;
+}
+
+/**
+ * Creates a Product with optional nested Variants and their VariantSpecs.
+ *
+ * 🔥 Flow: Product → Variant → VariantSpec → (SpecDefinition + SpecOption)
+ *
+ * Example payload:
+ * {
+ *   name: "AMD Ryzen 7 7800X3D",
+ *   subCategoryId: "...",
+ *   brandId: "...",
+ *   variants: [{
+ *     sku: "CPU-AMD-7800X3D",
+ *     price: 34999,
+ *     specs: [
+ *       { specId: "<socket-spec-id>", optionId: "<am5-option-id>" },
+ *       { specId: "<core-count-spec-id>", valueNumber: 8 },
+ *       { specId: "<tdp-spec-id>", valueNumber: 120 }
+ *     ]
+ *   }]
+ * }
+ */
+export async function createProduct(data: CreateProduct) {
+  if (!data.name || !data.subCategoryId)
+    throw new ServiceError("Name and subCategoryId are required");
+
+  // Validate subCategory exists
+  const subCategory = await prisma.subCategory.findUnique({
+    where: { id: data.subCategoryId },
+    include: { specDefinitions: true },
+  });
+  if (!subCategory) throw new ServiceError("SubCategory not found", 404);
+
+  // Generate unique slug
+  let productSlug =
+    data.slug ||
+    data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+  const existingSlug = await prisma.product.findUnique({
+    where: { slug: productSlug },
+  });
+  if (existingSlug) {
+    productSlug = `${productSlug}-${Math.random().toString(36).substring(2, 7)}`;
+  }
+
+  // Validate variant SKU uniqueness upfront
+  if (data.variants && data.variants.length > 0) {
+    const skus = data.variants.map((v) => v.sku);
+    const duplicateSkus = await prisma.productVariant.findMany({
+      where: { sku: { in: skus } },
+      select: { sku: true },
+    });
+    if (duplicateSkus.length > 0) {
+      throw new ServiceError(
+        `SKU(s) already exist: ${duplicateSkus.map((d) => d.sku).join(", ")}`,
+        409,
+      );
+    }
+
+    // Validate that variant specs reference valid specDefinitions for this subCategory
+    const validSpecIds = new Set(subCategory.specDefinitions.map((s) => s.id));
+    for (const variant of data.variants) {
+      if (variant.specs) {
+        for (const spec of variant.specs) {
+          if (!validSpecIds.has(spec.specId)) {
+            throw new ServiceError(
+              `SpecDefinition "${spec.specId}" does not belong to SubCategory "${subCategory.name}"`,
+              400,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Deep create: Product → Variant → VariantSpec
+  const productData: any = {
+    name: data.name,
+    subCategoryId: data.subCategoryId,
+    slug: productSlug,
+    brandId: data.brandId,
+    metaTitle: data.metaTitle,
+    metaDescription: data.metaDescription,
+    description: data.description,
+    status: (data.status as any) || "DRAFT",
+    media:
+      data.images && data.images.length > 0
+        ? {
+            create: data.images.map((url, index) => ({
+              url,
+              sortOrder: index,
+            })),
+          }
+        : undefined,
+  };
+
+  if (data.variants && data.variants.length > 0) {
+    productData.variants = {
+      create: data.variants.map((v) => ({
+        sku: v.sku,
+        price: v.price,
+        compareAtPrice: v.compareAtPrice,
+        attributes: v.attributes,
+        status: (v.status as any) || "IN_STOCK",
+        variantSpecs:
+          v.specs && v.specs.length > 0
+            ? {
+                create: v.specs.map((s) => ({
+                  specId: s.specId,
+                  optionId: s.optionId,
+                  valueString: s.valueString,
+                  valueNumber: s.valueNumber,
+                  valueBool: s.valueBool,
+                })),
+              }
+            : undefined,
+      })),
+    };
+  }
+
+  return prisma.product.create({
+    data: productData,
+    include: {
+      subCategory: { include: { category: true } },
+      brand: true,
+      variants: {
+        include: {
+          variantSpecs: { include: { spec: true, option: true } },
+        },
+      },
+    },
+  });
+}
+
+export async function updateProduct(
+  id: string,
+  data: {
+    name?: string;
+    slug?: string;
+    brandId?: string;
+    subCategoryId?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    description?: string;
+    status?: string;
+    images?: string[];
+  },
+) {
+  const patch: any = {};
+  if (data.name !== undefined) patch.name = data.name;
+  if (data.slug !== undefined) patch.slug = data.slug;
+  if (data.brandId !== undefined) patch.brandId = data.brandId;
+  if (data.subCategoryId !== undefined)
+    patch.subCategoryId = data.subCategoryId;
+  if (data.metaTitle !== undefined) patch.metaTitle = data.metaTitle;
+  if (data.metaDescription !== undefined)
+    patch.metaDescription = data.metaDescription;
+  if (data.description !== undefined) patch.description = data.description;
+  if (data.status !== undefined) patch.status = data.status;
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const product = await tx.product.update({ where: { id }, data: patch });
+
+      if (data.images !== undefined) {
+        await tx.productMedia.deleteMany({ where: { productId: id } });
+        if (data.images.length > 0) {
+          await tx.productMedia.createMany({
+            data: data.images.map((url, index) => ({
+              productId: id,
+              url,
+              sortOrder: index,
+            })),
+          });
+        }
+      }
+
+      return product;
+    });
+  } catch (err: any) {
+    if (err.code === "P2025") throw new ServiceError("Product not found", 404);
+    throw err;
+  }
+}
+
+export async function deleteProduct(id: string) {
+  try {
+    const product = await prisma.product.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    await prisma.productVariant.updateMany({
+      where: { productId: id },
+      data: { deletedAt: new Date() },
+    });
+
+    return product;
+  } catch (err: any) {
+    if (err.code === "P2025") throw new ServiceError("Product not found", 404);
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔥 FILTERING — SubCategory → SpecDefinition → SpecOption → VariantSpec
+// Returns products filtered by spec option values within a subcategory.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Gets the filterable spec schema for a subcategory (for building filter UI)
+ * Flow: SubCategory → SpecDefinition(isFilterable) → SpecOption
+ */
+export async function getFilterSchema(subCategoryId: string) {
+  if (!subCategoryId) throw new ServiceError("subCategoryId is required");
+
+  return prisma.specDefinition.findMany({
+    where: { subCategoryId, isFilterable: true },
+    orderBy: [{ filterOrder: "asc" }, { name: "asc" }],
+    include: {
+      options: {
+        orderBy: { order: "asc" },
+        include: {
+          childOptionDeps: {
+            include: {
+              parentSpec: true,
+              parentOption: true,
+            },
+          },
+        },
+      },
+      childOptionDeps: {
+        include: {
+          parentSpec: true,
+          parentOption: true,
+          childOption: true,
+        },
+      },
+    },
+  });
+}
+
+export async function getCatalogListing(query: AdvancedFilter) {
+  if (!query.subCategoryId) {
+    throw new ServiceError("subCategoryId is required");
+  }
+
+  const [products, filterSchema] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        deletedAt: null,
+        subCategoryId: query.subCategoryId,
+        ...(query.status ? { status: query.status as any } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        subCategory: { include: { category: true } },
+        brand: true,
+        variants: {
+          where: { deletedAt: null },
+          include: {
+            variantSpecs: { include: { spec: true, option: true } },
+            inventoryItems: true,
+          },
+        },
+        media: { orderBy: { sortOrder: "asc" } },
+      },
+    }),
+    getFilterSchema(query.subCategoryId),
+  ]);
+
+  const serializedProducts = serializeProducts(products as any[]);
+  return buildDynamicCatalogResult({
+    products: serializedProducts as any[],
+    filterSchema: filterSchema as any[],
+    query,
+  });
+}
+
+/**
+ * Advanced Filters products by spec IDs within a subcategory.
+ * Flow: SubCategory → SpecDefinition → SpecOption → VariantSpec → Variant → Product
+ */
+export async function filterProducts(query: AdvancedFilter) {
+  if (!query.subCategoryId) throw new ServiceError("subCategoryId is required");
+
+  const where: any = {
+    deletedAt: null,
+    subCategoryId: query.subCategoryId,
+  };
+
+  if (query.brandId) where.brandId = query.brandId;
+  if (query.status) where.status = query.status;
+
+  // Build spec-based filter conditions on variants
+  if (query.filters && query.filters.length > 0) {
+    const specFilters: any[] = [];
+
+    for (const filter of query.filters) {
+      if (!filter.values || filter.values.length === 0) continue;
+
+      specFilters.push({
+        variants: {
+          some: {
+            deletedAt: null,
+            variantSpecs: {
+              some: {
+                specId: filter.specId,
+                OR: [
+                  { option: { value: { in: filter.values } } },
+                  { valueString: { in: filter.values } },
+                ],
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (specFilters.length > 0) {
+      where.AND = [...(where.AND || []), ...specFilters];
+    }
+  }
+
+  // Price filter on variants
+  if (query.priceMin !== undefined || query.priceMax !== undefined) {
+    const priceWhere: any = {};
+    if (query.priceMin !== undefined) priceWhere.gte = query.priceMin;
+    if (query.priceMax !== undefined) priceWhere.lte = query.priceMax;
+
+    where.AND = [
+      ...(where.AND || []),
+      {
+        variants: {
+          some: { deletedAt: null, price: priceWhere },
+        },
+      },
+    ];
+  }
+
+  return prisma.product.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      subCategory: { include: { category: true } },
+      brand: true,
+      variants: {
+        where: { deletedAt: null },
+        include: {
+          variantSpecs: { include: { spec: true, option: true } },
+        },
+      },
+      media: { orderBy: { sortOrder: "asc" } },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VARIANTS (standalone create / update — still available for single-variant ops)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Creates a variant with optional nested specs in one call.
+ * Flow: Variant → VariantSpec → (SpecDefinition + SpecOption)
+ */
+export async function createVariant(productId: string, data: CreateVariant) {
+  if (!data.sku || data.price === undefined)
+    throw new ServiceError("SKU and price are required");
+
+  const existingSku = await prisma.productVariant.findUnique({
+    where: { sku: data.sku },
+  });
+  if (existingSku) throw new ServiceError("SKU must be unique", 409);
+
+  const variantData: any = {
+    productId,
+    sku: data.sku,
+    price: data.price,
+    compareAtPrice: data.compareAtPrice,
+    attributes: data.attributes,
+    status: (data.status as any) || "IN_STOCK",
+  };
+
+  // Deep create: Variant → VariantSpec
+  if (data.specs && data.specs.length > 0) {
+    variantData.variantSpecs = {
+      create: data.specs.map((s) => ({
+        specId: s.specId,
+        optionId: s.optionId,
+        valueString: s.valueString,
+        valueNumber: s.valueNumber,
+        valueBool: s.valueBool,
+      })),
+    };
+  }
+
+  return prisma.productVariant.create({
+    data: variantData,
+    include: {
+      variantSpecs: { include: { spec: true, option: true } },
+    },
+  });
+}
+
+export async function updateVariant(
+  id: string,
+  data: {
+    sku?: string;
+    price?: number;
+    compareAtPrice?: number;
+    attributes?: any;
+    status?: string;
+  },
+) {
+  const patch: any = {};
+  if (data.sku !== undefined) patch.sku = data.sku;
+  if (data.price !== undefined) patch.price = data.price;
+  if (data.compareAtPrice !== undefined)
+    patch.compareAtPrice = data.compareAtPrice;
+  if (data.attributes !== undefined) patch.attributes = data.attributes;
+  if (data.status !== undefined) patch.status = data.status;
+
+  try {
+    return await prisma.productVariant.update({ where: { id }, data: patch });
+  } catch (err: any) {
+    if (err.code === "P2002") throw new ServiceError("SKU must be unique", 409);
+    if (err.code === "P2025") throw new ServiceError("Variant not found", 404);
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VARIANT SPECS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function upsertVariantSpec(
+  variantId: string,
+  data: CreateVariantSpec,
+) {
+  if (!data.specId) throw new ServiceError("specId is required");
+
+  return prisma.variantSpec.upsert({
+    where: {
+      variantId_specId: { variantId, specId: data.specId },
+    },
+    update: {
+      optionId: data.optionId,
+      valueString: data.valueString,
+      valueNumber: data.valueNumber,
+      valueBool: data.valueBool,
+    },
+    create: {
+      variantId,
+      specId: data.specId,
+      optionId: data.optionId,
+      valueString: data.valueString,
+      valueNumber: data.valueNumber,
+      valueBool: data.valueBool,
+    },
+  });
+}
+
+
+
+----- FILE: category.service.ts -----
+
+import { CategoryHierarchy } from "@/types";
+
+const API_BASE = "/api/catalog/categories/hierarchy";
+
+/**
+ * Client-side service for fetching the CategoryHierarchy tree.
+ * Used by the sidebar/category tree navigation component.
+ */
+
+/**
+ * Fetches the full category hierarchy (pre-nested tree sorted by sortOrder).
+ * Falls back to client-side sort as a safety net.
+ */
+export async function getCategoryHierarchy(): Promise<CategoryHierarchy[]> {
+  const res = await fetch(API_BASE, {
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(
+      body || `Failed to fetch category hierarchy (${res.status})`,
+    );
+  }
+
+  const data: CategoryHierarchy[] = await res.json();
+
+  // Safety-net: sort by sortOrder at every level (API should already return sorted)
+  return sortHierarchy(data);
+}
+
+/**
+ * Recursively sorts hierarchy nodes and their children by sortOrder.
+ */
+function sortHierarchy(nodes: CategoryHierarchy[]): CategoryHierarchy[] {
+  return [...nodes]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((node) => ({
+      ...node,
+      children: node.children?.length ? sortHierarchy(node.children) : [],
+    }));
+}
+
+
+
+----- FILE: compatibility.service.ts -----
+
+/**
+ * compatibility.service.ts — Business logic for the PC build compatibility engine.
+ *
+ * 🔥 CRITICAL FLOW: SpecDefinition → CompatibilityRule → Build → Check
+ *
+ * The rule engine operates on VariantSpec values. Each CompatibilityRule points to
+ * a sourceSpecId and targetSpecId (both SpecDefinition records). When checking a
+ * build, we resolve each BuildItem's variant specs and evaluate rules across
+ * component pairs scoped by their SubCategories.
+ */
+
+import { prisma } from "@/lib/prisma";
+import { ServiceError } from "@/lib/errors";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCOPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listScopes() {
+  return prisma.compatibilityScope.findMany({
+    include: {
+      sourceSubCategory: true,
+      targetSubCategory: true,
+      rules: {
+        include: { sourceSpec: true, targetSpec: true },
+      },
+    },
+  });
+}
+
+export async function createScope(data: {
+  sourceSubCategoryId: string;
+  targetSubCategoryId: string;
+}) {
+  if (!data.sourceSubCategoryId || !data.targetSubCategoryId)
+    throw new ServiceError(
+      "sourceSubCategoryId and targetSubCategoryId are required",
+    );
+
+  return prisma.compatibilityScope.upsert({
+    where: {
+      sourceSubCategoryId_targetSubCategoryId: {
+        sourceSubCategoryId: data.sourceSubCategoryId,
+        targetSubCategoryId: data.targetSubCategoryId,
+      },
+    },
+    update: {},
+    create: {
+      sourceSubCategoryId: data.sourceSubCategoryId,
+      targetSubCategoryId: data.targetSubCategoryId,
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RULES — SpecDefinition → CompatibilityRule
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listRules() {
+  return prisma.compatibilityRule.findMany({
+    include: {
+      scope: {
+        include: { sourceSubCategory: true, targetSubCategory: true },
+      },
+      sourceSpec: true,
+      targetSpec: true,
+    },
+  });
+}
+
+/**
+ * Creates a compatibility rule linking two SpecDefinitions.
+ *
+ * 🔥 Flow: SpecDefinition(source) + SpecDefinition(target) → CompatibilityRule
+ *
+ * Validates that:
+ * - The scope exists and the source/target specs belong to the scope's subcategories
+ */
+export async function createRule(data: {
+  name: string;
+  scopeId: string;
+  sourceSpecId: string;
+  targetSpecId: string;
+  operator: string;
+  message?: string;
+  severity: string;
+}) {
+  if (
+    !data.name ||
+    !data.scopeId ||
+    !data.sourceSpecId ||
+    !data.targetSpecId ||
+    !data.operator ||
+    !data.severity
+  )
+    throw new ServiceError("Missing required fields");
+
+  // Validate scope and spec ownership
+  const scope = await prisma.compatibilityScope.findUnique({
+    where: { id: data.scopeId },
+  });
+  if (!scope) throw new ServiceError("Scope not found", 404);
+
+  const sourceSpec = await prisma.specDefinition.findUnique({
+    where: { id: data.sourceSpecId },
+  });
+  const targetSpec = await prisma.specDefinition.findUnique({
+    where: { id: data.targetSpecId },
+  });
+
+  if (!sourceSpec)
+    throw new ServiceError(`Source spec "${data.sourceSpecId}" not found`, 404);
+  if (!targetSpec)
+    throw new ServiceError(`Target spec "${data.targetSpecId}" not found`, 404);
+
+  // Ensure specs belong to correct subcategories in the scope
+  if (sourceSpec.subCategoryId !== scope.sourceSubCategoryId)
+    throw new ServiceError(
+      `Source spec "${sourceSpec.name}" does not belong to source subcategory`,
+    );
+  if (targetSpec.subCategoryId !== scope.targetSubCategoryId)
+    throw new ServiceError(
+      `Target spec "${targetSpec.name}" does not belong to target subcategory`,
+    );
+
+  return prisma.compatibilityRule.create({
+    data: {
+      name: data.name,
+      scopeId: data.scopeId,
+      sourceSpecId: data.sourceSpecId,
+      targetSpecId: data.targetSpecId,
+      operator: data.operator as any,
+      message: data.message || "Compatibility issue between specs",
+      severity: data.severity as any,
+    },
+    include: { sourceSpec: true, targetSpec: true },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔥 CHECK — SpecDefinition → CompatibilityRule → Build → Check
+//
+// Steps:
+// 1. Load Build → BuildItems → Variants → VariantSpecs (resolves spec values)
+// 2. For every directed pair of items, find CompatibilityScopes
+// 3. For each scope, load rules (SpecDef source + SpecDef target)
+// 4. Evaluate each rule against the resolved VariantSpec values
+// 5. Persist BuildCompatibilityResult → CompatibilityChecks
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function checkBuildCompatibility(buildId: string) {
+  if (!buildId) throw new ServiceError("buildId is required");
+
+  // Step 1: Deep-load the build's components with their spec values
+  const build = await prisma.build.findUnique({
+    where: { id: buildId },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: {
+              product: {
+                select: { id: true, name: true, subCategoryId: true },
+              },
+              variantSpecs: {
+                include: {
+                  spec: true, // SpecDefinition (name, valueType)
+                  option: true, // SpecOption (value, label)
+                },
+              },
+            },
+          },
+          slot: true,
+        },
+      },
+    },
+  });
+
+  if (!build) throw new ServiceError("Build not found", 404);
+
+  const buildItems = build.items;
+  if (buildItems.length < 2) {
+    return {
+      buildId,
+      isCompatible: true,
+      message: "Not enough items to check compatibility",
+      checks: [],
+    };
+  }
+
+  // Step 2–4: Evaluate every directed pair
+  const results: Array<{
+    ruleId: string;
+    ruleName: string;
+    sourceVariantId: string;
+    targetVariantId: string;
+    passed: boolean;
+    message: string;
+    severity: string;
+    sourceSpecName: string;
+    targetSpecName: string;
+    sourceValue: any;
+    targetValue: any;
+  }> = [];
+
+  // Pre-load all relevant scopes+rules in one query to avoid N+1
+  const subCategoryIds = [
+    ...new Set(buildItems.map((item) => item.variant.product.subCategoryId)),
+  ];
+  const allScopes = await prisma.compatibilityScope.findMany({
+    where: {
+      sourceSubCategoryId: { in: subCategoryIds },
+      targetSubCategoryId: { in: subCategoryIds },
+    },
+    include: {
+      rules: {
+        include: { sourceSpec: true, targetSpec: true },
+      },
+    },
+  });
+
+  // Index scopes by source→target for O(1) lookup
+  const scopeMap = new Map<string, typeof allScopes>();
+  for (const scope of allScopes) {
+    const key = `${scope.sourceSubCategoryId}→${scope.targetSubCategoryId}`;
+    if (!scopeMap.has(key)) scopeMap.set(key, []);
+    scopeMap.get(key)!.push(scope);
+  }
+
+  for (let i = 0; i < buildItems.length; i++) {
+    for (let j = 0; j < buildItems.length; j++) {
+      if (i === j) continue;
+
+      const itemA = buildItems[i];
+      const itemB = buildItems[j];
+      const key = `${itemA.variant.product.subCategoryId}→${itemB.variant.product.subCategoryId}`;
+      const scopes = scopeMap.get(key) || [];
+
+      for (const scope of scopes) {
+        for (const rule of scope.rules) {
+          const { passed, sourceValue, targetValue } = evaluateRule(
+            rule,
+            itemA.variant.variantSpecs,
+            itemB.variant.variantSpecs,
+          );
+
+          results.push({
+            ruleId: rule.id,
+            ruleName: rule.name,
+            sourceVariantId: itemA.variantId,
+            targetVariantId: itemB.variantId,
+            passed,
+            message: passed ? "OK" : rule.message,
+            severity: rule.severity,
+            sourceSpecName: rule.sourceSpec.name,
+            targetSpecName: rule.targetSpec.name,
+            sourceValue,
+            targetValue,
+          });
+        }
+      }
+    }
+  }
+
+  const isCompatible = results.every((r) => r.passed || r.severity !== "ERROR");
+
+  // Step 5: Persist result
+  const finalResult = await prisma.buildCompatibilityResult.create({
+    data: {
+      buildId,
+      isCompatible,
+      checks: {
+        create: results.map((r) => ({
+          ruleId: r.ruleId,
+          sourceVariantId: r.sourceVariantId,
+          targetVariantId: r.targetVariantId,
+          passed: r.passed,
+          message: r.message,
+          severity: r.severity as any,
+        })),
+      },
+    },
+    include: { checks: { include: { rule: true } } },
+  });
+
+  return {
+    ...finalResult,
+    summary: {
+      totalChecks: results.length,
+      passed: results.filter((r) => r.passed).length,
+      failed: results.filter((r) => !r.passed).length,
+      errors: results.filter((r) => !r.passed && r.severity === "ERROR").length,
+      warnings: results.filter((r) => !r.passed && r.severity === "WARNING")
+        .length,
+    },
+    details: results,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rule evaluator — resolves VariantSpec values by specId and compares
+// ─────────────────────────────────────────────────────────────────────────────
+
+function resolveSpecValue(specs: any[], specId: string): any {
+  const spec = specs.find((s: any) => s.specId === specId);
+  if (!spec) return undefined;
+
+  // Prefer option value (for enum/select specs), then typed value fields
+  if (spec.option?.value !== undefined) return spec.option.value;
+  if (spec.valueString !== null && spec.valueString !== undefined)
+    return spec.valueString;
+  if (spec.valueNumber !== null && spec.valueNumber !== undefined)
+    return Number(spec.valueNumber);
+  if (spec.valueBool !== null && spec.valueBool !== undefined)
+    return spec.valueBool;
+  return undefined;
+}
+
+function evaluateRule(
+  rule: any,
+  sourceSpecs: any[],
+  targetSpecs: any[],
+): { passed: boolean; sourceValue: any; targetValue: any } {
+  const sourceValue = resolveSpecValue(sourceSpecs, rule.sourceSpecId);
+  const targetValue = resolveSpecValue(targetSpecs, rule.targetSpecId);
+
+  // If either side is missing the spec, the rule fails
+  if (sourceValue === undefined || targetValue === undefined) {
+    return { passed: false, sourceValue, targetValue };
+  }
+
+  let passed = false;
+
+  switch (rule.operator) {
+    case "EQUAL":
+      passed = String(sourceValue) === String(targetValue);
+      break;
+    case "NOT_EQUAL":
+      passed = String(sourceValue) !== String(targetValue);
+      break;
+    case "LESS_THAN":
+      passed = Number(sourceValue) < Number(targetValue);
+      break;
+    case "LESS_OR_EQUAL":
+      passed = Number(sourceValue) <= Number(targetValue);
+      break;
+    case "GREATER_THAN":
+      passed = Number(sourceValue) > Number(targetValue);
+      break;
+    case "GREATER_OR_EQUAL":
+      passed = Number(sourceValue) >= Number(targetValue);
+      break;
+    case "CONTAINS":
+      passed =
+        String(sourceValue).includes(String(targetValue)) ||
+        String(targetValue).includes(String(sourceValue));
+      break;
+    case "IN_LIST": {
+      const list = String(sourceValue)
+        .split(",")
+        .map((s) => s.trim());
+      passed = list.includes(String(targetValue));
+      break;
+    }
+    default:
+      passed = false;
+  }
+
+  return { passed, sourceValue, targetValue };
+}
+
+
+
+----- FILE: customer.service.ts -----
+
+/**
+ * customer.service.ts — Business logic for Customer CRUD.
+ */
+
+import { prisma } from "@/lib/prisma";
+import { ServiceError } from "@/lib/errors";
+
+export async function listCustomers(filters?: { email?: string }) {
+  const where: any = {};
+  if (filters?.email) {
+    where.email = { contains: filters.email, mode: "insensitive" };
+  }
+
+  return prisma.customer.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getCustomerById(id: string) {
+  const customer = await prisma.customer.findUnique({
+    where: { id },
+    include: { orders: true, invoices: true },
+  });
+  if (!customer) throw new ServiceError("Customer not found", 404);
+  return customer;
+}
+
+export async function createCustomer(data: {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  addressLine1?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+}) {
+  if (!data.name || !data.email)
+    throw new ServiceError("Name and email are required");
+
+  const existing = await prisma.customer.findFirst({
+    where: { email: data.email },
+  });
+  if (existing)
+    throw new ServiceError("Customer with this email already exists", 409);
+
+  return prisma.customer.create({ data });
+}
+
+export async function updateCustomer(
+  id: string,
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    company?: string;
+    addressLine1?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  },
+) {
+  try {
+    return await prisma.customer.update({ where: { id }, data });
+  } catch (err: any) {
+    if (err.code === "P2025") throw new ServiceError("Customer not found", 404);
+    throw err;
+  }
+}
+
+
+
+----- FILE: inventory.service.ts -----
+
+/**
+ * inventory.service.ts — Business logic for InventoryItems and Reservations.
+ */
+
+import { prisma } from "@/lib/prisma";
+import { ServiceError } from "@/lib/errors";
+import {
+  InventoryItem,
+  InventoryTrackingType,
+  InventoryStatus,
+  Reservation,
+  ReservationStatus,
+  StockMovementType,
+} from "@/types";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTORY ITEMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getInventoryItems(filters?: {
+  variantId?: string;
+  status?: string;
+}): Promise<InventoryItem[]> {
+  const where: any = {};
+  if (filters?.variantId) where.variantId = filters.variantId;
+  if (filters?.status) where.status = filters.status;
+
+  const items = await prisma.inventoryItem.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      variantId: true,
+      trackingType: true,
+      serialNumber: true,
+      partNumber: true,
+      quantityOnHand: true,
+      quantityReserved: true,
+      status: true,
+      costPrice: true,
+      batchNumber: true,
+      receivedAt: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
+      variant: {
+        select: {
+          id: true,
+          productId: true,
+          sku: true,
+          price: true,
+          compareAtPrice: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              subCategoryId: true,
+              media: {
+                orderBy: { sortOrder: "asc" },
+                take: 1,
+                select: {
+                  id: true,
+                  url: true,
+                  altText: true,
+                  sortOrder: true,
+                },
+              },
+              subCategory: {
+                select: {
+                  id: true,
+                  name: true,
+                  category: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  return items as unknown as InventoryItem[];
+}
+
+export async function getInventoryItem(id: string): Promise<InventoryItem> {
+  const item = await prisma.inventoryItem.findUnique({
+    where: { id },
+    include: {
+      variant: { include: { product: true } },
+    },
+  });
+  if (!item) throw new ServiceError("Inventory item not found", 404);
+  return item as unknown as InventoryItem;
+}
+
+export function getAvailableQuantity(item: InventoryItem): number {
+  return (item.quantityOnHand || 0) - (item.quantityReserved || 0);
+}
+
+export async function createInventoryItem(data: {
+  variantId: string;
+  trackingType?: string;
+  serialNumber?: string;
+  partNumber?: string;
+  units?: Array<{
+    serialNumber: string;
+    partNumber: string;
+  }>;
+  quantityOnHand?: number;
+  status?: string;
+  costPrice?: number;
+  batchNumber?: string;
+  notes?: string;
+}) {
+  if (!data.variantId) throw new ServiceError("variantId is required");
+
+  if (Array.isArray(data.units) && data.units.length > 0) {
+    const normalizedUnits = data.units.map((unit) => ({
+      serialNumber: unit.serialNumber?.trim(),
+      partNumber: unit.partNumber?.trim(),
+    }));
+
+    const hasMissingValues = normalizedUnits.some(
+      (unit) => !unit.serialNumber || !unit.partNumber,
+    );
+    if (hasMissingValues) {
+      throw new ServiceError(
+        "Each unit must include serialNumber and partNumber",
+        400,
+      );
+    }
+
+    const duplicateSerials = normalizedUnits.filter(
+      (unit, index) =>
+        normalizedUnits.findIndex(
+          (candidate) => candidate.serialNumber === unit.serialNumber,
+        ) !== index,
+    );
+    if (duplicateSerials.length > 0) {
+      throw new ServiceError(
+        `Duplicate serial number(s) in request: ${duplicateSerials
+          .map((unit) => unit.serialNumber)
+          .join(", ")}`,
+        409,
+      );
+    }
+
+    const existing = await prisma.inventoryItem.findMany({
+      where: {
+        serialNumber: {
+          in: normalizedUnits.map((unit) => unit.serialNumber!),
+        },
+      },
+      select: { serialNumber: true },
+    });
+
+    if (existing.length > 0) {
+      throw new ServiceError(
+        `Serial number(s) already exist: ${existing
+          .map((item) => item.serialNumber)
+          .filter(Boolean)
+          .join(", ")}`,
+        409,
+      );
+    }
+
+    return prisma.$transaction(
+      normalizedUnits.map((unit) =>
+        prisma.inventoryItem.create({
+          data: {
+            variantId: data.variantId,
+            trackingType: "SERIALIZED",
+            serialNumber: unit.serialNumber,
+            partNumber: unit.partNumber,
+            quantityOnHand: 1,
+            quantityReserved: 0,
+            status: (data.status as any) || "IN_STOCK",
+            costPrice: data.costPrice,
+            batchNumber: data.batchNumber,
+            notes: data.notes,
+            receivedAt: new Date(),
+          },
+        }),
+      ),
+    );
+  }
+
+  if (data.serialNumber) {
+    const existing = await prisma.inventoryItem.findUnique({
+      where: { serialNumber: data.serialNumber },
+    });
+    if (existing) throw new ServiceError("Serial number already exists", 409);
+  }
+
+  return prisma.inventoryItem.create({
+    data: {
+      variantId: data.variantId,
+      trackingType:
+        (data.trackingType as any) ||
+        (data.serialNumber ? "SERIALIZED" : "BULK"),
+      serialNumber: data.serialNumber,
+      partNumber: data.partNumber,
+      quantityOnHand:
+        data.quantityOnHand ?? (data.serialNumber || data.partNumber ? 1 : 0),
+      status: (data.status as any) || "IN_STOCK",
+      costPrice: data.costPrice,
+      batchNumber: data.batchNumber,
+      notes: data.notes,
+      receivedAt: new Date(),
+    },
+  });
+}
+
+export async function adjustStockByVariant(
+  variantId: string,
+  quantity: number,
+  type: string,
+) {
+  const serializedCount = await prisma.inventoryItem.count({
+    where: { variantId, trackingType: "SERIALIZED" },
+  });
+
+  if (serializedCount > 0) {
+    throw new ServiceError(
+      "Serialized inventory must be managed as individual units with serial and part numbers.",
+      400,
+    );
+  }
+
+  let item = await prisma.inventoryItem.findFirst({
+    where: { variantId, trackingType: "BULK" },
+  });
+
+  if (!item) {
+    item = await prisma.inventoryItem.create({
+      data: {
+        variantId,
+        trackingType: "BULK",
+        quantityOnHand: 0,
+        status: "IN_STOCK",
+      },
+    });
+  }
+
+  let increment = 0;
+  if (type === "INWARD" || type === "RETURN") {
+    increment = quantity;
+  } else if (type === "OUTWARD" || type === "SALE") {
+    increment = -quantity;
+  } else if (type === "ADJUSTMENT") {
+    increment = quantity; // could be negative or positive
+  }
+
+  return prisma.inventoryItem.update({
+    where: { id: item.id },
+    data: { quantityOnHand: { increment } },
+  });
+}
+
+export async function updateInventoryItem(
+  id: string,
+  data: {
+    trackingType?: string;
+    serialNumber?: string;
+    partNumber?: string;
+    quantityOnHand?: number;
+    quantityReserved?: number;
+    status?: string;
+    costPrice?: number;
+    batchNumber?: string;
+    notes?: string;
+  },
+) {
+  if (data.serialNumber) {
+    const existing = await prisma.inventoryItem.findUnique({
+      where: { serialNumber: data.serialNumber },
+    });
+    if (existing && existing.id !== id)
+      throw new ServiceError("Serial number already in use", 409);
+  }
+
+  const patch: any = {};
+  if (data.trackingType !== undefined) patch.trackingType = data.trackingType;
+  if (data.serialNumber !== undefined) patch.serialNumber = data.serialNumber;
+  if (data.partNumber !== undefined) patch.partNumber = data.partNumber;
+  if (data.quantityOnHand !== undefined)
+    patch.quantityOnHand = data.quantityOnHand;
+  if (data.quantityReserved !== undefined)
+    patch.quantityReserved = data.quantityReserved;
+  if (data.status !== undefined) patch.status = data.status;
+  if (data.costPrice !== undefined) patch.costPrice = data.costPrice;
+  if (data.batchNumber !== undefined) patch.batchNumber = data.batchNumber;
+  if (data.notes !== undefined) patch.notes = data.notes;
+
+  try {
+    return await prisma.inventoryItem.update({ where: { id }, data: patch });
+  } catch (err: any) {
+    if (err.code === "P2025")
+      throw new ServiceError("Inventory Item not found", 404);
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESERVATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getReservations(
+  orderId?: string,
+): Promise<Reservation[]> {
+  const where: any = {};
+  if (orderId) where.orderId = orderId;
+
+  const items = await prisma.reservation.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: { inventoryItem: true },
+  });
+  return items as unknown as Reservation[];
+}
+
+export async function createReservation(data: {
+  orderId: string;
+  inventoryItemId?: string;
+  variantId?: string;
+  quantity?: number;
+  expiresAt?: string;
+}) {
+  if (!data.orderId || (!data.inventoryItemId && !data.variantId))
+    throw new ServiceError(
+      "orderId and either inventoryItemId or variantId are required",
+    );
+
+  let inventoryItemId = data.inventoryItemId;
+
+  if (!inventoryItemId && data.variantId) {
+    let item = await prisma.inventoryItem.findFirst({
+      where: { variantId: data.variantId, trackingType: "BULK" },
+    });
+    if (!item) {
+      item = await prisma.inventoryItem.create({
+        data: {
+          variantId: data.variantId,
+          trackingType: "BULK",
+          quantityOnHand: 0,
+          status: "IN_STOCK",
+        },
+      });
+    }
+    inventoryItemId = item.id;
+  }
+
+  const quantity = data.quantity ?? 1;
+
+  const [reservation] = await prisma.$transaction([
+    prisma.reservation.create({
+      data: {
+        orderId: data.orderId,
+        inventoryItemId: inventoryItemId!,
+        quantity,
+        status: "ACTIVE",
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      },
+    }),
+    prisma.inventoryItem.update({
+      where: { id: inventoryItemId! },
+      data: { quantityReserved: { increment: quantity } },
+    }),
+  ]);
+
+  return reservation;
+}
+
+export async function updateReservation(
+  id: string,
+  data: { status?: string; expiresAt?: string },
+) {
+  const currentReservation = await prisma.reservation.findUnique({
+    where: { id },
+  });
+  if (!currentReservation) throw new ServiceError("Reservation not found", 404);
+
+  const patch: any = {};
+  if (data.status !== undefined) patch.status = data.status;
+  if (data.expiresAt !== undefined) patch.expiresAt = new Date(data.expiresAt);
+
+  // Handle state transitions with inventory adjustments
+  if (data.status && data.status !== currentReservation.status) {
+    // ACTIVE → RELEASED | EXPIRED: give back reserved qty
+    if (
+      currentReservation.status === "ACTIVE" &&
+      (data.status === "RELEASED" || data.status === "EXPIRED")
+    ) {
+      await prisma.$transaction([
+        prisma.reservation.update({ where: { id }, data: patch }),
+        prisma.inventoryItem.update({
+          where: { id: currentReservation.inventoryItemId },
+          data: {
+            quantityReserved: { decrement: currentReservation.quantity },
+          },
+        }),
+      ]);
+      return prisma.reservation.findUnique({ where: { id } });
+    }
+
+    // ACTIVE → CONVERTED: deduct both reserved and on-hand
+    if (currentReservation.status === "ACTIVE" && data.status === "CONVERTED") {
+      await prisma.$transaction([
+        prisma.reservation.update({ where: { id }, data: patch }),
+        prisma.inventoryItem.update({
+          where: { id: currentReservation.inventoryItemId },
+          data: {
+            quantityReserved: { decrement: currentReservation.quantity },
+            quantityOnHand: { decrement: currentReservation.quantity },
+          },
+        }),
+      ]);
+      return prisma.reservation.findUnique({ where: { id } });
+    }
+  }
+
+  // Default update — no inventory side‐effects
+  return prisma.reservation.update({ where: { id }, data: patch });
+}
+
+
+export async function adjustStockBySku(
+  skuOrVariantId: string,
+  quantity: number,
+  type: string,
+) {
+  // Try to find the variant by SKU first, fall back to treating input as variantId
+  const variant = await prisma.productVariant.findFirst({
+    where: {
+      OR: [
+        { id: skuOrVariantId },
+        { sku: skuOrVariantId },
+      ],
+    },
+    select: { id: true },
+  });
+  
+  const variantId = variant?.id;
+  if (!variantId) throw new ServiceError(`Variant not found: ${skuOrVariantId}`, 404);
+  
+  return adjustStockByVariant(variantId, quantity, type);
+}
+
+
+----- FILE: invoice-client.service.ts -----
+
+// Client-only: uses fetch. Safe to import in client components and contexts.
+import { apiFetch } from "@/lib/helpers";
+import {
+  Invoice,
+  CreateInvoice,
+  PayInvoiceInput,
+  InvoiceActionInput,
+  CreateCreditNoteInput,
+} from "../types";
+
+/**
+ * Fetch all invoices with optional filtering.
+ */
+export async function getInvoices(filters?: {
+  status?: string;
+  customerId?: string;
+  orderId?: string;
+}): Promise<Invoice[]> {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.customerId) params.set("customerId", filters.customerId);
+  if (filters?.orderId) params.set("orderId", filters.orderId);
+  const qs = params.toString();
+  const url = qs ? `/api/billing/invoices?${qs}` : "/api/billing/invoices";
+  return apiFetch<Invoice[]>(url);
+}
+
+/**
+ * Fetch a single invoice by ID, ensuring lineItems and audit are present.
+ */
+export async function getInvoice(id: string): Promise<Invoice> {
+  const invoice = await apiFetch<Invoice>(`/api/billing/invoices/${id}`);
+  if (!invoice.lineItems) invoice.lineItems = [];
+  if (!invoice.audit) invoice.audit = [];
+  return invoice;
+}
+
+/**
+ * Create a new invoice.
+ */
+export async function createInvoice(data: CreateInvoice): Promise<Invoice> {
+  return apiFetch<Invoice>("/api/billing/invoices", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Pay an invoice.
+ */
+export async function payInvoice(
+  id: string,
+  data: PayInvoiceInput,
+): Promise<Invoice> {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/pay`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Send an invoice to the customer.
+ */
+export async function sendInvoice(
+  id: string,
+  data: InvoiceActionInput,
+): Promise<Invoice> {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/send`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Cancel an invoice.
+ */
+export async function cancelInvoice(
+  id: string,
+  data: InvoiceActionInput,
+): Promise<Invoice> {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Void an invoice.
+ */
+export async function voidInvoice(
+  id: string,
+  data: InvoiceActionInput,
+): Promise<Invoice> {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/void`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Create a credit note against an invoice.
+ */
+export async function createCreditNote(
+  id: string,
+  data: CreateCreditNoteInput,
+): Promise<Invoice> {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/credit-note`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+
+
+----- FILE: order.service.ts -----
+
+/**
+ * order.service.ts — Enterprise-grade Order Management.
+ *
+ * Order lifecycle:
+ *   PENDING → PAID → PROCESSING → SHIPPED → DELIVERED
+ *   CANCEL / RETURN support with inventory + billing side effects.
+ *
+ * Every status transition is validated, logged, and triggers side effects.
+ */
+
+import { prisma } from "@/lib/prisma";
+import { ServiceError } from "@/lib/errors";
+import { Order, CreateOrder, CreateOrderItem } from "@/types";
+import { createPaymentTransaction } from "../lib/payments";
+
+type PrismaTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem) {
+  if (item.inventoryItemId) {
+    if (item.quantity !== 1) {
+      throw new ServiceError(
+        "Serialized inventory items must be ordered with quantity 1 per unit.",
+        400,
+      );
+    }
+
+    const inventoryItem = await tx.inventoryItem.findUnique({
+      where: { id: item.inventoryItemId },
+      include: {
+        variant: {
+          select: {
+            sku: true,
+          },
+        },
+      },
+    });
+
+    if (!inventoryItem || inventoryItem.variantId !== item.variantId) {
+      throw new ServiceError(
+        "Requested inventory item is not available for this variant.",
+        400,
+      );
+    }
+    if (inventoryItem.trackingType !== "SERIALIZED") {
+      throw new ServiceError(
+        "Traceable order items must be allocated from serialized inventory.",
+        400,
+      );
+    }
+    if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
+      throw new ServiceError(
+        "Serialized inventory item is missing part or serial number.",
+        400,
+      );
+    }
+
+    const available =
+      Number(inventoryItem.quantityOnHand ?? 0) -
+      Number(inventoryItem.quantityReserved ?? 0);
+    if (available < 1 || inventoryItem.status === "SOLD") {
+      throw new ServiceError(
+        "Requested inventory item is no longer available.",
+        409,
+      );
+    }
+
+    return [
+      {
+        inventoryItemId: inventoryItem.id,
+        quantity: 1,
+        productNumber:
+          inventoryItem.variant?.sku ||
+          item.productNumber ||
+          item.sku ||
+          item.variantId,
+        partNumber: inventoryItem.partNumber,
+        serialNumber: inventoryItem.serialNumber,
+      },
+    ];
+  }
+
+  const serializedItems = await tx.inventoryItem.findMany({
+    where: {
+      variantId: item.variantId,
+      trackingType: "SERIALIZED",
+      quantityOnHand: { gt: 0 },
+      quantityReserved: 0,
+      status: { in: ["IN_STOCK", "RETURNED"] },
+    },
+    include: {
+      variant: {
+        select: {
+          sku: true,
+        },
+      },
+    },
+    orderBy: [{ receivedAt: "asc" }, { createdAt: "asc" }],
+    take: item.quantity,
+  });
+
+  if (serializedItems.length === item.quantity) {
+    const seenSerial = new Set<string>();
+    const seenPart = new Set<string>();
+
+    return serializedItems.map((inventoryItem: any) => {
+      if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
+        throw new ServiceError(
+          "Serialized inventory item is missing part or serial number.",
+          400,
+        );
+      }
+      if (
+        seenSerial.has(inventoryItem.serialNumber) ||
+        seenPart.has(inventoryItem.partNumber)
+      ) {
+        throw new ServiceError(
+          `Inventory allocation conflict detected for variant ${item.variantId}.`,
+          409,
+        );
+      }
+
+      seenSerial.add(inventoryItem.serialNumber);
+      seenPart.add(inventoryItem.partNumber);
+
+      return {
+        inventoryItemId: inventoryItem.id,
+        quantity: 1,
+        productNumber:
+          inventoryItem.variant?.sku ||
+          item.productNumber ||
+          item.sku ||
+          item.variantId,
+        partNumber: inventoryItem.partNumber,
+        serialNumber: inventoryItem.serialNumber,
+      };
+    });
+  }
+
+  throw new ServiceError(
+    `Insufficient serialized stock for variant ${item.variantId}. Each ordered unit must map to a unique serial and part number.`,
+    409,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS TRANSITION MAP (strict DAG)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ["PAID", "CANCELLED"],
+  PAID: ["PROCESSING", "CANCELLED"],
+  PROCESSING: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
+  // Terminal states
+  CANCELLED: [],
+  RETURNED: [],
+};
+
+function assertStatusTransition(from: string, to: string) {
+  const allowed = VALID_TRANSITIONS[from];
+  if (!allowed || !allowed.includes(to)) {
+    throw new ServiceError(
+      `Invalid order status transition: ${from} → ${to}`,
+      400,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIST / GET
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listOrders(filters?: {
+  status?: string;
+  customerId?: string;
+  page?: number;
+  limit?: number;
+}): Promise<Order[]> {
+  const where: any = { deletedAt: null };
+  if (filters?.status) where.status = filters.status;
+  if (filters?.customerId) where.customerId = filters.customerId;
+  const page = Math.max(1, Number(filters?.page ?? 1));
+  const limit = Math.min(100, Math.max(1, Number(filters?.limit ?? 25)));
+
+  const orders = await prisma.order.findMany({
+    where,
+    orderBy: { date: "desc" },
+    skip: (page - 1) * limit,
+    take: limit,
+    select: {
+      id: true,
+      customerName: true,
+      email: true,
+      phone: true,
+      date: true,
+      subtotal: true,
+      gstAmount: true,
+      taxAmount: true,
+      discountAmount: true,
+      total: true,
+      status: true,
+      version: true,
+      deletedAt: true,
+      customerId: true,
+      shippingStreet: true,
+      shippingCity: true,
+      shippingState: true,
+      shippingZip: true,
+      shippingCountry: true,
+      paymentMethod: true,
+      paymentTransactionId: true,
+      paymentStatus: true,
+      idempotencyKey: true,
+      source: true,
+      createdAt: true,
+      updatedAt: true,
+      items: {
+        take: 3,
+        orderBy: { id: "asc" },
+        select: {
+          id: true,
+          lineReference: true,
+          orderId: true,
+          variantId: true,
+          inventoryItemId: true,
+          productNumber: true,
+          partNumber: true,
+          serialNumber: true,
+          name: true,
+          category: true,
+          price: true,
+          quantity: true,
+          image: true,
+          sku: true,
+          variantSnapshot: true,
+        },
+      },
+      logs: { orderBy: { timestamp: "desc" } },
+      shipments: { orderBy: { createdAt: "desc" } },
+      payments: {
+        select: {
+          id: true,
+          orderId: true,
+          method: true,
+          gatewayTxnId: true,
+          amount: true,
+          status: true,
+          idempotencyKey: true,
+          metadata: true,
+          createdAt: true,
+          updatedAt: true,
+          paymentProofs: true,
+        },
+        orderBy: { createdAt: "desc" },
+      },
+      invoices: false,
+      reservations: false,
+    },
+  });
+  return orders as any as Order[];
+}
+
+export async function getOrderById(id: string): Promise<Order> {
+  const order = await prisma.order.findUnique({
+    where: { id, deletedAt: null },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: { product: true },
+          },
+        },
+      },
+      logs: { orderBy: { timestamp: "desc" } },
+      shipments: { orderBy: { createdAt: "desc" } },
+      payments: {
+        include: { paymentProofs: true },
+        orderBy: { createdAt: "desc" },
+      },
+      invoices: {
+        include: { lineItems: true },
+        orderBy: { createdAt: "desc" },
+      },
+      reservations: true,
+      customer: true,
+    },
+  });
+  if (!order) throw new ServiceError("Order not found", 404);
+  return order as any as Order;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createOrder(data: CreateOrder): Promise<Order> {
+  if (!data.customerName || !data.email || data.total === undefined)
+    throw new ServiceError("customerName, email, and total are required");
+
+  const orderId =
+    data.id || `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+
+  const order = await prisma.$transaction(async (tx) => {
+    let customerId = data.customerId;
+    if (!customerId) {
+      const existingCustomer = await tx.customer.findFirst({
+        where: { email: data.email },
+        orderBy: { createdAt: "asc" },
+      });
+
+      if (existingCustomer) {
+        const updatedCustomer = await tx.customer.update({
+          where: { id: existingCustomer.id },
+          data: {
+            name: data.customerName,
+            phone: data.phone,
+            addressLine1: data.shippingStreet,
+            city: data.shippingCity,
+            state: data.shippingState,
+            postalCode: data.shippingZip,
+            country: data.shippingCountry,
+          },
+        });
+        customerId = updatedCustomer.id;
+      } else {
+        const createdCustomer = await tx.customer.create({
+          data: {
+            name: data.customerName,
+            email: data.email,
+            phone: data.phone,
+            addressLine1: data.shippingStreet,
+            city: data.shippingCity,
+            state: data.shippingState,
+            postalCode: data.shippingZip,
+            country: data.shippingCountry,
+          },
+        });
+        customerId = createdCustomer.id;
+      }
+    }
+
+    const normalizedItems = data.items ?? [];
+    const reservedInventory: Array<{
+      inventoryItemId: string;
+      quantity: number;
+      productNumber: string;
+      partNumber: string;
+      serialNumber: string;
+    }> = [];
+    const orderLineItems: Array<Record<string, unknown>> = [];
+    let lineCounter = 1;
+
+    for (const item of normalizedItems) {
+      const allocations = await allocateInventoryForOrderItem(tx, item);
+
+      for (const allocation of allocations) {
+        reservedInventory.push(allocation);
+        orderLineItems.push({
+          lineReference: `${orderId}-LI-${String(lineCounter).padStart(4, "0")}`,
+          variantId: item.variantId,
+          inventoryItemId: allocation.inventoryItemId,
+          productNumber: allocation.productNumber,
+          partNumber: allocation.partNumber,
+          serialNumber: allocation.serialNumber,
+          name: item.name,
+          category: item.category || "General",
+          price: item.price,
+          quantity: allocation.quantity,
+          image: item.image,
+          sku: item.sku,
+        });
+        lineCounter += 1;
+      }
+    }
+
+    const orderData: any = {
+      id: orderId,
+      customerName: data.customerName,
+      email: data.email,
+      phone: data.phone,
+      customerId,
+      subtotal: data.subtotal ?? 0,
+      gstAmount: data.gstAmount ?? 0,
+      taxAmount: data.taxAmount ?? 0,
+      discountAmount: data.discountAmount ?? 0,
+      total: data.total,
+      shippingStreet: data.shippingStreet,
+      shippingCity: data.shippingCity,
+      shippingState: data.shippingState,
+      shippingZip: data.shippingZip,
+      shippingCountry: data.shippingCountry,
+      paymentMethod: data.paymentMethod,
+      paymentTransactionId: data.paymentTransactionId,
+      paymentStatus: data.paymentStatus,
+      idempotencyKey: data.paymentIdempotencyKey,
+      source: data.source,
+      status: "PENDING",
+    };
+
+    if (orderLineItems.length > 0) {
+      orderData.items = {
+        create: orderLineItems,
+      };
+    }
+
+    const newOrder = await tx.order.create({
+      data: orderData,
+      include: { items: true },
+    });
+
+    if (data.paymentMethod) {
+      const payment = await createPaymentTransaction(tx as any, {
+        orderId: newOrder.id,
+        method: data.paymentMethod,
+        amount: data.total,
+        gatewayTxnId: data.paymentTransactionId || undefined,
+        idempotencyKey:
+          data.paymentIdempotencyKey ||
+          `${newOrder.id}-${data.paymentMethod}-${Date.now()}`,
+        metadata: data.paymentMetadata,
+        status: data.paymentStatus,
+      });
+
+      if (data.paymentProofUrl) {
+        await tx.paymentProof.create({
+          data: {
+            transactionId: payment.id,
+            proofUrl: data.paymentProofUrl,
+          },
+        });
+      }
+    }
+
+    // Automatically create reservations for items with inventoryItemId
+    if (reservedInventory.length > 0) {
+      for (const item of reservedInventory) {
+        const reservationWhere: any = {
+          id: item.inventoryItemId,
+          quantityOnHand: { gte: item.quantity },
+          trackingType: "SERIALIZED",
+          serialNumber: item.serialNumber,
+          partNumber: item.partNumber,
+          quantityReserved: 0,
+          status: { in: ["IN_STOCK", "RETURNED"] },
+        };
+
+        const reserved = await tx.inventoryItem.updateMany({
+          where: reservationWhere,
+          data: {
+            quantityReserved: { increment: item.quantity },
+            status: "RESERVED",
+          },
+        });
+
+        if (reserved.count === 0) {
+          throw new ServiceError(
+            "One or more inventory units became unavailable during checkout.",
+            409,
+          );
+        }
+
+        await tx.reservation.create({
+          data: {
+            orderId: newOrder.id,
+            inventoryItemId: item.inventoryItemId,
+            quantity: item.quantity,
+            status: "ACTIVE",
+          },
+        });
+      }
+    }
+
+    await tx.orderLog.create({
+      data: {
+        orderId: newOrder.id,
+        status: "PENDING",
+        note: "Order created and items reserved",
+      },
+    });
+
+    return newOrder as any as Order;
+  });
+
+  return order as any as Order;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH (field-level update, no status change)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function updateOrder(
+  id: string,
+  data: Partial<Order> & { version: number },
+): Promise<Order> {
+  const patch: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined && key !== "version") patch[key] = value;
+  }
+  patch.version = { increment: 1 };
+
+  try {
+    return (await prisma.order.update({
+      where: { id, version: data.version },
+      data: patch,
+    })) as any as Order;
+  } catch (err: any) {
+    if (err.code === "P2025") {
+      throw new ServiceError(
+        "Order was modified by another user, please refresh.",
+        409,
+      );
+    }
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS TRANSITION (with validation + side effects)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function updateOrderStatus(
+  id: string,
+  status: string,
+  note?: string,
+) {
+  if (!status) throw new ServiceError("Status is required");
+
+  const order = await prisma.order.findUnique({
+    where: { id, deletedAt: null },
+    include: { reservations: true, items: true },
+  });
+  if (!order) throw new ServiceError("Order not found", 404);
+
+  // Validate transition
+  assertStatusTransition(order.status, status);
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Update order status
+    const updatedOrder = await tx.order.update({
+      where: { id },
+      data: { status: status as any, version: { increment: 1 } },
+      include: {
+        items: true,
+        logs: { orderBy: { timestamp: "desc" } },
+      },
+    });
+
+    // 2. Create status log
+    await tx.orderLog.create({
+      data: {
+        orderId: id,
+        status: status as any,
+        note: note || `Status updated to ${status}`,
+      },
+    });
+
+    // ── SIDE EFFECTS ──────────────────────────────────────────────
+
+    // PAID: Convert reservations from ACTIVE → CONVERTED, deduct on-hand
+    if (status === "PAID") {
+      const activeReservations = order.reservations.filter(
+        (r) => r.status === "ACTIVE",
+      );
+      for (const res of activeReservations) {
+        await tx.reservation.update({
+          where: { id: res.id },
+          data: { status: "CONVERTED" },
+        });
+        const inventoryItem = await tx.inventoryItem.findUnique({
+          where: { id: res.inventoryItemId },
+          select: { quantityOnHand: true },
+        });
+
+        await tx.inventoryItem.update({
+          where: { id: res.inventoryItemId },
+          data: {
+            quantityReserved: { decrement: res.quantity },
+            quantityOnHand: { decrement: res.quantity },
+            status:
+              Number(inventoryItem?.quantityOnHand ?? 0) -
+                Number(res.quantity) <=
+              0
+                ? "SOLD"
+                : "IN_STOCK",
+          },
+        });
+      }
+    }
+
+    // DELIVERED: Mark inventory items as SOLD
+    if (status === "DELIVERED") {
+      for (const item of order.items) {
+        if (item.inventoryItemId) {
+          await tx.inventoryItem.update({
+            where: { id: item.inventoryItemId },
+            data: { status: "SOLD" },
+          });
+        }
+      }
+    }
+
+    // RETURNED: Restore inventory
+    if (status === "RETURNED") {
+      for (const item of order.items) {
+        if (item.inventoryItemId) {
+          await tx.inventoryItem.update({
+            where: { id: item.inventoryItemId },
+            data: {
+              quantityOnHand: { increment: item.quantity },
+              status: "RETURNED",
+            },
+          });
+        }
+      }
+
+      await tx.orderLog.create({
+        data: {
+          orderId: id,
+          status: "RETURNED" as any,
+          note: "Inventory restored for returned items",
+        },
+      });
+    }
+
+    return updatedOrder;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CANCEL (with reservation release + audit)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function cancelOrder(id: string, note?: string) {
+  const order = await prisma.order.findUnique({
+    where: { id, deletedAt: null },
+    include: { reservations: true },
+  });
+  if (!order) throw new ServiceError("Order not found", 404);
+
+  // Validate transition
+  assertStatusTransition(order.status, "CANCELLED");
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Update order status
+    const updatedOrder = await tx.order.update({
+      where: { id },
+      data: { status: "CANCELLED", version: { increment: 1 } },
+      include: {
+        items: true,
+        logs: { orderBy: { timestamp: "desc" } },
+      },
+    });
+
+    // 2. Create cancel log
+    await tx.orderLog.create({
+      data: {
+        orderId: id,
+        status: "CANCELLED",
+        note: note || "Order cancelled",
+      },
+    });
+
+    // 3. Release active reservations and restore inventory
+    const activeReservations = order.reservations.filter(
+      (r) => r.status === "ACTIVE",
+    );
+    for (const res of activeReservations) {
+      await tx.reservation.update({
+        where: { id: res.id },
+        data: { status: "RELEASED" },
+      });
+      await tx.inventoryItem.update({
+        where: { id: res.inventoryItemId },
+        data: {
+          quantityReserved: { decrement: res.quantity },
+          status: "IN_STOCK",
+        },
+      });
+    }
+
+    const convertedReservations = order.reservations.filter(
+      (r) => r.status === "CONVERTED",
+    );
+    for (const res of convertedReservations) {
+      await tx.reservation.update({
+        where: { id: res.id },
+        data: { status: "RELEASED" },
+      });
+      await tx.inventoryItem.update({
+        where: { id: res.inventoryItemId },
+        data: {
+          quantityOnHand: { increment: res.quantity },
+          status: "IN_STOCK",
+        },
+      });
+    }
+
+    // 4. Log reservation release
+    if (activeReservations.length > 0 || convertedReservations.length > 0) {
+      await tx.orderLog.create({
+        data: {
+          orderId: id,
+          status: "CANCELLED",
+          note: `Released ${activeReservations.length} active reservation(s) and restored ${convertedReservations.length} converted allocation(s)`,
+        },
+      });
+    }
+
+    return updatedOrder as any as Order;
+  });
+}
+
+
+
+----- FILE: product.service.ts -----
+
+/**
+ * product.service.ts — Client-side HTTP service for Products, Variants, and VariantSpecs.
+ *
+ * 🔥 CRITICAL RELATION FLOWS (client → API → catalog.service.ts → Prisma)
+ *   getProducts()       → GET  /api/catalog/products
+ *   getProduct(id)      → GET  /api/catalog/products/:id     (returns variants with variantSpecs)
+ *   createProduct()     → POST /api/catalog/products          (supports nested variants[].specs[])
+ *   updateProduct()     → PATCH /api/catalog/products/:id
+ *   deleteProduct()     → DELETE /api/catalog/products/:id
+ *   filterProducts()    → POST /api/catalog/products/filter   (AdvancedFilter)
+ *   getVariants()       → GET  /api/catalog/products/:id/variants
+ *   createVariant()     → POST /api/catalog/products/:id/variants
+ *   createSpec()        → POST /api/catalog/specs
+ *
+ * TYPE CONTRACT
+ *   ProductVariant.attributes  — freeform JSON (Record<string,any> | null)
+ *   ProductVariant.variantSpecs — typed spec system (VariantSpec[])
+ *   Only ONE of valueString / valueNumber / valueBool is set per VariantSpec.
+ *   Use SpecDefinition.valueType to determine which field carries the value.
+ *
+ * AdvancedFilter.filters[].values — always string[], backend coerces for NUMBER specs.
+ * CreateVariantSpec.optionId     — used when spec has predefined SpecOptions (dropdown).
+ */
+
+import type {
+  Product,
+  ProductVariant,
+  VariantSpec,
+  SpecDefinition,
+  AdvancedFilter,
+  CatalogListingResult,
+  CreateProduct,
+  CreateVariant,
+  CreateVariantSpec,
+  CreateSpecWithOptions,
+} from "@/types";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BASE = "/api/catalog";
+
+async function apiFetch<T>(
+  url: string,
+  init?: RequestInit
+): Promise<T> {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...init,
+  });
+
+  if (!res.ok) {
+    const message = await res.text().catch(() => res.statusText);
+    throw new ProductServiceError(message, res.status);
+  }
+
+  return res.json() as Promise<T>;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Error class
+// ─────────────────────────────────────────────────────────────────────────────
+
+export class ProductServiceError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number = 400
+  ) {
+    super(message);
+    this.name = "ProductServiceError";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT — List / Get / Create / Update / Delete
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Lists all products (unfiltered).
+ * Each Product's variants[] will include variantSpecs[] if the backend includes them.
+ * For filtered results use filterProducts().
+ */
+export async function getProducts(): Promise<Product[]> {
+  return apiFetch<Product[]>(`${BASE}/products`);
+}
+
+/**
+ * Fetches a single product by ID.
+ * The returned Product always contains:
+ *   - variants[].variantSpecs[]   — typed spec values (valueString | valueNumber | valueBool | optionId)
+ *   - variants[].attributes       — freeform JSON (separate from variantSpecs)
+ *   - subCategory.specDefinitions — the spec schema for filter UI
+ */
+export async function getProduct(id: string): Promise<Product> {
+  return apiFetch<Product>(`${BASE}/products/${id}`);
+}
+
+/**
+ * Creates a product with optional nested variants and their spec values.
+ *
+ * 🔥 Deep create flow: Product → Variant → VariantSpec → (SpecDefinition + SpecOption)
+ *
+ * @example
+ * createProduct({
+ *   name: "AMD Ryzen 7 7800X3D",
+ *   subCategoryId: "<subcategory-id>",
+ *   brandId: "<brand-id>",
+ *   status: "DRAFT",
+ *   variants: [{
+ *     sku: "CPU-AMD-7800X3D-BOX",
+ *     price: 34999,
+ *     attributes: { color: "Black" },     // freeform — still supported
+ *     specs: [
+ *       { specId: "<socket-spec-id>", optionId: "<am5-option-id>" },  // select-type
+ *       { specId: "<cores-spec-id>",  valueNumber: 8 },               // free-entry NUMBER
+ *       { specId: "<unlocked-spec>",  valueBool: true },              // BOOLEAN spec
+ *     ]
+ *   }]
+ * })
+ */
+export async function createProduct(data: CreateProduct): Promise<Product> {
+  return apiFetch<Product>(`${BASE}/products`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Partially updates a product's top-level fields.
+ * Does NOT update variants or variantSpecs — use createVariant / upsertVariantSpec for those.
+ */
+export async function updateProduct(
+  id: string,
+  data: Partial<CreateProduct>
+): Promise<Product> {
+  return apiFetch<Product>(`${BASE}/products/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Soft-deletes a product (sets deletedAt timestamp).
+ * All variants under the product are also soft-deleted by the server.
+ */
+export async function deleteProduct(id: string): Promise<void> {
+  await apiFetch<void>(`${BASE}/products/${id}`, { method: "DELETE" });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT — Advanced Filter
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Filters products using a structured AdvancedFilter object.
+ *
+ * Filter semantics:
+ *   - filters[].specId   — the SpecDefinition to filter on
+ *   - filters[].values   — always string[]; backend handles coercion for NUMBER specs
+ *   - Multiple filters   → AND (product must match ALL)
+ *   - Multiple values    → OR  (within a single spec)
+ *
+ * All returned Product objects include variants[].variantSpecs[] with full spec + option data.
+ *
+ * @example
+ * filterProducts({
+ *   subCategoryId: "<cpu-subcategory-id>",
+ *   priceMin: 10000,
+ *   priceMax: 50000,
+ *   brandId: "<amd-brand-id>",
+ *   filters: [
+ *     { specId: "<socket-spec-id>", values: ["<am5-option-id>", "<am4-option-id>"] },
+ *     { specId: "<tdp-spec-id>",    values: ["120"] },  // number spec → string value
+ *   ]
+ * })
+ */
+export async function getCatalogListing(
+  filter: AdvancedFilter
+): Promise<CatalogListingResult> {
+  return apiFetch<CatalogListingResult>(`${BASE}/products/filter`, {
+    method: "POST",
+    body: JSON.stringify(filter),
+  });
+}
+
+export async function filterProducts(filter: AdvancedFilter): Promise<Product[]> {
+  const result = await getCatalogListing(filter);
+  return result.products;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VARIANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Lists all variants for a product (deletedAt: null).
+ * Each variant includes variantSpecs[] with spec + option details.
+ */
+export async function getVariants(productId: string): Promise<ProductVariant[]> {
+  return apiFetch<ProductVariant[]>(`${BASE}/products/${productId}/variants`);
+}
+
+/**
+ * Creates a standalone variant under a product with optional nested VariantSpecs.
+ *
+ * Use this for adding variants after initial product creation.
+ * For deep creation alongside the product, embed variants[] in createProduct().
+ *
+ * 🔥 VariantSpec field rules:
+ *   - optionId      → set when spec has predefined SpecOptions (dropdown/checkbox)
+ *   - valueString   → set for free-entry STRING specs
+ *   - valueNumber   → set for free-entry NUMBER specs (backend stores as Float)
+ *   - valueBool     → set for BOOLEAN specs
+ *   Only ONE of these should be populated per spec entry.
+ */
+export async function createVariant(
+  productId: string,
+  data: CreateVariant
+): Promise<ProductVariant> {
+  return apiFetch<ProductVariant>(`${BASE}/products/${productId}/variants`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPECS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Creates a SpecDefinition with optional nested SpecOptions in one call.
+ *
+ * Flow: SubCategory → SpecDefinition → SpecOption[]
+ *
+ * Use SpecDefinition.valueType to determine how variantSpecs are stored:
+ *   STRING  → VariantSpec.valueString
+ *   NUMBER  → VariantSpec.valueNumber
+ *   BOOLEAN → VariantSpec.valueBool
+ *   (select types additionally set optionId)
+ */
+export async function createSpec(data: CreateSpecWithOptions): Promise<SpecDefinition> {
+  return apiFetch<SpecDefinition>(`${BASE}/specs`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Re-exports for convenience (types only — no runtime cost)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type {
+  Product,
+  ProductVariant,
+  VariantSpec,
+  SpecDefinition,
+  AdvancedFilter,
+  CatalogListingResult,
+  CreateProduct,
+  CreateVariant,
+  CreateVariantSpec,
+  CreateSpecWithOptions,
+};
+

@@ -10,6 +10,7 @@ import {
   useMemo,
 } from "react";
 import { InventoryItem, InventorySkuSummary, Reservation } from "../types";
+import { apiFetch, useLoadingCounter } from "@/lib/helpers";
 
 export interface InventorySummary {
   available: number;
@@ -51,27 +52,10 @@ interface InventoryContextType {
   releaseReservation: (id: string) => Promise<void>;
 
   loading: boolean;
+  error: Error | null;
 }
 
 const InventoryContext = createContext<InventoryContextType | null>(null);
-
-async function fetchJSON(url: string, options?: RequestInit) {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      ...options?.headers,
-      "Content-Type": "application/json",
-    },
-  });
-  if (!res.ok) {
-    let msg = "Request failed";
-    try {
-      msg = await res.text();
-    } catch (e) {}
-    throw new Error(msg);
-  }
-  return res.json();
-}
 
 export const InventoryProvider = ({
   children,
@@ -80,10 +64,13 @@ export const InventoryProvider = ({
   children: ReactNode;
   autoLoad?: boolean;
 }) => {
-  const [loading, setLoading] = useState(false);
+  // start/stop are guaranteed stable by useLoadingCounter's internal useCallback([],
+  // so including them in dependency arrays is safe and prevents exhaustive-deps warnings.
+  const { loading, start, stop } = useLoadingCounter();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [error, setError] = useState<Error | null>(null);
 
   const inventoryBySku = useMemo(() => {
     const map = new Map<string, InventorySummary>();
@@ -129,84 +116,145 @@ export const InventoryProvider = ({
   }, [inventory]);
 
   const refreshInventory = useCallback(async () => {
-    const data = await fetchJSON("/api/inventory?limit=200&page=1");
-    setInventory(Array.isArray(data?.items) ? data.items : []);
-  }, []);
+    setError(null);
+    start();
+    try {
+      const data = await apiFetch<any>("/api/inventory?limit=200&page=1");
+      setInventory(Array.isArray(data?.items) ? data.items : []);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [start, stop]);
 
   const refreshReservations = useCallback(async () => {
-    const data = await fetchJSON("/api/inventory/reservations");
-    setReservations(data);
-  }, []);
+    setError(null);
+    start();
+    try {
+      const data = await apiFetch<Reservation[]>("/api/inventory/reservations");
+      setReservations(data);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [start, stop]);
 
   const refreshAuditLogs = useCallback(async () => {
-    const data = await fetchJSON("/api/audit-logs");
-    const logs = Array.isArray(data) ? data : [];
-    setAuditLogs(logs);
-    return logs;
-  }, []);
+    setError(null);
+    start();
+    try {
+      const data = await apiFetch<any[]>("/api/audit-logs");
+      const logs = Array.isArray(data) ? data : [];
+      setAuditLogs(logs);
+      return logs;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+      return [];
+    } finally {
+      stop();
+    }
+  }, [start, stop]);
 
   const fetchInventoryPage = useCallback(
     async (query?: URLSearchParams | string) => {
-      const qs = query?.toString();
-      const data = await fetchJSON(
-        qs ? `/api/inventory?${qs}` : "/api/inventory",
-      );
-      return {
-        items: Array.isArray(data?.items)
-          ? data.items
-          : Array.isArray(data)
-            ? data
-            : [],
-        total: Number(data?.total ?? 0),
-        page: Number(data?.page ?? 1),
-        limit: Number(data?.limit ?? 10),
-      };
+      setError(null);
+      start();
+      try {
+        const qs = query?.toString();
+        const data = await apiFetch<any>(
+          qs ? `/api/inventory?${qs}` : "/api/inventory",
+        );
+        return {
+          items: Array.isArray(data?.items)
+            ? data.items
+            : Array.isArray(data)
+              ? data
+              : [],
+          total: Number(data?.total ?? 0),
+          page: Number(data?.page ?? 1),
+          limit: Number(data?.limit ?? 10),
+        };
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
     },
-    [],
+    [start, stop],
   );
 
-  const adjustStock = async (
+  const adjustStock = useCallback(async (
     variantId: string,
     quantity: number,
     type: string,
   ) => {
-    await fetchJSON("/api/inventory/items", {
-      method: "POST",
-      body: JSON.stringify({ variantId, quantity, type, action: "ADJUST" }),
-    });
-    await refreshInventory();
-  };
+    setError(null);
+    start();
+    try {
+      await apiFetch("/api/inventory/items", {
+        method: "POST",
+        body: JSON.stringify({ variantId, quantity, type, action: "ADJUST" }),
+      });
+      await refreshInventory();
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [refreshInventory, start, stop]);
 
-  const createReservation = async (
+  const createReservation = useCallback(async (
     orderId: string,
     variantId: string,
     quantity: number,
   ) => {
-    await fetchJSON("/api/inventory/reservations", {
-      method: "POST",
-      body: JSON.stringify({ orderId, variantId, quantity }),
-    });
-    await refreshReservations();
-    await refreshInventory();
-  };
+    setError(null);
+    start();
+    try {
+      await apiFetch("/api/inventory/reservations", {
+        method: "POST",
+        body: JSON.stringify({ orderId, variantId, quantity }),
+      });
+      await refreshReservations();
+      await refreshInventory();
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [refreshReservations, refreshInventory, start, stop]);
 
-  const releaseReservation = async (id: string) => {
-    await fetchJSON(`/api/inventory/reservations/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: "RELEASED" }),
-    });
-    await refreshReservations();
-    await refreshInventory();
-  };
+  const releaseReservation = useCallback(async (id: string) => {
+    setError(null);
+    start();
+    try {
+      await apiFetch(`/api/inventory/reservations/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "RELEASED" }),
+      });
+      await refreshReservations();
+      await refreshInventory();
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [refreshReservations, refreshInventory, start, stop]);
 
   const loadAll = useCallback(async () => {
-    setLoading(true);
+    setError(null);
+    start();
     try {
-      await Promise.all([refreshInventory(), refreshReservations()]);
+      await Promise.allSettled([refreshInventory(), refreshReservations()]);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      setLoading(false);
+      stop();
     }
-  }, [refreshInventory, refreshReservations]);
+  }, [refreshInventory, refreshReservations, start, stop]);
 
   useEffect(() => {
     if (!autoLoad) return;
@@ -228,6 +276,7 @@ export const InventoryProvider = ({
         createReservation,
         releaseReservation,
         loading,
+        error,
       }}
     >
       {children}

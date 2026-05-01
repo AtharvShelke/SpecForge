@@ -16,12 +16,15 @@ import { OrderProvider, useOrder } from "./OrderContext";
 import { BillingProvider, useBilling } from "./BillingContext";
 import { BuildProvider, useBuild } from "./BuildContext";
 import type { CategoryNode } from "@/types";
+import { apiFetch } from "@/lib/helpers";
+
 
 interface AdminContextType {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   syncData: () => Promise<void>;
   isLoading: boolean;
+  error: Error | null;
 
   // Domain Contexts (Facades for convenience)
   catalog: ReturnType<typeof useCatalog>;
@@ -35,41 +38,10 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | null>(null);
 
-async function fetchJSON<T = any>(
-  url: string,
-  options?: RequestInit,
-): Promise<T> {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    let message = "Request failed";
-    try {
-      const data = await response.json();
-      message = data.error || data.message || message;
-    } catch {
-      try {
-        message = await response.text();
-      } catch {}
-    }
-    throw new Error(message);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json();
-}
-
 const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const hydratedTabsRef = useRef<Set<string>>(new Set());
+  const [error, setError] = useState<Error | null>(null);
 
   const catalog = useCatalog();
   const inventory = useInventory();
@@ -85,20 +57,25 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
     builds.loading;
 
   const syncData = useCallback(async () => {
-    // Parallel refresh across all domains
-    await Promise.allSettled([
-      catalog.refreshProducts(),
-      catalog.refreshCategories(),
-      catalog.refreshCategoryHierarchy(),
-      catalog.refreshBrands(),
-      catalog.refreshSpecs(),
-      inventory.refreshInventory(),
-      inventory.refreshReservations(),
-      orders.refreshOrders(),
-      billing.refreshInvoices(),
-      builds.refreshBuilds(),
-      builds.refreshBuildGuides(),
-    ]);
+    setError(null);
+    try {
+      // Parallel refresh across all domains
+      await Promise.allSettled([
+        catalog.refreshProducts(),
+        catalog.refreshCategories(),
+        catalog.refreshCategoryHierarchy(),
+        catalog.refreshBrands(),
+        catalog.refreshSpecs(),
+        inventory.refreshInventory(),
+        inventory.refreshReservations(),
+        orders.refreshOrders(),
+        billing.refreshInvoices(),
+        builds.refreshBuilds(),
+        builds.refreshBuildGuides(),
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    }
   }, [catalog, inventory, orders, billing, builds]);
 
   useEffect(() => {
@@ -137,171 +114,185 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
     );
   }, [activeTab, billing, builds, catalog, inventory, orders]);
 
-  const inventoryFacade = useMemo(
-    () => Object.assign([...inventory.inventory], inventory),
-    [inventory],
-  );
-  const ordersFacade = useMemo(
-    () => Object.assign([...orders.orders], orders),
-    [orders],
-  );
+  
   const noop = useCallback(async () => {}, []);
 
   const updateCategories = useCallback(
     async (categories: CategoryNode[]) => {
-      await catalog.updateCategoryHierarchy(categories);
+      setError(null);
+      try {
+        await catalog.updateCategoryHierarchy(categories);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
     },
     [catalog],
   );
 
   const addBrand = useCallback(
     async (data: { name: string }) => {
-      await fetchJSON("/api/catalog/brands", {
-        method: "POST",
-        body: JSON.stringify({ name: data.name }),
-      });
-      await catalog.refreshBrands();
+      setError(null);
+      try {
+        await apiFetch("/api/catalog/brands", {
+          method: "POST",
+          body: JSON.stringify({ name: data.name }),
+        });
+        await catalog.refreshBrands();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
     },
     [catalog],
   );
 
   const deleteBrand = useCallback(
     async (id: string) => {
-      await fetchJSON(`/api/catalog/brands/${id}`, { method: "DELETE" });
-      await catalog.refreshBrands();
+      setError(null);
+      try {
+        await apiFetch(`/api/catalog/brands/${id}`, { method: "DELETE" });
+        await catalog.refreshBrands();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
     },
     [catalog],
   );
 
-  const legacyAddProduct = useCallback(
+  const addProduct = useCallback(
     async (data: any) => {
-      const brandName =
-        data?.specs?.brand || data?.brand?.name || data?.brandName;
-      const brand = catalog.brands.find((entry) => entry.name === brandName);
-      const directSubCategory = catalog.subCategories.find(
-        (entry) =>
-          entry.id === data?.subCategoryId || entry.name === data?.category,
-      );
-      const categoryMatch = catalog.categories.find(
-        (entry) => entry.name === data?.category,
-      );
-      const subCategoryId =
-        directSubCategory?.id || categoryMatch?.subCategories?.[0]?.id;
-
-      if (!subCategoryId) {
-        throw new Error(
-          `Unable to resolve a sub-category for "${data?.category ?? "this product"}".`,
+      setError(null);
+      try {
+        const brandName =
+          data?.specs?.brand || data?.brand?.name || data?.brandName;
+        const brand = catalog.brands.find((entry) => entry.name === brandName);
+        const directSubCategory = catalog.subCategories.find(
+          (entry) =>
+            entry.id === data?.subCategoryId || entry.name === data?.category,
         );
-      }
+        const categoryMatch = catalog.categories.find(
+          (entry) => entry.name === data?.category,
+        );
+        const subCategoryId =
+          directSubCategory?.id || categoryMatch?.subCategories?.[0]?.id;
 
-      await fetchJSON("/api/catalog/products", {
-        method: "POST",
-        body: JSON.stringify({
-          name: data.name,
-          slug: data.slug,
-          subCategoryId,
-          brandId: brand?.id,
-          description: data.description,
-          status: data.status || "ACTIVE",
-          variants: [
-            {
-              sku: data.sku,
-              price: data.price || 0,
-              status: "IN_STOCK",
-            },
-          ],
-          images: data.images,
-        }),
-      });
+        if (!subCategoryId) {
+          throw new Error(
+            `Unable to resolve a sub-category for "${data?.category ?? "this product"}".`,
+          );
+        }
 
-      await Promise.all([
-        catalog.refreshProducts(),
-        inventory.refreshInventory(),
-      ]);
-    },
-    [catalog, inventory],
-  );
-
-  const legacyUpdateProduct = useCallback(
-    async (idOrData: any, maybeData?: any) => {
-      const data =
-        typeof idOrData === "string"
-          ? { ...(maybeData || {}), id: idOrData }
-          : idOrData;
-
-      if (!data?.id) return;
-
-      const existingProduct = catalog.products.find(
-        (entry) => entry.id === data.id,
-      );
-      const firstVariant = existingProduct?.variants?.[0];
-      const brandName =
-        data?.specs?.brand || data?.brand?.name || existingProduct?.brand?.name;
-      const brand = catalog.brands.find((entry) => entry.name === brandName);
-      const directSubCategory = catalog.subCategories.find(
-        (entry) =>
-          entry.id === data?.subCategoryId || entry.name === data?.category,
-      );
-      const categoryMatch = catalog.categories.find(
-        (entry) => entry.name === data?.category,
-      );
-      const subCategoryId =
-        data?.subCategoryId ||
-        directSubCategory?.id ||
-        categoryMatch?.subCategories?.[0]?.id ||
-        existingProduct?.subCategoryId;
-
-      await fetchJSON(`/api/catalog/products/${data.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          name: data.name,
-          slug: data.slug,
-          subCategoryId,
-          brandId: brand?.id,
-          description: data.description,
-          status: data.status || existingProduct?.status,
-          images: data.images,
-        }),
-      });
-
-      if (firstVariant) {
-        await fetchJSON(`/api/catalog/variants/${firstVariant.id}`, {
-          method: "PATCH",
+        await apiFetch("/api/catalog/products", {
+          method: "POST",
           body: JSON.stringify({
-            sku: data.sku || firstVariant.sku,
-            price: data.price ?? firstVariant.price,
-            status:
-              data.status === "ARCHIVED" ? "DISCONTINUED" : firstVariant.status,
+            name: data.name,
+            slug: data.slug,
+            subCategoryId,
+            brandId: brand?.id,
+            description: data.description,
+            status: data.status || "ACTIVE",
+            variants: [
+              {
+                sku: data.sku,
+                price: data.price || 0,
+                status: "IN_STOCK",
+              },
+            ],
+            images: data.images,
           }),
         });
-      }
 
-      await Promise.all([
-        catalog.refreshProducts(),
-        inventory.refreshInventory(),
-      ]);
+        await Promise.all([
+          catalog.refreshProducts(),
+          inventory.refreshInventory(),
+        ]);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
     },
     [catalog, inventory],
   );
 
-  const legacyDeleteProduct = useCallback(
-    async (id: string) => {
-      await catalog.deleteProduct(id);
+  const updateProduct = useCallback(
+    async (idOrData: any, maybeData?: any) => {
+      setError(null);
+      try {
+        const data =
+          typeof idOrData === "string"
+            ? { ...(maybeData || {}), id: idOrData }
+            : idOrData;
+
+        if (!data?.id) return;
+
+        const existingProduct = catalog.products.find(
+          (entry) => entry.id === data.id,
+        );
+        const firstVariant = existingProduct?.variants?.[0];
+        const brandName =
+          data?.specs?.brand ||
+          data?.brand?.name ||
+          existingProduct?.brand?.name;
+        const brand = catalog.brands.find((entry) => entry.name === brandName);
+        const directSubCategory = catalog.subCategories.find(
+          (entry) =>
+            entry.id === data?.subCategoryId || entry.name === data?.category,
+        );
+        const categoryMatch = catalog.categories.find(
+          (entry) => entry.name === data?.category,
+        );
+        const subCategoryId =
+          data?.subCategoryId ||
+          directSubCategory?.id ||
+          categoryMatch?.subCategories?.[0]?.id ||
+          existingProduct?.subCategoryId;
+
+        await apiFetch(`/api/catalog/products/${data.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: data.name,
+            slug: data.slug,
+            subCategoryId,
+            brandId: brand?.id,
+            description: data.description,
+            status: data.status || existingProduct?.status,
+            images: data.images,
+          }),
+        });
+
+        if (firstVariant) {
+          await apiFetch(`/api/catalog/variants/${firstVariant.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              sku: data.sku || firstVariant.sku,
+              price: data.price ?? firstVariant.price,
+              status:
+                data.status === "ARCHIVED"
+                  ? "DISCONTINUED"
+                  : firstVariant.status,
+            }),
+          });
+        }
+
+        await Promise.all([
+          catalog.refreshProducts(),
+          inventory.refreshInventory(),
+        ]);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
     },
-    [catalog],
+    [catalog, inventory],
   );
 
-  const legacyAdjustStock = useCallback(
-    async (skuOrVariantId: string, quantity: number, type: string) => {
-      const matchedItem = inventory.inventory.find(
-        (item: any) =>
-          item.variantId === skuOrVariantId ||
-          item.variant?.sku === skuOrVariantId,
-      );
-      const variantId = matchedItem?.variantId ?? skuOrVariantId;
-      await inventory.adjustStock(variantId, quantity, type);
+  const deleteProduct = useCallback(
+    async (id: string) => {
+      setError(null);
+      try {
+        await catalog.deleteProduct(id);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
     },
-    [inventory],
+    [catalog],
   );
 
   const value = useMemo(
@@ -310,9 +301,12 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       setActiveTab,
       syncData,
       isLoading,
+      error,
       catalog,
-      inventory: inventoryFacade,
-      orders: ordersFacade,
+      inventory: inventory.inventory,
+      inventoryContext: inventory,
+      orders: orders.orders,
+      ordersContext: orders,
       billing,
       builds,
 
@@ -323,9 +317,9 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       brands: catalog.brands,
       specs: catalog.specs,
       schemas: [],
-      addProduct: legacyAddProduct,
-      updateProduct: legacyUpdateProduct,
-      deleteProduct: legacyDeleteProduct,
+      addProduct: addProduct,
+      updateProduct: updateProduct,
+      deleteProduct: deleteProduct,
       refreshProducts: catalog.refreshProducts,
       refreshCategories: catalog.refreshCategories,
       refreshCategoryHierarchy: catalog.refreshCategoryHierarchy,
@@ -340,7 +334,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       stockMovements: [],
       auditLogs: inventory.auditLogs,
       reservations: inventory.reservations,
-      adjustStock: legacyAdjustStock,
+      adjustStock: inventory.adjustStock,
       refreshInventory: inventory.refreshInventory,
       refreshAuditLogs: inventory.refreshAuditLogs,
       fetchInventoryPage: inventory.fetchInventoryPage,
@@ -366,9 +360,9 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       activeTab,
       syncData,
       isLoading,
+      error,
       catalog,
-      inventoryFacade,
-      ordersFacade,
+      
       billing,
       builds,
       inventory,
@@ -377,10 +371,9 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       addBrand,
       deleteBrand,
       updateCategories,
-      legacyAddProduct,
-      legacyUpdateProduct,
-      legacyDeleteProduct,
-      legacyAdjustStock,
+      addProduct,
+      updateProduct,
+      deleteProduct,
     ],
   );
 

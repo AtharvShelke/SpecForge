@@ -2,8 +2,8 @@
  * build-guide.service.ts — Business logic for PC Build Guides.
  */
 
+import { ServiceError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { ServiceError } from "./catalog.service";
 
 export async function createBuildGuide(data: {
   title?: string;

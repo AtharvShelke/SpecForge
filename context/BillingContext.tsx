@@ -32,7 +32,8 @@ import {
   Customer,
   BillingProfile,
 } from "../types";
-import * as invoiceService from "../services/invoice.service";
+import * as invoiceService from "../services/invoice-client.service";
+import { apiFetch, useLoadingCounter, refreshAndSyncDetail } from "@/lib/helpers";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Context Shape
@@ -85,37 +86,10 @@ interface BillingContextType {
 
   loading: boolean;
   updateInvoice: (id: string, data: Partial<Invoice>) => Promise<void>;
+  error: Error | null;
 }
 
 const BillingContext = createContext<BillingContextType | null>(null);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Fetch Utility
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function fetchJSON<T = any>(
-  url: string,
-  options?: RequestInit,
-): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...options?.headers, "Content-Type": "application/json" },
-  });
-  if (!res.ok) {
-    let msg = "Request failed";
-    try {
-      const errData = await res.json();
-      msg = errData.error || errData.message || (await res.text());
-    } catch {
-      try {
-        msg = await res.text();
-      } catch {}
-    }
-    throw new Error(msg);
-  }
-  if (res.status === 204) return undefined as unknown as T;
-  return res.json();
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Provider
@@ -128,7 +102,9 @@ export const BillingProvider = ({
   children: ReactNode;
   autoLoad?: boolean;
 }) => {
-  const [loading, setLoading] = useState(false);
+  // start/stop are guaranteed stable by useLoadingCounter's internal useCallback([],
+  // so including them in dependency arrays is safe and prevents exhaustive-deps warnings.
+  const { loading, start, stop } = useLoadingCounter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedAuditTrail, setSelectedAuditTrail] = useState<
@@ -138,6 +114,7 @@ export const BillingProvider = ({
   const [billingProfile, setBillingProfile] = useState<BillingProfile | null>(
     null,
   );
+  const [error, setError] = useState<Error | null>(null);
 
   // ── O(1) Lookup Map ──────────────────────────────────────────────────
 
@@ -170,175 +147,229 @@ export const BillingProvider = ({
       customerId?: string;
       orderId?: string;
     }) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         const data = await invoiceService.getInvoices(filters);
         setInvoices(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [],
+    [start, stop],
   );
 
   const getInvoiceDetail = useCallback(async (id: string) => {
-    setLoading(true);
+    setError(null);
+    start();
     try {
       const data = await invoiceService.getInvoice(id);
       setSelectedInvoice(data);
       setSelectedAuditTrail(data.audit || []);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      setLoading(false);
+      stop();
     }
-  }, []);
+  }, [start, stop]);
 
   // ── Lifecycle Actions ────────────────────────────────────────────────
 
   const createInvoice = useCallback(
     async (data: CreateInvoice): Promise<Invoice> => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         const invoice = await invoiceService.createInvoice(data);
         await refreshInvoices();
         return invoice;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshInvoices],
+    [refreshInvoices, start, stop],
   );
 
   const sendInvoice = useCallback(
     async (id: string, data?: InvoiceActionInput) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         await invoiceService.sendInvoice(id, data || {});
-        await refreshInvoices();
-        // Refresh detail if viewing this invoice
-        if (selectedInvoice?.id === id) await getInvoiceDetail(id);
+        await refreshAndSyncDetail(id, refreshInvoices, selectedInvoice?.id, getInvoiceDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id],
+    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id, start, stop],
   );
 
   const payInvoice = useCallback(
     async (id: string, data?: PayInvoiceInput) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         await invoiceService.payInvoice(id, data || {});
-        await refreshInvoices();
-        if (selectedInvoice?.id === id) await getInvoiceDetail(id);
+        await refreshAndSyncDetail(id, refreshInvoices, selectedInvoice?.id, getInvoiceDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id],
+    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id, start, stop],
   );
 
   const voidInvoice = useCallback(
     async (id: string, data?: InvoiceActionInput) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         await invoiceService.voidInvoice(id, data || {});
-        await refreshInvoices();
-        if (selectedInvoice?.id === id) await getInvoiceDetail(id);
+        await refreshAndSyncDetail(id, refreshInvoices, selectedInvoice?.id, getInvoiceDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id],
+    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id, start, stop],
   );
 
   const cancelInvoice = useCallback(
     async (id: string, data?: InvoiceActionInput) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         await invoiceService.cancelInvoice(id, data || {});
-        await refreshInvoices();
-        if (selectedInvoice?.id === id) await getInvoiceDetail(id);
+        await refreshAndSyncDetail(id, refreshInvoices, selectedInvoice?.id, getInvoiceDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id],
+    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id, start, stop],
   );
 
   const createCreditNote = useCallback(
     async (invoiceId: string, data?: CreateCreditNoteInput) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         await invoiceService.createCreditNote(invoiceId, data || {});
-        await refreshInvoices();
-        if (selectedInvoice?.id === invoiceId)
-          await getInvoiceDetail(invoiceId);
+        await refreshAndSyncDetail(invoiceId, refreshInvoices, selectedInvoice?.id, getInvoiceDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id],
+    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id, start, stop],
   );
 
   const updateInvoice = useCallback(
     async (id: string, data: Partial<Invoice>) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        await fetchJSON(`/api/billing/invoices/${id}`, {
+        await apiFetch(`/api/billing/invoices/${id}`, {
           method: "PATCH",
           body: JSON.stringify(data),
         });
-        await refreshInvoices();
-        if (selectedInvoice?.id === id) await getInvoiceDetail(id);
+        await refreshAndSyncDetail(id, refreshInvoices, selectedInvoice?.id, getInvoiceDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id],
+    [refreshInvoices, getInvoiceDetail, selectedInvoice?.id, start, stop],
   );
 
   const refreshCustomers = useCallback(async () => {
-    const data = await fetchJSON<Customer[]>("/api/customers");
-    setCustomers(data);
-  }, []);
+    setError(null);
+    start();
+    try {
+      const data = await apiFetch<Customer[]>("/api/customers");
+      setCustomers(data);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [start, stop]);
 
   const createCustomer = useCallback(
     async (data: Partial<Customer>) => {
-      const customer = await fetchJSON<Customer>("/api/customers", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      await refreshCustomers();
-      return customer;
+      setError(null);
+      start();
+      try {
+        const customer = await apiFetch<Customer>("/api/customers", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        await refreshCustomers();
+        return customer;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
     },
-    [refreshCustomers],
+    [refreshCustomers, start, stop],
   );
 
   const refreshBillingProfile = useCallback(async () => {
-    const data = await fetchJSON<BillingProfile>("/api/billing/profile");
-    setBillingProfile(data);
-  }, []);
+    setError(null);
+    start();
+    try {
+      const data = await apiFetch<BillingProfile>("/api/billing/profile");
+      setBillingProfile(data);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
+  }, [start, stop]);
 
   const saveBillingProfile = useCallback(
     async (data: Partial<BillingProfile>) => {
-      const profile = await fetchJSON<BillingProfile>("/api/billing/profile", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      setBillingProfile(profile);
+      setError(null);
+      start();
+      try {
+        const profile = await apiFetch<BillingProfile>("/api/billing/profile", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        setBillingProfile(profile);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
     },
-    [],
+    [start, stop],
   );
 
   // ── Initial Load ─────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!autoLoad) return;
-    refreshInvoices();
-    refreshCustomers();
-    refreshBillingProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoLoad]);
+    void Promise.allSettled([
+      refreshInvoices(),
+      refreshCustomers(),
+      refreshBillingProfile(),
+    ]);
+  }, [autoLoad, refreshInvoices, refreshCustomers, refreshBillingProfile]);
 
   // ── Provider Value ───────────────────────────────────────────────────
 
@@ -365,6 +396,7 @@ export const BillingProvider = ({
       refreshBillingProfile,
       saveBillingProfile,
       loading,
+      error,
     }),
     [
       invoices,
@@ -388,6 +420,7 @@ export const BillingProvider = ({
       refreshBillingProfile,
       saveBillingProfile,
       loading,
+      error,
     ],
   );
 

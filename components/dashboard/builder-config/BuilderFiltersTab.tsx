@@ -3,16 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Filter, Eye, EyeOff, Save, Check } from "lucide-react";
 import type { FilterOverrideItem, SpecDefinition } from "@/types";
-
-async function fetchJSON<T>(url: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { "Content-Type": "application/json", ...opts?.headers },
-  });
-  if (!res.ok) throw new Error("Request failed");
-  if (res.status === 204) return undefined as T;
-  return res.json();
-}
+import { apiFetch } from "@/lib/helpers";
 
 interface SpecWithCategory extends SpecDefinition {
   categoryName?: string;
@@ -28,8 +19,8 @@ const BuilderFiltersTab = memo(function BuilderFiltersTab() {
 
   useEffect(() => {
     Promise.all([
-      fetchJSON<SpecWithCategory[]>("/api/catalog/specs").catch(() => []),
-      fetchJSON<FilterOverrideItem[]>("/api/admin/builder-filters").catch(
+      apiFetch<SpecWithCategory[]>("/api/catalog/specs").catch(() => []),
+      apiFetch<FilterOverrideItem[]>("/api/admin/builder-filters").catch(
         () => [],
       ),
     ])
@@ -81,7 +72,7 @@ const BuilderFiltersTab = memo(function BuilderFiltersTab() {
       const key = `${specId}:${categoryName}`;
       setSaving(key);
       try {
-        const result = await fetchJSON<FilterOverrideItem>(
+        const result = await apiFetch<FilterOverrideItem>(
           "/api/admin/builder-filters",
           {
             method: "POST",

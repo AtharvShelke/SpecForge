@@ -11,16 +11,7 @@ import {
 } from "lucide-react";
 import type { BuilderUIRule } from "@/types";
 import { BuilderRuleAction } from "@/types";
-
-async function fetchJSON<T>(url: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { "Content-Type": "application/json", ...opts?.headers },
-  });
-  if (!res.ok) throw new Error("Request failed");
-  if (res.status === 204) return undefined as T;
-  return res.json();
-}
+import { apiFetch } from "@/lib/helpers";
 
 const OPERATORS = [
   "equals",
@@ -67,7 +58,7 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
 
   const loadRules = useCallback(async () => {
     try {
-      const data = await fetchJSON<BuilderUIRule[]>("/api/admin/builder-rules");
+      const data = await apiFetch<BuilderUIRule[]>("/api/admin/builder-rules");
       setRules(data);
     } catch {
     } finally {
@@ -82,7 +73,7 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
   const handleCreate = useCallback(async () => {
     if (!form.name || !form.category || !form.specKey || !form.value) return;
     try {
-      const created = await fetchJSON<BuilderUIRule>(
+      const created = await apiFetch<BuilderUIRule>(
         "/api/admin/builder-rules",
         {
           method: "POST",
@@ -97,7 +88,7 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
 
   const handleToggle = useCallback(async (rule: BuilderUIRule) => {
     try {
-      const updated = await fetchJSON<BuilderUIRule>(
+      const updated = await apiFetch<BuilderUIRule>(
         "/api/admin/builder-rules",
         {
           method: "PUT",
@@ -110,7 +101,7 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      await fetchJSON(`/api/admin/builder-rules?id=${id}`, {
+      await apiFetch(`/api/admin/builder-rules?id=${id}`, {
         method: "DELETE",
       });
       setRules((prev) => prev.filter((r) => r.id !== id));

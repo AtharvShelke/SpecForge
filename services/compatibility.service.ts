@@ -10,7 +10,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { ServiceError } from "./catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCOPES
@@ -34,7 +34,7 @@ export async function createScope(data: {
 }) {
   if (!data.sourceSubCategoryId || !data.targetSubCategoryId)
     throw new ServiceError(
-      "sourceSubCategoryId and targetSubCategoryId are required"
+      "sourceSubCategoryId and targetSubCategoryId are required",
     );
 
   return prisma.compatibilityScope.upsert({
@@ -116,11 +116,11 @@ export async function createRule(data: {
   // Ensure specs belong to correct subcategories in the scope
   if (sourceSpec.subCategoryId !== scope.sourceSubCategoryId)
     throw new ServiceError(
-      `Source spec "${sourceSpec.name}" does not belong to source subcategory`
+      `Source spec "${sourceSpec.name}" does not belong to source subcategory`,
     );
   if (targetSpec.subCategoryId !== scope.targetSubCategoryId)
     throw new ServiceError(
-      `Target spec "${targetSpec.name}" does not belong to target subcategory`
+      `Target spec "${targetSpec.name}" does not belong to target subcategory`,
     );
 
   return prisma.compatibilityRule.create({
@@ -159,10 +159,12 @@ export async function checkBuildCompatibility(buildId: string) {
         include: {
           variant: {
             include: {
-              product: { select: { id: true, name: true, subCategoryId: true } },
+              product: {
+                select: { id: true, name: true, subCategoryId: true },
+              },
               variantSpecs: {
                 include: {
-                  spec: true,   // SpecDefinition (name, valueType)
+                  spec: true, // SpecDefinition (name, valueType)
                   option: true, // SpecOption (value, label)
                 },
               },
@@ -239,7 +241,7 @@ export async function checkBuildCompatibility(buildId: string) {
           const { passed, sourceValue, targetValue } = evaluateRule(
             rule,
             itemA.variant.variantSpecs,
-            itemB.variant.variantSpecs
+            itemB.variant.variantSpecs,
           );
 
           results.push({
@@ -260,9 +262,7 @@ export async function checkBuildCompatibility(buildId: string) {
     }
   }
 
-  const isCompatible = results.every(
-    (r) => r.passed || r.severity !== "ERROR"
-  );
+  const isCompatible = results.every((r) => r.passed || r.severity !== "ERROR");
 
   // Step 5: Persist result
   const finalResult = await prisma.buildCompatibilityResult.create({
@@ -290,7 +290,8 @@ export async function checkBuildCompatibility(buildId: string) {
       passed: results.filter((r) => r.passed).length,
       failed: results.filter((r) => !r.passed).length,
       errors: results.filter((r) => !r.passed && r.severity === "ERROR").length,
-      warnings: results.filter((r) => !r.passed && r.severity === "WARNING").length,
+      warnings: results.filter((r) => !r.passed && r.severity === "WARNING")
+        .length,
     },
     details: results,
   };
@@ -306,16 +307,19 @@ function resolveSpecValue(specs: any[], specId: string): any {
 
   // Prefer option value (for enum/select specs), then typed value fields
   if (spec.option?.value !== undefined) return spec.option.value;
-  if (spec.valueString !== null && spec.valueString !== undefined) return spec.valueString;
-  if (spec.valueNumber !== null && spec.valueNumber !== undefined) return Number(spec.valueNumber);
-  if (spec.valueBool !== null && spec.valueBool !== undefined) return spec.valueBool;
+  if (spec.valueString !== null && spec.valueString !== undefined)
+    return spec.valueString;
+  if (spec.valueNumber !== null && spec.valueNumber !== undefined)
+    return Number(spec.valueNumber);
+  if (spec.valueBool !== null && spec.valueBool !== undefined)
+    return spec.valueBool;
   return undefined;
 }
 
 function evaluateRule(
   rule: any,
   sourceSpecs: any[],
-  targetSpecs: any[]
+  targetSpecs: any[],
 ): { passed: boolean; sourceValue: any; targetValue: any } {
   const sourceValue = resolveSpecValue(sourceSpecs, rule.sourceSpecId);
   const targetValue = resolveSpecValue(targetSpecs, rule.targetSpecId);

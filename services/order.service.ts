@@ -9,11 +9,14 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { ServiceError } from "./catalog.service";
-import { Order, CreateOrder, CreateOrderItem } from "@/types";
+import { ServiceError } from "@/lib/errors";
+import { Order, CreateOrder, CreateOrderItem, OrderStatus } from "@/types";
 import { createPaymentTransaction } from "../lib/payments";
+import { assertOrderTransition } from "@/lib/orderTransitions";
 
-async function allocateInventoryForOrderItem(tx: any, item: CreateOrderItem) {
+type PrismaTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem) {
   if (item.inventoryItemId) {
     if (item.quantity !== 1) {
       throw new ServiceError(
@@ -140,30 +143,6 @@ async function allocateInventoryForOrderItem(tx: any, item: CreateOrderItem) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STATUS TRANSITION MAP (strict DAG)
-// ─────────────────────────────────────────────────────────────────────────────
-
-const VALID_TRANSITIONS: Record<string, string[]> = {
-  PENDING: ["PAID", "CANCELLED"],
-  PAID: ["PROCESSING", "CANCELLED"],
-  PROCESSING: ["SHIPPED", "CANCELLED"],
-  SHIPPED: ["DELIVERED", "RETURNED"],
-  DELIVERED: ["RETURNED"],
-  // Terminal states
-  CANCELLED: [],
-  RETURNED: [],
-};
-
-function assertStatusTransition(from: string, to: string) {
-  const allowed = VALID_TRANSITIONS[from];
-  if (!allowed || !allowed.includes(to)) {
-    throw new ServiceError(
-      `Invalid order status transition: ${from} → ${to}`,
-      400,
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIST / GET
@@ -531,7 +510,7 @@ export async function updateOrderStatus(
   if (!order) throw new ServiceError("Order not found", 404);
 
   // Validate transition
-  assertStatusTransition(order.status, status);
+  assertOrderTransition(order.status as OrderStatus, status as OrderStatus);
 
   return prisma.$transaction(async (tx) => {
     // 1. Update order status
@@ -637,7 +616,7 @@ export async function cancelOrder(id: string, note?: string) {
   if (!order) throw new ServiceError("Order not found", 404);
 
   // Validate transition
-  assertStatusTransition(order.status, "CANCELLED");
+  assertOrderTransition(order.status as OrderStatus, OrderStatus.CANCELLED);
 
   return prisma.$transaction(async (tx) => {
     // 1. Update order status

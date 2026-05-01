@@ -4,15 +4,7 @@ import { useState, useEffect, useCallback, memo } from "react";
 import { Settings, Save, RotateCcw, Check } from "lucide-react";
 import type { BuilderSettings } from "@/types";
 import { DEFAULT_BUILDER_SETTINGS } from "@/types";
-
-async function fetchJSON<T>(url: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { "Content-Type": "application/json", ...opts?.headers },
-  });
-  if (!res.ok) throw new Error("Request failed");
-  return res.json();
-}
+import { apiFetch } from "@/lib/helpers";
 
 const POWER_MODES = [
   { value: "static", label: "Static", desc: "Fixed wattage per category" },
@@ -70,7 +62,7 @@ const BuilderSettingsTab = memo(function BuilderSettingsTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchJSON<{ settings: BuilderSettings }>("/api/admin/builder-config")
+    apiFetch<{ settings: BuilderSettings }>("/api/admin/builder-config")
       .then((r) => setSettings({ ...DEFAULT_BUILDER_SETTINGS, ...r.settings }))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -79,7 +71,7 @@ const BuilderSettingsTab = memo(function BuilderSettingsTab() {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await fetchJSON("/api/admin/builder-config", {
+      await apiFetch("/api/admin/builder-config", {
         method: "POST",
         body: JSON.stringify({ settings }),
       });

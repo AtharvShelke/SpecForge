@@ -22,6 +22,7 @@
  * CreateVariantSpec.optionId     — used when spec has predefined SpecOptions (dropdown).
  */
 
+import { apiFetch } from "@/lib/helpers";
 import type {
   Product,
   ProductVariant,
@@ -41,23 +42,6 @@ import type {
 
 const BASE = "/api/catalog";
 
-async function apiFetch<T>(
-  url: string,
-  init?: RequestInit
-): Promise<T> {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-
-  if (!res.ok) {
-    const message = await res.text().catch(() => res.statusText);
-    throw new ProductServiceError(message, res.status);
-  }
-
-  return res.json() as Promise<T>;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Error class
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,7 +49,7 @@ async function apiFetch<T>(
 export class ProductServiceError extends Error {
   constructor(
     message: string,
-    public statusCode: number = 400
+    public statusCode: number = 400,
   ) {
     super(message);
     this.name = "ProductServiceError";
@@ -132,7 +116,7 @@ export async function createProduct(data: CreateProduct): Promise<Product> {
  */
 export async function updateProduct(
   id: string,
-  data: Partial<CreateProduct>
+  data: Partial<CreateProduct>,
 ): Promise<Product> {
   return apiFetch<Product>(`${BASE}/products/${id}`, {
     method: "PATCH",
@@ -176,7 +160,7 @@ export async function deleteProduct(id: string): Promise<void> {
  * })
  */
 export async function getCatalogListing(
-  filter: AdvancedFilter
+  filter: AdvancedFilter,
 ): Promise<CatalogListingResult> {
   return apiFetch<CatalogListingResult>(`${BASE}/products/filter`, {
     method: "POST",
@@ -184,7 +168,9 @@ export async function getCatalogListing(
   });
 }
 
-export async function filterProducts(filter: AdvancedFilter): Promise<Product[]> {
+export async function filterProducts(
+  filter: AdvancedFilter,
+): Promise<Product[]> {
   const result = await getCatalogListing(filter);
   return result.products;
 }
@@ -197,7 +183,9 @@ export async function filterProducts(filter: AdvancedFilter): Promise<Product[]>
  * Lists all variants for a product (deletedAt: null).
  * Each variant includes variantSpecs[] with spec + option details.
  */
-export async function getVariants(productId: string): Promise<ProductVariant[]> {
+export async function getVariants(
+  productId: string,
+): Promise<ProductVariant[]> {
   return apiFetch<ProductVariant[]>(`${BASE}/products/${productId}/variants`);
 }
 
@@ -216,7 +204,7 @@ export async function getVariants(productId: string): Promise<ProductVariant[]> 
  */
 export async function createVariant(
   productId: string,
-  data: CreateVariant
+  data: CreateVariant,
 ): Promise<ProductVariant> {
   return apiFetch<ProductVariant>(`${BASE}/products/${productId}/variants`, {
     method: "POST",
@@ -239,7 +227,9 @@ export async function createVariant(
  *   BOOLEAN → VariantSpec.valueBool
  *   (select types additionally set optionId)
  */
-export async function createSpec(data: CreateSpecWithOptions): Promise<SpecDefinition> {
+export async function createSpec(
+  data: CreateSpecWithOptions,
+): Promise<SpecDefinition> {
   return apiFetch<SpecDefinition>(`${BASE}/specs`, {
     method: "POST",
     body: JSON.stringify(data),

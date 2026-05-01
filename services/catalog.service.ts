@@ -18,7 +18,7 @@ import {
 } from "@/types";
 import { serializeProducts } from "@/lib/adminSerializers";
 import { buildDynamicCatalogResult } from "@/lib/dynamicCatalogFilters";
-
+import { ServiceError } from "@/lib/errors";
 export class CatalogService {
   // =====================================================
   // PRODUCT
@@ -493,20 +493,6 @@ export class CatalogService {
       orderBy: { sortOrder: "asc" },
       include: childrenInclude(4), // 4 more levels below root = 5 total
     });
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Custom Error for service‐layer validation / not‐found
-// ─────────────────────────────────────────────────────────────────────────────
-
-export class ServiceError extends Error {
-  constructor(
-    message: string,
-    public statusCode: number = 400,
-  ) {
-    super(message);
-    this.name = "ServiceError";
   }
 }
 

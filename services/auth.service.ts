@@ -1,8 +1,8 @@
 // lib/services/auth.service.ts
 
+import { ServiceError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { ServiceError } from "./catalog.service";
 
 export async function loginUser(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });

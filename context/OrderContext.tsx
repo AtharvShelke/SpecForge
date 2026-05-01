@@ -23,20 +23,9 @@ import {
   ReactNode,
 } from "react";
 import { Order, OrderLog, OrderStatus, CreateOrder } from "../types";
+import { apiFetch, useLoadingCounter, refreshAndSyncDetail } from "@/lib/helpers";
+import { ORDER_VALID_TRANSITIONS } from "@/lib/orderTransitions";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Status Transition Map (client-side mirror of service DAG)
-// ─────────────────────────────────────────────────────────────────────────────
-
-const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  [OrderStatus.PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
-  [OrderStatus.PAID]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
-  [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-  [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED, OrderStatus.RETURNED],
-  [OrderStatus.DELIVERED]: [OrderStatus.RETURNED],
-  [OrderStatus.CANCELLED]: [],
-  [OrderStatus.RETURNED]: [],
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Context Shape
@@ -86,41 +75,10 @@ interface OrderContextType {
   trackOrder: (orderId: string, contact: string) => Promise<Order>;
 
   loading: boolean;
+  error: Error | null;
 }
 
 const OrderContext = createContext<OrderContextType | null>(null);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Fetch Utility
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function fetchJSON<T = any>(
-  url: string,
-  options?: RequestInit,
-): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...options?.headers, "Content-Type": "application/json" },
-  });
-  if (!res.ok) {
-    let msg = `Request failed (${res.status})`;
-    try {
-      const raw = await res.text();
-      if (raw) {
-        try {
-          const errData = JSON.parse(raw);
-          msg = errData.error || errData.message || raw;
-        } catch {
-          msg = raw;
-        }
-      }
-    } catch {
-      // Keep default message if the body cannot be read.
-    }
-    throw new Error(msg);
-  }
-  return res.json();
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Provider
@@ -133,10 +91,13 @@ export const OrderProvider = ({
   children: ReactNode;
   autoLoad?: boolean;
 }) => {
-  const [loading, setLoading] = useState(false);
+  // start/stop are guaranteed stable by useLoadingCounter's internal useCallback([],
+  // so including them in dependency arrays is safe and prevents exhaustive-deps warnings.
+  const { loading, start, stop } = useLoadingCounter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedTimeline, setSelectedTimeline] = useState<OrderLog[]>([]);
+  const [error, setError] = useState<Error | null>(null);
 
   // ── O(1) Lookup Map ──────────────────────────────────────────────────
 
@@ -167,7 +128,7 @@ export const OrderProvider = ({
     (orderId: string): OrderStatus[] => {
       const order = orderById.get(orderId);
       if (!order) return [];
-      return VALID_TRANSITIONS[order.status] || [];
+      return ORDER_VALID_TRANSITIONS[order.status] || [];
     },
     [orderById],
   );
@@ -181,7 +142,8 @@ export const OrderProvider = ({
       page?: number;
       limit?: number;
     }) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
         const params = new URLSearchParams();
         if (filters?.status) params.set("status", filters.status);
@@ -190,7 +152,7 @@ export const OrderProvider = ({
         params.set("limit", String(filters?.limit ?? 25));
         const qs = params.toString();
         const url = qs ? `/api/orders?${qs}` : "/api/orders";
-        const data = await fetchJSON<Order[]>(url);
+        const data = await apiFetch<Order[]>(url);
         const normalizedData = data.map((o) => ({
           ...o,
           logs: o.logs || [],
@@ -200,17 +162,20 @@ export const OrderProvider = ({
           reservations: o.reservations || [],
         }));
         setOrders(normalizedData);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [],
   );
 
   const getOrderDetail = useCallback(async (id: string) => {
-    setLoading(true);
+    setError(null);
+    start();
     try {
-      const o = await fetchJSON<Order>(`/api/orders/${id}`);
+      const o = await apiFetch<Order>(`/api/orders/${id}`);
       const normalizedOrder = {
         ...o,
         logs: o.logs || [],
@@ -221,10 +186,12 @@ export const OrderProvider = ({
       };
       setSelectedOrder(normalizedOrder);
       setSelectedTimeline(normalizedOrder.logs);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      setLoading(false);
+      stop();
     }
-  }, []);
+  }, [start, stop]);
 
   const clearSelectedOrder = useCallback(() => {
     setSelectedOrder(null);
@@ -235,33 +202,39 @@ export const OrderProvider = ({
 
   const createOrder = useCallback(
     async (data: CreateOrder): Promise<Order> => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        const order = await fetchJSON<Order>("/api/orders", {
+        const order = await apiFetch<Order>("/api/orders", {
           method: "POST",
           body: JSON.stringify(data),
         });
         await refreshOrders();
         return order;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       } finally {
-        setLoading(false);
+        stop();
       }
     },
-    [refreshOrders],
+    [refreshOrders, start, stop],
   );
 
   const updateOrder = useCallback(
     async (id: string, data: Partial<Order> & { version: number }) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        await fetchJSON(`/api/orders/${id}`, {
+        await apiFetch(`/api/orders/${id}`, {
           method: "PATCH",
           body: JSON.stringify(data),
         });
-        await refreshOrders();
-        if (selectedOrder?.id === id) await getOrderDetail(id);
+        await refreshAndSyncDetail(id, refreshOrders, selectedOrder?.id, getOrderDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [refreshOrders, getOrderDetail, selectedOrder?.id],
@@ -269,17 +242,18 @@ export const OrderProvider = ({
 
   const updateOrderStatus = useCallback(
     async (id: string, status: OrderStatus, note?: string) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        await fetchJSON(`/api/orders/${id}/status`, {
+        await apiFetch(`/api/orders/${id}/status`, {
           method: "POST",
           body: JSON.stringify({ status, note }),
         });
-        await refreshOrders();
-        // Refresh detail if viewing this order
-        if (selectedOrder?.id === id) await getOrderDetail(id);
+        await refreshAndSyncDetail(id, refreshOrders, selectedOrder?.id, getOrderDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [refreshOrders, getOrderDetail, selectedOrder?.id],
@@ -287,16 +261,18 @@ export const OrderProvider = ({
 
   const cancelOrder = useCallback(
     async (id: string, note?: string) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        await fetchJSON(`/api/orders/${id}/cancel`, {
+        await apiFetch(`/api/orders/${id}/cancel`, {
           method: "POST",
           body: JSON.stringify({ note }),
         });
-        await refreshOrders();
-        if (selectedOrder?.id === id) await getOrderDetail(id);
+        await refreshAndSyncDetail(id, refreshOrders, selectedOrder?.id, getOrderDetail);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [refreshOrders, getOrderDetail, selectedOrder?.id],
@@ -304,15 +280,19 @@ export const OrderProvider = ({
 
   const trackOrder = useCallback(
     async (orderId: string, contact: string): Promise<Order> => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        const order = await fetchJSON<Order>("/api/storefront/track-order", {
+        const order = await apiFetch<Order>("/api/storefront/track-order", {
           method: "POST",
           body: JSON.stringify({ orderId, contact }),
         });
         return order;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [],
@@ -322,9 +302,8 @@ export const OrderProvider = ({
 
   useEffect(() => {
     if (!autoLoad) return;
-    refreshOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoLoad]);
+    void Promise.allSettled([refreshOrders()]);
+  }, [autoLoad, refreshOrders]);
 
   // ── Provider Value ───────────────────────────────────────────────────
 
@@ -345,6 +324,7 @@ export const OrderProvider = ({
       cancelOrder,
       trackOrder,
       loading,
+      error,
     }),
     [
       orders,
@@ -362,6 +342,7 @@ export const OrderProvider = ({
       cancelOrder,
       trackOrder,
       loading,
+      error,
     ],
   );
 

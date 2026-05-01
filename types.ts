@@ -45,7 +45,14 @@ export enum InvoiceType {
   STANDARD = "STANDARD",
   CREDIT_NOTE = "CREDIT_NOTE",
 }
-
+export interface UpdateInvoicePayload {
+  status?: InvoiceStatus;
+  dueDate?: string;
+  notes?: string;
+  discountPct?: number;
+  shipping?: number;
+  actor?: string;
+}
 export enum PaymentMethodType {
   RAZORPAY = "RAZORPAY",
   UPI = "UPI",
@@ -1292,3 +1299,19 @@ export type HomepageCategory = {
   sortOrder: number;
   subCategories: Array<{ id: string; name: string }>;
 };
+
+export interface BillingProfilePayload {
+  companyName: string;
+  legalName?: string;
+  email: string;
+  phone?: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  gstin?: string;
+  logoUrl?: string;
+}
+

@@ -3,7 +3,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { ServiceError } from "./catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BUILDS

@@ -30,6 +30,7 @@ import {
   CompatibilityCheck,
   CompatibilitySeverity,
 } from "../types";
+import { apiFetch, useLoadingCounter } from "@/lib/helpers";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -131,38 +132,10 @@ interface BuildContextType {
   generateShareLink: () => string | null;
 
   loading: boolean;
+  error: Error | null;
 }
 
 const BuildContext = createContext<BuildContextType | null>(null);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Fetch Utility
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function fetchJSON<T = unknown>(
-  url: string,
-  options?: RequestInit,
-): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...options?.headers, "Content-Type": "application/json" },
-  });
-  if (!res.ok) {
-    let msg = "Request failed";
-    try {
-      const errData = await res.json();
-      msg = errData.error || errData.message || msg;
-    } catch {
-      try {
-        msg = await res.text();
-      } catch {}
-    }
-    throw new Error(msg);
-  }
-  // Handle 204 No Content
-  if (res.status === 204) return undefined as unknown as T;
-  return res.json();
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Provider
@@ -180,8 +153,9 @@ export const BuildProvider = ({
   const [buildGuides, setBuildGuides] = useState<BuildGuide[]>([]);
   const [compatibilityResult, setCompatibilityResult] =
     useState<CompatibilityResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { loading, start, stop } = useLoadingCounter();
   const [isBuildMode, setIsBuildMode] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   // ── O(1) Slot Lookup ────────────────────────────────────────────────
 
@@ -243,16 +217,19 @@ export const BuildProvider = ({
   // ── Build CRUD ──────────────────────────────────────────────────────
 
   const createBuild = useCallback(async (name?: string) => {
-    setLoading(true);
+    setError(null);
+    start();
     try {
-      const data = await fetchJSON<Build>("/api/builds", {
+      const data = await apiFetch<Build>("/api/builds", {
         method: "POST",
         body: JSON.stringify({ name }),
       });
       setBuild(data);
       setCompatibilityResult(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      setLoading(false);
+      stop();
     }
   }, []);
 
@@ -263,97 +240,136 @@ export const BuildProvider = ({
       category?: string;
       description?: string;
     }) => {
-      const items = payload.items
-        .filter((item) => item.selectedVariant?.id)
-        .map((item) => ({
-          variantId: item.selectedVariant!.id,
-          quantity: item.quantity,
-        }));
+      setError(null);
+      start();
+      try {
+        const items = payload.items
+          .filter((item) => item.selectedVariant?.id)
+          .map((item) => ({
+            variantId: item.selectedVariant!.id,
+            quantity: item.quantity,
+          }));
 
-      const created = await fetchJSON<BuildGuide>("/api/build-guides", {
-        method: "POST",
-        body: JSON.stringify({
-          title: payload.title,
-          category: payload.category,
-          description: payload.description,
-          total: payload.items.reduce(
-            (sum, item) =>
-              sum + (item.selectedVariant?.price || 0) * item.quantity,
-            0,
-          ),
-          items,
-        }),
-      });
+        const created = await apiFetch<BuildGuide>("/api/build-guides", {
+          method: "POST",
+          body: JSON.stringify({
+            title: payload.title,
+            category: payload.category,
+            description: payload.description,
+            total: payload.items.reduce(
+              (sum, item) =>
+                sum + (item.selectedVariant?.price || 0) * item.quantity,
+              0,
+            ),
+            items,
+          }),
+        });
 
-      setBuildGuides((prev) => [created, ...prev]);
-      return created;
+        setBuildGuides((prev) => [created, ...prev]);
+        return created;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
     },
     [],
   );
 
   const loadBuild = useCallback(async (id: string) => {
-    setLoading(true);
+    setError(null);
+    start();
     try {
-      const data = await fetchJSON<Build>(`/api/builds/${id}`);
+      const data = await apiFetch<Build>(`/api/builds/${id}`);
       setBuild(data);
       setCompatibilityResult(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      setLoading(false);
+      stop();
     }
   }, []);
 
   const refreshBuilds = useCallback(async () => {
-    setLoading(true);
+    setError(null);
+    start();
     try {
-      const data = await fetchJSON<Build[]>("/api/builds");
+      const data = await apiFetch<Build[]>("/api/builds");
       setBuilds(data);
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
       // Silently handle — builds list may not exist yet
     } finally {
-      setLoading(false);
+      stop();
     }
   }, []);
 
   const refreshBuildGuides = useCallback(async () => {
+    setError(null);
+    start();
     try {
-      const data = await fetchJSON<BuildGuide[]>("/api/build-guides");
+      const data = await apiFetch<BuildGuide[]>("/api/build-guides");
       setBuildGuides(data);
     } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
       console.error("Failed to fetch build guides", err);
+    } finally {
+      stop();
     }
   }, []);
 
   const updateBuildGuide = useCallback(
     async (id: string, data: Partial<BuildGuide>) => {
-      const updated = await fetchJSON<BuildGuide>(`/api/build-guides/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
-      setBuildGuides((prev) =>
-        prev.map((guide) => (guide.id === id ? updated : guide)),
-      );
-      return updated;
+      setError(null);
+      start();
+      try {
+        const updated = await apiFetch<BuildGuide>(`/api/build-guides/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(data),
+        });
+        setBuildGuides((prev) =>
+          prev.map((guide) => (guide.id === id ? updated : guide)),
+        );
+        return updated;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
     },
     [],
   );
 
   const deleteBuildGuide = useCallback(async (id: string) => {
-    await fetchJSON(`/api/build-guides/${id}`, { method: "DELETE" });
-    setBuildGuides((prev) => prev.filter((guide) => guide.id !== id));
+    setError(null);
+    start();
+    try {
+      await apiFetch(`/api/build-guides/${id}`, { method: "DELETE" });
+      setBuildGuides((prev) => prev.filter((guide) => guide.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      stop();
+    }
   }, []);
 
   const deleteBuild = useCallback(
     async (id: string) => {
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        await fetchJSON(`/api/builds/${id}`, { method: "DELETE" });
+        await apiFetch(`/api/builds/${id}`, { method: "DELETE" });
         if (build?.id === id) {
           setBuild(null);
           setCompatibilityResult(null);
         }
         setBuilds((prev) => prev.filter((b) => b.id !== id));
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [build?.id],
@@ -364,19 +380,22 @@ export const BuildProvider = ({
   const addItem = useCallback(
     async (variantId: string, slotId: string) => {
       if (!build) return;
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        await fetchJSON(`/api/builds/${build.id}/items`, {
+        await apiFetch(`/api/builds/${build.id}/items`, {
           method: "POST",
           body: JSON.stringify({ variantId, slotId }),
         });
         // Reload build to get fresh state with variant details
-        const refreshed = await fetchJSON<Build>(`/api/builds/${build.id}`);
+        const refreshed = await apiFetch<Build>(`/api/builds/${build.id}`);
         setBuild(refreshed);
         // Invalidate previous compatibility result
         setCompatibilityResult(null);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [build],
@@ -385,18 +404,21 @@ export const BuildProvider = ({
   const removeItem = useCallback(
     async (itemId: string) => {
       if (!build) return;
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        await fetchJSON(`/api/builds/${build.id}/items/${itemId}`, {
+        await apiFetch(`/api/builds/${build.id}/items/${itemId}`, {
           method: "DELETE",
         });
         // Reload build
-        const refreshed = await fetchJSON<Build>(`/api/builds/${build.id}`);
+        const refreshed = await apiFetch<Build>(`/api/builds/${build.id}`);
         setBuild(refreshed);
         // Invalidate previous compatibility result
         setCompatibilityResult(null);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        stop();
       }
     },
     [build],
@@ -407,9 +429,10 @@ export const BuildProvider = ({
   const checkCompatibility =
     useCallback(async (): Promise<CompatibilityResult | null> => {
       if (!build) return null;
-      setLoading(true);
+      setError(null);
+      start();
       try {
-        const result = await fetchJSON<CompatibilityResult>(
+        const result = await apiFetch<CompatibilityResult>(
           "/api/compatibility/check",
           {
             method: "POST",
@@ -418,8 +441,11 @@ export const BuildProvider = ({
         );
         setCompatibilityResult(result);
         return result;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        return null;
       } finally {
-        setLoading(false);
+        stop();
       }
     }, [build]);
 
@@ -427,7 +453,7 @@ export const BuildProvider = ({
 
   useEffect(() => {
     if (!autoLoad) return;
-    refreshBuildGuides();
+    void Promise.allSettled([refreshBuildGuides()]);
   }, [autoLoad, refreshBuildGuides]);
 
   // ── Provider Value ──────────────────────────────────────────────────
@@ -458,6 +484,7 @@ export const BuildProvider = ({
       saveCurrentBuild,
       generateShareLink,
       loading,
+      error,
     }),
     [
       build,
@@ -484,6 +511,7 @@ export const BuildProvider = ({
       saveCurrentBuild,
       generateShareLink,
       loading,
+      error,
     ],
   );
 

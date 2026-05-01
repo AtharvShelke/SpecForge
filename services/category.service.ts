@@ -1,4 +1,5 @@
 import { CategoryHierarchy } from "@/types";
+import { apiFetch } from "@/lib/helpers";
 
 const API_BASE = "/api/catalog/categories/hierarchy";
 
@@ -12,16 +13,7 @@ const API_BASE = "/api/catalog/categories/hierarchy";
  * Falls back to client-side sort as a safety net.
  */
 export async function getCategoryHierarchy(): Promise<CategoryHierarchy[]> {
-  const res = await fetch(API_BASE, {
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(body || `Failed to fetch category hierarchy (${res.status})`);
-  }
-
-  const data: CategoryHierarchy[] = await res.json();
+  const data = await apiFetch<CategoryHierarchy[]>(API_BASE);
 
   // Safety-net: sort by sortOrder at every level (API should already return sorted)
   return sortHierarchy(data);

@@ -1,3 +1,4 @@
+// Server-only: uses Prisma. Do not import in client components.
 /**
  * billing.service.ts — Enterprise-grade billing logic.
  *
@@ -7,8 +8,9 @@
  * Every mutation logs an InvoiceAuditEvent for traceability.
  */
 
+import { ServiceError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { ServiceError } from "./catalog.service";
+import { BillingProfilePayload, UpdateInvoicePayload } from "@/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALID STATUS TRANSITIONS
@@ -28,10 +30,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 function assertTransition(from: string, to: string) {
   const allowed = VALID_TRANSITIONS[from];
   if (!allowed || !allowed.includes(to)) {
-    throw new ServiceError(
-      `Invalid invoice transition: ${from} → ${to}`,
-      400
-    );
+    throw new ServiceError(`Invalid invoice transition: ${from} → ${to}`, 400);
   }
 }
 
@@ -52,7 +51,11 @@ export async function listInvoices(filters?: {
   return prisma.invoice.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: { customer: true, lineItems: true, audit: { orderBy: { createdAt: "desc" } } },
+    include: {
+      customer: true,
+      lineItems: true,
+      audit: { orderBy: { createdAt: "desc" } },
+    },
   });
 }
 
@@ -110,14 +113,15 @@ export async function createInvoice(data: {
     hsnCode?: string;
   }>;
 }) {
-  if (!data.customerId)
-    throw new ServiceError("Customer ID is required");
-  if (!data.dueDate)
-    throw new ServiceError("Due Date is required");
+  if (!data.customerId) throw new ServiceError("Customer ID is required");
+  if (!data.dueDate) throw new ServiceError("Due Date is required");
 
   return prisma.$transaction(async (tx) => {
     let resolvedLineItems = data.lineItems;
-    if ((!resolvedLineItems || resolvedLineItems.length === 0) && data.orderId) {
+    if (
+      (!resolvedLineItems || resolvedLineItems.length === 0) &&
+      data.orderId
+    ) {
       const order = await tx.order.findUnique({
         where: { id: data.orderId },
         include: {
@@ -132,12 +136,17 @@ export async function createInvoice(data: {
       }
 
       if (order.customerId !== data.customerId) {
-        throw new ServiceError("Invoice customer does not match the linked order", 400);
+        throw new ServiceError(
+          "Invoice customer does not match the linked order",
+          400,
+        );
       }
 
       resolvedLineItems = (order.items as any[]).map((item) => ({
         name: item.name,
-        description: [item.category, item.lineReference].filter(Boolean).join(" · "),
+        description: [item.category, item.lineReference]
+          .filter(Boolean)
+          .join(" · "),
         orderItemId: item.id,
         inventoryItemId: item.inventoryItemId ?? undefined,
         lineReference: item.lineReference,
@@ -166,21 +175,19 @@ export async function createInvoice(data: {
     if (resolvedLineItems && resolvedLineItems.length > 0 && !data.subtotal) {
       subtotal = resolvedLineItems.reduce(
         (sum, li) => sum + li.quantity * li.unitPrice,
-        0
+        0,
       );
       taxTotal = resolvedLineItems.reduce(
         (sum, li) =>
-          sum +
-          li.quantity * li.unitPrice * ((li.taxRatePct ?? 18) / 100),
-        0
+          sum + li.quantity * li.unitPrice * ((li.taxRatePct ?? 18) / 100),
+        0,
       );
     }
 
     const shipping = data.shipping ?? 0;
     const discountPct = data.discountPct ?? 0;
     const discountAmount = subtotal * (discountPct / 100);
-    const total =
-      data.total ?? subtotal + taxTotal + shipping - discountAmount;
+    const total = data.total ?? subtotal + taxTotal + shipping - discountAmount;
     const amountPaid = data.amountPaid ?? 0;
     const amountDue = data.amountDue ?? total - amountPaid;
 
@@ -245,21 +252,16 @@ export async function createInvoice(data: {
 // UPDATE
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function updateInvoice(
-  id: string,
-  data: Record<string, any>
-) {
+export async function updateInvoice(id: string, data: UpdateInvoicePayload) {
   const invoice = await prisma.invoice.findUnique({ where: { id } });
   if (!invoice) throw new ServiceError("Invoice not found", 404);
 
-  const actor = data.actor ?? "System";
+  
 
   return prisma.$transaction(async (tx) => {
-    const updateData = { ...data };
-    delete updateData.actor;
-
+    const { actor = "System", ...updateData } = data;
     if (updateData.dueDate) {
-      updateData.dueDate = new Date(updateData.dueDate);
+      (updateData as any).dueDate = new Date(updateData.dueDate);
     }
 
     const updated = await tx.invoice.update({
@@ -287,7 +289,7 @@ export async function updateInvoice(
 
 export async function payInvoice(
   id: string,
-  data: { amount?: number; note?: string; actor?: string }
+  data: { amount?: number; note?: string; actor?: string },
 ) {
   const invoice = await prisma.invoice.findUnique({ where: { id } });
   if (!invoice) throw new ServiceError("Invoice not found", 404);
@@ -348,7 +350,7 @@ export async function payInvoice(
 
 export async function sendInvoice(
   id: string,
-  data: { note?: string; actor?: string }
+  data: { note?: string; actor?: string },
 ) {
   const invoice = await prisma.invoice.findUnique({ where: { id } });
   if (!invoice) throw new ServiceError("Invoice not found", 404);
@@ -376,8 +378,7 @@ export async function sendInvoice(
         type: "SENT",
         actor,
         message:
-          data.note ||
-          `Invoice sent to customer. Status → ${nextStatus}`,
+          data.note || `Invoice sent to customer. Status → ${nextStatus}`,
       },
     });
 
@@ -391,7 +392,7 @@ export async function sendInvoice(
 
 export async function voidInvoice(
   id: string,
-  data: { reason?: string; actor?: string }
+  data: { reason?: string; actor?: string },
 ) {
   const invoice = await prisma.invoice.findUnique({ where: { id } });
   if (!invoice) throw new ServiceError("Invoice not found", 404);
@@ -412,8 +413,7 @@ export async function voidInvoice(
         invoiceId: id,
         type: "VOIDED",
         actor,
-        message:
-          data.reason || `Invoice voided by ${actor}`,
+        message: data.reason || `Invoice voided by ${actor}`,
       },
     });
 
@@ -427,7 +427,7 @@ export async function voidInvoice(
 
 export async function cancelInvoice(
   id: string,
-  data: { reason?: string; actor?: string }
+  data: { reason?: string; actor?: string },
 ) {
   const invoice = await prisma.invoice.findUnique({ where: { id } });
   if (!invoice) throw new ServiceError("Invoice not found", 404);
@@ -448,8 +448,7 @@ export async function cancelInvoice(
         invoiceId: id,
         type: "CANCELLED",
         actor,
-        message:
-          data.reason || `Invoice cancelled by ${actor}`,
+        message: data.reason || `Invoice cancelled by ${actor}`,
       },
     });
 
@@ -480,7 +479,7 @@ export async function createCreditNote(
       taxRatePct?: number;
       hsnCode?: string;
     }>;
-  }
+  },
 ) {
   const original = await prisma.invoice.findUnique({
     where: { id: originalInvoiceId },
@@ -488,7 +487,10 @@ export async function createCreditNote(
   });
   if (!original) throw new ServiceError("Original invoice not found", 404);
   if (original.status !== "PAID")
-    throw new ServiceError("Credit notes can only be issued against PAID invoices", 400);
+    throw new ServiceError(
+      "Credit notes can only be issued against PAID invoices",
+      400,
+    );
 
   const actor = data.actor ?? "System";
 
@@ -524,13 +526,12 @@ export async function createCreditNote(
     // 2. Compute credit totals
     const subtotal = creditLineItems.reduce(
       (sum, li) => sum + li.quantity * li.unitPrice,
-      0
+      0,
     );
     const taxTotal = creditLineItems.reduce(
       (sum, li) =>
-        sum +
-        li.quantity * li.unitPrice * ((li.taxRatePct ?? 18) / 100),
-      0
+        sum + li.quantity * li.unitPrice * ((li.taxRatePct ?? 18) / 100),
+      0,
     );
     const total = subtotal + taxTotal;
 
@@ -620,7 +621,7 @@ export async function getBillingProfile() {
   return prisma.billingProfile.findFirst();
 }
 
-export async function upsertBillingProfile(data: any) {
+export async function upsertBillingProfile(data: BillingProfilePayload) {
   const profile = await prisma.billingProfile.findFirst();
 
   if (profile) {

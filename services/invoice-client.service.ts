@@ -1,3 +1,5 @@
+// Client-only: uses fetch. Safe to import in client components and contexts.
+import { apiFetch } from "@/lib/helpers";
 import {
   Invoice,
   CreateInvoice,
@@ -5,29 +7,6 @@ import {
   InvoiceActionInput,
   CreateCreditNoteInput,
 } from "../types";
-
-async function fetchJSON<T = any>(
-  url: string,
-  options?: RequestInit,
-): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...options?.headers, "Content-Type": "application/json" },
-  });
-  if (!res.ok) {
-    let msg = "Request failed";
-    try {
-      const errData = await res.json();
-      msg = errData.error || errData.message || (await res.text());
-    } catch {
-      try {
-        msg = await res.text();
-      } catch {}
-    }
-    throw new Error(msg);
-  }
-  return res.json();
-}
 
 /**
  * Fetch all invoices with optional filtering.
@@ -43,14 +22,14 @@ export async function getInvoices(filters?: {
   if (filters?.orderId) params.set("orderId", filters.orderId);
   const qs = params.toString();
   const url = qs ? `/api/billing/invoices?${qs}` : "/api/billing/invoices";
-  return fetchJSON<Invoice[]>(url);
+  return apiFetch<Invoice[]>(url);
 }
 
 /**
  * Fetch a single invoice by ID, ensuring lineItems and audit are present.
  */
 export async function getInvoice(id: string): Promise<Invoice> {
-  const invoice = await fetchJSON<Invoice>(`/api/billing/invoices/${id}`);
+  const invoice = await apiFetch<Invoice>(`/api/billing/invoices/${id}`);
   if (!invoice.lineItems) invoice.lineItems = [];
   if (!invoice.audit) invoice.audit = [];
   return invoice;
@@ -60,7 +39,7 @@ export async function getInvoice(id: string): Promise<Invoice> {
  * Create a new invoice.
  */
 export async function createInvoice(data: CreateInvoice): Promise<Invoice> {
-  return fetchJSON<Invoice>("/api/billing/invoices", {
+  return apiFetch<Invoice>("/api/billing/invoices", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -73,7 +52,7 @@ export async function payInvoice(
   id: string,
   data: PayInvoiceInput,
 ): Promise<Invoice> {
-  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/pay`, {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/pay`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -86,7 +65,7 @@ export async function sendInvoice(
   id: string,
   data: InvoiceActionInput,
 ): Promise<Invoice> {
-  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/send`, {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/send`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -99,7 +78,7 @@ export async function cancelInvoice(
   id: string,
   data: InvoiceActionInput,
 ): Promise<Invoice> {
-  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/cancel`, {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/cancel`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -112,7 +91,7 @@ export async function voidInvoice(
   id: string,
   data: InvoiceActionInput,
 ): Promise<Invoice> {
-  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/void`, {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/void`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -125,7 +104,7 @@ export async function createCreditNote(
   id: string,
   data: CreateCreditNoteInput,
 ): Promise<Invoice> {
-  return fetchJSON<Invoice>(`/api/billing/invoices/${id}/credit-note`, {
+  return apiFetch<Invoice>(`/api/billing/invoices/${id}/credit-note`, {
     method: "POST",
     body: JSON.stringify(data),
   });

@@ -3,7 +3,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { ServiceError } from "./catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function listCustomers(filters?: { email?: string }) {
   const where: any = {};
@@ -61,13 +61,12 @@ export async function updateCustomer(
     state?: string;
     postalCode?: string;
     country?: string;
-  }
+  },
 ) {
   try {
     return await prisma.customer.update({ where: { id }, data });
   } catch (err: any) {
-    if (err.code === "P2025")
-      throw new ServiceError("Customer not found", 404);
+    if (err.code === "P2025") throw new ServiceError("Customer not found", 404);
     throw err;
   }
 }
