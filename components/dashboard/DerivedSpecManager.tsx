@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
@@ -21,7 +19,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -30,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus,
@@ -79,12 +75,9 @@ const DerivedSpecManager: React.FC = () => {
     formula: "",
   });
 
-  // Fetch data
   const fetchData = async () => {
     setLoading(true);
     try {
-      // For now, we'll mock the data since the API endpoints don't exist yet
-      // In a real implementation, you would fetch from /api/compatibility/derived-specs
       const mockDerivedSpecs: DerivedSpec[] = [
         {
           id: "1",
@@ -136,7 +129,6 @@ const DerivedSpecManager: React.FC = () => {
     fetchData();
   }, []);
 
-  // Form handling
   const resetForm = () => {
     setFormData({
       name: "",
@@ -165,9 +157,7 @@ const DerivedSpecManager: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      // Mock save operation
       if (editingSpec) {
-        // Update existing spec
         setDerivedSpecs(prev =>
           prev.map(spec =>
             spec.id === editingSpec.id
@@ -176,7 +166,6 @@ const DerivedSpecManager: React.FC = () => {
           )
         );
       } else {
-        // Create new spec
         const newSpec: DerivedSpec = {
           id: Date.now().toString(),
           ...formData,
@@ -185,7 +174,6 @@ const DerivedSpecManager: React.FC = () => {
         };
         setDerivedSpecs(prev => [...prev, newSpec]);
       }
-      
       setIsDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -195,9 +183,7 @@ const DerivedSpecManager: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this derived spec?")) return;
-    
     try {
-      // Mock delete operation
       setDerivedSpecs(prev => prev.filter(spec => spec.id !== id));
     } catch (error) {
       console.error("Failed to delete derived spec:", error);
@@ -205,147 +191,138 @@ const DerivedSpecManager: React.FC = () => {
   };
 
   const getFormulaPreview = (formula: string) => {
-    // Simple preview of the formula
     if (!formula) return "No formula";
-    
-    // This would be more sophisticated in a real implementation
     return formula;
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold">Derived Specifications</h2>
-          <p className="text-muted-foreground">
-            Define computed specifications that aggregate values from multiple components
+          <h2 className="text-xl font-semibold text-slate-900">Derived Specifications</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Define computed specifications that aggregate values from multiple components.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={fetchData} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Derived Spec
-          </Button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchData}
+            className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
+            onClick={handleCreate}
+            className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+          >
+            <Plus size={14} />
+            <span className="hidden sm:inline">New Spec</span>
+            <span className="sm:hidden">Add</span>
+          </button>
         </div>
       </div>
 
-      {/* Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
+      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-slate-200 bg-slate-50 p-5">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <Calculator size={16} className="text-slate-500" />
             About Derived Specs
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <p>
-              Derived specifications allow you to compute values from multiple components, such as:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li><strong>Total TDP:</strong> SUM(CPU.TDP, GPU.TDP)</li>
-              <li><strong>PSU Headroom:</strong> SUBTRACT(PSU.Wattage, Total_TDP)</li>
-              <li><strong>Total RAM:</strong> SUM(RAM.Capacity)</li>
-              <li><strong>Storage Space:</strong> SUM(STORAGE.Capacity)</li>
+          </h3>
+          <div className="mt-3 text-sm text-slate-600">
+            <p className="mb-2">Derived specifications allow you to compute values from multiple components, such as:</p>
+            <ul className="list-inside list-disc space-y-1 text-slate-500 ml-1">
+              <li><strong className="text-slate-700 font-medium">Total TDP:</strong> <span className="font-mono text-xs">SUM(CPU.TDP, GPU.TDP)</span></li>
+              <li><strong className="text-slate-700 font-medium">PSU Headroom:</strong> <span className="font-mono text-xs">SUBTRACT(PSU.Wattage, Total_TDP)</span></li>
+              <li><strong className="text-slate-700 font-medium">Total RAM:</strong> <span className="font-mono text-xs">SUM(RAM.Capacity)</span></li>
             </ul>
-            <p>
-              These computed values can then be used in GLOBAL compatibility rules.
-            </p>
+            <p className="mt-3">These computed values can then be used in GLOBAL compatibility rules.</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Derived Specs Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Derived Specifications</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <div className="bg-white">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin" />
-              <span className="ml-2">Loading derived specs...</span>
+            <div className="flex items-center justify-center py-12 text-slate-500">
+              <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+              <span className="text-sm">Loading derived specs...</span>
             </div>
           ) : derivedSpecs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="py-16 text-center text-sm text-slate-500">
               No derived specifications found. Create your first derived spec to get started.
             </div>
           ) : (
-            <ScrollArea className="h-[400px] rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Formula</TableHead>
-                    <TableHead>Result Spec</TableHead>
-                    <TableHead>Updated</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+            <ScrollArea className="h-[400px] w-full">
+              <Table className="w-full text-left text-sm text-slate-600">
+                <TableHeader className="bg-slate-50/50 text-xs text-slate-500">
+                  <TableRow className="border-b border-slate-200">
+                    <TableHead className="px-5 py-3 font-medium">Name</TableHead>
+                    <TableHead className="px-5 py-3 font-medium">Formula</TableHead>
+                    <TableHead className="px-5 py-3 font-medium">Result Spec</TableHead>
+                    <TableHead className="px-5 py-3 font-medium">Updated</TableHead>
+                    <TableHead className="px-5 py-3 text-right font-medium">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="divide-y divide-slate-100">
                   {derivedSpecs.map((spec) => (
-                    <TableRow key={spec.id}>
-                      <TableCell>
+                    <TableRow key={spec.id} className="transition-colors hover:bg-slate-50/50 border-0">
+                      <TableCell className="px-5 py-4">
                         <div>
-                          <div className="font-medium">{spec.name}</div>
+                          <div className="font-medium text-slate-900">{spec.name}</div>
                           {spec.description && (
-                            <div className="text-sm text-muted-foreground">
-                              {spec.description}
-                            </div>
+                            <div className="mt-0.5 text-xs text-slate-500">{spec.description}</div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-5 py-4">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono text-xs">
+                          <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600">
                             {getFormulaPreview(spec.formula)}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          </span>
+                          <button
                             onClick={() => navigator.clipboard.writeText(spec.formula)}
+                            className="p-1 text-slate-400 hover:text-slate-900 transition-colors"
+                            title="Copy formula"
                           >
-                            <Copy className="h-3 w-3" />
-                          </Button>
+                            <Copy size={14} />
+                          </button>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
+                      <TableCell className="px-5 py-4">
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                           {spec.resultSpec?.name || spec.resultSpecId}
-                        </Badge>
+                        </span>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="px-5 py-4 text-xs text-slate-500">
                         {formatDate(spec.updatedAt)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="px-5 py-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                            <button className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+                              <MoreHorizontal size={14} />
+                            </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(spec)}>
-                              <Edit className="mr-2 h-4 w-4" />
+                          <DropdownMenuContent align="end" className="rounded-md border-slate-200">
+                            <DropdownMenuItem onClick={() => handleEdit(spec)} className="text-sm cursor-pointer">
+                              <Edit className="mr-2 h-4 w-4 text-slate-400" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Copy className="mr-2 h-4 w-4" />
+                            <DropdownMenuItem className="text-sm cursor-pointer" onClick={() => navigator.clipboard.writeText(spec.formula)}>
+                              <Copy className="mr-2 h-4 w-4 text-slate-400" />
                               Copy Formula
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem
                               onClick={() => handleDelete(spec.id)}
-                              className="text-destructive"
+                              className="text-sm text-rose-600 cursor-pointer focus:bg-rose-50 focus:text-rose-700"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete
@@ -359,54 +336,52 @@ const DerivedSpecManager: React.FC = () => {
               </Table>
             </ScrollArea>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-xl flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+          <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-5">
+            <DialogTitle className="text-lg font-semibold text-slate-900">
               {editingSpec ? "Edit Derived Specification" : "Create Derived Specification"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-slate-500">
               Define a computed specification that aggregates values from multiple components.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Name</Label>
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700">Name</label>
               <Input
-                id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Total TDP"
+                className="h-10 rounded-md border-slate-200 text-sm"
                 required
               />
             </div>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700">Description</label>
               <Textarea
-                id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Optional description of what this spec computes"
                 rows={2}
+                className="resize-none rounded-md border-slate-200 text-sm"
               />
             </div>
 
-            <div>
-              <Label htmlFor="resultSpecId">Result Specification</Label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700">Result Specification</label>
               <select
-                id="resultSpecId"
                 value={formData.resultSpecId}
                 onChange={(e) => setFormData(prev => ({ ...prev, resultSpecId: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
                 required
               >
-                <option value="">Select a specification</option>
+                <option value="" disabled>Select a specification</option>
                 {specs.map((spec) => (
                   <option key={spec.id} value={spec.id}>
                     {spec.name}
@@ -415,29 +390,28 @@ const DerivedSpecManager: React.FC = () => {
               </select>
             </div>
 
-            <div>
-              <Label htmlFor="formula">Formula</Label>
+            <div className="space-y-1.5 rounded-md border border-slate-200 bg-slate-50 p-4">
+              <label className="text-xs font-medium text-slate-700">Formula</label>
               <Textarea
-                id="formula"
                 value={formData.formula}
                 onChange={(e) => setFormData(prev => ({ ...prev, formula: e.target.value }))}
                 placeholder="e.g., SUM(CPU.TDP, GPU.TDP)"
                 rows={3}
-                className="font-mono text-sm"
+                className="font-mono text-xs rounded-md border-slate-200 bg-white"
                 required
               />
-              <p className="text-sm text-muted-foreground mt-1">
-                Available functions: SUM(), SUBTRACT(), MULTIPLY(), DIVIDE()
+              <p className="text-xs text-slate-500 mt-2">
+                Available functions: <span className="font-medium text-slate-700 font-mono">SUM()</span>, <span className="font-medium text-slate-700 font-mono">SUBTRACT()</span>, <span className="font-medium text-slate-700 font-mono">MULTIPLY()</span>, <span className="font-medium text-slate-700 font-mono">DIVIDE()</span>
               </p>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!formData.name || !formData.formula}>
-              {editingSpec ? "Update" : "Create"}
+            <Button size="sm" onClick={handleSave} disabled={!formData.name || !formData.formula} className="rounded-md bg-slate-900 text-white hover:bg-slate-800">
+              {editingSpec ? "Update Spec" : "Create Spec"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -5,6 +5,8 @@ import { Settings, Save, RotateCcw, Check, Plus, Trash2, Zap, DollarSign } from 
 import type { BuilderSettings } from "@/types";
 import { DEFAULT_BUILDER_SETTINGS } from "@/types";
 import { apiFetch } from "@/lib/helpers";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const POWER_MODES = [
   { value: "static", label: "Static", desc: "Fixed wattage per category" },
@@ -32,21 +34,23 @@ const Toggle = memo(
     checked: boolean;
     onChange: (v: boolean) => void;
   }) => (
-    <label className="flex items-start gap-3 p-3 rounded-xl border border-zinc-100 hover:border-zinc-200 transition-colors cursor-pointer">
+    <label className="flex cursor-pointer items-start gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100">
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`mt-0.5 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${checked ? "bg-indigo-600" : "bg-zinc-200"}`}
+        className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${checked ? "bg-slate-900" : "bg-slate-300"
+          }`}
       >
         <span
-          className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[18px]" : "translate-x-[3px]"}`}
+          className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[18px]" : "translate-x-[3px]"
+            }`}
         />
       </button>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-zinc-800">{label}</p>
-        <p className="text-xs text-zinc-400 mt-0.5">{desc}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-900">{label}</p>
+        <p className="mt-0.5 text-xs text-slate-500">{desc}</p>
       </div>
     </label>
   ),
@@ -64,7 +68,7 @@ const BuilderSettingsTab = memo(function BuilderSettingsTab() {
   useEffect(() => {
     apiFetch<{ settings: BuilderSettings }>("/api/admin/builder-config")
       .then((r) => setSettings({ ...DEFAULT_BUILDER_SETTINGS, ...r.settings }))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -138,317 +142,301 @@ const BuilderSettingsTab = memo(function BuilderSettingsTab() {
 
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-16 rounded-xl bg-zinc-100" />
+      <div className="space-y-4 animate-pulse">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-20 rounded-lg bg-slate-100" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings size={18} className="text-indigo-500" />
-          <h3 className="text-lg font-bold text-zinc-900">Builder Settings</h3>
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+            <Settings size={16} />
+          </div>
+          <h3 className="text-base font-semibold text-slate-900">Builder Settings</h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-500 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
+            className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw size={14} /> <span className="hidden sm:inline">Reset Defaults</span>
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
           >
             {saved ? (
               <>
-                <Check size={12} /> Saved
+                <Check size={14} /> Saved
               </>
             ) : (
               <>
-                <Save size={12} /> {saving ? "Saving…" : "Save"}
+                <Save size={14} /> {saving ? "Saving…" : "Save Settings"}
               </>
             )}
           </button>
         </div>
       </div>
 
-      <div className="grid gap-3">
-        <Toggle
-          label="Auto-Open Next Category"
-          desc="Automatically expand the next category when a component is selected"
-          checked={settings.autoOpenNextCategory}
-          onChange={(v) => update("autoOpenNextCategory", v)}
-        />
-        <Toggle
-          label="Enforce Compatibility"
-          desc="Block incompatible component selections"
-          checked={settings.enforceCompatibility}
-          onChange={(v) => update("enforceCompatibility", v)}
-        />
-        <Toggle
-          label="Show Warnings"
-          desc="Display compatibility warnings for borderline matches"
-          checked={settings.showWarnings}
-          onChange={(v) => update("showWarnings", v)}
-        />
-        <Toggle
-          label="Allow Incompatible Checkout"
-          desc="Let users proceed to checkout even with compatibility issues"
-          checked={settings.allowIncompatibleCheckout}
-          onChange={(v) => update("allowIncompatibleCheckout", v)}
-        />
-      </div>
-
-      <div>
-        <p className="text-sm font-semibold text-zinc-700 mb-2">
-          Power Calculation Mode
-        </p>
-        <div className="grid gap-2">
-          {POWER_MODES.map((mode) => (
-            <button
-              key={mode.value}
-              onClick={() => update("powerCalculationMode", mode.value)}
-              className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
-                settings.powerCalculationMode === mode.value
-                  ? "border-indigo-200 bg-indigo-50 ring-1 ring-indigo-200"
-                  : "border-zinc-100 hover:border-zinc-200"
-              }`}
-            >
-              <div
-                className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                  settings.powerCalculationMode === mode.value
-                    ? "border-indigo-600"
-                    : "border-zinc-300"
-                }`}
-              >
-                {settings.powerCalculationMode === mode.value && (
-                  <div className="w-2 h-2 rounded-full bg-indigo-600" />
-                )}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-zinc-800">
-                  {mode.label}
-                </p>
-                <p className="text-xs text-zinc-400">{mode.desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="text-sm font-semibold text-zinc-700 mb-3 flex items-center gap-2">
-          <Zap size={14} className="text-amber-500" />
-          Power Calculation Defaults
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-zinc-500 mb-1 block">Base Wattage (W)</label>
-            <input
-              type="number"
-              value={settings.powerDefaults.baseWattage}
-              onChange={(e) => updatePowerDefault("baseWattage", Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+      <div className="p-5 space-y-8">
+        {/* Core Behavior Toggles */}
+        <div>
+          <h4 className="mb-4 text-sm font-semibold text-slate-900">Core Behavior</h4>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Toggle
+              label="Auto-Open Next Category"
+              desc="Automatically expand the next category when a component is selected"
+              checked={settings.autoOpenNextCategory}
+              onChange={(v) => update("autoOpenNextCategory", v)}
             />
-          </div>
-          <div>
-            <label className="text-xs text-zinc-500 mb-1 block">CPU Default (W)</label>
-            <input
-              type="number"
-              value={settings.powerDefaults.cpuDefaultWattage}
-              onChange={(e) => updatePowerDefault("cpuDefaultWattage", Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            <Toggle
+              label="Enforce Compatibility"
+              desc="Block incompatible component selections"
+              checked={settings.enforceCompatibility}
+              onChange={(v) => update("enforceCompatibility", v)}
             />
-          </div>
-          <div>
-            <label className="text-xs text-zinc-500 mb-1 block">GPU Default (W)</label>
-            <input
-              type="number"
-              value={settings.powerDefaults.gpuDefaultWattage}
-              onChange={(e) => updatePowerDefault("gpuDefaultWattage", Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            <Toggle
+              label="Show Warnings"
+              desc="Display compatibility warnings for borderline matches"
+              checked={settings.showWarnings}
+              onChange={(v) => update("showWarnings", v)}
             />
-          </div>
-          <div>
-            <label className="text-xs text-zinc-500 mb-1 block">RAM per Stick (W)</label>
-            <input
-              type="number"
-              value={settings.powerDefaults.ramWattagePerStick}
-              onChange={(e) => updatePowerDefault("ramWattagePerStick", Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-            />
-          </div>
-          <div className="col-span-2">
-            <label className="text-xs text-zinc-500 mb-1 block">Storage per Drive (W)</label>
-            <input
-              type="number"
-              value={settings.powerDefaults.storageWattagePerDrive}
-              onChange={(e) => updatePowerDefault("storageWattagePerDrive", Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            <Toggle
+              label="Allow Incompatible Checkout"
+              desc="Let users proceed to checkout even with compatibility issues"
+              checked={settings.allowIncompatibleCheckout}
+              onChange={(v) => update("allowIncompatibleCheckout", v)}
             />
           </div>
         </div>
-      </div>
 
-      <div>
-        <p className="text-sm font-semibold text-zinc-700 mb-3">TDP Bands</p>
-        <div className="space-y-3">
-          <div className="p-3 rounded-xl border border-zinc-200">
-            <label className="text-xs text-zinc-500 mb-2 block">Low Power Band</label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">Max Wattage (W)</label>
-                <input
-                  type="number"
-                  value={settings.tdpBands.low.max}
-                  onChange={(e) => updateTdpBand("low", "max", Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                />
+        {/* Power Settings */}
+        <div className="border-t border-slate-200 pt-8">
+          <div className="mb-4 flex items-center gap-2">
+            <Zap size={16} className="text-slate-400" />
+            <h4 className="text-sm font-semibold text-slate-900">Power Settings</h4>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <p className="mb-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Calculation Mode</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {POWER_MODES.map((mode) => (
+                  <button
+                    key={mode.value}
+                    onClick={() => update("powerCalculationMode", mode.value)}
+                    className={cn(
+                      "flex flex-col items-start gap-1 rounded-md border p-4 text-left transition-colors",
+                      settings.powerCalculationMode === mode.value
+                        ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900"
+                        : "border-slate-200 bg-white hover:border-slate-300"
+                    )}
+                  >
+                    <p className={cn("text-sm font-medium", settings.powerCalculationMode === mode.value ? "text-slate-900" : "text-slate-700")}>
+                      {mode.label}
+                    </p>
+                    <p className="text-xs text-slate-500">{mode.desc}</p>
+                  </button>
+                ))}
               </div>
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">Label</label>
-                <input
+            </div>
+
+            <div>
+              <p className="mb-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Default Wattages (W)</p>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                {[
+                  { key: "baseWattage", label: "Base System" },
+                  { key: "cpuDefaultWattage", label: "CPU Default" },
+                  { key: "gpuDefaultWattage", label: "GPU Default" },
+                  { key: "ramWattagePerStick", label: "RAM (Per Stick)" },
+                  { key: "storageWattagePerDrive", label: "Storage (Per Drive)" },
+                ].map(({ key, label }) => (
+                  <div key={key}>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-700">{label}</label>
+                    <Input
+                      type="number"
+                      value={(settings.powerDefaults as any)[key]}
+                      onChange={(e) => updatePowerDefault(key as any, Number(e.target.value))}
+                      className="h-9 rounded-md border-slate-200 text-sm font-mono"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-xs font-medium text-slate-500 uppercase tracking-wider">TDP Bands</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-900">Low Power Band</p>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500">Max Wattage (W)</label>
+                    <Input
+                      type="number"
+                      value={settings.tdpBands.low.max}
+                      onChange={(e) => updateTdpBand("low", "max", Number(e.target.value))}
+                      className="h-8 rounded-md border-slate-200 text-xs font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500">Label</label>
+                    <Input
+                      type="text"
+                      value={settings.tdpBands.low.label}
+                      onChange={(e) => updateTdpBand("low", "label", e.target.value)}
+                      className="h-8 rounded-md border-slate-200 text-xs bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-900">Balanced Power Band</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-1 block text-xs text-slate-500">Min (W)</label>
+                      <Input
+                        type="number"
+                        value={settings.tdpBands.balanced.min}
+                        onChange={(e) => updateTdpBand("balanced", "min", Number(e.target.value))}
+                        className="h-8 rounded-md border-slate-200 text-xs font-mono bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-slate-500">Max (W)</label>
+                      <Input
+                        type="number"
+                        value={settings.tdpBands.balanced.max}
+                        onChange={(e) => updateTdpBand("balanced", "max", Number(e.target.value))}
+                        className="h-8 rounded-md border-slate-200 text-xs font-mono bg-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500">Label</label>
+                    <Input
+                      type="text"
+                      value={settings.tdpBands.balanced.label}
+                      onChange={(e) => updateTdpBand("balanced", "label", e.target.value)}
+                      className="h-8 rounded-md border-slate-200 text-xs bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-900">High Power Band</p>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500">Min Wattage (W)</label>
+                    <Input
+                      type="number"
+                      value={settings.tdpBands.high.min}
+                      onChange={(e) => updateTdpBand("high", "min", Number(e.target.value))}
+                      className="h-8 rounded-md border-slate-200 text-xs font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500">Label</label>
+                    <Input
+                      type="text"
+                      value={settings.tdpBands.high.label}
+                      onChange={(e) => updateTdpBand("high", "label", e.target.value)}
+                      className="h-8 rounded-md border-slate-200 text-xs bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Store Settings */}
+        <div className="border-t border-slate-200 pt-8">
+          <div className="mb-4 flex items-center gap-2">
+            <DollarSign size={16} className="text-slate-400" />
+            <h4 className="text-sm font-semibold text-slate-900">Store Settings</h4>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div>
+              <p className="mb-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Price Presets</p>
+              <div className="space-y-3">
+                {settings.pricePresets.map((preset, index) => (
+                  <div key={preset.id} className="flex items-center gap-3 rounded-md border border-slate-200 p-2">
+                    <Input
+                      type="text"
+                      value={preset.label}
+                      onChange={(e) => updatePricePreset(index, "label", e.target.value)}
+                      className="h-8 flex-1 rounded-md border-slate-200 text-xs"
+                      placeholder="Label"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400 font-mono">₹</span>
+                      <Input
+                        type="number"
+                        value={preset.min ?? ""}
+                        onChange={(e) => updatePricePreset(index, "min", e.target.value ? Number(e.target.value) : undefined)}
+                        className="h-8 w-24 rounded-md border-slate-200 text-xs font-mono"
+                        placeholder="Min"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400 font-mono">- ₹</span>
+                      <Input
+                        type="number"
+                        value={preset.max ?? ""}
+                        onChange={(e) => updatePricePreset(index, "max", e.target.value ? Number(e.target.value) : undefined)}
+                        className="h-8 w-24 rounded-md border-slate-200 text-xs font-mono"
+                        placeholder="Max"
+                      />
+                    </div>
+                    <button
+                      onClick={() => removePricePreset(index)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={addPricePreset}
+                  className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 bg-slate-50 text-sm font-medium text-slate-600 transition-colors hover:border-slate-400 hover:text-slate-900"
+                >
+                  <Plus size={14} /> Add Preset
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-xs font-medium text-slate-500 uppercase tracking-wider">UI Defaults</p>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Default Expanded Category</label>
+                <Input
                   type="text"
-                  value={settings.tdpBands.low.label}
-                  onChange={(e) => updateTdpBand("low", "label", e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="p-3 rounded-xl border border-zinc-200">
-            <label className="text-xs text-zinc-500 mb-2 block">Balanced Power Band</label>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">Min (W)</label>
-                <input
-                  type="number"
-                  value={settings.tdpBands.balanced.min}
-                  onChange={(e) => updateTdpBand("balanced", "min", Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">Max (W)</label>
-                <input
-                  type="number"
-                  value={settings.tdpBands.balanced.max}
-                  onChange={(e) => updateTdpBand("balanced", "max", Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">Label</label>
-                <input
-                  type="text"
-                  value={settings.tdpBands.balanced.label}
-                  onChange={(e) => updateTdpBand("balanced", "label", e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="p-3 rounded-xl border border-zinc-200">
-            <label className="text-xs text-zinc-500 mb-2 block">High Power Band</label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">Min Wattage (W)</label>
-                <input
-                  type="number"
-                  value={settings.tdpBands.high.min}
-                  onChange={(e) => updateTdpBand("high", "min", Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">Label</label>
-                <input
-                  type="text"
-                  value={settings.tdpBands.high.label}
-                  onChange={(e) => updateTdpBand("high", "label", e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                  value={settings.defaultExpandedCategory ?? ""}
+                  onChange={(e) => update("defaultExpandedCategory", e.target.value || null)}
+                  placeholder="e.g. Processor (leave empty for none)"
+                  className="h-10 rounded-md border-slate-200 text-sm"
                 />
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div>
-        <p className="text-sm font-semibold text-zinc-700 mb-3 flex items-center gap-2">
-          <DollarSign size={14} className="text-emerald-500" />
-          Price Presets
-        </p>
-        <div className="space-y-2">
-          {settings.pricePresets.map((preset, index) => (
-            <div key={preset.id} className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200">
-              <input
-                type="text"
-                value={preset.label}
-                onChange={(e) => updatePricePreset(index, "label", e.target.value)}
-                className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                placeholder="Label"
-              />
-              <input
-                type="number"
-                value={preset.min ?? ""}
-                onChange={(e) => updatePricePreset(index, "min", e.target.value ? Number(e.target.value) : undefined)}
-                className="w-24 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                placeholder="Min"
-              />
-              <input
-                type="number"
-                value={preset.max ?? ""}
-                onChange={(e) => updatePricePreset(index, "max", e.target.value ? Number(e.target.value) : undefined)}
-                className="w-24 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-                placeholder="Max"
-              />
-              <button
-                onClick={() => removePricePreset(index)}
-                className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={addPricePreset}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-zinc-600 border border-dashed border-zinc-300 rounded-lg hover:border-zinc-400 hover:bg-zinc-50 transition-colors"
-          >
-            <Plus size={14} /> Add Price Preset
-          </button>
-        </div>
+        {/* Developer Info */}
+        <details className="group border-t border-slate-200 pt-6">
+          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-slate-400 transition-colors hover:text-slate-600 focus:outline-none">
+            Developer Info: JSON Payload
+          </summary>
+          <pre className="mt-4 max-h-64 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-4 text-xs font-mono text-slate-600 shadow-inner">
+            {JSON.stringify(settings, null, 2)}
+          </pre>
+        </details>
       </div>
-
-      <div>
-        <p className="text-sm font-semibold text-zinc-700 mb-2">
-          Default Expanded Category
-        </p>
-        <input
-          type="text"
-          value={settings.defaultExpandedCategory ?? ""}
-          onChange={(e) =>
-            update("defaultExpandedCategory", e.target.value || null)
-          }
-          placeholder="e.g. Processor (leave empty for none)"
-          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-        />
-      </div>
-
-      <details className="group">
-        <summary className="text-xs font-semibold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-zinc-600">
-          JSON Preview
-        </summary>
-        <pre className="mt-2 p-3 text-xs bg-zinc-50 border border-zinc-100 rounded-lg overflow-auto max-h-48 text-zinc-600">
-          {JSON.stringify(settings, null, 2)}
-        </pre>
-      </details>
     </div>
   );
 });

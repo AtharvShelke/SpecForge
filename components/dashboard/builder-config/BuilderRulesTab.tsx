@@ -13,6 +13,7 @@ import type { BuilderUIRule } from "@/types";
 import { BuilderRuleAction } from "@/types";
 import { apiFetch } from "@/lib/helpers";
 import { useAdmin } from "@/context/AdminContext";
+import { cn } from "@/lib/utils";
 
 const OPERATORS = [
   "equals",
@@ -24,11 +25,11 @@ const OPERATORS = [
 ];
 const ACTIONS = Object.values(BuilderRuleAction);
 const ACTION_COLORS: Record<string, string> = {
-  HIGHLIGHT: "bg-amber-100 text-amber-700",
-  HIDE_FILTER: "bg-zinc-100 text-zinc-600",
-  LOCK_CATEGORY: "bg-red-100 text-red-600",
-  AUTO_SELECT: "bg-emerald-100 text-emerald-700",
-  SHOW_WARNING: "bg-orange-100 text-orange-700",
+  HIGHLIGHT: "bg-amber-50 text-amber-700 border-amber-200",
+  HIDE_FILTER: "bg-slate-50 text-slate-600 border-slate-200",
+  LOCK_CATEGORY: "bg-rose-50 text-rose-700 border-rose-200",
+  AUTO_SELECT: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  SHOW_WARNING: "bg-orange-50 text-orange-700 border-orange-200",
 };
 
 interface RuleFormData {
@@ -58,7 +59,6 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<RuleFormData>(EMPTY_FORM);
 
-  // Group subcategories by parent category name for the dropdown
   const groupedCategories = useMemo(() => {
     const map = new Map<string, { id: string; name: string }[]>();
     (subCategories ?? []).forEach((sub: any) => {
@@ -96,7 +96,7 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
       setRules((prev) => [created, ...prev]);
       setForm(EMPTY_FORM);
       setShowForm(false);
-    } catch {}
+    } catch { }
   }, [form]);
 
   const handleToggle = useCallback(async (rule: BuilderUIRule) => {
@@ -109,7 +109,7 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
         },
       );
       setRules((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-    } catch {}
+    } catch { }
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
@@ -118,189 +118,195 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
         method: "DELETE",
       });
       setRules((prev) => prev.filter((r) => r.id !== id));
-    } catch {}
+    } catch { }
   }, []);
 
   if (loading)
     return (
-      <div className="space-y-2 animate-pulse">
+      <div className="space-y-4 animate-pulse">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 rounded-xl bg-zinc-100" />
+          <div key={i} className="h-20 rounded-lg bg-slate-100" />
         ))}
       </div>
     );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles size={18} className="text-indigo-500" />
-          <h3 className="text-lg font-bold text-zinc-900">Rules Engine</h3>
-          <span className="text-xs text-zinc-400">{rules.length} rules</span>
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+            <Sparkles size={16} />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Rules Engine</h3>
+            <p className="text-xs text-slate-500">{rules.length} rules active</p>
+          </div>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+          className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
         >
-          <Plus size={12} /> New Rule
+          <Plus size={14} /> <span className="hidden sm:inline">New Rule</span>
         </button>
       </div>
 
-      {showForm && (
-        <div className="p-4 border border-indigo-100 bg-indigo-50/30 rounded-xl space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              placeholder="Rule name"
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            />
-            <select
-              value={form.category}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, category: e.target.value }))
-              }
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
-            >
-              <option value="" disabled>
-                Select category…
-              </option>
-              {groupedCategories.map(([catName, subs]) => (
-                <optgroup key={catName} label={catName}>
-                  {subs.map((sub) => (
-                    <option key={sub.id} value={sub.name}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <input
-              value={form.specKey}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, specKey: e.target.value }))
-              }
-              placeholder="Spec key (e.g. socket)"
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            />
-            <select
-              value={form.operator}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, operator: e.target.value }))
-              }
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
-            >
-              {OPERATORS.map((op) => (
-                <option key={op} value={op}>
-                  {op}
-                </option>
-              ))}
-            </select>
-            <input
-              value={form.value}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, value: e.target.value }))
-              }
-              placeholder="Value (e.g. AM5)"
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              value={form.action}
-              onChange={(e) =>
-                setForm((p) => ({
-                  ...p,
-                  action: e.target.value as BuilderRuleAction,
-                }))
-              }
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
-            >
-              {ACTIONS.map((a) => (
-                <option key={a} value={a}>
-                  {a.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              value={form.priority}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, priority: Number(e.target.value) }))
-              }
-              placeholder="Priority"
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => {
-                setShowForm(false);
-                setForm(EMPTY_FORM);
-              }}
-              className="px-3 py-1.5 text-xs font-semibold text-zinc-500 border border-zinc-200 rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleCreate}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg flex items-center gap-1.5"
-            >
-              <Save size={12} /> Create
-            </button>
-          </div>
-        </div>
-      )}
-
-      {rules.length === 0 ? (
-        <div className="text-center py-8 text-zinc-400 text-sm">
-          No rules configured yet. Add your first rule above.
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          {rules.map((rule) => (
-            <div
-              key={rule.id}
-              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${rule.enabled ? "border-zinc-100 bg-white" : "border-zinc-100 bg-zinc-50 opacity-60"}`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-zinc-800">
-                    {rule.name}
-                  </p>
-                  <span
-                    className={`px-1.5 py-0.5 text-[9px] font-bold rounded-full uppercase ${ACTION_COLORS[rule.action] || "bg-zinc-100 text-zinc-500"}`}
-                  >
-                    {rule.action.replace("_", " ")}
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-400 mt-0.5 font-mono">
-                  {rule.category} → {rule.specKey} {rule.operator} &quot;
-                  {rule.value}&quot;
-                </p>
+      <div className="p-5">
+        {showForm && (
+          <div className="mb-6 rounded-md border border-slate-200 bg-slate-50 p-5">
+            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Rule Name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. Highlight AM5"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
               </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Category</label>
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                >
+                  <option value="" disabled>Select category…</option>
+                  {groupedCategories.map(([catName, subs]) => (
+                    <optgroup key={catName} label={catName}>
+                      {subs.map((sub) => (
+                        <option key={sub.id} value={sub.name}>{sub.name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Target Spec Key</label>
+                <input
+                  value={form.specKey}
+                  onChange={(e) => setForm((p) => ({ ...p, specKey: e.target.value }))}
+                  placeholder="e.g. socket"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Operator</label>
+                <select
+                  value={form.operator}
+                  onChange={(e) => setForm((p) => ({ ...p, operator: e.target.value }))}
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                >
+                  {OPERATORS.map((op) => (
+                    <option key={op} value={op}>{op}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Value</label>
+                <input
+                  value={form.value}
+                  onChange={(e) => setForm((p) => ({ ...p, value: e.target.value }))}
+                  placeholder="e.g. AM5"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+            </div>
+            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Action</label>
+                <select
+                  value={form.action}
+                  onChange={(e) => setForm((p) => ({ ...p, action: e.target.value as BuilderRuleAction }))}
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                >
+                  {ACTIONS.map((a) => (
+                    <option key={a} value={a}>{a.replace("_", " ")}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Priority (Higher runs first)</label>
+                <input
+                  type="number"
+                  value={form.priority}
+                  onChange={(e) => setForm((p) => ({ ...p, priority: Number(e.target.value) }))}
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
               <button
-                onClick={() => handleToggle(rule)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700"
+                onClick={() => {
+                  setShowForm(false);
+                  setForm(EMPTY_FORM);
+                }}
+                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                {rule.enabled ? (
-                  <ToggleRight size={18} className="text-indigo-500" />
-                ) : (
-                  <ToggleLeft size={18} />
-                )}
+                Cancel
               </button>
               <button
-                onClick={() => handleDelete(rule.id)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50"
+                onClick={handleCreate}
+                className="flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
               >
-                <Trash2 size={13} />
+                <Save size={14} /> Create Rule
               </button>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+
+        {rules.length === 0 ? (
+          <div className="py-12 text-center text-sm text-slate-500 border border-dashed border-slate-200 rounded-md">
+            No rules configured yet. Add your first rule above.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {rules.map((rule) => (
+              <div
+                key={rule.id}
+                className={cn(
+                  "flex items-center gap-4 rounded-md border p-4 transition-colors",
+                  rule.enabled ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50 opacity-60"
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{rule.name}</p>
+                    <span
+                      className={cn(
+                        "rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+                        ACTION_COLORS[rule.action] || "border-slate-200 bg-slate-50 text-slate-600"
+                      )}
+                    >
+                      {rule.action.replace("_", " ")}
+                    </span>
+                  </div>
+                  <p className="font-mono text-xs text-slate-500">
+                    <span className="font-medium text-slate-700">{rule.category}</span> → {rule.specKey} {rule.operator} "{rule.value}"
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => handleToggle(rule)}
+                    className="p-1.5 text-slate-400 transition-colors hover:text-slate-900"
+                    title={rule.enabled ? "Disable rule" : "Enable rule"}
+                  >
+                    {rule.enabled ? <ToggleRight size={20} className="text-emerald-600" /> : <ToggleLeft size={20} />}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(rule.id)}
+                    className="p-1.5 text-slate-400 transition-colors hover:text-rose-600"
+                    title="Delete rule"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 });

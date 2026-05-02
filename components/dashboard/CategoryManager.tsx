@@ -33,6 +33,11 @@ import {
   FolderOpen,
   RefreshCw,
   Settings,
+  Tag,
+  TrendingUp,
+  BarChart3,
+  Star,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -52,6 +57,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 // ─────────────────────────────────────────────────────────────
 // SHARED PRIMITIVES
@@ -65,52 +81,28 @@ const SectionLabel = memo(
     icon: React.ReactNode;
     children: React.ReactNode;
   }) => (
-    <div className="flex items-center gap-1.5">
-      <span className="text-stone-400">{icon}</span>
-      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-        {children}
-      </span>
+    <div className="flex items-center gap-2 text-slate-700">
+      <span className="text-slate-400">{icon}</span>
+      <span className="text-sm font-semibold">{children}</span>
     </div>
   ),
 );
 SectionLabel.displayName = "SectionLabel";
 
-type Stripe = "indigo" | "teal" | "amber" | "rose" | "violet" | "stone";
-
-// Stripe classes extracted outside component to avoid re-creation on every render
-const STRIPE_CLASSES: Record<Stripe, string> = {
-  indigo: "from-indigo-400 via-indigo-500 to-violet-400",
-  teal: "from-teal-400 via-emerald-400 to-emerald-300",
-  amber: "from-amber-400 via-amber-400 to-orange-300",
-  rose: "from-rose-400 via-rose-400 to-rose-300",
-  violet: "from-violet-400 via-violet-500 to-indigo-400",
-  stone: "from-stone-300 via-stone-400 to-stone-300",
-};
-
 const Panel = memo(
   ({
     children,
     className,
-    stripe,
   }: {
     children: React.ReactNode;
     className?: string;
-    stripe?: Stripe;
   }) => (
     <div
       className={cn(
-        "rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden",
+        "rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden",
         className,
       )}
     >
-      {stripe && (
-        <div
-          className={cn(
-            "h-0.5 w-full bg-gradient-to-r",
-            STRIPE_CLASSES[stripe],
-          )}
-        />
-      )}
       {children}
     </div>
   ),
@@ -127,7 +119,7 @@ const PanelHeader = memo(
     children: React.ReactNode;
     right?: React.ReactNode;
   }) => (
-    <div className="px-3 sm:px-5 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between gap-2">
+    <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
       <SectionLabel icon={icon}>{children}</SectionLabel>
       {right}
     </div>
@@ -139,31 +131,32 @@ PanelHeader.displayName = "PanelHeader";
 // SMALL REUSABLES
 // ─────────────────────────────────────────────────────────────
 
-const PILL_CLASSES: Record<string, string> = {
-  stone: "bg-stone-100 text-stone-600 ring-stone-200",
-  indigo: "bg-indigo-50 text-indigo-700 ring-indigo-200",
-  teal: "bg-teal-50 text-teal-700 ring-teal-200",
-  amber: "bg-amber-50 text-amber-700 ring-amber-200",
-  violet: "bg-violet-50 text-violet-700 ring-violet-200",
-};
-
 const Pill = memo(
   ({
     children,
-    color = "stone",
+    color = "slate",
   }: {
     children: React.ReactNode;
-    color?: "stone" | "indigo" | "teal" | "amber" | "violet";
-  }) => (
-    <span
-      className={cn(
-        "inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 whitespace-nowrap",
-        PILL_CLASSES[color],
-      )}
-    >
-      {children}
-    </span>
-  ),
+    color?: "slate" | "indigo" | "teal" | "amber" | "violet";
+  }) => {
+    const colorClasses = {
+      slate: "border-slate-200 bg-slate-50 text-slate-700",
+      indigo: "border-indigo-200 bg-indigo-50 text-indigo-700",
+      teal: "border-teal-200 bg-teal-50 text-teal-700",
+      amber: "border-amber-200 bg-amber-50 text-amber-700",
+      violet: "border-violet-200 bg-violet-50 text-violet-700",
+    };
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+          colorClasses[color]
+        )}
+      >
+        {children}
+      </span>
+    );
+  }
 );
 Pill.displayName = "Pill";
 
@@ -185,10 +178,10 @@ const ActionBtn = memo(
       type="button"
       onClick={onClick}
       className={cn(
-        "h-7 w-7 rounded-md flex items-center justify-center transition-all duration-150",
+        "flex h-8 w-8 items-center justify-center rounded-md border border-transparent transition-colors",
         danger
-          ? "text-stone-300 hover:text-rose-500 hover:bg-rose-50 active:bg-rose-100"
-          : "text-stone-300 hover:text-stone-700 hover:bg-stone-100 active:bg-stone-200",
+          ? "text-slate-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+          : "text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
         alwaysVisible
           ? "opacity-100"
           : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
@@ -205,7 +198,6 @@ ActionBtn.displayName = "ActionBtn";
 // INLINE NODE FORM
 // ─────────────────────────────────────────────────────────────
 
-// Stable field config outside component — no re-creation per render
 const NODE_FORM_FIELDS = [
   { label: "Display Label", field: "label", placeholder: "e.g. Laptops" },
   { label: "Brand Filter", field: "brand", placeholder: "e.g. ASUS" },
@@ -226,28 +218,28 @@ const NodeForm = memo(
     onSave: () => void;
     onCancel: () => void;
   }) => (
-    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-      <SectionLabel icon={<Edit size={11} />}>{title}</SectionLabel>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+    <div className="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+      <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {NODE_FORM_FIELDS.map(({ label, field, placeholder }) => (
-          <div key={field} className="space-y-1">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
+          <div key={field} className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-700">
               {label}
-            </span>
+            </label>
             <Input
               placeholder={placeholder}
               value={(nodeForm as any)[field] ?? ""}
               onChange={(e) =>
                 setNodeForm({ ...nodeForm, [field]: e.target.value })
               }
-              className="h-8 text-xs border-stone-200 bg-white rounded-lg placeholder:text-stone-400 font-medium focus:border-indigo-300 focus:ring-indigo-500/20"
+              className="h-9 rounded-md border-slate-200 text-sm"
             />
           </div>
         ))}
-        <div className="space-y-1">
-          <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-slate-700">
             Category Mapping
-          </span>
+          </label>
           <Select
             value={nodeForm.category ?? "none"}
             onValueChange={(val) =>
@@ -257,18 +249,15 @@ const NodeForm = memo(
               })
             }
           >
-            <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg">
+            <SelectTrigger className="h-9 rounded-md border-slate-200 bg-white text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem
-                value="none"
-                className="text-xs italic text-stone-400"
-              >
+              <SelectItem value="none" className="text-slate-500 italic">
                 No Mapping
               </SelectItem>
-              {CATEGORY_VALUES.map((c) => (
-                <SelectItem key={c} value={c} className="text-xs">
+              {Object.values(CATEGORY_NAMES).map((c) => (
+                <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>
               ))}
@@ -276,21 +265,13 @@ const NodeForm = memo(
           </Select>
         </div>
       </div>
-      <div className="flex gap-2 pt-0.5">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 sm:flex-none h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
-        >
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
-        </button>
-        <button
-          type="button"
-          onClick={onSave}
-          className="flex-1 sm:flex-none h-8 px-3 text-[10px] font-bold uppercase tracking-widest bg-stone-900 text-white rounded-lg hover:bg-stone-700 transition-colors"
-        >
+        </Button>
+        <Button size="sm" onClick={onSave} className="bg-slate-900 text-white">
           Save
-        </button>
+        </Button>
       </div>
     </div>
   ),
@@ -298,13 +279,8 @@ const NodeForm = memo(
 NodeForm.displayName = "NodeForm";
 
 // ─────────────────────────────────────────────────────────────
-// TREE NODE — isolated memo component to prevent full-tree re-renders
+// TREE NODE
 // ─────────────────────────────────────────────────────────────
-
-// Stable empty children array reference
-const EMPTY_CHILDREN: any[] = [];
-
-const CATEGORY_VALUES = Object.values(CATEGORY_NAMES);
 
 interface TreeNodeProps {
   node: any;
@@ -344,87 +320,67 @@ const TreeNode = memo(
   }: TreeNodeProps) => {
     const hasChildren = node.children && node.children.length > 0;
 
-    const handleToggle = useCallback(
-      () => onToggle(currentPath),
-      [onToggle, currentPath],
-    );
-    const handleEdit = useCallback(
-      () => onEdit(node, currentPath),
-      [onEdit, node, currentPath],
-    );
-    const handleAddSub = useCallback(
-      () => onAddSub(currentPath),
-      [onAddSub, currentPath],
-    );
-    const handleDelete = useCallback(
-      () => onDelete(currentPath, node.label),
-      [onDelete, currentPath, node.label],
-    );
-
     return (
       <div>
         <div
           className={cn(
-            "group flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all duration-150",
+            "group flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
             isEditing
-              ? "border-indigo-200 bg-indigo-50/40"
-              : "border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm",
+              ? "border border-slate-200 bg-slate-50"
+              : "border border-transparent hover:bg-slate-50",
           )}
         >
-          <GripVertical
-            size={12}
-            className="text-stone-200 cursor-grab shrink-0 hidden sm:block"
-          />
+
           <button
             type="button"
-            onClick={handleToggle}
+            onClick={() => onToggle(currentPath)}
             className={cn(
-              "h-6 w-6 rounded flex items-center justify-center text-stone-400 hover:bg-stone-100 active:bg-stone-200 transition-colors shrink-0",
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-slate-400 hover:bg-slate-200",
               !hasChildren && "invisible",
             )}
           >
             {isExpanded ? (
-              <ChevronDown size={12} />
+              <ChevronDown size={14} />
             ) : (
-              <ChevronRight size={12} />
+              <ChevronRight size={14} />
             )}
           </button>
           <div
             className={cn(
-              "h-6 w-6 rounded-lg flex items-center justify-center shrink-0",
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border",
               depth === 0
-                ? "bg-indigo-50 text-indigo-500"
-                : "bg-stone-100 text-stone-500",
+                ? "border-slate-200 bg-white text-slate-700"
+                : "border-transparent bg-transparent text-slate-400",
             )}
           >
-            {isExpanded ? <FolderOpen size={13} /> : <Folder size={13} />}
+            {isExpanded ? <FolderOpen size={14} /> : <Folder size={14} />}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-stone-800 tracking-tight truncate">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-slate-900">
               {node.label}
             </p>
             {(node.category || node.brand) && (
-              <div className="flex flex-wrap gap-1 mt-0.5">
+              <div className="mt-1 flex flex-wrap gap-2">
                 {node.category && <Pill color="indigo">{node.category}</Pill>}
-                {node.brand && <Pill color="stone">{node.brand}</Pill>}
+                {node.brand && <Pill color="slate">{node.brand}</Pill>}
               </div>
             )}
           </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            <ActionBtn onClick={handleAddSub}>
-              <Plus size={12} />
+          <div className="flex shrink-0 items-center gap-1">
+            <ActionBtn onClick={() => onAddSub(currentPath)}>
+              <Plus size={14} />
             </ActionBtn>
-            <ActionBtn onClick={handleEdit}>
-              <Edit size={12} />
+            <ActionBtn onClick={() => onEdit(node, currentPath)}>
+              <Edit size={14} />
             </ActionBtn>
-            <ActionBtn danger onClick={handleDelete}>
-              <Trash size={12} />
+            <ActionBtn danger onClick={() => onDelete(currentPath, node.label)}>
+              <Trash size={14} />
             </ActionBtn>
           </div>
         </div>
 
         {isEditing && (
-          <div className="mt-2 mb-2 ml-6 sm:ml-10">
+          <div className="my-2 ml-10 border-l border-slate-200 pl-4 sm:ml-12">
             <NodeForm
               title="Edit Category"
               nodeForm={nodeForm}
@@ -436,7 +392,7 @@ const TreeNode = memo(
         )}
 
         {isAddingSub && (
-          <div className="mt-2 mb-2 ml-6 sm:ml-10">
+          <div className="my-2 ml-10 border-l border-slate-200 pl-4 sm:ml-12">
             <NodeForm
               title="Add Subcategory"
               nodeForm={nodeForm}
@@ -448,7 +404,7 @@ const TreeNode = memo(
         )}
 
         {hasChildren && isExpanded && (
-          <div className="mt-1.5 mb-1.5 ml-6 sm:ml-9 pl-3 sm:pl-4 border-l-2 border-stone-100 space-y-1.5">
+          <div className="my-1 ml-10 border-l border-slate-200 pl-4 sm:ml-12 space-y-1">
             {children}
           </div>
         )}
@@ -459,60 +415,7 @@ const TreeNode = memo(
 TreeNode.displayName = "TreeNode";
 
 // ─────────────────────────────────────────────────────────────
-// FILTER CARD — isolated memo to prevent grid re-renders
-// ─────────────────────────────────────────────────────────────
-
-interface FilterCardProps {
-  filter: FilterDefinition;
-  idx: number;
-  onEdit: (idx: number, filter: FilterDefinition) => void;
-  onDelete: (idx: number) => void;
-}
-
-const FilterCard = memo(
-  ({ filter, idx, onEdit, onDelete }: FilterCardProps) => {
-    const handleEdit = useCallback(
-      () => onEdit(idx, filter),
-      [onEdit, idx, filter],
-    );
-    const handleDelete = useCallback(() => onDelete(idx), [onDelete, idx]);
-
-    return (
-      <div className="group flex items-start justify-between gap-2 px-3 py-3 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150">
-        <div className="min-w-0 space-y-1.5 flex-1">
-          <p className="text-xs font-bold text-stone-800 tracking-tight truncate">
-            {filter.label}
-          </p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
-              {filter.key}
-            </span>
-            <Pill color={filter.type === "range" ? "amber" : "teal"}>
-              {filter.type}
-            </Pill>
-            {filter.options && filter.options.length > 0 && (
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                {filter.options.length} opts
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
-          <ActionBtn onClick={handleEdit}>
-            <Edit size={12} />
-          </ActionBtn>
-          <ActionBtn danger onClick={handleDelete}>
-            <Trash size={12} />
-          </ActionBtn>
-        </div>
-      </div>
-    );
-  },
-);
-FilterCard.displayName = "FilterCard";
-
-// ─────────────────────────────────────────────────────────────
-// STABLE INITIAL FORM VALUES — defined outside to avoid GC churn
+// MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 
 const EMPTY_NODE_FORM: Partial<CategoryNode> = {
@@ -538,10 +441,6 @@ const EMPTY_SPEC_FORM: UpdateSpecInput = {
   options: [],
   dependencies: [],
 };
-
-// ─────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────
 
 const CategoryManager = () => {
   const { toast } = useToast();
@@ -573,14 +472,13 @@ const CategoryManager = () => {
     subCategories,
     specs,
     refreshSpecs,
-    createSpec,
     updateSpec,
     deleteSpec,
   } = admin;
   const filterConfigs = Array.isArray(admin.filterConfigs)
     ? admin.filterConfigs
     : [];
-  const updateFilterConfig = admin.updateFilterConfig ?? (async () => {});
+  const updateFilterConfig = admin.updateFilterConfig ?? (async () => { });
   const categories = Array.isArray(categoryHierarchy) ? categoryHierarchy : [];
   const [selectedSubCategoryId, setSelectedSubCategoryId] =
     useState<string>("");
@@ -607,57 +505,45 @@ const CategoryManager = () => {
       }),
       categoryName
         ? apiFetch<FilterOverrideItem[]>(
-            `/api/admin/builder-filters?category=${encodeURIComponent(categoryName)}`,
+          `/api/admin/builder-filters?category=${encodeURIComponent(categoryName)}`,
+        )
+          .then((data) =>
+            setOverrides(Array.isArray(data) ? data : []),
           )
-            .then((data) =>
-              setOverrides(Array.isArray(data) ? data : []),
-            )
-            .catch(() => setOverrides([]))
+          .catch(() => setOverrides([]))
         : Promise.resolve(),
     ]);
   }, [refreshSpecs, selectedSubCategoryId, subCategories]);
 
-  // ── Hierarchy state ──
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingNodePath, setEditingNodePath] = useState<string | null>(null);
-  const [nodeForm, setNodeForm] =
-    useState<Partial<CategoryNode>>(EMPTY_NODE_FORM);
+  const [nodeForm, setNodeForm] = useState<Partial<CategoryNode>>(EMPTY_NODE_FORM);
   const [isAddingRoot, setIsAddingRoot] = useState(false);
 
-  // ── Filter config state ──
-  const [configMode, setConfigMode] = useState<"hierarchy" | "filters">(
-    "hierarchy",
-  );
+  const [configMode, setConfigMode] = useState<"hierarchy" | "filters">("hierarchy");
   const [selectedCatForFilters, setSelectedCatForFilters] = useState<string>(
     CATEGORY_NAMES.PROCESSOR,
   );
   const [editingFilterIdx, setEditingFilterIdx] = useState<number | null>(null);
-  const [filterForm, setFilterForm] =
-    useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
   const [showSpecModal, setShowSpecModal] = useState(false);
   const [editingSpecId, setEditingSpecId] = useState<string | null>(null);
   const [specForm, setSpecForm] = useState<UpdateSpecInput>(EMPTY_SPEC_FORM);
 
-  // ── Builder-override state (inlined from BuilderFiltersTab) ──
   const [overrides, setOverrides] = useState<FilterOverrideItem[]>([]);
   const [savingOverride, setSavingOverride] = useState<string | null>(null);
   const [savedOverride, setSavedOverride] = useState<string | null>(null);
 
-  // ── Builder state ──
   const [showBuilderModal, setShowBuilderModal] = useState(false);
   const [builderForm, setBuilderForm] = useState<Partial<SubCategory>>({});
   const [isSavingBuilder, setIsSavingBuilder] = useState(false);
 
-  // ── Delete confirm state ──
   const [deleteConfirm, setDeleteConfirm] = useState<{
     type: "filter" | "node";
     filterIdx?: number;
     nodePath?: string;
     label: string;
   } | null>(null);
-
-  // ─── Memoized callbacks — prevent child re-renders ───
 
   const toggleExpand = useCallback(
     (path: string) => setExpanded((prev) => ({ ...prev, [path]: !prev[path] })),
@@ -767,7 +653,7 @@ const CategoryManager = () => {
   const activeFilters = useMemo<FilterDefinition[]>(
     () =>
       filterConfigs.find((c) => c.category === selectedCatForFilters)
-        ?.filters || EMPTY_CHILDREN,
+        ?.filters || [],
     [filterConfigs, selectedCatForFilters],
   );
 
@@ -820,7 +706,7 @@ const CategoryManager = () => {
         toast({
           variant: "destructive",
           title: "Failed to save override",
-          description: error.message || "An error occurred while saving the PC Builder setting.",
+          description: error.message || "An error occurred.",
         });
       } finally {
         setSavingOverride(null);
@@ -862,11 +748,10 @@ const CategoryManager = () => {
       await admin.syncData();
       toast({
         title: "Settings saved",
-        description: "PC Builder configuration updated successfully.",
+        description: "PC Builder configuration updated.",
       });
       setShowBuilderModal(false);
     } catch (error: any) {
-      console.error("Failed to save builder config", error);
       toast({
         variant: "destructive",
         title: "Save failed",
@@ -882,59 +767,6 @@ const CategoryManager = () => {
     [selectedSubCategoryId, specs],
   );
 
-  const handleSaveFilter = useCallback(async () => {
-    if (!filterForm.key || !filterForm.label) return;
-    const newFilters = [...activeFilters];
-    const filterData = filterForm as FilterDefinition;
-    if (editingFilterIdx !== null) newFilters[editingFilterIdx] = filterData;
-    else newFilters.push(filterData);
-
-    try {
-      await updateFilterConfig(selectedCatForFilters, newFilters);
-      toast({
-        title: "Filter config saved",
-        description: `Successfully updated filters for ${selectedCatForFilters}`,
-      });
-      setShowFilterModal(false);
-      setFilterForm(EMPTY_FILTER_FORM);
-      setEditingFilterIdx(null);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Save failed",
-        description: error.message || "Could not update filter configuration.",
-      });
-    }
-  }, [
-    filterForm,
-    activeFilters,
-    editingFilterIdx,
-    updateFilterConfig,
-    selectedCatForFilters,
-    toast,
-  ]);
-
-  const handleDeleteFilter = useCallback(
-    (idx: number) => {
-      const filter = activeFilters[idx];
-      setDeleteConfirm({
-        type: "filter",
-        filterIdx: idx,
-        label: filter?.label || "this filter",
-      });
-    },
-    [activeFilters],
-  );
-
-  const handleEditFilter = useCallback(
-    (idx: number, filter: FilterDefinition) => {
-      setEditingFilterIdx(idx);
-      setFilterForm(filter);
-      setShowFilterModal(true);
-    },
-    [],
-  );
-
   const confirmDeleteFilter = useCallback(
     async (idx: number) => {
       const newFilters = [...activeFilters];
@@ -943,7 +775,7 @@ const CategoryManager = () => {
         await updateFilterConfig(selectedCatForFilters, newFilters);
         toast({
           title: "Filter removed",
-          description: "The filter has been removed from the configuration.",
+          description: "The filter has been removed.",
         });
       } catch (error: any) {
         toast({
@@ -972,105 +804,11 @@ const CategoryManager = () => {
     if (!open) setDeleteConfirm(null);
   }, []);
 
-  const closeFilterModal = useCallback((open: boolean) => {
-    setShowFilterModal(open);
-  }, []);
-
   const openAddRoot = useCallback(() => {
     setIsAddingRoot(true);
     setNodeForm(EMPTY_NODE_FORM);
     setEditingNodePath(null);
   }, []);
-
-  const openAddFilter = useCallback(() => {
-    setShowFilterModal(true);
-    setEditingFilterIdx(null);
-    setFilterForm(EMPTY_FILTER_FORM);
-  }, []);
-
-  const handleSyncData = useCallback(() => syncData(), [syncData]);
-
-  const handleCatForFiltersChange = useCallback(
-    (val: string) => setSelectedCatForFilters(val),
-    [],
-  );
-
-  // ─── Tree renderer — memoized with useCallback, stable deps ───
-  const renderTree = useCallback(
-    (nodes: any[], pathPrefix = "", depth = 0): React.ReactNode =>
-      nodes.map((node, index) => {
-        const currentPath = `${pathPrefix}${index}`;
-        const isExpanded = expanded[currentPath] ?? false;
-        const hasChildren = node.children && node.children.length > 0;
-        const isEditing = editingNodePath === currentPath;
-        const isAddingSub = editingNodePath === `${currentPath}-new`;
-
-        return (
-          <TreeNode
-            key={currentPath}
-            node={node}
-            currentPath={currentPath}
-            depth={depth}
-            isExpanded={isExpanded}
-            isEditing={isEditing}
-            isAddingSub={isAddingSub}
-            nodeForm={nodeForm}
-            setNodeForm={setNodeForm}
-            onToggle={toggleExpand}
-            onEdit={handleEditNode}
-            onAddSub={handleAddSubcategory}
-            onDelete={deleteNode}
-            onSave={saveNode}
-            onCancel={cancelNodeEdit}
-          >
-            {hasChildren && isExpanded
-              ? renderTree(node.children, `${currentPath}-`, depth + 1)
-              : null}
-          </TreeNode>
-        );
-      }),
-    [
-      expanded,
-      editingNodePath,
-      nodeForm,
-      toggleExpand,
-      handleEditNode,
-      handleAddSubcategory,
-      deleteNode,
-      saveNode,
-      cancelNodeEdit,
-    ],
-  );
-
-  // Memoize the filter options textarea value to avoid recalc on every keystroke elsewhere
-  const filterOptionsValue = useMemo(
-    () => filterForm.options?.join(", ") || "",
-    [filterForm.options],
-  );
-
-  const handleFilterOptionsChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) =>
-      setFilterForm((prev) => ({
-        ...prev,
-        options: e.target.value
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      })),
-    [],
-  );
-
-  const handleFilterFieldChange = useCallback(
-    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-      setFilterForm((prev) => ({ ...prev, [field]: e.target.value })),
-    [],
-  );
-
-  const handleFilterTypeChange = useCallback(
-    (val: string) =>
-      setFilterForm((prev) => ({ ...prev, type: val as "checkbox" | "range" })),
-    [],
-  );
 
   const openCreateSpec = useCallback(() => {
     setEditingSpecId(null);
@@ -1161,17 +899,7 @@ const CategoryManager = () => {
             options: payload.options,
           }),
         });
-        if (!response.ok) {
-          const errText = await response.text();
-          let errMessage = errText;
-          try {
-            const errJson = JSON.parse(errText);
-            errMessage = errJson.error || errJson.message || errText;
-          } catch {
-            // ignore
-          }
-          throw new Error(errMessage);
-        }
+        if (!response.ok) throw new Error("Failed to save spec.");
         const created = await response.json();
         if (payload.dependencies && payload.dependencies.length > 0) {
           await updateSpec(created.id, payload);
@@ -1181,7 +909,7 @@ const CategoryManager = () => {
       await refreshSpecs(selectedSubCategoryId);
       toast({
         title: editingSpecId ? "Filter updated" : "Filter created",
-        description: `"${payload.name}" has been ${editingSpecId ? "updated" : "created"} successfully.`,
+        description: `"${payload.name}" saved successfully.`,
       });
 
       setShowSpecModal(false);
@@ -1190,7 +918,7 @@ const CategoryManager = () => {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: editingSpecId ? "Update failed" : "Creation failed",
+        title: "Save failed",
         description: error.message || "An unexpected error occurred.",
       });
     }
@@ -1209,13 +937,13 @@ const CategoryManager = () => {
         await deleteSpec(spec.id, spec.subCategoryId);
         toast({
           title: "Filter deleted",
-          description: `"${spec.name}" has been removed from the catalog.`,
+          description: `"${spec.name}" has been removed.`,
         });
       } catch (error: any) {
         toast({
           variant: "destructive",
           title: "Delete failed",
-          description: error.message || "This filter is already used by products or dependencies and cannot be deleted.",
+          description: error.message || "Filter cannot be deleted.",
         });
       }
     },
@@ -1227,51 +955,73 @@ const CategoryManager = () => {
     [activeSpecs, editingSpecId],
   );
 
-  return (
-    <div
-      className="space-y-2.5"
-      style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
-    >
-      {/* ── PAGE HEADER ── */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-stone-800 tracking-tight">
-              Categories & Filters
-            </h2>
-            <p className="text-[11px] text-stone-400 mt-0.5 hidden sm:block">
-              Navigation hierarchy and filter configuration
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={handleSyncData}
-            disabled={isLoading}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+  const renderTree = useCallback(
+    (nodes: any[], pathPrefix = "", depth = 0): React.ReactNode =>
+      nodes.map((node, index) => {
+        const currentPath = `${pathPrefix}${index}`;
+        const isExpanded = expanded[currentPath] ?? false;
+        const hasChildren = node.children && node.children.length > 0;
+        const isEditing = editingNodePath === currentPath;
+        const isAddingSub = editingNodePath === `${currentPath}-new`;
+
+        return (
+          <TreeNode
+            key={currentPath}
+            node={node}
+            currentPath={currentPath}
+            depth={depth}
+            isExpanded={isExpanded}
+            isEditing={isEditing}
+            isAddingSub={isAddingSub}
+            nodeForm={nodeForm}
+            setNodeForm={setNodeForm}
+            onToggle={toggleExpand}
+            onEdit={handleEditNode}
+            onAddSub={handleAddSubcategory}
+            onDelete={deleteNode}
+            onSave={saveNode}
+            onCancel={cancelNodeEdit}
           >
-            <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Sync</span>
-          </button>
-          <div className="flex items-center gap-px bg-stone-100 p-1 rounded-xl border border-stone-200">
+            {hasChildren && isExpanded
+              ? renderTree(node.children, `${currentPath}-`, depth + 1)
+              : null}
+          </TreeNode>
+        );
+      }),
+    [
+      expanded,
+      editingNodePath,
+      nodeForm,
+      toggleExpand,
+      handleEditNode,
+      handleAddSubcategory,
+      deleteNode,
+      saveNode,
+      cancelNodeEdit,
+    ],
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* ── PAGE HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+       
+        <div className="flex items-center gap-3">
+
+          <div className="flex rounded-md border border-slate-200 bg-slate-50 p-1">
             {(["hierarchy", "filters"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setConfigMode(mode)}
                 className={cn(
-                  "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-150",
+                  "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
                   configMode === mode
-                    ? "bg-white text-stone-900 shadow-sm border border-stone-200"
-                    : "text-stone-400 hover:text-stone-700",
+                    ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                    : "text-slate-500 hover:text-slate-900",
                 )}
               >
-                {mode === "hierarchy" ? (
-                  <Layers size={11} />
-                ) : (
-                  <ListFilter size={11} />
-                )}
+                {mode === "hierarchy" ? <Layers size={14} /> : <ListFilter size={14} />}
                 <span className="hidden sm:inline">
                   {mode === "hierarchy" ? "Hierarchy" : "Filters"}
                 </span>
@@ -1282,20 +1032,20 @@ const CategoryManager = () => {
       </div>
 
       {/* ══════════════════════════════════════ */}
-      {/*  HIERARCHY MODE                        */}
+      {/*  HIERARCHY MODE                      */}
       {/* ══════════════════════════════════════ */}
       {configMode === "hierarchy" && (
-        <Panel stripe="indigo">
+        <Panel>
           <PanelHeader
-            icon={<Layers size={12} />}
+            icon={<Layers size={16} />}
             right={
               <button
                 type="button"
                 onClick={openAddRoot}
-                className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
+                className="flex h-8 items-center gap-2 rounded-md bg-slate-900 px-3 text-xs font-medium text-white transition-colors hover:bg-slate-800"
               >
-                <Plus size={11} />
-                <span className="hidden sm:inline">Add Root</span>
+                <Plus size={14} />
+                <span className="hidden sm:inline">Add Root Category</span>
                 <span className="sm:hidden">Add</span>
               </button>
             }
@@ -1303,9 +1053,9 @@ const CategoryManager = () => {
             Category Hierarchy
           </PanelHeader>
 
-          <div className="px-3 sm:px-5 py-3 space-y-1.5">
+          <div className="p-4 sm:p-6">
             {isAddingRoot && (
-              <div className="mb-3">
+              <div className="mb-4">
                 <NodeForm
                   title="Add Root Category"
                   nodeForm={nodeForm}
@@ -1317,21 +1067,21 @@ const CategoryManager = () => {
             )}
 
             {categories.length === 0 ? (
-              <div className="py-12 flex flex-col items-center gap-3">
-                <Folder size={24} className="text-stone-200" />
-                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+              <div className="flex flex-col items-center justify-center py-16">
+                <Folder size={32} className="text-slate-300 mb-4" />
+                <p className="text-sm font-medium text-slate-500 mb-2">
                   No categories configured
                 </p>
                 <button
                   type="button"
                   onClick={openAddRoot}
-                  className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline"
+                  className="text-sm font-medium text-slate-900 hover:underline"
                 >
-                  Add first category →
+                  Add first category
                 </button>
               </div>
             ) : (
-              <div className="space-y-1.5">{renderTree(categories)}</div>
+              <div className="space-y-1">{renderTree(categories)}</div>
             )}
           </div>
         </Panel>
@@ -1341,35 +1091,33 @@ const CategoryManager = () => {
       {/*  FILTERS MODE                          */}
       {/* ══════════════════════════════════════ */}
       {configMode === "filters" && (
-        <Panel stripe="teal">
+        <Panel>
           <PanelHeader
-            icon={<ListFilter size={12} />}
+            icon={<ListFilter size={16} />}
             right={
               <button
                 type="button"
                 onClick={openCreateSpec}
-                className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm flex-shrink-0"
+                className="flex h-8 items-center gap-2 rounded-md bg-slate-900 px-3 text-xs font-medium text-white transition-colors hover:bg-slate-800"
               >
-                <Plus size={11} />
+                <Plus size={14} />
                 <span className="hidden sm:inline">Add Filter</span>
                 <span className="sm:hidden">Add</span>
               </button>
             }
           >
-            Filter Configuration
+            Dynamic Filters
           </PanelHeader>
 
-          <div className="px-3 sm:px-5 py-3 space-y-3">
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-xl flex-wrap sm:flex-nowrap">
-              <SectionLabel icon={<Layers size={11} />}>
-                Subcategory
-              </SectionLabel>
-              <div className="flex-1 min-w-0">
+          <div className="p-4 sm:p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+              <div className="flex-1 space-y-1.5">
+
                 <Select
                   value={selectedSubCategoryId}
                   onValueChange={setSelectedSubCategoryId}
                 >
-                  <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg w-full">
+                  <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1377,7 +1125,6 @@ const CategoryManager = () => {
                       <SelectItem
                         key={subCategory.id}
                         value={subCategory.id}
-                        className="text-xs"
                       >
                         {subCategory.category?.name
                           ? `${subCategory.category.name} / ${subCategory.name}`
@@ -1387,100 +1134,92 @@ const CategoryManager = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <button
-                type="button"
-                onClick={openBuilderConfig}
-                className="flex items-center gap-1.5 h-8 px-3 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
-                disabled={!selectedSubCategory}
-              >
-                <Settings size={13} />
-                PC Builder
-              </button>
-              <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md flex-shrink-0">
-                {activeSpecs.length} filter{activeSpecs.length !== 1 ? "s" : ""}
-              </span>
+              <div className="flex items-end gap-3">
+                <button
+                  type="button"
+                  onClick={openBuilderConfig}
+                  className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                  disabled={!selectedSubCategory}
+                >
+                  <Settings size={16} className="text-slate-400" />
+                  PC Builder
+                </button>
+              </div>
             </div>
 
             {activeSpecs.length === 0 ? (
-              <div className="py-12 flex flex-col items-center gap-3">
-                <ListFilter size={24} className="text-stone-200" />
-                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
-                  No filters defined
+              <div className="flex flex-col items-center justify-center py-12">
+                <ListFilter size={32} className="mb-4 text-slate-300" />
+                <p className="mb-2 text-sm font-medium text-slate-500">
+                  No filters defined for this subcategory
                 </p>
                 <button
                   type="button"
                   onClick={openCreateSpec}
-                  className="text-[10px] font-bold text-teal-600 uppercase tracking-widest hover:underline"
+                  className="text-sm font-medium text-slate-900 hover:underline"
                 >
-                  Add first filter →
+                  Create first filter
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {activeSpecs.map((spec) => {
                   const override = overrideMap.get(spec.id) ?? null;
                   const isHidden = override?.hidden ?? false;
                   const catName = selectedSubCategory?.category?.name ?? "";
-                  const oKey = spec.id;
 
                   return (
                     <div
                       key={spec.id}
-                      className={`group flex flex-col gap-0 rounded-xl border bg-white transition-all duration-150 overflow-hidden ${
+                      className={cn(
+                        "flex flex-col rounded-md border bg-white transition-colors",
                         isHidden
-                          ? "border-stone-100 opacity-70"
-                          : "border-stone-100 hover:border-stone-200 hover:shadow-sm"
-                      }`}
+                          ? "border-slate-200 opacity-60"
+                          : "border-slate-200 hover:border-slate-300"
+                      )}
                     >
-                      {/* ── Spec definition row ── */}
-                      <div className="flex items-start justify-between gap-2 px-3 py-3">
-                        <div className="min-w-0 space-y-1.5 flex-1">
-                          <p className="text-xs font-bold text-stone-800 tracking-tight truncate">
+                      <div className="flex items-start justify-between gap-4 p-4">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-900">
                             {override?.labelOverride || spec.name}
                             {override?.labelOverride && (
-                              <span className="ml-1.5 text-[10px] font-medium text-indigo-400 normal-case tracking-normal">
+                              <span className="ml-2 text-xs font-normal text-slate-400">
                                 ({spec.name})
                               </span>
                             )}
                           </p>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600">
                               {spec.valueType}
                             </span>
-                            <Pill color={spec.isFilterable ? "teal" : "stone"}>
+                            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
                               {spec.isFilterable ? "Visible" : "Hidden"}
-                            </Pill>
-                            {spec.isRange && (
-                              <Pill color="amber">Range</Pill>
-                            )}
-                            {spec.filterGroup && (
-                              <Pill color="indigo">
-                                {override?.groupOverride || spec.filterGroup}
-                              </Pill>
-                            )}
-                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                              {(spec.options ?? []).length} opts
                             </span>
-                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                              {(spec.childOptionDeps ?? []).length} rels
+                            {spec.isRange && (
+                              <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
+                                Range
+                              </span>
+                            )}
+                            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
+                              {(spec.options ?? []).length} opts
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
-                          <ActionBtn onClick={() => openEditSpec(spec)}>
-                            <Edit size={12} />
+                        <div className="flex shrink-0 items-center gap-1">
+                          <ActionBtn onClick={() => openEditSpec(spec)} alwaysVisible>
+                            <Edit size={14} />
                           </ActionBtn>
-                          <ActionBtn danger onClick={() => removeSpec(spec)}>
-                            <Trash size={12} />
+                          <ActionBtn danger onClick={() => removeSpec(spec)} alwaysVisible>
+                            <Trash size={14} />
                           </ActionBtn>
                         </div>
                       </div>
 
-                      {/* ── PC Builder override row ── */}
+                      {/* PC Builder override row */}
                       {catName && (
-                        <div className="flex items-center gap-2 px-3 py-2 border-t border-stone-50 bg-stone-50/60">
-                          <span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest shrink-0">
-                            Builder
+                        <div className="flex items-center gap-3 border-t border-slate-100 bg-slate-50 px-4 py-2.5">
+                          <span className="shrink-0 text-xs font-medium text-slate-500">
+                            Builder Label
                           </span>
                           <input
                             type="text"
@@ -1497,7 +1236,7 @@ const CategoryManager = () => {
                                 });
                               }
                             }}
-                            className="flex-1 min-w-0 px-2 py-1 text-[11px] bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-200 placeholder:text-stone-300"
+                            className="flex-1 min-w-0 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
                           />
                           <button
                             type="button"
@@ -1507,21 +1246,16 @@ const CategoryManager = () => {
                                 labelOverride: override?.labelOverride ?? null,
                               })
                             }
-                            className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors shrink-0 ${
+                            className={cn(
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors",
                               isHidden
-                                ? "text-stone-300 hover:text-indigo-500 hover:bg-indigo-50"
-                                : "text-indigo-500 hover:text-stone-400 hover:bg-stone-100"
-                            }`}
+                                ? "border-slate-200 bg-white text-slate-400 hover:bg-slate-100"
+                                : "border-slate-200 bg-slate-900 text-white hover:bg-slate-800"
+                            )}
                             title={isHidden ? "Show in builder" : "Hide from builder"}
                           >
-                            {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                            {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
-                          {savingOverride === oKey && (
-                            <Save size={11} className="text-indigo-300 animate-pulse shrink-0" />
-                          )}
-                          {savedOverride === oKey && (
-                            <Check size={11} className="text-emerald-500 shrink-0" />
-                          )}
                         </div>
                       )}
                     </div>
@@ -1537,38 +1271,33 @@ const CategoryManager = () => {
       {/*  FILTER MODAL                          */}
       {/* ══════════════════════════════════════ */}
       <Dialog open={showSpecModal} onOpenChange={closeSpecModal}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 rounded-2xl shadow-xl">
-          <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300 -mt-6 mb-4 rounded-t-2xl" />
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
-              {editingSpecId ? "Edit Dynamic Filter" : "New Dynamic Filter"}
+        <DialogContent className="flex max-h-[90vh] p-0 flex-col overflow-hidden border-slate-200 bg-white shadow-lg sm:max-w-2xl sm:rounded-lg">
+          <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-5">
+            <DialogTitle className="text-lg font-semibold text-slate-900">
+              {editingSpecId ? "Edit Filter" : "New Filter"}
             </DialogTitle>
-            <DialogDescription className="text-[11px] text-stone-400">
+            <DialogDescription className="text-sm text-slate-500">
               {selectedSubCategory
                 ? `${selectedSubCategory.category?.name ?? "Catalog"} / ${selectedSubCategory.name}`
                 : "Select a subcategory first"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-1 max-h-[70vh] overflow-y-auto pr-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                  Filter Label
-                </span>
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-700">Filter Label</label>
                 <Input
                   placeholder="e.g. Socket"
                   value={specForm.name ?? ""}
                   onChange={(e) =>
                     setSpecForm((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg"
+                  className="h-9 rounded-md border-slate-200 text-sm"
                 />
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                  Group
-                </span>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-700">Group (Optional)</label>
                 <Input
                   placeholder="e.g. Compatibility"
                   value={specForm.filterGroup ?? ""}
@@ -1578,39 +1307,29 @@ const CategoryManager = () => {
                       filterGroup: e.target.value,
                     }))
                   }
-                  className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg"
+                  className="h-9 rounded-md border-slate-200 text-sm"
                 />
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                  Value Type
-                </span>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-700">Value Type</label>
                 <Select
                   value={specForm.valueType ?? "STRING"}
                   onValueChange={(value) =>
                     setSpecForm((prev) => ({ ...prev, valueType: value }))
                   }
                 >
-                  <SelectTrigger className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg">
+                  <SelectTrigger className="h-9 rounded-md border-slate-200 bg-white text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="STRING" className="text-xs">
-                      String
-                    </SelectItem>
-                    <SelectItem value="NUMBER" className="text-xs">
-                      Number
-                    </SelectItem>
-                    <SelectItem value="BOOLEAN" className="text-xs">
-                      Boolean
-                    </SelectItem>
+                    <SelectItem value="STRING">String</SelectItem>
+                    <SelectItem value="NUMBER">Number</SelectItem>
+                    <SelectItem value="BOOLEAN">Boolean</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                  Sort Order
-                </span>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-700">Sort Order</label>
                 <Input
                   type="number"
                   value={specForm.filterOrder ?? 0}
@@ -1620,20 +1339,20 @@ const CategoryManager = () => {
                       filterOrder: Number(e.target.value),
                     }))
                   }
-                  className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg"
+                  className="h-9 rounded-md border-slate-200 text-sm"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
-                ["isFilterable", "Visible"],
-                ["isRange", "Range-like"],
-                ["isMulti", "Multi-value"],
+                ["isFilterable", "Visible to Users"],
+                ["isRange", "Range Slider"],
+                ["isMulti", "Multi-Select"],
               ].map(([field, label]) => (
                 <label
                   key={field}
-                  className="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600"
+                  className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 transition-colors hover:bg-slate-100"
                 >
                   <input
                     type="checkbox"
@@ -1646,18 +1365,17 @@ const CategoryManager = () => {
                         [field]: e.target.checked,
                       }))
                     }
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                   />
-                  {label}
+                  <span className="text-sm font-medium text-slate-700">{label}</span>
                 </label>
               ))}
             </div>
 
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                Filter Options
-              </span>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700">Filter Options</label>
               <Textarea
-                placeholder="AM4, AM5, LGA1700"
+                placeholder="AM4, AM5, LGA1700 (comma-separated)"
                 value={(specForm.options ?? [])
                   .map((option) => option.value)
                   .join(", ")}
@@ -1666,7 +1384,7 @@ const CategoryManager = () => {
                     ...prev,
                     options: e.target.value
                       .split(",")
-                      .map((value, index) => value.trim())
+                      .map((value) => value.trim())
                       .filter(Boolean)
                       .map((value, index) => ({
                         value,
@@ -1675,15 +1393,13 @@ const CategoryManager = () => {
                       })),
                   }))
                 }
-                className="min-h-[72px] text-xs font-medium border-stone-200 bg-stone-50 rounded-lg resize-none"
+                className="min-h-[100px] resize-none rounded-md border-slate-200 text-sm"
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3 pt-4 border-t border-slate-200">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                  Relationships
-                </span>
+                <label className="text-sm font-semibold text-slate-900">Relationships</label>
                 <button
                   type="button"
                   onClick={() =>
@@ -1699,9 +1415,9 @@ const CategoryManager = () => {
                       ],
                     }))
                   }
-                  className="text-[10px] font-bold text-teal-600 uppercase tracking-widest hover:underline"
+                  className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
                 >
-                  Add relation
+                  Add Relation
                 </button>
               </div>
 
@@ -1713,8 +1429,8 @@ const CategoryManager = () => {
 
                 return (
                   <div
-                    key={`${dependency.parentSpecId}-${dependency.parentOptionValue}-${index}`}
-                    className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 rounded-xl border border-stone-100 bg-stone-50/60 p-3"
+                    key={index}
+                    className="grid grid-cols-1 gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_1fr_1fr_auto]"
                   >
                     <Select
                       value={dependency.parentSpecId}
@@ -1725,30 +1441,27 @@ const CategoryManager = () => {
                             (item, itemIndex) =>
                               itemIndex === index
                                 ? {
-                                    ...item,
-                                    parentSpecId: value,
-                                    parentOptionValue: "",
-                                  }
+                                  ...item,
+                                  parentSpecId: value,
+                                  parentOptionValue: "",
+                                }
                                 : item,
                           ),
                         }))
                       }
                     >
-                      <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg">
-                        <SelectValue placeholder="Parent filter" />
+                      <SelectTrigger className="h-9 rounded-md border-slate-200 bg-white text-sm">
+                        <SelectValue placeholder="Parent Filter" />
                       </SelectTrigger>
                       <SelectContent>
                         {availableParentSpecs.map((spec) => (
-                          <SelectItem
-                            key={spec.id}
-                            value={spec.id}
-                            className="text-xs"
-                          >
+                          <SelectItem key={spec.id} value={spec.id}>
                             {spec.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+
                     <Select
                       value={dependency.parentOptionValue}
                       onValueChange={(value) =>
@@ -1763,21 +1476,18 @@ const CategoryManager = () => {
                         }))
                       }
                     >
-                      <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg">
-                        <SelectValue placeholder="Parent option" />
+                      <SelectTrigger className="h-9 rounded-md border-slate-200 bg-white text-sm">
+                        <SelectValue placeholder="Parent Value" />
                       </SelectTrigger>
                       <SelectContent>
                         {parentOptions.map((option) => (
-                          <SelectItem
-                            key={option.id}
-                            value={option.value}
-                            className="text-xs"
-                          >
+                          <SelectItem key={option.id} value={option.value}>
                             {option.label ?? option.value}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+
                     <Select
                       value={dependency.childOptionValue ?? "__all__"}
                       onValueChange={(value) =>
@@ -1787,33 +1497,28 @@ const CategoryManager = () => {
                             (item, itemIndex) =>
                               itemIndex === index
                                 ? {
-                                    ...item,
-                                    childOptionValue:
-                                      value === "__all__" ? null : value,
-                                  }
+                                  ...item,
+                                  childOptionValue:
+                                    value === "__all__" ? null : value,
+                                }
                                 : item,
                           ),
                         }))
                       }
                     >
-                      <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg">
-                        <SelectValue placeholder="Child option" />
+                      <SelectTrigger className="h-9 rounded-md border-slate-200 bg-white text-sm">
+                        <SelectValue placeholder="Target Option" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__all__" className="text-xs">
-                          Whole filter
-                        </SelectItem>
+                        <SelectItem value="__all__">Entire Filter</SelectItem>
                         {(specForm.options ?? []).map((option) => (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value}
-                            className="text-xs"
-                          >
+                          <SelectItem key={option.value} value={option.value}>
                             {option.label ?? option.value}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+
                     <button
                       type="button"
                       onClick={() =>
@@ -1824,143 +1529,23 @@ const CategoryManager = () => {
                           ),
                         }))
                       }
-                      className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-white"
+                      className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-slate-500 hover:text-rose-600 transition-colors"
                     >
-                      Remove
+                      <Trash size={16} />
                     </button>
                   </div>
                 );
               })}
-
-              {(specForm.dependencies ?? []).length === 0 && (
-                <p className="text-[11px] text-stone-400">
-                  No dependencies configured. Add one when a filter or option
-                  should only be available after another selection.
-                </p>
-              )}
             </div>
           </div>
 
-          <DialogFooter className="gap-2 pt-2 flex-row">
-            <button
-              type="button"
-              onClick={() => closeSpecModal(false)}
-              className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
-            >
+          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => closeSpecModal(false)}>
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={saveSpec}
-              className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
-            >
+            </Button>
+            <Button size="sm" onClick={saveSpec} className="bg-slate-900 text-white">
               Save Filter
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showFilterModal} onOpenChange={closeFilterModal}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg bg-white border-stone-200 rounded-2xl shadow-xl">
-          <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300 -mt-6 mb-4 rounded-t-2xl" />
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
-              {editingFilterIdx !== null ? "Edit Filter" : "New Filter"}
-            </DialogTitle>
-            <DialogDescription className="text-[11px] text-stone-400">
-              Configuring filters for:{" "}
-              <span className="font-bold text-stone-600">
-                {selectedCatForFilters}
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {[
-                {
-                  label: "Filter Key",
-                  field: "key",
-                  placeholder: "e.g. specs.brand",
-                  mono: true,
-                },
-                {
-                  label: "Display Label",
-                  field: "label",
-                  placeholder: "e.g. Manufacturer",
-                  mono: false,
-                },
-              ].map(({ label, field, placeholder, mono }) => (
-                <div key={field} className="space-y-1">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                    {label}
-                  </span>
-                  <Input
-                    placeholder={placeholder}
-                    value={(filterForm as any)[field] ?? ""}
-                    onChange={handleFilterFieldChange(field)}
-                    className={cn(
-                      "h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-teal-300 focus:ring-teal-500/20 placeholder:text-stone-400",
-                      mono && "font-mono",
-                    )}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                Filter Type
-              </span>
-              <Select
-                value={filterForm.type}
-                onValueChange={handleFilterTypeChange}
-              >
-                <SelectTrigger className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="checkbox" className="text-xs">
-                    Checkbox
-                  </SelectItem>
-                  <SelectItem value="range" className="text-xs">
-                    Range (Price / Value)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-                Options
-              </span>
-              <Textarea
-                placeholder="AMD, Intel, NVIDIA  (comma-separated)"
-                value={filterOptionsValue}
-                onChange={handleFilterOptionsChange}
-                className="min-h-[72px] text-xs font-medium border-stone-200 bg-stone-50 rounded-lg resize-none focus:bg-white focus:border-teal-300 focus:ring-teal-500/20 placeholder:text-stone-400"
-              />
-              <p className="text-[10px] text-stone-400">
-                Separate values with commas.
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 pt-2 flex-row">
-            <button
-              type="button"
-              onClick={() => setShowFilterModal(false)}
-              className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveFilter}
-              className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
-            >
-              Save Filter
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1968,56 +1553,38 @@ const CategoryManager = () => {
       {/* ══════════════════════════════════════ */}
       {/*  DELETE CONFIRM MODAL                  */}
       {/* ══════════════════════════════════════ */}
-      <Dialog open={deleteConfirm !== null} onOpenChange={closeDeleteConfirm}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md bg-white border-stone-200 rounded-2xl shadow-xl">
-          <div className="h-0.5 w-full bg-gradient-to-r from-rose-400 via-rose-400 to-rose-300 -mt-6 mb-4 rounded-t-2xl" />
-          <DialogHeader className="pb-2">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-7 w-7 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle size={14} className="text-rose-500" />
-              </div>
-              <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
-                Confirm Delete
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-stone-500 leading-relaxed pl-9">
+      <AlertDialog open={deleteConfirm !== null} onOpenChange={closeDeleteConfirm}>
+        <AlertDialogContent className="border-slate-200 bg-white p-0 shadow-lg sm:max-w-md rounded-lg overflow-hidden">
+          <AlertDialogHeader className="border-b border-slate-100 px-6 pb-4 pt-6">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-900">
+              Confirm Deletion
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500">
               {deleteConfirm?.type === "node" ? (
                 <>
-                  Delete{" "}
-                  <span className="font-bold text-stone-700">
-                    {deleteConfirm?.label}
-                  </span>{" "}
-                  and all its subcategories? This cannot be undone.
+                  Delete category <span className="font-medium text-slate-900">{deleteConfirm?.label}</span> and all its subcategories? This cannot be undone.
                 </>
               ) : (
                 <>
-                  Delete filter{" "}
-                  <span className="font-bold text-stone-700">
-                    {deleteConfirm?.label}
-                  </span>
-                  ? This cannot be undone.
+                  Delete filter <span className="font-medium text-slate-900">{deleteConfirm?.label}</span>? This cannot be undone.
                 </>
               )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 pt-2 flex-row">
-            <button
-              type="button"
-              onClick={() => setDeleteConfirm(null)}
-              className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
-            >
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-6 py-4">
+            <AlertDialogCancel className="mt-0 rounded-md border-slate-200 text-slate-700 hover:bg-slate-100">
               Cancel
-            </button>
-            <button
-              type="button"
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
               onClick={handleConfirmDelete}
-              className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-1.5"
+              className="rounded-md"
             >
-              <Trash size={11} /> Delete
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              Delete
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ══════════════════════════════════════ */}
       {/*  BUILDER CONFIG MODAL                  */}
@@ -2029,23 +1596,21 @@ const CategoryManager = () => {
             if (!open && !isSavingBuilder) setShowBuilderModal(false);
           }}
         >
-          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-xl bg-white border-stone-200 rounded-2xl shadow-xl">
-            <DialogHeader className="pb-2 border-b border-stone-100 mb-2">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                  <Settings size={14} className="text-indigo-600" />
-                </div>
-                <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
-                  PC Builder Settings: {selectedSubCategory?.name}
-                </DialogTitle>
-              </div>
+          <DialogContent className="flex max-h-[90vh] p-0 flex-col overflow-hidden border-slate-200 bg-white shadow-lg sm:max-w-lg sm:rounded-lg">
+            <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-5">
+              <DialogTitle className="text-lg font-semibold text-slate-900">
+                PC Builder Settings
+              </DialogTitle>
+              <DialogDescription className="text-sm text-slate-500">
+                Configuring constraints for <span className="font-medium text-slate-900">{selectedSubCategory?.name}</span>
+              </DialogDescription>
             </DialogHeader>
 
-            <div className="py-2 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
-                    Enabled in PC Builder
+                  <label className="text-xs font-medium text-slate-700">
+                    Visible in Builder
                   </label>
                   <Select
                     value={builderForm.isBuilderEnabled ? "true" : "false"}
@@ -2056,7 +1621,7 @@ const CategoryManager = () => {
                       }))
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-9 rounded-md border-slate-200 bg-white text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2066,7 +1631,7 @@ const CategoryManager = () => {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                  <label className="text-xs font-medium text-slate-700">
                     Display Order
                   </label>
                   <Input
@@ -2078,11 +1643,11 @@ const CategoryManager = () => {
                         builderOrder: parseInt(e.target.value) || 0,
                       }))
                     }
-                    className="h-9 text-sm"
+                    className="h-9 rounded-md border-slate-200 text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                  <label className="text-xs font-medium text-slate-700">
                     Short Label
                   </label>
                   <Input
@@ -2094,11 +1659,11 @@ const CategoryManager = () => {
                       }))
                     }
                     placeholder="e.g. CPU, RAM"
-                    className="h-9 text-sm"
+                    className="h-9 rounded-md border-slate-200 text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                  <label className="text-xs font-medium text-slate-700">
                     Lucide Icon Name
                   </label>
                   <Input
@@ -2109,107 +1674,79 @@ const CategoryManager = () => {
                         icon: e.target.value,
                       }))
                     }
-                    placeholder="cpu, memory"
-                    className="h-9 text-sm"
+                    placeholder="e.g. cpu, memory"
+                    className="h-9 rounded-md border-slate-200 text-sm font-mono"
                   />
                 </div>
+              </div>
 
-                <div className="col-span-2 space-y-2 mt-2">
-                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest flex items-center gap-1 border-b border-stone-100 pb-2">
-                    Builder Rules
-                  </label>
+              <div className="space-y-3 pt-4 border-t border-slate-200">
+                <label className="text-sm font-semibold text-slate-900">
+                  Builder Constraints
+                </label>
 
-                  <label className="flex items-center gap-3 p-2 hover:bg-stone-50 rounded-lg cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-600"
-                      checked={builderForm.isCore ?? false}
-                      onChange={(e) =>
-                        setBuilderForm((prev) => ({
-                          ...prev,
-                          isCore: e.target.checked,
-                        }))
-                      }
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-stone-800">
-                        Core Component
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        Essential for a functioning PC
-                      </span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-2 hover:bg-stone-50 rounded-lg cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-600"
-                      checked={builderForm.isRequired ?? false}
-                      onChange={(e) =>
-                        setBuilderForm((prev) => ({
-                          ...prev,
-                          isRequired: e.target.checked,
-                        }))
-                      }
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-stone-800">
-                        Required Selection
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        User must pick an item from this category
-                      </span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-2 hover:bg-stone-50 rounded-lg cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-600"
-                      checked={builderForm.allowMultiple ?? false}
-                      onChange={(e) =>
-                        setBuilderForm((prev) => ({
-                          ...prev,
-                          allowMultiple: e.target.checked,
-                        }))
-                      }
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-stone-800">
-                        Allow Multiple
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        Users can pick multiple items (e.g. RAM, Storage)
-                      </span>
-                    </div>
-                  </label>
+                <div className="grid gap-3">
+                  {[
+                    {
+                      field: "isCore",
+                      title: "Core Component",
+                      desc: "Essential for a functioning PC build",
+                    },
+                    {
+                      field: "isRequired",
+                      title: "Required Selection",
+                      desc: "User must pick an item from this category",
+                    },
+                    {
+                      field: "allowMultiple",
+                      title: "Allow Multiple",
+                      desc: "Users can pick multiple items (e.g. RAM, Storage)",
+                    },
+                  ].map(({ field, title, desc }) => (
+                    <label
+                      key={field}
+                      className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100"
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                        checked={Boolean((builderForm as any)[field])}
+                        onChange={(e) =>
+                          setBuilderForm((prev) => ({
+                            ...prev,
+                            [field]: e.target.checked,
+                          }))
+                        }
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{title}</p>
+                        <p className="text-xs text-slate-500">{desc}</p>
+                      </div>
+                    </label>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="gap-2 pt-2 flex-row">
-              <button
-                type="button"
+            <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowBuilderModal(false)}
-                className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50"
                 disabled={isSavingBuilder}
+                className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
               >
                 Cancel
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                size="sm"
                 onClick={saveBuilderConfig}
-                className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
                 disabled={isSavingBuilder}
+                className="gap-2 rounded-md bg-slate-900 text-white hover:bg-slate-800"
               >
-                {isSavingBuilder ? (
-                  <RefreshCw className="animate-spin" size={12} />
-                ) : (
-                  <Save size={12} />
-                )}
+                {isSavingBuilder ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
                 {isSavingBuilder ? "Saving..." : "Save Settings"}
-              </button>
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

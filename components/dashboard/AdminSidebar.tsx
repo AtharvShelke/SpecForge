@@ -3,13 +3,16 @@
 import { memo, useCallback } from "react";
 import {
   Bookmark,
+  Calculator,
   Hammer,
   Layers,
   LayoutDashboard,
   LogOut,
   Package,
+  Receipt,
   ShoppingBag,
   Tag,
+  Wrench,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,21 +22,25 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   key: string;
-  group?: "primary" | "secondary";
+  group?: "primary" | "secondary" | "settings";
 }
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Overview", icon: LayoutDashboard, key: "overview", group: "primary" },
   { label: "Orders", icon: ShoppingBag, key: "orders", group: "primary" },
+  { label: "Billing", icon: Receipt, key: "billing", group: "primary" },
   { label: "Products", icon: Package, key: "products", group: "primary" },
   { label: "Inventory", icon: Layers, key: "inventory", group: "primary" },
   { label: "Categories", icon: Tag, key: "categories", group: "secondary" },
   { label: "Brands", icon: Bookmark, key: "brands", group: "secondary" },
-  { label: "Builder Config", icon: Hammer, key: "builder-config", group: "secondary" },
+  { label: "Builder Config", icon: Hammer, key: "builder-config", group: "settings" },
+  { label: "Compatibility", icon: Wrench, key: "compatibility", group: "settings" },
+  { label: "Tax Settings", icon: Calculator, key: "tax-settings", group: "settings" },
 ];
 
 const PRIMARY_NAV = NAV_ITEMS.filter((item) => item.group === "primary");
 const SECONDARY_NAV = NAV_ITEMS.filter((item) => item.group === "secondary");
+const SETTINGS_NAV = NAV_ITEMS.filter((item) => item.group === "settings");
 
 interface AdminSidebarProps {
   activeTab: string;
@@ -139,6 +146,22 @@ export const AdminSidebar = memo<AdminSidebarProps>(
                 </p>
                 <div className="space-y-1">
                   {SECONDARY_NAV.map((item) => (
+                    <NavButton
+                      key={item.key}
+                      item={item}
+                      isActive={activeTab === item.key}
+                      onClick={handleNavClick}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-slate-400">
+                  Settings
+                </p>
+                <div className="space-y-1">
+                  {SETTINGS_NAV.map((item) => (
                     <NavButton
                       key={item.key}
                       item={item}

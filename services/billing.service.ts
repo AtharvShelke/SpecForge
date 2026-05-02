@@ -602,6 +602,16 @@ export async function createCreditNote(
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT TRAIL (standalone)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getInvoiceAuditTrail(invoiceId: string) {
+  return prisma.invoiceAuditEvent.findMany({
+    where: { invoiceId },
+    orderBy: { createdAt: "desc" },
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BILLING PROFILE

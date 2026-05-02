@@ -14,16 +14,16 @@ import {
   AlertCircle,
   RefreshCw,
   ChevronDown,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Brand, Category } from "@/types";
+import { Button } from "@/components/ui/button";
 
 // ─────────────────────────────────────────────────────────────
-// SHARED PRIMITIVES — memoized
+// SHARED PRIMITIVES
 // ─────────────────────────────────────────────────────────────
 
 const SectionLabel = memo(
@@ -34,52 +34,28 @@ const SectionLabel = memo(
     icon: React.ReactNode;
     children: React.ReactNode;
   }) => (
-    <div className="flex items-center gap-1.5">
-      <span className="text-stone-400">{icon}</span>
-      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-        {children}
-      </span>
+    <div className="flex items-center gap-2 text-slate-700">
+      <span className="text-slate-400">{icon}</span>
+      <span className="text-sm font-semibold">{children}</span>
     </div>
   ),
 );
 SectionLabel.displayName = "SectionLabel";
 
-type Stripe = "indigo" | "teal" | "amber" | "rose" | "violet" | "stone";
-
-// Hoisted outside component — never recreated
-const STRIPE_CLASSES: Record<Stripe, string> = {
-  indigo: "from-indigo-400 via-indigo-500 to-violet-400",
-  teal: "from-teal-400 via-emerald-400 to-emerald-300",
-  amber: "from-amber-400 via-amber-400 to-orange-300",
-  rose: "from-rose-400 via-rose-400 to-rose-300",
-  violet: "from-violet-400 via-violet-500 to-indigo-400",
-  stone: "from-stone-300 via-stone-400 to-stone-300",
-};
-
 const Panel = memo(
   ({
     children,
     className,
-    stripe,
   }: {
     children: React.ReactNode;
     className?: string;
-    stripe?: Stripe;
   }) => (
     <div
       className={cn(
-        "rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden",
+        "rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden",
         className,
       )}
     >
-      {stripe && (
-        <div
-          className={cn(
-            "h-0.5 w-full bg-gradient-to-r",
-            STRIPE_CLASSES[stripe],
-          )}
-        />
-      )}
       {children}
     </div>
   ),
@@ -104,19 +80,19 @@ const PanelHeader = memo(
   }) => (
     <div
       className={cn(
-        "px-3 sm:px-5 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between gap-2",
-        collapsible && "cursor-pointer select-none",
+        "flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-5",
+        collapsible && "cursor-pointer transition-colors hover:bg-slate-50",
       )}
       onClick={onClick}
     >
       <SectionLabel icon={icon}>{children}</SectionLabel>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {right}
         {collapsible && (
           <ChevronDown
-            size={13}
+            size={16}
             className={cn(
-              "text-stone-400 transition-transform duration-200",
+              "text-slate-400 transition-transform duration-200",
               open && "rotate-180",
             )}
           />
@@ -128,17 +104,17 @@ const PanelHeader = memo(
 PanelHeader.displayName = "PanelHeader";
 
 // ─────────────────────────────────────────────────────────────
-// CATEGORY PILL — memoized
+// CATEGORY PILL
 // ─────────────────────────────────────────────────────────────
 const CategoryPill = memo(({ label }: { label: string }) => (
-  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap bg-stone-100 text-stone-600 ring-1 ring-stone-200">
+  <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 whitespace-nowrap">
     {label}
   </span>
 ));
 CategoryPill.displayName = "CategoryPill";
 
 // ─────────────────────────────────────────────────────────────
-// BRAND CARD — memoized to prevent re-renders on list changes
+// BRAND CARD
 // ─────────────────────────────────────────────────────────────
 const BrandCard = memo(
   ({
@@ -156,44 +132,45 @@ const BrandCard = memo(
     const brandCategories = brand.categories ?? [];
 
     return (
-      <Panel stripe="stone" className="group">
-        <div className="px-3 py-3 space-y-2.5">
-          <div className="flex items-start justify-between gap-2">
+      <Panel className="group transition-colors hover:border-slate-300">
+        <div className="p-4 space-y-4">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-1 mb-0.5">
-                <Hash size={9} className="text-stone-300" />
-                <span className="text-[10px] font-mono font-bold text-stone-400">
+              <div className="mb-1 flex items-center gap-1.5">
+                <Hash size={12} className="text-slate-400" />
+                <span className="font-mono text-xs font-medium text-slate-500">
                   {shortId}
                 </span>
               </div>
-              <p className="text-sm font-bold text-stone-800 tracking-tight truncate">
+              <p className="truncate text-base font-semibold text-slate-900">
                 {brand.name}
               </p>
             </div>
             <button
               onClick={handleDelete}
-              className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 h-7 w-7 rounded-md flex items-center justify-center text-stone-300 hover:text-rose-500 hover:bg-rose-50 active:bg-rose-100 flex-shrink-0"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-slate-400 opacity-100 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100"
             >
-              <Trash size={13} />
+              <Trash size={14} />
             </button>
           </div>
 
-          <div className="h-px bg-stone-100" />
+          <div className="h-px bg-slate-100" />
 
-          {brandCategories.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {brandCategories.map((cat) => (
-                <CategoryPill key={cat} label={cat} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg w-fit">
-              <AlertCircle size={11} className="text-amber-500 shrink-0" />
-              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">
-                No categories
-              </span>
-            </div>
-          )}
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-500">Associated Categories</p>
+            {brandCategories.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {brandCategories.map((cat) => (
+                  <CategoryPill key={cat} label={cat} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex w-fit items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-amber-700">
+                <AlertCircle size={14} />
+                <span className="text-xs font-medium">No categories</span>
+              </div>
+            )}
+          </div>
         </div>
       </Panel>
     );
@@ -201,11 +178,8 @@ const BrandCard = memo(
 );
 BrandCard.displayName = "BrandCard";
 
-// Precompute category values once at module level — never recreated
-const EMPTY_CATEGORIES: string[] = [];
-
 // ─────────────────────────────────────────────────────────────
-// CATEGORY CHIP — memoized toggle chip for the mobile selector
+// CATEGORY CHIP — mobile selector
 // ─────────────────────────────────────────────────────────────
 const CategoryChip = memo(
   ({
@@ -223,13 +197,13 @@ const CategoryChip = memo(
         type="button"
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors duration-150 ring-1",
+          "flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
           active
-            ? "bg-indigo-600 text-white ring-indigo-600"
-            : "bg-white text-stone-500 ring-stone-200 hover:ring-stone-300",
+            ? "border-slate-900 bg-slate-900 text-white"
+            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
         )}
       >
-        {active && <CheckCircle2 size={9} />}
+        {active && <CheckCircle2 size={12} />}
         {cat}
       </button>
     );
@@ -238,7 +212,7 @@ const CategoryChip = memo(
 CategoryChip.displayName = "CategoryChip";
 
 // ─────────────────────────────────────────────────────────────
-// DESKTOP CATEGORY ROW — memoized list item
+// DESKTOP CATEGORY ROW — desktop selector
 // ─────────────────────────────────────────────────────────────
 const DesktopCategoryRow = memo(
   ({
@@ -256,21 +230,23 @@ const DesktopCategoryRow = memo(
         type="button"
         onClick={handleClick}
         className={cn(
-          "w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-left transition-colors duration-150",
+          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors",
           active
-            ? "bg-indigo-50 text-indigo-700"
-            : "text-stone-600 hover:bg-stone-50",
+            ? "bg-slate-100 text-slate-900"
+            : "text-slate-600 hover:bg-slate-50",
         )}
       >
         <div
           className={cn(
-            "w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
-            active ? "bg-indigo-500 border-indigo-500" : "border-stone-300",
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors",
+            active
+              ? "border-slate-900 bg-slate-900 text-white"
+              : "border-slate-300 bg-white",
           )}
         >
-          {active && <CheckCircle2 size={9} className="text-white" />}
+          {active && <CheckCircle2 size={10} strokeWidth={3} />}
         </div>
-        <span className="text-[11px] font-semibold">{cat}</span>
+        <span className="text-sm font-medium">{cat}</span>
       </button>
     );
   },
@@ -280,6 +256,9 @@ DesktopCategoryRow.displayName = "DesktopCategoryRow";
 // ─────────────────────────────────────────────────────────────
 // BRAND MANAGER
 // ─────────────────────────────────────────────────────────────
+
+const EMPTY_CATEGORIES: string[] = [];
+
 const BrandManager = () => {
   const admin = useAdmin() as any;
   const { syncData, isLoading } = admin;
@@ -347,7 +326,6 @@ const BrandManager = () => {
 
   const canSubmit = newBrandName.trim().length > 0 && selectedCats.length > 0;
 
-  // Pre-build a Set for O(1) active lookups instead of Array.includes O(n)
   const selectedCatSet = useMemo(() => new Set(selectedCats), [selectedCats]);
   const allCategories = useMemo(
     () => catalogCategories.map((category) => category.name).filter(Boolean),
@@ -357,182 +335,141 @@ const BrandManager = () => {
   const brandsCount = brands.length;
 
   return (
-    <div
-      className="space-y-2.5"
-      style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
-    >
-      {/* ── PAGE HEADER ── */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-stone-800 tracking-tight">
-              Brand Management
-            </h2>
-            <p className="text-[11px] text-stone-400 mt-0.5 hidden sm:block">
-              Manage brand portfolio and category associations
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md shadow-sm hidden sm:inline">
-            {brandsCount} brands
-          </span>
-          <button
-            onClick={handleSyncData}
-            disabled={isLoading}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Sync</span>
-          </button>
-        </div>
-      </div>
+    <div className="space-y-6">
+
 
       {/* ── MAIN LAYOUT ── */}
-      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* ── LEFT: ADD BRAND FORM ── */}
         <div className="lg:col-span-4">
-          <Panel stripe="indigo" className="lg:sticky lg:top-6">
+          <Panel className="lg:sticky lg:top-6">
             <PanelHeader
-              icon={<Plus size={12} />}
+              icon={<Building2 size={16} />}
               collapsible
               open={formOpen}
               onClick={toggleForm}
               right={
-                <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md sm:hidden">
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600 sm:hidden">
                   {brandsCount}
                 </span>
               }
             >
-              Add Brand
+              Add New Brand
             </PanelHeader>
 
-            <div className={cn("lg:block", formOpen ? "block" : "hidden")}>
-              <form
-                onSubmit={handleAdd}
-                className="px-3 sm:px-5 py-3 space-y-3"
-              >
-                {/* Brand name */}
+            <div className={cn("p-5", formOpen ? "block" : "hidden lg:block")}>
+              <form onSubmit={handleAdd} className="space-y-5">
                 <div className="space-y-1.5">
-                  <SectionLabel icon={<Tag size={11} />}>
+                  <label className="text-sm font-medium text-slate-700">
                     Brand Name
-                  </SectionLabel>
+                  </label>
                   <Input
                     placeholder="e.g. ASUS"
                     value={newBrandName}
                     onChange={handleNameChange}
-                    className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-indigo-300 focus:ring-indigo-500/20 placeholder:text-stone-400 font-medium"
+                    className="h-10 rounded-md border-slate-200 text-sm"
                     required
                   />
                 </div>
 
-                {/* Category selector */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <SectionLabel icon={<Layers size={11} />}>
-                      Categories
-                    </SectionLabel>
+                    <label className="text-sm font-medium text-slate-700">
+                      Target Categories
+                    </label>
                     {selectedCats.length > 0 && (
-                      <span className="text-[10px] font-bold font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600">
                         {selectedCats.length} selected
                       </span>
                     )}
                   </div>
 
                   {/* Mobile chip grid */}
-                  <div className="lg:hidden flex flex-wrap gap-1.5 p-2 rounded-lg border border-stone-200 bg-stone-50/50">
-                    {(allCategories.length
-                      ? allCategories
-                      : EMPTY_CATEGORIES
-                    ).map((cat) => (
-                      <CategoryChip
-                        key={cat}
-                        cat={cat}
-                        active={selectedCatSet.has(cat)}
-                        onToggle={toggleCat}
-                      />
-                    ))}
+                  <div className="flex flex-wrap gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 lg:hidden">
+                    {(allCategories.length ? allCategories : EMPTY_CATEGORIES).map(
+                      (cat) => (
+                        <CategoryChip
+                          key={cat}
+                          cat={cat}
+                          active={selectedCatSet.has(cat)}
+                          onToggle={toggleCat}
+                        />
+                      ),
+                    )}
                   </div>
 
                   {/* Desktop scrollable list */}
-                  <div className="hidden lg:block rounded-lg border border-stone-200 overflow-hidden">
-                    <ScrollArea className="h-[200px]">
-                      <div className="p-1.5 space-y-0.5">
-                        {(allCategories.length
-                          ? allCategories
-                          : EMPTY_CATEGORIES
-                        ).map((cat) => (
-                          <DesktopCategoryRow
-                            key={cat}
-                            cat={cat}
-                            active={selectedCatSet.has(cat)}
-                            onToggle={toggleCat}
-                          />
-                        ))}
+                  <div className="hidden overflow-hidden rounded-md border border-slate-200 lg:block">
+                    <ScrollArea className="h-[240px]">
+                      <div className="p-2 space-y-0.5">
+                        {(allCategories.length ? allCategories : EMPTY_CATEGORIES).map(
+                          (cat) => (
+                            <DesktopCategoryRow
+                              key={cat}
+                              cat={cat}
+                              active={selectedCatSet.has(cat)}
+                              onToggle={toggleCat}
+                            />
+                          ),
+                        )}
                       </div>
                     </ScrollArea>
                   </div>
                 </div>
 
-                {/* Submit */}
-                <button
+                <Button
                   type="submit"
                   disabled={!canSubmit}
                   className={cn(
-                    "w-full h-9 rounded-lg text-xs font-bold uppercase tracking-widest transition-all duration-150",
-                    canSubmit
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm active:bg-indigo-800"
-                      : "bg-stone-100 text-stone-400 cursor-not-allowed",
+                    "w-full bg-slate-900 text-white hover:bg-slate-800",
+                    !canSubmit && "bg-slate-100 text-slate-400 hover:bg-slate-100 cursor-not-allowed"
                   )}
                 >
-                  Save Brand
-                </button>
+                  <Plus size={16} className="mr-2" /> Save Brand
+                </Button>
               </form>
             </div>
           </Panel>
         </div>
 
         {/* ── RIGHT: BRAND LIST ── */}
-        <div className="lg:col-span-8 space-y-3">
-          {/* Search bar */}
+        <div className="space-y-4 lg:col-span-8">
           <Panel>
-            <div className="px-3 py-2.5">
+            <div className="p-4">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input
                   placeholder="Search brands…"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="pl-8 h-8 text-xs border-stone-200 bg-stone-50/50 rounded-lg placeholder:text-stone-400 font-medium"
+                  className="h-10 rounded-md border-slate-200 pl-9 text-sm"
                 />
               </div>
             </div>
           </Panel>
 
-          {/* Empty state */}
           {filteredBrands.length === 0 ? (
             <Panel>
-              <div className="py-12 flex flex-col items-center gap-2.5">
-                <Tag size={22} className="text-stone-200" />
-                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+              <div className="flex flex-col items-center justify-center py-16">
+                <Tag size={32} className="mb-4 text-slate-300" />
+                <p className="mb-2 text-sm font-medium text-slate-500">
                   {searchQuery
                     ? "No brands match your search"
-                    : "No brands found"}
+                    : "No brands configured"}
                 </p>
                 {!searchQuery && (
                   <button
                     type="button"
                     onClick={handleOpenForm}
-                    className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline"
+                    className="text-sm font-medium text-slate-900 hover:underline"
                   >
-                    Add your first brand →
+                    Add your first brand
                   </button>
                 )}
               </div>
             </Panel>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {filteredBrands.map((brand) => (
                 <BrandCard
                   key={brand.id}

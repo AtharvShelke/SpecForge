@@ -9,9 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -20,10 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Save, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 
 interface CompatibilityRule {
   id?: string;
@@ -81,7 +78,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
   const [specs, setSpecs] = useState<SpecDefinition[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Initialize form data when rule changes
   useEffect(() => {
     if (rule) {
       setFormData(rule);
@@ -99,7 +95,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
     }
   }, [rule]);
 
-  // Fetch scopes and specs when dialog opens
   useEffect(() => {
     if (isOpen) {
       Promise.all([
@@ -115,7 +110,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       await onSave(formData);
     } finally {
@@ -127,168 +121,143 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Filter specs based on selected scope
   const getSpecsForScope = (scopeId: string, isSource: boolean) => {
     const scope = scopes.find((s) => s.id === scopeId);
     if (!scope) return [];
-    
-    const subCategoryId = isSource 
-      ? scope.sourceSubCategory.id 
+
+    const subCategoryId = isSource
+      ? scope.sourceSubCategory.id
       : scope.targetSubCategory.id;
-    
+
     return specs.filter((spec) => spec.subCategoryId === subCategoryId);
   };
 
   const isFormValid = () => {
     if (!formData.name || !formData.message) return false;
-    
+
     if (formData.type === "PAIR") {
       return !!(formData.scopeId && formData.sourceSpecId && formData.targetSpecId && formData.operator);
     }
-    
+
     return true;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-2xl flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+        <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-5">
+          <DialogTitle className="text-lg font-semibold text-slate-900">
             {rule ? "Edit Compatibility Rule" : "Create Compatibility Rule"}
           </DialogTitle>
-          <DialogDescription>
-            Configure a compatibility rule to validate PC builds.
+          <DialogDescription className="text-sm text-slate-500">
+            Configure a dynamic rule to validate PC component selections.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Rule Name</Label>
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
+          <form id="rule-form" onSubmit={handleSubmit} className="space-y-8">
+
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Basic Information</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700">Rule Name</label>
                   <Input
-                    id="name"
                     value={formData.name || ""}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     placeholder="e.g., CPU-Motherboard Socket Match"
+                    className="h-10 rounded-md border-slate-200 text-sm"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="type">Rule Type</Label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700">Rule Type</label>
                   <Select
                     value={formData.type}
                     onValueChange={(value) => handleInputChange("type", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PAIR">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default">Pair</Badge>
-                          <span>Compare two components</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="COMPONENT">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-blue-100 text-blue-800">Component</Badge>
-                          <span>Single component constraint</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="GLOBAL">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-purple-100 text-purple-800">Global</Badge>
-                          <span>Full-build constraint</span>
-                        </div>
-                      </SelectItem>
+                      <SelectItem value="PAIR">Pair (Compare two components)</SelectItem>
+                      <SelectItem value="COMPONENT">Component (Single constraint)</SelectItem>
+                      <SelectItem value="GLOBAL">Global (Full-build constraint)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700">Description</label>
+                  <Textarea
+                    value={formData.description || ""}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Optional description of what this rule checks"
+                    rows={2}
+                    className="resize-none rounded-md border-slate-200 text-sm"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description || ""}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  placeholder="Optional description of what this rule checks"
-                  rows={2}
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="severity">Severity</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700">Severity</label>
                   <Select
                     value={formData.severity}
                     onValueChange={(value) => handleInputChange("severity", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                       <SelectValue placeholder="Select severity" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ERROR">
-                        <Badge variant="destructive">Error</Badge>
-                      </SelectItem>
-                      <SelectItem value="WARNING">
-                        <Badge variant="secondary">Warning</Badge>
-                      </SelectItem>
-                      <SelectItem value="INFO">
-                        <Badge variant="outline">Info</Badge>
-                      </SelectItem>
+                      <SelectItem value="ERROR">Error</SelectItem>
+                      <SelectItem value="WARNING">Warning</SelectItem>
+                      <SelectItem value="INFO">Info</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="priority">Priority</Label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700">Priority</label>
                   <Input
-                    id="priority"
                     type="number"
                     value={formData.priority || 0}
                     onChange={(e) => handleInputChange("priority", parseInt(e.target.value))}
                     min={0}
                     max={100}
+                    className="h-10 rounded-md border-slate-200 text-sm font-mono"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="enabled"
-                    checked={formData.enabled || false}
-                    onCheckedChange={(checked) => handleInputChange("enabled", checked)}
-                  />
-                  <Label htmlFor="enabled">Enabled</Label>
+                <div className="flex items-center space-x-3 pt-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.enabled || false}
+                      onChange={(e) => handleInputChange("enabled", e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                    />
+                    <span className="text-sm font-medium text-slate-700">Rule Enabled</span>
+                  </label>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Rule Configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Rule Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            {/* Rule Configuration */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Rule Configuration</h4>
+
               {formData.type === "PAIR" && (
-                <>
-                  <div>
-                    <Label htmlFor="scope">Compatibility Scope</Label>
+                <div className="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-700">Compatibility Scope</label>
                     <Select
                       value={formData.scopeId || ""}
                       onValueChange={(value) => {
                         handleInputChange("scopeId", value);
-                        // Clear spec selections when scope changes
                         handleInputChange("sourceSpecId", "");
                         handleInputChange("targetSpecId", "");
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                         <SelectValue placeholder="Select scope" />
                       </SelectTrigger>
                       <SelectContent>
@@ -301,15 +270,15 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="sourceSpec">Source Spec</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-700">Source Spec</label>
                       <Select
                         value={formData.sourceSpecId || ""}
                         onValueChange={(value) => handleInputChange("sourceSpecId", value)}
                         disabled={!formData.scopeId}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                           <SelectValue placeholder="Select source spec" />
                         </SelectTrigger>
                         <SelectContent>
@@ -321,14 +290,14 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label htmlFor="targetSpec">Target Spec</Label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-700">Target Spec</label>
                       <Select
                         value={formData.targetSpecId || ""}
                         onValueChange={(value) => handleInputChange("targetSpecId", value)}
                         disabled={!formData.scopeId}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                           <SelectValue placeholder="Select target spec" />
                         </SelectTrigger>
                         <SelectContent>
@@ -342,13 +311,13 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="operator">Operator</Label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-700">Operator</label>
                     <Select
                       value={formData.operator || ""}
                       onValueChange={(value) => handleInputChange("operator", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                         <SelectValue placeholder="Select operator" />
                       </SelectTrigger>
                       <SelectContent>
@@ -363,83 +332,90 @@ const RuleEditor: React.FC<RuleEditorProps> = ({
                       </SelectContent>
                     </Select>
                   </div>
-                </>
+                </div>
               )}
 
               {(formData.type === "COMPONENT" || formData.type === "GLOBAL") && (
-                <div>
-                  <Label htmlFor="logic">Logic Configuration</Label>
+                <div className="space-y-1.5 rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <label className="text-xs font-medium text-slate-700">Logic Configuration</label>
                   <Textarea
-                    id="logic"
                     value={formData.logic ? JSON.stringify(formData.logic, null, 2) : ""}
                     onChange={(e) => {
                       try {
                         const logic = e.target.value ? JSON.parse(e.target.value) : null;
                         handleInputChange("logic", logic);
                       } catch (error) {
-                        // Invalid JSON, don't update
+                        // Let users type invalid JSON temporarily
                       }
                     }}
                     placeholder='{"operator": "GREATER_OR_EQUAL", "left": {"ref": "PSU.Wattage"}, "right": {"ref": "totals.totalTDP", "offset": 100}}'
                     rows={6}
-                    className="font-mono text-sm"
+                    className="font-mono text-xs rounded-md border-slate-200 bg-white"
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     JSON configuration for complex logic. Use variable references like "CPU.TDP" or "totals.totalTDP".
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Message Configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Message Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="message">Error Message</Label>
-                <Textarea
-                  id="message"
-                  value={formData.message || ""}
-                  onChange={(e) => handleInputChange("message", e.target.value)}
-                  placeholder="Message to show when rule fails"
-                  rows={2}
-                  required
-                />
+            {/* Message Configuration */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Messages</h4>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700">Error Message</label>
+                  <Textarea
+                    value={formData.message || ""}
+                    onChange={(e) => handleInputChange("message", e.target.value)}
+                    placeholder="Message to show when rule fails"
+                    rows={2}
+                    className="resize-none rounded-md border-slate-200 text-sm"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700">Message Template (Optional)</label>
+                  <Textarea
+                    value={formData.messageTemplate || ""}
+                    onChange={(e) => handleInputChange("messageTemplate", e.target.value)}
+                    placeholder="Template with variables: e.g., 'CPU {source.name} ({source.TDP}W) exceeds limit'"
+                    rows={2}
+                    className="resize-none rounded-md border-slate-200 text-sm font-mono"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Use <span className="font-medium text-slate-700">{"{source.field}"}</span>, <span className="font-medium text-slate-700">{"{target.field}"}</span>, or <span className="font-medium text-slate-700">{"{totals.field}"}</span> for dynamic values.
+                  </p>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="messageTemplate">Message Template (Optional)</Label>
-                <Textarea
-                  id="messageTemplate"
-                  value={formData.messageTemplate || ""}
-                  onChange={(e) => handleInputChange("messageTemplate", e.target.value)}
-                  placeholder="Template with variable interpolation: e.g., 'CPU {source.name} ({source.TDP}W) exceeds limit'"
-                  rows={2}
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Use {"{"}source.field{"}"}, {"{"}target.field{"}"}, or {"{"}totals.field{"}"} for dynamic values.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!isFormValid() || loading}>
-              {loading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              {rule ? "Update Rule" : "Create Rule"}
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </div>
+
+        <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="rule-form"
+            disabled={!isFormValid() || loading}
+            className="rounded-md bg-slate-900 text-white hover:bg-slate-800"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {rule ? "Update Rule" : "Create Rule"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

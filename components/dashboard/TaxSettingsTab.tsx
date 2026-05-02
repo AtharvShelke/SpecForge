@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo } from "react";
-import { Settings, Save, RotateCcw, Check, DollarSign } from "lucide-react";
+import { Save, RotateCcw, Check, DollarSign } from "lucide-react";
 import { apiFetch } from "@/lib/helpers";
+import { cn } from "@/lib/utils";
 
 const Toggle = memo(
   ({
@@ -16,21 +17,23 @@ const Toggle = memo(
     checked: boolean;
     onChange: (v: boolean) => void;
   }) => (
-    <label className="flex items-start gap-3 p-3 rounded-xl border border-zinc-100 hover:border-zinc-200 transition-colors cursor-pointer">
+    <label className="flex cursor-pointer items-start gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100">
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`mt-0.5 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${checked ? "bg-indigo-600" : "bg-zinc-200"}`}
+        className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${checked ? "bg-slate-900" : "bg-slate-300"
+          }`}
       >
         <span
-          className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[18px]" : "translate-x-[3px]"}`}
+          className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[18px]" : "translate-x-[3px]"
+            }`}
         />
       </button>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-zinc-800">{label}</p>
-        <p className="text-xs text-zinc-400 mt-0.5">{desc}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-900">{label}</p>
+        <p className="mt-0.5 text-xs text-slate-500">{desc}</p>
       </div>
     </label>
   ),
@@ -58,7 +61,7 @@ const TaxSettingsTab = memo(function TaxSettingsTab() {
   useEffect(() => {
     apiFetch<TaxSettingsData>("/api/admin/tax-settings")
       .then((data) => setSettings(data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -93,107 +96,110 @@ const TaxSettingsTab = memo(function TaxSettingsTab() {
 
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-16 rounded-xl bg-zinc-100" />
+      <div className="space-y-4 animate-pulse">
+        {[1, 2].map((i) => (
+          <div key={i} className="h-20 rounded-lg bg-slate-100" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <DollarSign size={18} className="text-emerald-500" />
-          <h3 className="text-lg font-bold text-zinc-900">Tax Settings</h3>
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+            <DollarSign size={16} />
+          </div>
+          <h3 className="text-base font-semibold text-slate-900">Tax Settings</h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-500 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
+            className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw size={14} /> <span className="hidden sm:inline">Reset Defaults</span>
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
           >
             {saved ? (
               <>
-                <Check size={12} /> Saved
+                <Check size={14} /> Saved
               </>
             ) : (
               <>
-                <Save size={12} /> {saving ? "Saving…" : "Save"}
+                <Save size={14} /> {saving ? "Saving…" : "Save Settings"}
               </>
             )}
           </button>
         </div>
       </div>
 
-      <div className="grid gap-3">
-        <Toggle
-          label="Enable Tax Calculation"
-          desc="Apply tax to orders and invoices"
-          checked={settings.enabled}
-          onChange={(v) => update("enabled", v)}
-        />
+      <div className="p-5 space-y-8">
+        <div className="grid gap-5 max-w-2xl">
+          <Toggle
+            label="Enable Tax Calculation"
+            desc="Apply tax automatically to orders and invoices during checkout."
+            checked={settings.enabled}
+            onChange={(v) => update("enabled", v)}
+          />
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-700">
+              Tax Rate (%)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={settings.taxRatePct}
+              onChange={(e) => update("taxRatePct", Number(e.target.value))}
+              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              placeholder="e.g. 18"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-700">
+              Tax Name
+            </label>
+            <input
+              type="text"
+              value={settings.taxName}
+              onChange={(e) => update("taxName", e.target.value)}
+              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              placeholder="e.g. GST, VAT, Sales Tax"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-700">
+              Description (Optional)
+            </label>
+            <textarea
+              value={settings.taxDescription ?? ""}
+              onChange={(e) => update("taxDescription", e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              placeholder="Additional description for invoices"
+            />
+          </div>
+        </div>
+
+        {/* Developer Info */}
+        <details className="group border-t border-slate-200 pt-6">
+          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-slate-400 transition-colors hover:text-slate-600 focus:outline-none">
+            Developer Info: JSON Payload
+          </summary>
+          <pre className="mt-4 max-h-64 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-4 text-xs font-mono text-slate-600 shadow-inner">
+            {JSON.stringify(settings, null, 2)}
+          </pre>
+        </details>
       </div>
-
-      <div className="grid gap-4">
-        <div>
-          <label className="text-sm font-semibold text-zinc-700 mb-2 block">
-            Tax Rate (%)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            max="100"
-            value={settings.taxRatePct}
-            onChange={(e) => update("taxRatePct", Number(e.target.value))}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-            placeholder="e.g. 18"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-semibold text-zinc-700 mb-2 block">
-            Tax Name
-          </label>
-          <input
-            type="text"
-            value={settings.taxName}
-            onChange={(e) => update("taxName", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-            placeholder="e.g. GST, VAT, Sales Tax"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-semibold text-zinc-700 mb-2 block">
-            Description (Optional)
-          </label>
-          <textarea
-            value={settings.taxDescription ?? ""}
-            onChange={(e) => update("taxDescription", e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
-            placeholder="Additional description for invoices"
-          />
-        </div>
-      </div>
-
-      <details className="group">
-        <summary className="text-xs font-semibold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-zinc-600">
-          JSON Preview
-        </summary>
-        <pre className="mt-2 p-3 text-xs bg-zinc-50 border border-zinc-100 rounded-lg overflow-auto max-h-48 text-zinc-600">
-          {JSON.stringify(settings, null, 2)}
-        </pre>
-      </details>
     </div>
   );
 });

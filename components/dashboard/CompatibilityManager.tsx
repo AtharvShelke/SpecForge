@@ -2,13 +2,11 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Settings, Play, Bug, Search, Filter } from "lucide-react";
+import { Plus, Settings, Play, Bug, AlertTriangle, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-// Import components (we'll create these next)
+// Import components
 import RuleList from "./RuleList";
 import RuleEditor from "./RuleEditor";
 import DerivedSpecManager from "./DerivedSpecManager";
@@ -50,7 +48,6 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch rules from API
   const fetchRules = useCallback(async () => {
     setLoading(true);
     try {
@@ -66,7 +63,6 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
     }
   }, []);
 
-  // Filter rules based on search query
   const filteredRules = useMemo(() => {
     if (!searchQuery) return rules;
     
@@ -80,7 +76,6 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
     );
   }, [rules, searchQuery]);
 
-  // Handle rule creation/editing
   const handleCreateRule = useCallback(() => {
     setSelectedRule(null);
     setIsEditorOpen(true);
@@ -114,7 +109,6 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
     }
   }, [selectedRule, fetchRules]);
 
-  // Handle rule deletion
   const handleDeleteRule = useCallback(async (ruleId: string) => {
     if (!confirm("Are you sure you want to delete this rule?")) return;
     
@@ -131,7 +125,6 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
     }
   }, [fetchRules]);
 
-  // Handle rule toggle
   const handleToggleRule = useCallback(async (ruleId: string, enabled: boolean) => {
     try {
       const response = await fetch(`/api/compatibility/rules/${ruleId}`, {
@@ -148,7 +141,6 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
     }
   }, [fetchRules]);
 
-  // Stats for overview
   const stats = useMemo(() => {
     const total = rules.length;
     const enabled = rules.filter(r => r.enabled).length;
@@ -161,69 +153,64 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Compatibility Rules</h1>
-          <p className="text-muted-foreground">
-            Manage dynamic compatibility rules for PC builds
+          <h1 className="text-xl font-semibold text-slate-900">Compatibility Rules</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage dynamic compatibility rules and constraints for PC builds.
           </p>
         </div>
-        <Button onClick={handleCreateRule} className="gap-2">
-          <Plus className="h-4 w-4" />
+        <button 
+          onClick={handleCreateRule} 
+          className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+        >
+          <Plus size={14} />
           New Rule
-        </Button>
+        </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Rules</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Rules</CardTitle>
-            <Play className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.enabled}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Error Rules</CardTitle>
-            <Badge variant="destructive" className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.errors}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Warning Rules</CardTitle>
-            <Badge variant="secondary" className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.warnings}</div>
-          </CardContent>
-        </Card>
+        {[
+          { label: "Total Rules", value: stats.total, icon: <Settings size={16} />, color: "text-slate-500", bg: "bg-slate-50" },
+          { label: "Active Rules", value: stats.enabled, icon: <Play size={16} />, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Error Rules", value: stats.errors, icon: <XCircle size={16} />, color: "text-rose-600", bg: "bg-rose-50" },
+          { label: "Warning Rules", value: stats.warnings, icon: <AlertTriangle size={16} />, color: "text-amber-600", bg: "bg-amber-50" },
+        ].map((stat, idx) => (
+          <div key={idx} className="flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <p className="mt-1.5 text-2xl font-semibold text-slate-900">{stat.value}</p>
+              </div>
+              <div className={cn("rounded-md p-2", stat.bg, stat.color)}>
+                {stat.icon}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="rules">Rules</TabsTrigger>
-          <TabsTrigger value="sandbox">Sandbox</TabsTrigger>
-          <TabsTrigger value="derived-specs">Derived Specs</TabsTrigger>
-          <TabsTrigger value="debug">Debug</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="flex w-full sm:w-auto h-auto flex-wrap rounded-md border border-slate-200 bg-slate-50 p-1">
+          {[
+            { value: "rules", label: "Rules" },
+            { value: "sandbox", label: "Sandbox" },
+            { value: "derived-specs", label: "Derived Specs" },
+            { value: "debug", label: "Debug" },
+          ].map((tab) => (
+            <TabsTrigger 
+              key={tab.value}
+              value={tab.value}
+              className="rounded-sm px-4 py-1.5 text-sm font-medium text-slate-500 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="rules" className="space-y-4">
+        <TabsContent value="rules" className="mt-0">
           <RuleList
             rules={filteredRules}
             loading={loading}
@@ -236,31 +223,29 @@ const CompatibilityManager: React.FC<CompatibilityManagerProps> = () => {
           />
         </TabsContent>
 
-        <TabsContent value="sandbox" className="space-y-4">
+        <TabsContent value="sandbox" className="mt-0">
           <RuleSandbox rules={rules} />
         </TabsContent>
 
-        <TabsContent value="derived-specs" className="space-y-4">
+        <TabsContent value="derived-specs" className="mt-0">
           <DerivedSpecManager />
         </TabsContent>
 
-        <TabsContent value="debug" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bug className="h-5 w-5" />
-                Rule Debugger
-              </CardTitle>
-              <CardDescription>
-                Debug individual rules with step-by-step evaluation traces
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Select a rule from the Rules tab and click "Debug" to see detailed evaluation traces.
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent value="debug" className="mt-0">
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="border-b border-slate-200 bg-white px-5 py-4 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+                <Bug size={16} />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Rule Debugger</h3>
+                <p className="text-xs text-slate-500">Debug individual rules with step-by-step evaluation traces.</p>
+              </div>
+            </div>
+            <div className="p-8 text-center text-sm text-slate-500">
+              Select a rule from the Rules tab and click "Debug" to see detailed evaluation traces.
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 

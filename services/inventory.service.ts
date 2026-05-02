@@ -90,7 +90,20 @@ export async function getInventoryItems(filters?: {
   return items as unknown as InventoryItem[];
 }
 
+export async function getInventoryItem(id: string): Promise<InventoryItem> {
+  const item = await prisma.inventoryItem.findUnique({
+    where: { id },
+    include: {
+      variant: { include: { product: true } },
+    },
+  });
+  if (!item) throw new ServiceError("Inventory item not found", 404);
+  return item as unknown as InventoryItem;
+}
 
+export function getAvailableQuantity(item: InventoryItem): number {
+  return (item.quantityOnHand || 0) - (item.quantityReserved || 0);
+}
 
 export async function createInventoryItem(data: {
   variantId: string;
@@ -416,4 +429,27 @@ export async function updateReservation(
 
   // Default update — no inventory side‐effects
   return prisma.reservation.update({ where: { id }, data: patch });
+}
+
+
+export async function adjustStockBySku(
+  skuOrVariantId: string,
+  quantity: number,
+  type: string,
+) {
+  // Try to find the variant by SKU first, fall back to treating input as variantId
+  const variant = await prisma.productVariant.findFirst({
+    where: {
+      OR: [
+        { id: skuOrVariantId },
+        { sku: skuOrVariantId },
+      ],
+    },
+    select: { id: true },
+  });
+  
+  const variantId = variant?.id;
+  if (!variantId) throw new ServiceError(`Variant not found: ${skuOrVariantId}`, 404);
+  
+  return adjustStockByVariant(variantId, quantity, type);
 }
