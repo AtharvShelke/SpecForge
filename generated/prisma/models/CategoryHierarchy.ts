@@ -232,9 +232,9 @@ export type CategoryHierarchyWhereInput = {
   brand?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   parentId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   sortOrder?: Prisma.IntFilter<"CategoryHierarchy"> | number
+  category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
   parent?: Prisma.XOR<Prisma.CategoryHierarchyNullableScalarRelationFilter, Prisma.CategoryHierarchyWhereInput> | null
   children?: Prisma.CategoryHierarchyListRelationFilter
-  category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
 }
 
 export type CategoryHierarchyOrderByWithRelationInput = {
@@ -245,9 +245,9 @@ export type CategoryHierarchyOrderByWithRelationInput = {
   brand?: Prisma.SortOrderInput | Prisma.SortOrder
   parentId?: Prisma.SortOrderInput | Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
+  category?: Prisma.CategoryOrderByWithRelationInput
   parent?: Prisma.CategoryHierarchyOrderByWithRelationInput
   children?: Prisma.CategoryHierarchyOrderByRelationAggregateInput
-  category?: Prisma.CategoryOrderByWithRelationInput
 }
 
 export type CategoryHierarchyWhereUniqueInput = Prisma.AtLeast<{
@@ -261,9 +261,9 @@ export type CategoryHierarchyWhereUniqueInput = Prisma.AtLeast<{
   brand?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   parentId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   sortOrder?: Prisma.IntFilter<"CategoryHierarchy"> | number
+  category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
   parent?: Prisma.XOR<Prisma.CategoryHierarchyNullableScalarRelationFilter, Prisma.CategoryHierarchyWhereInput> | null
   children?: Prisma.CategoryHierarchyListRelationFilter
-  category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
 }, "id">
 
 export type CategoryHierarchyOrderByWithAggregationInput = {
@@ -300,9 +300,9 @@ export type CategoryHierarchyCreateInput = {
   query?: string | null
   brand?: string | null
   sortOrder?: number
+  category?: Prisma.CategoryCreateNestedOneWithoutCategoryHierarchiesInput
   parent?: Prisma.CategoryHierarchyCreateNestedOneWithoutChildrenInput
   children?: Prisma.CategoryHierarchyCreateNestedManyWithoutParentInput
-  category?: Prisma.CategoryCreateNestedOneWithoutCategoryHierarchiesInput
 }
 
 export type CategoryHierarchyUncheckedCreateInput = {
@@ -322,9 +322,9 @@ export type CategoryHierarchyUpdateInput = {
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  category?: Prisma.CategoryUpdateOneWithoutCategoryHierarchiesNestedInput
   parent?: Prisma.CategoryHierarchyUpdateOneWithoutChildrenNestedInput
   children?: Prisma.CategoryHierarchyUpdateManyWithoutParentNestedInput
-  category?: Prisma.CategoryUpdateOneWithoutCategoryHierarchiesNestedInput
 }
 
 export type CategoryHierarchyUncheckedUpdateInput = {
@@ -584,8 +584,8 @@ export type CategoryHierarchyCreateWithoutChildrenInput = {
   query?: string | null
   brand?: string | null
   sortOrder?: number
-  parent?: Prisma.CategoryHierarchyCreateNestedOneWithoutChildrenInput
   category?: Prisma.CategoryCreateNestedOneWithoutCategoryHierarchiesInput
+  parent?: Prisma.CategoryHierarchyCreateNestedOneWithoutChildrenInput
 }
 
 export type CategoryHierarchyUncheckedCreateWithoutChildrenInput = {
@@ -609,8 +609,8 @@ export type CategoryHierarchyCreateWithoutParentInput = {
   query?: string | null
   brand?: string | null
   sortOrder?: number
-  children?: Prisma.CategoryHierarchyCreateNestedManyWithoutParentInput
   category?: Prisma.CategoryCreateNestedOneWithoutCategoryHierarchiesInput
+  children?: Prisma.CategoryHierarchyCreateNestedManyWithoutParentInput
 }
 
 export type CategoryHierarchyUncheckedCreateWithoutParentInput = {
@@ -650,8 +650,8 @@ export type CategoryHierarchyUpdateWithoutChildrenInput = {
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  parent?: Prisma.CategoryHierarchyUpdateOneWithoutChildrenNestedInput
   category?: Prisma.CategoryUpdateOneWithoutCategoryHierarchiesNestedInput
+  parent?: Prisma.CategoryHierarchyUpdateOneWithoutChildrenNestedInput
 }
 
 export type CategoryHierarchyUncheckedUpdateWithoutChildrenInput = {
@@ -733,8 +733,8 @@ export type CategoryHierarchyUpdateWithoutParentInput = {
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  children?: Prisma.CategoryHierarchyUpdateManyWithoutParentNestedInput
   category?: Prisma.CategoryUpdateOneWithoutCategoryHierarchiesNestedInput
+  children?: Prisma.CategoryHierarchyUpdateManyWithoutParentNestedInput
 }
 
 export type CategoryHierarchyUncheckedUpdateWithoutParentInput = {
@@ -795,9 +795,9 @@ export type CategoryHierarchySelect<ExtArgs extends runtime.Types.Extensions.Int
   brand?: boolean
   parentId?: boolean
   sortOrder?: boolean
+  category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
   parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
   children?: boolean | Prisma.CategoryHierarchy$childrenArgs<ExtArgs>
-  category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
   _count?: boolean | Prisma.CategoryHierarchyCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["categoryHierarchy"]>
 
@@ -809,8 +809,8 @@ export type CategoryHierarchySelectCreateManyAndReturn<ExtArgs extends runtime.T
   brand?: boolean
   parentId?: boolean
   sortOrder?: boolean
-  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
   category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
+  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
 }, ExtArgs["result"]["categoryHierarchy"]>
 
 export type CategoryHierarchySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -821,8 +821,8 @@ export type CategoryHierarchySelectUpdateManyAndReturn<ExtArgs extends runtime.T
   brand?: boolean
   parentId?: boolean
   sortOrder?: boolean
-  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
   category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
+  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
 }, ExtArgs["result"]["categoryHierarchy"]>
 
 export type CategoryHierarchySelectScalar = {
@@ -837,26 +837,26 @@ export type CategoryHierarchySelectScalar = {
 
 export type CategoryHierarchyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "label" | "categoryId" | "query" | "brand" | "parentId" | "sortOrder", ExtArgs["result"]["categoryHierarchy"]>
 export type CategoryHierarchyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
   parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
   children?: boolean | Prisma.CategoryHierarchy$childrenArgs<ExtArgs>
-  category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
   _count?: boolean | Prisma.CategoryHierarchyCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CategoryHierarchyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
   category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
+  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
 }
 export type CategoryHierarchyIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
   category?: boolean | Prisma.CategoryHierarchy$categoryArgs<ExtArgs>
+  parent?: boolean | Prisma.CategoryHierarchy$parentArgs<ExtArgs>
 }
 
 export type $CategoryHierarchyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "CategoryHierarchy"
   objects: {
+    category: Prisma.$CategoryPayload<ExtArgs> | null
     parent: Prisma.$CategoryHierarchyPayload<ExtArgs> | null
     children: Prisma.$CategoryHierarchyPayload<ExtArgs>[]
-    category: Prisma.$CategoryPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1260,9 +1260,9 @@ readonly fields: CategoryHierarchyFieldRefs;
  */
 export interface Prisma__CategoryHierarchyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  category<T extends Prisma.CategoryHierarchy$categoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryHierarchy$categoryArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   parent<T extends Prisma.CategoryHierarchy$parentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryHierarchy$parentArgs<ExtArgs>>): Prisma.Prisma__CategoryHierarchyClient<runtime.Types.Result.GetResult<Prisma.$CategoryHierarchyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   children<T extends Prisma.CategoryHierarchy$childrenArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryHierarchy$childrenArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CategoryHierarchyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  category<T extends Prisma.CategoryHierarchy$categoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryHierarchy$categoryArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1695,6 +1695,25 @@ export type CategoryHierarchyDeleteManyArgs<ExtArgs extends runtime.Types.Extens
 }
 
 /**
+ * CategoryHierarchy.category
+ */
+export type CategoryHierarchy$categoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Category
+   */
+  select?: Prisma.CategorySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Category
+   */
+  omit?: Prisma.CategoryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CategoryInclude<ExtArgs> | null
+  where?: Prisma.CategoryWhereInput
+}
+
+/**
  * CategoryHierarchy.parent
  */
 export type CategoryHierarchy$parentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1735,25 +1754,6 @@ export type CategoryHierarchy$childrenArgs<ExtArgs extends runtime.Types.Extensi
   take?: number
   skip?: number
   distinct?: Prisma.CategoryHierarchyScalarFieldEnum | Prisma.CategoryHierarchyScalarFieldEnum[]
-}
-
-/**
- * CategoryHierarchy.category
- */
-export type CategoryHierarchy$categoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Category
-   */
-  select?: Prisma.CategorySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Category
-   */
-  omit?: Prisma.CategoryOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.CategoryInclude<ExtArgs> | null
-  where?: Prisma.CategoryWhereInput
 }
 
 /**

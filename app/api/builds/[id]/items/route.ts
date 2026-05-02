@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addBuildItem } from "@/services/build.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function POST(
   req: NextRequest,

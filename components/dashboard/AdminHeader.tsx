@@ -24,7 +24,7 @@ export const AdminHeader = memo<AdminHeaderProps>(
     const { syncData, isLoading } = useAdmin();
 
     return (
-      <header className="app-surface rounded-[1.75rem] px-4 py-3 sm:px-5 lg:px-6">
+      <header className="app-surface rounded-[1.75rem] px-4 py-2 sm:px-5 lg:px-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -38,7 +38,7 @@ export const AdminHeader = memo<AdminHeaderProps>(
               <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
                 Admin panel
               </p>
-              <h2 className="truncate text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+              <h2 className="truncate text-xl font-semibold tracking-[-0.04em] text-slate-950">
                 {title}
               </h2>
             </div>
@@ -69,16 +69,12 @@ export const AdminHeader = memo<AdminHeaderProps>(
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/84 px-2 py-1.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-white">
-                    <span className="text-[0.7rem] font-semibold tracking-[0.16em]">
-                      AD
-                    </span>
-                  </div>
+
                   <div className="hidden text-left sm:block">
                     <p className="text-xs font-semibold text-slate-900">
                       Admin User
                     </p>
-                    <p className="text-[0.68rem] text-slate-400">Operations</p>
+
                   </div>
                   <ChevronDown
                     size={14}

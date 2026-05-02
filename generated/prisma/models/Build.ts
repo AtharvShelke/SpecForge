@@ -174,8 +174,8 @@ export type BuildWhereInput = {
   name?: Prisma.StringFilter<"Build"> | string
   createdAt?: Prisma.DateTimeFilter<"Build"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Build"> | Date | string
-  items?: Prisma.BuildItemListRelationFilter
   buildCompatibilityResults?: Prisma.BuildCompatibilityResultListRelationFilter
+  items?: Prisma.BuildItemListRelationFilter
 }
 
 export type BuildOrderByWithRelationInput = {
@@ -183,8 +183,8 @@ export type BuildOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  items?: Prisma.BuildItemOrderByRelationAggregateInput
   buildCompatibilityResults?: Prisma.BuildCompatibilityResultOrderByRelationAggregateInput
+  items?: Prisma.BuildItemOrderByRelationAggregateInput
 }
 
 export type BuildWhereUniqueInput = Prisma.AtLeast<{
@@ -195,8 +195,8 @@ export type BuildWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Build"> | string
   createdAt?: Prisma.DateTimeFilter<"Build"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Build"> | Date | string
-  items?: Prisma.BuildItemListRelationFilter
   buildCompatibilityResults?: Prisma.BuildCompatibilityResultListRelationFilter
+  items?: Prisma.BuildItemListRelationFilter
 }, "id">
 
 export type BuildOrderByWithAggregationInput = {
@@ -224,8 +224,8 @@ export type BuildCreateInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  items?: Prisma.BuildItemCreateNestedManyWithoutBuildInput
   buildCompatibilityResults?: Prisma.BuildCompatibilityResultCreateNestedManyWithoutBuildInput
+  items?: Prisma.BuildItemCreateNestedManyWithoutBuildInput
 }
 
 export type BuildUncheckedCreateInput = {
@@ -233,8 +233,8 @@ export type BuildUncheckedCreateInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  items?: Prisma.BuildItemUncheckedCreateNestedManyWithoutBuildInput
   buildCompatibilityResults?: Prisma.BuildCompatibilityResultUncheckedCreateNestedManyWithoutBuildInput
+  items?: Prisma.BuildItemUncheckedCreateNestedManyWithoutBuildInput
 }
 
 export type BuildUpdateInput = {
@@ -242,8 +242,8 @@ export type BuildUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  items?: Prisma.BuildItemUpdateManyWithoutBuildNestedInput
   buildCompatibilityResults?: Prisma.BuildCompatibilityResultUpdateManyWithoutBuildNestedInput
+  items?: Prisma.BuildItemUpdateManyWithoutBuildNestedInput
 }
 
 export type BuildUncheckedUpdateInput = {
@@ -251,8 +251,8 @@ export type BuildUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  items?: Prisma.BuildItemUncheckedUpdateManyWithoutBuildNestedInput
   buildCompatibilityResults?: Prisma.BuildCompatibilityResultUncheckedUpdateManyWithoutBuildNestedInput
+  items?: Prisma.BuildItemUncheckedUpdateManyWithoutBuildNestedInput
 }
 
 export type BuildCreateManyInput = {
@@ -432,13 +432,13 @@ export type BuildUncheckedUpdateWithoutBuildCompatibilityResultsInput = {
  */
 
 export type BuildCountOutputType = {
-  items: number
   buildCompatibilityResults: number
+  items: number
 }
 
 export type BuildCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  items?: boolean | BuildCountOutputTypeCountItemsArgs
   buildCompatibilityResults?: boolean | BuildCountOutputTypeCountBuildCompatibilityResultsArgs
+  items?: boolean | BuildCountOutputTypeCountItemsArgs
 }
 
 /**
@@ -454,15 +454,15 @@ export type BuildCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
 /**
  * BuildCountOutputType without action
  */
-export type BuildCountOutputTypeCountItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.BuildItemWhereInput
+export type BuildCountOutputTypeCountBuildCompatibilityResultsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BuildCompatibilityResultWhereInput
 }
 
 /**
  * BuildCountOutputType without action
  */
-export type BuildCountOutputTypeCountBuildCompatibilityResultsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.BuildCompatibilityResultWhereInput
+export type BuildCountOutputTypeCountItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BuildItemWhereInput
 }
 
 
@@ -471,8 +471,8 @@ export type BuildSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   name?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  items?: boolean | Prisma.Build$itemsArgs<ExtArgs>
   buildCompatibilityResults?: boolean | Prisma.Build$buildCompatibilityResultsArgs<ExtArgs>
+  items?: boolean | Prisma.Build$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.BuildCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["build"]>
 
@@ -499,8 +499,8 @@ export type BuildSelectScalar = {
 
 export type BuildOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "createdAt" | "updatedAt", ExtArgs["result"]["build"]>
 export type BuildInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  items?: boolean | Prisma.Build$itemsArgs<ExtArgs>
   buildCompatibilityResults?: boolean | Prisma.Build$buildCompatibilityResultsArgs<ExtArgs>
+  items?: boolean | Prisma.Build$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.BuildCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type BuildIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -509,8 +509,8 @@ export type BuildIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
 export type $BuildPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Build"
   objects: {
-    items: Prisma.$BuildItemPayload<ExtArgs>[]
     buildCompatibilityResults: Prisma.$BuildCompatibilityResultPayload<ExtArgs>[]
+    items: Prisma.$BuildItemPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -911,8 +911,8 @@ readonly fields: BuildFieldRefs;
  */
 export interface Prisma__BuildClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  items<T extends Prisma.Build$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Build$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BuildItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   buildCompatibilityResults<T extends Prisma.Build$buildCompatibilityResultsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Build$buildCompatibilityResultsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BuildCompatibilityResultPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  items<T extends Prisma.Build$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Build$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BuildItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1334,30 +1334,6 @@ export type BuildDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
 }
 
 /**
- * Build.items
- */
-export type Build$itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the BuildItem
-   */
-  select?: Prisma.BuildItemSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the BuildItem
-   */
-  omit?: Prisma.BuildItemOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.BuildItemInclude<ExtArgs> | null
-  where?: Prisma.BuildItemWhereInput
-  orderBy?: Prisma.BuildItemOrderByWithRelationInput | Prisma.BuildItemOrderByWithRelationInput[]
-  cursor?: Prisma.BuildItemWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.BuildItemScalarFieldEnum | Prisma.BuildItemScalarFieldEnum[]
-}
-
-/**
  * Build.buildCompatibilityResults
  */
 export type Build$buildCompatibilityResultsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1379,6 +1355,30 @@ export type Build$buildCompatibilityResultsArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.BuildCompatibilityResultScalarFieldEnum | Prisma.BuildCompatibilityResultScalarFieldEnum[]
+}
+
+/**
+ * Build.items
+ */
+export type Build$itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BuildItem
+   */
+  select?: Prisma.BuildItemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BuildItem
+   */
+  omit?: Prisma.BuildItemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BuildItemInclude<ExtArgs> | null
+  where?: Prisma.BuildItemWhereInput
+  orderBy?: Prisma.BuildItemOrderByWithRelationInput | Prisma.BuildItemOrderByWithRelationInput[]
+  cursor?: Prisma.BuildItemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BuildItemScalarFieldEnum | Prisma.BuildItemScalarFieldEnum[]
 }
 
 /**

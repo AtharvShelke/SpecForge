@@ -3,7 +3,7 @@ import {
   createBuildGuide,
   listBuildGuides,
 } from "@/services/build-guide.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 import {
   serializeBuildGuide,
   serializeBuildGuides,

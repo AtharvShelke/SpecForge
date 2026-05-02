@@ -568,11 +568,18 @@ export type EnumReservationStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumReservationStatusFilter<$PrismaModel>
 }
 
-export type EnumCompatibilityOperatorFilter<$PrismaModel = never> = {
-  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumCompatibilityOperatorFilter<$PrismaModel> | $Enums.CompatibilityOperator
+export type EnumRuleTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.RuleType | Prisma.EnumRuleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRuleTypeFilter<$PrismaModel> | $Enums.RuleType
+}
+
+export type EnumCompatibilityOperatorNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumCompatibilityOperatorNullableFilter<$PrismaModel> | $Enums.CompatibilityOperator | null
 }
 
 export type EnumCompatibilitySeverityFilter<$PrismaModel = never> = {
@@ -582,14 +589,24 @@ export type EnumCompatibilitySeverityFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumCompatibilitySeverityFilter<$PrismaModel> | $Enums.CompatibilitySeverity
 }
 
-export type EnumCompatibilityOperatorWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumCompatibilityOperatorWithAggregatesFilter<$PrismaModel> | $Enums.CompatibilityOperator
+export type EnumRuleTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RuleType | Prisma.EnumRuleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRuleTypeWithAggregatesFilter<$PrismaModel> | $Enums.RuleType
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumCompatibilityOperatorFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumCompatibilityOperatorFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRuleTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRuleTypeFilter<$PrismaModel>
+}
+
+export type EnumCompatibilityOperatorNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumCompatibilityOperatorNullableWithAggregatesFilter<$PrismaModel> | $Enums.CompatibilityOperator | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCompatibilityOperatorNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCompatibilityOperatorNullableFilter<$PrismaModel>
 }
 
 export type EnumCompatibilitySeverityWithAggregatesFilter<$PrismaModel = never> = {
@@ -1199,11 +1216,18 @@ export type NestedEnumReservationStatusWithAggregatesFilter<$PrismaModel = never
   _max?: Prisma.NestedEnumReservationStatusFilter<$PrismaModel>
 }
 
-export type NestedEnumCompatibilityOperatorFilter<$PrismaModel = never> = {
-  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumCompatibilityOperatorFilter<$PrismaModel> | $Enums.CompatibilityOperator
+export type NestedEnumRuleTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.RuleType | Prisma.EnumRuleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRuleTypeFilter<$PrismaModel> | $Enums.RuleType
+}
+
+export type NestedEnumCompatibilityOperatorNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumCompatibilityOperatorNullableFilter<$PrismaModel> | $Enums.CompatibilityOperator | null
 }
 
 export type NestedEnumCompatibilitySeverityFilter<$PrismaModel = never> = {
@@ -1213,14 +1237,24 @@ export type NestedEnumCompatibilitySeverityFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumCompatibilitySeverityFilter<$PrismaModel> | $Enums.CompatibilitySeverity
 }
 
-export type NestedEnumCompatibilityOperatorWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumCompatibilityOperatorWithAggregatesFilter<$PrismaModel> | $Enums.CompatibilityOperator
+export type NestedEnumRuleTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RuleType | Prisma.EnumRuleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RuleType[] | Prisma.ListEnumRuleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRuleTypeWithAggregatesFilter<$PrismaModel> | $Enums.RuleType
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumCompatibilityOperatorFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumCompatibilityOperatorFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRuleTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRuleTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumCompatibilityOperatorNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CompatibilityOperator | Prisma.EnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.CompatibilityOperator[] | Prisma.ListEnumCompatibilityOperatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumCompatibilityOperatorNullableWithAggregatesFilter<$PrismaModel> | $Enums.CompatibilityOperator | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCompatibilityOperatorNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCompatibilityOperatorNullableFilter<$PrismaModel>
 }
 
 export type NestedEnumCompatibilitySeverityWithAggregatesFilter<$PrismaModel = never> = {

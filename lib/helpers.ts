@@ -1,6 +1,6 @@
 import { HomepageCategory } from "@/types";
 import { normalizeCatalogProduct } from "./catalogFrontend";
-import { useCallback, useState } from "react";
+
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
@@ -71,10 +71,4 @@ export const refreshAndSyncDetail = async (
   await refresh();
   if (selectedId === id) await loadDetail(id);
 };
-export function useLoadingCounter() {
-  const [count, setCount] = useState(0);
-  const start = useCallback(() => setCount((c) => c + 1), []);
-  const stop = useCallback(() => setCount((c) => Math.max(0, c - 1)), []);
-  const loading = count > 0;
-  return { loading, start, stop };
-}
+

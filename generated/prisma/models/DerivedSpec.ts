@@ -27,22 +27,31 @@ export type AggregateDerivedSpec = {
 export type DerivedSpecMinAggregateOutputType = {
   id: string | null
   name: string | null
+  description: string | null
   resultSpecId: string | null
   formula: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type DerivedSpecMaxAggregateOutputType = {
   id: string | null
   name: string | null
+  description: string | null
   resultSpecId: string | null
   formula: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type DerivedSpecCountAggregateOutputType = {
   id: number
   name: number
+  description: number
   resultSpecId: number
   formula: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -50,22 +59,31 @@ export type DerivedSpecCountAggregateOutputType = {
 export type DerivedSpecMinAggregateInputType = {
   id?: true
   name?: true
+  description?: true
   resultSpecId?: true
   formula?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type DerivedSpecMaxAggregateInputType = {
   id?: true
   name?: true
+  description?: true
   resultSpecId?: true
   formula?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type DerivedSpecCountAggregateInputType = {
   id?: true
   name?: true
+  description?: true
   resultSpecId?: true
   formula?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -144,8 +162,11 @@ export type DerivedSpecGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 export type DerivedSpecGroupByOutputType = {
   id: string
   name: string
+  description: string | null
   resultSpecId: string
   formula: string
+  createdAt: Date
+  updatedAt: Date
   _count: DerivedSpecCountAggregateOutputType | null
   _min: DerivedSpecMinAggregateOutputType | null
   _max: DerivedSpecMaxAggregateOutputType | null
@@ -172,16 +193,22 @@ export type DerivedSpecWhereInput = {
   NOT?: Prisma.DerivedSpecWhereInput | Prisma.DerivedSpecWhereInput[]
   id?: Prisma.StringFilter<"DerivedSpec"> | string
   name?: Prisma.StringFilter<"DerivedSpec"> | string
+  description?: Prisma.StringNullableFilter<"DerivedSpec"> | string | null
   resultSpecId?: Prisma.StringFilter<"DerivedSpec"> | string
   formula?: Prisma.StringFilter<"DerivedSpec"> | string
+  createdAt?: Prisma.DateTimeFilter<"DerivedSpec"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"DerivedSpec"> | Date | string
   resultSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
 }
 
 export type DerivedSpecOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   resultSpecId?: Prisma.SortOrder
   formula?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   resultSpec?: Prisma.SpecDefinitionOrderByWithRelationInput
 }
 
@@ -191,16 +218,22 @@ export type DerivedSpecWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.DerivedSpecWhereInput | Prisma.DerivedSpecWhereInput[]
   OR?: Prisma.DerivedSpecWhereInput[]
   NOT?: Prisma.DerivedSpecWhereInput | Prisma.DerivedSpecWhereInput[]
+  description?: Prisma.StringNullableFilter<"DerivedSpec"> | string | null
   resultSpecId?: Prisma.StringFilter<"DerivedSpec"> | string
   formula?: Prisma.StringFilter<"DerivedSpec"> | string
+  createdAt?: Prisma.DateTimeFilter<"DerivedSpec"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"DerivedSpec"> | Date | string
   resultSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
 }, "id" | "name">
 
 export type DerivedSpecOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   resultSpecId?: Prisma.SortOrder
   formula?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.DerivedSpecCountOrderByAggregateInput
   _max?: Prisma.DerivedSpecMaxOrderByAggregateInput
   _min?: Prisma.DerivedSpecMinOrderByAggregateInput
@@ -212,56 +245,80 @@ export type DerivedSpecScalarWhereWithAggregatesInput = {
   NOT?: Prisma.DerivedSpecScalarWhereWithAggregatesInput | Prisma.DerivedSpecScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"DerivedSpec"> | string
   name?: Prisma.StringWithAggregatesFilter<"DerivedSpec"> | string
+  description?: Prisma.StringNullableWithAggregatesFilter<"DerivedSpec"> | string | null
   resultSpecId?: Prisma.StringWithAggregatesFilter<"DerivedSpec"> | string
   formula?: Prisma.StringWithAggregatesFilter<"DerivedSpec"> | string
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"DerivedSpec"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"DerivedSpec"> | Date | string
 }
 
 export type DerivedSpecCreateInput = {
   id?: string
   name: string
+  description?: string | null
   formula: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
   resultSpec: Prisma.SpecDefinitionCreateNestedOneWithoutDerivedSpecsInput
 }
 
 export type DerivedSpecUncheckedCreateInput = {
   id?: string
   name: string
+  description?: string | null
   resultSpecId: string
   formula: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type DerivedSpecUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formula?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resultSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutDerivedSpecsNestedInput
 }
 
 export type DerivedSpecUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resultSpecId?: Prisma.StringFieldUpdateOperationsInput | string
   formula?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DerivedSpecCreateManyInput = {
   id?: string
   name: string
+  description?: string | null
   resultSpecId: string
   formula: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type DerivedSpecUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formula?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DerivedSpecUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resultSpecId?: Prisma.StringFieldUpdateOperationsInput | string
   formula?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DerivedSpecListRelationFilter = {
@@ -277,22 +334,31 @@ export type DerivedSpecOrderByRelationAggregateInput = {
 export type DerivedSpecCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   resultSpecId?: Prisma.SortOrder
   formula?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type DerivedSpecMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   resultSpecId?: Prisma.SortOrder
   formula?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type DerivedSpecMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   resultSpecId?: Prisma.SortOrder
   formula?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type DerivedSpecCreateNestedManyWithoutResultSpecInput = {
@@ -340,13 +406,19 @@ export type DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput = {
 export type DerivedSpecCreateWithoutResultSpecInput = {
   id?: string
   name: string
+  description?: string | null
   formula: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type DerivedSpecUncheckedCreateWithoutResultSpecInput = {
   id?: string
   name: string
+  description?: string | null
   formula: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type DerivedSpecCreateOrConnectWithoutResultSpecInput = {
@@ -381,32 +453,47 @@ export type DerivedSpecScalarWhereInput = {
   NOT?: Prisma.DerivedSpecScalarWhereInput | Prisma.DerivedSpecScalarWhereInput[]
   id?: Prisma.StringFilter<"DerivedSpec"> | string
   name?: Prisma.StringFilter<"DerivedSpec"> | string
+  description?: Prisma.StringNullableFilter<"DerivedSpec"> | string | null
   resultSpecId?: Prisma.StringFilter<"DerivedSpec"> | string
   formula?: Prisma.StringFilter<"DerivedSpec"> | string
+  createdAt?: Prisma.DateTimeFilter<"DerivedSpec"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"DerivedSpec"> | Date | string
 }
 
 export type DerivedSpecCreateManyResultSpecInput = {
   id?: string
   name: string
+  description?: string | null
   formula: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type DerivedSpecUpdateWithoutResultSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formula?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DerivedSpecUncheckedUpdateWithoutResultSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formula?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DerivedSpecUncheckedUpdateManyWithoutResultSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formula?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -414,35 +501,47 @@ export type DerivedSpecUncheckedUpdateManyWithoutResultSpecInput = {
 export type DerivedSpecSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  description?: boolean
   resultSpecId?: boolean
   formula?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   resultSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["derivedSpec"]>
 
 export type DerivedSpecSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  description?: boolean
   resultSpecId?: boolean
   formula?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   resultSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["derivedSpec"]>
 
 export type DerivedSpecSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  description?: boolean
   resultSpecId?: boolean
   formula?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   resultSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["derivedSpec"]>
 
 export type DerivedSpecSelectScalar = {
   id?: boolean
   name?: boolean
+  description?: boolean
   resultSpecId?: boolean
   formula?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type DerivedSpecOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "resultSpecId" | "formula", ExtArgs["result"]["derivedSpec"]>
+export type DerivedSpecOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "resultSpecId" | "formula" | "createdAt" | "updatedAt", ExtArgs["result"]["derivedSpec"]>
 export type DerivedSpecInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   resultSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }
@@ -461,8 +560,11 @@ export type $DerivedSpecPayload<ExtArgs extends runtime.Types.Extensions.Interna
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
+    description: string | null
     resultSpecId: string
     formula: string
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["derivedSpec"]>
   composites: {}
 }
@@ -889,8 +991,11 @@ export interface Prisma__DerivedSpecClient<T, Null = never, ExtArgs extends runt
 export interface DerivedSpecFieldRefs {
   readonly id: Prisma.FieldRef<"DerivedSpec", 'String'>
   readonly name: Prisma.FieldRef<"DerivedSpec", 'String'>
+  readonly description: Prisma.FieldRef<"DerivedSpec", 'String'>
   readonly resultSpecId: Prisma.FieldRef<"DerivedSpec", 'String'>
   readonly formula: Prisma.FieldRef<"DerivedSpec", 'String'>
+  readonly createdAt: Prisma.FieldRef<"DerivedSpec", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"DerivedSpec", 'DateTime'>
 }
     
 

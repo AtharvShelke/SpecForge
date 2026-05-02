@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCustomerById, updateCustomer } from "@/services/customer.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function GET(
   req: NextRequest,

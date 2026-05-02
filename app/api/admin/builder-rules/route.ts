@@ -46,13 +46,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sourceCategory = await prisma.category.findFirst({
+    // category stores a SubCategory.name — that's what the UI dropdown sends.
+    // Validate it references a real, non-deleted subcategory.
+    const sourceSubCategory = await prisma.subCategory.findFirst({
       where: { name: category, deletedAt: null },
       select: { id: true },
     });
-    if (!sourceCategory) {
+    if (!sourceSubCategory) {
       return NextResponse.json(
-        { error: 'category must map to an existing Category.name' },
+        { error: 'category must match an existing SubCategory name' },
         { status: 400 },
       );
     }
@@ -98,13 +100,13 @@ export async function PUT(req: NextRequest) {
     }
 
     if (data.category !== undefined) {
-      const sourceCategory = await prisma.category.findFirst({
+      const sourceSubCategory = await prisma.subCategory.findFirst({
         where: { name: data.category, deletedAt: null },
         select: { id: true },
       });
-      if (!sourceCategory) {
+      if (!sourceSubCategory) {
         return NextResponse.json(
-          { error: 'category must map to an existing Category.name' },
+          { error: 'category must match an existing SubCategory name' },
           { status: 400 },
         );
       }

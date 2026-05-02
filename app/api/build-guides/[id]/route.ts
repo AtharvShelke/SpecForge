@@ -4,7 +4,7 @@ import {
   getBuildGuideById,
   updateBuildGuide,
 } from "@/services/build-guide.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 import { serializeBuildGuide } from "@/lib/adminSerializers";
 import { getSessionUser } from "@/lib/auth";
 

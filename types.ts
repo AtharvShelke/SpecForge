@@ -898,21 +898,58 @@ export interface CompatibilityScope {
   rules?: CompatibilityRule[];
 }
 
+export enum RuleType {
+  PAIR = "PAIR",
+  COMPONENT = "COMPONENT",
+  GLOBAL = "GLOBAL",
+}
+
 export interface CompatibilityRule {
   id: string;
   name: string;
-  sourceSpecId: string;
-  targetSpecId: string;
-  operator: CompatibilityOperator;
-  message: string;
-  severity: CompatibilitySeverity;
-  scopeId: string;
+  description?: string | null;
 
-  sourceSpec?: SpecDefinition;
-  targetSpec?: SpecDefinition;
-  scope?: CompatibilityScope;
+  type: RuleType;
+
+  // PAIR rule fields (optional for COMPONENT/GLOBAL)
+  sourceSpecId?: string | null;
+  targetSpecId?: string | null;
+  operator?: CompatibilityOperator | null;
+  scopeId?: string | null;
+
+  message: string;
+  messageTemplate?: string | null;
+  severity: CompatibilitySeverity;
+
+  // Dynamic logic for COMPONENT/GLOBAL rules
+  logic?: Record<string, any> | null;
+
+  // Execution control
+  priority: number;
+  enabled: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+
+  sourceSpec?: SpecDefinition | null;
+  targetSpec?: SpecDefinition | null;
+  scope?: CompatibilityScope | null;
 
   compatibilityChecks?: CompatibilityCheck[];
+}
+
+// Condition node for the visual rule builder
+export interface RuleCondition {
+  id: string;
+  type: "condition" | "group";
+  // Condition fields
+  specRef?: string;        // e.g. "CPU.TDP" or "totals.totalTDP"
+  operator?: string;       // EQUAL, GREATER_THAN, etc.
+  value?: string | number | boolean;
+  compareRef?: string;     // Reference to another spec instead of static value
+  // Group fields
+  groupOperator?: "AND" | "OR";
+  children?: RuleCondition[];
 }
 
 export interface BuildCompatibilityResult {
@@ -988,6 +1025,30 @@ export interface BuilderSettings {
   showWarnings: boolean;
   allowIncompatibleCheckout: boolean;
   powerCalculationMode: "static" | "spec_based" | "rule_based";
+  
+  // Power calculation defaults
+  powerDefaults: {
+    baseWattage: number;
+    cpuDefaultWattage: number;
+    gpuDefaultWattage: number;
+    ramWattagePerStick: number;
+    storageWattagePerDrive: number;
+  };
+  
+  // TDP band configuration
+  tdpBands: {
+    low: { max: number; label: string };
+    balanced: { min: number; max: number; label: string };
+    high: { min: number; label: string };
+  };
+  
+  // Price presets
+  pricePresets: Array<{
+    id: string;
+    label: string;
+    min?: number;
+    max?: number;
+  }>;
 }
 
 export const DEFAULT_BUILDER_SETTINGS: BuilderSettings = {
@@ -997,6 +1058,24 @@ export const DEFAULT_BUILDER_SETTINGS: BuilderSettings = {
   showWarnings: true,
   allowIncompatibleCheckout: false,
   powerCalculationMode: "static",
+  powerDefaults: {
+    baseWattage: 50,
+    cpuDefaultWattage: 65,
+    gpuDefaultWattage: 150,
+    ramWattagePerStick: 5,
+    storageWattagePerDrive: 5,
+  },
+  tdpBands: {
+    low: { max: 65, label: "Low power (up to 65W)" },
+    balanced: { min: 66, max: 120, label: "Balanced (66W-120W)" },
+    high: { min: 121, label: "High power (121W+)" },
+  },
+  pricePresets: [
+    { id: "budget", label: "Under 10k", max: 10000 },
+    { id: "mid", label: "10k - 25k", min: 10000, max: 25000 },
+    { id: "upper", label: "25k - 50k", min: 25000, max: 50000 },
+    { id: "premium", label: "50k+", min: 50000 },
+  ],
 };
 
 export interface BuilderConfig {

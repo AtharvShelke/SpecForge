@@ -3,8 +3,9 @@ import {
   getCategoryById,
   updateCategory,
   deleteCategory,
-  ServiceError,
+  
 } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function GET(
   req: NextRequest,

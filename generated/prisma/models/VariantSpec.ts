@@ -232,9 +232,9 @@ export type VariantSpecWhereInput = {
   valueString?: Prisma.StringNullableFilter<"VariantSpec"> | string | null
   valueNumber?: Prisma.FloatNullableFilter<"VariantSpec"> | number | null
   valueBool?: Prisma.BoolNullableFilter<"VariantSpec"> | boolean | null
-  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
-  spec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
   option?: Prisma.XOR<Prisma.SpecOptionNullableScalarRelationFilter, Prisma.SpecOptionWhereInput> | null
+  spec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
+  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
 }
 
 export type VariantSpecOrderByWithRelationInput = {
@@ -245,9 +245,9 @@ export type VariantSpecOrderByWithRelationInput = {
   valueString?: Prisma.SortOrderInput | Prisma.SortOrder
   valueNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   valueBool?: Prisma.SortOrderInput | Prisma.SortOrder
-  variant?: Prisma.ProductVariantOrderByWithRelationInput
-  spec?: Prisma.SpecDefinitionOrderByWithRelationInput
   option?: Prisma.SpecOptionOrderByWithRelationInput
+  spec?: Prisma.SpecDefinitionOrderByWithRelationInput
+  variant?: Prisma.ProductVariantOrderByWithRelationInput
 }
 
 export type VariantSpecWhereUniqueInput = Prisma.AtLeast<{
@@ -262,9 +262,9 @@ export type VariantSpecWhereUniqueInput = Prisma.AtLeast<{
   valueString?: Prisma.StringNullableFilter<"VariantSpec"> | string | null
   valueNumber?: Prisma.FloatNullableFilter<"VariantSpec"> | number | null
   valueBool?: Prisma.BoolNullableFilter<"VariantSpec"> | boolean | null
-  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
-  spec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
   option?: Prisma.XOR<Prisma.SpecOptionNullableScalarRelationFilter, Prisma.SpecOptionWhereInput> | null
+  spec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
+  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
 }, "id" | "variantId_specId">
 
 export type VariantSpecOrderByWithAggregationInput = {
@@ -300,9 +300,9 @@ export type VariantSpecCreateInput = {
   valueString?: string | null
   valueNumber?: number | null
   valueBool?: boolean | null
-  variant: Prisma.ProductVariantCreateNestedOneWithoutVariantSpecsInput
-  spec: Prisma.SpecDefinitionCreateNestedOneWithoutVariantSpecsInput
   option?: Prisma.SpecOptionCreateNestedOneWithoutVariantSpecsInput
+  spec: Prisma.SpecDefinitionCreateNestedOneWithoutVariantSpecsInput
+  variant: Prisma.ProductVariantCreateNestedOneWithoutVariantSpecsInput
 }
 
 export type VariantSpecUncheckedCreateInput = {
@@ -320,9 +320,9 @@ export type VariantSpecUpdateInput = {
   valueString?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   valueNumber?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   valueBool?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutVariantSpecsNestedInput
-  spec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutVariantSpecsNestedInput
   option?: Prisma.SpecOptionUpdateOneWithoutVariantSpecsNestedInput
+  spec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutVariantSpecsNestedInput
+  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutVariantSpecsNestedInput
 }
 
 export type VariantSpecUncheckedUpdateInput = {
@@ -558,8 +558,8 @@ export type VariantSpecCreateWithoutSpecInput = {
   valueString?: string | null
   valueNumber?: number | null
   valueBool?: boolean | null
-  variant: Prisma.ProductVariantCreateNestedOneWithoutVariantSpecsInput
   option?: Prisma.SpecOptionCreateNestedOneWithoutVariantSpecsInput
+  variant: Prisma.ProductVariantCreateNestedOneWithoutVariantSpecsInput
 }
 
 export type VariantSpecUncheckedCreateWithoutSpecInput = {
@@ -615,8 +615,8 @@ export type VariantSpecCreateWithoutOptionInput = {
   valueString?: string | null
   valueNumber?: number | null
   valueBool?: boolean | null
-  variant: Prisma.ProductVariantCreateNestedOneWithoutVariantSpecsInput
   spec: Prisma.SpecDefinitionCreateNestedOneWithoutVariantSpecsInput
+  variant: Prisma.ProductVariantCreateNestedOneWithoutVariantSpecsInput
 }
 
 export type VariantSpecUncheckedCreateWithoutOptionInput = {
@@ -659,8 +659,8 @@ export type VariantSpecCreateWithoutVariantInput = {
   valueString?: string | null
   valueNumber?: number | null
   valueBool?: boolean | null
-  spec: Prisma.SpecDefinitionCreateNestedOneWithoutVariantSpecsInput
   option?: Prisma.SpecOptionCreateNestedOneWithoutVariantSpecsInput
+  spec: Prisma.SpecDefinitionCreateNestedOneWithoutVariantSpecsInput
 }
 
 export type VariantSpecUncheckedCreateWithoutVariantInput = {
@@ -712,8 +712,8 @@ export type VariantSpecUpdateWithoutSpecInput = {
   valueString?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   valueNumber?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   valueBool?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutVariantSpecsNestedInput
   option?: Prisma.SpecOptionUpdateOneWithoutVariantSpecsNestedInput
+  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutVariantSpecsNestedInput
 }
 
 export type VariantSpecUncheckedUpdateWithoutSpecInput = {
@@ -748,8 +748,8 @@ export type VariantSpecUpdateWithoutOptionInput = {
   valueString?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   valueNumber?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   valueBool?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutVariantSpecsNestedInput
   spec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutVariantSpecsNestedInput
+  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutVariantSpecsNestedInput
 }
 
 export type VariantSpecUncheckedUpdateWithoutOptionInput = {
@@ -784,8 +784,8 @@ export type VariantSpecUpdateWithoutVariantInput = {
   valueString?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   valueNumber?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   valueBool?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  spec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutVariantSpecsNestedInput
   option?: Prisma.SpecOptionUpdateOneWithoutVariantSpecsNestedInput
+  spec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutVariantSpecsNestedInput
 }
 
 export type VariantSpecUncheckedUpdateWithoutVariantInput = {
@@ -816,9 +816,9 @@ export type VariantSpecSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   valueString?: boolean
   valueNumber?: boolean
   valueBool?: boolean
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   option?: boolean | Prisma.VariantSpec$optionArgs<ExtArgs>
+  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["variantSpec"]>
 
 export type VariantSpecSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -829,9 +829,9 @@ export type VariantSpecSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   valueString?: boolean
   valueNumber?: boolean
   valueBool?: boolean
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   option?: boolean | Prisma.VariantSpec$optionArgs<ExtArgs>
+  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["variantSpec"]>
 
 export type VariantSpecSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -842,9 +842,9 @@ export type VariantSpecSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   valueString?: boolean
   valueNumber?: boolean
   valueBool?: boolean
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   option?: boolean | Prisma.VariantSpec$optionArgs<ExtArgs>
+  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["variantSpec"]>
 
 export type VariantSpecSelectScalar = {
@@ -859,27 +859,27 @@ export type VariantSpecSelectScalar = {
 
 export type VariantSpecOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "specId" | "optionId" | "valueString" | "valueNumber" | "valueBool", ExtArgs["result"]["variantSpec"]>
 export type VariantSpecInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   option?: boolean | Prisma.VariantSpec$optionArgs<ExtArgs>
+  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }
 export type VariantSpecIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   option?: boolean | Prisma.VariantSpec$optionArgs<ExtArgs>
+  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }
 export type VariantSpecIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   option?: boolean | Prisma.VariantSpec$optionArgs<ExtArgs>
+  spec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }
 
 export type $VariantSpecPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "VariantSpec"
   objects: {
-    variant: Prisma.$ProductVariantPayload<ExtArgs>
-    spec: Prisma.$SpecDefinitionPayload<ExtArgs>
     option: Prisma.$SpecOptionPayload<ExtArgs> | null
+    spec: Prisma.$SpecDefinitionPayload<ExtArgs>
+    variant: Prisma.$ProductVariantPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1283,9 +1283,9 @@ readonly fields: VariantSpecFieldRefs;
  */
 export interface Prisma__VariantSpecClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  spec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   option<T extends Prisma.VariantSpec$optionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VariantSpec$optionArgs<ExtArgs>>): Prisma.Prisma__SpecOptionClient<runtime.Types.Result.GetResult<Prisma.$SpecOptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  spec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

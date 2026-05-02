@@ -4,7 +4,7 @@ import {
   createInventoryItem,
   adjustStockByVariant,
 } from "@/services/inventory.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 import { serializeInventoryItems } from "@/lib/adminSerializers";
 
 export async function GET(req: NextRequest) {

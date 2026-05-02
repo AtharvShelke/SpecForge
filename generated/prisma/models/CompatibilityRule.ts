@@ -20,76 +20,138 @@ export type CompatibilityRuleModel = runtime.Types.Result.DefaultSelection<Prism
 
 export type AggregateCompatibilityRule = {
   _count: CompatibilityRuleCountAggregateOutputType | null
+  _avg: CompatibilityRuleAvgAggregateOutputType | null
+  _sum: CompatibilityRuleSumAggregateOutputType | null
   _min: CompatibilityRuleMinAggregateOutputType | null
   _max: CompatibilityRuleMaxAggregateOutputType | null
+}
+
+export type CompatibilityRuleAvgAggregateOutputType = {
+  priority: number | null
+}
+
+export type CompatibilityRuleSumAggregateOutputType = {
+  priority: number | null
 }
 
 export type CompatibilityRuleMinAggregateOutputType = {
   id: string | null
   name: string | null
+  description: string | null
+  type: $Enums.RuleType | null
   sourceSpecId: string | null
   targetSpecId: string | null
   operator: $Enums.CompatibilityOperator | null
-  message: string | null
-  severity: $Enums.CompatibilitySeverity | null
   scopeId: string | null
+  message: string | null
+  messageTemplate: string | null
+  severity: $Enums.CompatibilitySeverity | null
+  priority: number | null
+  enabled: boolean | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type CompatibilityRuleMaxAggregateOutputType = {
   id: string | null
   name: string | null
+  description: string | null
+  type: $Enums.RuleType | null
   sourceSpecId: string | null
   targetSpecId: string | null
   operator: $Enums.CompatibilityOperator | null
-  message: string | null
-  severity: $Enums.CompatibilitySeverity | null
   scopeId: string | null
+  message: string | null
+  messageTemplate: string | null
+  severity: $Enums.CompatibilitySeverity | null
+  priority: number | null
+  enabled: boolean | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type CompatibilityRuleCountAggregateOutputType = {
   id: number
   name: number
+  description: number
+  type: number
   sourceSpecId: number
   targetSpecId: number
   operator: number
-  message: number
-  severity: number
   scopeId: number
+  message: number
+  messageTemplate: number
+  severity: number
+  logic: number
+  priority: number
+  enabled: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
 
+export type CompatibilityRuleAvgAggregateInputType = {
+  priority?: true
+}
+
+export type CompatibilityRuleSumAggregateInputType = {
+  priority?: true
+}
+
 export type CompatibilityRuleMinAggregateInputType = {
   id?: true
   name?: true
+  description?: true
+  type?: true
   sourceSpecId?: true
   targetSpecId?: true
   operator?: true
-  message?: true
-  severity?: true
   scopeId?: true
+  message?: true
+  messageTemplate?: true
+  severity?: true
+  priority?: true
+  enabled?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type CompatibilityRuleMaxAggregateInputType = {
   id?: true
   name?: true
+  description?: true
+  type?: true
   sourceSpecId?: true
   targetSpecId?: true
   operator?: true
-  message?: true
-  severity?: true
   scopeId?: true
+  message?: true
+  messageTemplate?: true
+  severity?: true
+  priority?: true
+  enabled?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type CompatibilityRuleCountAggregateInputType = {
   id?: true
   name?: true
+  description?: true
+  type?: true
   sourceSpecId?: true
   targetSpecId?: true
   operator?: true
-  message?: true
-  severity?: true
   scopeId?: true
+  message?: true
+  messageTemplate?: true
+  severity?: true
+  logic?: true
+  priority?: true
+  enabled?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -131,6 +193,18 @@ export type CompatibilityRuleAggregateArgs<ExtArgs extends runtime.Types.Extensi
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: CompatibilityRuleAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: CompatibilityRuleSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: CompatibilityRuleMinAggregateInputType
@@ -161,6 +235,8 @@ export type CompatibilityRuleGroupByArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   _count?: CompatibilityRuleCountAggregateInputType | true
+  _avg?: CompatibilityRuleAvgAggregateInputType
+  _sum?: CompatibilityRuleSumAggregateInputType
   _min?: CompatibilityRuleMinAggregateInputType
   _max?: CompatibilityRuleMaxAggregateInputType
 }
@@ -168,13 +244,23 @@ export type CompatibilityRuleGroupByArgs<ExtArgs extends runtime.Types.Extension
 export type CompatibilityRuleGroupByOutputType = {
   id: string
   name: string
-  sourceSpecId: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description: string | null
+  type: $Enums.RuleType
+  sourceSpecId: string | null
+  targetSpecId: string | null
+  operator: $Enums.CompatibilityOperator | null
+  scopeId: string | null
   message: string
+  messageTemplate: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic: runtime.JsonValue | null
+  priority: number
+  enabled: boolean
+  createdAt: Date
+  updatedAt: Date
   _count: CompatibilityRuleCountAggregateOutputType | null
+  _avg: CompatibilityRuleAvgAggregateOutputType | null
+  _sum: CompatibilityRuleSumAggregateOutputType | null
   _min: CompatibilityRuleMinAggregateOutputType | null
   _max: CompatibilityRuleMaxAggregateOutputType | null
 }
@@ -200,31 +286,47 @@ export type CompatibilityRuleWhereInput = {
   NOT?: Prisma.CompatibilityRuleWhereInput | Prisma.CompatibilityRuleWhereInput[]
   id?: Prisma.StringFilter<"CompatibilityRule"> | string
   name?: Prisma.StringFilter<"CompatibilityRule"> | string
-  sourceSpecId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  targetSpecId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  operator?: Prisma.EnumCompatibilityOperatorFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator
+  description?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  type?: Prisma.EnumRuleTypeFilter<"CompatibilityRule"> | $Enums.RuleType
+  sourceSpecId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  targetSpecId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  operator?: Prisma.EnumCompatibilityOperatorNullableFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
   message?: Prisma.StringFilter<"CompatibilityRule"> | string
+  messageTemplate?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
   severity?: Prisma.EnumCompatibilitySeverityFilter<"CompatibilityRule"> | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  sourceSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
-  targetSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
-  scope?: Prisma.XOR<Prisma.CompatibilityScopeScalarRelationFilter, Prisma.CompatibilityScopeWhereInput>
+  logic?: Prisma.JsonNullableFilter<"CompatibilityRule">
+  priority?: Prisma.IntFilter<"CompatibilityRule"> | number
+  enabled?: Prisma.BoolFilter<"CompatibilityRule"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"CompatibilityRule"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"CompatibilityRule"> | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckListRelationFilter
+  scope?: Prisma.XOR<Prisma.CompatibilityScopeNullableScalarRelationFilter, Prisma.CompatibilityScopeWhereInput> | null
+  sourceSpec?: Prisma.XOR<Prisma.SpecDefinitionNullableScalarRelationFilter, Prisma.SpecDefinitionWhereInput> | null
+  targetSpec?: Prisma.XOR<Prisma.SpecDefinitionNullableScalarRelationFilter, Prisma.SpecDefinitionWhereInput> | null
 }
 
 export type CompatibilityRuleOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  sourceSpecId?: Prisma.SortOrder
-  targetSpecId?: Prisma.SortOrder
-  operator?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrder
+  sourceSpecId?: Prisma.SortOrderInput | Prisma.SortOrder
+  targetSpecId?: Prisma.SortOrderInput | Prisma.SortOrder
+  operator?: Prisma.SortOrderInput | Prisma.SortOrder
+  scopeId?: Prisma.SortOrderInput | Prisma.SortOrder
   message?: Prisma.SortOrder
+  messageTemplate?: Prisma.SortOrderInput | Prisma.SortOrder
   severity?: Prisma.SortOrder
-  scopeId?: Prisma.SortOrder
+  logic?: Prisma.SortOrderInput | Prisma.SortOrder
+  priority?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+  compatibilityChecks?: Prisma.CompatibilityCheckOrderByRelationAggregateInput
+  scope?: Prisma.CompatibilityScopeOrderByWithRelationInput
   sourceSpec?: Prisma.SpecDefinitionOrderByWithRelationInput
   targetSpec?: Prisma.SpecDefinitionOrderByWithRelationInput
-  scope?: Prisma.CompatibilityScopeOrderByWithRelationInput
-  compatibilityChecks?: Prisma.CompatibilityCheckOrderByRelationAggregateInput
 }
 
 export type CompatibilityRuleWhereUniqueInput = Prisma.AtLeast<{
@@ -233,30 +335,48 @@ export type CompatibilityRuleWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.CompatibilityRuleWhereInput[]
   NOT?: Prisma.CompatibilityRuleWhereInput | Prisma.CompatibilityRuleWhereInput[]
   name?: Prisma.StringFilter<"CompatibilityRule"> | string
-  sourceSpecId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  targetSpecId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  operator?: Prisma.EnumCompatibilityOperatorFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator
+  description?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  type?: Prisma.EnumRuleTypeFilter<"CompatibilityRule"> | $Enums.RuleType
+  sourceSpecId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  targetSpecId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  operator?: Prisma.EnumCompatibilityOperatorNullableFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
   message?: Prisma.StringFilter<"CompatibilityRule"> | string
+  messageTemplate?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
   severity?: Prisma.EnumCompatibilitySeverityFilter<"CompatibilityRule"> | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  sourceSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
-  targetSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
-  scope?: Prisma.XOR<Prisma.CompatibilityScopeScalarRelationFilter, Prisma.CompatibilityScopeWhereInput>
+  logic?: Prisma.JsonNullableFilter<"CompatibilityRule">
+  priority?: Prisma.IntFilter<"CompatibilityRule"> | number
+  enabled?: Prisma.BoolFilter<"CompatibilityRule"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"CompatibilityRule"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"CompatibilityRule"> | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckListRelationFilter
+  scope?: Prisma.XOR<Prisma.CompatibilityScopeNullableScalarRelationFilter, Prisma.CompatibilityScopeWhereInput> | null
+  sourceSpec?: Prisma.XOR<Prisma.SpecDefinitionNullableScalarRelationFilter, Prisma.SpecDefinitionWhereInput> | null
+  targetSpec?: Prisma.XOR<Prisma.SpecDefinitionNullableScalarRelationFilter, Prisma.SpecDefinitionWhereInput> | null
 }, "id">
 
 export type CompatibilityRuleOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  sourceSpecId?: Prisma.SortOrder
-  targetSpecId?: Prisma.SortOrder
-  operator?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrder
+  sourceSpecId?: Prisma.SortOrderInput | Prisma.SortOrder
+  targetSpecId?: Prisma.SortOrderInput | Prisma.SortOrder
+  operator?: Prisma.SortOrderInput | Prisma.SortOrder
+  scopeId?: Prisma.SortOrderInput | Prisma.SortOrder
   message?: Prisma.SortOrder
+  messageTemplate?: Prisma.SortOrderInput | Prisma.SortOrder
   severity?: Prisma.SortOrder
-  scopeId?: Prisma.SortOrder
+  logic?: Prisma.SortOrderInput | Prisma.SortOrder
+  priority?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.CompatibilityRuleCountOrderByAggregateInput
+  _avg?: Prisma.CompatibilityRuleAvgOrderByAggregateInput
   _max?: Prisma.CompatibilityRuleMaxOrderByAggregateInput
   _min?: Prisma.CompatibilityRuleMinOrderByAggregateInput
+  _sum?: Prisma.CompatibilityRuleSumOrderByAggregateInput
 }
 
 export type CompatibilityRuleScalarWhereWithAggregatesInput = {
@@ -265,90 +385,154 @@ export type CompatibilityRuleScalarWhereWithAggregatesInput = {
   NOT?: Prisma.CompatibilityRuleScalarWhereWithAggregatesInput | Prisma.CompatibilityRuleScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"CompatibilityRule"> | string
   name?: Prisma.StringWithAggregatesFilter<"CompatibilityRule"> | string
-  sourceSpecId?: Prisma.StringWithAggregatesFilter<"CompatibilityRule"> | string
-  targetSpecId?: Prisma.StringWithAggregatesFilter<"CompatibilityRule"> | string
-  operator?: Prisma.EnumCompatibilityOperatorWithAggregatesFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator
+  description?: Prisma.StringNullableWithAggregatesFilter<"CompatibilityRule"> | string | null
+  type?: Prisma.EnumRuleTypeWithAggregatesFilter<"CompatibilityRule"> | $Enums.RuleType
+  sourceSpecId?: Prisma.StringNullableWithAggregatesFilter<"CompatibilityRule"> | string | null
+  targetSpecId?: Prisma.StringNullableWithAggregatesFilter<"CompatibilityRule"> | string | null
+  operator?: Prisma.EnumCompatibilityOperatorNullableWithAggregatesFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.StringNullableWithAggregatesFilter<"CompatibilityRule"> | string | null
   message?: Prisma.StringWithAggregatesFilter<"CompatibilityRule"> | string
+  messageTemplate?: Prisma.StringNullableWithAggregatesFilter<"CompatibilityRule"> | string | null
   severity?: Prisma.EnumCompatibilitySeverityWithAggregatesFilter<"CompatibilityRule"> | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringWithAggregatesFilter<"CompatibilityRule"> | string
+  logic?: Prisma.JsonNullableWithAggregatesFilter<"CompatibilityRule">
+  priority?: Prisma.IntWithAggregatesFilter<"CompatibilityRule"> | number
+  enabled?: Prisma.BoolWithAggregatesFilter<"CompatibilityRule"> | boolean
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"CompatibilityRule"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CompatibilityRule"> | Date | string
 }
 
 export type CompatibilityRuleCreateInput = {
   id?: string
   name: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  operator?: $Enums.CompatibilityOperator | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  sourceSpec: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
-  targetSpec: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
-  scope: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckCreateNestedManyWithoutRuleInput
+  scope?: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  sourceSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
+  targetSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
 }
 
 export type CompatibilityRuleUncheckedCreateInput = {
   id?: string
   name: string
-  sourceSpecId: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  sourceSpecId?: string | null
+  targetSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
+  scopeId?: string | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedCreateNestedManyWithoutRuleInput
 }
 
 export type CompatibilityRuleUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  sourceSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutSourceRulesNestedInput
-  targetSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutTargetRulesNestedInput
-  scope?: Prisma.CompatibilityScopeUpdateOneRequiredWithoutRulesNestedInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUpdateManyWithoutRuleNestedInput
+  scope?: Prisma.CompatibilityScopeUpdateOneWithoutRulesNestedInput
+  sourceSpec?: Prisma.SpecDefinitionUpdateOneWithoutSourceRulesNestedInput
+  targetSpec?: Prisma.SpecDefinitionUpdateOneWithoutTargetRulesNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  sourceSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  targetSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFieldUpdateOperationsInput | string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedUpdateManyWithoutRuleNestedInput
 }
 
 export type CompatibilityRuleCreateManyInput = {
   id?: string
   name: string
-  sourceSpecId: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  sourceSpecId?: string | null
+  targetSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
+  scopeId?: string | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type CompatibilityRuleUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type CompatibilityRuleUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  sourceSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  targetSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFieldUpdateOperationsInput | string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type CompatibilityRuleListRelationFilter = {
@@ -364,34 +548,64 @@ export type CompatibilityRuleOrderByRelationAggregateInput = {
 export type CompatibilityRuleCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   sourceSpecId?: Prisma.SortOrder
   targetSpecId?: Prisma.SortOrder
   operator?: Prisma.SortOrder
-  message?: Prisma.SortOrder
-  severity?: Prisma.SortOrder
   scopeId?: Prisma.SortOrder
+  message?: Prisma.SortOrder
+  messageTemplate?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  logic?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+}
+
+export type CompatibilityRuleAvgOrderByAggregateInput = {
+  priority?: Prisma.SortOrder
 }
 
 export type CompatibilityRuleMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   sourceSpecId?: Prisma.SortOrder
   targetSpecId?: Prisma.SortOrder
   operator?: Prisma.SortOrder
-  message?: Prisma.SortOrder
-  severity?: Prisma.SortOrder
   scopeId?: Prisma.SortOrder
+  message?: Prisma.SortOrder
+  messageTemplate?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type CompatibilityRuleMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   sourceSpecId?: Prisma.SortOrder
   targetSpecId?: Prisma.SortOrder
   operator?: Prisma.SortOrder
-  message?: Prisma.SortOrder
-  severity?: Prisma.SortOrder
   scopeId?: Prisma.SortOrder
+  message?: Prisma.SortOrder
+  messageTemplate?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+}
+
+export type CompatibilityRuleSumOrderByAggregateInput = {
+  priority?: Prisma.SortOrder
 }
 
 export type CompatibilityRuleScalarRelationFilter = {
@@ -483,8 +697,12 @@ export type CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput = {
   deleteMany?: Prisma.CompatibilityRuleScalarWhereInput | Prisma.CompatibilityRuleScalarWhereInput[]
 }
 
-export type EnumCompatibilityOperatorFieldUpdateOperationsInput = {
-  set?: $Enums.CompatibilityOperator
+export type EnumRuleTypeFieldUpdateOperationsInput = {
+  set?: $Enums.RuleType
+}
+
+export type NullableEnumCompatibilityOperatorFieldUpdateOperationsInput = {
+  set?: $Enums.CompatibilityOperator | null
 }
 
 export type EnumCompatibilitySeverityFieldUpdateOperationsInput = {
@@ -550,22 +768,38 @@ export type CompatibilityRuleUpdateOneRequiredWithoutCompatibilityChecksNestedIn
 export type CompatibilityRuleCreateWithoutSourceSpecInput = {
   id?: string
   name: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  operator?: $Enums.CompatibilityOperator | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  targetSpec: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
-  scope: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckCreateNestedManyWithoutRuleInput
+  scope?: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  targetSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
 }
 
 export type CompatibilityRuleUncheckedCreateWithoutSourceSpecInput = {
   id?: string
   name: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  targetSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
+  scopeId?: string | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedCreateNestedManyWithoutRuleInput
 }
 
@@ -582,22 +816,38 @@ export type CompatibilityRuleCreateManySourceSpecInputEnvelope = {
 export type CompatibilityRuleCreateWithoutTargetSpecInput = {
   id?: string
   name: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  operator?: $Enums.CompatibilityOperator | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  sourceSpec: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
-  scope: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckCreateNestedManyWithoutRuleInput
+  scope?: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  sourceSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
 }
 
 export type CompatibilityRuleUncheckedCreateWithoutTargetSpecInput = {
   id?: string
   name: string
-  sourceSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  sourceSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
+  scopeId?: string | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedCreateNestedManyWithoutRuleInput
 }
 
@@ -633,12 +883,20 @@ export type CompatibilityRuleScalarWhereInput = {
   NOT?: Prisma.CompatibilityRuleScalarWhereInput | Prisma.CompatibilityRuleScalarWhereInput[]
   id?: Prisma.StringFilter<"CompatibilityRule"> | string
   name?: Prisma.StringFilter<"CompatibilityRule"> | string
-  sourceSpecId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  targetSpecId?: Prisma.StringFilter<"CompatibilityRule"> | string
-  operator?: Prisma.EnumCompatibilityOperatorFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator
+  description?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  type?: Prisma.EnumRuleTypeFilter<"CompatibilityRule"> | $Enums.RuleType
+  sourceSpecId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  targetSpecId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
+  operator?: Prisma.EnumCompatibilityOperatorNullableFilter<"CompatibilityRule"> | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
   message?: Prisma.StringFilter<"CompatibilityRule"> | string
+  messageTemplate?: Prisma.StringNullableFilter<"CompatibilityRule"> | string | null
   severity?: Prisma.EnumCompatibilitySeverityFilter<"CompatibilityRule"> | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFilter<"CompatibilityRule"> | string
+  logic?: Prisma.JsonNullableFilter<"CompatibilityRule">
+  priority?: Prisma.IntFilter<"CompatibilityRule"> | number
+  enabled?: Prisma.BoolFilter<"CompatibilityRule"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"CompatibilityRule"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"CompatibilityRule"> | Date | string
 }
 
 export type CompatibilityRuleUpsertWithWhereUniqueWithoutTargetSpecInput = {
@@ -660,22 +918,38 @@ export type CompatibilityRuleUpdateManyWithWhereWithoutTargetSpecInput = {
 export type CompatibilityRuleCreateWithoutScopeInput = {
   id?: string
   name: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  operator?: $Enums.CompatibilityOperator | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  sourceSpec: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
-  targetSpec: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckCreateNestedManyWithoutRuleInput
+  sourceSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
+  targetSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
 }
 
 export type CompatibilityRuleUncheckedCreateWithoutScopeInput = {
   id?: string
   name: string
-  sourceSpecId: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  sourceSpecId?: string | null
+  targetSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedCreateNestedManyWithoutRuleInput
 }
 
@@ -708,23 +982,39 @@ export type CompatibilityRuleUpdateManyWithWhereWithoutScopeInput = {
 export type CompatibilityRuleCreateWithoutCompatibilityChecksInput = {
   id?: string
   name: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  operator?: $Enums.CompatibilityOperator | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  sourceSpec: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
-  targetSpec: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
-  scope: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  scope?: Prisma.CompatibilityScopeCreateNestedOneWithoutRulesInput
+  sourceSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutSourceRulesInput
+  targetSpec?: Prisma.SpecDefinitionCreateNestedOneWithoutTargetRulesInput
 }
 
 export type CompatibilityRuleUncheckedCreateWithoutCompatibilityChecksInput = {
   id?: string
   name: string
-  sourceSpecId: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  sourceSpecId?: string | null
+  targetSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
+  scopeId?: string | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type CompatibilityRuleCreateOrConnectWithoutCompatibilityChecksInput = {
@@ -746,149 +1036,261 @@ export type CompatibilityRuleUpdateToOneWithWhereWithoutCompatibilityChecksInput
 export type CompatibilityRuleUpdateWithoutCompatibilityChecksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  sourceSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutSourceRulesNestedInput
-  targetSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutTargetRulesNestedInput
-  scope?: Prisma.CompatibilityScopeUpdateOneRequiredWithoutRulesNestedInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scope?: Prisma.CompatibilityScopeUpdateOneWithoutRulesNestedInput
+  sourceSpec?: Prisma.SpecDefinitionUpdateOneWithoutSourceRulesNestedInput
+  targetSpec?: Prisma.SpecDefinitionUpdateOneWithoutTargetRulesNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateWithoutCompatibilityChecksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  sourceSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  targetSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFieldUpdateOperationsInput | string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type CompatibilityRuleCreateManySourceSpecInput = {
   id?: string
   name: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  targetSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
+  scopeId?: string | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type CompatibilityRuleCreateManyTargetSpecInput = {
   id?: string
   name: string
-  sourceSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  sourceSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
+  scopeId?: string | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
-  scopeId: string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type CompatibilityRuleUpdateWithoutSourceSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  targetSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutTargetRulesNestedInput
-  scope?: Prisma.CompatibilityScopeUpdateOneRequiredWithoutRulesNestedInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUpdateManyWithoutRuleNestedInput
+  scope?: Prisma.CompatibilityScopeUpdateOneWithoutRulesNestedInput
+  targetSpec?: Prisma.SpecDefinitionUpdateOneWithoutTargetRulesNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateWithoutSourceSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  targetSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFieldUpdateOperationsInput | string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedUpdateManyWithoutRuleNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  targetSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFieldUpdateOperationsInput | string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type CompatibilityRuleUpdateWithoutTargetSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  sourceSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutSourceRulesNestedInput
-  scope?: Prisma.CompatibilityScopeUpdateOneRequiredWithoutRulesNestedInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUpdateManyWithoutRuleNestedInput
+  scope?: Prisma.CompatibilityScopeUpdateOneWithoutRulesNestedInput
+  sourceSpec?: Prisma.SpecDefinitionUpdateOneWithoutSourceRulesNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateWithoutTargetSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  sourceSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFieldUpdateOperationsInput | string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedUpdateManyWithoutRuleNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  sourceSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
+  scopeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  scopeId?: Prisma.StringFieldUpdateOperationsInput | string
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type CompatibilityRuleCreateManyScopeInput = {
   id?: string
   name: string
-  sourceSpecId: string
-  targetSpecId: string
-  operator: $Enums.CompatibilityOperator
+  description?: string | null
+  type?: $Enums.RuleType
+  sourceSpecId?: string | null
+  targetSpecId?: string | null
+  operator?: $Enums.CompatibilityOperator | null
   message: string
+  messageTemplate?: string | null
   severity: $Enums.CompatibilitySeverity
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: number
+  enabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type CompatibilityRuleUpdateWithoutScopeInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
-  sourceSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutSourceRulesNestedInput
-  targetSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutTargetRulesNestedInput
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUpdateManyWithoutRuleNestedInput
+  sourceSpec?: Prisma.SpecDefinitionUpdateOneWithoutSourceRulesNestedInput
+  targetSpec?: Prisma.SpecDefinitionUpdateOneWithoutTargetRulesNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateWithoutScopeInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  sourceSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  targetSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compatibilityChecks?: Prisma.CompatibilityCheckUncheckedUpdateManyWithoutRuleNestedInput
 }
 
 export type CompatibilityRuleUncheckedUpdateManyWithoutScopeInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  operator?: Prisma.EnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumRuleTypeFieldUpdateOperationsInput | $Enums.RuleType
+  sourceSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  targetSpecId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  operator?: Prisma.NullableEnumCompatibilityOperatorFieldUpdateOperationsInput | $Enums.CompatibilityOperator | null
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  messageTemplate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.EnumCompatibilitySeverityFieldUpdateOperationsInput | $Enums.CompatibilitySeverity
+  logic?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -925,94 +1327,134 @@ export type CompatibilityRuleCountOutputTypeCountCompatibilityChecksArgs<ExtArgs
 export type CompatibilityRuleSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  description?: boolean
+  type?: boolean
   sourceSpecId?: boolean
   targetSpecId?: boolean
   operator?: boolean
-  message?: boolean
-  severity?: boolean
   scopeId?: boolean
-  sourceSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  targetSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  scope?: boolean | Prisma.CompatibilityScopeDefaultArgs<ExtArgs>
+  message?: boolean
+  messageTemplate?: boolean
+  severity?: boolean
+  logic?: boolean
+  priority?: boolean
+  enabled?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   compatibilityChecks?: boolean | Prisma.CompatibilityRule$compatibilityChecksArgs<ExtArgs>
+  scope?: boolean | Prisma.CompatibilityRule$scopeArgs<ExtArgs>
+  sourceSpec?: boolean | Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs>
+  targetSpec?: boolean | Prisma.CompatibilityRule$targetSpecArgs<ExtArgs>
   _count?: boolean | Prisma.CompatibilityRuleCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["compatibilityRule"]>
 
 export type CompatibilityRuleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  description?: boolean
+  type?: boolean
   sourceSpecId?: boolean
   targetSpecId?: boolean
   operator?: boolean
-  message?: boolean
-  severity?: boolean
   scopeId?: boolean
-  sourceSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  targetSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  scope?: boolean | Prisma.CompatibilityScopeDefaultArgs<ExtArgs>
+  message?: boolean
+  messageTemplate?: boolean
+  severity?: boolean
+  logic?: boolean
+  priority?: boolean
+  enabled?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
+  scope?: boolean | Prisma.CompatibilityRule$scopeArgs<ExtArgs>
+  sourceSpec?: boolean | Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs>
+  targetSpec?: boolean | Prisma.CompatibilityRule$targetSpecArgs<ExtArgs>
 }, ExtArgs["result"]["compatibilityRule"]>
 
 export type CompatibilityRuleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  description?: boolean
+  type?: boolean
   sourceSpecId?: boolean
   targetSpecId?: boolean
   operator?: boolean
-  message?: boolean
-  severity?: boolean
   scopeId?: boolean
-  sourceSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  targetSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  scope?: boolean | Prisma.CompatibilityScopeDefaultArgs<ExtArgs>
+  message?: boolean
+  messageTemplate?: boolean
+  severity?: boolean
+  logic?: boolean
+  priority?: boolean
+  enabled?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
+  scope?: boolean | Prisma.CompatibilityRule$scopeArgs<ExtArgs>
+  sourceSpec?: boolean | Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs>
+  targetSpec?: boolean | Prisma.CompatibilityRule$targetSpecArgs<ExtArgs>
 }, ExtArgs["result"]["compatibilityRule"]>
 
 export type CompatibilityRuleSelectScalar = {
   id?: boolean
   name?: boolean
+  description?: boolean
+  type?: boolean
   sourceSpecId?: boolean
   targetSpecId?: boolean
   operator?: boolean
-  message?: boolean
-  severity?: boolean
   scopeId?: boolean
+  message?: boolean
+  messageTemplate?: boolean
+  severity?: boolean
+  logic?: boolean
+  priority?: boolean
+  enabled?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type CompatibilityRuleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "sourceSpecId" | "targetSpecId" | "operator" | "message" | "severity" | "scopeId", ExtArgs["result"]["compatibilityRule"]>
+export type CompatibilityRuleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "type" | "sourceSpecId" | "targetSpecId" | "operator" | "scopeId" | "message" | "messageTemplate" | "severity" | "logic" | "priority" | "enabled" | "createdAt" | "updatedAt", ExtArgs["result"]["compatibilityRule"]>
 export type CompatibilityRuleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  sourceSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  targetSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  scope?: boolean | Prisma.CompatibilityScopeDefaultArgs<ExtArgs>
   compatibilityChecks?: boolean | Prisma.CompatibilityRule$compatibilityChecksArgs<ExtArgs>
+  scope?: boolean | Prisma.CompatibilityRule$scopeArgs<ExtArgs>
+  sourceSpec?: boolean | Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs>
+  targetSpec?: boolean | Prisma.CompatibilityRule$targetSpecArgs<ExtArgs>
   _count?: boolean | Prisma.CompatibilityRuleCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CompatibilityRuleIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  sourceSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  targetSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  scope?: boolean | Prisma.CompatibilityScopeDefaultArgs<ExtArgs>
+  scope?: boolean | Prisma.CompatibilityRule$scopeArgs<ExtArgs>
+  sourceSpec?: boolean | Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs>
+  targetSpec?: boolean | Prisma.CompatibilityRule$targetSpecArgs<ExtArgs>
 }
 export type CompatibilityRuleIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  sourceSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  targetSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  scope?: boolean | Prisma.CompatibilityScopeDefaultArgs<ExtArgs>
+  scope?: boolean | Prisma.CompatibilityRule$scopeArgs<ExtArgs>
+  sourceSpec?: boolean | Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs>
+  targetSpec?: boolean | Prisma.CompatibilityRule$targetSpecArgs<ExtArgs>
 }
 
 export type $CompatibilityRulePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "CompatibilityRule"
   objects: {
-    sourceSpec: Prisma.$SpecDefinitionPayload<ExtArgs>
-    targetSpec: Prisma.$SpecDefinitionPayload<ExtArgs>
-    scope: Prisma.$CompatibilityScopePayload<ExtArgs>
     compatibilityChecks: Prisma.$CompatibilityCheckPayload<ExtArgs>[]
+    scope: Prisma.$CompatibilityScopePayload<ExtArgs> | null
+    sourceSpec: Prisma.$SpecDefinitionPayload<ExtArgs> | null
+    targetSpec: Prisma.$SpecDefinitionPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
-    sourceSpecId: string
-    targetSpecId: string
-    operator: $Enums.CompatibilityOperator
+    description: string | null
+    type: $Enums.RuleType
+    sourceSpecId: string | null
+    targetSpecId: string | null
+    operator: $Enums.CompatibilityOperator | null
+    scopeId: string | null
     message: string
+    messageTemplate: string | null
     severity: $Enums.CompatibilitySeverity
-    scopeId: string
+    logic: runtime.JsonValue | null
+    priority: number
+    enabled: boolean
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["compatibilityRule"]>
   composites: {}
 }
@@ -1407,10 +1849,10 @@ readonly fields: CompatibilityRuleFieldRefs;
  */
 export interface Prisma__CompatibilityRuleClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  sourceSpec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  targetSpec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  scope<T extends Prisma.CompatibilityScopeDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompatibilityScopeDefaultArgs<ExtArgs>>): Prisma.Prisma__CompatibilityScopeClient<runtime.Types.Result.GetResult<Prisma.$CompatibilityScopePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   compatibilityChecks<T extends Prisma.CompatibilityRule$compatibilityChecksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompatibilityRule$compatibilityChecksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityCheckPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  scope<T extends Prisma.CompatibilityRule$scopeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompatibilityRule$scopeArgs<ExtArgs>>): Prisma.Prisma__CompatibilityScopeClient<runtime.Types.Result.GetResult<Prisma.$CompatibilityScopePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  sourceSpec<T extends Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompatibilityRule$sourceSpecArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  targetSpec<T extends Prisma.CompatibilityRule$targetSpecArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompatibilityRule$targetSpecArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1442,12 +1884,20 @@ export interface Prisma__CompatibilityRuleClient<T, Null = never, ExtArgs extend
 export interface CompatibilityRuleFieldRefs {
   readonly id: Prisma.FieldRef<"CompatibilityRule", 'String'>
   readonly name: Prisma.FieldRef<"CompatibilityRule", 'String'>
+  readonly description: Prisma.FieldRef<"CompatibilityRule", 'String'>
+  readonly type: Prisma.FieldRef<"CompatibilityRule", 'RuleType'>
   readonly sourceSpecId: Prisma.FieldRef<"CompatibilityRule", 'String'>
   readonly targetSpecId: Prisma.FieldRef<"CompatibilityRule", 'String'>
   readonly operator: Prisma.FieldRef<"CompatibilityRule", 'CompatibilityOperator'>
-  readonly message: Prisma.FieldRef<"CompatibilityRule", 'String'>
-  readonly severity: Prisma.FieldRef<"CompatibilityRule", 'CompatibilitySeverity'>
   readonly scopeId: Prisma.FieldRef<"CompatibilityRule", 'String'>
+  readonly message: Prisma.FieldRef<"CompatibilityRule", 'String'>
+  readonly messageTemplate: Prisma.FieldRef<"CompatibilityRule", 'String'>
+  readonly severity: Prisma.FieldRef<"CompatibilityRule", 'CompatibilitySeverity'>
+  readonly logic: Prisma.FieldRef<"CompatibilityRule", 'Json'>
+  readonly priority: Prisma.FieldRef<"CompatibilityRule", 'Int'>
+  readonly enabled: Prisma.FieldRef<"CompatibilityRule", 'Boolean'>
+  readonly createdAt: Prisma.FieldRef<"CompatibilityRule", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"CompatibilityRule", 'DateTime'>
 }
     
 
@@ -1865,6 +2315,63 @@ export type CompatibilityRule$compatibilityChecksArgs<ExtArgs extends runtime.Ty
   take?: number
   skip?: number
   distinct?: Prisma.CompatibilityCheckScalarFieldEnum | Prisma.CompatibilityCheckScalarFieldEnum[]
+}
+
+/**
+ * CompatibilityRule.scope
+ */
+export type CompatibilityRule$scopeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CompatibilityScope
+   */
+  select?: Prisma.CompatibilityScopeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CompatibilityScope
+   */
+  omit?: Prisma.CompatibilityScopeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CompatibilityScopeInclude<ExtArgs> | null
+  where?: Prisma.CompatibilityScopeWhereInput
+}
+
+/**
+ * CompatibilityRule.sourceSpec
+ */
+export type CompatibilityRule$sourceSpecArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SpecDefinition
+   */
+  select?: Prisma.SpecDefinitionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SpecDefinition
+   */
+  omit?: Prisma.SpecDefinitionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SpecDefinitionInclude<ExtArgs> | null
+  where?: Prisma.SpecDefinitionWhereInput
+}
+
+/**
+ * CompatibilityRule.targetSpec
+ */
+export type CompatibilityRule$targetSpecArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SpecDefinition
+   */
+  select?: Prisma.SpecDefinitionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SpecDefinition
+   */
+  omit?: Prisma.SpecDefinitionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SpecDefinitionInclude<ExtArgs> | null
+  where?: Prisma.SpecDefinitionWhereInput
 }
 
 /**

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInventoryItems } from "@/services/inventory.service";
 import { serializeInventoryItems } from "@/lib/adminSerializers";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function GET(req: NextRequest) {
   try {

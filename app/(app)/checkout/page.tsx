@@ -3,14 +3,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Building2, CreditCard, Lock, Smartphone } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  CreditCard,
+  Lock,
+  Smartphone,
+} from "lucide-react";
 
 import { processCheckout } from "@/app/actions/checkout";
 import ImageUploader from "@/components/uploadthing/ImageUploader";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/context/ShopContext";
-import { calculateOrderFinancials } from "@/lib/gst";
+
 import { PaymentMethodType, PaymentStatus } from "@/types";
+import { calculateOrderFinancials } from "@/lib/tax-engine";
 
 type PaymentMethod = PaymentMethodType;
 
@@ -109,7 +116,9 @@ function Section({
   return (
     <section className="border border-gray-200 bg-white p-6">
       <h2 className="text-base font-medium text-gray-900">{title}</h2>
-      {description ? <p className="mt-1 text-sm text-gray-500">{description}</p> : null}
+      {description ? (
+        <p className="mt-1 text-sm text-gray-500">{description}</p>
+      ) : null}
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -142,7 +151,8 @@ export default function CheckoutPage() {
   );
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [paymentReference, setPaymentReference] = useState("");
-  const [paymentConfig, setPaymentConfig] = useState<PaymentConfigResponse | null>(null);
+  const [paymentConfig, setPaymentConfig] =
+    useState<PaymentConfigResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [formError, setFormError] = useState("");
@@ -305,7 +315,9 @@ export default function CheckoutPage() {
 
             const verifyPayload = await verifyRes.json();
             if (!verifyRes.ok) {
-              reject(new Error(verifyPayload.error || "Unable to verify payment."));
+              reject(
+                new Error(verifyPayload.error || "Unable to verify payment."),
+              );
               return;
             }
 
@@ -319,7 +331,8 @@ export default function CheckoutPage() {
           }
         },
         modal: {
-          ondismiss: () => reject(new Error("Payment was cancelled before completion.")),
+          ondismiss: () =>
+            reject(new Error("Payment was cancelled before completion.")),
         },
       });
 
@@ -360,11 +373,15 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-white">
         <div className="mx-auto flex min-h-screen max-w-2xl items-center px-4 py-12 sm:px-6 lg:px-8">
           <div className="w-full border border-gray-200 bg-white p-8 text-center">
-            <p className="text-sm uppercase tracking-[0.16em] text-gray-500">Order confirmed</p>
+            <p className="text-sm uppercase tracking-[0.16em] text-gray-500">
+              Order confirmed
+            </p>
             <h1 className="mt-4 text-3xl font-semibold text-gray-900">
               Checkout complete
             </h1>
-            <p className="mt-4 text-sm leading-7 text-gray-600">{successMessage}</p>
+            <p className="mt-4 text-sm leading-7 text-gray-600">
+              {successMessage}
+            </p>
             <Button asChild className="mt-8 h-12 px-6">
               <Link href="/products">Continue shopping</Link>
             </Button>
@@ -379,7 +396,9 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-white">
         <div className="mx-auto flex min-h-screen max-w-2xl items-center px-4 py-12 sm:px-6 lg:px-8">
           <div className="w-full border border-gray-200 bg-white p-8 text-center">
-            <h1 className="text-2xl font-semibold text-gray-900">Your cart is empty</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Your cart is empty
+            </h1>
             <p className="mt-3 text-sm text-gray-500">
               Add a few products before heading to checkout.
             </p>
@@ -412,11 +431,18 @@ export default function CheckoutPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Guest checkout</p>
-          <h1 className="mt-3 text-3xl font-semibold text-gray-900">Checkout</h1>
+          <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
+            Guest checkout
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold text-gray-900">
+            Checkout
+          </h1>
           <p className="mt-2 text-sm text-gray-500">
             Complete your order as a guest, or{" "}
-            <Link href="/login" className="text-gray-900 underline underline-offset-4">
+            <Link
+              href="/login"
+              className="text-gray-900 underline underline-offset-4"
+            >
               log in
             </Link>{" "}
             to use an existing account.
@@ -424,7 +450,11 @@ export default function CheckoutPage() {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-          <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
+          <form
+            id="checkout-form"
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
             <Section
               title="Contact information"
               description="We will use these details for order updates and delivery communication."
@@ -552,14 +582,20 @@ export default function CheckoutPage() {
                     >
                       <span
                         className={`inline-flex size-10 items-center justify-center border ${
-                          active ? "border-white/20 bg-white/10 text-white" : "border-gray-200 bg-gray-50 text-gray-700"
+                          active
+                            ? "border-white/20 bg-white/10 text-white"
+                            : "border-gray-200 bg-gray-50 text-gray-700"
                         }`}
                       >
                         <Icon className="size-4" />
                       </span>
                       <span>
-                        <span className="block text-sm font-medium">{method.title}</span>
-                        <span className={`mt-1 block text-sm ${active ? "text-gray-200" : "text-gray-500"}`}>
+                        <span className="block text-sm font-medium">
+                          {method.title}
+                        </span>
+                        <span
+                          className={`mt-1 block text-sm ${active ? "text-gray-200" : "text-gray-500"}`}
+                        >
                           {method.description}
                         </span>
                       </span>
@@ -573,14 +609,34 @@ export default function CheckoutPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="border border-gray-200 p-4 text-sm text-gray-600">
                       <p className="font-medium text-gray-900">UPI details</p>
-                      <p className="mt-3">UPI ID: {paymentConfig?.manualPaymentDetails?.upiId || "Not configured"}</p>
-                      <p className="mt-1">Payee: {paymentConfig?.manualPaymentDetails?.upiName || "Not configured"}</p>
+                      <p className="mt-3">
+                        UPI ID:{" "}
+                        {paymentConfig?.manualPaymentDetails?.upiId ||
+                          "Not configured"}
+                      </p>
+                      <p className="mt-1">
+                        Payee:{" "}
+                        {paymentConfig?.manualPaymentDetails?.upiName ||
+                          "Not configured"}
+                      </p>
                     </div>
                     <div className="border border-gray-200 p-4 text-sm text-gray-600">
                       <p className="font-medium text-gray-900">Bank details</p>
-                      <p className="mt-3">Account: {paymentConfig?.manualPaymentDetails?.bankAccountName || "Not configured"}</p>
-                      <p className="mt-1">Number: {paymentConfig?.manualPaymentDetails?.bankAccountNumber || "Not configured"}</p>
-                      <p className="mt-1">IFSC: {paymentConfig?.manualPaymentDetails?.bankIfsc || "Not configured"}</p>
+                      <p className="mt-3">
+                        Account:{" "}
+                        {paymentConfig?.manualPaymentDetails?.bankAccountName ||
+                          "Not configured"}
+                      </p>
+                      <p className="mt-1">
+                        Number:{" "}
+                        {paymentConfig?.manualPaymentDetails
+                          ?.bankAccountNumber || "Not configured"}
+                      </p>
+                      <p className="mt-1">
+                        IFSC:{" "}
+                        {paymentConfig?.manualPaymentDetails?.bankIfsc ||
+                          "Not configured"}
+                      </p>
                     </div>
                   </div>
 
@@ -594,7 +650,9 @@ export default function CheckoutPage() {
 
                   <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
                     <div>
-                      <p className="mb-2 text-sm text-gray-700">Payment proof</p>
+                      <p className="mb-2 text-sm text-gray-700">
+                        Payment proof
+                      </p>
                       <ImageUploader
                         endpoint="paymentProofUploader"
                         previewUrl={paymentProofUrl || undefined}
@@ -605,11 +663,16 @@ export default function CheckoutPage() {
                         onUploadError={(error) => setFormError(error.message)}
                       />
                     </div>
-                    <Field label="UTR / reference number" htmlFor="paymentReference">
+                    <Field
+                      label="UTR / reference number"
+                      htmlFor="paymentReference"
+                    >
                       <input
                         id="paymentReference"
                         value={paymentReference}
-                        onChange={(event) => setPaymentReference(event.target.value)}
+                        onChange={(event) =>
+                          setPaymentReference(event.target.value)
+                        }
                         className="h-12 w-full border border-gray-200 px-4 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900"
                         placeholder={
                           paymentMethod === PaymentMethodType.UPI
@@ -627,13 +690,18 @@ export default function CheckoutPage() {
           <aside className="lg:sticky lg:top-24">
             <div className="border border-gray-200 bg-white">
               <div className="border-b border-gray-200 p-6">
-                <h2 className="text-base font-medium text-gray-900">Order summary</h2>
+                <h2 className="text-base font-medium text-gray-900">
+                  Order summary
+                </h2>
               </div>
 
               <div className="max-h-[320px] overflow-y-auto p-6">
                 <ul className="space-y-4">
                   {cart.map((item) => (
-                    <li key={`${item.id}-${item.selectedVariant?.id ?? "default"}`} className="flex gap-3">
+                    <li
+                      key={`${item.id}-${item.selectedVariant?.id ?? "default"}`}
+                      className="flex gap-3"
+                    >
                       <div className="relative size-16 shrink-0 overflow-hidden border border-gray-200 bg-gray-50">
                         <Image
                           src={item.media?.[0]?.url ?? "/placeholder.png"}
@@ -644,11 +712,18 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-sm text-gray-900">{item.name}</p>
-                        <p className="mt-1 text-xs text-gray-500">Qty {item.quantity}</p>
+                        <p className="line-clamp-2 text-sm text-gray-900">
+                          {item.name}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Qty {item.quantity}
+                        </p>
                       </div>
                       <p className="text-sm font-medium text-gray-900">
-                        Rs. {((item.selectedVariant?.price ?? 0) * item.quantity).toLocaleString("en-IN")}
+                        Rs.{" "}
+                        {(
+                          (item.selectedVariant?.price ?? 0) * item.quantity
+                        ).toLocaleString("en-IN")}
                       </p>
                     </li>
                   ))}
@@ -659,11 +734,15 @@ export default function CheckoutPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span className="text-gray-900">Rs. {financials.subtotal.toLocaleString("en-IN")}</span>
+                    <span className="text-gray-900">
+                      Rs. {financials.subtotal.toLocaleString("en-IN")}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-gray-600">
                     <span>GST</span>
-                    <span className="text-gray-900">Rs. {financials.gstAmount.toLocaleString("en-IN")}</span>
+                    <span className="text-gray-900">
+                      Rs. {financials.gstAmount.toLocaleString("en-IN")}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-gray-600">
                     <span>Shipping</span>
@@ -672,14 +751,18 @@ export default function CheckoutPage() {
                   {discountAmount > 0 ? (
                     <div className="flex items-center justify-between text-gray-600">
                       <span>Manual payment discount</span>
-                      <span className="text-gray-900">- Rs. {discountAmount.toLocaleString("en-IN")}</span>
+                      <span className="text-gray-900">
+                        - Rs. {discountAmount.toLocaleString("en-IN")}
+                      </span>
                     </div>
                   ) : null}
                 </div>
 
                 <div className="mt-5 border-t border-gray-200 pt-5">
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-medium text-gray-900">Total</span>
+                    <span className="text-base font-medium text-gray-900">
+                      Total
+                    </span>
                     <span className="text-2xl font-semibold text-gray-900">
                       Rs. {payableTotal.toLocaleString("en-IN")}
                     </span>
@@ -707,7 +790,8 @@ export default function CheckoutPage() {
                   </Button>
 
                   <p className="mt-3 text-xs leading-6 text-gray-500">
-                    By placing your order, you agree to complete payment and receive order updates by email or phone.
+                    By placing your order, you agree to complete payment and
+                    receive order updates by email or phone.
                   </p>
                 </div>
               </div>

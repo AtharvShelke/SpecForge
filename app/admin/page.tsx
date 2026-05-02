@@ -20,14 +20,18 @@ const CategoryManager = lazy(
   () => import("@/components/dashboard/CategoryManager"),
 );
 const BrandManager = lazy(() => import("@/components/dashboard/BrandManager"));
-const SavedBuildsManager = lazy(
-  () => import("@/components/dashboard/SavedBuildsManager"),
-);
+
 const BillingInvoices = lazy(
   () => import("@/components/dashboard/BillingInvoices"),
 );
 const BuilderConfigManager = lazy(
   () => import("@/components/dashboard/builder-config/BuilderConfigManager"),
+);
+const CompatibilityManager = lazy(
+  () => import("@/components/dashboard/CompatibilityManager"),
+);
+const TaxSettingsTab = lazy(
+  () => import("@/components/dashboard/TaxSettingsTab"),
 );
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -109,11 +113,6 @@ const AdminDashboardContent = memo(function AdminDashboardContent() {
           <BrandManager />
         </TabViewport>
       )}
-      {activeTab === "saved-builds" && (
-        <TabViewport>
-          <SavedBuildsManager />
-        </TabViewport>
-      )}
       {activeTab === "billing" && (
         <TabViewport>
           <BillingInvoices />
@@ -122,6 +121,16 @@ const AdminDashboardContent = memo(function AdminDashboardContent() {
       {activeTab === "builder-config" && (
         <TabViewport>
           <BuilderConfigManager />
+        </TabViewport>
+      )}
+      {activeTab === "compatibility" && (
+        <TabViewport>
+          <CompatibilityManager />
+        </TabViewport>
+      )}
+      {activeTab === "tax-settings" && (
+        <TabViewport>
+          <TaxSettingsTab />
         </TabViewport>
       )}
     </div>

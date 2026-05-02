@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { serializeOrder } from "@/lib/adminSerializers";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 import { getOrderById } from "@/services/order.service";
 import { generateInvoicePdfBuffer } from "@/lib/invoicePdf";
 import type { Order } from "@/types";

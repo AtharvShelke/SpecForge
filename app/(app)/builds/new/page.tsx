@@ -14,6 +14,7 @@ import {
   CompatibilityLevel,
   Role,
   specsToFlat,
+  BuilderSettings,
 } from "@/types";
 import {
   CATEGORY_LABELS,
@@ -218,11 +219,11 @@ const MOTION_FAST = { duration: 0.15 } as const;
 
 /* ─────────────────────────────── Utilities ──────────────────────────────── */
 // Combined single-pass wattage + PSU capacity to avoid two separate cart iterations
-function estimatePowerStats(cart: CartItem[]): {
+function estimatePowerStats(cart: CartItem[], powerDefaults: BuilderSettings["powerDefaults"]): {
   wattage: number;
   psuCap: number | null;
 } {
-  let w = 50;
+  let w = powerDefaults.baseWattage;
   let psuCap: number | null = null;
   for (const item of cart) {
     const s = specsToFlat(item.specs);
@@ -235,18 +236,18 @@ function estimatePowerStats(cart: CartItem[]): {
       w += n * item.quantity;
       continue;
     }
-    if (sameCategory(item.category, CATEGORY_NAMES.PROCESSOR)) w += 65;
-    if (sameCategory(item.category, CATEGORY_NAMES.GPU)) w += 150;
-    if (sameCategory(item.category, CATEGORY_NAMES.RAM)) w += 5 * item.quantity;
+    if (sameCategory(item.category, CATEGORY_NAMES.PROCESSOR)) w += powerDefaults.cpuDefaultWattage;
+    if (sameCategory(item.category, CATEGORY_NAMES.GPU)) w += powerDefaults.gpuDefaultWattage;
+    if (sameCategory(item.category, CATEGORY_NAMES.RAM)) w += powerDefaults.ramWattagePerStick * item.quantity;
     if (sameCategory(item.category, CATEGORY_NAMES.STORAGE))
-      w += 5 * item.quantity;
+      w += powerDefaults.storageWattagePerDrive * item.quantity;
   }
   return { wattage: w, psuCap };
 }
 
 // Keep legacy helpers as thin wrappers for BuildSummaryPanel (no breaking changes)
-function estimateWattage(cart: CartItem[]): number {
-  return estimatePowerStats(cart).wattage;
+function estimateWattage(cart: CartItem[], powerDefaults: BuilderSettings["powerDefaults"]): number {
+  return estimatePowerStats(cart, powerDefaults).wattage;
 }
 
 // Legacy builder-specific filters (kept for internal compatibility helpers).
@@ -288,26 +289,6 @@ const CORE_TIER_LABELS: Record<string, string> = {
   enthusiast: "Enthusiast (12-16 cores)",
   workstation: "Workstation (18+ cores)",
 };
-
-const TDP_BAND_LABELS: Record<string, string> = {
-  low: "Low power (up to 65W)",
-  balanced: "Balanced (66W-120W)",
-  high: "High power (121W+)",
-};
-
-type PricePreset = {
-  id: string;
-  label: string;
-  min?: number;
-  max?: number;
-};
-
-const PRICE_PRESETS: PricePreset[] = [
-  { id: "budget", label: "Under 10k", max: 10000 },
-  { id: "mid", label: "10k - 25k", min: 10000, max: 25000 },
-  { id: "upper", label: "25k - 50k", min: 25000, max: 50000 },
-  { id: "premium", label: "50k+", min: 50000 },
-];
 
 function getPrice(product: Product): number {
   return Number(product.variants?.[0]?.price ?? 0);
@@ -360,14 +341,15 @@ function deriveCoreTier(coreCount: number | null): string {
   return "workstation";
 }
 
-function deriveTdpBand(tdp: number | null): string {
+function deriveTdpBand(tdp: number | null, tdpBands: BuilderSettings["tdpBands"]): string {
   if (!tdp || tdp <= 0) return "";
-  if (tdp <= 65) return "low";
-  if (tdp <= 120) return "balanced";
-  return "high";
+  if (tdp <= tdpBands.low.max) return "low";
+  if (tdp >= tdpBands.balanced.min && tdp <= tdpBands.balanced.max) return "balanced";
+  if (tdp >= tdpBands.high.min) return "high";
+  return "";
 }
 
-function deriveProductFacts(product: Product): ProductFacts {
+function deriveProductFacts(product: Product, tdpBands: BuilderSettings["tdpBands"]): ProductFacts {
   const coreCount = getNumericSpec(product, "cores", "coreCount", "cpuCores");
   const tdp = getNumericSpec(product, "tdp", "wattage", "powerDraw");
   return {
@@ -383,7 +365,7 @@ function deriveProductFacts(product: Product): ProductFacts {
       "integratedGpu",
     ),
     tdp,
-    tdpBand: deriveTdpBand(tdp),
+    tdpBand: deriveTdpBand(tdp, tdpBands),
     generation: getSpecText(
       product,
       "generation",
@@ -441,7 +423,7 @@ function getMemoryTypeFromSpecs(specs: CartItem["specs"]): string {
   return normalizeSpecText(flat.memoryType ?? flat.ramType);
 }
 
-function validateBuild(items: CartItem[] = []): {
+function validateBuild(items: CartItem[] = [], powerDefaults: BuilderSettings["powerDefaults"]): {
   status: CompatibilityLevel;
   issues: BuildIssue[];
 } {
@@ -453,7 +435,7 @@ function validateBuild(items: CartItem[] = []): {
     sameCategory(i.category, CATEGORY_NAMES.MOTHERBOARD),
   );
   const ram = items.find((i) => sameCategory(i.category, CATEGORY_NAMES.RAM));
-  const { wattage, psuCap } = estimatePowerStats(items);
+  const { wattage, psuCap } = estimatePowerStats(items, powerDefaults);
 
   if (cpu && mobo) {
     const cpuSocket = normalizeSpecText(specsToFlat(cpu.specs).socket);
@@ -786,6 +768,7 @@ const BuildSummaryPanel: React.FC<{
   onSave?: () => void;
   onShare?: () => void;
   onCheckout: () => void;
+  powerDefaults: BuilderSettings["powerDefaults"];
 }> = memo(
   ({
     cart,
@@ -795,8 +778,9 @@ const BuildSummaryPanel: React.FC<{
     onSave,
     onShare,
     onCheckout,
+    powerDefaults,
   }) => {
-    const report = useMemo(() => validateBuild(cart), [cart]);
+    const report = useMemo(() => validateBuild(cart, powerDefaults), [cart, powerDefaults]);
     const totalPrice = useMemo(
       () =>
         cart.reduce(
@@ -1160,6 +1144,7 @@ type BuilderFiltersSidebarProps = {
   onClearAll: () => void;
   priceBounds: { min: number; max: number };
   resultCount: number;
+  builderSettings: BuilderSettings;
 };
 
 function BuilderFiltersSidebar({
@@ -1169,6 +1154,7 @@ function BuilderFiltersSidebar({
   onClearAll,
   priceBounds,
   resultCount,
+  builderSettings,
 }: BuilderFiltersSidebarProps) {
   const countMatches = useCallback(
     (next: BuilderFilterState) =>
@@ -1342,7 +1328,7 @@ function BuilderFiltersSidebar({
                 </div>
 
                 <div className="grid grid-cols-2 gap-1.5">
-                  {PRICE_PRESETS.map((preset) => {
+                  {builderSettings.pricePresets.map((preset) => {
                     const presetMin =
                       typeof preset.min === "number"
                         ? preset.min
@@ -1612,7 +1598,11 @@ function BuilderFiltersSidebar({
               </span>
             </summary>
             <div className="px-3 pb-3 pt-1 space-y-1.5">
-              {Object.entries(TDP_BAND_LABELS)
+              {Object.entries({
+                low: builderSettings.tdpBands.low.label,
+                balanced: builderSettings.tdpBands.balanced.label,
+                high: builderSettings.tdpBands.high.label,
+              })
                 .filter(([band]) => availableTdpBands.includes(band))
                 .map(([band, label]) => {
                   const selected = filters.tdpBands.includes(band);
@@ -1667,7 +1657,7 @@ export default function PCBuilderPage() {
     categories,
     refreshCategories,
   } = useShop();
-  const { isBuildMode, toggleBuildMode, saveCurrentBuild } = useBuild();
+  const { isBuildMode, toggleBuildMode, saveCurrentBuild, builderSettings } = useBuild();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -1823,7 +1813,7 @@ export default function PCBuilderPage() {
         ...cart.filter((i) => !sameCategory(i.category, product.category)),
         { ...product, quantity: 1, selectedVariant: product.variants?.[0] },
       ];
-      const rep = validateBuild(hypo);
+      const rep = validateBuild(hypo, builderSettings.powerDefaults);
       const result = {
         level:
           rep.issues.length > 0
@@ -1838,7 +1828,7 @@ export default function PCBuilderPage() {
       cartCompatMap.set(product.id, result);
       return result;
     },
-    [cart, cartCompatMap],
+    [cart, cartCompatMap, builderSettings.powerDefaults],
   );
 
   const handleSave = useCallback(
@@ -1873,7 +1863,7 @@ export default function PCBuilderPage() {
       ),
     [cart],
   );
-  const compatReport = useMemo(() => validateBuild(cart), [cart]);
+  const compatReport = useMemo(() => validateBuild(cart, builderSettings.powerDefaults), [cart, builderSettings.powerDefaults]);
   const completedCount = useMemo(
     () =>
       CORE_CATEGORIES.filter((cat) =>
@@ -1881,7 +1871,7 @@ export default function PCBuilderPage() {
       ).length,
     [cart],
   );
-  const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
+  const wattageEst = useMemo(() => estimateWattage(cart, builderSettings.powerDefaults), [cart, builderSettings.powerDefaults]);
 
   const visibleProducts = useMemo(() => {
     if (showIncompat) return products;
@@ -2091,6 +2081,7 @@ export default function PCBuilderPage() {
             cart={cart}
             onRemove={handleRemove}
             onStepClick={handleStepClick}
+            powerDefaults={builderSettings.powerDefaults}
             activeStep={activeStep}
             onSave={isAdmin ? handleOpenSave : undefined}
             onShare={undefined}
@@ -2143,6 +2134,7 @@ export default function PCBuilderPage() {
               cart={cart}
               onRemove={handleRemove}
               onStepClick={handleStepClick}
+              powerDefaults={builderSettings.powerDefaults}
               activeStep={activeStep}
               onSave={isAdmin ? handleOpenSave : undefined}
               onShare={undefined}

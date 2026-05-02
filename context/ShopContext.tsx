@@ -20,7 +20,8 @@ import {
   Order,
 } from "../types";
 import { sameCategory } from "../lib/categoryUtils";
-import { apiFetch, useLoadingCounter } from "@/lib/helpers";
+import { apiFetch } from "@/lib/helpers";
+import { useLoadingCounter } from "@/hooks/useLoadingCounter";
 
 interface ShopContextType {
   products: Product[];

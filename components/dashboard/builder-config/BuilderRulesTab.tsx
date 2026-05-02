@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
   Sparkles,
   Plus,
@@ -12,6 +12,7 @@ import {
 import type { BuilderUIRule } from "@/types";
 import { BuilderRuleAction } from "@/types";
 import { apiFetch } from "@/lib/helpers";
+import { useAdmin } from "@/context/AdminContext";
 
 const OPERATORS = [
   "equals",
@@ -51,10 +52,22 @@ const EMPTY_FORM: RuleFormData = {
 };
 
 const BuilderRulesTab = memo(function BuilderRulesTab() {
+  const { subCategories } = useAdmin();
   const [rules, setRules] = useState<BuilderUIRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<RuleFormData>(EMPTY_FORM);
+
+  // Group subcategories by parent category name for the dropdown
+  const groupedCategories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }[]>();
+    (subCategories ?? []).forEach((sub: any) => {
+      const catName = sub.category?.name ?? "Uncategorized";
+      if (!map.has(catName)) map.set(catName, []);
+      map.get(catName)!.push({ id: sub.id, name: sub.name });
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [subCategories]);
 
   const loadRules = useCallback(async () => {
     try {
@@ -142,14 +155,26 @@ const BuilderRulesTab = memo(function BuilderRulesTab() {
               placeholder="Rule name"
               className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
             />
-            <input
+            <select
               value={form.category}
               onChange={(e) =>
                 setForm((p) => ({ ...p, category: e.target.value }))
               }
-              placeholder="Category (e.g. Processor)"
-              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            />
+              className="px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
+            >
+              <option value="" disabled>
+                Select category…
+              </option>
+              {groupedCategories.map(([catName, subs]) => (
+                <optgroup key={catName} label={catName}>
+                  {subs.map((sub) => (
+                    <option key={sub.id} value={sub.name}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <input

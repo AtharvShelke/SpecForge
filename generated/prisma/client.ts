@@ -162,6 +162,11 @@ export type InvoiceLineItem = Prisma.InvoiceLineItemModel
  */
 export type InvoiceAuditEvent = Prisma.InvoiceAuditEventModel
 /**
+ * Model TaxSettings
+ * 
+ */
+export type TaxSettings = Prisma.TaxSettingsModel
+/**
  * Model PaymentTransaction
  * 
  */

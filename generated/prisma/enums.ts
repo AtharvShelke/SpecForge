@@ -187,6 +187,15 @@ export const ReservationStatus = {
 export type ReservationStatus = (typeof ReservationStatus)[keyof typeof ReservationStatus]
 
 
+export const RuleType = {
+  PAIR: 'PAIR',
+  COMPONENT: 'COMPONENT',
+  GLOBAL: 'GLOBAL'
+} as const
+
+export type RuleType = (typeof RuleType)[keyof typeof RuleType]
+
+
 export const BuilderRuleAction = {
   HIGHLIGHT: 'HIGHLIGHT',
   HIDE_FILTER: 'HIDE_FILTER',

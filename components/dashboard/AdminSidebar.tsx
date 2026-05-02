@@ -23,29 +23,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    label: "Overview",
-    icon: LayoutDashboard,
-    key: "overview",
-    group: "primary",
-  },
+  { label: "Overview", icon: LayoutDashboard, key: "overview", group: "primary", },
   { label: "Orders", icon: ShoppingBag, key: "orders", group: "primary" },
   { label: "Products", icon: Package, key: "products", group: "primary" },
   { label: "Inventory", icon: Layers, key: "inventory", group: "primary" },
   { label: "Categories", icon: Tag, key: "categories", group: "secondary" },
   { label: "Brands", icon: Bookmark, key: "brands", group: "secondary" },
-  {
-    label: "Saved Builds",
-    icon: Layers,
-    key: "saved-builds",
-    group: "secondary",
-  },
-  {
-    label: "Builder Config",
-    icon: Hammer,
-    key: "builder-config",
-    group: "secondary",
-  },
+  { label: "Builder Config", icon: Hammer, key: "builder-config", group: "secondary", },
 ];
 
 const PRIMARY_NAV = NAV_ITEMS.filter((item) => item.group === "primary");

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   deleteSpec,
-  ServiceError,
+  
   updateSpec,
 } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function PATCH(
   request: NextRequest,

@@ -2,18 +2,15 @@
  * seed-builder-config.ts — Seeds default builder configuration.
  *
  * Run: npx tsx prisma/seed-builder-config.ts
+ *
+ * Safety guarantees:
+ *   - BuilderConfig upsert: create-only (never overwrites admin-edited values)
+ *   - SubCategory builder fields: updateMany only for rows still at schema default
+ *   - BuilderUIRule: findFirst guard prevents duplicate seeding
  */
 
 import { prisma } from "../lib/prisma";
-
-const DEFAULT_SETTINGS = {
-  defaultExpandedCategory: null,
-  autoOpenNextCategory: true,
-  enforceCompatibility: true,
-  showWarnings: true,
-  allowIncompatibleCheckout: false,
-  powerCalculationMode: "static",
-};
+import { DEFAULT_BUILDER_SETTINGS } from "../types";
 
 const CATEGORY_METADATA: Record<
   string,
@@ -141,36 +138,54 @@ const DEFAULT_RULES = [
 async function main() {
   console.log("🔧 Seeding builder configuration...\n");
 
-  // 1. Global settings
+  // 1. Global settings — create-only: preserves any admin-edited values on re-run
   await prisma.builderConfig.upsert({
     where: { id: "default" },
-    update: { settings: DEFAULT_SETTINGS },
-    create: { id: "default", settings: DEFAULT_SETTINGS },
+    update: {},
+    create: { id: "default", settings: DEFAULT_BUILDER_SETTINGS as any },
   });
-  console.log("  ✓ Global builder settings");
+  console.log("  ✓ Global builder settings (create-only, admin values preserved)");
 
-  // 2. Category configs (source of truth = Category model)
+  // 2. SubCategory builder fields — write per-category metadata
+  //    Only updates subcategories that haven't been manually configured yet
+  //    (isBuilderEnabled still false = pristine/unset).
   const categories = await prisma.category.findMany({
     where: { deletedAt: null },
     orderBy: { name: "asc" },
-    select: { name: true },
+    include: {
+      subCategories: {
+        where: { deletedAt: null },
+        select: { id: true, name: true, isBuilderEnabled: true },
+      },
+    },
   });
+
+  let updatedSubCats = 0;
   for (const category of categories) {
-    const metadata = CATEGORY_METADATA[category.name] ?? {};
-    const config = {
-      categoryName: category.name,
-      enabled: true,
-      isCore: metadata.isCore ?? false,
-      required: metadata.required ?? false,
-      allowMultiple: metadata.allowMultiple ?? false,
-      displayOrder: metadata.displayOrder ?? Number.MAX_SAFE_INTEGER,
-      icon: metadata.icon ?? null,
-      shortLabel: metadata.shortLabel ?? null,
-      description: metadata.description ?? null,
-    };
+    const metadata = CATEGORY_METADATA[category.name];
+    if (!metadata) continue; // Not a known builder category — skip
+
+    for (const sub of category.subCategories) {
+      // Only seed if the row is still at the default (admin hasn't touched it)
+      if (sub.isBuilderEnabled) continue;
+
+      await prisma.subCategory.update({
+        where: { id: sub.id },
+        data: {
+          isBuilderEnabled: true,
+          isCore: metadata.isCore ?? false,
+          isRequired: metadata.required ?? false,
+          allowMultiple: metadata.allowMultiple ?? false,
+          builderOrder: metadata.displayOrder ?? 99,
+          icon: metadata.icon ?? null,
+          shortLabel: metadata.shortLabel ?? null,
+        },
+      });
+      updatedSubCats++;
+    }
   }
   console.log(
-    `  ✓ ${categories.length} category configs (from Category table)`,
+    `  ✓ ${updatedSubCats} subcategory builder fields set (skipped already-configured)`,
   );
 
   // 3. Default UI rules

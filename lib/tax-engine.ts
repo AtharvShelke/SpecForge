@@ -94,14 +94,15 @@ export function lookupGSTRate(hsnCode?: string): number {
  * Unified tax calculation for all commerce flows.
  *
  * @param config - Items and optional place-of-supply info
+ * @param defaultTaxRatePct - Optional default tax rate to use if items don't have taxRatePct
  * @returns Full tax breakdown per line item and totals
  */
-export function calculateTax(config: TaxConfig): TaxCalculationResult {
+export function calculateTax(config: TaxConfig, defaultTaxRatePct: number = 18): TaxCalculationResult {
     const { items, placeOfSupply, sellerState } = config;
     const isInterState = !!(placeOfSupply && sellerState && placeOfSupply !== sellerState);
 
     const lineResults: TaxLineResult[] = items.map(item => {
-        const taxRatePct = item.taxRatePct ?? lookupGSTRate(item.hsnCode);
+        const taxRatePct = item.taxRatePct ?? lookupGSTRate(item.hsnCode) ?? defaultTaxRatePct;
         const subtotal = roundCurrency(item.unitPrice * item.quantity);
         const discountPct = Math.max(0, Math.min(100, item.discountPct ?? 0));
         const discount = roundCurrency(subtotal * discountPct / 100);

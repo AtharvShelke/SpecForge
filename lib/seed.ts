@@ -16,7 +16,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
-
   FilterType,
   OrderStatus,
   InvoiceStatus,
@@ -28,6 +27,8 @@ import {
   CompatibilitySeverity,
   InventoryStatus,
   InventoryTrackingType,
+  BuilderRuleAction,
+  PaymentMethodType,
 } from "../generated/prisma/enums";
 import { PrismaClient } from "@/generated/prisma/client";
 
@@ -2388,7 +2389,120 @@ const COMPAT_RULES: CompatRuleSeed[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. SAMPLE DATA — Customers, Orders, Invoices
+// 7. DERIVED SPECS
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface DerivedSpecSeed {
+  name: string;
+  description?: string;
+  resultSpecName: string;
+  resultSpecSubCategory: string;
+  formula: string;
+}
+
+const DERIVED_SPECS: DerivedSpecSeed[] = [
+  {
+    name: "Total TDP",
+    description: "Combined TDP of CPU and GPU for PSU sizing",
+    resultSpecName: "TDP (W)",
+    resultSpecSubCategory: "ATX PSU",
+    formula: "SUM(CPU.TDP, GPU.TDP)",
+  },
+  {
+    name: "Total Power Draw",
+    description: "Estimated total system power draw with 20% headroom",
+    resultSpecName: "TDP (W)",
+    resultSpecSubCategory: "ATX PSU",
+    formula: "MULTIPLY(SUM(CPU.TDP, GPU.TDP), 1.2)",
+  },
+  {
+    name: "Remaining Cooler Clearance",
+    description: "Case cooler height minus CPU cooler height",
+    resultSpecName: "Height (mm)",
+    resultSpecSubCategory: "Air Cooler",
+    formula: "SUBTRACT(CASE.Max CPU Cooler Height, COOLER.Height)",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. BUILDER CONFIGURATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BUILDER_CONFIG = {
+  settings: {
+    maxBuildPrice: 500000,
+    defaultCurrency: "INR",
+    enableCompatibilityWarnings: true,
+    autoSelectComponents: false,
+    showPriceBreakdown: true,
+    enableBuildSharing: true,
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. BUILDER UI RULES
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface BuilderUIRuleSeed {
+  name: string;
+  category: string;
+  specKey: string;
+  operator: string;
+  value: string;
+  action: BuilderRuleAction;
+  priority: number;
+  enabled: boolean;
+  metadata?: any;
+}
+
+const BUILDER_UI_RULES: BuilderUIRuleSeed[] = [
+  {
+    name: "Hide Intel CPUs when AMD selected",
+    category: "Processor",
+    specKey: "Manufacturer",
+    operator: "equals",
+    value: "AMD",
+    action: BuilderRuleAction.HIDE_FILTER,
+    priority: 10,
+    enabled: true,
+    metadata: { filterToHide: "Manufacturer:Intel" },
+  },
+  {
+    name: "Highlight DDR5 RAM for AM5 builds",
+    category: "RAM",
+    specKey: "Memory Type",
+    operator: "equals",
+    value: "DDR5",
+    action: BuilderRuleAction.HIGHLIGHT,
+    priority: 8,
+    enabled: true,
+    metadata: { highlightColor: "#10b981" },
+  },
+  {
+    name: "Auto-select WiFi 6E for premium builds",
+    category: "Motherboard",
+    specKey: "WiFi",
+    operator: "equals",
+    value: "WiFi 6E",
+    action: BuilderRuleAction.AUTO_SELECT,
+    priority: 5,
+    enabled: false,
+  },
+  {
+    name: "Show warning for low wattage PSU",
+    category: "Power Supply",
+    specKey: "Wattage",
+    operator: "lessThan",
+    value: "650",
+    action: BuilderRuleAction.SHOW_WARNING,
+    priority: 9,
+    enabled: true,
+    metadata: { warningMessage: "Low wattage PSU may not support high-end GPUs" },
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. SAMPLE DATA — Customers, Orders, Invoices
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CUSTOMERS_DATA = [
@@ -2439,7 +2553,7 @@ interface OrderSeed {
   shippingState: string;
   shippingZip: string;
   shippingCountry: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethodType;
   paymentStatus: PaymentStatus;
   customerId?: string;
   items: { productId: string; quantity: number }[];
@@ -2456,7 +2570,7 @@ const ORDERS_DATA: OrderSeed[] = [
     subtotal: 78000, gstAmount: 14040, total: 92040,
     shippingStreet: "14A, Sector 15", shippingCity: "Noida", shippingState: "Uttar Pradesh",
     shippingZip: "201301", shippingCountry: "India",
-    paymentMethod: "Net Banking", paymentStatus: PaymentStatus.PENDING,
+    paymentMethod: PaymentMethodType.BANK_TRANSFER, paymentStatus: PaymentStatus.PENDING,
     customerId: "cust-01",
     items: [
       { productId: "cpu-01", quantity: 1 },
@@ -2476,7 +2590,7 @@ const ORDERS_DATA: OrderSeed[] = [
     subtotal: 175000, gstAmount: 31500, total: 206500,
     shippingStreet: "22, Kaloor Junction", shippingCity: "Kochi", shippingState: "Kerala",
     shippingZip: "682017", shippingCountry: "India",
-    paymentMethod: "Credit Card", paymentStatus: PaymentStatus.COMPLETED,
+    paymentMethod: PaymentMethodType.BANK_TRANSFER, paymentStatus: PaymentStatus.COMPLETED,
     customerId: "cust-02",
     items: [
       { productId: "gpu-01", quantity: 1 },
@@ -2496,7 +2610,7 @@ const ORDERS_DATA: OrderSeed[] = [
     subtotal: 120800, gstAmount: 21744, total: 142544,
     shippingStreet: "A-403, Powai Heights", shippingCity: "Mumbai", shippingState: "Maharashtra",
     shippingZip: "400076", shippingCountry: "India",
-    paymentMethod: "UPI", paymentStatus: PaymentStatus.COMPLETED,
+    paymentMethod: PaymentMethodType.UPI, paymentStatus: PaymentStatus.COMPLETED,
     customerId: "cust-04",
     items: [
       { productId: "cpu-02", quantity: 1 },
@@ -2519,7 +2633,7 @@ const ORDERS_DATA: OrderSeed[] = [
     subtotal: 65000, gstAmount: 11700, total: 76700,
     shippingStreet: "F-12, DLF City Phase 2", shippingCity: "Gurugram", shippingState: "Haryana",
     shippingZip: "122002", shippingCountry: "India",
-    paymentMethod: "Credit Card", paymentStatus: PaymentStatus.COMPLETED,
+    paymentMethod: PaymentMethodType.BANK_TRANSFER, paymentStatus: PaymentStatus.COMPLETED,
     customerId: "cust-05",
     items: [
       { productId: "cpu-01", quantity: 1 },
@@ -2542,7 +2656,7 @@ const ORDERS_DATA: OrderSeed[] = [
     subtotal: 365000, gstAmount: 65700, total: 430700,
     shippingStreet: "44, Electronics City Phase 1", shippingCity: "Bengaluru", shippingState: "Karnataka",
     shippingZip: "560100", shippingCountry: "India",
-    paymentMethod: "Net Banking", paymentStatus: PaymentStatus.COMPLETED,
+    paymentMethod: PaymentMethodType.BANK_TRANSFER, paymentStatus: PaymentStatus.COMPLETED,
     customerId: "cust-03",
     items: [
       { productId: "cpu-04", quantity: 10 },
@@ -2883,7 +2997,65 @@ async function main() {
     }
   }
 
-  // ── 7. Category Hierarchy ─────────────────────────────────────────────────
+  // ── 7. Derived Specs ───────────────────────────────────────────────────────
+  console.log("  → Seeding derived specs...");
+  for (const ds of DERIVED_SPECS) {
+    const resultSubCatId = subCategoryMap.get(ds.resultSpecSubCategory);
+    if (!resultSubCatId) {
+      console.warn(`    ⚠ SubCategory not found for derived spec: ${ds.name}`);
+      continue;
+    }
+
+    const resultSpecKey = `${resultSubCatId}::${ds.resultSpecName}`;
+    const resultSpecId = specDefMap.get(resultSpecKey);
+    if (!resultSpecId) {
+      console.warn(`    ⚠ Spec not found for derived spec: ${ds.name}`);
+      continue;
+    }
+
+    const existing = await prisma.derivedSpec.findUnique({ where: { name: ds.name } });
+    if (!existing) {
+      await prisma.derivedSpec.create({
+        data: {
+          name: ds.name,
+          resultSpecId,
+          formula: ds.formula,
+        },
+      });
+    }
+  }
+
+  // ── 8. Builder Configuration ───────────────────────────────────────────────
+  console.log("  → Seeding builder configuration...");
+  const existingConfig = await prisma.builderConfig.findUnique({ where: { id: "default" } });
+  if (!existingConfig) {
+    await prisma.builderConfig.create({
+      data: { id: "default", settings: BUILDER_CONFIG.settings },
+    });
+  }
+
+  // ── 9. Builder UI Rules ───────────────────────────────────────────────────
+  console.log("  → Seeding builder UI rules...");
+  for (const rule of BUILDER_UI_RULES) {
+    const existing = await prisma.builderUIRule.findFirst({ where: { name: rule.name } });
+    if (!existing) {
+      await prisma.builderUIRule.create({
+        data: {
+          name: rule.name,
+          category: rule.category,
+          specKey: rule.specKey,
+          operator: rule.operator,
+          value: rule.value,
+          action: rule.action,
+          priority: rule.priority,
+          enabled: rule.enabled,
+          metadata: rule.metadata ?? null,
+        },
+      });
+    }
+  }
+
+  // ── 10. Category Hierarchy ─────────────────────────────────────────────────
   console.log("  → Seeding category hierarchy...");
 
   async function seedNode(

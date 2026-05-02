@@ -296,9 +296,9 @@ export type OrderItemWhereInput = {
   image?: Prisma.StringNullableFilter<"OrderItem"> | string | null
   sku?: Prisma.StringNullableFilter<"OrderItem"> | string | null
   variantSnapshot?: Prisma.JsonNullableFilter<"OrderItem">
+  inventoryItem?: Prisma.XOR<Prisma.InventoryItemNullableScalarRelationFilter, Prisma.InventoryItemWhereInput> | null
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
-  inventoryItem?: Prisma.XOR<Prisma.InventoryItemNullableScalarRelationFilter, Prisma.InventoryItemWhereInput> | null
 }
 
 export type OrderItemOrderByWithRelationInput = {
@@ -317,9 +317,9 @@ export type OrderItemOrderByWithRelationInput = {
   image?: Prisma.SortOrderInput | Prisma.SortOrder
   sku?: Prisma.SortOrderInput | Prisma.SortOrder
   variantSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
+  inventoryItem?: Prisma.InventoryItemOrderByWithRelationInput
   order?: Prisma.OrderOrderByWithRelationInput
   variant?: Prisma.ProductVariantOrderByWithRelationInput
-  inventoryItem?: Prisma.InventoryItemOrderByWithRelationInput
 }
 
 export type OrderItemWhereUniqueInput = Prisma.AtLeast<{
@@ -341,9 +341,9 @@ export type OrderItemWhereUniqueInput = Prisma.AtLeast<{
   image?: Prisma.StringNullableFilter<"OrderItem"> | string | null
   sku?: Prisma.StringNullableFilter<"OrderItem"> | string | null
   variantSnapshot?: Prisma.JsonNullableFilter<"OrderItem">
+  inventoryItem?: Prisma.XOR<Prisma.InventoryItemNullableScalarRelationFilter, Prisma.InventoryItemWhereInput> | null
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
-  inventoryItem?: Prisma.XOR<Prisma.InventoryItemNullableScalarRelationFilter, Prisma.InventoryItemWhereInput> | null
 }, "id" | "lineReference">
 
 export type OrderItemOrderByWithAggregationInput = {
@@ -403,9 +403,9 @@ export type OrderItemCreateInput = {
   image?: string | null
   sku?: string | null
   variantSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  inventoryItem?: Prisma.InventoryItemCreateNestedOneWithoutOrderItemsInput
   order: Prisma.OrderCreateNestedOneWithoutItemsInput
   variant: Prisma.ProductVariantCreateNestedOneWithoutOrderItemsInput
-  inventoryItem?: Prisma.InventoryItemCreateNestedOneWithoutOrderItemsInput
 }
 
 export type OrderItemUncheckedCreateInput = {
@@ -439,9 +439,9 @@ export type OrderItemUpdateInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sku?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  inventoryItem?: Prisma.InventoryItemUpdateOneWithoutOrderItemsNestedInput
   order?: Prisma.OrderUpdateOneRequiredWithoutItemsNestedInput
   variant?: Prisma.ProductVariantUpdateOneRequiredWithoutOrderItemsNestedInput
-  inventoryItem?: Prisma.InventoryItemUpdateOneWithoutOrderItemsNestedInput
 }
 
 export type OrderItemUncheckedUpdateInput = {
@@ -724,8 +724,8 @@ export type OrderItemCreateWithoutVariantInput = {
   image?: string | null
   sku?: string | null
   variantSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  order: Prisma.OrderCreateNestedOneWithoutItemsInput
   inventoryItem?: Prisma.InventoryItemCreateNestedOneWithoutOrderItemsInput
+  order: Prisma.OrderCreateNestedOneWithoutItemsInput
 }
 
 export type OrderItemUncheckedCreateWithoutVariantInput = {
@@ -805,8 +805,8 @@ export type OrderItemCreateWithoutOrderInput = {
   image?: string | null
   sku?: string | null
   variantSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  variant: Prisma.ProductVariantCreateNestedOneWithoutOrderItemsInput
   inventoryItem?: Prisma.InventoryItemCreateNestedOneWithoutOrderItemsInput
+  variant: Prisma.ProductVariantCreateNestedOneWithoutOrderItemsInput
 }
 
 export type OrderItemUncheckedCreateWithoutOrderInput = {
@@ -942,8 +942,8 @@ export type OrderItemUpdateWithoutVariantInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sku?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  order?: Prisma.OrderUpdateOneRequiredWithoutItemsNestedInput
   inventoryItem?: Prisma.InventoryItemUpdateOneWithoutOrderItemsNestedInput
+  order?: Prisma.OrderUpdateOneRequiredWithoutItemsNestedInput
 }
 
 export type OrderItemUncheckedUpdateWithoutVariantInput = {
@@ -1010,8 +1010,8 @@ export type OrderItemUpdateWithoutOrderInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sku?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutOrderItemsNestedInput
   inventoryItem?: Prisma.InventoryItemUpdateOneWithoutOrderItemsNestedInput
+  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutOrderItemsNestedInput
 }
 
 export type OrderItemUncheckedUpdateWithoutOrderInput = {
@@ -1134,9 +1134,9 @@ export type OrderItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   image?: boolean
   sku?: boolean
   variantSnapshot?: boolean
+  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
 }, ExtArgs["result"]["orderItem"]>
 
 export type OrderItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1155,9 +1155,9 @@ export type OrderItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   image?: boolean
   sku?: boolean
   variantSnapshot?: boolean
+  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
 }, ExtArgs["result"]["orderItem"]>
 
 export type OrderItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1176,9 +1176,9 @@ export type OrderItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   image?: boolean
   sku?: boolean
   variantSnapshot?: boolean
+  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
 }, ExtArgs["result"]["orderItem"]>
 
 export type OrderItemSelectScalar = {
@@ -1201,27 +1201,27 @@ export type OrderItemSelectScalar = {
 
 export type OrderItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "lineReference" | "orderId" | "variantId" | "inventoryItemId" | "productNumber" | "partNumber" | "serialNumber" | "name" | "category" | "price" | "quantity" | "image" | "sku" | "variantSnapshot", ExtArgs["result"]["orderItem"]>
 export type OrderItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
 }
 export type OrderItemIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
 }
 export type OrderItemIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
-  inventoryItem?: boolean | Prisma.OrderItem$inventoryItemArgs<ExtArgs>
 }
 
 export type $OrderItemPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "OrderItem"
   objects: {
+    inventoryItem: Prisma.$InventoryItemPayload<ExtArgs> | null
     order: Prisma.$OrderPayload<ExtArgs>
     variant: Prisma.$ProductVariantPayload<ExtArgs>
-    inventoryItem: Prisma.$InventoryItemPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1633,9 +1633,9 @@ readonly fields: OrderItemFieldRefs;
  */
 export interface Prisma__OrderItemClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  inventoryItem<T extends Prisma.OrderItem$inventoryItemArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderItem$inventoryItemArgs<ExtArgs>>): Prisma.Prisma__InventoryItemClient<runtime.Types.Result.GetResult<Prisma.$InventoryItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   order<T extends Prisma.OrderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderDefaultArgs<ExtArgs>>): Prisma.Prisma__OrderClient<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  inventoryItem<T extends Prisma.OrderItem$inventoryItemArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderItem$inventoryItemArgs<ExtArgs>>): Prisma.Prisma__InventoryItemClient<runtime.Types.Result.GetResult<Prisma.$InventoryItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

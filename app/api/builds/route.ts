@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createBuild, listBuilds } from "@/services/build.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function GET() {
   try {

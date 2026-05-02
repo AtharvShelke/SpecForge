@@ -41,7 +41,20 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
   try {
     const data = checkoutSchema.parse(payload);
 
-    // 1. Bulk fetch all products to retrieve server-side pricing and metadata
+    // 1. Fetch tax settings from database
+    let taxRate = 0.18; // default fallback
+    try {
+      const taxSettings = await prisma.taxSettings.findUnique({
+        where: { id: "tax_config" },
+      });
+      if (taxSettings && taxSettings.enabled) {
+        taxRate = Number(taxSettings.taxRatePct) / 100; // convert percentage to decimal
+      }
+    } catch (error) {
+      console.error("Error fetching tax settings, using default 18%:", error);
+    }
+
+    // 2. Bulk fetch all products to retrieve server-side pricing and metadata
     const productIds = data.items.map((i) => i.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -85,9 +98,9 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
       });
     }
 
-    // 2. Calculate Total (Requires for Orders API payload)
+    // 3. Calculate Total (Requires for Orders API payload)
     const { subtotal, gstAmount, total } =
-      calculateOrderFinancials(calculationItems);
+      calculateOrderFinancials(calculationItems, taxRate);
     const orderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
     const isDiscountedManualPayment =
       data.paymentMethod === PaymentMethodType.UPI ||

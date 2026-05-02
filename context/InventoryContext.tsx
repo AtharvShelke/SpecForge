@@ -10,7 +10,8 @@ import {
   useMemo,
 } from "react";
 import { InventoryItem, InventorySkuSummary, Reservation } from "../types";
-import { apiFetch, useLoadingCounter } from "@/lib/helpers";
+import { apiFetch } from "@/lib/helpers";
+import { useLoadingCounter } from "@/hooks/useLoadingCounter";
 
 export interface InventorySummary {
   available: number;
@@ -186,63 +187,64 @@ export const InventoryProvider = ({
     [start, stop],
   );
 
-  const adjustStock = useCallback(async (
-    variantId: string,
-    quantity: number,
-    type: string,
-  ) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch("/api/inventory/items", {
-        method: "POST",
-        body: JSON.stringify({ variantId, quantity, type, action: "ADJUST" }),
-      });
-      await refreshInventory();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshInventory, start, stop]);
+  const adjustStock = useCallback(
+    async (variantId: string, quantity: number, type: string) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch("/api/inventory/items", {
+          method: "POST",
+          body: JSON.stringify({ variantId, quantity, type, action: "ADJUST" }),
+        });
+        await refreshInventory();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
+    },
+    [refreshInventory, start, stop],
+  );
 
-  const createReservation = useCallback(async (
-    orderId: string,
-    variantId: string,
-    quantity: number,
-  ) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch("/api/inventory/reservations", {
-        method: "POST",
-        body: JSON.stringify({ orderId, variantId, quantity }),
-      });
-      await refreshReservations();
-      await refreshInventory();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshReservations, refreshInventory, start, stop]);
+  const createReservation = useCallback(
+    async (orderId: string, variantId: string, quantity: number) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch("/api/inventory/reservations", {
+          method: "POST",
+          body: JSON.stringify({ orderId, variantId, quantity }),
+        });
+        await refreshReservations();
+        await refreshInventory();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
+    },
+    [refreshReservations, refreshInventory, start, stop],
+  );
 
-  const releaseReservation = useCallback(async (id: string) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch(`/api/inventory/reservations/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: "RELEASED" }),
-      });
-      await refreshReservations();
-      await refreshInventory();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshReservations, refreshInventory, start, stop]);
+  const releaseReservation = useCallback(
+    async (id: string) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch(`/api/inventory/reservations/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "RELEASED" }),
+        });
+        await refreshReservations();
+        await refreshInventory();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
+    },
+    [refreshReservations, refreshInventory, start, stop],
+  );
 
   const loadAll = useCallback(async () => {
     setError(null);

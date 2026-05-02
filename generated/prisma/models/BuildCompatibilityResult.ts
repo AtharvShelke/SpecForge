@@ -174,8 +174,8 @@ export type BuildCompatibilityResultWhereInput = {
   buildId?: Prisma.StringFilter<"BuildCompatibilityResult"> | string
   isCompatible?: Prisma.BoolFilter<"BuildCompatibilityResult"> | boolean
   createdAt?: Prisma.DateTimeFilter<"BuildCompatibilityResult"> | Date | string
-  checks?: Prisma.CompatibilityCheckListRelationFilter
   build?: Prisma.XOR<Prisma.BuildScalarRelationFilter, Prisma.BuildWhereInput>
+  checks?: Prisma.CompatibilityCheckListRelationFilter
 }
 
 export type BuildCompatibilityResultOrderByWithRelationInput = {
@@ -183,8 +183,8 @@ export type BuildCompatibilityResultOrderByWithRelationInput = {
   buildId?: Prisma.SortOrder
   isCompatible?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  checks?: Prisma.CompatibilityCheckOrderByRelationAggregateInput
   build?: Prisma.BuildOrderByWithRelationInput
+  checks?: Prisma.CompatibilityCheckOrderByRelationAggregateInput
 }
 
 export type BuildCompatibilityResultWhereUniqueInput = Prisma.AtLeast<{
@@ -195,8 +195,8 @@ export type BuildCompatibilityResultWhereUniqueInput = Prisma.AtLeast<{
   buildId?: Prisma.StringFilter<"BuildCompatibilityResult"> | string
   isCompatible?: Prisma.BoolFilter<"BuildCompatibilityResult"> | boolean
   createdAt?: Prisma.DateTimeFilter<"BuildCompatibilityResult"> | Date | string
-  checks?: Prisma.CompatibilityCheckListRelationFilter
   build?: Prisma.XOR<Prisma.BuildScalarRelationFilter, Prisma.BuildWhereInput>
+  checks?: Prisma.CompatibilityCheckListRelationFilter
 }, "id">
 
 export type BuildCompatibilityResultOrderByWithAggregationInput = {
@@ -223,8 +223,8 @@ export type BuildCompatibilityResultCreateInput = {
   id?: string
   isCompatible: boolean
   createdAt?: Date | string
-  checks?: Prisma.CompatibilityCheckCreateNestedManyWithoutResultInput
   build: Prisma.BuildCreateNestedOneWithoutBuildCompatibilityResultsInput
+  checks?: Prisma.CompatibilityCheckCreateNestedManyWithoutResultInput
 }
 
 export type BuildCompatibilityResultUncheckedCreateInput = {
@@ -239,8 +239,8 @@ export type BuildCompatibilityResultUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   isCompatible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  checks?: Prisma.CompatibilityCheckUpdateManyWithoutResultNestedInput
   build?: Prisma.BuildUpdateOneRequiredWithoutBuildCompatibilityResultsNestedInput
+  checks?: Prisma.CompatibilityCheckUpdateManyWithoutResultNestedInput
 }
 
 export type BuildCompatibilityResultUncheckedUpdateInput = {
@@ -519,8 +519,8 @@ export type BuildCompatibilityResultSelect<ExtArgs extends runtime.Types.Extensi
   buildId?: boolean
   isCompatible?: boolean
   createdAt?: boolean
-  checks?: boolean | Prisma.BuildCompatibilityResult$checksArgs<ExtArgs>
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
+  checks?: boolean | Prisma.BuildCompatibilityResult$checksArgs<ExtArgs>
   _count?: boolean | Prisma.BuildCompatibilityResultCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildCompatibilityResult"]>
 
@@ -549,8 +549,8 @@ export type BuildCompatibilityResultSelectScalar = {
 
 export type BuildCompatibilityResultOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "buildId" | "isCompatible" | "createdAt", ExtArgs["result"]["buildCompatibilityResult"]>
 export type BuildCompatibilityResultInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  checks?: boolean | Prisma.BuildCompatibilityResult$checksArgs<ExtArgs>
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
+  checks?: boolean | Prisma.BuildCompatibilityResult$checksArgs<ExtArgs>
   _count?: boolean | Prisma.BuildCompatibilityResultCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type BuildCompatibilityResultIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -563,8 +563,8 @@ export type BuildCompatibilityResultIncludeUpdateManyAndReturn<ExtArgs extends r
 export type $BuildCompatibilityResultPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BuildCompatibilityResult"
   objects: {
-    checks: Prisma.$CompatibilityCheckPayload<ExtArgs>[]
     build: Prisma.$BuildPayload<ExtArgs>
+    checks: Prisma.$CompatibilityCheckPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -965,8 +965,8 @@ readonly fields: BuildCompatibilityResultFieldRefs;
  */
 export interface Prisma__BuildCompatibilityResultClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  checks<T extends Prisma.BuildCompatibilityResult$checksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BuildCompatibilityResult$checksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityCheckPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   build<T extends Prisma.BuildDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BuildDefaultArgs<ExtArgs>>): Prisma.Prisma__BuildClient<runtime.Types.Result.GetResult<Prisma.$BuildPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  checks<T extends Prisma.BuildCompatibilityResult$checksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BuildCompatibilityResult$checksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityCheckPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

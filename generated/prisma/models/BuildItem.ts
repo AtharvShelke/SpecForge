@@ -175,8 +175,8 @@ export type BuildItemWhereInput = {
   variantId?: Prisma.StringFilter<"BuildItem"> | string
   slotId?: Prisma.StringFilter<"BuildItem"> | string
   build?: Prisma.XOR<Prisma.BuildScalarRelationFilter, Prisma.BuildWhereInput>
-  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
   slot?: Prisma.XOR<Prisma.PartSlotScalarRelationFilter, Prisma.PartSlotWhereInput>
+  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
 }
 
 export type BuildItemOrderByWithRelationInput = {
@@ -185,8 +185,8 @@ export type BuildItemOrderByWithRelationInput = {
   variantId?: Prisma.SortOrder
   slotId?: Prisma.SortOrder
   build?: Prisma.BuildOrderByWithRelationInput
-  variant?: Prisma.ProductVariantOrderByWithRelationInput
   slot?: Prisma.PartSlotOrderByWithRelationInput
+  variant?: Prisma.ProductVariantOrderByWithRelationInput
 }
 
 export type BuildItemWhereUniqueInput = Prisma.AtLeast<{
@@ -199,8 +199,8 @@ export type BuildItemWhereUniqueInput = Prisma.AtLeast<{
   variantId?: Prisma.StringFilter<"BuildItem"> | string
   slotId?: Prisma.StringFilter<"BuildItem"> | string
   build?: Prisma.XOR<Prisma.BuildScalarRelationFilter, Prisma.BuildWhereInput>
-  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
   slot?: Prisma.XOR<Prisma.PartSlotScalarRelationFilter, Prisma.PartSlotWhereInput>
+  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
 }, "id" | "buildId_slotId">
 
 export type BuildItemOrderByWithAggregationInput = {
@@ -226,8 +226,8 @@ export type BuildItemScalarWhereWithAggregatesInput = {
 export type BuildItemCreateInput = {
   id?: string
   build: Prisma.BuildCreateNestedOneWithoutItemsInput
-  variant: Prisma.ProductVariantCreateNestedOneWithoutBuildItemsInput
   slot: Prisma.PartSlotCreateNestedOneWithoutBuildItemsInput
+  variant: Prisma.ProductVariantCreateNestedOneWithoutBuildItemsInput
 }
 
 export type BuildItemUncheckedCreateInput = {
@@ -240,8 +240,8 @@ export type BuildItemUncheckedCreateInput = {
 export type BuildItemUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   build?: Prisma.BuildUpdateOneRequiredWithoutItemsNestedInput
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutBuildItemsNestedInput
   slot?: Prisma.PartSlotUpdateOneRequiredWithoutBuildItemsNestedInput
+  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutBuildItemsNestedInput
 }
 
 export type BuildItemUncheckedUpdateInput = {
@@ -481,8 +481,8 @@ export type BuildItemScalarWhereInput = {
 
 export type BuildItemCreateWithoutBuildInput = {
   id?: string
-  variant: Prisma.ProductVariantCreateNestedOneWithoutBuildItemsInput
   slot: Prisma.PartSlotCreateNestedOneWithoutBuildItemsInput
+  variant: Prisma.ProductVariantCreateNestedOneWithoutBuildItemsInput
 }
 
 export type BuildItemUncheckedCreateWithoutBuildInput = {
@@ -587,8 +587,8 @@ export type BuildItemCreateManyBuildInput = {
 
 export type BuildItemUpdateWithoutBuildInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutBuildItemsNestedInput
   slot?: Prisma.PartSlotUpdateOneRequiredWithoutBuildItemsNestedInput
+  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutBuildItemsNestedInput
 }
 
 export type BuildItemUncheckedUpdateWithoutBuildInput = {
@@ -635,8 +635,8 @@ export type BuildItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   variantId?: boolean
   slotId?: boolean
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildItem"]>
 
 export type BuildItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -645,8 +645,8 @@ export type BuildItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   variantId?: boolean
   slotId?: boolean
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildItem"]>
 
 export type BuildItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -655,8 +655,8 @@ export type BuildItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   variantId?: boolean
   slotId?: boolean
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildItem"]>
 
 export type BuildItemSelectScalar = {
@@ -669,26 +669,26 @@ export type BuildItemSelectScalar = {
 export type BuildItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "buildId" | "variantId" | "slotId", ExtArgs["result"]["buildItem"]>
 export type BuildItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }
 export type BuildItemIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }
 export type BuildItemIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   build?: boolean | Prisma.BuildDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
 }
 
 export type $BuildItemPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BuildItem"
   objects: {
     build: Prisma.$BuildPayload<ExtArgs>
-    variant: Prisma.$ProductVariantPayload<ExtArgs>
     slot: Prisma.$PartSlotPayload<ExtArgs>
+    variant: Prisma.$ProductVariantPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1090,8 +1090,8 @@ readonly fields: BuildItemFieldRefs;
 export interface Prisma__BuildItemClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   build<T extends Prisma.BuildDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BuildDefaultArgs<ExtArgs>>): Prisma.Prisma__BuildClient<runtime.Types.Result.GetResult<Prisma.$BuildPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   slot<T extends Prisma.PartSlotDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PartSlotDefaultArgs<ExtArgs>>): Prisma.Prisma__PartSlotClient<runtime.Types.Result.GetResult<Prisma.$PartSlotPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

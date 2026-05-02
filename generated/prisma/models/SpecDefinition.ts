@@ -248,15 +248,15 @@ export type SpecDefinitionWhereInput = {
   isMulti?: Prisma.BoolFilter<"SpecDefinition"> | boolean
   filterGroup?: Prisma.StringNullableFilter<"SpecDefinition"> | string | null
   filterOrder?: Prisma.IntNullableFilter<"SpecDefinition"> | number | null
-  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
-  options?: Prisma.SpecOptionListRelationFilter
-  variantSpecs?: Prisma.VariantSpecListRelationFilter
-  parentOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
-  childOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
   sourceRules?: Prisma.CompatibilityRuleListRelationFilter
   targetRules?: Prisma.CompatibilityRuleListRelationFilter
   derivedSpecs?: Prisma.DerivedSpecListRelationFilter
   filterOverrides?: Prisma.FilterOverrideListRelationFilter
+  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
+  options?: Prisma.SpecOptionListRelationFilter
+  childOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
+  parentOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
+  variantSpecs?: Prisma.VariantSpecListRelationFilter
 }
 
 export type SpecDefinitionOrderByWithRelationInput = {
@@ -269,15 +269,15 @@ export type SpecDefinitionOrderByWithRelationInput = {
   isMulti?: Prisma.SortOrder
   filterGroup?: Prisma.SortOrderInput | Prisma.SortOrder
   filterOrder?: Prisma.SortOrderInput | Prisma.SortOrder
-  subCategory?: Prisma.SubCategoryOrderByWithRelationInput
-  options?: Prisma.SpecOptionOrderByRelationAggregateInput
-  variantSpecs?: Prisma.VariantSpecOrderByRelationAggregateInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyOrderByRelationAggregateInput
-  childOptionDeps?: Prisma.SpecOptionDependencyOrderByRelationAggregateInput
   sourceRules?: Prisma.CompatibilityRuleOrderByRelationAggregateInput
   targetRules?: Prisma.CompatibilityRuleOrderByRelationAggregateInput
   derivedSpecs?: Prisma.DerivedSpecOrderByRelationAggregateInput
   filterOverrides?: Prisma.FilterOverrideOrderByRelationAggregateInput
+  subCategory?: Prisma.SubCategoryOrderByWithRelationInput
+  options?: Prisma.SpecOptionOrderByRelationAggregateInput
+  childOptionDeps?: Prisma.SpecOptionDependencyOrderByRelationAggregateInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyOrderByRelationAggregateInput
+  variantSpecs?: Prisma.VariantSpecOrderByRelationAggregateInput
 }
 
 export type SpecDefinitionWhereUniqueInput = Prisma.AtLeast<{
@@ -294,15 +294,15 @@ export type SpecDefinitionWhereUniqueInput = Prisma.AtLeast<{
   isMulti?: Prisma.BoolFilter<"SpecDefinition"> | boolean
   filterGroup?: Prisma.StringNullableFilter<"SpecDefinition"> | string | null
   filterOrder?: Prisma.IntNullableFilter<"SpecDefinition"> | number | null
-  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
-  options?: Prisma.SpecOptionListRelationFilter
-  variantSpecs?: Prisma.VariantSpecListRelationFilter
-  parentOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
-  childOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
   sourceRules?: Prisma.CompatibilityRuleListRelationFilter
   targetRules?: Prisma.CompatibilityRuleListRelationFilter
   derivedSpecs?: Prisma.DerivedSpecListRelationFilter
   filterOverrides?: Prisma.FilterOverrideListRelationFilter
+  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
+  options?: Prisma.SpecOptionListRelationFilter
+  childOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
+  parentOptionDeps?: Prisma.SpecOptionDependencyListRelationFilter
+  variantSpecs?: Prisma.VariantSpecListRelationFilter
 }, "id" | "subCategoryId_name">
 
 export type SpecDefinitionOrderByWithAggregationInput = {
@@ -346,15 +346,15 @@ export type SpecDefinitionCreateInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateInput = {
@@ -367,14 +367,14 @@ export type SpecDefinitionUncheckedCreateInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUpdateInput = {
@@ -386,15 +386,15 @@ export type SpecDefinitionUpdateInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateInput = {
@@ -407,14 +407,14 @@ export type SpecDefinitionUncheckedUpdateInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionCreateManyInput = {
@@ -516,6 +516,11 @@ export type SpecDefinitionScalarRelationFilter = {
   isNot?: Prisma.SpecDefinitionWhereInput
 }
 
+export type SpecDefinitionNullableScalarRelationFilter = {
+  is?: Prisma.SpecDefinitionWhereInput | null
+  isNot?: Prisma.SpecDefinitionWhereInput | null
+}
+
 export type SpecDefinitionCreateNestedManyWithoutSubCategoryInput = {
   create?: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutSubCategoryInput, Prisma.SpecDefinitionUncheckedCreateWithoutSubCategoryInput> | Prisma.SpecDefinitionCreateWithoutSubCategoryInput[] | Prisma.SpecDefinitionUncheckedCreateWithoutSubCategoryInput[]
   connectOrCreate?: Prisma.SpecDefinitionCreateOrConnectWithoutSubCategoryInput | Prisma.SpecDefinitionCreateOrConnectWithoutSubCategoryInput[]
@@ -584,24 +589,16 @@ export type SpecDefinitionUpdateOneRequiredWithoutVariantSpecsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SpecDefinitionUpdateToOneWithWhereWithoutVariantSpecsInput, Prisma.SpecDefinitionUpdateWithoutVariantSpecsInput>, Prisma.SpecDefinitionUncheckedUpdateWithoutVariantSpecsInput>
 }
 
-export type SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput = {
-  create?: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput>
-  connectOrCreate?: Prisma.SpecDefinitionCreateOrConnectWithoutParentOptionDepsInput
-  connect?: Prisma.SpecDefinitionWhereUniqueInput
-}
-
 export type SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput = {
   create?: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutChildOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutChildOptionDepsInput>
   connectOrCreate?: Prisma.SpecDefinitionCreateOrConnectWithoutChildOptionDepsInput
   connect?: Prisma.SpecDefinitionWhereUniqueInput
 }
 
-export type SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput = {
+export type SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput = {
   create?: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput>
   connectOrCreate?: Prisma.SpecDefinitionCreateOrConnectWithoutParentOptionDepsInput
-  upsert?: Prisma.SpecDefinitionUpsertWithoutParentOptionDepsInput
   connect?: Prisma.SpecDefinitionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.SpecDefinitionUpdateToOneWithWhereWithoutParentOptionDepsInput, Prisma.SpecDefinitionUpdateWithoutParentOptionDepsInput>, Prisma.SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput>
 }
 
 export type SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput = {
@@ -610,6 +607,14 @@ export type SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput = {
   upsert?: Prisma.SpecDefinitionUpsertWithoutChildOptionDepsInput
   connect?: Prisma.SpecDefinitionWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.SpecDefinitionUpdateToOneWithWhereWithoutChildOptionDepsInput, Prisma.SpecDefinitionUpdateWithoutChildOptionDepsInput>, Prisma.SpecDefinitionUncheckedUpdateWithoutChildOptionDepsInput>
+}
+
+export type SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput = {
+  create?: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput>
+  connectOrCreate?: Prisma.SpecDefinitionCreateOrConnectWithoutParentOptionDepsInput
+  upsert?: Prisma.SpecDefinitionUpsertWithoutParentOptionDepsInput
+  connect?: Prisma.SpecDefinitionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SpecDefinitionUpdateToOneWithWhereWithoutParentOptionDepsInput, Prisma.SpecDefinitionUpdateWithoutParentOptionDepsInput>, Prisma.SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput>
 }
 
 export type SpecDefinitionCreateNestedOneWithoutOptionsInput = {
@@ -638,18 +643,22 @@ export type SpecDefinitionCreateNestedOneWithoutTargetRulesInput = {
   connect?: Prisma.SpecDefinitionWhereUniqueInput
 }
 
-export type SpecDefinitionUpdateOneRequiredWithoutSourceRulesNestedInput = {
+export type SpecDefinitionUpdateOneWithoutSourceRulesNestedInput = {
   create?: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutSourceRulesInput, Prisma.SpecDefinitionUncheckedCreateWithoutSourceRulesInput>
   connectOrCreate?: Prisma.SpecDefinitionCreateOrConnectWithoutSourceRulesInput
   upsert?: Prisma.SpecDefinitionUpsertWithoutSourceRulesInput
+  disconnect?: Prisma.SpecDefinitionWhereInput | boolean
+  delete?: Prisma.SpecDefinitionWhereInput | boolean
   connect?: Prisma.SpecDefinitionWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.SpecDefinitionUpdateToOneWithWhereWithoutSourceRulesInput, Prisma.SpecDefinitionUpdateWithoutSourceRulesInput>, Prisma.SpecDefinitionUncheckedUpdateWithoutSourceRulesInput>
 }
 
-export type SpecDefinitionUpdateOneRequiredWithoutTargetRulesNestedInput = {
+export type SpecDefinitionUpdateOneWithoutTargetRulesNestedInput = {
   create?: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutTargetRulesInput, Prisma.SpecDefinitionUncheckedCreateWithoutTargetRulesInput>
   connectOrCreate?: Prisma.SpecDefinitionCreateOrConnectWithoutTargetRulesInput
   upsert?: Prisma.SpecDefinitionUpsertWithoutTargetRulesInput
+  disconnect?: Prisma.SpecDefinitionWhereInput | boolean
+  delete?: Prisma.SpecDefinitionWhereInput | boolean
   connect?: Prisma.SpecDefinitionWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.SpecDefinitionUpdateToOneWithWhereWithoutTargetRulesInput, Prisma.SpecDefinitionUpdateWithoutTargetRulesInput>, Prisma.SpecDefinitionUncheckedUpdateWithoutTargetRulesInput>
 }
@@ -691,14 +700,14 @@ export type SpecDefinitionCreateWithoutSubCategoryInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutSubCategoryInput = {
@@ -710,14 +719,14 @@ export type SpecDefinitionUncheckedCreateWithoutSubCategoryInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutSubCategoryInput = {
@@ -770,14 +779,14 @@ export type SpecDefinitionCreateWithoutVariantSpecsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutVariantSpecsInput = {
@@ -790,13 +799,13 @@ export type SpecDefinitionUncheckedCreateWithoutVariantSpecsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutVariantSpecsInput = {
@@ -824,14 +833,14 @@ export type SpecDefinitionUpdateWithoutVariantSpecsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutVariantSpecsInput = {
@@ -844,56 +853,13 @@ export type SpecDefinitionUncheckedUpdateWithoutVariantSpecsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
-}
-
-export type SpecDefinitionCreateWithoutParentOptionDepsInput = {
-  id?: string
-  name: string
-  valueType: $Enums.SpecValueType
-  isFilterable?: boolean
-  isRange?: boolean
-  isMulti?: boolean
-  filterGroup?: string | null
-  filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
-  sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
-  targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
-  derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
-  filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
-}
-
-export type SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput = {
-  id?: string
-  subCategoryId: string
-  name: string
-  valueType: $Enums.SpecValueType
-  isFilterable?: boolean
-  isRange?: boolean
-  isMulti?: boolean
-  filterGroup?: string | null
-  filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
-  sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
-  targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
-  derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
-  filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
-}
-
-export type SpecDefinitionCreateOrConnectWithoutParentOptionDepsInput = {
-  where: Prisma.SpecDefinitionWhereUniqueInput
-  create: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput>
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
 }
 
 export type SpecDefinitionCreateWithoutChildOptionDepsInput = {
@@ -905,14 +871,14 @@ export type SpecDefinitionCreateWithoutChildOptionDepsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutChildOptionDepsInput = {
@@ -925,13 +891,13 @@ export type SpecDefinitionUncheckedCreateWithoutChildOptionDepsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutChildOptionDepsInput = {
@@ -939,53 +905,47 @@ export type SpecDefinitionCreateOrConnectWithoutChildOptionDepsInput = {
   create: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutChildOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutChildOptionDepsInput>
 }
 
-export type SpecDefinitionUpsertWithoutParentOptionDepsInput = {
-  update: Prisma.XOR<Prisma.SpecDefinitionUpdateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput>
+export type SpecDefinitionCreateWithoutParentOptionDepsInput = {
+  id?: string
+  name: string
+  valueType: $Enums.SpecValueType
+  isFilterable?: boolean
+  isRange?: boolean
+  isMulti?: boolean
+  filterGroup?: string | null
+  filterOrder?: number | null
+  sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
+  targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
+  derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
+  filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
+}
+
+export type SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput = {
+  id?: string
+  subCategoryId: string
+  name: string
+  valueType: $Enums.SpecValueType
+  isFilterable?: boolean
+  isRange?: boolean
+  isMulti?: boolean
+  filterGroup?: string | null
+  filterOrder?: number | null
+  sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
+  targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
+  derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
+  filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
+}
+
+export type SpecDefinitionCreateOrConnectWithoutParentOptionDepsInput = {
+  where: Prisma.SpecDefinitionWhereUniqueInput
   create: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput>
-  where?: Prisma.SpecDefinitionWhereInput
-}
-
-export type SpecDefinitionUpdateToOneWithWhereWithoutParentOptionDepsInput = {
-  where?: Prisma.SpecDefinitionWhereInput
-  data: Prisma.XOR<Prisma.SpecDefinitionUpdateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput>
-}
-
-export type SpecDefinitionUpdateWithoutParentOptionDepsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  valueType?: Prisma.EnumSpecValueTypeFieldUpdateOperationsInput | $Enums.SpecValueType
-  isFilterable?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isRange?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
-  sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
-  targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
-  derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
-  filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
-}
-
-export type SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  valueType?: Prisma.EnumSpecValueTypeFieldUpdateOperationsInput | $Enums.SpecValueType
-  isFilterable?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isRange?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
-  sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
-  targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
-  derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
-  filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
 }
 
 export type SpecDefinitionUpsertWithoutChildOptionDepsInput = {
@@ -1008,14 +968,14 @@ export type SpecDefinitionUpdateWithoutChildOptionDepsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutChildOptionDepsInput = {
@@ -1028,13 +988,62 @@ export type SpecDefinitionUncheckedUpdateWithoutChildOptionDepsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
+}
+
+export type SpecDefinitionUpsertWithoutParentOptionDepsInput = {
+  update: Prisma.XOR<Prisma.SpecDefinitionUpdateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput>
+  create: Prisma.XOR<Prisma.SpecDefinitionCreateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedCreateWithoutParentOptionDepsInput>
+  where?: Prisma.SpecDefinitionWhereInput
+}
+
+export type SpecDefinitionUpdateToOneWithWhereWithoutParentOptionDepsInput = {
+  where?: Prisma.SpecDefinitionWhereInput
+  data: Prisma.XOR<Prisma.SpecDefinitionUpdateWithoutParentOptionDepsInput, Prisma.SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput>
+}
+
+export type SpecDefinitionUpdateWithoutParentOptionDepsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  valueType?: Prisma.EnumSpecValueTypeFieldUpdateOperationsInput | $Enums.SpecValueType
+  isFilterable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRange?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
+  targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
+  derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
+  filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
+}
+
+export type SpecDefinitionUncheckedUpdateWithoutParentOptionDepsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  valueType?: Prisma.EnumSpecValueTypeFieldUpdateOperationsInput | $Enums.SpecValueType
+  isFilterable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isRange?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
+  targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
+  derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
+  filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionCreateWithoutOptionsInput = {
@@ -1046,14 +1055,14 @@ export type SpecDefinitionCreateWithoutOptionsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutOptionsInput = {
@@ -1066,13 +1075,13 @@ export type SpecDefinitionUncheckedCreateWithoutOptionsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutOptionsInput = {
@@ -1100,14 +1109,14 @@ export type SpecDefinitionUpdateWithoutOptionsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutOptionsInput = {
@@ -1120,13 +1129,13 @@ export type SpecDefinitionUncheckedUpdateWithoutOptionsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionCreateWithoutSourceRulesInput = {
@@ -1138,14 +1147,14 @@ export type SpecDefinitionCreateWithoutSourceRulesInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutSourceRulesInput = {
@@ -1158,13 +1167,13 @@ export type SpecDefinitionUncheckedCreateWithoutSourceRulesInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutSourceRulesInput = {
@@ -1181,14 +1190,14 @@ export type SpecDefinitionCreateWithoutTargetRulesInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutTargetRulesInput = {
@@ -1201,13 +1210,13 @@ export type SpecDefinitionUncheckedCreateWithoutTargetRulesInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutTargetRulesInput = {
@@ -1235,14 +1244,14 @@ export type SpecDefinitionUpdateWithoutSourceRulesInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutSourceRulesInput = {
@@ -1255,13 +1264,13 @@ export type SpecDefinitionUncheckedUpdateWithoutSourceRulesInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUpsertWithoutTargetRulesInput = {
@@ -1284,14 +1293,14 @@ export type SpecDefinitionUpdateWithoutTargetRulesInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutTargetRulesInput = {
@@ -1304,13 +1313,13 @@ export type SpecDefinitionUncheckedUpdateWithoutTargetRulesInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionCreateWithoutDerivedSpecsInput = {
@@ -1322,14 +1331,14 @@ export type SpecDefinitionCreateWithoutDerivedSpecsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   filterOverrides?: Prisma.FilterOverrideCreateNestedManyWithoutSpecDefinitionInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutDerivedSpecsInput = {
@@ -1342,13 +1351,13 @@ export type SpecDefinitionUncheckedCreateWithoutDerivedSpecsInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   filterOverrides?: Prisma.FilterOverrideUncheckedCreateNestedManyWithoutSpecDefinitionInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutDerivedSpecsInput = {
@@ -1376,14 +1385,14 @@ export type SpecDefinitionUpdateWithoutDerivedSpecsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutDerivedSpecsInput = {
@@ -1396,13 +1405,13 @@ export type SpecDefinitionUncheckedUpdateWithoutDerivedSpecsInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionCreateWithoutFilterOverridesInput = {
@@ -1414,14 +1423,14 @@ export type SpecDefinitionCreateWithoutFilterOverridesInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
-  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecCreateNestedManyWithoutResultSpecInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSpecDefinitionsInput
+  options?: Prisma.SpecOptionCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionUncheckedCreateWithoutFilterOverridesInput = {
@@ -1434,13 +1443,13 @@ export type SpecDefinitionUncheckedCreateWithoutFilterOverridesInput = {
   isMulti?: boolean
   filterGroup?: string | null
   filterOrder?: number | null
-  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
-  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutSourceSpecInput
   targetRules?: Prisma.CompatibilityRuleUncheckedCreateNestedManyWithoutTargetSpecInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedCreateNestedManyWithoutResultSpecInput
+  options?: Prisma.SpecOptionUncheckedCreateNestedManyWithoutSpecInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput
+  variantSpecs?: Prisma.VariantSpecUncheckedCreateNestedManyWithoutSpecInput
 }
 
 export type SpecDefinitionCreateOrConnectWithoutFilterOverridesInput = {
@@ -1468,14 +1477,14 @@ export type SpecDefinitionUpdateWithoutFilterOverridesInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSpecDefinitionsNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutFilterOverridesInput = {
@@ -1488,13 +1497,13 @@ export type SpecDefinitionUncheckedUpdateWithoutFilterOverridesInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionCreateManySubCategoryInput = {
@@ -1517,14 +1526,14 @@ export type SpecDefinitionUpdateWithoutSubCategoryInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateWithoutSubCategoryInput = {
@@ -1536,14 +1545,14 @@ export type SpecDefinitionUncheckedUpdateWithoutSubCategoryInput = {
   isMulti?: Prisma.BoolFieldUpdateOperationsInput | boolean
   filterGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filterOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
-  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
-  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
-  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
   sourceRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutSourceSpecNestedInput
   targetRules?: Prisma.CompatibilityRuleUncheckedUpdateManyWithoutTargetSpecNestedInput
   derivedSpecs?: Prisma.DerivedSpecUncheckedUpdateManyWithoutResultSpecNestedInput
   filterOverrides?: Prisma.FilterOverrideUncheckedUpdateManyWithoutSpecDefinitionNestedInput
+  options?: Prisma.SpecOptionUncheckedUpdateManyWithoutSpecNestedInput
+  childOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput
+  parentOptionDeps?: Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput
+  variantSpecs?: Prisma.VariantSpecUncheckedUpdateManyWithoutSpecNestedInput
 }
 
 export type SpecDefinitionUncheckedUpdateManyWithoutSubCategoryInput = {
@@ -1563,25 +1572,25 @@ export type SpecDefinitionUncheckedUpdateManyWithoutSubCategoryInput = {
  */
 
 export type SpecDefinitionCountOutputType = {
-  options: number
-  variantSpecs: number
-  parentOptionDeps: number
-  childOptionDeps: number
   sourceRules: number
   targetRules: number
   derivedSpecs: number
   filterOverrides: number
+  options: number
+  childOptionDeps: number
+  parentOptionDeps: number
+  variantSpecs: number
 }
 
 export type SpecDefinitionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  options?: boolean | SpecDefinitionCountOutputTypeCountOptionsArgs
-  variantSpecs?: boolean | SpecDefinitionCountOutputTypeCountVariantSpecsArgs
-  parentOptionDeps?: boolean | SpecDefinitionCountOutputTypeCountParentOptionDepsArgs
-  childOptionDeps?: boolean | SpecDefinitionCountOutputTypeCountChildOptionDepsArgs
   sourceRules?: boolean | SpecDefinitionCountOutputTypeCountSourceRulesArgs
   targetRules?: boolean | SpecDefinitionCountOutputTypeCountTargetRulesArgs
   derivedSpecs?: boolean | SpecDefinitionCountOutputTypeCountDerivedSpecsArgs
   filterOverrides?: boolean | SpecDefinitionCountOutputTypeCountFilterOverridesArgs
+  options?: boolean | SpecDefinitionCountOutputTypeCountOptionsArgs
+  childOptionDeps?: boolean | SpecDefinitionCountOutputTypeCountChildOptionDepsArgs
+  parentOptionDeps?: boolean | SpecDefinitionCountOutputTypeCountParentOptionDepsArgs
+  variantSpecs?: boolean | SpecDefinitionCountOutputTypeCountVariantSpecsArgs
 }
 
 /**
@@ -1592,34 +1601,6 @@ export type SpecDefinitionCountOutputTypeDefaultArgs<ExtArgs extends runtime.Typ
    * Select specific fields to fetch from the SpecDefinitionCountOutputType
    */
   select?: Prisma.SpecDefinitionCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * SpecDefinitionCountOutputType without action
- */
-export type SpecDefinitionCountOutputTypeCountOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SpecOptionWhereInput
-}
-
-/**
- * SpecDefinitionCountOutputType without action
- */
-export type SpecDefinitionCountOutputTypeCountVariantSpecsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.VariantSpecWhereInput
-}
-
-/**
- * SpecDefinitionCountOutputType without action
- */
-export type SpecDefinitionCountOutputTypeCountParentOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SpecOptionDependencyWhereInput
-}
-
-/**
- * SpecDefinitionCountOutputType without action
- */
-export type SpecDefinitionCountOutputTypeCountChildOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SpecOptionDependencyWhereInput
 }
 
 /**
@@ -1650,6 +1631,34 @@ export type SpecDefinitionCountOutputTypeCountFilterOverridesArgs<ExtArgs extend
   where?: Prisma.FilterOverrideWhereInput
 }
 
+/**
+ * SpecDefinitionCountOutputType without action
+ */
+export type SpecDefinitionCountOutputTypeCountOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SpecOptionWhereInput
+}
+
+/**
+ * SpecDefinitionCountOutputType without action
+ */
+export type SpecDefinitionCountOutputTypeCountChildOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SpecOptionDependencyWhereInput
+}
+
+/**
+ * SpecDefinitionCountOutputType without action
+ */
+export type SpecDefinitionCountOutputTypeCountParentOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SpecOptionDependencyWhereInput
+}
+
+/**
+ * SpecDefinitionCountOutputType without action
+ */
+export type SpecDefinitionCountOutputTypeCountVariantSpecsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.VariantSpecWhereInput
+}
+
 
 export type SpecDefinitionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1661,15 +1670,15 @@ export type SpecDefinitionSelect<ExtArgs extends runtime.Types.Extensions.Intern
   isMulti?: boolean
   filterGroup?: boolean
   filterOrder?: boolean
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
-  options?: boolean | Prisma.SpecDefinition$optionsArgs<ExtArgs>
-  variantSpecs?: boolean | Prisma.SpecDefinition$variantSpecsArgs<ExtArgs>
-  parentOptionDeps?: boolean | Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs>
-  childOptionDeps?: boolean | Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs>
   sourceRules?: boolean | Prisma.SpecDefinition$sourceRulesArgs<ExtArgs>
   targetRules?: boolean | Prisma.SpecDefinition$targetRulesArgs<ExtArgs>
   derivedSpecs?: boolean | Prisma.SpecDefinition$derivedSpecsArgs<ExtArgs>
   filterOverrides?: boolean | Prisma.SpecDefinition$filterOverridesArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
+  options?: boolean | Prisma.SpecDefinition$optionsArgs<ExtArgs>
+  childOptionDeps?: boolean | Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs>
+  parentOptionDeps?: boolean | Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs>
+  variantSpecs?: boolean | Prisma.SpecDefinition$variantSpecsArgs<ExtArgs>
   _count?: boolean | Prisma.SpecDefinitionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["specDefinition"]>
 
@@ -1713,15 +1722,15 @@ export type SpecDefinitionSelectScalar = {
 
 export type SpecDefinitionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subCategoryId" | "name" | "valueType" | "isFilterable" | "isRange" | "isMulti" | "filterGroup" | "filterOrder", ExtArgs["result"]["specDefinition"]>
 export type SpecDefinitionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
-  options?: boolean | Prisma.SpecDefinition$optionsArgs<ExtArgs>
-  variantSpecs?: boolean | Prisma.SpecDefinition$variantSpecsArgs<ExtArgs>
-  parentOptionDeps?: boolean | Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs>
-  childOptionDeps?: boolean | Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs>
   sourceRules?: boolean | Prisma.SpecDefinition$sourceRulesArgs<ExtArgs>
   targetRules?: boolean | Prisma.SpecDefinition$targetRulesArgs<ExtArgs>
   derivedSpecs?: boolean | Prisma.SpecDefinition$derivedSpecsArgs<ExtArgs>
   filterOverrides?: boolean | Prisma.SpecDefinition$filterOverridesArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
+  options?: boolean | Prisma.SpecDefinition$optionsArgs<ExtArgs>
+  childOptionDeps?: boolean | Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs>
+  parentOptionDeps?: boolean | Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs>
+  variantSpecs?: boolean | Prisma.SpecDefinition$variantSpecsArgs<ExtArgs>
   _count?: boolean | Prisma.SpecDefinitionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SpecDefinitionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1734,15 +1743,15 @@ export type SpecDefinitionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Typ
 export type $SpecDefinitionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SpecDefinition"
   objects: {
-    subCategory: Prisma.$SubCategoryPayload<ExtArgs>
-    options: Prisma.$SpecOptionPayload<ExtArgs>[]
-    variantSpecs: Prisma.$VariantSpecPayload<ExtArgs>[]
-    parentOptionDeps: Prisma.$SpecOptionDependencyPayload<ExtArgs>[]
-    childOptionDeps: Prisma.$SpecOptionDependencyPayload<ExtArgs>[]
     sourceRules: Prisma.$CompatibilityRulePayload<ExtArgs>[]
     targetRules: Prisma.$CompatibilityRulePayload<ExtArgs>[]
     derivedSpecs: Prisma.$DerivedSpecPayload<ExtArgs>[]
     filterOverrides: Prisma.$FilterOverridePayload<ExtArgs>[]
+    subCategory: Prisma.$SubCategoryPayload<ExtArgs>
+    options: Prisma.$SpecOptionPayload<ExtArgs>[]
+    childOptionDeps: Prisma.$SpecOptionDependencyPayload<ExtArgs>[]
+    parentOptionDeps: Prisma.$SpecOptionDependencyPayload<ExtArgs>[]
+    variantSpecs: Prisma.$VariantSpecPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2148,15 +2157,15 @@ readonly fields: SpecDefinitionFieldRefs;
  */
 export interface Prisma__SpecDefinitionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  subCategory<T extends Prisma.SubCategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__SubCategoryClient<runtime.Types.Result.GetResult<Prisma.$SubCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  options<T extends Prisma.SpecDefinition$optionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$optionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpecOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  variantSpecs<T extends Prisma.SpecDefinition$variantSpecsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$variantSpecsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VariantSpecPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  parentOptionDeps<T extends Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpecOptionDependencyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  childOptionDeps<T extends Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpecOptionDependencyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sourceRules<T extends Prisma.SpecDefinition$sourceRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$sourceRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   targetRules<T extends Prisma.SpecDefinition$targetRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$targetRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   derivedSpecs<T extends Prisma.SpecDefinition$derivedSpecsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$derivedSpecsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DerivedSpecPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   filterOverrides<T extends Prisma.SpecDefinition$filterOverridesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$filterOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilterOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  subCategory<T extends Prisma.SubCategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__SubCategoryClient<runtime.Types.Result.GetResult<Prisma.$SubCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  options<T extends Prisma.SpecDefinition$optionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$optionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpecOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  childOptionDeps<T extends Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$childOptionDepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpecOptionDependencyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  parentOptionDeps<T extends Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$parentOptionDepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpecOptionDependencyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  variantSpecs<T extends Prisma.SpecDefinition$variantSpecsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinition$variantSpecsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VariantSpecPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2591,102 +2600,6 @@ export type SpecDefinitionDeleteManyArgs<ExtArgs extends runtime.Types.Extension
 }
 
 /**
- * SpecDefinition.options
- */
-export type SpecDefinition$optionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SpecOption
-   */
-  select?: Prisma.SpecOptionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SpecOption
-   */
-  omit?: Prisma.SpecOptionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SpecOptionInclude<ExtArgs> | null
-  where?: Prisma.SpecOptionWhereInput
-  orderBy?: Prisma.SpecOptionOrderByWithRelationInput | Prisma.SpecOptionOrderByWithRelationInput[]
-  cursor?: Prisma.SpecOptionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SpecOptionScalarFieldEnum | Prisma.SpecOptionScalarFieldEnum[]
-}
-
-/**
- * SpecDefinition.variantSpecs
- */
-export type SpecDefinition$variantSpecsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the VariantSpec
-   */
-  select?: Prisma.VariantSpecSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the VariantSpec
-   */
-  omit?: Prisma.VariantSpecOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.VariantSpecInclude<ExtArgs> | null
-  where?: Prisma.VariantSpecWhereInput
-  orderBy?: Prisma.VariantSpecOrderByWithRelationInput | Prisma.VariantSpecOrderByWithRelationInput[]
-  cursor?: Prisma.VariantSpecWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.VariantSpecScalarFieldEnum | Prisma.VariantSpecScalarFieldEnum[]
-}
-
-/**
- * SpecDefinition.parentOptionDeps
- */
-export type SpecDefinition$parentOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SpecOptionDependency
-   */
-  select?: Prisma.SpecOptionDependencySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SpecOptionDependency
-   */
-  omit?: Prisma.SpecOptionDependencyOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SpecOptionDependencyInclude<ExtArgs> | null
-  where?: Prisma.SpecOptionDependencyWhereInput
-  orderBy?: Prisma.SpecOptionDependencyOrderByWithRelationInput | Prisma.SpecOptionDependencyOrderByWithRelationInput[]
-  cursor?: Prisma.SpecOptionDependencyWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SpecOptionDependencyScalarFieldEnum | Prisma.SpecOptionDependencyScalarFieldEnum[]
-}
-
-/**
- * SpecDefinition.childOptionDeps
- */
-export type SpecDefinition$childOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SpecOptionDependency
-   */
-  select?: Prisma.SpecOptionDependencySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SpecOptionDependency
-   */
-  omit?: Prisma.SpecOptionDependencyOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SpecOptionDependencyInclude<ExtArgs> | null
-  where?: Prisma.SpecOptionDependencyWhereInput
-  orderBy?: Prisma.SpecOptionDependencyOrderByWithRelationInput | Prisma.SpecOptionDependencyOrderByWithRelationInput[]
-  cursor?: Prisma.SpecOptionDependencyWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SpecOptionDependencyScalarFieldEnum | Prisma.SpecOptionDependencyScalarFieldEnum[]
-}
-
-/**
  * SpecDefinition.sourceRules
  */
 export type SpecDefinition$sourceRulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2780,6 +2693,102 @@ export type SpecDefinition$filterOverridesArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   distinct?: Prisma.FilterOverrideScalarFieldEnum | Prisma.FilterOverrideScalarFieldEnum[]
+}
+
+/**
+ * SpecDefinition.options
+ */
+export type SpecDefinition$optionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SpecOption
+   */
+  select?: Prisma.SpecOptionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SpecOption
+   */
+  omit?: Prisma.SpecOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SpecOptionInclude<ExtArgs> | null
+  where?: Prisma.SpecOptionWhereInput
+  orderBy?: Prisma.SpecOptionOrderByWithRelationInput | Prisma.SpecOptionOrderByWithRelationInput[]
+  cursor?: Prisma.SpecOptionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SpecOptionScalarFieldEnum | Prisma.SpecOptionScalarFieldEnum[]
+}
+
+/**
+ * SpecDefinition.childOptionDeps
+ */
+export type SpecDefinition$childOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SpecOptionDependency
+   */
+  select?: Prisma.SpecOptionDependencySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SpecOptionDependency
+   */
+  omit?: Prisma.SpecOptionDependencyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SpecOptionDependencyInclude<ExtArgs> | null
+  where?: Prisma.SpecOptionDependencyWhereInput
+  orderBy?: Prisma.SpecOptionDependencyOrderByWithRelationInput | Prisma.SpecOptionDependencyOrderByWithRelationInput[]
+  cursor?: Prisma.SpecOptionDependencyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SpecOptionDependencyScalarFieldEnum | Prisma.SpecOptionDependencyScalarFieldEnum[]
+}
+
+/**
+ * SpecDefinition.parentOptionDeps
+ */
+export type SpecDefinition$parentOptionDepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SpecOptionDependency
+   */
+  select?: Prisma.SpecOptionDependencySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SpecOptionDependency
+   */
+  omit?: Prisma.SpecOptionDependencyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SpecOptionDependencyInclude<ExtArgs> | null
+  where?: Prisma.SpecOptionDependencyWhereInput
+  orderBy?: Prisma.SpecOptionDependencyOrderByWithRelationInput | Prisma.SpecOptionDependencyOrderByWithRelationInput[]
+  cursor?: Prisma.SpecOptionDependencyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SpecOptionDependencyScalarFieldEnum | Prisma.SpecOptionDependencyScalarFieldEnum[]
+}
+
+/**
+ * SpecDefinition.variantSpecs
+ */
+export type SpecDefinition$variantSpecsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the VariantSpec
+   */
+  select?: Prisma.VariantSpecSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the VariantSpec
+   */
+  omit?: Prisma.VariantSpecOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.VariantSpecInclude<ExtArgs> | null
+  where?: Prisma.VariantSpecWhereInput
+  orderBy?: Prisma.VariantSpecOrderByWithRelationInput | Prisma.VariantSpecOrderByWithRelationInput[]
+  cursor?: Prisma.VariantSpecWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.VariantSpecScalarFieldEnum | Prisma.VariantSpecScalarFieldEnum[]
 }
 
 /**

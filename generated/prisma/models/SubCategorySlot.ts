@@ -166,16 +166,16 @@ export type SubCategorySlotWhereInput = {
   id?: Prisma.StringFilter<"SubCategorySlot"> | string
   subCategoryId?: Prisma.StringFilter<"SubCategorySlot"> | string
   slotId?: Prisma.StringFilter<"SubCategorySlot"> | string
-  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
   slot?: Prisma.XOR<Prisma.PartSlotScalarRelationFilter, Prisma.PartSlotWhereInput>
+  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
 }
 
 export type SubCategorySlotOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   subCategoryId?: Prisma.SortOrder
   slotId?: Prisma.SortOrder
-  subCategory?: Prisma.SubCategoryOrderByWithRelationInput
   slot?: Prisma.PartSlotOrderByWithRelationInput
+  subCategory?: Prisma.SubCategoryOrderByWithRelationInput
 }
 
 export type SubCategorySlotWhereUniqueInput = Prisma.AtLeast<{
@@ -186,8 +186,8 @@ export type SubCategorySlotWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.SubCategorySlotWhereInput | Prisma.SubCategorySlotWhereInput[]
   subCategoryId?: Prisma.StringFilter<"SubCategorySlot"> | string
   slotId?: Prisma.StringFilter<"SubCategorySlot"> | string
-  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
   slot?: Prisma.XOR<Prisma.PartSlotScalarRelationFilter, Prisma.PartSlotWhereInput>
+  subCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
 }, "id" | "subCategoryId_slotId">
 
 export type SubCategorySlotOrderByWithAggregationInput = {
@@ -210,8 +210,8 @@ export type SubCategorySlotScalarWhereWithAggregatesInput = {
 
 export type SubCategorySlotCreateInput = {
   id?: string
-  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSubCategorySlotsInput
   slot: Prisma.PartSlotCreateNestedOneWithoutSubCategorySlotsInput
+  subCategory: Prisma.SubCategoryCreateNestedOneWithoutSubCategorySlotsInput
 }
 
 export type SubCategorySlotUncheckedCreateInput = {
@@ -222,8 +222,8 @@ export type SubCategorySlotUncheckedCreateInput = {
 
 export type SubCategorySlotUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSubCategorySlotsNestedInput
   slot?: Prisma.PartSlotUpdateOneRequiredWithoutSubCategorySlotsNestedInput
+  subCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSubCategorySlotsNestedInput
 }
 
 export type SubCategorySlotUncheckedUpdateInput = {
@@ -492,24 +492,24 @@ export type SubCategorySlotSelect<ExtArgs extends runtime.Types.Extensions.Inter
   id?: boolean
   subCategoryId?: boolean
   slotId?: boolean
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["subCategorySlot"]>
 
 export type SubCategorySlotSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subCategoryId?: boolean
   slotId?: boolean
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["subCategorySlot"]>
 
 export type SubCategorySlotSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subCategoryId?: boolean
   slotId?: boolean
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["subCategorySlot"]>
 
 export type SubCategorySlotSelectScalar = {
@@ -520,23 +520,23 @@ export type SubCategorySlotSelectScalar = {
 
 export type SubCategorySlotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subCategoryId" | "slotId", ExtArgs["result"]["subCategorySlot"]>
 export type SubCategorySlotInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
 }
 export type SubCategorySlotIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
 }
 export type SubCategorySlotIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   slot?: boolean | Prisma.PartSlotDefaultArgs<ExtArgs>
+  subCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
 }
 
 export type $SubCategorySlotPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SubCategorySlot"
   objects: {
-    subCategory: Prisma.$SubCategoryPayload<ExtArgs>
     slot: Prisma.$PartSlotPayload<ExtArgs>
+    subCategory: Prisma.$SubCategoryPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -936,8 +936,8 @@ readonly fields: SubCategorySlotFieldRefs;
  */
 export interface Prisma__SubCategorySlotClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  subCategory<T extends Prisma.SubCategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__SubCategoryClient<runtime.Types.Result.GetResult<Prisma.$SubCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   slot<T extends Prisma.PartSlotDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PartSlotDefaultArgs<ExtArgs>>): Prisma.Prisma__PartSlotClient<runtime.Types.Result.GetResult<Prisma.$PartSlotPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  subCategory<T extends Prisma.SubCategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__SubCategoryClient<runtime.Types.Result.GetResult<Prisma.$SubCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

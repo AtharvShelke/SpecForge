@@ -50,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -65,6 +66,7 @@ import {
 } from "@/data/constants";
 import { generateInvoiceHTML } from "@/lib/invoice";
 import OrderPayments from "@/components/orders/OrderPayments";
+import InvoiceSequenceTab from "@/components/orders/InvoiceSequenceTab";
 import {
   ConfirmStatusDialog,
   DeleteOrderDialog,
@@ -738,6 +740,21 @@ const OrderManager = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="hidden sm:inline">Live</span>
               </div>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm">
+                    <Hash size={11} />
+                    <span className="hidden sm:inline">Sequence</span>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-xl p-0 overflow-hidden border-0 bg-transparent shadow-none">
+                  <div className="bg-white rounded-2xl p-6 shadow-xl border border-stone-200">
+                    <InvoiceSequenceTab />
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <button
                 onClick={syncData}
                 disabled={isLoading}

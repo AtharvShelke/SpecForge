@@ -29,8 +29,11 @@ import {
   CartItem,
   CompatibilityCheck,
   CompatibilitySeverity,
+  BuilderSettings,
+  DEFAULT_BUILDER_SETTINGS,
 } from "../types";
-import { apiFetch, useLoadingCounter } from "@/lib/helpers";
+import { apiFetch } from "@/lib/helpers";
+import { useLoadingCounter } from "@/hooks/useLoadingCounter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -103,6 +106,10 @@ interface BuildContextType {
   /** Warnings from the compatibility result */
   compatibilityWarnings: CompatibilityCheck[];
 
+  // ── Builder-wide settings loaded from /api/builder-settings ──
+  /** Active builder settings (fetched from DB via API on mount). */
+  builderSettings: BuilderSettings;
+
   // ── Build CRUD ──────────────────────────────────────────────────────
   createBuild: (name?: string) => Promise<void>;
   loadBuild: (id: string) => Promise<void>;
@@ -156,6 +163,9 @@ export const BuildProvider = ({
   const { loading, start, stop } = useLoadingCounter();
   const [isBuildMode, setIsBuildMode] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [builderSettings, setBuilderSettings] = useState<BuilderSettings>(
+    DEFAULT_BUILDER_SETTINGS,
+  );
 
   // ── O(1) Slot Lookup ────────────────────────────────────────────────
 
@@ -429,6 +439,21 @@ export const BuildProvider = ({
   const checkCompatibility =
     useCallback(async (): Promise<CompatibilityResult | null> => {
       if (!build) return null;
+
+      // Respect the admin-configured enforceCompatibility flag.
+      // When disabled, skip the check and mark the build as compatible.
+      if (!builderSettings.enforceCompatibility) {
+        const skipped: CompatibilityResult = {
+          buildId: build.id,
+          isCompatible: true,
+          message: "Compatibility enforcement is disabled.",
+          checks: [],
+          summary: { totalChecks: 0, passed: 0, failed: 0, errors: 0, warnings: 0 },
+        };
+        setCompatibilityResult(skipped);
+        return skipped;
+      }
+
       setError(null);
       start();
       try {
@@ -447,13 +472,19 @@ export const BuildProvider = ({
       } finally {
         stop();
       }
-    }, [build]);
+    }, [build, builderSettings.enforceCompatibility]);
 
   // ── Initial Load ────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!autoLoad) return;
-    void Promise.allSettled([refreshBuildGuides()]);
+    void Promise.allSettled([
+      refreshBuildGuides(),
+      // Load builder settings on mount so the context drives runtime behavior
+      apiFetch<BuilderSettings>("/api/builder-settings")
+        .then((s) => setBuilderSettings({ ...DEFAULT_BUILDER_SETTINGS, ...s }))
+        .catch(() => {}), // Silently fall back to defaults
+    ]);
   }, [autoLoad, refreshBuildGuides]);
 
   // ── Provider Value ──────────────────────────────────────────────────
@@ -470,6 +501,7 @@ export const BuildProvider = ({
       itemBySlot,
       compatibilityErrors,
       compatibilityWarnings,
+      builderSettings,
       createBuild,
       loadBuild,
       refreshBuilds,
@@ -497,6 +529,7 @@ export const BuildProvider = ({
       itemBySlot,
       compatibilityErrors,
       compatibilityWarnings,
+      builderSettings,
       createBuild,
       loadBuild,
       refreshBuilds,

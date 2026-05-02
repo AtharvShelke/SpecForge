@@ -33,7 +33,8 @@ import {
   BillingProfile,
 } from "../types";
 import * as invoiceService from "../services/invoice-client.service";
-import { apiFetch, useLoadingCounter, refreshAndSyncDetail } from "@/lib/helpers";
+import { apiFetch, refreshAndSyncDetail } from "@/lib/helpers";
+import { useLoadingCounter } from "@/hooks/useLoadingCounter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Context Shape

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import {
   CatalogService,
-  ServiceError,
+  
   createBrand,
 } from "@/services/catalog.service";
 import { serializeBrand, serializeBrands } from "@/lib/adminSerializers";
+import { ServiceError } from "@/lib/errors";
 
 export async function GET() {
   try {

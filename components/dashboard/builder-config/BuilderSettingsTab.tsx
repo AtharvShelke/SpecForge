@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo } from "react";
-import { Settings, Save, RotateCcw, Check } from "lucide-react";
+import { Settings, Save, RotateCcw, Check, Plus, Trash2, Zap, DollarSign } from "lucide-react";
 import type { BuilderSettings } from "@/types";
 import { DEFAULT_BUILDER_SETTINGS } from "@/types";
 import { apiFetch } from "@/lib/helpers";
@@ -91,6 +91,49 @@ const BuilderSettingsTab = memo(function BuilderSettingsTab() {
 
   const update = useCallback((key: keyof BuilderSettings, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const updatePowerDefault = useCallback((key: keyof BuilderSettings["powerDefaults"], value: number) => {
+    setSettings((prev) => ({
+      ...prev,
+      powerDefaults: { ...prev.powerDefaults, [key]: value },
+    }));
+  }, []);
+
+  const updateTdpBand = useCallback((band: keyof BuilderSettings["tdpBands"], field: string, value: any) => {
+    setSettings((prev) => ({
+      ...prev,
+      tdpBands: {
+        ...prev.tdpBands,
+        [band]: { ...prev.tdpBands[band], [field]: value },
+      },
+    }));
+  }, []);
+
+  const addPricePreset = useCallback(() => {
+    setSettings((prev) => ({
+      ...prev,
+      pricePresets: [
+        ...prev.pricePresets,
+        { id: `custom-${Date.now()}`, label: "New Preset" },
+      ],
+    }));
+  }, []);
+
+  const updatePricePreset = useCallback((index: number, field: string, value: any) => {
+    setSettings((prev) => ({
+      ...prev,
+      pricePresets: prev.pricePresets.map((preset, i) =>
+        i === index ? { ...preset, [field]: value } : preset
+      ),
+    }));
+  }, []);
+
+  const removePricePreset = useCallback((index: number) => {
+    setSettings((prev) => ({
+      ...prev,
+      pricePresets: prev.pricePresets.filter((_, i) => i !== index),
+    }));
   }, []);
 
   if (loading) {
@@ -196,6 +239,190 @@ const BuilderSettingsTab = memo(function BuilderSettingsTab() {
               </div>
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-zinc-700 mb-3 flex items-center gap-2">
+          <Zap size={14} className="text-amber-500" />
+          Power Calculation Defaults
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Base Wattage (W)</label>
+            <input
+              type="number"
+              value={settings.powerDefaults.baseWattage}
+              onChange={(e) => updatePowerDefault("baseWattage", Number(e.target.value))}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">CPU Default (W)</label>
+            <input
+              type="number"
+              value={settings.powerDefaults.cpuDefaultWattage}
+              onChange={(e) => updatePowerDefault("cpuDefaultWattage", Number(e.target.value))}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">GPU Default (W)</label>
+            <input
+              type="number"
+              value={settings.powerDefaults.gpuDefaultWattage}
+              onChange={(e) => updatePowerDefault("gpuDefaultWattage", Number(e.target.value))}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">RAM per Stick (W)</label>
+            <input
+              type="number"
+              value={settings.powerDefaults.ramWattagePerStick}
+              onChange={(e) => updatePowerDefault("ramWattagePerStick", Number(e.target.value))}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="text-xs text-zinc-500 mb-1 block">Storage per Drive (W)</label>
+            <input
+              type="number"
+              value={settings.powerDefaults.storageWattagePerDrive}
+              onChange={(e) => updatePowerDefault("storageWattagePerDrive", Number(e.target.value))}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-zinc-700 mb-3">TDP Bands</p>
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl border border-zinc-200">
+            <label className="text-xs text-zinc-500 mb-2 block">Low Power Band</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Max Wattage (W)</label>
+                <input
+                  type="number"
+                  value={settings.tdpBands.low.max}
+                  onChange={(e) => updateTdpBand("low", "max", Number(e.target.value))}
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Label</label>
+                <input
+                  type="text"
+                  value={settings.tdpBands.low.label}
+                  onChange={(e) => updateTdpBand("low", "label", e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="p-3 rounded-xl border border-zinc-200">
+            <label className="text-xs text-zinc-500 mb-2 block">Balanced Power Band</label>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Min (W)</label>
+                <input
+                  type="number"
+                  value={settings.tdpBands.balanced.min}
+                  onChange={(e) => updateTdpBand("balanced", "min", Number(e.target.value))}
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Max (W)</label>
+                <input
+                  type="number"
+                  value={settings.tdpBands.balanced.max}
+                  onChange={(e) => updateTdpBand("balanced", "max", Number(e.target.value))}
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Label</label>
+                <input
+                  type="text"
+                  value={settings.tdpBands.balanced.label}
+                  onChange={(e) => updateTdpBand("balanced", "label", e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="p-3 rounded-xl border border-zinc-200">
+            <label className="text-xs text-zinc-500 mb-2 block">High Power Band</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Min Wattage (W)</label>
+                <input
+                  type="number"
+                  value={settings.tdpBands.high.min}
+                  onChange={(e) => updateTdpBand("high", "min", Number(e.target.value))}
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Label</label>
+                <input
+                  type="text"
+                  value={settings.tdpBands.high.label}
+                  onChange={(e) => updateTdpBand("high", "label", e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-zinc-700 mb-3 flex items-center gap-2">
+          <DollarSign size={14} className="text-emerald-500" />
+          Price Presets
+        </p>
+        <div className="space-y-2">
+          {settings.pricePresets.map((preset, index) => (
+            <div key={preset.id} className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200">
+              <input
+                type="text"
+                value={preset.label}
+                onChange={(e) => updatePricePreset(index, "label", e.target.value)}
+                className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                placeholder="Label"
+              />
+              <input
+                type="number"
+                value={preset.min ?? ""}
+                onChange={(e) => updatePricePreset(index, "min", e.target.value ? Number(e.target.value) : undefined)}
+                className="w-24 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                placeholder="Min"
+              />
+              <input
+                type="number"
+                value={preset.max ?? ""}
+                onChange={(e) => updatePricePreset(index, "max", e.target.value ? Number(e.target.value) : undefined)}
+                className="w-24 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                placeholder="Max"
+              />
+              <button
+                onClick={() => removePricePreset(index)}
+                className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={addPricePreset}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-zinc-600 border border-dashed border-zinc-300 rounded-lg hover:border-zinc-400 hover:bg-zinc-50 transition-colors"
+          >
+            <Plus size={14} /> Add Price Preset
+          </button>
         </div>
       </div>
 

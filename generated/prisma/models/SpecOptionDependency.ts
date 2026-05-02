@@ -182,10 +182,10 @@ export type SpecOptionDependencyWhereInput = {
   parentOptionId?: Prisma.StringFilter<"SpecOptionDependency"> | string
   childSpecId?: Prisma.StringFilter<"SpecOptionDependency"> | string
   childOptionId?: Prisma.StringNullableFilter<"SpecOptionDependency"> | string | null
-  parentSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
-  parentOption?: Prisma.XOR<Prisma.SpecOptionScalarRelationFilter, Prisma.SpecOptionWhereInput>
-  childSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
   childOption?: Prisma.XOR<Prisma.SpecOptionNullableScalarRelationFilter, Prisma.SpecOptionWhereInput> | null
+  childSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
+  parentOption?: Prisma.XOR<Prisma.SpecOptionScalarRelationFilter, Prisma.SpecOptionWhereInput>
+  parentSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
 }
 
 export type SpecOptionDependencyOrderByWithRelationInput = {
@@ -194,10 +194,10 @@ export type SpecOptionDependencyOrderByWithRelationInput = {
   parentOptionId?: Prisma.SortOrder
   childSpecId?: Prisma.SortOrder
   childOptionId?: Prisma.SortOrderInput | Prisma.SortOrder
-  parentSpec?: Prisma.SpecDefinitionOrderByWithRelationInput
-  parentOption?: Prisma.SpecOptionOrderByWithRelationInput
-  childSpec?: Prisma.SpecDefinitionOrderByWithRelationInput
   childOption?: Prisma.SpecOptionOrderByWithRelationInput
+  childSpec?: Prisma.SpecDefinitionOrderByWithRelationInput
+  parentOption?: Prisma.SpecOptionOrderByWithRelationInput
+  parentSpec?: Prisma.SpecDefinitionOrderByWithRelationInput
 }
 
 export type SpecOptionDependencyWhereUniqueInput = Prisma.AtLeast<{
@@ -210,10 +210,10 @@ export type SpecOptionDependencyWhereUniqueInput = Prisma.AtLeast<{
   parentOptionId?: Prisma.StringFilter<"SpecOptionDependency"> | string
   childSpecId?: Prisma.StringFilter<"SpecOptionDependency"> | string
   childOptionId?: Prisma.StringNullableFilter<"SpecOptionDependency"> | string | null
-  parentSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
-  parentOption?: Prisma.XOR<Prisma.SpecOptionScalarRelationFilter, Prisma.SpecOptionWhereInput>
-  childSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
   childOption?: Prisma.XOR<Prisma.SpecOptionNullableScalarRelationFilter, Prisma.SpecOptionWhereInput> | null
+  childSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
+  parentOption?: Prisma.XOR<Prisma.SpecOptionScalarRelationFilter, Prisma.SpecOptionWhereInput>
+  parentSpec?: Prisma.XOR<Prisma.SpecDefinitionScalarRelationFilter, Prisma.SpecDefinitionWhereInput>
 }, "id" | "parentSpecId_parentOptionId_childSpecId_childOptionId">
 
 export type SpecOptionDependencyOrderByWithAggregationInput = {
@@ -240,10 +240,10 @@ export type SpecOptionDependencyScalarWhereWithAggregatesInput = {
 
 export type SpecOptionDependencyCreateInput = {
   id?: string
-  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
-  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
-  childSpec: Prisma.SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput
   childOption?: Prisma.SpecOptionCreateNestedOneWithoutChildOptionDepsInput
+  childSpec: Prisma.SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput
+  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
+  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
 }
 
 export type SpecOptionDependencyUncheckedCreateInput = {
@@ -256,10 +256,10 @@ export type SpecOptionDependencyUncheckedCreateInput = {
 
 export type SpecOptionDependencyUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
-  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
-  childSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput
   childOption?: Prisma.SpecOptionUpdateOneWithoutChildOptionDepsNestedInput
+  childSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput
+  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
+  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
 }
 
 export type SpecOptionDependencyUncheckedUpdateInput = {
@@ -331,13 +331,6 @@ export type SpecOptionDependencyMinOrderByAggregateInput = {
   childOptionId?: Prisma.SortOrder
 }
 
-export type SpecOptionDependencyCreateNestedManyWithoutParentSpecInput = {
-  create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput> | Prisma.SpecOptionDependencyCreateWithoutParentSpecInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput[]
-  connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput[]
-  createMany?: Prisma.SpecOptionDependencyCreateManyParentSpecInputEnvelope
-  connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
-}
-
 export type SpecOptionDependencyCreateNestedManyWithoutChildSpecInput = {
   create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutChildSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutChildSpecInput> | Prisma.SpecOptionDependencyCreateWithoutChildSpecInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutChildSpecInput[]
   connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutChildSpecInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutChildSpecInput[]
@@ -345,7 +338,7 @@ export type SpecOptionDependencyCreateNestedManyWithoutChildSpecInput = {
   connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
 }
 
-export type SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput = {
+export type SpecOptionDependencyCreateNestedManyWithoutParentSpecInput = {
   create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput> | Prisma.SpecOptionDependencyCreateWithoutParentSpecInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput[]
   connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput[]
   createMany?: Prisma.SpecOptionDependencyCreateManyParentSpecInputEnvelope
@@ -359,18 +352,11 @@ export type SpecOptionDependencyUncheckedCreateNestedManyWithoutChildSpecInput =
   connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
 }
 
-export type SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput = {
+export type SpecOptionDependencyUncheckedCreateNestedManyWithoutParentSpecInput = {
   create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput> | Prisma.SpecOptionDependencyCreateWithoutParentSpecInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput[]
   connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput[]
-  upsert?: Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput | Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput[]
   createMany?: Prisma.SpecOptionDependencyCreateManyParentSpecInputEnvelope
-  set?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
-  disconnect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
-  delete?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
   connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
-  update?: Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentSpecInput | Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentSpecInput[]
-  updateMany?: Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentSpecInput | Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentSpecInput[]
-  deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
 export type SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput = {
@@ -387,7 +373,7 @@ export type SpecOptionDependencyUpdateManyWithoutChildSpecNestedInput = {
   deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
-export type SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput = {
+export type SpecOptionDependencyUpdateManyWithoutParentSpecNestedInput = {
   create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput> | Prisma.SpecOptionDependencyCreateWithoutParentSpecInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput[]
   connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput[]
   upsert?: Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput | Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput[]
@@ -415,11 +401,18 @@ export type SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecNestedInput =
   deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
-export type SpecOptionDependencyCreateNestedManyWithoutParentOptionInput = {
-  create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput> | Prisma.SpecOptionDependencyCreateWithoutParentOptionInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput[]
-  connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput[]
-  createMany?: Prisma.SpecOptionDependencyCreateManyParentOptionInputEnvelope
+export type SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecNestedInput = {
+  create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput> | Prisma.SpecOptionDependencyCreateWithoutParentSpecInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput[]
+  connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentSpecInput[]
+  upsert?: Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput | Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput[]
+  createMany?: Prisma.SpecOptionDependencyCreateManyParentSpecInputEnvelope
+  set?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
+  disconnect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
+  delete?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
   connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
+  update?: Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentSpecInput | Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentSpecInput[]
+  updateMany?: Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentSpecInput | Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentSpecInput[]
+  deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
 export type SpecOptionDependencyCreateNestedManyWithoutChildOptionInput = {
@@ -429,7 +422,7 @@ export type SpecOptionDependencyCreateNestedManyWithoutChildOptionInput = {
   connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
 }
 
-export type SpecOptionDependencyUncheckedCreateNestedManyWithoutParentOptionInput = {
+export type SpecOptionDependencyCreateNestedManyWithoutParentOptionInput = {
   create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput> | Prisma.SpecOptionDependencyCreateWithoutParentOptionInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput[]
   connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput[]
   createMany?: Prisma.SpecOptionDependencyCreateManyParentOptionInputEnvelope
@@ -443,18 +436,11 @@ export type SpecOptionDependencyUncheckedCreateNestedManyWithoutChildOptionInput
   connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
 }
 
-export type SpecOptionDependencyUpdateManyWithoutParentOptionNestedInput = {
+export type SpecOptionDependencyUncheckedCreateNestedManyWithoutParentOptionInput = {
   create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput> | Prisma.SpecOptionDependencyCreateWithoutParentOptionInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput[]
   connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput[]
-  upsert?: Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput | Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput[]
   createMany?: Prisma.SpecOptionDependencyCreateManyParentOptionInputEnvelope
-  set?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
-  disconnect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
-  delete?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
   connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
-  update?: Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentOptionInput | Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentOptionInput[]
-  updateMany?: Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentOptionInput | Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentOptionInput[]
-  deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
 export type SpecOptionDependencyUpdateManyWithoutChildOptionNestedInput = {
@@ -471,7 +457,7 @@ export type SpecOptionDependencyUpdateManyWithoutChildOptionNestedInput = {
   deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
-export type SpecOptionDependencyUncheckedUpdateManyWithoutParentOptionNestedInput = {
+export type SpecOptionDependencyUpdateManyWithoutParentOptionNestedInput = {
   create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput> | Prisma.SpecOptionDependencyCreateWithoutParentOptionInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput[]
   connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput[]
   upsert?: Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput | Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput[]
@@ -499,35 +485,25 @@ export type SpecOptionDependencyUncheckedUpdateManyWithoutChildOptionNestedInput
   deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
-export type SpecOptionDependencyCreateWithoutParentSpecInput = {
-  id?: string
-  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
-  childSpec: Prisma.SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput
-  childOption?: Prisma.SpecOptionCreateNestedOneWithoutChildOptionDepsInput
-}
-
-export type SpecOptionDependencyUncheckedCreateWithoutParentSpecInput = {
-  id?: string
-  parentOptionId: string
-  childSpecId: string
-  childOptionId?: string | null
-}
-
-export type SpecOptionDependencyCreateOrConnectWithoutParentSpecInput = {
-  where: Prisma.SpecOptionDependencyWhereUniqueInput
-  create: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput>
-}
-
-export type SpecOptionDependencyCreateManyParentSpecInputEnvelope = {
-  data: Prisma.SpecOptionDependencyCreateManyParentSpecInput | Prisma.SpecOptionDependencyCreateManyParentSpecInput[]
-  skipDuplicates?: boolean
+export type SpecOptionDependencyUncheckedUpdateManyWithoutParentOptionNestedInput = {
+  create?: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput> | Prisma.SpecOptionDependencyCreateWithoutParentOptionInput[] | Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput[]
+  connectOrCreate?: Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput | Prisma.SpecOptionDependencyCreateOrConnectWithoutParentOptionInput[]
+  upsert?: Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput | Prisma.SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput[]
+  createMany?: Prisma.SpecOptionDependencyCreateManyParentOptionInputEnvelope
+  set?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
+  disconnect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
+  delete?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
+  connect?: Prisma.SpecOptionDependencyWhereUniqueInput | Prisma.SpecOptionDependencyWhereUniqueInput[]
+  update?: Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentOptionInput | Prisma.SpecOptionDependencyUpdateWithWhereUniqueWithoutParentOptionInput[]
+  updateMany?: Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentOptionInput | Prisma.SpecOptionDependencyUpdateManyWithWhereWithoutParentOptionInput[]
+  deleteMany?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
 }
 
 export type SpecOptionDependencyCreateWithoutChildSpecInput = {
   id?: string
-  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
-  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
   childOption?: Prisma.SpecOptionCreateNestedOneWithoutChildOptionDepsInput
+  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
+  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
 }
 
 export type SpecOptionDependencyUncheckedCreateWithoutChildSpecInput = {
@@ -547,31 +523,28 @@ export type SpecOptionDependencyCreateManyChildSpecInputEnvelope = {
   skipDuplicates?: boolean
 }
 
-export type SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput = {
+export type SpecOptionDependencyCreateWithoutParentSpecInput = {
+  id?: string
+  childOption?: Prisma.SpecOptionCreateNestedOneWithoutChildOptionDepsInput
+  childSpec: Prisma.SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput
+  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
+}
+
+export type SpecOptionDependencyUncheckedCreateWithoutParentSpecInput = {
+  id?: string
+  parentOptionId: string
+  childSpecId: string
+  childOptionId?: string | null
+}
+
+export type SpecOptionDependencyCreateOrConnectWithoutParentSpecInput = {
   where: Prisma.SpecOptionDependencyWhereUniqueInput
-  update: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentSpecInput>
   create: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput>
 }
 
-export type SpecOptionDependencyUpdateWithWhereUniqueWithoutParentSpecInput = {
-  where: Prisma.SpecOptionDependencyWhereUniqueInput
-  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentSpecInput>
-}
-
-export type SpecOptionDependencyUpdateManyWithWhereWithoutParentSpecInput = {
-  where: Prisma.SpecOptionDependencyScalarWhereInput
-  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateManyMutationInput, Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecInput>
-}
-
-export type SpecOptionDependencyScalarWhereInput = {
-  AND?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
-  OR?: Prisma.SpecOptionDependencyScalarWhereInput[]
-  NOT?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
-  id?: Prisma.StringFilter<"SpecOptionDependency"> | string
-  parentSpecId?: Prisma.StringFilter<"SpecOptionDependency"> | string
-  parentOptionId?: Prisma.StringFilter<"SpecOptionDependency"> | string
-  childSpecId?: Prisma.StringFilter<"SpecOptionDependency"> | string
-  childOptionId?: Prisma.StringNullableFilter<"SpecOptionDependency"> | string | null
+export type SpecOptionDependencyCreateManyParentSpecInputEnvelope = {
+  data: Prisma.SpecOptionDependencyCreateManyParentSpecInput | Prisma.SpecOptionDependencyCreateManyParentSpecInput[]
+  skipDuplicates?: boolean
 }
 
 export type SpecOptionDependencyUpsertWithWhereUniqueWithoutChildSpecInput = {
@@ -590,35 +563,38 @@ export type SpecOptionDependencyUpdateManyWithWhereWithoutChildSpecInput = {
   data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateManyMutationInput, Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecInput>
 }
 
-export type SpecOptionDependencyCreateWithoutParentOptionInput = {
-  id?: string
-  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
-  childSpec: Prisma.SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput
-  childOption?: Prisma.SpecOptionCreateNestedOneWithoutChildOptionDepsInput
+export type SpecOptionDependencyScalarWhereInput = {
+  AND?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
+  OR?: Prisma.SpecOptionDependencyScalarWhereInput[]
+  NOT?: Prisma.SpecOptionDependencyScalarWhereInput | Prisma.SpecOptionDependencyScalarWhereInput[]
+  id?: Prisma.StringFilter<"SpecOptionDependency"> | string
+  parentSpecId?: Prisma.StringFilter<"SpecOptionDependency"> | string
+  parentOptionId?: Prisma.StringFilter<"SpecOptionDependency"> | string
+  childSpecId?: Prisma.StringFilter<"SpecOptionDependency"> | string
+  childOptionId?: Prisma.StringNullableFilter<"SpecOptionDependency"> | string | null
 }
 
-export type SpecOptionDependencyUncheckedCreateWithoutParentOptionInput = {
-  id?: string
-  parentSpecId: string
-  childSpecId: string
-  childOptionId?: string | null
-}
-
-export type SpecOptionDependencyCreateOrConnectWithoutParentOptionInput = {
+export type SpecOptionDependencyUpsertWithWhereUniqueWithoutParentSpecInput = {
   where: Prisma.SpecOptionDependencyWhereUniqueInput
-  create: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput>
+  update: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentSpecInput>
+  create: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentSpecInput>
 }
 
-export type SpecOptionDependencyCreateManyParentOptionInputEnvelope = {
-  data: Prisma.SpecOptionDependencyCreateManyParentOptionInput | Prisma.SpecOptionDependencyCreateManyParentOptionInput[]
-  skipDuplicates?: boolean
+export type SpecOptionDependencyUpdateWithWhereUniqueWithoutParentSpecInput = {
+  where: Prisma.SpecOptionDependencyWhereUniqueInput
+  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentSpecInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentSpecInput>
+}
+
+export type SpecOptionDependencyUpdateManyWithWhereWithoutParentSpecInput = {
+  where: Prisma.SpecOptionDependencyScalarWhereInput
+  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateManyMutationInput, Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecInput>
 }
 
 export type SpecOptionDependencyCreateWithoutChildOptionInput = {
   id?: string
-  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
-  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
   childSpec: Prisma.SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput
+  parentOption: Prisma.SpecOptionCreateNestedOneWithoutParentOptionDepsInput
+  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
 }
 
 export type SpecOptionDependencyUncheckedCreateWithoutChildOptionInput = {
@@ -638,20 +614,28 @@ export type SpecOptionDependencyCreateManyChildOptionInputEnvelope = {
   skipDuplicates?: boolean
 }
 
-export type SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput = {
+export type SpecOptionDependencyCreateWithoutParentOptionInput = {
+  id?: string
+  childOption?: Prisma.SpecOptionCreateNestedOneWithoutChildOptionDepsInput
+  childSpec: Prisma.SpecDefinitionCreateNestedOneWithoutChildOptionDepsInput
+  parentSpec: Prisma.SpecDefinitionCreateNestedOneWithoutParentOptionDepsInput
+}
+
+export type SpecOptionDependencyUncheckedCreateWithoutParentOptionInput = {
+  id?: string
+  parentSpecId: string
+  childSpecId: string
+  childOptionId?: string | null
+}
+
+export type SpecOptionDependencyCreateOrConnectWithoutParentOptionInput = {
   where: Prisma.SpecOptionDependencyWhereUniqueInput
-  update: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentOptionInput>
   create: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput>
 }
 
-export type SpecOptionDependencyUpdateWithWhereUniqueWithoutParentOptionInput = {
-  where: Prisma.SpecOptionDependencyWhereUniqueInput
-  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentOptionInput>
-}
-
-export type SpecOptionDependencyUpdateManyWithWhereWithoutParentOptionInput = {
-  where: Prisma.SpecOptionDependencyScalarWhereInput
-  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateManyMutationInput, Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentOptionInput>
+export type SpecOptionDependencyCreateManyParentOptionInputEnvelope = {
+  data: Prisma.SpecOptionDependencyCreateManyParentOptionInput | Prisma.SpecOptionDependencyCreateManyParentOptionInput[]
+  skipDuplicates?: boolean
 }
 
 export type SpecOptionDependencyUpsertWithWhereUniqueWithoutChildOptionInput = {
@@ -670,11 +654,20 @@ export type SpecOptionDependencyUpdateManyWithWhereWithoutChildOptionInput = {
   data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateManyMutationInput, Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutChildOptionInput>
 }
 
-export type SpecOptionDependencyCreateManyParentSpecInput = {
-  id?: string
-  parentOptionId: string
-  childSpecId: string
-  childOptionId?: string | null
+export type SpecOptionDependencyUpsertWithWhereUniqueWithoutParentOptionInput = {
+  where: Prisma.SpecOptionDependencyWhereUniqueInput
+  update: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentOptionInput>
+  create: Prisma.XOR<Prisma.SpecOptionDependencyCreateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedCreateWithoutParentOptionInput>
+}
+
+export type SpecOptionDependencyUpdateWithWhereUniqueWithoutParentOptionInput = {
+  where: Prisma.SpecOptionDependencyWhereUniqueInput
+  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateWithoutParentOptionInput, Prisma.SpecOptionDependencyUncheckedUpdateWithoutParentOptionInput>
+}
+
+export type SpecOptionDependencyUpdateManyWithWhereWithoutParentOptionInput = {
+  where: Prisma.SpecOptionDependencyScalarWhereInput
+  data: Prisma.XOR<Prisma.SpecOptionDependencyUpdateManyMutationInput, Prisma.SpecOptionDependencyUncheckedUpdateManyWithoutParentOptionInput>
 }
 
 export type SpecOptionDependencyCreateManyChildSpecInput = {
@@ -684,32 +677,18 @@ export type SpecOptionDependencyCreateManyChildSpecInput = {
   childOptionId?: string | null
 }
 
-export type SpecOptionDependencyUpdateWithoutParentSpecInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
-  childSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput
-  childOption?: Prisma.SpecOptionUpdateOneWithoutChildOptionDepsNestedInput
-}
-
-export type SpecOptionDependencyUncheckedUpdateWithoutParentSpecInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentOptionId?: Prisma.StringFieldUpdateOperationsInput | string
-  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-}
-
-export type SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentOptionId?: Prisma.StringFieldUpdateOperationsInput | string
-  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+export type SpecOptionDependencyCreateManyParentSpecInput = {
+  id?: string
+  parentOptionId: string
+  childSpecId: string
+  childOptionId?: string | null
 }
 
 export type SpecOptionDependencyUpdateWithoutChildSpecInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
-  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
   childOption?: Prisma.SpecOptionUpdateOneWithoutChildOptionDepsNestedInput
+  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
+  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
 }
 
 export type SpecOptionDependencyUncheckedUpdateWithoutChildSpecInput = {
@@ -726,11 +705,25 @@ export type SpecOptionDependencyUncheckedUpdateManyWithoutChildSpecInput = {
   childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
-export type SpecOptionDependencyCreateManyParentOptionInput = {
-  id?: string
-  parentSpecId: string
-  childSpecId: string
-  childOptionId?: string | null
+export type SpecOptionDependencyUpdateWithoutParentSpecInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  childOption?: Prisma.SpecOptionUpdateOneWithoutChildOptionDepsNestedInput
+  childSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput
+  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
+}
+
+export type SpecOptionDependencyUncheckedUpdateWithoutParentSpecInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  parentOptionId?: Prisma.StringFieldUpdateOperationsInput | string
+  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
+  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type SpecOptionDependencyUncheckedUpdateManyWithoutParentSpecInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  parentOptionId?: Prisma.StringFieldUpdateOperationsInput | string
+  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
+  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type SpecOptionDependencyCreateManyChildOptionInput = {
@@ -740,32 +733,18 @@ export type SpecOptionDependencyCreateManyChildOptionInput = {
   childSpecId: string
 }
 
-export type SpecOptionDependencyUpdateWithoutParentOptionInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
-  childSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput
-  childOption?: Prisma.SpecOptionUpdateOneWithoutChildOptionDepsNestedInput
-}
-
-export type SpecOptionDependencyUncheckedUpdateWithoutParentOptionInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-}
-
-export type SpecOptionDependencyUncheckedUpdateManyWithoutParentOptionInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
-  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+export type SpecOptionDependencyCreateManyParentOptionInput = {
+  id?: string
+  parentSpecId: string
+  childSpecId: string
+  childOptionId?: string | null
 }
 
 export type SpecOptionDependencyUpdateWithoutChildOptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
-  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
   childSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput
+  parentOption?: Prisma.SpecOptionUpdateOneRequiredWithoutParentOptionDepsNestedInput
+  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
 }
 
 export type SpecOptionDependencyUncheckedUpdateWithoutChildOptionInput = {
@@ -782,6 +761,27 @@ export type SpecOptionDependencyUncheckedUpdateManyWithoutChildOptionInput = {
   childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
+export type SpecOptionDependencyUpdateWithoutParentOptionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  childOption?: Prisma.SpecOptionUpdateOneWithoutChildOptionDepsNestedInput
+  childSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutChildOptionDepsNestedInput
+  parentSpec?: Prisma.SpecDefinitionUpdateOneRequiredWithoutParentOptionDepsNestedInput
+}
+
+export type SpecOptionDependencyUncheckedUpdateWithoutParentOptionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  parentSpecId?: Prisma.StringFieldUpdateOperationsInput | string
+  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
+  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type SpecOptionDependencyUncheckedUpdateManyWithoutParentOptionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  parentSpecId?: Prisma.StringFieldUpdateOperationsInput | string
+  childSpecId?: Prisma.StringFieldUpdateOperationsInput | string
+  childOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
 
 
 export type SpecOptionDependencySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -790,10 +790,10 @@ export type SpecOptionDependencySelect<ExtArgs extends runtime.Types.Extensions.
   parentOptionId?: boolean
   childSpecId?: boolean
   childOptionId?: boolean
-  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
-  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   childOption?: boolean | Prisma.SpecOptionDependency$childOptionArgs<ExtArgs>
+  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
+  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["specOptionDependency"]>
 
 export type SpecOptionDependencySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -802,10 +802,10 @@ export type SpecOptionDependencySelectCreateManyAndReturn<ExtArgs extends runtim
   parentOptionId?: boolean
   childSpecId?: boolean
   childOptionId?: boolean
-  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
-  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   childOption?: boolean | Prisma.SpecOptionDependency$childOptionArgs<ExtArgs>
+  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
+  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["specOptionDependency"]>
 
 export type SpecOptionDependencySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -814,10 +814,10 @@ export type SpecOptionDependencySelectUpdateManyAndReturn<ExtArgs extends runtim
   parentOptionId?: boolean
   childSpecId?: boolean
   childOptionId?: boolean
-  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
-  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   childOption?: boolean | Prisma.SpecOptionDependency$childOptionArgs<ExtArgs>
+  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
+  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["specOptionDependency"]>
 
 export type SpecOptionDependencySelectScalar = {
@@ -830,31 +830,31 @@ export type SpecOptionDependencySelectScalar = {
 
 export type SpecOptionDependencyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "parentSpecId" | "parentOptionId" | "childSpecId" | "childOptionId", ExtArgs["result"]["specOptionDependency"]>
 export type SpecOptionDependencyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
-  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   childOption?: boolean | Prisma.SpecOptionDependency$childOptionArgs<ExtArgs>
+  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
+  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }
 export type SpecOptionDependencyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
-  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   childOption?: boolean | Prisma.SpecOptionDependency$childOptionArgs<ExtArgs>
+  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
+  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }
 export type SpecOptionDependencyIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
-  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
-  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
   childOption?: boolean | Prisma.SpecOptionDependency$childOptionArgs<ExtArgs>
+  childSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
+  parentOption?: boolean | Prisma.SpecOptionDefaultArgs<ExtArgs>
+  parentSpec?: boolean | Prisma.SpecDefinitionDefaultArgs<ExtArgs>
 }
 
 export type $SpecOptionDependencyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SpecOptionDependency"
   objects: {
-    parentSpec: Prisma.$SpecDefinitionPayload<ExtArgs>
-    parentOption: Prisma.$SpecOptionPayload<ExtArgs>
-    childSpec: Prisma.$SpecDefinitionPayload<ExtArgs>
     childOption: Prisma.$SpecOptionPayload<ExtArgs> | null
+    childSpec: Prisma.$SpecDefinitionPayload<ExtArgs>
+    parentOption: Prisma.$SpecOptionPayload<ExtArgs>
+    parentSpec: Prisma.$SpecDefinitionPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1256,10 +1256,10 @@ readonly fields: SpecOptionDependencyFieldRefs;
  */
 export interface Prisma__SpecOptionDependencyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  parentSpec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  parentOption<T extends Prisma.SpecOptionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecOptionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecOptionClient<runtime.Types.Result.GetResult<Prisma.$SpecOptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  childSpec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   childOption<T extends Prisma.SpecOptionDependency$childOptionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecOptionDependency$childOptionArgs<ExtArgs>>): Prisma.Prisma__SpecOptionClient<runtime.Types.Result.GetResult<Prisma.$SpecOptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  childSpec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  parentOption<T extends Prisma.SpecOptionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecOptionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecOptionClient<runtime.Types.Result.GetResult<Prisma.$SpecOptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  parentSpec<T extends Prisma.SpecDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SpecDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__SpecDefinitionClient<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

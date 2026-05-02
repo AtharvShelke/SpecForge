@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { ShipmentTracking } from "@/types";
 import { cn } from "@/lib/utils";
 import { Copy, ExternalLink, Package, Truck } from "lucide-react";
@@ -74,9 +74,9 @@ function getTrackingUrl(
 ───────────────────────────────────────────────────────────────*/
 
 const CopyButton = memo(({ text }: { text: string }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const handleCopy = React.useCallback(async () => {
+  const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);

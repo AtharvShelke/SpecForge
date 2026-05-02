@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCatalogListing, ServiceError } from "@/services/catalog.service";
+import { getCatalogListing } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 /**
  * POST /api/catalog/products/filter

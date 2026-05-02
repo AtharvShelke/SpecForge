@@ -75,6 +75,7 @@ export const ModelName = {
   Invoice: 'Invoice',
   InvoiceLineItem: 'InvoiceLineItem',
   InvoiceAuditEvent: 'InvoiceAuditEvent',
+  TaxSettings: 'TaxSettings',
   PaymentTransaction: 'PaymentTransaction',
   PaymentProof: 'PaymentProof',
   AuditLog: 'AuditLog',
@@ -486,6 +487,19 @@ export const InvoiceAuditEventScalarFieldEnum = {
 export type InvoiceAuditEventScalarFieldEnum = (typeof InvoiceAuditEventScalarFieldEnum)[keyof typeof InvoiceAuditEventScalarFieldEnum]
 
 
+export const TaxSettingsScalarFieldEnum = {
+  id: 'id',
+  taxRatePct: 'taxRatePct',
+  taxName: 'taxName',
+  taxDescription: 'taxDescription',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
+
+
 export const PaymentTransactionScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
@@ -595,12 +609,20 @@ export type PartSlotScalarFieldEnum = (typeof PartSlotScalarFieldEnum)[keyof typ
 export const CompatibilityRuleScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  description: 'description',
+  type: 'type',
   sourceSpecId: 'sourceSpecId',
   targetSpecId: 'targetSpecId',
   operator: 'operator',
+  scopeId: 'scopeId',
   message: 'message',
+  messageTemplate: 'messageTemplate',
   severity: 'severity',
-  scopeId: 'scopeId'
+  logic: 'logic',
+  priority: 'priority',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type CompatibilityRuleScalarFieldEnum = (typeof CompatibilityRuleScalarFieldEnum)[keyof typeof CompatibilityRuleScalarFieldEnum]
@@ -618,8 +640,11 @@ export type CompatibilityScopeScalarFieldEnum = (typeof CompatibilityScopeScalar
 export const DerivedSpecScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  description: 'description',
   resultSpecId: 'resultSpecId',
-  formula: 'formula'
+  formula: 'formula',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type DerivedSpecScalarFieldEnum = (typeof DerivedSpecScalarFieldEnum)[keyof typeof DerivedSpecScalarFieldEnum]

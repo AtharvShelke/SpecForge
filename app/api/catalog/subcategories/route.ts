@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   CatalogService,
-  ServiceError,
   createSubCategory,
 } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function GET(request: Request) {
   try {

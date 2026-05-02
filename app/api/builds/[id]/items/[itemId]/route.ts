@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { removeBuildItem } from "@/services/build.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function DELETE(
   req: NextRequest,

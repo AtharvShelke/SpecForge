@@ -2,19 +2,24 @@
 
 import { useMemo, useState, useEffect, useCallback, memo } from "react";
 import { useAdmin } from "@/context/AdminContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   CategoryFilterConfig,
   CategoryNode,
   FilterDefinition,
+  FilterOverrideItem,
   SpecDefinition,
   SubCategory,
   UpdateSpecInput,
 } from "@/types";
+import { apiFetch } from "@/lib/helpers";
 import { CATEGORY_NAMES } from "@/lib/categoryUtils";
 import {
   ChevronDown,
   ChevronRight,
   Edit,
+  Eye,
+  EyeOff,
   Folder,
   GripVertical,
   Layers,
@@ -23,6 +28,7 @@ import {
   Trash,
   X,
   Save,
+  Check,
   AlertTriangle,
   FolderOpen,
   RefreshCw,
@@ -538,6 +544,7 @@ const EMPTY_SPEC_FORM: UpdateSpecInput = {
 // ─────────────────────────────────────────────────────────────
 
 const CategoryManager = () => {
+  const { toast } = useToast();
   const admin = useAdmin() as unknown as {
     categoryHierarchy: CategoryNode[];
     refreshCategoryHierarchy: () => Promise<void>;
@@ -592,10 +599,23 @@ const CategoryManager = () => {
 
   useEffect(() => {
     if (!selectedSubCategoryId) return;
-    refreshSpecs(selectedSubCategoryId).catch((error) => {
-      console.error("Failed to load filter schema", error);
-    });
-  }, [refreshSpecs, selectedSubCategoryId]);
+    const sub = subCategories.find((s) => s.id === selectedSubCategoryId);
+    const categoryName = sub?.category?.name ?? "";
+    Promise.all([
+      refreshSpecs(selectedSubCategoryId).catch((error) => {
+        console.error("Failed to load filter schema", error);
+      }),
+      categoryName
+        ? apiFetch<FilterOverrideItem[]>(
+            `/api/admin/builder-filters?category=${encodeURIComponent(categoryName)}`,
+          )
+            .then((data) =>
+              setOverrides(Array.isArray(data) ? data : []),
+            )
+            .catch(() => setOverrides([]))
+        : Promise.resolve(),
+    ]);
+  }, [refreshSpecs, selectedSubCategoryId, subCategories]);
 
   // ── Hierarchy state ──
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -618,6 +638,11 @@ const CategoryManager = () => {
   const [showSpecModal, setShowSpecModal] = useState(false);
   const [editingSpecId, setEditingSpecId] = useState<string | null>(null);
   const [specForm, setSpecForm] = useState<UpdateSpecInput>(EMPTY_SPEC_FORM);
+
+  // ── Builder-override state (inlined from BuilderFiltersTab) ──
+  const [overrides, setOverrides] = useState<FilterOverrideItem[]>([]);
+  const [savingOverride, setSavingOverride] = useState<string | null>(null);
+  const [savedOverride, setSavedOverride] = useState<string | null>(null);
 
   // ── Builder state ──
   const [showBuilderModal, setShowBuilderModal] = useState(false);
@@ -654,7 +679,7 @@ const CategoryManager = () => {
   const cancelNodeEdit = useCallback(() => setEditingNodePath(null), []);
   const cancelAddRoot = useCallback(() => setIsAddingRoot(false), []);
 
-  const saveNode = useCallback(() => {
+  const saveNode = useCallback(async () => {
     if (!editingNodePath && !isAddingRoot) return;
     const newTree = JSON.parse(JSON.stringify(categories));
     if (isAddingRoot) {
@@ -676,7 +701,20 @@ const CategoryManager = () => {
         current = current.children![path[i]];
       Object.assign(current, nodeForm);
     }
-    updateCategories(newTree).then(() => refreshCategoryHierarchy());
+    try {
+      await updateCategories(newTree);
+      await refreshCategoryHierarchy();
+      toast({
+        title: "Category hierarchy updated",
+        description: "The changes have been saved successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update hierarchy",
+        description: error.message || "An unexpected error occurred.",
+      });
+    }
     setEditingNodePath(null);
     setIsAddingRoot(false);
     setNodeForm(EMPTY_NODE_FORM);
@@ -687,6 +725,7 @@ const CategoryManager = () => {
     nodeForm,
     updateCategories,
     refreshCategoryHierarchy,
+    toast,
   ]);
 
   const deleteNode = useCallback(
@@ -696,7 +735,7 @@ const CategoryManager = () => {
   );
 
   const confirmDeleteNode = useCallback(
-    (pathStr: string) => {
+    async (pathStr: string) => {
       const newTree = JSON.parse(JSON.stringify(categories));
       const path = pathStr.split("-").map(Number);
       if (path.length === 1) {
@@ -707,9 +746,22 @@ const CategoryManager = () => {
           parent = parent.children![path[i]];
         parent.children!.splice(path[path.length - 1], 1);
       }
-      updateCategories(newTree).then(() => refreshCategoryHierarchy());
+      try {
+        await updateCategories(newTree);
+        await refreshCategoryHierarchy();
+        toast({
+          title: "Category deleted",
+          description: "The category and its subcategories have been removed.",
+        });
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Failed to delete category",
+          description: error.message || "An unexpected error occurred.",
+        });
+      }
     },
-    [categories, updateCategories, refreshCategoryHierarchy],
+    [categories, updateCategories, refreshCategoryHierarchy, toast],
   );
 
   const activeFilters = useMemo<FilterDefinition[]>(
@@ -725,6 +777,56 @@ const CategoryManager = () => {
         (subCategory) => subCategory.id === selectedSubCategoryId,
       ) ?? null,
     [selectedSubCategoryId, subCategories],
+  );
+
+  const overrideMap = useMemo(() => {
+    const map = new Map<string, FilterOverrideItem>();
+    overrides.forEach((o) => map.set(o.specDefinitionId, o));
+    return map;
+  }, [overrides]);
+
+  const handleSaveSpecOverride = useCallback(
+    async (
+      specId: string,
+      categoryName: string,
+      data: Partial<FilterOverrideItem>,
+    ) => {
+      const key = specId;
+      setSavingOverride(key);
+      try {
+        const result = await apiFetch<FilterOverrideItem>(
+          "/api/admin/builder-filters",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              specDefinitionId: specId,
+              categoryName,
+              ...data,
+            }),
+          },
+        );
+        setOverrides((prev) => {
+          const idx = prev.findIndex((o) => o.specDefinitionId === specId);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = result;
+            return next;
+          }
+          return [...prev, result];
+        });
+        setSavedOverride(key);
+        setTimeout(() => setSavedOverride(null), 1500);
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Failed to save override",
+          description: error.message || "An error occurred while saving the PC Builder setting.",
+        });
+      } finally {
+        setSavingOverride(null);
+      }
+    },
+    [toast],
   );
 
   const openBuilderConfig = useCallback(() => {
@@ -753,37 +855,63 @@ const CategoryManager = () => {
           body: JSON.stringify(builderForm),
         },
       );
-      if (!response.ok) throw new Error("Failed to save");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to save builder config");
+      }
       await admin.syncData();
+      toast({
+        title: "Settings saved",
+        description: "PC Builder configuration updated successfully.",
+      });
       setShowBuilderModal(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save builder config", error);
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: error.message || "Could not save PC Builder settings.",
+      });
     } finally {
       setIsSavingBuilder(false);
     }
-  }, [selectedSubCategoryId, builderForm, admin]);
+  }, [selectedSubCategoryId, builderForm, admin, toast]);
 
   const activeSpecs = useMemo(
     () => specs.filter((spec) => spec.subCategoryId === selectedSubCategoryId),
     [selectedSubCategoryId, specs],
   );
 
-  const handleSaveFilter = useCallback(() => {
+  const handleSaveFilter = useCallback(async () => {
     if (!filterForm.key || !filterForm.label) return;
     const newFilters = [...activeFilters];
     const filterData = filterForm as FilterDefinition;
     if (editingFilterIdx !== null) newFilters[editingFilterIdx] = filterData;
     else newFilters.push(filterData);
-    updateFilterConfig(selectedCatForFilters, newFilters);
-    setShowFilterModal(false);
-    setFilterForm(EMPTY_FILTER_FORM);
-    setEditingFilterIdx(null);
+
+    try {
+      await updateFilterConfig(selectedCatForFilters, newFilters);
+      toast({
+        title: "Filter config saved",
+        description: `Successfully updated filters for ${selectedCatForFilters}`,
+      });
+      setShowFilterModal(false);
+      setFilterForm(EMPTY_FILTER_FORM);
+      setEditingFilterIdx(null);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: error.message || "Could not update filter configuration.",
+      });
+    }
   }, [
     filterForm,
     activeFilters,
     editingFilterIdx,
     updateFilterConfig,
     selectedCatForFilters,
+    toast,
   ]);
 
   const handleDeleteFilter = useCallback(
@@ -808,12 +936,24 @@ const CategoryManager = () => {
   );
 
   const confirmDeleteFilter = useCallback(
-    (idx: number) => {
+    async (idx: number) => {
       const newFilters = [...activeFilters];
       newFilters.splice(idx, 1);
-      updateFilterConfig(selectedCatForFilters, newFilters);
+      try {
+        await updateFilterConfig(selectedCatForFilters, newFilters);
+        toast({
+          title: "Filter removed",
+          description: "The filter has been removed from the configuration.",
+        });
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Delete failed",
+          description: error.message || "Could not remove the filter.",
+        });
+      }
     },
-    [activeFilters, updateFilterConfig, selectedCatForFilters],
+    [activeFilters, updateFilterConfig, selectedCatForFilters, toast],
   );
 
   const handleConfirmDelete = useCallback(() => {
@@ -1002,51 +1142,84 @@ const CategoryManager = () => {
       ),
     };
 
-    if (editingSpecId) {
-      await updateSpec(editingSpecId, payload);
-    } else {
-      const response = await fetch("/api/catalog/specs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subCategoryId: selectedSubCategoryId,
-          name: payload.name ?? "",
-          valueType: payload.valueType ?? "STRING",
-          isFilterable: payload.isFilterable,
-          isRange: payload.isRange,
-          isMulti: payload.isMulti,
-          filterGroup: payload.filterGroup ?? undefined,
-          filterOrder: payload.filterOrder ?? undefined,
-          options: payload.options,
-        }),
+    try {
+      if (editingSpecId) {
+        await updateSpec(editingSpecId, payload);
+      } else {
+        const response = await fetch("/api/catalog/specs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subCategoryId: selectedSubCategoryId,
+            name: payload.name ?? "",
+            valueType: payload.valueType ?? "STRING",
+            isFilterable: payload.isFilterable,
+            isRange: payload.isRange,
+            isMulti: payload.isMulti,
+            filterGroup: payload.filterGroup ?? undefined,
+            filterOrder: payload.filterOrder ?? undefined,
+            options: payload.options,
+          }),
+        });
+        if (!response.ok) {
+          const errText = await response.text();
+          let errMessage = errText;
+          try {
+            const errJson = JSON.parse(errText);
+            errMessage = errJson.error || errJson.message || errText;
+          } catch {
+            // ignore
+          }
+          throw new Error(errMessage);
+        }
+        const created = await response.json();
+        if (payload.dependencies && payload.dependencies.length > 0) {
+          await updateSpec(created.id, payload);
+        }
+      }
+
+      await refreshSpecs(selectedSubCategoryId);
+      toast({
+        title: editingSpecId ? "Filter updated" : "Filter created",
+        description: `"${payload.name}" has been ${editingSpecId ? "updated" : "created"} successfully.`,
       });
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      const created = await response.json();
-      if (payload.dependencies && payload.dependencies.length > 0) {
-        await updateSpec(created.id, payload);
-      }
+
+      setShowSpecModal(false);
+      setEditingSpecId(null);
+      setSpecForm(EMPTY_SPEC_FORM);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: editingSpecId ? "Update failed" : "Creation failed",
+        description: error.message || "An unexpected error occurred.",
+      });
     }
-
-    await refreshSpecs(selectedSubCategoryId);
-
-    setShowSpecModal(false);
-    setEditingSpecId(null);
-    setSpecForm(EMPTY_SPEC_FORM);
   }, [
     editingSpecId,
     refreshSpecs,
     selectedSubCategoryId,
     specForm,
     updateSpec,
+    toast,
   ]);
 
   const removeSpec = useCallback(
     async (spec: SpecDefinition) => {
-      await deleteSpec(spec.id, spec.subCategoryId);
+      try {
+        await deleteSpec(spec.id, spec.subCategoryId);
+        toast({
+          title: "Filter deleted",
+          description: `"${spec.name}" has been removed from the catalog.`,
+        });
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Delete failed",
+          description: error.message || "This filter is already used by products or dependencies and cannot be deleted.",
+        });
+      }
     },
-    [deleteSpec],
+    [deleteSpec, toast],
   );
 
   const availableParentSpecs = useMemo(
@@ -1244,43 +1417,116 @@ const CategoryManager = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {activeSpecs.map((spec) => (
-                  <div
-                    key={spec.id}
-                    className="group flex items-start justify-between gap-2 px-3 py-3 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150"
-                  >
-                    <div className="min-w-0 space-y-1.5 flex-1">
-                      <p className="text-xs font-bold text-stone-800 tracking-tight truncate">
-                        {spec.name}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
-                          {spec.valueType}
-                        </span>
-                        <Pill color={spec.isFilterable ? "teal" : "stone"}>
-                          {spec.isFilterable ? "Visible" : "Hidden"}
-                        </Pill>
-                        {spec.filterGroup && (
-                          <Pill color="indigo">{spec.filterGroup}</Pill>
-                        )}
-                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                          {(spec.options ?? []).length} opts
-                        </span>
-                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                          {(spec.childOptionDeps ?? []).length} rels
-                        </span>
+                {activeSpecs.map((spec) => {
+                  const override = overrideMap.get(spec.id) ?? null;
+                  const isHidden = override?.hidden ?? false;
+                  const catName = selectedSubCategory?.category?.name ?? "";
+                  const oKey = spec.id;
+
+                  return (
+                    <div
+                      key={spec.id}
+                      className={`group flex flex-col gap-0 rounded-xl border bg-white transition-all duration-150 overflow-hidden ${
+                        isHidden
+                          ? "border-stone-100 opacity-70"
+                          : "border-stone-100 hover:border-stone-200 hover:shadow-sm"
+                      }`}
+                    >
+                      {/* ── Spec definition row ── */}
+                      <div className="flex items-start justify-between gap-2 px-3 py-3">
+                        <div className="min-w-0 space-y-1.5 flex-1">
+                          <p className="text-xs font-bold text-stone-800 tracking-tight truncate">
+                            {override?.labelOverride || spec.name}
+                            {override?.labelOverride && (
+                              <span className="ml-1.5 text-[10px] font-medium text-indigo-400 normal-case tracking-normal">
+                                ({spec.name})
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
+                              {spec.valueType}
+                            </span>
+                            <Pill color={spec.isFilterable ? "teal" : "stone"}>
+                              {spec.isFilterable ? "Visible" : "Hidden"}
+                            </Pill>
+                            {spec.isRange && (
+                              <Pill color="amber">Range</Pill>
+                            )}
+                            {spec.filterGroup && (
+                              <Pill color="indigo">
+                                {override?.groupOverride || spec.filterGroup}
+                              </Pill>
+                            )}
+                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                              {(spec.options ?? []).length} opts
+                            </span>
+                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                              {(spec.childOptionDeps ?? []).length} rels
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
+                          <ActionBtn onClick={() => openEditSpec(spec)}>
+                            <Edit size={12} />
+                          </ActionBtn>
+                          <ActionBtn danger onClick={() => removeSpec(spec)}>
+                            <Trash size={12} />
+                          </ActionBtn>
+                        </div>
                       </div>
+
+                      {/* ── PC Builder override row ── */}
+                      {catName && (
+                        <div className="flex items-center gap-2 px-3 py-2 border-t border-stone-50 bg-stone-50/60">
+                          <span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest shrink-0">
+                            Builder
+                          </span>
+                          <input
+                            type="text"
+                            placeholder={spec.name}
+                            defaultValue={override?.labelOverride ?? ""}
+                            key={`lbl-${spec.id}-${override?.labelOverride}`}
+                            onBlur={(e) => {
+                              const val = e.target.value.trim();
+                              const current = override?.labelOverride ?? "";
+                              if (val !== current) {
+                                handleSaveSpecOverride(spec.id, catName, {
+                                  labelOverride: val || null,
+                                  hidden: isHidden,
+                                });
+                              }
+                            }}
+                            className="flex-1 min-w-0 px-2 py-1 text-[11px] bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-200 placeholder:text-stone-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleSaveSpecOverride(spec.id, catName, {
+                                hidden: !isHidden,
+                                labelOverride: override?.labelOverride ?? null,
+                              })
+                            }
+                            className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors shrink-0 ${
+                              isHidden
+                                ? "text-stone-300 hover:text-indigo-500 hover:bg-indigo-50"
+                                : "text-indigo-500 hover:text-stone-400 hover:bg-stone-100"
+                            }`}
+                            title={isHidden ? "Show in builder" : "Hide from builder"}
+                          >
+                            {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                          {savingOverride === oKey && (
+                            <Save size={11} className="text-indigo-300 animate-pulse shrink-0" />
+                          )}
+                          {savedOverride === oKey && (
+                            <Check size={11} className="text-emerald-500 shrink-0" />
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
-                      <ActionBtn onClick={() => openEditSpec(spec)}>
-                        <Edit size={12} />
-                      </ActionBtn>
-                      <ActionBtn danger onClick={() => removeSpec(spec)}>
-                        <Trash size={12} />
-                      </ActionBtn>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

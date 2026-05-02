@@ -102,19 +102,23 @@ import { cn } from "@/lib/utils";
 // STATIC DATA & TYPES
 // ─────────────────────────────────────────────────────────────
 
-const BILLING_PROFILE: BillingProfile = {
-  id: "prof_default",
-  companyName: "Computer Store Store",
-  legalName: "Computer Store Private Limited",
-  email: "billing@nexushardware.com",
-  phone: "+91 80000 12345",
-  addressLine1: "123, Tech Park",
-  addressLine2: "MG Road",
-  city: "Bengaluru",
-  state: "Karnataka",
-  postalCode: "560001",
+// BILLING_PROFILE is no longer hardcoded here.
+// It is fetched from the database via BillingContext.billingProfile
+// and passed into buildInvoiceHtml() at the call site.
+// A fallback stub is used only if the profile hasn't loaded yet.
+const BILLING_PROFILE_STUB: BillingProfile = {
+  id: "",
+  companyName: "Your Company",
+  legalName: "",
+  email: "",
+  phone: "",
+  addressLine1: "",
+  addressLine2: null,
+  city: "",
+  state: "",
+  postalCode: "",
   country: "India",
-  gstin: "29ABCDE1234F1Z5",
+  gstin: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
@@ -1754,7 +1758,8 @@ const BillingInvoices: React.FC = () => {
   };
 
   const handlePrint = (invoice: Invoice) => {
-    const html = buildInvoiceHtml(invoice, BILLING_PROFILE);
+    const profile = billingProfile ?? BILLING_PROFILE_STUB;
+    const html = buildInvoiceHtml(invoice, profile);
     const win = window.open("", "_blank", "width=900,height=700");
     if (win) {
       win.document.write(html);
@@ -1765,7 +1770,8 @@ const BillingInvoices: React.FC = () => {
   };
 
   const handleDownload = (invoice: Invoice) => {
-    const html = buildInvoiceHtml(invoice, BILLING_PROFILE);
+    const profile = billingProfile ?? BILLING_PROFILE_STUB;
+    const html = buildInvoiceHtml(invoice, profile);
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

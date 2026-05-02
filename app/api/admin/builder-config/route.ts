@@ -1,27 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { DEFAULT_BUILDER_SETTINGS } from '@/types';
+import { DEFAULT_BUILDER_SETTINGS, BuilderSettings } from '@/types';
+import { getBuilderSettings } from '@/lib/builderConfig';
+import { z } from 'zod';
+
+/** Runtime schema for BuilderSettings — validates incoming POST body. */
+const BuilderSettingsSchema = z.object({
+  defaultExpandedCategory: z.string().nullable().optional(),
+  autoOpenNextCategory: z.boolean().optional(),
+  enforceCompatibility: z.boolean().optional(),
+  showWarnings: z.boolean().optional(),
+  allowIncompatibleCheckout: z.boolean().optional(),
+  powerCalculationMode: z
+    .enum(['static', 'spec_based', 'rule_based'])
+    .optional(),
+  powerDefaults: z.object({
+    baseWattage: z.number().min(0).optional(),
+    cpuDefaultWattage: z.number().min(0).optional(),
+    gpuDefaultWattage: z.number().min(0).optional(),
+    ramWattagePerStick: z.number().min(0).optional(),
+    storageWattagePerDrive: z.number().min(0).optional(),
+  }).optional(),
+  tdpBands: z.object({
+    low: z.object({
+      max: z.number().min(0).optional(),
+      label: z.string().optional(),
+    }).optional(),
+    balanced: z.object({
+      min: z.number().min(0).optional(),
+      max: z.number().min(0).optional(),
+      label: z.string().optional(),
+    }).optional(),
+    high: z.object({
+      min: z.number().min(0).optional(),
+      label: z.string().optional(),
+    }).optional(),
+  }).optional(),
+  pricePresets: z.array(z.object({
+    id: z.string().optional(),
+    label: z.string().optional(),
+    min: z.number().min(0).optional(),
+    max: z.number().min(0).optional(),
+  })).optional(),
+}).strict(); // reject unknown keys
 
 /**
  * GET /api/admin/builder-config
- * Returns the global builder configuration. Creates default if none exists.
+ * Returns the global builder configuration.
+ * Delegates to getBuilderSettings() which handles the create-if-missing fallback.
  */
 export async function GET() {
   try {
-    let config = await prisma.builderConfig.findUnique({
-      where: { id: 'default' },
-    });
-
-    if (!config) {
-      config = await prisma.builderConfig.create({
-        data: {
-          id: 'default',
-          settings: DEFAULT_BUILDER_SETTINGS as any,
-        },
-      });
-    }
-
-    return NextResponse.json(config);
+    const settings = await getBuilderSettings();
+    return NextResponse.json({ settings });
   } catch (error) {
     console.error('[builder-config] GET error:', error);
     return NextResponse.json(
@@ -47,8 +78,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Merge with defaults to ensure all keys present
-    const merged = { ...DEFAULT_BUILDER_SETTINGS, ...settings };
+    // Runtime validation — rejects unknown or wrongly-typed fields
+    const parsed = BuilderSettingsSchema.safeParse(settings);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid settings', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    // Merge validated partial with current defaults so all keys are always present
+    const merged = { ...DEFAULT_BUILDER_SETTINGS, ...parsed.data };
 
     const config = await prisma.builderConfig.upsert({
       where: { id: 'default' },

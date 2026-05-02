@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateReservation } from "@/services/inventory.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function PATCH(
   req: NextRequest,

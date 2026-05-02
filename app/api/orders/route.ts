@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listOrders, createOrder } from "@/services/order.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 import { serializeOrder, serializeOrders } from "@/lib/adminSerializers";
 import { getSessionUser } from "@/lib/auth";
 import { Role } from "@/types";

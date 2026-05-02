@@ -7,9 +7,732 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─────────────────────────────────────────────────
-// ENUMS
-// ─────────────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Brand {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  products  Product[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([deletedAt])
+}
+
+model Category {
+  id                  String              @id @default(uuid())
+  name                String              @unique
+  description         String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+  categoryHierarchies CategoryHierarchy[]
+  subCategories       SubCategory[]
+}
+
+model SubCategory {
+  id                        String               @id @default(uuid())
+  name                      String
+  description               String?
+  categoryId                String
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  deletedAt                 DateTime?
+  isBuilderEnabled          Boolean              @default(false)
+  isCore                    Boolean              @default(false)
+  isRequired                Boolean              @default(false)
+  allowMultiple             Boolean              @default(false)
+  builderOrder              Int                  @default(0)
+  icon                      String?
+  shortLabel                String?
+  sourceCompatibilityScopes CompatibilityScope[] @relation("scopeSource")
+  targetCompatibilityScopes CompatibilityScope[] @relation("scopeTarget")
+  products                  Product[]
+  specDefinitions           SpecDefinition[]
+  category                  Category             @relation(fields: [categoryId], references: [id])
+  subCategorySlots          SubCategorySlot[]
+
+  @@unique([categoryId, name])
+}
+
+model CategoryHierarchy {
+  id         String              @id @default(uuid())
+  label      String
+  categoryId String?
+  query      String?
+  brand      String?
+  parentId   String?
+  sortOrder  Int                 @default(0)
+  category   Category?           @relation(fields: [categoryId], references: [id])
+  parent     CategoryHierarchy?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children   CategoryHierarchy[] @relation("CategoryTree")
+
+  @@index([parentId])
+  @@index([sortOrder])
+  @@index([categoryId])
+}
+
+model SpecDefinition {
+  id               String                 @id @default(uuid())
+  subCategoryId    String
+  name             String
+  valueType        SpecValueType
+  isFilterable     Boolean                @default(true)
+  isRange          Boolean                @default(false)
+  isMulti          Boolean                @default(false)
+  filterGroup      String?
+  filterOrder      Int?
+  sourceRules      CompatibilityRule[]    @relation("ruleSource")
+  targetRules      CompatibilityRule[]    @relation("ruleTarget")
+  derivedSpecs     DerivedSpec[]
+  filterOverrides  FilterOverride[]
+  subCategory      SubCategory            @relation(fields: [subCategoryId], references: [id])
+  options          SpecOption[]
+  childOptionDeps  SpecOptionDependency[] @relation("SOD_ChildSpec")
+  parentOptionDeps SpecOptionDependency[] @relation("SOD_ParentSpec")
+  variantSpecs     VariantSpec[]
+
+  @@unique([subCategoryId, name])
+  @@index([subCategoryId, isFilterable, filterOrder])
+}
+
+model VariantSpec {
+  id          String         @id @default(uuid())
+  variantId   String
+  specId      String
+  optionId    String?
+  valueString String?
+  valueNumber Float?
+  valueBool   Boolean?
+  option      SpecOption?    @relation(fields: [optionId], references: [id])
+  spec        SpecDefinition @relation(fields: [specId], references: [id])
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([variantId, specId])
+  @@index([specId, optionId])
+}
+
+model SpecOptionDependency {
+  id             String         @id @default(uuid())
+  parentSpecId   String
+  parentOptionId String
+  childSpecId    String
+  childOptionId  String?
+  childOption    SpecOption?    @relation("SOD_ChildOption", fields: [childOptionId], references: [id])
+  childSpec      SpecDefinition @relation("SOD_ChildSpec", fields: [childSpecId], references: [id])
+  parentOption   SpecOption     @relation("SOD_ParentOption", fields: [parentOptionId], references: [id])
+  parentSpec     SpecDefinition @relation("SOD_ParentSpec", fields: [parentSpecId], references: [id])
+
+  @@unique([parentSpecId, parentOptionId, childSpecId, childOptionId])
+  @@index([parentSpecId, parentOptionId])
+}
+
+model SpecOption {
+  id               String                 @id @default(uuid())
+  specId           String
+  value            String
+  label            String?
+  order            Int?
+  parentOptionId   String?
+  parentOption     SpecOption?            @relation("OptionTree", fields: [parentOptionId], references: [id])
+  children         SpecOption[]           @relation("OptionTree")
+  spec             SpecDefinition         @relation(fields: [specId], references: [id])
+  childOptionDeps  SpecOptionDependency[] @relation("SOD_ChildOption")
+  parentOptionDeps SpecOptionDependency[] @relation("SOD_ParentOption")
+  variantSpecs     VariantSpec[]
+}
+
+model ProductMedia {
+  id        String  @id @default(uuid())
+  productId String
+  url       String
+  altText   String?
+  sortOrder Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([productId, sortOrder])
+}
+
+model Product {
+  id              String           @id @default(uuid())
+  slug            String           @unique @default(uuid())
+  name            String
+  metaTitle       String?
+  metaDescription String?
+  description     String?
+  status          ProductStatus    @default(ACTIVE)
+  subCategoryId   String
+  brandId         String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  brand           Brand?           @relation(fields: [brandId], references: [id])
+  subCategory     SubCategory      @relation(fields: [subCategoryId], references: [id])
+  media           ProductMedia[]
+  variants        ProductVariant[]
+
+  @@index([status])
+  @@index([brandId])
+  @@index([slug])
+  @@index([name])
+  @@index([subCategoryId])
+  @@index([deletedAt])
+  @@index([status, name])
+  @@index([deletedAt, status, createdAt])
+}
+
+model ProductVariant {
+  id              String           @id @default(uuid())
+  productId       String
+  sku             String           @unique
+  price           Decimal
+  compareAtPrice  Decimal?
+  attributes      Json?
+  status          VariantStatus    @default(IN_STOCK)
+  deletedAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  buildGuideItems BuildGuideItem[]
+  buildItems      BuildItem[]
+  inventoryItems  InventoryItem[]
+  orderItems      OrderItem[]
+  product         Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantSpecs    VariantSpec[]
+
+  @@index([productId])
+  @@index([sku])
+  @@index([price])
+  @@index([status])
+  @@index([productId, status])
+  @@index([deletedAt])
+  @@index([productId, deletedAt])
+  @@index([status, deletedAt])
+}
+
+model Customer {
+  id           String    @id @default(uuid())
+  name         String
+  email        String
+  phone        String?
+  company      String?
+  addressLine1 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  invoices     Invoice[]
+  orders       Order[]
+
+  @@index([email])
+  @@index([name])
+}
+
+model Order {
+  id                   String               @id
+  customerName         String
+  email                String
+  phone                String?
+  date                 DateTime             @default(now())
+  subtotal             Decimal              @default(0)
+  gstAmount            Decimal              @default(0)
+  taxAmount            Decimal              @default(0)
+  discountAmount       Decimal              @default(0)
+  total                Decimal
+  status               OrderStatus          @default(PENDING)
+  version              Int                  @default(1)
+  deletedAt            DateTime?
+  customerId           String?
+  shippingStreet       String?
+  shippingCity         String?
+  shippingState        String?
+  shippingZip          String?
+  shippingCountry      String?
+  paymentMethod        String?
+  paymentTransactionId String?
+  paymentStatus        PaymentStatus?
+  idempotencyKey       String?              @unique
+  source               Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  invoices             Invoice[]
+  customer             Customer?            @relation(fields: [customerId], references: [id])
+  items                OrderItem[]
+  logs                 OrderLog[]
+  payments             PaymentTransaction[]
+  reservations         Reservation[]
+  shipments            ShipmentTracking[]
+
+  @@index([email])
+  @@index([status])
+  @@index([date])
+  @@index([status, date])
+  @@index([customerId])
+  @@index([deletedAt, status, date])
+}
+
+model OrderItem {
+  id              String         @id @default(uuid())
+  lineReference   String         @unique
+  orderId         String
+  variantId       String
+  inventoryItemId String?
+  productNumber   String
+  partNumber      String
+  serialNumber    String
+  name            String
+  category        String
+  price           Decimal
+  quantity        Int
+  image           String?
+  sku             String?
+  variantSnapshot Json?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([variantId])
+  @@index([inventoryItemId])
+  @@index([productNumber])
+}
+
+model OrderLog {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  timestamp DateTime    @default(now())
+  note      String?
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, timestamp])
+}
+
+model ShipmentTracking {
+  id                String    @id @default(uuid())
+  orderId           String
+  trackingNumber    String
+  carrier           String
+  status            String
+  estimatedDelivery DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model BuildGuide {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  category    String           @default("General")
+  total       Decimal          @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  items       BuildGuideItem[]
+
+  @@index([createdAt])
+  @@index([category, createdAt])
+}
+
+model BuildGuideItem {
+  id           String         @id @default(uuid())
+  buildGuideId String
+  variantId    String
+  quantity     Int            @default(1)
+  buildGuide   BuildGuide     @relation(fields: [buildGuideId], references: [id], onDelete: Cascade)
+  variant      ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([buildGuideId, variantId])
+  @@index([buildGuideId])
+}
+
+model InvoiceSequence {
+  id           String @id @default("invoice_seq")
+  currentValue Int    @default(0)
+}
+
+model BillingProfile {
+  id           String   @id @default(uuid())
+  companyName  String
+  legalName    String?
+  email        String
+  phone        String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  postalCode   String
+  country      String
+  gstin        String?
+  logoUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Invoice {
+  id            String              @id @default(uuid())
+  invoiceNumber String              @unique
+  orderId       String?
+  type          InvoiceType         @default(STANDARD)
+  status        InvoiceStatus       @default(DRAFT)
+  customerId    String
+  subtotal      Decimal             @default(0)
+  taxTotal      Decimal             @default(0)
+  discountPct   Decimal             @default(0)
+  shipping      Decimal             @default(0)
+  total         Decimal             @default(0)
+  amountPaid    Decimal             @default(0)
+  amountDue     Decimal             @default(0)
+  notes         String?
+  sentAt        DateTime?
+  refundedAt    DateTime?
+  cancelledAt   DateTime?
+  paidAt        DateTime?
+  voidedAt      DateTime?
+  createdAt     DateTime            @default(now())
+  dueDate       DateTime
+  lastUpdatedAt DateTime            @updatedAt
+  customer      Customer            @relation(fields: [customerId], references: [id])
+  order         Order?              @relation(fields: [orderId], references: [id])
+  audit         InvoiceAuditEvent[]
+  lineItems     InvoiceLineItem[]
+
+  @@index([customerId])
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InvoiceLineItem {
+  id              String  @id @default(uuid())
+  invoiceId       String
+  orderItemId     String?
+  inventoryItemId String?
+  lineReference   String?
+  name            String
+  description     String?
+  productNumber   String?
+  partNumber      String?
+  serialNumber    String?
+  quantity        Int
+  unitPrice       Decimal
+  taxRatePct      Decimal @default(18)
+  hsnCode         String?
+  invoice         Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([orderItemId])
+  @@index([inventoryItemId])
+}
+
+model InvoiceAuditEvent {
+  id        String   @id @default(uuid())
+  invoiceId String
+  type      String
+  actor     String
+  message   String?
+  createdAt DateTime @default(now())
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, createdAt])
+}
+
+model TaxSettings {
+  id              String   @id @default("tax_config")
+  taxRatePct      Decimal  @default(18)
+  taxName         String   @default("GST")
+  taxDescription  String?
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentTransaction {
+  id             String            @id @default(uuid())
+  orderId        String
+  method         PaymentMethodType
+  gatewayTxnId   String?           @unique
+  amount         Decimal
+  status         PaymentStatus     @default(INITIATED)
+  idempotencyKey String            @unique
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  paymentProofs  PaymentProof[]
+  order          Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model PaymentProof {
+  id                 String             @id @default(uuid())
+  transactionId      String
+  proofUrl           String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  paymentTransaction PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  actor      String   @default("System")
+  before     Json?
+  after      Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actor])
+  @@index([createdAt])
+}
+
+model InventoryItem {
+  id               String                @id @default(uuid())
+  variantId        String
+  trackingType     InventoryTrackingType @default(BULK)
+  serialNumber     String?               @unique
+  partNumber       String?
+  quantityOnHand   Int                   @default(0)
+  quantityReserved Int                   @default(0)
+  status           InventoryStatus       @default(IN_STOCK)
+  costPrice        Decimal?
+  batchNumber      String?
+  receivedAt       DateTime?
+  notes            String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  variant          ProductVariant        @relation(fields: [variantId], references: [id])
+  orderItems       OrderItem[]
+  reservations     Reservation[]
+
+  @@index([variantId, status])
+  @@index([serialNumber])
+  @@index([trackingType, status])
+  @@index([variantId, trackingType])
+  @@index([status, variantId])
+}
+
+model Reservation {
+  id              String            @id @default(uuid())
+  orderId         String
+  inventoryItemId String
+  quantity        Int               @default(1)
+  status          ReservationStatus @default(ACTIVE)
+  expiresAt       DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  inventoryItem   InventoryItem     @relation(fields: [inventoryItemId], references: [id])
+  order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([inventoryItemId, status])
+  @@index([expiresAt, status])
+  @@index([orderId, inventoryItemId])
+}
+
+model Build {
+  id                        String                     @id @default(uuid())
+  name                      String
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  buildCompatibilityResults BuildCompatibilityResult[]
+  items                     BuildItem[]
+}
+
+model BuildItem {
+  id        String         @id @default(uuid())
+  buildId   String
+  variantId String
+  slotId    String
+  build     Build          @relation(fields: [buildId], references: [id])
+  slot      PartSlot       @relation(fields: [slotId], references: [id])
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([buildId, slotId])
+  @@index([buildId, slotId])
+}
+
+model PartSlot {
+  id               String            @id @default(uuid())
+  name             String            @unique
+  maxItems         Int?
+  minItems         Int?
+  buildItems       BuildItem[]
+  slotConstraint   SlotConstraint?
+  subCategorySlots SubCategorySlot[]
+}
+
+model CompatibilityRule {
+  id                  String                 @id @default(uuid())
+  name                String
+  description         String?
+  type                RuleType               @default(PAIR)
+  sourceSpecId        String?
+  targetSpecId        String?
+  operator            CompatibilityOperator?
+  scopeId             String?
+  message             String
+  messageTemplate     String?
+  severity            CompatibilitySeverity
+  logic               Json?
+  priority            Int                    @default(0)
+  enabled             Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  compatibilityChecks CompatibilityCheck[]
+  scope               CompatibilityScope?    @relation(fields: [scopeId], references: [id])
+  sourceSpec          SpecDefinition?        @relation("ruleSource", fields: [sourceSpecId], references: [id])
+  targetSpec          SpecDefinition?        @relation("ruleTarget", fields: [targetSpecId], references: [id])
+
+  @@index([scopeId])
+  @@index([sourceSpecId])
+  @@index([targetSpecId])
+  @@index([enabled, priority])
+  @@index([type, enabled])
+}
+
+model CompatibilityScope {
+  id                  String              @id @default(uuid())
+  sourceSubCategoryId String
+  targetSubCategoryId String
+  rules               CompatibilityRule[]
+  sourceSubCategory   SubCategory         @relation("scopeSource", fields: [sourceSubCategoryId], references: [id])
+  targetSubCategory   SubCategory         @relation("scopeTarget", fields: [targetSubCategoryId], references: [id])
+
+  @@unique([sourceSubCategoryId, targetSubCategoryId])
+}
+
+model DerivedSpec {
+  id           String         @id @default(uuid())
+  name         String         @unique
+  description  String?
+  resultSpecId String
+  formula      String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  resultSpec   SpecDefinition @relation(fields: [resultSpecId], references: [id])
+}
+
+model BuildCompatibilityResult {
+  id           String               @id @default(uuid())
+  buildId      String
+  isCompatible Boolean
+  createdAt    DateTime             @default(now())
+  build        Build                @relation(fields: [buildId], references: [id])
+  checks       CompatibilityCheck[]
+
+  @@index([buildId])
+}
+
+model CompatibilityCheck {
+  id              String                   @id @default(uuid())
+  resultId        String
+  ruleId          String
+  sourceVariantId String?
+  targetVariantId String?
+  passed          Boolean
+  message         String
+  severity        CompatibilitySeverity
+  result          BuildCompatibilityResult @relation(fields: [resultId], references: [id])
+  rule            CompatibilityRule        @relation(fields: [ruleId], references: [id])
+
+  @@index([resultId])
+  @@index([ruleId])
+}
+
+model SlotConstraint {
+  id       String   @id @default(uuid())
+  slotId   String   @unique
+  minItems Int
+  maxItems Int
+  slot     PartSlot @relation(fields: [slotId], references: [id])
+}
+
+model VariantCompatibilityCache {
+  id         String   @id @default(uuid())
+  variantAId String
+  variantBId String
+  compatible Boolean
+  message    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([variantAId, variantBId])
+  @@index([variantAId])
+}
+
+model SubCategorySlot {
+  id            String      @id @default(uuid())
+  subCategoryId String
+  slotId        String
+  slot          PartSlot    @relation(fields: [slotId], references: [id])
+  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+
+  @@unique([subCategoryId, slotId])
+}
+
+model BuilderConfig {
+  id        String   @id @default("default")
+  settings  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BuilderUIRule {
+  id        String            @id @default(uuid())
+  name      String
+  category  String
+  specKey   String
+  operator  String
+  value     String
+  action    BuilderRuleAction
+  priority  Int               @default(0)
+  enabled   Boolean           @default(true)
+  metadata  Json?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([category])
+  @@index([enabled, priority])
+}
+
+model FilterOverride {
+  id               String         @id @default(uuid())
+  specDefinitionId String
+  categoryName     String
+  labelOverride    String?
+  hidden           Boolean        @default(false)
+  displayOrder     Int            @default(0)
+  groupOverride    String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  specDefinition   SpecDefinition @relation(fields: [specDefinitionId], references: [id])
+
+  @@unique([specDefinitionId, categoryName])
+  @@index([categoryName])
+}
 
 enum OrderStatus {
   PENDING
@@ -81,7 +804,6 @@ enum ProductStatus {
   ARCHIVED
 }
 
-// FIX: ProductVariant.status was String — now typed
 enum VariantStatus {
   IN_STOCK
   OUT_OF_STOCK
@@ -139,838 +861,11 @@ enum ReservationStatus {
   EXPIRED
 }
 
-// ─────────────────────────────────────────────────
-// AUTH
-// ─────────────────────────────────────────────────
-
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum RuleType {
+  PAIR
+  COMPONENT
+  GLOBAL
 }
-
-// ─────────────────────────────────────────────────
-// CATALOG — Brand
-// ─────────────────────────────────────────────────
-
-model Brand {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  slug      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  @@index([name])
-  @@index([slug])
-  @@index([deletedAt])
-}
-
-// ─────────────────────────────────────────────────
-// CATALOG — Category Hierarchy & Schema
-// ─────────────────────────────────────────────────
-
-model Category {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  description String?
-
-  subCategories SubCategory[]
-
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  deletedAt           DateTime?
-  categoryHierarchies CategoryHierarchy[]
-}
-
-model SubCategory {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  // --- BUILDER CONFIGURATION ---
-  isBuilderEnabled Boolean @default(false)
-  isCore           Boolean @default(false)
-  isRequired       Boolean @default(false)
-  allowMultiple    Boolean @default(false)
-  builderOrder     Int     @default(0)
-  icon             String?
-  shortLabel       String?
-
-  products Product[]
-
-  sourceCompatibilityScopes CompatibilityScope[] @relation("scopeSource")
-  targetCompatibilityScopes CompatibilityScope[] @relation("scopeTarget")
-
-  subCategorySlots SubCategorySlot[]
-  // FIX: removed redundant specOptions, specOptionDependencies back-relations
-  // (those are reachable via specDefinitions -> options -> deps)
-  specDefinitions  SpecDefinition[]
-
-  @@unique([categoryId, name])
-}
-
-// FIX: CategoryHierarchy.category was typed as Category (model relation without FK).
-// Replaced with explicit categoryId FK.
-model CategoryHierarchy {
-  id         String              @id @default(uuid())
-  label      String
-  categoryId String?
-  query      String?
-  brand      String?
-  parentId   String?
-  sortOrder  Int                 @default(0)
-  parent     CategoryHierarchy?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children   CategoryHierarchy[] @relation("CategoryTree")
-  category   Category?           @relation(fields: [categoryId], references: [id])
-
-  @@index([parentId])
-  @@index([sortOrder])
-  @@index([categoryId])
-}
-
-// ─────────────────────────────────────────────────
-// SPECS
-// ─────────────────────────────────────────────────
-
-model SpecDefinition {
-  id String @id @default(uuid())
-
-  subCategoryId String
-  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
-
-  name      String
-  valueType SpecValueType
-
-  isFilterable Boolean @default(true)
-  isRange      Boolean @default(false)
-  isMulti      Boolean @default(false)
-
-  filterGroup String?
-  filterOrder Int?
-
-  options      SpecOption[]
-  variantSpecs VariantSpec[]
-
-  parentOptionDeps SpecOptionDependency[] @relation("SOD_ParentSpec")
-  childOptionDeps  SpecOptionDependency[] @relation("SOD_ChildSpec")
-  sourceRules      CompatibilityRule[]    @relation("ruleSource")
-  targetRules      CompatibilityRule[]    @relation("ruleTarget")
-
-  derivedSpecs DerivedSpec[]
-  filterOverrides FilterOverride[]
-
-  @@unique([subCategoryId, name])
-  @@index([subCategoryId, isFilterable, filterOrder])
-}
-
-model VariantSpec {
-  id String @id @default(uuid())
-
-  variantId String
-  specId    String
-  optionId  String?
-
-  valueString String?
-  valueNumber Float?
-  valueBool   Boolean?
-
-  variant ProductVariant @relation(fields: [variantId], references: [id])
-  spec    SpecDefinition @relation(fields: [specId], references: [id])
-  option  SpecOption?    @relation(fields: [optionId], references: [id])
-
-  @@unique([variantId, specId])
-  @@index([specId, optionId]) // common filter query
-}
-
-model SpecOptionDependency {
-  id String @id @default(uuid())
-
-  parentSpecId   String
-  parentOptionId String
-  childSpecId    String
-  childOptionId  String?
-
-  // FIX: removed optional subCategoryId — redundant, derivable via parentSpec.subCategoryId
-  parentSpec   SpecDefinition @relation("SOD_ParentSpec", fields: [parentSpecId], references: [id])
-  parentOption SpecOption     @relation("SOD_ParentOption", fields: [parentOptionId], references: [id])
-  childSpec    SpecDefinition @relation("SOD_ChildSpec", fields: [childSpecId], references: [id])
-  childOption  SpecOption?    @relation("SOD_ChildOption", fields: [childOptionId], references: [id])
-
-  @@unique([parentSpecId, parentOptionId, childSpecId, childOptionId])
-  @@index([parentSpecId, parentOptionId])
-}
-
-model SpecOption {
-  id String @id @default(uuid())
-
-  specId String
-  spec   SpecDefinition @relation(fields: [specId], references: [id])
-
-  value String
-  label String?
-  order Int?
-
-  parentOptionId String?
-  parentOption   SpecOption?  @relation("OptionTree", fields: [parentOptionId], references: [id])
-  children       SpecOption[] @relation("OptionTree")
-
-  variantSpecs VariantSpec[]
-
-  parentOptionDeps SpecOptionDependency[] @relation("SOD_ParentOption")
-  childOptionDeps  SpecOptionDependency[] @relation("SOD_ChildOption")
-}
-
-// ─────────────────────────────────────────────────
-// CATALOG — Product, Variants, Media
-// ─────────────────────────────────────────────────
-
-model ProductMedia {
-  id        String  @id @default(uuid())
-  productId String
-  url       String
-  altText   String?
-  sortOrder Int     @default(0)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-  @@index([productId, sortOrder])
-}
-
-model Product {
-  id              String        @id @default(uuid())
-  slug            String        @unique @default(uuid())
-  name            String
-  metaTitle       String?
-  metaDescription String?
-  description     String?
-  status          ProductStatus @default(ACTIVE)
-
-  subCategoryId String
-  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
-
-  brandId String?
-  brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  variants ProductVariant[]
-  media    ProductMedia[]
-
-  @@index([status])
-  @@index([brandId])
-  @@index([slug])
-  @@index([name])
-  @@index([subCategoryId])
-  @@index([deletedAt])
-  @@index([status, name])
-  @@index([deletedAt, status, createdAt])
-}
-
-model ProductVariant {
-  id             String   @id @default(uuid())
-  productId      String
-  sku            String   @unique
-  price          Decimal
-  compareAtPrice Decimal?
-  attributes     Json?
-
-  status    VariantStatus @default(IN_STOCK)
-  deletedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  variantSpecs    VariantSpec[]
-  orderItems      OrderItem[]
-  buildGuideItems BuildGuideItem[]
-  buildItems      BuildItem[] // FIX: was missing
-  inventoryItems  InventoryItem[]
-
-  @@index([productId])
-  @@index([sku])
-  @@index([price])
-  @@index([status])
-  @@index([productId, status])
-  @@index([deletedAt])
-  @@index([productId, deletedAt])
-  @@index([status, deletedAt])
-}
-
-// ─────────────────────────────────────────────────
-// CUSTOMER
-// ─────────────────────────────────────────────────
-
-model Customer {
-  id           String  @id @default(uuid())
-  name         String
-  email        String
-  phone        String?
-  company      String?
-  addressLine1 String?
-  city         String?
-  state        String?
-  postalCode   String?
-  country      String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  invoices Invoice[]
-  orders   Order[]
-
-  @@index([email])
-  @@index([name])
-}
-
-// ─────────────────────────────────────────────────
-// ORDERS & SHIPMENTS
-// ─────────────────────────────────────────────────
-
-model Order {
-  id String @id
-
-  customerName   String
-  email          String
-  phone          String?
-  date           DateTime    @default(now())
-  subtotal       Decimal     @default(0) // FIX: Float -> Decimal
-  gstAmount      Decimal     @default(0)
-  taxAmount      Decimal     @default(0)
-  discountAmount Decimal     @default(0)
-  total          Decimal
-  status         OrderStatus @default(PENDING)
-  version        Int         @default(1)
-  deletedAt      DateTime?
-
-  customerId String?
-  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-
-  shippingStreet  String?
-  shippingCity    String?
-  shippingState   String?
-  shippingZip     String?
-  shippingCountry String?
-
-  paymentMethod        String?
-  paymentTransactionId String?
-
-  paymentStatus  PaymentStatus?
-  idempotencyKey String?        @unique
-  source         Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  items        OrderItem[]
-  logs         OrderLog[]
-  invoices     Invoice[]
-  shipments    ShipmentTracking[]
-  payments     PaymentTransaction[]
-  reservations Reservation[] // FIX: was missing back-relation
-
-  @@index([email])
-  @@index([status])
-  @@index([date])
-  @@index([status, date])
-  @@index([customerId])
-  @@index([deletedAt, status, date])
-}
-
-model OrderItem {
-  id              String  @id @default(uuid())
-  lineReference   String  @unique
-  orderId         String
-  variantId       String
-  // FIX: inventoryItemId now has explicit relation
-  inventoryItemId String?
-  productNumber   String
-  partNumber      String
-  serialNumber    String
-  name            String
-  // FIX: category was typed as Category — now a plain string label for display
-  category        String
-  price           Decimal
-  quantity        Int
-  image           String?
-  sku             String?
-  variantSnapshot Json?
-
-  order         Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variant       ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
-  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id])
-
-  @@index([orderId])
-  @@index([variantId])
-  @@index([inventoryItemId])
-  @@index([productNumber])
-}
-
-model OrderLog {
-  id        String      @id @default(uuid())
-  orderId   String
-  status    OrderStatus
-  timestamp DateTime    @default(now())
-  note      String?
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId, timestamp])
-}
-
-model ShipmentTracking {
-  id                String    @id @default(uuid())
-  orderId           String
-  trackingNumber    String
-  carrier           String
-  status            String
-  estimatedDelivery DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-}
-
-model BuildGuide {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  category    String   @default("General")
-  total       Decimal  @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  items BuildGuideItem[]
-
-  @@index([createdAt])
-  @@index([category, createdAt])
-}
-
-model BuildGuideItem {
-  id           String @id @default(uuid())
-  buildGuideId String
-  variantId    String
-  quantity     Int    @default(1)
-
-  buildGuide BuildGuide     @relation(fields: [buildGuideId], references: [id], onDelete: Cascade)
-  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
-
-  @@unique([buildGuideId, variantId])
-  @@index([buildGuideId])
-}
-
-// ─────────────────────────────────────────────────
-// BILLING & INVOICES
-// ─────────────────────────────────────────────────
-
-model InvoiceSequence {
-  id           String @id @default("invoice_seq")
-  currentValue Int    @default(0)
-}
-
-model BillingProfile {
-  id           String  @id @default(uuid())
-  companyName  String
-  legalName    String?
-  email        String
-  phone        String?
-  addressLine1 String
-  addressLine2 String?
-  city         String
-  state        String
-  postalCode   String
-  country      String
-  gstin        String?
-  logoUrl      String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Invoice {
-  id            String        @id @default(uuid())
-  invoiceNumber String        @unique
-  orderId       String?
-  type          InvoiceType   @default(STANDARD)
-  status        InvoiceStatus @default(DRAFT)
-  customerId    String
-
-  subtotal    Decimal @default(0) // FIX: Float -> Decimal
-  taxTotal    Decimal @default(0)
-  discountPct Decimal @default(0)
-  shipping    Decimal @default(0)
-  total       Decimal @default(0)
-  amountPaid  Decimal @default(0)
-  amountDue   Decimal @default(0)
-
-  notes       String?
-  sentAt      DateTime?
-  refundedAt  DateTime?
-  cancelledAt DateTime?
-  paidAt      DateTime?
-  voidedAt    DateTime?
-
-  createdAt     DateTime @default(now())
-  dueDate       DateTime
-  lastUpdatedAt DateTime @updatedAt
-
-  order    Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
-
-  // FIX: removed duplicate InvoiceItem model — using InvoiceLineItem only
-  lineItems InvoiceLineItem[]
-  audit     InvoiceAuditEvent[]
-
-  @@index([customerId])
-  @@index([orderId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-// FIX: deleted InvoiceItem — was a duplicate of InvoiceLineItem.
-// InvoiceLineItem is the canonical invoice line with HSN/GST support.
-model InvoiceLineItem {
-  id          String  @id @default(uuid())
-  invoiceId   String
-  orderItemId String?
-  inventoryItemId String?
-  lineReference String?
-  name        String
-  description String?
-  productNumber String?
-  partNumber String?
-  serialNumber String?
-  quantity    Int
-  unitPrice   Decimal // FIX: Float -> Decimal
-  taxRatePct  Decimal @default(18)
-  hsnCode     String?
-
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  @@index([invoiceId])
-  @@index([orderItemId])
-  @@index([inventoryItemId])
-}
-
-model InvoiceAuditEvent {
-  id        String   @id @default(uuid())
-  invoiceId String
-  type      String
-  actor     String
-  message   String?
-  createdAt DateTime @default(now())
-  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  @@index([invoiceId, createdAt])
-}
-
-// ─────────────────────────────────────────────────
-// PAYMENT TRANSACTIONS
-// ─────────────────────────────────────────────────
-
-model PaymentTransaction {
-  id           String            @id @default(uuid())
-  orderId      String
-  method       PaymentMethodType
-  gatewayTxnId String?           @unique
-  amount       Decimal // FIX: Float -> Decimal
-
-  status         PaymentStatus @default(INITIATED)
-  idempotencyKey String        @unique
-  metadata       Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  order         Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  paymentProofs PaymentProof[]
-
-  @@index([orderId])
-  @@index([status])
-}
-
-model PaymentProof {
-  id                 String             @id @default(uuid())
-  transactionId      String
-  paymentTransaction PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  proofUrl           String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  @@index([transactionId])
-}
-
-// ─────────────────────────────────────────────────
-// AUDIT LOG
-// ─────────────────────────────────────────────────
-
-model AuditLog {
-  id         String   @id @default(uuid())
-  entityType String
-  entityId   String
-  action     String
-  actor      String   @default("System")
-  before     Json?
-  after      Json?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-
-  @@index([entityType, entityId])
-  @@index([actor])
-  @@index([createdAt]) // FIX: was already present, keeping for TTL/partition support
-}
-
-// ─────────────────────────────────────────────────
-// INVENTORY
-// ─────────────────────────────────────────────────
-
-model InventoryItem {
-  id        String @id @default(uuid())
-  variantId String
-
-  trackingType InventoryTrackingType @default(BULK)
-
-  serialNumber String? @unique
-  partNumber   String?
-
-  quantityOnHand   Int @default(0)
-  quantityReserved Int @default(0)
-
-  status InventoryStatus @default(IN_STOCK)
-
-  costPrice   Decimal?
-  batchNumber String?
-  receivedAt  DateTime?
-  notes       String?
-
-  variant ProductVariant @relation(fields: [variantId], references: [id])
-
-  orderItems   OrderItem[]
-  reservations Reservation[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([variantId, status])
-  @@index([serialNumber])
-  @@index([trackingType, status])
-  @@index([variantId, trackingType])
-  @@index([status, variantId])
-}
-
-// ─────────────────────────────────────────────────
-// RESERVATIONS
-// ─────────────────────────────────────────────────
-
-model Reservation {
-  id              String @id @default(uuid())
-  orderId         String
-  inventoryItemId String
-  quantity        Int    @default(1)
-
-  status    ReservationStatus @default(ACTIVE)
-  expiresAt DateTime?
-
-  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([orderId])
-  @@index([inventoryItemId, status])
-  @@index([expiresAt, status])
-  @@index([orderId, inventoryItemId]) // FIX: added composite for "reserved for this order" queries
-}
-
-// ─────────────────────────────────────────────────
-// BUILD (dynamic, user-assembled, compatibility-checked)
-// ─────────────────────────────────────────────────
-
-model Build {
-  id   String @id @default(uuid())
-  name String
-
-  items BuildItem[]
-
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime                   @updatedAt
-  buildCompatibilityResults BuildCompatibilityResult[]
-}
-
-model BuildItem {
-  id String @id @default(uuid())
-
-  buildId   String
-  variantId String
-  slotId    String
-
-  build   Build          @relation(fields: [buildId], references: [id])
-  variant ProductVariant @relation(fields: [variantId], references: [id])
-  slot    PartSlot       @relation(fields: [slotId], references: [id])
-
-  @@unique([buildId, slotId])
-  @@index([buildId, slotId])
-}
-
-model PartSlot {
-  id       String @id @default(uuid())
-  name     String @unique // CPU, GPU, RAM, CASE, PSU, COOLER, STORAGE, MB
-  maxItems Int?
-  minItems Int?
-
-  buildItems       BuildItem[]
-  slotConstraint   SlotConstraint?
-  subCategorySlots SubCategorySlot[]
-}
-
-// ─────────────────────────────────────────────────
-// COMPATIBILITY ENGINE
-// ─────────────────────────────────────────────────
-
-model CompatibilityRule {
-  id String @id @default(uuid())
-
-  name         String
-  sourceSpecId String
-  targetSpecId String
-  operator     CompatibilityOperator
-  message      String
-  severity     CompatibilitySeverity
-  scopeId      String
-
-  sourceSpec SpecDefinition     @relation("ruleSource", fields: [sourceSpecId], references: [id])
-  targetSpec SpecDefinition     @relation("ruleTarget", fields: [targetSpecId], references: [id])
-  scope      CompatibilityScope @relation(fields: [scopeId], references: [id])
-
-  // FIX: removed dangling implicit SpecDefinition back-relation (specDefinitionId field)
-  // that caused Prisma to error on ambiguous relations.
-  compatibilityChecks CompatibilityCheck[]
-
-  @@index([scopeId])
-  @@index([sourceSpecId])
-  @@index([targetSpecId])
-}
-
-model CompatibilityScope {
-  id String @id @default(uuid())
-
-  sourceSubCategoryId String
-  targetSubCategoryId String
-
-  sourceSubCategory SubCategory @relation("scopeSource", fields: [sourceSubCategoryId], references: [id])
-  targetSubCategory SubCategory @relation("scopeTarget", fields: [targetSubCategoryId], references: [id])
-
-  rules CompatibilityRule[]
-
-  // FIX: removed subCategoryId (third redundant FK on a two-FK join table)
-  @@unique([sourceSubCategoryId, targetSubCategoryId])
-}
-
-model DerivedSpec {
-  id           String @id @default(uuid())
-  name         String @unique
-  resultSpecId String
-  formula      String
-
-  resultSpec SpecDefinition @relation(fields: [resultSpecId], references: [id])
-}
-
-model BuildCompatibilityResult {
-  id           String   @id @default(uuid())
-  buildId      String
-  isCompatible Boolean
-  createdAt    DateTime @default(now())
-
-  checks CompatibilityCheck[]
-  build  Build                @relation(fields: [buildId], references: [id])
-
-  @@index([buildId])
-}
-
-model CompatibilityCheck {
-  id String @id @default(uuid())
-
-  resultId        String
-  ruleId          String
-  sourceVariantId String?
-  targetVariantId String?
-  passed          Boolean
-  message         String
-  severity        CompatibilitySeverity
-
-  result BuildCompatibilityResult @relation(fields: [resultId], references: [id])
-  rule   CompatibilityRule        @relation(fields: [ruleId], references: [id])
-
-  @@index([resultId])
-  @@index([ruleId])
-}
-
-model SlotConstraint {
-  id       String @id @default(uuid())
-  slotId   String
-  minItems Int
-  maxItems Int
-
-  slot PartSlot @relation(fields: [slotId], references: [id])
-
-  @@unique([slotId])
-}
-
-model VariantCompatibilityCache {
-  id         String   @id @default(uuid())
-  variantAId String
-  variantBId String
-  compatible Boolean
-  message    String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([variantAId, variantBId])
-  @@index([variantAId])
-}
-
-model SubCategorySlot {
-  id            String @id @default(uuid())
-  subCategoryId String
-  slotId        String
-
-  subCategory SubCategory @relation(fields: [subCategoryId], references: [id])
-  slot        PartSlot    @relation(fields: [slotId], references: [id])
-
-  @@unique([subCategoryId, slotId])
-}
-
-// ─────────────────────────────────────────────────
-// BUILDER CONFIGURATION (Admin-managed, replaces hardcoded constants)
-// ─────────────────────────────────────────────────
-
-model BuilderConfig {
-  id        String   @id @default("default")
-  settings  Json     // Global builder settings (JSON blob)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-
 
 enum BuilderRuleAction {
   HIGHLIGHT
@@ -978,41 +873,4 @@ enum BuilderRuleAction {
   LOCK_CATEGORY
   AUTO_SELECT
   SHOW_WARNING
-}
-
-model BuilderUIRule {
-  id        String            @id @default(uuid())
-  name      String
-  category  String            // Target category name
-  specKey   String            // Spec key to evaluate
-  operator  String            // equals, notEquals, contains, greaterThan, lessThan, in
-  value     String            // Condition value (JSON-encoded for complex values)
-  action    BuilderRuleAction // What to do when condition matches
-  priority  Int               @default(0) // Higher = evaluated first
-  enabled   Boolean           @default(true)
-  metadata  Json?             // Additional action config (e.g. which filter to hide)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([category])
-  @@index([enabled, priority])
-}
-
-model FilterOverride {
-  id              String  @id @default(uuid())
-  specDefinitionId String
-  categoryName    String  // Which category this override applies to
-  labelOverride   String? // Override the display label
-  hidden          Boolean @default(false)
-  displayOrder    Int     @default(0)
-  groupOverride   String? // Override the filter group
-
-  specDefinition SpecDefinition @relation(fields: [specDefinitionId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([specDefinitionId, categoryName])
-  @@index([categoryName])
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { CatalogService, ServiceError } from "@/services/catalog.service";
+import { CatalogService } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 
 export async function GET(request: Request) {
   try {

@@ -288,12 +288,12 @@ export type SubCategoryWhereInput = {
   builderOrder?: Prisma.IntFilter<"SubCategory"> | number
   icon?: Prisma.StringNullableFilter<"SubCategory"> | string | null
   shortLabel?: Prisma.StringNullableFilter<"SubCategory"> | string | null
-  category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
-  products?: Prisma.ProductListRelationFilter
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeListRelationFilter
   targetCompatibilityScopes?: Prisma.CompatibilityScopeListRelationFilter
-  subCategorySlots?: Prisma.SubCategorySlotListRelationFilter
+  products?: Prisma.ProductListRelationFilter
   specDefinitions?: Prisma.SpecDefinitionListRelationFilter
+  category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  subCategorySlots?: Prisma.SubCategorySlotListRelationFilter
 }
 
 export type SubCategoryOrderByWithRelationInput = {
@@ -311,12 +311,12 @@ export type SubCategoryOrderByWithRelationInput = {
   builderOrder?: Prisma.SortOrder
   icon?: Prisma.SortOrderInput | Prisma.SortOrder
   shortLabel?: Prisma.SortOrderInput | Prisma.SortOrder
-  category?: Prisma.CategoryOrderByWithRelationInput
-  products?: Prisma.ProductOrderByRelationAggregateInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeOrderByRelationAggregateInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeOrderByRelationAggregateInput
-  subCategorySlots?: Prisma.SubCategorySlotOrderByRelationAggregateInput
+  products?: Prisma.ProductOrderByRelationAggregateInput
   specDefinitions?: Prisma.SpecDefinitionOrderByRelationAggregateInput
+  category?: Prisma.CategoryOrderByWithRelationInput
+  subCategorySlots?: Prisma.SubCategorySlotOrderByRelationAggregateInput
 }
 
 export type SubCategoryWhereUniqueInput = Prisma.AtLeast<{
@@ -338,12 +338,12 @@ export type SubCategoryWhereUniqueInput = Prisma.AtLeast<{
   builderOrder?: Prisma.IntFilter<"SubCategory"> | number
   icon?: Prisma.StringNullableFilter<"SubCategory"> | string | null
   shortLabel?: Prisma.StringNullableFilter<"SubCategory"> | string | null
-  category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
-  products?: Prisma.ProductListRelationFilter
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeListRelationFilter
   targetCompatibilityScopes?: Prisma.CompatibilityScopeListRelationFilter
-  subCategorySlots?: Prisma.SubCategorySlotListRelationFilter
+  products?: Prisma.ProductListRelationFilter
   specDefinitions?: Prisma.SpecDefinitionListRelationFilter
+  category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  subCategorySlots?: Prisma.SubCategorySlotListRelationFilter
 }, "id" | "categoryId_name">
 
 export type SubCategoryOrderByWithAggregationInput = {
@@ -402,12 +402,12 @@ export type SubCategoryCreateInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
-  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionCreateNestedManyWithoutSubCategoryInput
+  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
+  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryUncheckedCreateInput = {
@@ -425,11 +425,11 @@ export type SubCategoryUncheckedCreateInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedCreateNestedManyWithoutSubCategoryInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryUpdateInput = {
@@ -446,12 +446,12 @@ export type SubCategoryUpdateInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
-  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUpdateManyWithoutSubCategoryNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryUncheckedUpdateInput = {
@@ -469,11 +469,11 @@ export type SubCategoryUncheckedUpdateInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedUpdateManyWithoutSubCategoryNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryCreateManyInput = {
@@ -743,11 +743,11 @@ export type SubCategoryCreateWithoutCategoryInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionCreateNestedManyWithoutSubCategoryInput
+  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryUncheckedCreateWithoutCategoryInput = {
@@ -764,11 +764,11 @@ export type SubCategoryUncheckedCreateWithoutCategoryInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedCreateNestedManyWithoutSubCategoryInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryCreateOrConnectWithoutCategoryInput = {
@@ -831,10 +831,10 @@ export type SubCategoryCreateWithoutSpecDefinitionsInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
-  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
+  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
+  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
 }
 
@@ -853,9 +853,9 @@ export type SubCategoryUncheckedCreateWithoutSpecDefinitionsInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
 }
 
@@ -889,10 +889,10 @@ export type SubCategoryUpdateWithoutSpecDefinitionsInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
-  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
+  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
 }
 
@@ -911,9 +911,9 @@ export type SubCategoryUncheckedUpdateWithoutSpecDefinitionsInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
 }
 
@@ -931,11 +931,11 @@ export type SubCategoryCreateWithoutProductsInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionCreateNestedManyWithoutSubCategoryInput
+  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
+  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryUncheckedCreateWithoutProductsInput = {
@@ -955,8 +955,8 @@ export type SubCategoryUncheckedCreateWithoutProductsInput = {
   shortLabel?: string | null
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedCreateNestedManyWithoutSubCategoryInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryCreateOrConnectWithoutProductsInput = {
@@ -989,11 +989,11 @@ export type SubCategoryUpdateWithoutProductsInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUpdateManyWithoutSubCategoryNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryUncheckedUpdateWithoutProductsInput = {
@@ -1013,8 +1013,8 @@ export type SubCategoryUncheckedUpdateWithoutProductsInput = {
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedUpdateManyWithoutSubCategoryNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryCreateWithoutSourceCompatibilityScopesInput = {
@@ -1031,11 +1031,11 @@ export type SubCategoryCreateWithoutSourceCompatibilityScopesInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
-  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionCreateNestedManyWithoutSubCategoryInput
+  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
+  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryUncheckedCreateWithoutSourceCompatibilityScopesInput = {
@@ -1053,10 +1053,10 @@ export type SubCategoryUncheckedCreateWithoutSourceCompatibilityScopesInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedCreateNestedManyWithoutSubCategoryInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryCreateOrConnectWithoutSourceCompatibilityScopesInput = {
@@ -1078,11 +1078,11 @@ export type SubCategoryCreateWithoutTargetCompatibilityScopesInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
-  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionCreateNestedManyWithoutSubCategoryInput
+  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
+  subCategorySlots?: Prisma.SubCategorySlotCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryUncheckedCreateWithoutTargetCompatibilityScopesInput = {
@@ -1100,10 +1100,10 @@ export type SubCategoryUncheckedCreateWithoutTargetCompatibilityScopesInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedCreateNestedManyWithoutSubCategoryInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedCreateNestedManyWithoutSubCategoryInput
 }
 
 export type SubCategoryCreateOrConnectWithoutTargetCompatibilityScopesInput = {
@@ -1136,11 +1136,11 @@ export type SubCategoryUpdateWithoutSourceCompatibilityScopesInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
-  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUpdateManyWithoutSubCategoryNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryUncheckedUpdateWithoutSourceCompatibilityScopesInput = {
@@ -1158,10 +1158,10 @@ export type SubCategoryUncheckedUpdateWithoutSourceCompatibilityScopesInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedUpdateManyWithoutSubCategoryNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryUpsertWithoutTargetCompatibilityScopesInput = {
@@ -1189,11 +1189,11 @@ export type SubCategoryUpdateWithoutTargetCompatibilityScopesInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
-  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUpdateManyWithoutSubCategoryNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryUncheckedUpdateWithoutTargetCompatibilityScopesInput = {
@@ -1211,10 +1211,10 @@ export type SubCategoryUncheckedUpdateWithoutTargetCompatibilityScopesInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedUpdateManyWithoutSubCategoryNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryCreateWithoutSubCategorySlotsInput = {
@@ -1231,11 +1231,11 @@ export type SubCategoryCreateWithoutSubCategorySlotsInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
-  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeCreateNestedManyWithoutTargetSubCategoryInput
+  products?: Prisma.ProductCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionCreateNestedManyWithoutSubCategoryInput
+  category: Prisma.CategoryCreateNestedOneWithoutSubCategoriesInput
 }
 
 export type SubCategoryUncheckedCreateWithoutSubCategorySlotsInput = {
@@ -1253,9 +1253,9 @@ export type SubCategoryUncheckedCreateWithoutSubCategorySlotsInput = {
   builderOrder?: number
   icon?: string | null
   shortLabel?: string | null
-  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutSourceSubCategoryInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedCreateNestedManyWithoutTargetSubCategoryInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutSubCategoryInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedCreateNestedManyWithoutSubCategoryInput
 }
 
@@ -1289,11 +1289,11 @@ export type SubCategoryUpdateWithoutSubCategorySlotsInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
-  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
+  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUpdateManyWithoutSubCategoryNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutSubCategoriesNestedInput
 }
 
 export type SubCategoryUncheckedUpdateWithoutSubCategorySlotsInput = {
@@ -1311,9 +1311,9 @@ export type SubCategoryUncheckedUpdateWithoutSubCategorySlotsInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedUpdateManyWithoutSubCategoryNestedInput
 }
 
@@ -1347,11 +1347,11 @@ export type SubCategoryUpdateWithoutCategoryInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUpdateManyWithoutSubCategoryNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryUncheckedUpdateWithoutCategoryInput = {
@@ -1368,11 +1368,11 @@ export type SubCategoryUncheckedUpdateWithoutCategoryInput = {
   builderOrder?: Prisma.IntFieldUpdateOperationsInput | number
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   sourceCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryNestedInput
   targetCompatibilityScopes?: Prisma.CompatibilityScopeUncheckedUpdateManyWithoutTargetSubCategoryNestedInput
-  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutSubCategoryNestedInput
   specDefinitions?: Prisma.SpecDefinitionUncheckedUpdateManyWithoutSubCategoryNestedInput
+  subCategorySlots?: Prisma.SubCategorySlotUncheckedUpdateManyWithoutSubCategoryNestedInput
 }
 
 export type SubCategoryUncheckedUpdateManyWithoutCategoryInput = {
@@ -1397,19 +1397,19 @@ export type SubCategoryUncheckedUpdateManyWithoutCategoryInput = {
  */
 
 export type SubCategoryCountOutputType = {
-  products: number
   sourceCompatibilityScopes: number
   targetCompatibilityScopes: number
-  subCategorySlots: number
+  products: number
   specDefinitions: number
+  subCategorySlots: number
 }
 
 export type SubCategoryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  products?: boolean | SubCategoryCountOutputTypeCountProductsArgs
   sourceCompatibilityScopes?: boolean | SubCategoryCountOutputTypeCountSourceCompatibilityScopesArgs
   targetCompatibilityScopes?: boolean | SubCategoryCountOutputTypeCountTargetCompatibilityScopesArgs
-  subCategorySlots?: boolean | SubCategoryCountOutputTypeCountSubCategorySlotsArgs
+  products?: boolean | SubCategoryCountOutputTypeCountProductsArgs
   specDefinitions?: boolean | SubCategoryCountOutputTypeCountSpecDefinitionsArgs
+  subCategorySlots?: boolean | SubCategoryCountOutputTypeCountSubCategorySlotsArgs
 }
 
 /**
@@ -1420,13 +1420,6 @@ export type SubCategoryCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.
    * Select specific fields to fetch from the SubCategoryCountOutputType
    */
   select?: Prisma.SubCategoryCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * SubCategoryCountOutputType without action
- */
-export type SubCategoryCountOutputTypeCountProductsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ProductWhereInput
 }
 
 /**
@@ -1446,8 +1439,8 @@ export type SubCategoryCountOutputTypeCountTargetCompatibilityScopesArgs<ExtArgs
 /**
  * SubCategoryCountOutputType without action
  */
-export type SubCategoryCountOutputTypeCountSubCategorySlotsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SubCategorySlotWhereInput
+export type SubCategoryCountOutputTypeCountProductsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProductWhereInput
 }
 
 /**
@@ -1455,6 +1448,13 @@ export type SubCategoryCountOutputTypeCountSubCategorySlotsArgs<ExtArgs extends 
  */
 export type SubCategoryCountOutputTypeCountSpecDefinitionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.SpecDefinitionWhereInput
+}
+
+/**
+ * SubCategoryCountOutputType without action
+ */
+export type SubCategoryCountOutputTypeCountSubCategorySlotsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SubCategorySlotWhereInput
 }
 
 
@@ -1473,12 +1473,12 @@ export type SubCategorySelect<ExtArgs extends runtime.Types.Extensions.InternalA
   builderOrder?: boolean
   icon?: boolean
   shortLabel?: boolean
-  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
-  products?: boolean | Prisma.SubCategory$productsArgs<ExtArgs>
   sourceCompatibilityScopes?: boolean | Prisma.SubCategory$sourceCompatibilityScopesArgs<ExtArgs>
   targetCompatibilityScopes?: boolean | Prisma.SubCategory$targetCompatibilityScopesArgs<ExtArgs>
-  subCategorySlots?: boolean | Prisma.SubCategory$subCategorySlotsArgs<ExtArgs>
+  products?: boolean | Prisma.SubCategory$productsArgs<ExtArgs>
   specDefinitions?: boolean | Prisma.SubCategory$specDefinitionsArgs<ExtArgs>
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategorySlots?: boolean | Prisma.SubCategory$subCategorySlotsArgs<ExtArgs>
   _count?: boolean | Prisma.SubCategoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["subCategory"]>
 
@@ -1537,12 +1537,12 @@ export type SubCategorySelectScalar = {
 
 export type SubCategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "categoryId" | "createdAt" | "updatedAt" | "deletedAt" | "isBuilderEnabled" | "isCore" | "isRequired" | "allowMultiple" | "builderOrder" | "icon" | "shortLabel", ExtArgs["result"]["subCategory"]>
 export type SubCategoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
-  products?: boolean | Prisma.SubCategory$productsArgs<ExtArgs>
   sourceCompatibilityScopes?: boolean | Prisma.SubCategory$sourceCompatibilityScopesArgs<ExtArgs>
   targetCompatibilityScopes?: boolean | Prisma.SubCategory$targetCompatibilityScopesArgs<ExtArgs>
-  subCategorySlots?: boolean | Prisma.SubCategory$subCategorySlotsArgs<ExtArgs>
+  products?: boolean | Prisma.SubCategory$productsArgs<ExtArgs>
   specDefinitions?: boolean | Prisma.SubCategory$specDefinitionsArgs<ExtArgs>
+  category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  subCategorySlots?: boolean | Prisma.SubCategory$subCategorySlotsArgs<ExtArgs>
   _count?: boolean | Prisma.SubCategoryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SubCategoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1555,12 +1555,12 @@ export type SubCategoryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.
 export type $SubCategoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SubCategory"
   objects: {
-    category: Prisma.$CategoryPayload<ExtArgs>
-    products: Prisma.$ProductPayload<ExtArgs>[]
     sourceCompatibilityScopes: Prisma.$CompatibilityScopePayload<ExtArgs>[]
     targetCompatibilityScopes: Prisma.$CompatibilityScopePayload<ExtArgs>[]
-    subCategorySlots: Prisma.$SubCategorySlotPayload<ExtArgs>[]
+    products: Prisma.$ProductPayload<ExtArgs>[]
     specDefinitions: Prisma.$SpecDefinitionPayload<ExtArgs>[]
+    category: Prisma.$CategoryPayload<ExtArgs>
+    subCategorySlots: Prisma.$SubCategorySlotPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1971,12 +1971,12 @@ readonly fields: SubCategoryFieldRefs;
  */
 export interface Prisma__SubCategoryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  products<T extends Prisma.SubCategory$productsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategory$productsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sourceCompatibilityScopes<T extends Prisma.SubCategory$sourceCompatibilityScopesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategory$sourceCompatibilityScopesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityScopePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   targetCompatibilityScopes<T extends Prisma.SubCategory$targetCompatibilityScopesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategory$targetCompatibilityScopesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityScopePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  subCategorySlots<T extends Prisma.SubCategory$subCategorySlotsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategory$subCategorySlotsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubCategorySlotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  products<T extends Prisma.SubCategory$productsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategory$productsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   specDefinitions<T extends Prisma.SubCategory$specDefinitionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategory$specDefinitionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpecDefinitionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  subCategorySlots<T extends Prisma.SubCategory$subCategorySlotsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategory$subCategorySlotsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubCategorySlotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2416,30 +2416,6 @@ export type SubCategoryDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
 }
 
 /**
- * SubCategory.products
- */
-export type SubCategory$productsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Product
-   */
-  select?: Prisma.ProductSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Product
-   */
-  omit?: Prisma.ProductOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ProductInclude<ExtArgs> | null
-  where?: Prisma.ProductWhereInput
-  orderBy?: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[]
-  cursor?: Prisma.ProductWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ProductScalarFieldEnum | Prisma.ProductScalarFieldEnum[]
-}
-
-/**
  * SubCategory.sourceCompatibilityScopes
  */
 export type SubCategory$sourceCompatibilityScopesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2488,27 +2464,27 @@ export type SubCategory$targetCompatibilityScopesArgs<ExtArgs extends runtime.Ty
 }
 
 /**
- * SubCategory.subCategorySlots
+ * SubCategory.products
  */
-export type SubCategory$subCategorySlotsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type SubCategory$productsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the SubCategorySlot
+   * Select specific fields to fetch from the Product
    */
-  select?: Prisma.SubCategorySlotSelect<ExtArgs> | null
+  select?: Prisma.ProductSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the SubCategorySlot
+   * Omit specific fields from the Product
    */
-  omit?: Prisma.SubCategorySlotOmit<ExtArgs> | null
+  omit?: Prisma.ProductOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.SubCategorySlotInclude<ExtArgs> | null
-  where?: Prisma.SubCategorySlotWhereInput
-  orderBy?: Prisma.SubCategorySlotOrderByWithRelationInput | Prisma.SubCategorySlotOrderByWithRelationInput[]
-  cursor?: Prisma.SubCategorySlotWhereUniqueInput
+  include?: Prisma.ProductInclude<ExtArgs> | null
+  where?: Prisma.ProductWhereInput
+  orderBy?: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[]
+  cursor?: Prisma.ProductWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.SubCategorySlotScalarFieldEnum | Prisma.SubCategorySlotScalarFieldEnum[]
+  distinct?: Prisma.ProductScalarFieldEnum | Prisma.ProductScalarFieldEnum[]
 }
 
 /**
@@ -2533,6 +2509,30 @@ export type SubCategory$specDefinitionsArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.SpecDefinitionScalarFieldEnum | Prisma.SpecDefinitionScalarFieldEnum[]
+}
+
+/**
+ * SubCategory.subCategorySlots
+ */
+export type SubCategory$subCategorySlotsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SubCategorySlot
+   */
+  select?: Prisma.SubCategorySlotSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SubCategorySlot
+   */
+  omit?: Prisma.SubCategorySlotOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SubCategorySlotInclude<ExtArgs> | null
+  where?: Prisma.SubCategorySlotWhereInput
+  orderBy?: Prisma.SubCategorySlotOrderByWithRelationInput | Prisma.SubCategorySlotOrderByWithRelationInput[]
+  cursor?: Prisma.SubCategorySlotWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SubCategorySlotScalarFieldEnum | Prisma.SubCategorySlotScalarFieldEnum[]
 }
 
 /**

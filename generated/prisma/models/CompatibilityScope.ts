@@ -166,18 +166,18 @@ export type CompatibilityScopeWhereInput = {
   id?: Prisma.StringFilter<"CompatibilityScope"> | string
   sourceSubCategoryId?: Prisma.StringFilter<"CompatibilityScope"> | string
   targetSubCategoryId?: Prisma.StringFilter<"CompatibilityScope"> | string
+  rules?: Prisma.CompatibilityRuleListRelationFilter
   sourceSubCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
   targetSubCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
-  rules?: Prisma.CompatibilityRuleListRelationFilter
 }
 
 export type CompatibilityScopeOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sourceSubCategoryId?: Prisma.SortOrder
   targetSubCategoryId?: Prisma.SortOrder
+  rules?: Prisma.CompatibilityRuleOrderByRelationAggregateInput
   sourceSubCategory?: Prisma.SubCategoryOrderByWithRelationInput
   targetSubCategory?: Prisma.SubCategoryOrderByWithRelationInput
-  rules?: Prisma.CompatibilityRuleOrderByRelationAggregateInput
 }
 
 export type CompatibilityScopeWhereUniqueInput = Prisma.AtLeast<{
@@ -188,9 +188,9 @@ export type CompatibilityScopeWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CompatibilityScopeWhereInput | Prisma.CompatibilityScopeWhereInput[]
   sourceSubCategoryId?: Prisma.StringFilter<"CompatibilityScope"> | string
   targetSubCategoryId?: Prisma.StringFilter<"CompatibilityScope"> | string
+  rules?: Prisma.CompatibilityRuleListRelationFilter
   sourceSubCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
   targetSubCategory?: Prisma.XOR<Prisma.SubCategoryScalarRelationFilter, Prisma.SubCategoryWhereInput>
-  rules?: Prisma.CompatibilityRuleListRelationFilter
 }, "id" | "sourceSubCategoryId_targetSubCategoryId">
 
 export type CompatibilityScopeOrderByWithAggregationInput = {
@@ -213,9 +213,9 @@ export type CompatibilityScopeScalarWhereWithAggregatesInput = {
 
 export type CompatibilityScopeCreateInput = {
   id?: string
+  rules?: Prisma.CompatibilityRuleCreateNestedManyWithoutScopeInput
   sourceSubCategory: Prisma.SubCategoryCreateNestedOneWithoutSourceCompatibilityScopesInput
   targetSubCategory: Prisma.SubCategoryCreateNestedOneWithoutTargetCompatibilityScopesInput
-  rules?: Prisma.CompatibilityRuleCreateNestedManyWithoutScopeInput
 }
 
 export type CompatibilityScopeUncheckedCreateInput = {
@@ -227,9 +227,9 @@ export type CompatibilityScopeUncheckedCreateInput = {
 
 export type CompatibilityScopeUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  rules?: Prisma.CompatibilityRuleUpdateManyWithoutScopeNestedInput
   sourceSubCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSourceCompatibilityScopesNestedInput
   targetSubCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutTargetCompatibilityScopesNestedInput
-  rules?: Prisma.CompatibilityRuleUpdateManyWithoutScopeNestedInput
 }
 
 export type CompatibilityScopeUncheckedUpdateInput = {
@@ -265,9 +265,9 @@ export type CompatibilityScopeOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type CompatibilityScopeScalarRelationFilter = {
-  is?: Prisma.CompatibilityScopeWhereInput
-  isNot?: Prisma.CompatibilityScopeWhereInput
+export type CompatibilityScopeNullableScalarRelationFilter = {
+  is?: Prisma.CompatibilityScopeWhereInput | null
+  isNot?: Prisma.CompatibilityScopeWhereInput | null
 }
 
 export type CompatibilityScopeSourceSubCategoryIdTargetSubCategoryIdCompoundUniqueInput = {
@@ -383,18 +383,20 @@ export type CompatibilityScopeCreateNestedOneWithoutRulesInput = {
   connect?: Prisma.CompatibilityScopeWhereUniqueInput
 }
 
-export type CompatibilityScopeUpdateOneRequiredWithoutRulesNestedInput = {
+export type CompatibilityScopeUpdateOneWithoutRulesNestedInput = {
   create?: Prisma.XOR<Prisma.CompatibilityScopeCreateWithoutRulesInput, Prisma.CompatibilityScopeUncheckedCreateWithoutRulesInput>
   connectOrCreate?: Prisma.CompatibilityScopeCreateOrConnectWithoutRulesInput
   upsert?: Prisma.CompatibilityScopeUpsertWithoutRulesInput
+  disconnect?: Prisma.CompatibilityScopeWhereInput | boolean
+  delete?: Prisma.CompatibilityScopeWhereInput | boolean
   connect?: Prisma.CompatibilityScopeWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.CompatibilityScopeUpdateToOneWithWhereWithoutRulesInput, Prisma.CompatibilityScopeUpdateWithoutRulesInput>, Prisma.CompatibilityScopeUncheckedUpdateWithoutRulesInput>
 }
 
 export type CompatibilityScopeCreateWithoutSourceSubCategoryInput = {
   id?: string
-  targetSubCategory: Prisma.SubCategoryCreateNestedOneWithoutTargetCompatibilityScopesInput
   rules?: Prisma.CompatibilityRuleCreateNestedManyWithoutScopeInput
+  targetSubCategory: Prisma.SubCategoryCreateNestedOneWithoutTargetCompatibilityScopesInput
 }
 
 export type CompatibilityScopeUncheckedCreateWithoutSourceSubCategoryInput = {
@@ -415,8 +417,8 @@ export type CompatibilityScopeCreateManySourceSubCategoryInputEnvelope = {
 
 export type CompatibilityScopeCreateWithoutTargetSubCategoryInput = {
   id?: string
-  sourceSubCategory: Prisma.SubCategoryCreateNestedOneWithoutSourceCompatibilityScopesInput
   rules?: Prisma.CompatibilityRuleCreateNestedManyWithoutScopeInput
+  sourceSubCategory: Prisma.SubCategoryCreateNestedOneWithoutSourceCompatibilityScopesInput
 }
 
 export type CompatibilityScopeUncheckedCreateWithoutTargetSubCategoryInput = {
@@ -528,8 +530,8 @@ export type CompatibilityScopeCreateManyTargetSubCategoryInput = {
 
 export type CompatibilityScopeUpdateWithoutSourceSubCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  targetSubCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutTargetCompatibilityScopesNestedInput
   rules?: Prisma.CompatibilityRuleUpdateManyWithoutScopeNestedInput
+  targetSubCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutTargetCompatibilityScopesNestedInput
 }
 
 export type CompatibilityScopeUncheckedUpdateWithoutSourceSubCategoryInput = {
@@ -545,8 +547,8 @@ export type CompatibilityScopeUncheckedUpdateManyWithoutSourceSubCategoryInput =
 
 export type CompatibilityScopeUpdateWithoutTargetSubCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceSubCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSourceCompatibilityScopesNestedInput
   rules?: Prisma.CompatibilityRuleUpdateManyWithoutScopeNestedInput
+  sourceSubCategory?: Prisma.SubCategoryUpdateOneRequiredWithoutSourceCompatibilityScopesNestedInput
 }
 
 export type CompatibilityScopeUncheckedUpdateWithoutTargetSubCategoryInput = {
@@ -595,9 +597,9 @@ export type CompatibilityScopeSelect<ExtArgs extends runtime.Types.Extensions.In
   id?: boolean
   sourceSubCategoryId?: boolean
   targetSubCategoryId?: boolean
+  rules?: boolean | Prisma.CompatibilityScope$rulesArgs<ExtArgs>
   sourceSubCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   targetSubCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
-  rules?: boolean | Prisma.CompatibilityScope$rulesArgs<ExtArgs>
   _count?: boolean | Prisma.CompatibilityScopeCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["compatibilityScope"]>
 
@@ -625,9 +627,9 @@ export type CompatibilityScopeSelectScalar = {
 
 export type CompatibilityScopeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sourceSubCategoryId" | "targetSubCategoryId", ExtArgs["result"]["compatibilityScope"]>
 export type CompatibilityScopeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  rules?: boolean | Prisma.CompatibilityScope$rulesArgs<ExtArgs>
   sourceSubCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
   targetSubCategory?: boolean | Prisma.SubCategoryDefaultArgs<ExtArgs>
-  rules?: boolean | Prisma.CompatibilityScope$rulesArgs<ExtArgs>
   _count?: boolean | Prisma.CompatibilityScopeCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CompatibilityScopeIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -642,9 +644,9 @@ export type CompatibilityScopeIncludeUpdateManyAndReturn<ExtArgs extends runtime
 export type $CompatibilityScopePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "CompatibilityScope"
   objects: {
+    rules: Prisma.$CompatibilityRulePayload<ExtArgs>[]
     sourceSubCategory: Prisma.$SubCategoryPayload<ExtArgs>
     targetSubCategory: Prisma.$SubCategoryPayload<ExtArgs>
-    rules: Prisma.$CompatibilityRulePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1044,9 +1046,9 @@ readonly fields: CompatibilityScopeFieldRefs;
  */
 export interface Prisma__CompatibilityScopeClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  rules<T extends Prisma.CompatibilityScope$rulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompatibilityScope$rulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sourceSubCategory<T extends Prisma.SubCategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__SubCategoryClient<runtime.Types.Result.GetResult<Prisma.$SubCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   targetSubCategory<T extends Prisma.SubCategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubCategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__SubCategoryClient<runtime.Types.Result.GetResult<Prisma.$SubCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  rules<T extends Prisma.CompatibilityScope$rulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompatibilityScope$rulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

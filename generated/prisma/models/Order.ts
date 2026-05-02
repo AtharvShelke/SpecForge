@@ -400,13 +400,13 @@ export type OrderWhereInput = {
   source?: Prisma.JsonNullableFilter<"Order">
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  invoices?: Prisma.InvoiceListRelationFilter
   customer?: Prisma.XOR<Prisma.CustomerNullableScalarRelationFilter, Prisma.CustomerWhereInput> | null
   items?: Prisma.OrderItemListRelationFilter
   logs?: Prisma.OrderLogListRelationFilter
-  invoices?: Prisma.InvoiceListRelationFilter
-  shipments?: Prisma.ShipmentTrackingListRelationFilter
   payments?: Prisma.PaymentTransactionListRelationFilter
   reservations?: Prisma.ReservationListRelationFilter
+  shipments?: Prisma.ShipmentTrackingListRelationFilter
 }
 
 export type OrderOrderByWithRelationInput = {
@@ -436,13 +436,13 @@ export type OrderOrderByWithRelationInput = {
   source?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  invoices?: Prisma.InvoiceOrderByRelationAggregateInput
   customer?: Prisma.CustomerOrderByWithRelationInput
   items?: Prisma.OrderItemOrderByRelationAggregateInput
   logs?: Prisma.OrderLogOrderByRelationAggregateInput
-  invoices?: Prisma.InvoiceOrderByRelationAggregateInput
-  shipments?: Prisma.ShipmentTrackingOrderByRelationAggregateInput
   payments?: Prisma.PaymentTransactionOrderByRelationAggregateInput
   reservations?: Prisma.ReservationOrderByRelationAggregateInput
+  shipments?: Prisma.ShipmentTrackingOrderByRelationAggregateInput
 }
 
 export type OrderWhereUniqueInput = Prisma.AtLeast<{
@@ -475,13 +475,13 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   source?: Prisma.JsonNullableFilter<"Order">
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  invoices?: Prisma.InvoiceListRelationFilter
   customer?: Prisma.XOR<Prisma.CustomerNullableScalarRelationFilter, Prisma.CustomerWhereInput> | null
   items?: Prisma.OrderItemListRelationFilter
   logs?: Prisma.OrderLogListRelationFilter
-  invoices?: Prisma.InvoiceListRelationFilter
-  shipments?: Prisma.ShipmentTrackingListRelationFilter
   payments?: Prisma.PaymentTransactionListRelationFilter
   reservations?: Prisma.ReservationListRelationFilter
+  shipments?: Prisma.ShipmentTrackingListRelationFilter
 }, "id" | "idempotencyKey">
 
 export type OrderOrderByWithAggregationInput = {
@@ -576,13 +576,13 @@ export type OrderCreateInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   customer?: Prisma.CustomerCreateNestedOneWithoutOrdersInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateInput = {
@@ -612,12 +612,12 @@ export type OrderUncheckedCreateInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationUncheckedCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUpdateInput = {
@@ -646,13 +646,13 @@ export type OrderUpdateInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutOrdersNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateInput = {
@@ -682,12 +682,12 @@ export type OrderUncheckedUpdateInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUncheckedUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateManyInput = {
@@ -1061,12 +1061,12 @@ export type OrderCreateWithoutCustomerInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutCustomerInput = {
@@ -1095,12 +1095,12 @@ export type OrderUncheckedCreateWithoutCustomerInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationUncheckedCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutCustomerInput = {
@@ -1187,12 +1187,12 @@ export type OrderCreateWithoutItemsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   customer?: Prisma.CustomerCreateNestedOneWithoutOrdersInput
   logs?: Prisma.OrderLogCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutItemsInput = {
@@ -1222,11 +1222,11 @@ export type OrderUncheckedCreateWithoutItemsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
   invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
+  logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationUncheckedCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutItemsInput = {
@@ -1271,12 +1271,12 @@ export type OrderUpdateWithoutItemsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutOrdersNestedInput
   logs?: Prisma.OrderLogUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutItemsInput = {
@@ -1306,11 +1306,11 @@ export type OrderUncheckedUpdateWithoutItemsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
   invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
+  logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUncheckedUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutLogsInput = {
@@ -1339,12 +1339,12 @@ export type OrderCreateWithoutLogsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   customer?: Prisma.CustomerCreateNestedOneWithoutOrdersInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutLogsInput = {
@@ -1374,11 +1374,11 @@ export type OrderUncheckedCreateWithoutLogsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
+  items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationUncheckedCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutLogsInput = {
@@ -1423,12 +1423,12 @@ export type OrderUpdateWithoutLogsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutOrdersNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutLogsInput = {
@@ -1458,11 +1458,11 @@ export type OrderUncheckedUpdateWithoutLogsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
+  items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUncheckedUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutShipmentsInput = {
@@ -1491,10 +1491,10 @@ export type OrderCreateWithoutShipmentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   customer?: Prisma.CustomerCreateNestedOneWithoutOrdersInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationCreateNestedManyWithoutOrderInput
 }
@@ -1526,9 +1526,9 @@ export type OrderUncheckedCreateWithoutShipmentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationUncheckedCreateNestedManyWithoutOrderInput
 }
@@ -1575,10 +1575,10 @@ export type OrderUpdateWithoutShipmentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutOrdersNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUpdateManyWithoutOrderNestedInput
 }
@@ -1610,9 +1610,9 @@ export type OrderUncheckedUpdateWithoutShipmentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUncheckedUpdateManyWithoutOrderNestedInput
 }
@@ -1646,9 +1646,9 @@ export type OrderCreateWithoutInvoicesInput = {
   customer?: Prisma.CustomerCreateNestedOneWithoutOrdersInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutInvoicesInput = {
@@ -1680,9 +1680,9 @@ export type OrderUncheckedCreateWithoutInvoicesInput = {
   updatedAt?: Date | string
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationUncheckedCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutInvoicesInput = {
@@ -1730,9 +1730,9 @@ export type OrderUpdateWithoutInvoicesInput = {
   customer?: Prisma.CustomerUpdateOneWithoutOrdersNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutInvoicesInput = {
@@ -1764,9 +1764,9 @@ export type OrderUncheckedUpdateWithoutInvoicesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUncheckedUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutPaymentsInput = {
@@ -1795,12 +1795,12 @@ export type OrderCreateWithoutPaymentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   customer?: Prisma.CustomerCreateNestedOneWithoutOrdersInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutPaymentsInput = {
@@ -1830,11 +1830,11 @@ export type OrderUncheckedCreateWithoutPaymentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
   reservations?: Prisma.ReservationUncheckedCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutPaymentsInput = {
@@ -1879,12 +1879,12 @@ export type OrderUpdateWithoutPaymentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutOrdersNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutPaymentsInput = {
@@ -1914,11 +1914,11 @@ export type OrderUncheckedUpdateWithoutPaymentsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUncheckedUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutReservationsInput = {
@@ -1947,12 +1947,12 @@ export type OrderCreateWithoutReservationsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
   customer?: Prisma.CustomerCreateNestedOneWithoutOrdersInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutReservationsInput = {
@@ -1982,11 +1982,11 @@ export type OrderUncheckedCreateWithoutReservationsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   logs?: Prisma.OrderLogUncheckedCreateNestedManyWithoutOrderInput
-  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutOrderInput
-  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
+  shipments?: Prisma.ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutReservationsInput = {
@@ -2031,12 +2031,12 @@ export type OrderUpdateWithoutReservationsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutOrdersNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutReservationsInput = {
@@ -2066,11 +2066,11 @@ export type OrderUncheckedUpdateWithoutReservationsInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateManyCustomerInput = {
@@ -2127,12 +2127,12 @@ export type OrderUpdateWithoutCustomerInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutCustomerInput = {
@@ -2161,12 +2161,12 @@ export type OrderUncheckedUpdateWithoutCustomerInput = {
   source?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   logs?: Prisma.OrderLogUncheckedUpdateManyWithoutOrderNestedInput
-  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutOrderNestedInput
-  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
   reservations?: Prisma.ReservationUncheckedUpdateManyWithoutOrderNestedInput
+  shipments?: Prisma.ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateManyWithoutCustomerInput = {
@@ -2203,21 +2203,21 @@ export type OrderUncheckedUpdateManyWithoutCustomerInput = {
  */
 
 export type OrderCountOutputType = {
+  invoices: number
   items: number
   logs: number
-  invoices: number
-  shipments: number
   payments: number
   reservations: number
+  shipments: number
 }
 
 export type OrderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  invoices?: boolean | OrderCountOutputTypeCountInvoicesArgs
   items?: boolean | OrderCountOutputTypeCountItemsArgs
   logs?: boolean | OrderCountOutputTypeCountLogsArgs
-  invoices?: boolean | OrderCountOutputTypeCountInvoicesArgs
-  shipments?: boolean | OrderCountOutputTypeCountShipmentsArgs
   payments?: boolean | OrderCountOutputTypeCountPaymentsArgs
   reservations?: boolean | OrderCountOutputTypeCountReservationsArgs
+  shipments?: boolean | OrderCountOutputTypeCountShipmentsArgs
 }
 
 /**
@@ -2228,6 +2228,13 @@ export type OrderCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
    * Select specific fields to fetch from the OrderCountOutputType
    */
   select?: Prisma.OrderCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * OrderCountOutputType without action
+ */
+export type OrderCountOutputTypeCountInvoicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InvoiceWhereInput
 }
 
 /**
@@ -2247,20 +2254,6 @@ export type OrderCountOutputTypeCountLogsArgs<ExtArgs extends runtime.Types.Exte
 /**
  * OrderCountOutputType without action
  */
-export type OrderCountOutputTypeCountInvoicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.InvoiceWhereInput
-}
-
-/**
- * OrderCountOutputType without action
- */
-export type OrderCountOutputTypeCountShipmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ShipmentTrackingWhereInput
-}
-
-/**
- * OrderCountOutputType without action
- */
 export type OrderCountOutputTypeCountPaymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.PaymentTransactionWhereInput
 }
@@ -2270,6 +2263,13 @@ export type OrderCountOutputTypeCountPaymentsArgs<ExtArgs extends runtime.Types.
  */
 export type OrderCountOutputTypeCountReservationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ReservationWhereInput
+}
+
+/**
+ * OrderCountOutputType without action
+ */
+export type OrderCountOutputTypeCountShipmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ShipmentTrackingWhereInput
 }
 
 
@@ -2300,13 +2300,13 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   source?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  invoices?: boolean | Prisma.Order$invoicesArgs<ExtArgs>
   customer?: boolean | Prisma.Order$customerArgs<ExtArgs>
   items?: boolean | Prisma.Order$itemsArgs<ExtArgs>
   logs?: boolean | Prisma.Order$logsArgs<ExtArgs>
-  invoices?: boolean | Prisma.Order$invoicesArgs<ExtArgs>
-  shipments?: boolean | Prisma.Order$shipmentsArgs<ExtArgs>
   payments?: boolean | Prisma.Order$paymentsArgs<ExtArgs>
   reservations?: boolean | Prisma.Order$reservationsArgs<ExtArgs>
+  shipments?: boolean | Prisma.Order$shipmentsArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
@@ -2401,13 +2401,13 @@ export type OrderSelectScalar = {
 
 export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "customerName" | "email" | "phone" | "date" | "subtotal" | "gstAmount" | "taxAmount" | "discountAmount" | "total" | "status" | "version" | "deletedAt" | "customerId" | "shippingStreet" | "shippingCity" | "shippingState" | "shippingZip" | "shippingCountry" | "paymentMethod" | "paymentTransactionId" | "paymentStatus" | "idempotencyKey" | "source" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  invoices?: boolean | Prisma.Order$invoicesArgs<ExtArgs>
   customer?: boolean | Prisma.Order$customerArgs<ExtArgs>
   items?: boolean | Prisma.Order$itemsArgs<ExtArgs>
   logs?: boolean | Prisma.Order$logsArgs<ExtArgs>
-  invoices?: boolean | Prisma.Order$invoicesArgs<ExtArgs>
-  shipments?: boolean | Prisma.Order$shipmentsArgs<ExtArgs>
   payments?: boolean | Prisma.Order$paymentsArgs<ExtArgs>
   reservations?: boolean | Prisma.Order$reservationsArgs<ExtArgs>
+  shipments?: boolean | Prisma.Order$shipmentsArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type OrderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2420,13 +2420,13 @@ export type OrderIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
 export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Order"
   objects: {
+    invoices: Prisma.$InvoicePayload<ExtArgs>[]
     customer: Prisma.$CustomerPayload<ExtArgs> | null
     items: Prisma.$OrderItemPayload<ExtArgs>[]
     logs: Prisma.$OrderLogPayload<ExtArgs>[]
-    invoices: Prisma.$InvoicePayload<ExtArgs>[]
-    shipments: Prisma.$ShipmentTrackingPayload<ExtArgs>[]
     payments: Prisma.$PaymentTransactionPayload<ExtArgs>[]
     reservations: Prisma.$ReservationPayload<ExtArgs>[]
+    shipments: Prisma.$ShipmentTrackingPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2849,13 +2849,13 @@ readonly fields: OrderFieldRefs;
  */
 export interface Prisma__OrderClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  invoices<T extends Prisma.Order$invoicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$invoicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customer<T extends Prisma.Order$customerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$customerArgs<ExtArgs>>): Prisma.Prisma__CustomerClient<runtime.Types.Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   items<T extends Prisma.Order$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   logs<T extends Prisma.Order$logsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$logsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  invoices<T extends Prisma.Order$invoicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$invoicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  shipments<T extends Prisma.Order$shipmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$shipmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShipmentTrackingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payments<T extends Prisma.Order$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reservations<T extends Prisma.Order$reservationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$reservationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  shipments<T extends Prisma.Order$shipmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$shipmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ShipmentTrackingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3307,6 +3307,30 @@ export type OrderDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
 }
 
 /**
+ * Order.invoices
+ */
+export type Order$invoicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Invoice
+   */
+  select?: Prisma.InvoiceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Invoice
+   */
+  omit?: Prisma.InvoiceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InvoiceInclude<ExtArgs> | null
+  where?: Prisma.InvoiceWhereInput
+  orderBy?: Prisma.InvoiceOrderByWithRelationInput | Prisma.InvoiceOrderByWithRelationInput[]
+  cursor?: Prisma.InvoiceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InvoiceScalarFieldEnum | Prisma.InvoiceScalarFieldEnum[]
+}
+
+/**
  * Order.customer
  */
 export type Order$customerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3374,54 +3398,6 @@ export type Order$logsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
 }
 
 /**
- * Order.invoices
- */
-export type Order$invoicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Invoice
-   */
-  select?: Prisma.InvoiceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Invoice
-   */
-  omit?: Prisma.InvoiceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.InvoiceInclude<ExtArgs> | null
-  where?: Prisma.InvoiceWhereInput
-  orderBy?: Prisma.InvoiceOrderByWithRelationInput | Prisma.InvoiceOrderByWithRelationInput[]
-  cursor?: Prisma.InvoiceWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.InvoiceScalarFieldEnum | Prisma.InvoiceScalarFieldEnum[]
-}
-
-/**
- * Order.shipments
- */
-export type Order$shipmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ShipmentTracking
-   */
-  select?: Prisma.ShipmentTrackingSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ShipmentTracking
-   */
-  omit?: Prisma.ShipmentTrackingOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ShipmentTrackingInclude<ExtArgs> | null
-  where?: Prisma.ShipmentTrackingWhereInput
-  orderBy?: Prisma.ShipmentTrackingOrderByWithRelationInput | Prisma.ShipmentTrackingOrderByWithRelationInput[]
-  cursor?: Prisma.ShipmentTrackingWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ShipmentTrackingScalarFieldEnum | Prisma.ShipmentTrackingScalarFieldEnum[]
-}
-
-/**
  * Order.payments
  */
 export type Order$paymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3467,6 +3443,30 @@ export type Order$reservationsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.ReservationScalarFieldEnum | Prisma.ReservationScalarFieldEnum[]
+}
+
+/**
+ * Order.shipments
+ */
+export type Order$shipmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ShipmentTracking
+   */
+  select?: Prisma.ShipmentTrackingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ShipmentTracking
+   */
+  omit?: Prisma.ShipmentTrackingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ShipmentTrackingInclude<ExtArgs> | null
+  where?: Prisma.ShipmentTrackingWhereInput
+  orderBy?: Prisma.ShipmentTrackingOrderByWithRelationInput | Prisma.ShipmentTrackingOrderByWithRelationInput[]
+  cursor?: Prisma.ShipmentTrackingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ShipmentTrackingScalarFieldEnum | Prisma.ShipmentTrackingScalarFieldEnum[]
 }
 
 /**

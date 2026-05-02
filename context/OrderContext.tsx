@@ -23,8 +23,9 @@ import {
   ReactNode,
 } from "react";
 import { Order, OrderLog, OrderStatus, CreateOrder } from "../types";
-import { apiFetch, useLoadingCounter, refreshAndSyncDetail } from "@/lib/helpers";
+import { apiFetch, refreshAndSyncDetail } from "@/lib/helpers";
 import { ORDER_VALID_TRANSITIONS } from "@/lib/orderTransitions";
+import { useLoadingCounter } from "@/hooks/useLoadingCounter";
 
 
 // ─────────────────────────────────────────────────────────────────────────────

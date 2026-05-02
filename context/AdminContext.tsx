@@ -107,6 +107,8 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         billing.refreshBillingProfile,
       ],
       "builder-config": [],
+      compatibility: [],
+      "tax-settings": [],
     };
 
     void Promise.allSettled(
@@ -124,6 +126,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         await catalog.updateCategoryHierarchy(categories);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       }
     },
     [catalog],
@@ -140,6 +143,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         await catalog.refreshBrands();
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       }
     },
     [catalog],
@@ -153,6 +157,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         await catalog.refreshBrands();
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       }
     },
     [catalog],
@@ -207,6 +212,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         ]);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       }
     },
     [catalog, inventory],
@@ -290,6 +296,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         await catalog.deleteProduct(id);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
       }
     },
     [catalog],

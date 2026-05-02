@@ -22,7 +22,8 @@ import {
   CreateSpecWithOptions,
   UpdateSpecInput,
 } from "../types";
-import { apiFetch, useLoadingCounter } from "@/lib/helpers";
+import { apiFetch } from "@/lib/helpers";
+import { useLoadingCounter } from "@/hooks/useLoadingCounter";
 
 interface CatalogContextType {
   products: Product[];
@@ -77,28 +78,32 @@ export const CatalogProvider = ({
   );
   const [error, setError] = useState<Error | null>(null);
 
-  const refreshProducts = useCallback(async (filters?: AdvancedFilter) => {
-    setError(null);
-    start();
-    try {
-      let url = "/api/catalog/products";
-      if (filters) {
-        url = "/api/catalog/products/filter";
-        const data = await apiFetch<any>(url, {
-          method: "POST",
-          body: JSON.stringify(filters),
-        });
+  const refreshProducts = useCallback(
+    async (filters?: AdvancedFilter) => {
+      setError(null);
+      start();
+      try {
+        let url = "/api/catalog/products";
+        if (filters) {
+          url = "/api/catalog/products/filter";
+          const data = await apiFetch<any>(url, {
+            method: "POST",
+            body: JSON.stringify(filters),
+          });
+          setProducts(Array.isArray(data) ? data : (data?.products ?? []));
+          return;
+        }
+        const data = await apiFetch<any>(url);
         setProducts(Array.isArray(data) ? data : (data?.products ?? []));
-        return;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
       }
-      const data = await apiFetch<any>(url);
-      setProducts(Array.isArray(data) ? data : (data?.products ?? []));
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [start, stop]);
+    },
+    [start, stop],
+  );
 
   const refreshCategories = useCallback(async () => {
     setError(null);
@@ -153,21 +158,24 @@ export const CatalogProvider = ({
     [start, stop],
   );
 
-  const refreshSubCategories = useCallback(async (categoryId?: string) => {
-    setError(null);
-    start();
-    try {
-      const url = categoryId
-        ? `/api/catalog/subcategories?categoryId=${categoryId}`
-        : "/api/catalog/subcategories";
-      const data = await apiFetch<SubCategory[]>(url);
-      setSubCategories(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [start, stop]);
+  const refreshSubCategories = useCallback(
+    async (categoryId?: string) => {
+      setError(null);
+      start();
+      try {
+        const url = categoryId
+          ? `/api/catalog/subcategories?categoryId=${categoryId}`
+          : "/api/catalog/subcategories";
+        const data = await apiFetch<SubCategory[]>(url);
+        setSubCategories(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
+    },
+    [start, stop],
+  );
 
   const refreshBrands = useCallback(async () => {
     setError(null);
@@ -182,129 +190,160 @@ export const CatalogProvider = ({
     }
   }, [start, stop]);
 
-  const refreshSpecs = useCallback(async (subCategoryId?: string) => {
-    setError(null);
-    start();
-    try {
-      const url = subCategoryId
-        ? `/api/catalog/specs?subCategoryId=${subCategoryId}`
-        : "/api/catalog/specs";
-      const data = await apiFetch<SpecDefinition[]>(url);
-      setSpecs(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [start, stop]);
+  const refreshSpecs = useCallback(
+    async (subCategoryId?: string) => {
+      setError(null);
+      start();
+      try {
+        const url = subCategoryId
+          ? `/api/catalog/specs?subCategoryId=${subCategoryId}`
+          : "/api/catalog/specs";
+        const data = await apiFetch<SpecDefinition[]>(url);
+        setSpecs(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        stop();
+      }
+    },
+    [start, stop],
+  );
 
-  const createProduct = useCallback(async (data: CreateProduct) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch("/api/catalog/products", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      await refreshProducts();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshProducts, start, stop]);
+  const createProduct = useCallback(
+    async (data: CreateProduct) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch("/api/catalog/products", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        await refreshProducts();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
+    },
+    [refreshProducts, start, stop],
+  );
 
-  const updateProduct = useCallback(async (id: string, data: Partial<CreateProduct>) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch(`/api/catalog/products/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
-      await refreshProducts();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshProducts, start, stop]);
+  const updateProduct = useCallback(
+    async (id: string, data: Partial<CreateProduct>) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch(`/api/catalog/products/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        });
+        await refreshProducts();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
+    },
+    [refreshProducts, start, stop],
+  );
 
-  const deleteProduct = useCallback(async (id: string) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch(`/api/catalog/products/${id}`, { method: "DELETE" });
-      await refreshProducts();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshProducts, start, stop]);
+  const deleteProduct = useCallback(
+    async (id: string) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch(`/api/catalog/products/${id}`, { method: "DELETE" });
+        await refreshProducts();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
+    },
+    [refreshProducts, start, stop],
+  );
 
-  const createVariant = useCallback(async (productId: string, data: CreateVariant) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch(`/api/catalog/products/${productId}/variants`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      await refreshProducts();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshProducts, start, stop]);
+  const createVariant = useCallback(
+    async (productId: string, data: CreateVariant) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch(`/api/catalog/products/${productId}/variants`, {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        await refreshProducts();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
+    },
+    [refreshProducts, start, stop],
+  );
 
-  const createSpec = useCallback(async (data: import("../types").CreateSpecWithOptions) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch("/api/catalog/specs", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      await refreshSpecs(data.subCategoryId);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshSpecs, start, stop]);
+  const createSpec = useCallback(
+    async (data: import("../types").CreateSpecWithOptions) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch("/api/catalog/specs", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        await refreshSpecs(data.subCategoryId);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
+    },
+    [refreshSpecs, start, stop],
+  );
 
-  const updateSpec = useCallback(async (id: string, data: UpdateSpecInput) => {
-    setError(null);
-    start();
-    try {
-      const result = await apiFetch(`/api/catalog/specs/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
-      const nextSubCategoryId = (result as SpecDefinition | undefined)
-        ?.subCategoryId;
-      await refreshSpecs(nextSubCategoryId);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshSpecs, start, stop]);
+  const updateSpec = useCallback(
+    async (id: string, data: UpdateSpecInput) => {
+      setError(null);
+      start();
+      try {
+        const result = await apiFetch(`/api/catalog/specs/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        });
+        const nextSubCategoryId = (result as SpecDefinition | undefined)
+          ?.subCategoryId;
+        await refreshSpecs(nextSubCategoryId);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
+    },
+    [refreshSpecs, start, stop],
+  );
 
-  const deleteSpec = useCallback(async (id: string, subCategoryId?: string) => {
-    setError(null);
-    start();
-    try {
-      await apiFetch(`/api/catalog/specs/${id}`, { method: "DELETE" });
-      await refreshSpecs(subCategoryId);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      stop();
-    }
-  }, [refreshSpecs, start, stop]);
+  const deleteSpec = useCallback(
+    async (id: string, subCategoryId?: string) => {
+      setError(null);
+      start();
+      try {
+        await apiFetch(`/api/catalog/specs/${id}`, { method: "DELETE" });
+        await refreshSpecs(subCategoryId);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      } finally {
+        stop();
+      }
+    },
+    [refreshSpecs, start, stop],
+  );
 
   const loadAll = useCallback(async () => {
     setError(null);

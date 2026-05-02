@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listInvoices, createInvoice } from "@/services/billing.service";
-import { ServiceError } from "@/services/catalog.service";
+import { ServiceError } from "@/lib/errors";
 import { serializeInvoice, serializeInvoices } from "@/lib/adminSerializers";
 
 export async function GET(req: NextRequest) {
