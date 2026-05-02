@@ -21,9 +21,7 @@ export default function Footer() {
           <Link href="/track-order" className="transition-colors hover:text-gray-900">
             Track Order
           </Link>
-          <Link href="/build-guides" className="transition-colors hover:text-gray-900">
-            Build Guides
-          </Link>
+          
         </div>
       </div>
     </footer>

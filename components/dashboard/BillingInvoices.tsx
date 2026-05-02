@@ -73,6 +73,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -1198,18 +1199,18 @@ const PosCounter: React.FC<PosCounterProps> = ({
             <div className="w-16 h-16 bg-zinc-900 rounded-xl flex items-center justify-center mx-auto shadow-sm">
               {selectedPmConfig.icon}
             </div>
-            <div className="text-center space-y-1">
-              <h3 className="text-xl font-semibold text-zinc-900">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-xl font-semibold text-zinc-900 text-center">
                 Confirm Payment
-              </h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">
+              </DialogTitle>
+              <DialogDescription className="text-sm text-zinc-400 text-center leading-relaxed">
                 Processing payment for{" "}
                 <span className="text-zinc-900 font-semibold">
                   {pos.customer?.name}
                 </span>
                 .
-              </p>
-            </div>
+              </DialogDescription>
+            </DialogHeader>
 
             <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-zinc-100 shadow-sm">

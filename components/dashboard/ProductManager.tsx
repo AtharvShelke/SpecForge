@@ -1,6 +1,6 @@
 "use client";
 
-import React,{ useState, useMemo, useEffect, memo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAdmin } from "@/context/AdminContext";
 import {
@@ -20,7 +20,6 @@ import {
   AlertCircle,
   Package,
   DollarSign,
-  Layers,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -34,11 +33,11 @@ import {
   TrendingUp,
   BarChart3,
   Star,
-  ShoppingCart,
   RefreshCw,
   ChevronDown,
   SlidersHorizontal,
   Loader2,
+  Warehouse,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ImageUploader from "../uploadthing/ImageUploader";
@@ -64,12 +63,12 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 
 // ─────────────────────────────────────────────────────────────
-// SHARED PRIMITIVES — memoized
+// SHARED PRIMITIVES
 // ─────────────────────────────────────────────────────────────
 
 const SectionLabel = memo(
@@ -80,11 +79,9 @@ const SectionLabel = memo(
     icon: React.ReactNode;
     children: React.ReactNode;
   }) => (
-    <div className="flex items-center gap-1.5">
-      <span className="text-stone-400">{icon}</span>
-      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-        {children}
-      </span>
+    <div className="flex items-center gap-2 text-slate-700">
+      <span className="text-slate-400">{icon}</span>
+      <span className="text-sm font-semibold">{children}</span>
     </div>
   ),
 );
@@ -98,15 +95,14 @@ const FieldLabel = memo(
     children: React.ReactNode;
     required?: boolean;
   }) => (
-    <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">
+    <label className="mb-1.5 block text-xs font-medium text-slate-700">
       {children}
-      {required && <span className="text-rose-400 ml-0.5">*</span>}
+      {required && <span className="ml-0.5 text-rose-500">*</span>}
     </label>
   ),
 );
 FieldLabel.displayName = "FieldLabel";
 
-// Compute stock once outside render — avoids repeated reduce in render
 function getVariantStock(variant: unknown): number {
   const rawInventoryItems =
     variant && typeof variant === "object" && "inventoryItems" in variant
@@ -117,11 +113,11 @@ function getVariantStock(variant: unknown): number {
     quantityOnHand?: number | null;
     quantityReserved?: number | null;
   }> = Array.isArray(rawInventoryItems)
-    ? (rawInventoryItems as Array<{
+      ? (rawInventoryItems as Array<{
         quantityOnHand?: number | null;
         quantityReserved?: number | null;
       }>)
-    : [];
+      : [];
   return items.reduce((sum: number, item) => {
     const onHand = Number(item?.quantityOnHand ?? 0);
     const reserved = Number(item?.quantityReserved ?? 0);
@@ -134,21 +130,21 @@ const StockPill = memo(
     const totalStock = getVariantStock(variant);
     if (totalStock <= 0)
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-rose-50 text-rose-600 ring-1 ring-rose-200 whitespace-nowrap">
-          <span className="w-1 h-1 rounded-full bg-current opacity-60" />
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 whitespace-nowrap">
+          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
           Out of Stock
         </span>
       );
     if (totalStock <= 5)
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-amber-50 text-amber-700 ring-1 ring-amber-200 whitespace-nowrap">
-          <span className="w-1 h-1 rounded-full bg-current opacity-60" />
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 whitespace-nowrap">
+          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
           Low Stock
         </span>
       );
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 whitespace-nowrap">
-        <span className="w-1 h-1 rounded-full bg-current opacity-60" />
+      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 whitespace-nowrap">
+        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
         In Stock
       </span>
     );
@@ -156,38 +152,35 @@ const StockPill = memo(
 );
 StockPill.displayName = "StockPill";
 
-// ─────────────────────────────────────────────────────────────
-// COLLAPSIBLE SECTION — memoized
-// ─────────────────────────────────────────────────────────────
 const CollapsibleSection = memo(
   ({
     icon,
     title,
     children,
     defaultOpen = true,
-    accent,
   }: {
     icon: React.ReactNode;
     title: string;
     children: React.ReactNode;
     defaultOpen?: boolean;
-    accent?: string;
   }) => {
     const [open, setOpen] = useState(defaultOpen);
     const toggle = useCallback(() => setOpen((o) => !o), []);
     return (
-      <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-        {accent && <div className={cn("h-0.5 w-full", accent)} />}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <button
           type="button"
-          className="w-full px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between"
+          className={cn(
+            "flex w-full items-center justify-between bg-white px-4 py-3 transition-colors hover:bg-slate-50",
+            open && "border-b border-slate-200",
+          )}
           onClick={toggle}
         >
           <SectionLabel icon={icon}>{title}</SectionLabel>
           <ChevronDown
-            size={13}
+            size={16}
             className={cn(
-              "text-stone-400 transition-transform duration-200",
+              "text-slate-400 transition-transform duration-200",
               open && "rotate-180",
             )}
           />
@@ -198,10 +191,6 @@ const CollapsibleSection = memo(
   },
 );
 CollapsibleSection.displayName = "CollapsibleSection";
-
-// ─────────────────────────────────────────────────────────────
-// PRODUCT TABLE ROW COMPONENTS — memoized to prevent list re-renders
-// ─────────────────────────────────────────────────────────────
 
 const DesktopProductRow = memo(
   ({
@@ -229,10 +218,10 @@ const DesktopProductRow = memo(
     );
 
     return (
-      <tr className="hover:bg-stone-50/60 transition-colors group">
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 shrink-0 bg-stone-100 border border-stone-200 rounded-lg overflow-hidden">
+      <tr className="group transition-colors hover:bg-slate-50/50">
+        <td className="px-5 py-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
               <img
                 className="h-full w-full object-contain p-1"
                 src={product.media?.[0]?.url || "/placeholder.png"}
@@ -246,79 +235,79 @@ const DesktopProductRow = memo(
             </div>
             <div className="min-w-0">
               <p
-                className="text-xs font-semibold text-stone-800 truncate tracking-tight leading-tight"
+                className="truncate text-sm font-medium text-slate-900"
                 title={product.name}
               >
                 {product.name}
               </p>
-              <p className="text-[10px] font-mono text-stone-400 mt-0.5">
+              <p className="mt-0.5 font-mono text-xs text-slate-500">
                 {firstVar?.sku || "NO-SKU"}
               </p>
             </div>
           </div>
         </td>
-        <td className="px-3 py-3 whitespace-nowrap">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full">
+        <td className="whitespace-nowrap px-5 py-3">
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
             {product.category}
           </span>
         </td>
-        <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap text-xs font-semibold text-stone-500">
+        <td className="hidden whitespace-nowrap px-5 py-3 text-sm font-medium text-slate-600 md:table-cell">
           {brand}
         </td>
-        <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap">
-          <span className="text-xs font-mono font-semibold text-stone-500 tabular-nums">
+        <td className="hidden whitespace-nowrap px-5 py-3 lg:table-cell">
+          <span className="font-mono text-sm text-slate-600 tabular-nums">
             {variantCount} var{variantCount !== 1 ? "s" : ""}
           </span>
         </td>
-        <td className="px-3 py-3 whitespace-nowrap text-right">
-          <span className="text-xs font-bold text-stone-900 font-mono tabular-nums">
+        <td className="whitespace-nowrap px-5 py-3 text-right">
+          <span className="font-mono text-sm font-medium text-slate-900 tabular-nums">
             ₹{price}
           </span>
         </td>
-        <td className="px-3 py-3 whitespace-nowrap text-right">
-          <div className="flex flex-col items-end gap-0.5">
+        <td className="whitespace-nowrap px-5 py-3 text-right">
+          <div className="flex flex-col items-end gap-1">
             <StockPill product={product} variant={firstVar} />
-            <span className="text-[10px] font-mono text-stone-400 tabular-nums">
+            <span className="font-mono text-xs text-slate-500 tabular-nums">
               {totalStock} units
             </span>
           </div>
         </td>
-        <td className="px-4 py-3 whitespace-nowrap text-right">
-          <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <td className="whitespace-nowrap px-5 py-3 text-right">
+          <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               onClick={handleEdit}
-              className="h-7 w-7 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-stone-50 text-stone-500 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
             >
-              <Edit size={12} />
+              <Edit size={14} />
             </button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <button className="h-7 w-7 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-rose-50 hover:border-rose-200 text-stone-400 hover:text-rose-500 transition-colors">
-                  <Trash size={12} />
+                <button className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600">
+                  <Trash size={14} />
                 </button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-white border-stone-200 rounded-xl shadow-xl mx-4">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-sm font-bold text-stone-900">
+              <AlertDialogContent className="rounded-lg border-slate-200 bg-white p-0 shadow-lg sm:max-w-md">
+                <AlertDialogHeader className="border-b border-slate-100 px-6 pb-4 pt-6">
+                  <AlertDialogTitle className="text-lg font-semibold text-slate-900">
                     Delete product?
                   </AlertDialogTitle>
-                  <AlertDialogDescription className="text-xs text-stone-400">
+                  <AlertDialogDescription className="text-sm text-slate-500">
                     This cannot be undone.{" "}
-                    <span className="font-semibold text-stone-700">
+                    <span className="font-medium text-slate-900">
                       {product.name}
                     </span>{" "}
                     will be permanently removed.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="text-xs font-semibold border-stone-200 text-stone-600 hover:bg-stone-50 rounded-lg">
+                <AlertDialogFooter className="bg-slate-50 px-6 py-4 border-t border-slate-100">
+                  <AlertDialogCancel className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100">
                     Cancel
                   </AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg"
+                    className="rounded-md bg-rose-600 font-medium text-white hover:bg-rose-700"
                     onClick={handleDelete}
                   >
-                    Delete
+                    Delete Permanently
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -352,8 +341,8 @@ const MobileProductCard = memo(
     );
 
     return (
-      <div className="flex items-center gap-3 px-3 py-3">
-        <div className="h-12 w-12 shrink-0 bg-stone-100 border border-stone-200 rounded-lg overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-4 hover:bg-slate-50/50 border-b border-slate-100 last:border-0">
+        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
           <img
             className="h-full w-full object-contain p-1"
             src={product.media?.[0]?.url || "/placeholder.png"}
@@ -365,59 +354,59 @@ const MobileProductCard = memo(
             }}
           />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-stone-800 truncate tracking-tight">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-slate-900">
             {product.name}
           </p>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
               {product.category}
             </span>
             <StockPill product={product} variant={firstVar} />
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs font-bold text-stone-900 font-mono tabular-nums">
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className="font-mono text-sm font-medium text-slate-900 tabular-nums">
               ₹{price}
             </span>
-            <span className="text-[10px] text-stone-400 font-mono">
+            <span className="font-mono text-xs text-slate-500">
               {totalStock} units
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex flex-shrink-0 items-center gap-2">
           <button
             onClick={handleEdit}
-            className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-stone-50 text-stone-500 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50"
           >
-            <Edit size={13} />
+            <Edit size={14} />
           </button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-stone-200 hover:bg-rose-50 hover:border-rose-200 text-stone-400 hover:text-rose-500 transition-colors">
-                <Trash size={13} />
+              <button className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600">
+                <Trash size={14} />
               </button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-white border-stone-200 rounded-xl shadow-xl mx-4">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-sm font-bold text-stone-900">
+            <AlertDialogContent className="rounded-lg border-slate-200 bg-white p-0 shadow-lg sm:max-w-md">
+              <AlertDialogHeader className="border-b border-slate-100 px-6 pb-4 pt-6">
+                <AlertDialogTitle className="text-lg font-semibold text-slate-900">
                   Delete product?
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-xs text-stone-400">
-                  <span className="font-semibold text-stone-700">
+                <AlertDialogDescription className="text-sm text-slate-500">
+                  <span className="font-medium text-slate-900">
                     {product.name}
                   </span>{" "}
                   will be permanently removed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="text-xs font-semibold border-stone-200 text-stone-600 hover:bg-stone-50 rounded-lg">
+              <AlertDialogFooter className="bg-slate-50 px-6 py-4 border-t border-slate-100">
+                <AlertDialogCancel className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100">
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg"
+                  className="rounded-md bg-rose-600 font-medium text-white hover:bg-rose-700"
                   onClick={handleDelete}
                 >
-                  Delete
+                  Delete Permanently
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -464,6 +453,7 @@ const EMPTY_FORM: ProductFormState = {
   specs: { brand: "" },
   description: "",
 };
+
 const ProductMediaUploader = React.memo(function ProductMediaUploader({
   onUploadComplete,
   minimal = false,
@@ -485,8 +475,9 @@ const ProductMediaUploader = React.memo(function ProductMediaUploader({
     />
   );
 });
+
 // ─────────────────────────────────────────────────────────────
-// MAIN
+// MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 const ProductManager = () => {
   const {
@@ -516,7 +507,7 @@ const ProductManager = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [newSpecKey, setNewSpecKey] = useState("");
   const [newSpecValue, setNewSpecValue] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -550,7 +541,6 @@ const ProductManager = () => {
 
   const [showDetail, setShowDetail] = useState(false);
 
-  // Stable ref for search params string to avoid stale closure in fetch effect
   const searchParamsStr = searchParams.toString();
 
   useEffect(() => {
@@ -617,7 +607,7 @@ const ProductManager = () => {
       if (!attr.dependencyKey) return true;
       const depVal =
         currentProduct.specs?.[
-          attr.key === "socket" ? "brand" : attr.dependencyKey
+        attr.key === "socket" ? "brand" : attr.dependencyKey
         ];
       return Array.isArray(depVal)
         ? depVal.includes(attr.dependencyValue || "")
@@ -635,8 +625,6 @@ const ProductManager = () => {
 
   const handleUploadComplete = useCallback((url: string) => {
     setPreviewUrl(url);
-
-    // defer heavy state update
     setTimeout(() => {
       setCurrentProduct((prev) => ({
         ...prev,
@@ -821,7 +809,7 @@ const ProductManager = () => {
     });
   }, []);
 
-  const toggleFilters = useCallback(() => setShowFilters((f) => !f), []);
+  
   const handleSyncData = useCallback(() => syncData(), [syncData]);
   const handleCloseDetail = useCallback(() => setShowDetail(false), []);
   const handleOpenDetail = useCallback(() => setShowDetail(true), []);
@@ -852,7 +840,6 @@ const ProductManager = () => {
     [currentProduct.specs, schemaKeys],
   );
 
-  // ── Catalog insights — all in one pass ──
   const {
     totalCatalogValue,
     outOfStockCount,
@@ -912,7 +899,6 @@ const ProductManager = () => {
     };
   }, [products]);
 
-  // Pre-format values used in KPI cards
   const avgPriceFormatted =
     priceRange.avg > 999999
       ? `₹${(priceRange.avg / 100000).toFixed(1)}L`
@@ -923,13 +909,12 @@ const ProductManager = () => {
       : `₹${totalCatalogValue.toLocaleString("en-IN")}`;
   const minPriceFormatted = `₹${priceRange.min.toLocaleString("en-IN")}`;
 
-  // Profit margin — computed only when relevant inputs change
   const profitMargin = useMemo(() => {
     if (newProductCost <= 0 || !currentProduct.price) return null;
     return Math.round(
       (((currentProduct.price || 0) - newProductCost) /
         (currentProduct.price || 1)) *
-        100,
+      100,
     );
   }, [newProductCost, currentProduct.price]);
 
@@ -938,60 +923,51 @@ const ProductManager = () => {
   // ─────────────────────────────────────────────────────────
   if (isEditing) {
     return (
-      <div
-        className="space-y-3 md:space-y-5 pb-20"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
-      >
+      <div className="space-y-6 pb-20">
         {/* ─── EDIT HEADER ─── */}
-        <div className="flex flex-row items-center justify-between gap-2 px-0.5 sticky top-0 z-20 bg-stone-50/80 backdrop-blur-md py-2 -mt-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-1 h-4 md:h-5 rounded-full bg-indigo-500 shrink-0" />
-            <div className="min-w-0">
-              <h2 className="text-sm md:text-base font-bold text-stone-900 tracking-tight truncate">
+        <div className="sticky top-0 z-20 -mt-2 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
                 {currentProduct.id ? "Edit Product" : "New Product"}
               </h2>
-              <p className="hidden md:block text-[11px] text-stone-400 mt-0.5 truncate">
+              <p className="hidden text-sm text-slate-500 md:block">
                 {currentProduct.id
                   ? `Editing: ${currentProduct.name}`
                   : "Add a new item to your catalogue"}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={handleCancel}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-[11px] font-bold transition-all"
+              className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
             >
-              <ArrowLeft size={12} />{" "}
+              <ArrowLeft size={14} />
               <span className="hidden xs:inline">Back</span>
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 active:bg-indigo-700 text-white text-[11px] font-bold transition-all shadow-sm shadow-indigo-100"
+              className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
             >
-              <Save size={12} /> Save
+              <Save size={14} /> Save Product
             </button>
           </div>
         </div>
 
         {/* ─── MAIN FORM GRID ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-5">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* ── LEFT: General + Specs ── */}
-          <div className="lg:col-span-2 space-y-3 md:space-y-4">
+          <div className="space-y-6 lg:col-span-2">
             {/* General Information */}
             <CollapsibleSection
-              icon={<LayoutGrid size={12} />}
+              icon={<LayoutGrid size={16} />}
               title="General Details"
-              accent="bg-gradient-to-r from-indigo-400 to-violet-400"
             >
-              <div className="p-3 md:p-5">
-                <form
-                  onSubmit={handleSave}
-                  id="product-form"
-                  className="space-y-4"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              <div className="p-5">
+                <form id="product-form" className="space-y-5">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div className="sm:col-span-2 md:col-span-1">
                       <FieldLabel required>Product Name</FieldLabel>
                       <Input
@@ -1004,7 +980,7 @@ const ProductManager = () => {
                           }))
                         }
                         placeholder="Identifying name..."
-                        className="h-10 md:h-9 text-sm rounded-xl border-stone-200 shadow-none focus-visible:ring-indigo-400"
+                        className="h-10 rounded-md border-slate-200 text-sm"
                       />
                     </div>
                     <div>
@@ -1018,7 +994,7 @@ const ProductManager = () => {
                           }))
                         }
                         placeholder="SKU-XXXXX"
-                        className="h-10 md:h-9 text-sm font-mono rounded-xl border-stone-200 shadow-none"
+                        className="h-10 font-mono rounded-md border-slate-200 text-sm"
                       />
                     </div>
                     <div>
@@ -1027,16 +1003,12 @@ const ProductManager = () => {
                         value={currentProduct.category}
                         onValueChange={handleCategoryChange}
                       >
-                        <SelectTrigger className="h-10 md:h-9 text-sm rounded-xl border-stone-200 bg-white">
+                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
+                        <SelectContent className="border-slate-200 bg-white">
                           {categoryOptions.map((cat: string) => (
-                            <SelectItem
-                              key={cat}
-                              value={cat}
-                              className="text-xs py-2 focus:bg-stone-50"
-                            >
+                            <SelectItem key={cat} value={cat}>
                               {cat}
                             </SelectItem>
                           ))}
@@ -1049,16 +1021,12 @@ const ProductManager = () => {
                         value={(currentProduct.specs?.brand as string) || ""}
                         onValueChange={(val) => handleSpecChange("brand", val)}
                       >
-                        <SelectTrigger className="h-10 md:h-9 text-sm rounded-xl border-stone-200 bg-white">
+                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
                           <SelectValue placeholder="Select brand..." />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
+                        <SelectContent className="border-slate-200 bg-white">
                           {availableBrands.map((brand: Brand) => (
-                            <SelectItem
-                              key={brand.id}
-                              value={brand.name}
-                              className="text-xs py-2 focus:bg-stone-50"
-                            >
+                            <SelectItem key={brand.id} value={brand.name}>
                               {brand.name}
                             </SelectItem>
                           ))}
@@ -1076,7 +1044,7 @@ const ProductManager = () => {
                           }))
                         }
                         placeholder="Enter technical details and overview..."
-                        className="min-h-[100px] text-sm border-stone-200 rounded-xl shadow-none resize-none"
+                        className="min-h-[100px] resize-none rounded-md border-slate-200 text-sm"
                       />
                     </div>
                   </div>
@@ -1086,23 +1054,23 @@ const ProductManager = () => {
 
             {/* Specifications */}
             <CollapsibleSection
-              icon={<Settings2 size={12} />}
+              icon={<Settings2 size={16} />}
               title="Specifications"
             >
-              <div className="p-3 md:p-5 space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              <div className="space-y-6 p-5">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   {activeSchemaSpecs.map((attr: ProductSchemaAttribute) => (
-                    <div key={attr.key} className="relative group">
+                    <div key={attr.key}>
                       <FieldLabel required={attr.required}>
                         {attr.label}
                         {attr.unit && (
-                          <span className="normal-case text-stone-400 ml-1">
+                          <span className="ml-1 text-slate-400 normal-case">
                             ({attr.unit})
                           </span>
                         )}
                       </FieldLabel>
                       {attr.type === "multi-select" ? (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
+                        <div className="flex flex-wrap gap-2">
                           {attr.options?.map((option: string) => (
                             <button
                               key={option}
@@ -1111,14 +1079,14 @@ const ProductManager = () => {
                                 handleMultiSelectToggle(attr.key, option)
                               }
                               className={cn(
-                                "px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border",
+                                "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
                                 (
                                   (currentProduct.specs?.[
                                     attr.key
                                   ] as string[]) || []
                                 ).includes(option)
-                                  ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                  : "bg-white text-stone-500 border-stone-200 active:bg-stone-50",
+                                  ? "border-slate-900 bg-slate-900 text-white"
+                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                               )}
                             >
                               {option}
@@ -1128,7 +1096,7 @@ const ProductManager = () => {
                       ) : (
                         <Input
                           type={attr.type === "number" ? "number" : "text"}
-                          className="h-10 md:h-9 text-sm rounded-xl border-stone-200"
+                          className="h-10 rounded-md border-slate-200 text-sm"
                           value={
                             currentProduct.specs?.[attr.key] == null
                               ? ""
@@ -1148,21 +1116,21 @@ const ProductManager = () => {
                   ))}
                 </div>
 
-                <div className="pt-4 border-t border-stone-100 space-y-3">
-                  <SectionLabel icon={<Plus size={11} />}>
+                <div className="border-t border-slate-200 pt-5 space-y-4">
+                  <SectionLabel icon={<Plus size={16} />}>
                     Custom Specifications
                   </SectionLabel>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {customSpecs.map(([key, value]) => (
                       <div
                         key={key}
-                        className="flex items-center gap-2 bg-stone-50/50 p-2 rounded-xl border border-stone-100"
+                        className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 p-2"
                       >
-                        <span className="text-[10px] text-stone-400 font-mono shrink-0 w-16 truncate">
+                        <span className="w-16 shrink-0 truncate font-mono text-xs text-slate-500">
                           {key}
                         </span>
                         <Input
-                          className="h-8 text-xs border-stone-200 rounded-lg bg-white flex-1"
+                          className="h-8 flex-1 rounded-md border-slate-200 bg-white text-sm"
                           value={String(value)}
                           onChange={(e) =>
                             handleSpecChange(key, e.target.value)
@@ -1170,31 +1138,31 @@ const ProductManager = () => {
                         />
                         <button
                           onClick={() => removeCustomSpec(key)}
-                          className="p-1.5 text-rose-400 active:text-rose-600"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
                         >
                           <Trash size={14} />
                         </button>
                       </div>
                     ))}
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                  <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 sm:flex-row">
                     <Input
                       placeholder="Spec Name (e.g. Weight)"
-                      className="h-9 text-xs border-stone-200 rounded-lg flex-1"
+                      className="h-9 flex-1 rounded-md border-slate-200 text-sm bg-white"
                       value={newSpecKey}
                       onChange={(e) => setNewSpecKey(e.target.value)}
                     />
                     <Input
                       placeholder="Value (e.g. 1.2kg)"
-                      className="h-9 text-xs border-stone-200 rounded-lg flex-1"
+                      className="h-9 flex-1 rounded-md border-slate-200 text-sm bg-white"
                       value={newSpecValue}
                       onChange={(e) => setNewSpecValue(e.target.value)}
                     />
                     <button
                       onClick={addCustomSpec}
-                      className="h-9 px-4 rounded-lg bg-white border border-stone-200 text-xs font-bold text-stone-600 active:bg-stone-100 transition-all"
+                      className="h-9 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
                     >
-                      Add Spec
+                      Add
                     </button>
                   </div>
                 </div>
@@ -1203,32 +1171,30 @@ const ProductManager = () => {
           </div>
 
           {/* ─── RIGHT: Media + Pricing + Inventory ─── */}
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-6">
             {/* ─── PRODUCT MEDIA SECTION ─── */}
             <CollapsibleSection
-              icon={<ImageIcon size={14} />}
+              icon={<ImageIcon size={16} />}
               title="Product Media"
             >
               <div className="p-5">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   {currentProduct.images.map((img, index) => (
                     <div
                       key={index}
                       className={cn(
-                        "relative aspect-square rounded-2xl border-2 overflow-hidden bg-white group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:z-10",
+                        "group relative aspect-square overflow-hidden rounded-md border bg-white transition-all",
                         index === 0
-                          ? "border-indigo-200 shadow-indigo-100/50"
-                          : "border-stone-100 shadow-sm hover:border-indigo-100",
+                          ? "border-slate-400"
+                          : "border-slate-200 hover:border-slate-300",
                       )}
                     >
                       <img
                         src={img}
-                        className="w-full h-full object-contain p-2.5 transition-transform duration-500 group-hover:scale-110"
+                        className="h-full w-full object-contain p-2"
                         alt={`Product view ${index + 1}`}
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
-
                       <button
                         type="button"
                         onClick={() => {
@@ -1240,14 +1206,13 @@ const ProductManager = () => {
                             images: newImages.length > 0 ? newImages : [],
                           }));
                         }}
-                        className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-md border border-rose-100 text-rose-500 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all active:scale-90 hover:bg-rose-500 hover:text-white"
+                        className="absolute right-2 top-2 rounded-md bg-white p-1.5 text-slate-400 opacity-0 shadow-sm transition-opacity hover:text-rose-600 group-hover:opacity-100 border border-slate-200"
                       >
                         <Trash size={14} />
                       </button>
 
                       {index === 0 && (
-                        <div className="absolute bottom-2 left-2 px-2.5 py-1 bg-indigo-600 text-[9px] font-black uppercase tracking-[0.15em] text-white rounded-lg shadow-lg flex items-center gap-1.5 animate-in slide-in-from-left duration-500">
-                          <Star size={10} fill="currentColor" />
+                        <div className="absolute bottom-2 left-2 rounded bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-white">
                           Primary
                         </div>
                       )}
@@ -1255,74 +1220,52 @@ const ProductManager = () => {
                   ))}
                   <div
                     className={cn(
-                      "aspect-square rounded-2xl border-2 border-dashed transition-all duration-500",
-                      "border-indigo-200/60 bg-indigo-50/20 hover:bg-white hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-100",
-                      "relative overflow-hidden group/uploader flex flex-col items-center justify-center text-center p-4",
-                      isMediaUploading &&
-                        "border-indigo-300 bg-indigo-50/40 cursor-wait",
+                      "group flex aspect-square flex-col items-center justify-center rounded-md border-2 border-dashed transition-colors",
+                      isMediaUploading
+                        ? "border-slate-300 bg-slate-50 cursor-wait"
+                        : "border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100",
                     )}
                   >
-                    {/* Background decoration */}
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.06),transparent)] opacity-0 group-hover/uploader:opacity-100 transition-opacity duration-700" />
-
                     {isMediaUploading ? (
-                      <div className="relative z-10 flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-300">
-                        <div className="relative">
-                          <Loader2
-                            size={32}
-                            className="text-indigo-600 animate-spin"
-                          />
-                          <div className="absolute inset-0 blur-lg bg-indigo-500/20 animate-pulse" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2
+                          size={24}
+                          className="animate-spin text-slate-600"
+                        />
+                        <div className="text-center">
+                          <p className="text-xs font-medium text-slate-700">
                             Uploading
                           </p>
-                          <p className="text-xs font-mono font-bold text-indigo-500 mt-1">
+                          <p className="font-mono text-xs text-slate-500">
                             {uploadProgress}%
                           </p>
                         </div>
-                        <div className="w-24 h-1 bg-indigo-100 rounded-full overflow-hidden shadow-inner">
-                          <div
-                            className="h-full bg-indigo-600 transition-all duration-300 shadow-[0_0_8px_rgba(79,70,229,0.5)]"
-                            style={{ width: `${uploadProgress}%` }}
-                          />
-                        </div>
                       </div>
                     ) : (
-                      <div className="relative z-10 flex flex-col items-center gap-3">
-                        <div className="relative group-hover/uploader:-translate-y-1 transition-transform duration-300">
-                          <div className="absolute -inset-4 bg-indigo-500/10 rounded-full blur-xl scale-0 group-hover/uploader:scale-100 transition-transform duration-500" />
-                          <div className="p-4 bg-white rounded-2xl shadow-sm border border-indigo-100 group-hover/uploader:border-indigo-200 group-hover/uploader:shadow-md transition-all duration-300">
-                            <Plus size={24} className="text-indigo-600" />
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="block text-[11px] font-black text-indigo-600 uppercase tracking-[0.15em]">
-                            Add Media
-                          </span>
-                          <span className="block text-[9px] text-stone-400 font-bold uppercase tracking-widest">
-                            Max 4MB
-                          </span>
-                        </div>
+                      <div className="flex flex-col items-center gap-2 text-center pointer-events-none">
+                        <Plus size={24} className="text-slate-400" />
+                        <span className="text-xs font-medium text-slate-500">
+                          Add Media
+                        </span>
                       </div>
                     )}
-
-                    <ProductMediaUploader
-                      minimal
-                      onUploadStart={() => setIsMediaUploading(true)}
-                      onProgress={(p) => setUploadProgress(p)}
-                      onUploadComplete={(url) => {
-                        setIsMediaUploading(false);
-                        setUploadProgress(0);
-                        handleUploadComplete(url);
-                      }}
-                    />
+                    <div className="absolute inset-0 z-10 opacity-0 cursor-pointer">
+                      <ProductMediaUploader
+                        minimal
+                        onUploadStart={() => setIsMediaUploading(true)}
+                        onProgress={(p) => setUploadProgress(p)}
+                        onUploadComplete={(url) => {
+                          setIsMediaUploading(false);
+                          setUploadProgress(0);
+                          handleUploadComplete(url);
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 p-3 bg-stone-50 rounded-xl border border-stone-100">
-                  <p className="text-[10px] text-stone-500 font-medium text-center leading-relaxed">
-                    <span className="text-indigo-600 font-bold">Pro Tip:</span>{" "}
+                <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-sm text-slate-600">
+                    <span className="font-semibold text-slate-900">Pro Tip:</span>{" "}
                     The first image in the grid is automatically set as your
                     primary thumbnail across the store.
                   </p>
@@ -1332,21 +1275,21 @@ const ProductManager = () => {
 
             {/* Pricing & Stock Card */}
             <CollapsibleSection
-              icon={<DollarSign size={12} />}
+              icon={<DollarSign size={16} />}
               title="Price & Inventory"
             >
-              <div className="p-4 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+              <div className="space-y-5 p-5">
+                <div className="space-y-4">
                   <div>
                     <FieldLabel required>Selling Price (₹)</FieldLabel>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-mono text-sm">
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-slate-400">
                         ₹
                       </span>
                       <Input
                         type="number"
                         step="0.01"
-                        className="h-11 md:h-10 pl-7 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm focus-visible:ring-indigo-400"
+                        className="h-10 rounded-md border-slate-200 pl-7 font-mono text-sm"
                         value={currentProduct.price}
                         onChange={(e) =>
                           setCurrentProduct((prev) => ({
@@ -1358,11 +1301,11 @@ const ProductManager = () => {
                     </div>
                   </div>
                   <div>
-                    <FieldLabel>Stock Hint</FieldLabel>
+                    <FieldLabel>Initial Stock Hint</FieldLabel>
                     <Input
                       type="number"
                       min={0}
-                      className="h-11 md:h-10 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm"
+                      className="h-10 rounded-md border-slate-200 font-mono text-sm"
                       value={currentProduct.stock ?? 0}
                       onChange={(e) =>
                         setCurrentProduct((prev) => ({
@@ -1374,24 +1317,24 @@ const ProductManager = () => {
                   </div>
                 </div>
                 {profitMargin !== null && (
-                  <div className="px-3 py-3 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp size={14} className="text-emerald-600" />
-                      <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest leading-none">
+                  <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <TrendingUp size={16} />
+                      <span className="text-sm font-medium">
                         Est. Margin
                       </span>
                     </div>
-                    <span className="text-sm font-black text-emerald-700 font-mono leading-none">
+                    <span className="font-mono text-sm font-semibold text-slate-900">
                       {profitMargin}%
                     </span>
                   </div>
                 )}
-                <div className="border-t border-stone-100 pt-4">
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-[11px] text-amber-800">
-                    Serial numbers and part numbers are managed only in
+                <div className="border-t border-slate-200 pt-4">
+                  <p className="text-sm text-slate-500">
+                    Serial numbers and part numbers are managed strictly within
                     Inventory. Create the product here, then add physical units
                     from the inventory page.
-                  </div>
+                  </p>
                 </div>
               </div>
             </CollapsibleSection>
@@ -1405,219 +1348,173 @@ const ProductManager = () => {
   // LIST VIEW
   // ─────────────────────────────────────────────────────────
   return (
-    <div
-      className="space-y-2.5"
-      style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
-    >
-      {/* ─── HEADER ─── */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-1 h-4 rounded-full bg-indigo-500 flex-shrink-0" />
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-stone-900 tracking-tight">
-              Products
-            </h2>
-            <p className="text-[11px] text-stone-400 font-mono hidden sm:block">
-              {totalProducts} SKUs in catalogue
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleSyncData}
-            disabled={isLoading}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Sync</span>
-          </button>
-          <button
-            onClick={handleAddNew}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
-          >
-            <Plus size={12} />
-            <span>Add</span>
-            <span className="hidden sm:inline"> Product</span>
-          </button>
-        </div>
-      </div>
-
+    <div className="space-y-6">
+    
       {/* ─── KPI CARDS ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 px-0.5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
           {
-            label: "Catalogue",
+            label: "Total Catalogue",
             value: products.length,
             sub: (
               <button
                 onClick={handleOpenDetail}
-                className="hover:text-indigo-600 transition-colors flex items-center gap-0.5"
+                className="flex items-center gap-1 hover:text-slate-900 transition-colors"
               >
-                <span className="truncate">
+                <span>
                   {categoryCount} cat · {brandCount} brands
                 </span>
-                <ChevronRight size={8} className="shrink-0" />
+                <ChevronRight size={12} />
               </button>
             ),
-            icon: <Package />,
-            accent: "border-l-indigo-400",
+            icon: <Package size={16} />,
           },
           {
-            label: "Avg Price",
+            label: "Average Price",
             value: avgPriceFormatted,
             sub: `Min ${minPriceFormatted}`,
-            icon: <DollarSign />,
-            accent: "border-l-teal-400",
+            icon: <DollarSign size={16} />,
           },
           {
             label: "Out of Stock",
             value: outOfStockCount,
-            sub: "Need attention",
-            icon: <AlertCircle />,
-            accent: "border-l-rose-400",
+            sub: "Requires attention",
+            icon: <AlertCircle size={16} />,
             alert: outOfStockCount > 0,
           },
           {
             label: "Total Value",
             value: totalValueFormatted,
             sub: "Catalogue Sum",
-            icon: <TrendingUp />,
-            accent: "border-l-violet-400",
+            icon: <TrendingUp size={16} />,
           },
         ].map((card, idx) => (
           <div
             key={idx}
-            className={cn(
-              "rounded-xl bg-white border border-stone-200 shadow-sm transition-all",
-              "p-2.5 sm:p-4 border-l-[3px] sm:border-l-4",
-              card.accent,
-            )}
+            className="flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
           >
-            <div className="flex items-center justify-between mb-1 sm:mb-1.5">
-              <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tighter sm:tracking-widest truncate mr-1">
-                {card.label}
-              </span>
-              <span
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  {card.label}
+                </p>
+                <p className="mt-1.5 text-2xl font-semibold text-slate-900">
+                  {card.value}
+                </p>
+                <div className="mt-1 text-xs text-slate-500">
+                  {card.sub}
+                </div>
+              </div>
+              <div
                 className={cn(
-                  "p-1 rounded-md shrink-0",
+                  "rounded-md p-2",
                   (card as any).alert
-                    ? "text-rose-500 bg-rose-50"
-                    : "text-stone-400 bg-stone-50",
+                    ? "bg-rose-50 text-rose-600"
+                    : "bg-slate-50 text-slate-500",
                 )}
               >
-                {React.isValidElement(card.icon)
-                  ? React.cloneElement(
-                      card.icon as React.ReactElement<{ size?: number }>,
-                      { size: 12 },
-                    )
-                  : card.icon}
-              </span>
-            </div>
-            <p className="text-base sm:text-lg md:text-xl font-extrabold text-stone-900 tabular-nums tracking-tight leading-none">
-              {card.value}
-            </p>
-            <div className="text-[9px] sm:text-[10px] text-stone-400 mt-1 truncate font-medium">
-              {card.sub}
+                {card.icon}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
       {/* ─── INSIGHTS ROW ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Category Breakdown */}
-        <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-          <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
-          <div className="px-4 py-2.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
-            <SectionLabel icon={<Tag size={12} />}>
-              SKUs by Category
-            </SectionLabel>
+        <div className="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <SectionLabel icon={<Tag size={16} />}>SKUs by Category</SectionLabel>
             <button
               onClick={handleOpenDetail}
-              className="text-[10px] font-bold text-indigo-600 hover:underline"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900"
             >
               View All
             </button>
           </div>
-          <ScrollArea className="h-[180px] sm:h-[220px]">
-            <div className="divide-y divide-stone-50 px-4">
+          <ScrollArea className="h-[220px]">
+            <div className="p-5">
               {categoryBreakdown.length === 0 ? (
-                <div className="py-5 text-center text-xs text-stone-400">
-                  No data
+                <div className="py-8 text-center text-sm text-slate-500">
+                  No data available
                 </div>
               ) : (
-                categoryBreakdown.map(([cat, data], idx) => {
-                  const pct =
-                    products.length > 0
-                      ? Math.round((data.count / products.length) * 100)
-                      : 0;
-                  return (
-                    <div key={idx} className="py-2.5">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-semibold text-stone-700 truncate">
-                          {cat}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold text-stone-400 tabular-nums shrink-0">
-                          {data.count} · {pct}%
-                        </span>
+                <div className="space-y-5">
+                  {categoryBreakdown.map(([cat, data], idx) => {
+                    const pct =
+                      products.length > 0
+                        ? Math.round((data.count / products.length) * 100)
+                        : 0;
+                    return (
+                      <div key={idx} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">
+                            {cat}
+                          </span>
+                          <span className="font-medium text-slate-900">
+                            {data.count} <span className="text-slate-400 font-normal ml-1">({pct}%)</span>
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-slate-800"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-indigo-400 transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </div>
           </ScrollArea>
         </div>
 
         {/* Brand Breakdown */}
-        <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-          <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300" />
-          <div className="px-4 py-2.5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
-            <SectionLabel icon={<Star size={12} />}>Top Brands</SectionLabel>
+        <div className="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <SectionLabel icon={<Star size={16} />}>Top Brands</SectionLabel>
             <button
               onClick={handleOpenDetail}
-              className="text-[10px] font-bold text-teal-600 hover:underline"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900"
             >
               View All
             </button>
           </div>
-          <ScrollArea className="h-[180px] sm:h-[220px]">
-            <div className="divide-y divide-stone-50 px-4">
+          <ScrollArea className="h-[220px]">
+            <div className="p-5">
               {brandBreakdown.length === 0 ? (
-                <div className="py-5 text-center text-xs text-stone-400">
-                  No data
+                <div className="py-8 text-center text-sm text-slate-500">
+                  No data available
                 </div>
               ) : (
-                brandBreakdown.slice(0, 10).map(([brand, count], idx) => {
-                  const pct =
-                    products.length > 0
-                      ? Math.round((count / products.length) * 100)
-                      : 0;
-                  return (
-                    <div key={idx} className="py-2.5">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-semibold text-stone-700 truncate">
-                          {brand}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold text-stone-400 tabular-nums shrink-0">
-                          {count} · {pct}%
-                        </span>
+                <div className="space-y-5">
+                  {brandBreakdown.slice(0, 10).map(([brand, count], idx) => {
+                    const pct =
+                      products.length > 0
+                        ? Math.round((count / products.length) * 100)
+                        : 0;
+                    return (
+                      <div key={idx} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">
+                            {brand}
+                          </span>
+                          <span className="font-medium text-slate-900">
+                            {count} <span className="text-slate-400 font-normal ml-1">({pct}%)</span>
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-slate-800"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-teal-400 transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </div>
           </ScrollArea>
@@ -1625,189 +1522,134 @@ const ProductManager = () => {
       </div>
 
       {/* ─── PRODUCT TABLE ─── */}
-      <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-        <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
-
+      <div className="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
         {/* Filters */}
-        <div className="px-3 sm:px-4 py-3 border-b border-stone-100 bg-stone-50/50 space-y-2">
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between px-0.5">
-            <div className="flex items-center justify-between sm:justify-start gap-3">
-              <div className="flex items-center gap-2">
-                <SectionLabel icon={<Package size={12} />}>
-                  Catalogue
-                </SectionLabel>
-                <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md shadow-sm">
-                  {totalProducts}
-                </span>
-              </div>
-              <button
-                onClick={toggleFilters}
-                className={cn(
-                  "sm:hidden flex items-center justify-center h-9 w-9 rounded-xl border transition-all active:scale-95 shadow-sm",
-                  showFilters
-                    ? "bg-indigo-50 border-indigo-200 text-indigo-600"
-                    : "bg-white border-stone-200 text-stone-600",
-                )}
-              >
-                <SlidersHorizontal size={16} />
-              </button>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-64 md:w-80">
-                <Search
-                  size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
-                />
-                <Input
-                  placeholder="Search catalogue..."
-                  className="pl-9 h-10 sm:h-9 text-xs bg-white border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 rounded-xl w-full shadow-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <button
-                onClick={toggleFilters}
-                className={cn(
-                  "hidden sm:flex items-center gap-2 h-9 px-3.5 rounded-xl border text-xs font-bold transition-all active:scale-95 shadow-sm",
-                  showFilters
-                    ? "bg-indigo-50 border-indigo-200 text-indigo-600"
-                    : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50",
-                )}
-              >
-                <SlidersHorizontal size={14} />
-                <span>Filters</span>
-              </button>
-            </div>
+        <div className="border-b border-slate-200 bg-white p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <SectionLabel icon={<Package size={16} />}>
+              Catalogue <span className="ml-2 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{totalProducts}</span>
+            </SectionLabel>
+           <div className='flex gap-2'>
+             
+            <button
+              onClick={handleAddNew}
+              className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+            >
+              <Plus size={14} />
+              <span>Add Product</span>
+            </button>
+           </div>
           </div>
 
-          {showFilters && (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Select
-                value={currentCategory}
-                onValueChange={(val) => updateQueryParams({ category: val })}
-              >
-                <SelectTrigger className="h-8 text-xs w-32 sm:w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-stone-200 shadow-md">
-                  <SelectItem value="all" className="text-xs focus:bg-stone-50">
-                    All Categories
-                  </SelectItem>
-                  {categoryOptions.map((cat: string) => (
-                    <SelectItem
-                      key={cat}
-                      value={cat}
-                      className="text-xs focus:bg-stone-50"
-                    >
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={currentStockStatus}
-                onValueChange={(val) =>
-                  updateQueryParams({ f_stock_status: val })
-                }
-              >
-                <SelectTrigger className="h-8 text-xs w-32 sm:w-36 bg-white border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
-                  <SelectValue placeholder="Availability" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-stone-200 shadow-md">
-                  <SelectItem value="all" className="text-xs focus:bg-stone-50">
-                    Any Availability
-                  </SelectItem>
-                  <SelectItem
-                    value="In Stock"
-                    className="text-xs focus:bg-stone-50"
-                  >
-                    In Stock
-                  </SelectItem>
-                  <SelectItem
-                    value="Out of Stock"
-                    className="text-xs focus:bg-stone-50"
-                  >
-                    Out of Stock
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1 h-8 px-2.5 bg-white border border-stone-200 rounded-lg">
-                <DollarSign size={11} className="text-stone-400" />
-                <input
-                  type="number"
-                  placeholder="Min"
-                  className="w-12 text-xs font-mono outline-none placeholder:text-stone-400 text-stone-700 bg-transparent"
-                  value={currentMinPrice}
-                  onChange={(e) =>
-                    updateQueryParams({ minPrice: e.target.value })
-                  }
-                />
-                <span className="text-stone-300">—</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  className="w-12 text-xs font-mono outline-none placeholder:text-stone-400 text-stone-700 bg-transparent"
-                  value={currentMaxPrice}
-                  onChange={(e) =>
-                    updateQueryParams({ maxPrice: e.target.value })
-                  }
-                />
-              </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <Input
+                placeholder="Search catalogue..."
+                className="h-10 rounded-md border-slate-200 pl-9 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-          )}
+
+            {showFilters && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Select
+                  value={currentCategory}
+                  onValueChange={(val) => updateQueryParams({ category: val })}
+                >
+                  <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-md border-slate-200 text-sm">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categoryOptions.map((cat: string) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={currentStockStatus}
+                  onValueChange={(val) =>
+                    updateQueryParams({ f_stock_status: val })
+                  }
+                >
+                  <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-md border-slate-200 text-sm">
+                    <SelectValue placeholder="Availability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any Availability</SelectItem>
+                    <SelectItem value="In Stock">In Stock</SelectItem>
+                    <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3">
+                  <DollarSign size={14} className="text-slate-400" />
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    className="w-16 bg-transparent text-sm font-medium outline-none placeholder:font-normal placeholder:text-slate-400"
+                    value={currentMinPrice}
+                    onChange={(e) =>
+                      updateQueryParams({ minPrice: e.target.value })
+                    }
+                  />
+                  <span className="text-slate-300">—</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    className="w-16 bg-transparent text-sm font-medium outline-none placeholder:font-normal placeholder:text-slate-400"
+                    value={currentMaxPrice}
+                    onChange={(e) =>
+                      updateQueryParams({ maxPrice: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Desktop Table */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-stone-100 bg-stone-50/30">
-                <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                  Product
-                </th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                  Category
-                </th>
-                <th className="hidden md:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                  Brand
-                </th>
-                <th className="hidden lg:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                  Variants
-                </th>
-                <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                  Price
-                </th>
-                <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                  Stock
-                </th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                  Actions
-                </th>
+        <div className="hidden overflow-x-auto sm:block">
+          <table className="w-full text-left text-sm text-slate-600">
+            <thead className="bg-slate-50/50 text-xs text-slate-500">
+              <tr className="border-b border-slate-200">
+                <th className="px-5 py-3 font-medium">Product</th>
+                <th className="px-5 py-3 font-medium">Category</th>
+                <th className="hidden px-5 py-3 font-medium md:table-cell">Brand</th>
+                <th className="hidden px-5 py-3 font-medium lg:table-cell">Variants</th>
+                <th className="px-5 py-3 text-right font-medium">Price</th>
+                <th className="px-5 py-3 text-right font-medium">Stock</th>
+                <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-50">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {isLoadingProducts ? (
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-5 py-10 text-center text-xs text-stone-400"
+                    className="px-5 py-12 text-center text-slate-500"
                   >
                     Loading products…
                   </td>
                 </tr>
               ) : paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center">
+                  <td colSpan={7} className="px-5 py-16 text-center">
                     <Package
                       size={24}
-                      className="mx-auto text-stone-300 mb-2"
+                      className="mx-auto mb-3 text-slate-400"
                     />
-                    <p className="text-xs text-stone-400 mb-1.5">
-                      No products found
-                    </p>
+                    <p className="mb-2 text-slate-500">No products found</p>
                     <button
                       onClick={handleClearFilters}
-                      className="text-xs text-indigo-600 font-semibold hover:underline"
+                      className="text-sm font-medium text-slate-900 hover:underline"
                     >
                       Clear filters
                     </button>
@@ -1828,18 +1670,18 @@ const ProductManager = () => {
         </div>
 
         {/* Mobile Cards */}
-        <div className="sm:hidden divide-y divide-stone-100">
+        <div className="divide-y divide-slate-100 sm:hidden">
           {isLoadingProducts ? (
-            <div className="p-8 text-center text-xs text-stone-400">
+            <div className="p-8 text-center text-sm text-slate-500">
               Loading products…
             </div>
           ) : paginatedProducts.length === 0 ? (
-            <div className="p-10 text-center">
-              <Package size={24} className="mx-auto text-stone-300 mb-2" />
-              <p className="text-xs text-stone-400 mb-1.5">No products found</p>
+            <div className="p-12 text-center">
+              <Package size={24} className="mx-auto mb-3 text-slate-400" />
+              <p className="mb-2 text-sm text-slate-500">No products found</p>
               <button
                 onClick={handleClearFilters}
-                className="text-xs text-indigo-600 font-semibold hover:underline"
+                className="text-sm font-medium text-slate-900 hover:underline"
               >
                 Clear filters
               </button>
@@ -1858,46 +1700,45 @@ const ProductManager = () => {
 
         {/* Pagination */}
         {!isLoadingProducts && totalProducts > 0 && (
-          <div className="px-3 sm:px-5 py-3 border-t border-stone-100 bg-stone-50/40 flex items-center justify-between">
-            <p className="text-xs text-stone-400 font-mono tabular-nums">
-              <span className="text-stone-600 font-semibold">
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
+            <p className="text-sm text-slate-600">
+              <span className="font-medium text-slate-900">
                 {(currentPage - 1) * currentLimit + 1}
               </span>
-              –
-              <span className="text-stone-600 font-semibold">
+              {" - "}
+              <span className="font-medium text-slate-900">
                 {Math.min(
                   currentPage *
-                    (currentLimit > 0 ? currentLimit : totalProducts),
+                  (currentLimit > 0 ? currentLimit : totalProducts),
                   totalProducts,
                 )}
               </span>
               <span className="hidden sm:inline">
-                {" "}
-                of{" "}
-                <span className="text-stone-600 font-semibold">
+                {" "}of{" "}
+                <span className="font-medium text-slate-900">
                   {totalProducts}
                 </span>
               </span>
             </p>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 disabled={currentPage <= 1}
                 onClick={() =>
                   updateQueryParams({ page: String(currentPage - 1) })
                 }
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <ChevronLeft size={13} />
+                <ChevronLeft size={14} />
               </button>
-              <span className="px-3 h-8 flex items-center text-xs font-mono font-bold text-stone-600 border border-stone-200 rounded-lg bg-white tabular-nums">
+              <span className="flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700">
                 {currentPage} /{" "}
                 {Math.max(
                   1,
                   Math.ceil(
                     totalProducts /
-                      (currentLimit > 0
-                        ? currentLimit
-                        : Math.max(totalProducts, 1)),
+                    (currentLimit > 0
+                      ? currentLimit
+                      : Math.max(totalProducts, 1)),
                   ),
                 )}
               </span>
@@ -1906,17 +1747,17 @@ const ProductManager = () => {
                   currentPage >=
                   Math.ceil(
                     totalProducts /
-                      (currentLimit > 0
-                        ? currentLimit
-                        : Math.max(totalProducts, 1)),
+                    (currentLimit > 0
+                      ? currentLimit
+                      : Math.max(totalProducts, 1)),
                   )
                 }
                 onClick={() =>
                   updateQueryParams({ page: String(currentPage + 1) })
                 }
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <ChevronRight size={13} />
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>
@@ -1925,161 +1766,131 @@ const ProductManager = () => {
 
       {/* ─── Breakdown Dialog ─── */}
       <AlertDialog open={showDetail} onOpenChange={setShowDetail}>
-        <AlertDialogContent className="bg-white border-stone-200 rounded-2xl shadow-2xl w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-hidden">
-          <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-teal-500" />
-
-          <AlertDialogHeader className="px-4 sm:px-6 py-4 border-b border-stone-100 bg-stone-50/30 flex-row items-center justify-between space-y-0">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                <BarChart3 size={16} />
+        <AlertDialogContent className="flex max-h-[90vh] w-[95vw] max-w-4xl flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+          <AlertDialogHeader className="shrink-0 flex-row items-center justify-between border-b border-slate-200 px-6 py-4 space-y-0">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+                <BarChart3 size={18} />
               </div>
-              <div>
-                <AlertDialogTitle className="text-base font-bold text-stone-900 tracking-tight">
+              <div className="text-left">
+                <AlertDialogTitle className="text-lg font-semibold text-slate-900">
                   Catalogue Intelligence
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-[10px] text-stone-400 mt-0.5 font-medium uppercase tracking-wider">
+                <AlertDialogDescription className="text-sm text-slate-500">
                   {products.length} SKUs · {categoryCount} categories ·{" "}
                   {brandCount} brands
                 </AlertDialogDescription>
               </div>
             </div>
-            <button
-              onClick={handleCloseDetail}
-              className="p-1.5 hover:bg-stone-100 rounded-full text-stone-400 transition-colors"
-            >
-              <X size={16} />
-            </button>
           </AlertDialogHeader>
 
-          <div className="flex-1 overflow-auto">
-            <div className="grid grid-cols-3 gap-2 p-4 border-b border-stone-50 bg-white">
+          <div className="flex-1 min-h-0 overflow-y-auto bg-slate-50/50 p-6">
+            <div className="mb-6 grid grid-cols-3 gap-4">
               {[
-                {
-                  label: "Total SKUs",
-                  value: products.length,
-                  cls: "text-stone-800",
-                },
-                {
-                  label: "Categories",
-                  value: categoryCount,
-                  cls: "text-indigo-600",
-                },
-                { label: "Brands", value: brandCount, cls: "text-teal-600" },
+                { label: "Total SKUs", value: products.length },
+                { label: "Categories", value: categoryCount },
+                { label: "Brands", value: brandCount },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="p-3 rounded-xl border border-stone-100 bg-stone-50/20 text-center"
+                  className="rounded-md border border-slate-200 bg-white p-4 text-center shadow-sm"
                 >
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wider text-slate-500">
                     {item.label}
                   </p>
-                  <p
-                    className={cn("text-xl font-black tabular-nums", item.cls)}
-                  >
+                  <p className="font-mono text-2xl font-bold text-slate-900">
                     {item.value}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <SectionLabel icon={<Tag size={12} />}>
-                      By Category
-                    </SectionLabel>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] uppercase font-bold text-stone-400 border-stone-200"
-                    >
-                      {categoryCount} total
-                    </Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {categoryBreakdown.map(([cat, data], i) => (
-                      <div key={i} className="group">
-                        <div className="flex items-center justify-between mb-1.5 px-0.5">
-                          <span className="text-xs font-bold text-stone-700 tracking-tight group-hover:text-indigo-600 transition-colors">
-                            {cat}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-stone-400">
-                              {Math.round((data.count / products.length) * 100)}
-                              %
-                            </span>
-                            <span className="text-xs font-mono font-extrabold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-lg min-w-[2rem] text-center">
-                              {data.count}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-1.5 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
-                          <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700 rounded-full"
-                            style={{
-                              width: `${(data.count / products.length) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <SectionLabel icon={<Tag size={16} />}>By Category</SectionLabel>
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                    {categoryCount} total
+                  </span>
                 </div>
-
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <SectionLabel icon={<Star size={12} />}>
-                      By Brand
-                    </SectionLabel>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] uppercase font-bold text-stone-400 border-stone-200"
-                    >
-                      {brandCount} total
-                    </Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {brandBreakdown.map(([brand, count], i) => (
-                      <div key={i} className="group">
-                        <div className="flex items-center justify-between mb-1.5 px-0.5">
-                          <span className="text-xs font-bold text-stone-700 tracking-tight group-hover:text-teal-600 transition-colors">
-                            {brand}
+                  {categoryBreakdown.map(([cat, data], i) => (
+                    <div key={i}>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-700">
+                          {cat}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">
+                            {Math.round((data.count / products.length) * 100)}%
                           </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-stone-400">
-                              {Math.round((count / products.length) * 100)}%
-                            </span>
-                            <span className="text-xs font-mono font-extrabold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-lg min-w-[2rem] text-center">
-                              {count}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-1.5 w-full bg-stone-50 rounded-full overflow-hidden border border-stone-100 shadow-inner">
-                          <div
-                            className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-700 rounded-full"
-                            style={{
-                              width: `${(count / products.length) * 100}%`,
-                            }}
-                          />
+                          <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-700">
+                            {data.count}
+                          </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-slate-800"
+                          style={{
+                            width: `${(data.count / products.length) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <SectionLabel icon={<Star size={16} />}>By Brand</SectionLabel>
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                    {brandCount} total
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {brandBreakdown.map(([brand, count], i) => (
+                    <div key={i}>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-700">
+                          {brand}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">
+                            {Math.round((count / products.length) * 100)}%
+                          </span>
+                          <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-700">
+                            {count}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-slate-800"
+                          style={{
+                            width: `${(count / products.length) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-4 border-t border-stone-100 bg-stone-50/50 flex justify-end">
+          <AlertDialogFooter className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4">
             <AlertDialogCancel asChild>
-              <button
+              <Button
+                variant="outline"
+                className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
                 onClick={handleCloseDetail}
-                className="px-5 py-2 rounded-xl bg-white border border-stone-200 text-xs font-black text-stone-600 hover:bg-stone-50 transition-all shadow-sm active:scale-95"
               >
                 Close
-              </button>
+              </Button>
             </AlertDialogCancel>
-          </div>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

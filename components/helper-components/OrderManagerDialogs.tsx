@@ -38,27 +38,27 @@ interface ConfirmStatusDialogProps {
 const inventoryMessage = (status: OrderStatus) => {
   if (status === OrderStatus.SHIPPED) {
     return {
-      tone: 'border-sky-100 bg-sky-50/80 text-sky-700',
+      tone: 'border-blue-200 bg-blue-50 text-blue-700',
       body: 'Reserved stock will be finalized as shipped and logged as a sale movement.',
     };
   }
 
   if (status === OrderStatus.CANCELLED) {
     return {
-      tone: 'border-amber-100 bg-amber-50/80 text-amber-700',
+      tone: 'border-amber-200 bg-amber-50 text-amber-700',
       body: 'Reserved stock will be released back into available inventory.',
     };
   }
 
   if (status === OrderStatus.RETURNED) {
     return {
-      tone: 'border-stone-200 bg-stone-50/90 text-stone-700',
+      tone: 'border-slate-200 bg-slate-50 text-slate-700',
       body: 'Returned items will be added back to stock and recorded as return movements.',
     };
   }
 
   return null;
-};
+}
 
 export const ConfirmStatusDialog = ({
   confirmDialog,
@@ -72,36 +72,40 @@ export const ConfirmStatusDialog = ({
 
   return (
     <Dialog open={confirmDialog.open} onOpenChange={(open: boolean) => !isUpdating && setConfirmDialog((dialog) => ({ ...dialog, open }))}>
-      <DialogContent className="max-h-[90vh] overflow-hidden border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,243,237,0.96))] p-0 shadow-[0_30px_90px_rgba(15,23,42,0.16)] sm:max-w-xl">
-        <div className="h-px w-full bg-gradient-to-r from-sky-300 via-cyan-300 to-amber-200" />
-        <DialogHeader className="space-y-4 px-6 pb-0 pt-6">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 border-slate-200 bg-white shadow-lg sm:max-w-xl sm:rounded-lg">
+
+        {/* Fixed Header */}
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
           <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white/90 text-sky-700 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600">
               <RefreshCw size={18} />
             </div>
-            <div className="space-y-2">
-              <DialogTitle className="text-xl font-semibold text-stone-950">Update order status</DialogTitle>
-              <DialogDescription className="text-sm leading-6 text-stone-600">
-                Confirm the next step for <span className="font-mono font-semibold text-stone-900">{confirmDialog.orderId}</span>. The order
+            <div className="space-y-1.5">
+              <DialogTitle className="text-lg font-semibold text-slate-900">Update Order Status</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500">
+                Confirm the next step for <span className="font-mono font-medium text-slate-900">{confirmDialog.orderId}</span>. The order
                 will be updated to the selected status and all linked inventory actions will follow automatically.
               </DialogDescription>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-white/80 bg-white/80 p-4 shadow-sm">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-400">New status</span>
+
+          <div className="mt-4 flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">New status</span>
             <StatusBadge status={confirmDialog.newStatus} />
           </div>
+
           {message && (
-            <div className={cn('rounded-[1.25rem] border px-4 py-3 text-sm leading-6', message.tone)}>
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.22em]">Inventory effect</span>
+            <div className={cn('mt-3 rounded-md border px-4 py-3 text-sm', message.tone)}>
+              <span className="block text-xs font-semibold uppercase tracking-wider">Inventory effect</span>
               <span className="mt-1 block">{message.body}</span>
             </div>
           )}
         </DialogHeader>
 
-        <div className="space-y-5 overflow-y-auto px-6 py-6">
+        {/* Scrollable Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-400">Internal note</label>
+            <label className="text-xs font-medium text-slate-700">Internal Note</label>
             <Textarea
               placeholder={
                 confirmDialog.newStatus === OrderStatus.SHIPPED
@@ -114,7 +118,7 @@ export const ConfirmStatusDialog = ({
               onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setConfirmDialog((dialog) => ({ ...dialog, note: event.target.value }))
               }
-              className="min-h-[104px] rounded-[1.25rem] border-stone-200 bg-white/90 px-4 py-3 text-sm shadow-none focus-visible:ring-2 focus-visible:ring-sky-200"
+              className="min-h-[100px] rounded-md border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-0"
             />
           </div>
 
@@ -122,12 +126,12 @@ export const ConfirmStatusDialog = ({
             confirmDialog.newStatus === OrderStatus.CANCELLED ||
             confirmDialog.newStatus === OrderStatus.RETURNED) &&
             selectedOrder && (
-              <div className="overflow-hidden rounded-[1.5rem] border border-stone-200/80 bg-white/85 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-stone-200/70 bg-stone-50/80 px-4 py-3">
-                  <Warehouse size={14} className="text-stone-500" />
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-stone-400">Inventory changes</p>
+              <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+                  <Warehouse size={14} className="text-slate-500" />
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Inventory Changes</p>
                 </div>
-                <div className="divide-y divide-stone-100">
+                <div className="divide-y divide-slate-100">
                   {(() => {
                     const variantTotals = new Map<string, { quantity: number; reserved: number; sku?: string }>();
 
@@ -161,25 +165,25 @@ export const ConfirmStatusDialog = ({
 
                       if (confirmDialog.newStatus === OrderStatus.SHIPPED) {
                         changeLabel = `Reserved -${item.quantity}`;
-                        changeClass = 'bg-sky-50 text-sky-700';
+                        changeClass = 'bg-blue-50 text-blue-700 border-blue-200';
                       } else if (confirmDialog.newStatus === OrderStatus.CANCELLED) {
                         stockAfter = current + item.quantity;
                         changeLabel = `+${item.quantity} released`;
-                        changeClass = 'bg-emerald-50 text-emerald-700';
+                        changeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                       } else {
                         stockAfter = current + item.quantity;
                         changeLabel = `+${item.quantity} returned`;
-                        changeClass = 'bg-stone-100 text-stone-700';
+                        changeClass = 'bg-slate-100 text-slate-700 border-slate-200';
                       }
 
                       return (
                         <div key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-stone-800">{item.name}</p>
-                            <p className="mt-1 text-[11px] text-stone-500">{item.sku || 'No SKU'}</p>
-                            <p className="mt-1 text-[11px] text-stone-400">Current stock: {current} | After update: {stockAfter}</p>
+                            <p className="truncate text-sm font-medium text-slate-900">{item.name}</p>
+                            <p className="mt-0.5 font-mono text-xs text-slate-500">{item.sku || 'No SKU'}</p>
+                            <p className="mt-1 text-xs text-slate-500">Current stock: {current} | After update: {stockAfter}</p>
                           </div>
-                          <span className={cn('rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]', changeClass)}>
+                          <span className={cn('rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap', changeClass)}>
                             {changeLabel}
                           </span>
                         </div>
@@ -191,29 +195,30 @@ export const ConfirmStatusDialog = ({
             )}
         </div>
 
-        <DialogFooter className="border-t border-stone-200/70 bg-white/70 px-6 py-4">
+        {/* Fixed Footer */}
+        <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => setConfirmDialog((dialog) => ({ ...dialog, open: false }))}
             disabled={isUpdating}
-            className="rounded-full"
+            className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
           >
             Cancel
           </Button>
           <Button
             size="sm"
             className={cn(
-              'gap-2 rounded-full px-5',
+              'gap-2 rounded-md px-4',
               confirmDialog.newStatus === OrderStatus.CANCELLED
                 ? 'bg-rose-600 text-white hover:bg-rose-700'
-                : 'bg-stone-900 text-white hover:bg-stone-800',
+                : 'bg-slate-900 text-white hover:bg-slate-800',
             )}
             onClick={confirmStatusUpdate}
             disabled={isUpdating}
           >
             {isUpdating ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-            {isUpdating ? 'Updating...' : 'Confirm update'}
+            {isUpdating ? 'Updating...' : 'Confirm Update'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -242,40 +247,42 @@ export const DeleteOrderDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(value) => !isDeleting && onOpenChange(value)}>
-      <DialogContent className="overflow-hidden border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,243,237,0.96))] p-0 shadow-[0_30px_90px_rgba(15,23,42,0.16)] sm:max-w-lg">
-        <div className="h-px w-full bg-gradient-to-r from-rose-300 via-amber-200 to-transparent" />
-        <DialogHeader className="space-y-4 px-6 pb-0 pt-6">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-slate-200 bg-white shadow-lg sm:max-w-lg sm:rounded-lg">
+
+        {/* Fixed Header */}
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
           <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-rose-600 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-600">
               <Trash2 size={18} />
             </div>
-            <div className="space-y-2">
-              <DialogTitle className="text-xl font-semibold text-stone-950">Delete order</DialogTitle>
-              <DialogDescription className="text-sm leading-6 text-stone-600">
-                This permanently removes <span className="font-mono font-semibold text-stone-900">{orderId}</span> from the admin system.
-                The action cannot be undone.
+            <div className="space-y-1.5">
+              <DialogTitle className="text-lg font-semibold text-slate-900">Delete Order</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500">
+                This permanently removes <span className="font-mono font-medium text-slate-900">{orderId}</span> from the admin system.
+                This action cannot be undone.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="px-6 py-6">
+        {/* Scrollable Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
           {activeWarning ? (
-            <div className="flex gap-3 rounded-[1.5rem] border border-amber-100 bg-amber-50/80 px-4 py-4">
-              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-600" />
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-700">Active order</p>
-                <p className="text-sm leading-6 text-amber-800">
+            <div className="flex gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-4">
+              <AlertTriangle size={18} className="shrink-0 text-amber-600" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-amber-900">Active order</p>
+                <p className="text-sm text-amber-700">
                   This order is still active. Deleting it will first cancel the order so reserved stock is safely restored before the record is removed.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="flex gap-3 rounded-[1.5rem] border border-stone-200 bg-stone-50/80 px-4 py-4">
-              <Trash2 size={18} className="mt-0.5 shrink-0 text-stone-500" />
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-stone-500">Already cancelled</p>
-                <p className="text-sm leading-6 text-stone-700">
+            <div className="flex gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-4">
+              <Trash2 size={18} className="shrink-0 text-slate-500" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-900">Already cancelled</p>
+                <p className="text-sm text-slate-600">
                   Inventory is already settled for this order. Deleting now only removes the record from the dashboard and history views.
                 </p>
               </div>
@@ -283,13 +290,26 @@ export const DeleteOrderDialog = ({
           )}
         </div>
 
-        <DialogFooter className="border-t border-stone-200/70 bg-white/70 px-6 py-4">
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={isDeleting} className="rounded-full">
-            Keep order
+        {/* Fixed Footer */}
+        <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={isDeleting}
+            className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
+          >
+            Keep Order
           </Button>
-          <Button size="sm" variant="destructive" className="gap-2 rounded-full px-5" onClick={onConfirm} disabled={isDeleting}>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="gap-2 rounded-md px-4"
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
             {isDeleting ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
-            {isDeleting ? 'Deleting...' : 'Delete permanently'}
+            {isDeleting ? 'Deleting...' : 'Delete Permanently'}
           </Button>
         </DialogFooter>
       </DialogContent>

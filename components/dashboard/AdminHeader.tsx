@@ -24,81 +24,77 @@ export const AdminHeader = memo<AdminHeaderProps>(
     const { syncData, isLoading } = useAdmin();
 
     return (
-      <header className="app-surface rounded-[1.75rem] px-4 py-2 sm:px-5 lg:px-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              onClick={onMenuClick}
-              className="flex size-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-white hover:text-slate-950 lg:hidden"
-            >
-              <Menu size={18} strokeWidth={1.75} />
-            </button>
+      <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onMenuClick}
+            className="flex rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            aria-label="Toggle Menu"
+          >
+            <Menu size={20} />
+          </button>
 
-            <div className="min-w-0">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Admin panel
-              </p>
-              <h2 className="truncate text-xl font-semibold tracking-[-0.04em] text-slate-950">
-                {title}
-              </h2>
-            </div>
+          <div className="flex flex-col">
+            <p className="text-[0.65rem] font-medium uppercase tracking-wider text-slate-500">
+              Admin panel
+            </p>
+            <h2 className="truncate text-lg font-semibold tracking-tight text-slate-900">
+              {title}
+            </h2>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={syncData}
-              disabled={isLoading}
-              className="hidden h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/84 px-4 text-sm font-semibold text-slate-600 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950 sm:inline-flex"
-              title="Sync Data"
-            >
-              <RefreshCw
-                size={14}
-                className={cn(
-                  "transition-transform duration-500",
-                  isLoading && "animate-spin",
-                )}
-              />
-              Refresh
-            </button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={syncData}
+            disabled={isLoading}
+            className="hidden h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 sm:inline-flex"
+            title="Sync Data"
+          >
+            <RefreshCw
+              size={14}
+              className={cn(
+                "transition-transform duration-500",
+                isLoading && "animate-spin",
+              )}
+            />
+            Refresh
+          </button>
 
-            <button className="relative flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white/84 text-slate-600 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950">
-              <Bell size={15} strokeWidth={1.75} />
-              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500" />
-            </button>
+          <button className="relative flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900">
+            <Bell size={16} />
+            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+          </button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/84 px-2 py-1.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300">
-
-                  <div className="hidden text-left sm:block">
-                    <p className="text-xs font-semibold text-slate-900">
-                      Admin User
-                    </p>
-
-                  </div>
-                  <ChevronDown
-                    size={14}
-                    className="hidden text-slate-400 sm:block"
-                  />
-                </button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent
-                align="end"
-                className="w-52 rounded-[1.25rem] border border-white/80 bg-white/94 p-2 shadow-[0_28px_70px_-48px_rgba(20,30,59,0.45)]"
-              >
-                <DropdownMenuLabel className="px-3 py-2">
-                  <p className="text-sm font-semibold text-slate-950">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-2 transition-colors hover:bg-slate-50 sm:px-3">
+                <div className="hidden text-left sm:block">
+                  <p className="text-sm font-medium text-slate-700">
                     Admin User
                   </p>
-                  <p className="text-xs text-slate-400">
-                    admin@mdcomputers.com
-                  </p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-slate-100" />
+                </div>
+                <ChevronDown size={14} className="text-slate-400" />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              className="w-56 rounded-md border border-slate-200 bg-white p-1 shadow-md"
+            >
+              <DropdownMenuLabel className="px-3 py-2.5">
+                <p className="text-sm font-medium text-slate-900">
+                  Admin User
+                </p>
+                <p className="text-xs text-slate-500">
+                  admin@mdcomputers.com
+                </p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-slate-100" />
+              <div className="p-1">
                 <DropdownMenuItem
                   onClick={syncData}
-                  className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:bg-slate-50"
+                  className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 focus:bg-slate-100"
                 >
                   <RefreshCw
                     size={14}
@@ -108,17 +104,18 @@ export const AdminHeader = memo<AdminHeaderProps>(
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={onLogout}
-                  className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 focus:bg-rose-50"
+                  className="mt-1 flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 focus:bg-rose-50 focus:text-rose-700"
                 >
                   <LogOut size={14} />
                   Sign out
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
     );
   },
 );
+
 AdminHeader.displayName = "AdminHeader";

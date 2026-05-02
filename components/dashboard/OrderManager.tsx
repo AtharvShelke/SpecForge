@@ -50,7 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -73,49 +73,46 @@ import {
 } from "../helper-components/OrderManagerDialogs";
 
 /* ─────────────────────────────────────────────────────────────
-   MODULE-LEVEL CONSTANTS — never reallocated on render
+   MODULE-LEVEL CONSTANTS
 ───────────────────────────────────────────────────────────────*/
 
-// Defined once at module scope — StatusPill was recreating this object on every render
 const STATUS_PILL_MAP: Record<string, { label: string; cls: string }> = {
   [OrderStatus.PENDING]: {
     label: "Pending",
-    cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+    cls: "bg-amber-50 text-amber-700 border-amber-200",
   },
   [OrderStatus.PAID]: {
     label: "Paid",
-    cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
   [OrderStatus.PROCESSING]: {
     label: "Processing",
-    cls: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200",
+    cls: "bg-blue-50 text-blue-700 border-blue-200",
   },
   [OrderStatus.SHIPPED]: {
     label: "Shipped",
-    cls: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
+    cls: "bg-violet-50 text-violet-700 border-violet-200",
   },
   [OrderStatus.DELIVERED]: {
     label: "Delivered",
-    cls: "bg-teal-50 text-teal-700 ring-1 ring-teal-200",
+    cls: "bg-teal-50 text-teal-700 border-teal-200",
   },
   [OrderStatus.CANCELLED]: {
     label: "Cancelled",
-    cls: "bg-rose-50 text-rose-600 ring-1 ring-rose-200",
+    cls: "bg-rose-50 text-rose-700 border-rose-200",
   },
   [OrderStatus.RETURNED]: {
     label: "Returned",
-    cls: "bg-stone-100 text-stone-600 ring-1 ring-stone-200",
+    cls: "bg-slate-100 text-slate-700 border-slate-200",
   },
 };
 
 const FALLBACK_IMG = "https://picsum.photos/300/300";
 
-// Stable onError handler — was an inline arrow per <img> per render
 const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
   (e.target as HTMLImageElement).src = FALLBACK_IMG;
 };
 
-// Pure function at module scope — called inside useMemo, never re-declared
 function computeFinancials(order: Order) {
   const subtotal =
     order.subtotal ??
@@ -129,7 +126,6 @@ function computeFinancials(order: Order) {
   return { subtotal, tax, discount, total };
 }
 
-// Date formatting helpers — avoid repeated option objects in hot render paths
 const DATE_OPTS_SHORT: Intl.DateTimeFormatOptions = {
   day: "numeric",
   month: "short",
@@ -190,43 +186,40 @@ function matchesDateFilter(orderDate: string, dateFilter: DateFilterValue) {
 
 function getPaymentTone(paymentStatus?: PaymentStatus | null) {
   if (paymentStatus === PaymentStatus.COMPLETED)
-    return "bg-emerald-50 text-emerald-700";
+    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
   if (
     paymentStatus === PaymentStatus.PENDING ||
     paymentStatus === PaymentStatus.INITIATED
   ) {
-    return "bg-amber-50 text-amber-700";
+    return "bg-amber-50 text-amber-700 border border-amber-200";
   }
-  if (paymentStatus === PaymentStatus.FAILED) return "bg-rose-50 text-rose-600";
-  return "bg-stone-100 text-stone-600";
+  if (paymentStatus === PaymentStatus.FAILED)
+    return "bg-rose-50 text-rose-700 border border-rose-200";
+  return "bg-slate-100 text-slate-700 border border-slate-200";
 }
 
 /* ─────────────────────────────────────────────────────────────
-   STATUS PILL — memo prevents re-render when parent re-renders
-   but status hasn't changed
+   COMPONENTS
 ───────────────────────────────────────────────────────────────*/
 const StatusPill = memo(({ status }: { status: OrderStatus }) => {
   const cfg = STATUS_PILL_MAP[status] ?? {
     label: status,
-    cls: "bg-stone-100 text-stone-600 ring-1 ring-stone-200",
+    cls: "bg-slate-100 text-slate-700 border-slate-200",
   };
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap",
+        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
         cfg.cls,
       )}
     >
-      <span className="w-1 h-1 rounded-full bg-current opacity-60" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
       {cfg.label}
     </span>
   );
 });
 StatusPill.displayName = "StatusPill";
 
-/* ─────────────────────────────────────────────────────────────
-   SECTION LABEL — pure presentational, memo for safety
-───────────────────────────────────────────────────────────────*/
 const SectionLabel = memo(
   ({
     icon,
@@ -235,20 +228,14 @@ const SectionLabel = memo(
     icon: React.ReactNode;
     children: React.ReactNode;
   }) => (
-    <div className="flex items-center gap-1.5">
-      <span className="text-stone-400">{icon}</span>
-      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">
-        {children}
-      </span>
+    <div className="flex items-center gap-2 text-slate-700">
+      <span className="text-slate-400">{icon}</span>
+      <span className="text-sm font-semibold">{children}</span>
     </div>
   ),
 );
 SectionLabel.displayName = "SectionLabel";
 
-/* ─────────────────────────────────────────────────────────────
-   COLLAPSIBLE SECTION — memo: only re-renders when children /
-   title / badge change, not on parent order selection changes
-───────────────────────────────────────────────────────────────*/
 const CollapsibleSection = memo(
   ({
     icon,
@@ -265,8 +252,6 @@ const CollapsibleSection = memo(
   }) => {
     const [open, setOpen] = useState(defaultOpen);
 
-    // Ensure the section updates its state if the parent dynamically changes defaultOpen
-    // (e.g. when switching between different selected orders)
     useEffect(() => {
       setOpen(defaultOpen);
     }, [defaultOpen]);
@@ -274,22 +259,22 @@ const CollapsibleSection = memo(
     const toggle = useCallback(() => setOpen((o) => !o), []);
 
     return (
-      <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
         <button
           className={cn(
-            "w-full px-4 py-3 bg-stone-50/50 hover:bg-stone-50 flex items-center justify-between transition-colors",
-            open && "border-b border-stone-100",
+            "flex w-full items-center justify-between bg-white px-5 py-3 transition-colors hover:bg-slate-50",
+            open && "border-b border-slate-200",
           )}
           onClick={toggle}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <SectionLabel icon={icon}>{title}</SectionLabel>
             {badge}
           </div>
           <ChevronDown
-            size={14}
+            size={16}
             className={cn(
-              "text-stone-400 transition-transform duration-200",
+              "text-slate-400 transition-transform duration-200",
               open && "rotate-180",
             )}
           />
@@ -301,10 +286,6 @@ const CollapsibleSection = memo(
 );
 CollapsibleSection.displayName = "CollapsibleSection";
 
-/* ─────────────────────────────────────────────────────────────
-   ORDER LIST ROW — memo: skips re-render unless this specific
-   order's data or selection state changes
-───────────────────────────────────────────────────────────────*/
 interface OrderRowProps {
   order: Order;
   isSelected: boolean;
@@ -318,7 +299,6 @@ const OrderRow = memo(({ order, isSelected, onClick }: OrderRowProps) => {
   const itemCount =
     order.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
-  // Memoize formatted date per row — avoids re-formatting on every parent render
   const formattedDate = useMemo(
     () => new Date(order.date).toLocaleDateString("en-IN", DATE_OPTS_SHORT),
     [order.date],
@@ -328,20 +308,20 @@ const OrderRow = memo(({ order, isSelected, onClick }: OrderRowProps) => {
     <button
       onClick={handleClick}
       className={cn(
-        "w-full text-left px-3 py-3 transition-all group relative",
+        "group relative w-full border-l-2 px-4 py-4 text-left transition-colors",
         isSelected
-          ? "bg-white border-l-2 border-l-indigo-500"
-          : "hover:bg-white/70 border-l-2 border-l-transparent",
+          ? "border-l-slate-900 bg-slate-50"
+          : "border-l-transparent hover:bg-slate-50",
       )}
     >
       {needsAction && !isSelected && (
-        <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-amber-400" />
+        <span className="absolute right-4 top-4 h-2 w-2 rounded-full bg-amber-500" />
       )}
-      <div className="flex items-center justify-between gap-2 mb-0.5">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <span
           className={cn(
-            "text-[10px] font-mono font-bold tracking-tight truncate",
-            isSelected ? "text-indigo-600" : "text-stone-400",
+            "truncate font-mono text-xs font-medium",
+            isSelected ? "text-slate-900" : "text-slate-500",
           )}
         >
           {order.id}
@@ -350,44 +330,46 @@ const OrderRow = memo(({ order, isSelected, onClick }: OrderRowProps) => {
       </div>
       <p
         className={cn(
-          "text-sm font-semibold truncate mb-1 tracking-tight",
-          isSelected ? "text-stone-900" : "text-stone-700",
+          "mb-1 truncate text-sm font-semibold tracking-tight",
+          isSelected ? "text-slate-900" : "text-slate-700",
         )}
       >
         {order.customerName}
       </p>
-      <p className="mb-2 truncate text-[11px] text-stone-500">{order.email}</p>
-      <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+      <p className="mb-3 truncate text-xs text-slate-500">{order.email}</p>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-600">
           {itemCount} item{itemCount !== 1 ? "s" : ""}
         </span>
         <span
           className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+            "rounded-md px-2 py-0.5 text-xs font-medium",
             getPaymentTone(order.paymentStatus),
           )}
         >
           {order.paymentStatus ?? "Unpaid"}
         </span>
         {order.phone && (
-          <span className="truncate rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500">
+          <span className="truncate rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-600">
             {order.phone}
           </span>
         )}
       </div>
+
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <span className="text-[10px] text-stone-400 font-mono tabular-nums">
+          <span className="font-mono text-xs text-slate-500">
             {formattedDate}
           </span>
-          <p className="truncate text-[11px] text-stone-400">
+          <p className="truncate text-xs text-slate-500">
             {order.paymentMethod ?? "Payment method pending"}
           </p>
         </div>
         <span
           className={cn(
-            "text-sm font-bold tabular-nums font-mono",
-            isSelected ? "text-stone-900" : "text-stone-700",
+            "font-mono text-sm font-medium",
+            isSelected ? "text-slate-900" : "text-slate-700",
           )}
         >
           ₹{order.total.toLocaleString("en-IN")}
@@ -422,7 +404,6 @@ const OrderManager = () => {
     isLoading: boolean;
   };
 
-  // Aggregate inventory by variantId across all warehouses
   const aggregatedInventory = useMemo(() => {
     const variantTotals = new Map<
       string,
@@ -460,7 +441,6 @@ const OrderManager = () => {
     return lookupMap;
   }, [inventory]);
 
-  // Stable reference — avoids Array.isArray check on every render
   const inventoryArray = useMemo(
     () => (Array.isArray(inventory) ? inventory : []),
     [inventory],
@@ -544,13 +524,11 @@ const OrderManager = () => {
     [selectedOrder],
   );
 
-  // Computed once per selected order — was called twice (header + footer) per render
   const selectedFinancials = useMemo(
     () => (selectedOrder ? computeFinancials(selectedOrder) : null),
     [selectedOrder],
   );
 
-  // Count orders needing action once — was two separate inline .filter() calls in JSX
   const needsActionCount = useMemo(
     () =>
       sortedOrders.filter(
@@ -560,14 +538,13 @@ const OrderManager = () => {
     [sortedOrders],
   );
 
-  // Memoized date strings for selected order detail panel
   const selectedDateLong = useMemo(
     () =>
       selectedOrder
         ? new Date(selectedOrder.date).toLocaleDateString(
-            "en-IN",
-            DATE_OPTS_LONG,
-          )
+          "en-IN",
+          DATE_OPTS_LONG,
+        )
         : "",
     [selectedOrder],
   );
@@ -578,8 +555,6 @@ const OrderManager = () => {
         : "",
     [selectedOrder],
   );
-
-  /* ── Stable callbacks — none of these are recreated unless deps change ── */
 
   const openConfirmDialog = useCallback(
     (orderId: string, newStatus: OrderStatus) => {
@@ -592,8 +567,6 @@ const OrderManager = () => {
     const { orderId, newStatus } = confirmDialog;
     setIsUpdating(true);
     try {
-      // Removed the pointless constructor.name async check — updateOrderStatus is
-      // always async (it's defined with async in AdminContext); just await it directly
       await updateOrderStatus(orderId, newStatus);
       setConfirmDialog((d) => ({ ...d, open: false }));
     } catch (error) {
@@ -687,18 +660,17 @@ const OrderManager = () => {
       openConfirmDialog(selectedOrder.id, OrderStatus.CANCELLED);
   }, [selectedOrder, openConfirmDialog]);
 
-  // ── Empty State ──
   if (sortedOrders.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] bg-stone-50 px-4">
-        <div className="text-center p-8 bg-white border border-stone-200 rounded-2xl w-full max-w-sm shadow-sm">
-          <div className="w-12 h-12 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Package size={22} className="text-stone-300" />
+      <div className="flex min-h-[400px] items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md border border-slate-200 bg-slate-50">
+            <Package size={20} className="text-slate-400" />
           </div>
-          <h3 className="text-sm font-semibold text-stone-800 mb-1 tracking-tight">
+          <h3 className="mb-1 text-sm font-semibold text-slate-900">
             No Orders Yet
           </h3>
-          <p className="text-xs text-stone-400">
+          <p className="text-sm text-slate-500">
             Orders will appear here once customers start placing them
           </p>
         </div>
@@ -708,83 +680,23 @@ const OrderManager = () => {
 
   return (
     <TooltipProvider>
-      <div
-        className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.2rem] bg-white border border-stone-200 shadow-sm"
-        style={{ fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif" }}
-      >
-        {/* ─── HEADER ─── */}
-        <div className="flex-shrink-0 border-b border-stone-100 bg-white px-3 py-3 sm:px-5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2">
-                <h1 className="text-sm font-bold text-stone-900 tracking-tight">
-                  Orders
-                </h1>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-stone-400">
-                <span className="w-px h-3 bg-stone-200" />
-                <span className="tabular-nums">{sortedOrders.length}</span>
-                {needsActionCount > 0 && (
-                  <>
-                    <span className="w-px h-3 bg-stone-200 hidden sm:block" />
-                    <span className="hidden sm:flex items-center gap-1 text-amber-600 font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      {needsActionCount} need action
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="hidden sm:inline">Live</span>
-              </div>
+      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm">
-                    <Hash size={11} />
-                    <span className="hidden sm:inline">Sequence</span>
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-xl p-0 overflow-hidden border-0 bg-transparent shadow-none">
-                  <div className="bg-white rounded-2xl p-6 shadow-xl border border-stone-200">
-                    <InvoiceSequenceTab />
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <button
-                onClick={syncData}
-                disabled={isLoading}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
-              >
-                <RefreshCw
-                  size={11}
-                  className={isLoading ? "animate-spin" : ""}
-                />
-                <span className="hidden sm:inline">Sync</span>
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* ─── BODY ─── */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* ─── LEFT PANEL (order list) ─── */}
           <div
             className={cn(
-              "flex flex-col bg-stone-50/60 border-r border-stone-100 flex-shrink-0",
-              "w-full lg:w-[300px] xl:w-[340px]",
+              "flex w-full flex-shrink-0 flex-col border-r border-slate-200 bg-white lg:w-[320px] xl:w-[360px]",
               showMobileDetail ? "hidden lg:flex" : "flex",
             )}
           >
             {/* Search + Filter */}
-            <div className="px-3 py-3 space-y-2.5 border-b border-stone-100 bg-white">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
-                  <CalendarRange size={12} />
+            <div className="space-y-3 border-b border-slate-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                  <CalendarRange size={14} />
                   Filters
                 </div>
                 <button
@@ -795,16 +707,16 @@ const OrderManager = () => {
                     setFilterOrderQuery("");
                     setFilterDate("ALL");
                   }}
-                  className="inline-flex items-center gap-1 rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500 transition-colors hover:bg-stone-50"
+                  className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 >
-                  <FilterX size={11} />
+                  <FilterX size={12} />
                   Reset
                 </button>
               </div>
               <div className="relative">
                 <Search
-                  size={12}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400"
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                 />
                 <Input
                   placeholder="Search ID, name, email…"
@@ -812,31 +724,22 @@ const OrderManager = () => {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setFilterOrderQuery(e.target.value)
                   }
-                  className="pl-7 h-8 text-xs bg-stone-50 border-stone-200 text-stone-800 placeholder:text-stone-400 focus-visible:ring-indigo-400 focus-visible:border-indigo-300 shadow-none rounded-lg"
+                  className="h-9 rounded-md border-slate-200 pl-8 text-sm placeholder:text-slate-400 focus-visible:ring-slate-400"
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="h-8 text-xs flex-1 bg-stone-50 border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
+                  <SelectTrigger className="h-9 flex-1 rounded-md border-slate-200 text-sm">
                     <SelectValue placeholder="All Statuses" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-stone-200 text-stone-800 shadow-md">
-                    <SelectItem
-                      value="All"
-                      className="text-xs focus:bg-stone-50"
-                    >
-                      All Orders
-                    </SelectItem>
+                  <SelectContent>
+                    <SelectItem value="All">All Orders</SelectItem>
                     {Object.values(OrderStatus).map((s) => (
-                      <SelectItem
-                        key={s}
-                        value={s}
-                        className="text-xs focus:bg-stone-50"
-                      >
+                      <SelectItem key={s} value={s}>
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
-                              "w-1.5 h-1.5 rounded-full",
+                              "h-1.5 w-1.5 rounded-full",
                               STATUS_CONFIG[s].dotClass,
                             )}
                           />
@@ -852,24 +755,17 @@ const OrderManager = () => {
                     setFilterDate(value as DateFilterValue)
                   }
                 >
-                  <SelectTrigger className="h-8 text-xs bg-stone-50 border-stone-200 text-stone-700 focus:ring-indigo-400 shadow-none rounded-lg">
+                  <SelectTrigger className="h-9 flex-1 rounded-md border-slate-200 text-sm">
                     <SelectValue placeholder="Any date" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-stone-200 text-stone-800 shadow-md">
+                  <SelectContent>
                     {DATE_FILTER_OPTIONS.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className="text-xs focus:bg-stone-50"
-                      >
+                      <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-100 border border-stone-200 px-2 py-1 rounded-md shrink-0 tabular-nums">
-                  {filteredOrders.length}
-                </span>
               </div>
             </div>
 
@@ -878,15 +774,15 @@ const OrderManager = () => {
               {filteredOrders.length === 0 ? (
                 <div className="p-8 text-center">
                   <AlertCircle
-                    size={22}
-                    className="mx-auto text-stone-300 mb-2"
+                    size={20}
+                    className="mx-auto mb-2 text-slate-400"
                   />
-                  <p className="text-xs text-stone-400">
+                  <p className="text-sm text-slate-500">
                     No orders match your filters
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-stone-100">
+                <div className="divide-y divide-slate-100">
                   {filteredOrders.map((order) => (
                     <OrderRow
                       key={order.id}
@@ -904,217 +800,199 @@ const OrderManager = () => {
           {selectedOrder && (
             <div
               className={cn(
-                "flex-1 overflow-y-auto bg-stone-50/40 min-w-0",
+                "min-w-0 flex-1 overflow-y-auto bg-slate-50/50",
                 !showMobileDetail && "hidden lg:block",
               )}
             >
-              <div className="p-3 sm:p-5 max-w-5xl mx-auto space-y-3">
+              <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
                 {/* Mobile back button */}
                 <button
-                  className="lg:hidden flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
+                  className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 lg:hidden"
                   onClick={handleBackClick}
                 >
-                  <ArrowLeft size={13} /> Back to orders
+                  <ArrowLeft size={14} /> Back to orders
                 </button>
 
                 {/* ── ORDER HEADER CARD ── */}
-                <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                  <div className="h-0.5 w-full bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
-
-                  <div className="p-3 sm:p-5">
-                    {/* Top row: ID + status + amount */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                          <h2 className="text-base sm:text-xl font-bold text-stone-900 tracking-tight font-mono truncate">
-                            {selectedOrder.id}
-                          </h2>
-                          <StatusPill status={selectedOrder.status} />
-                        </div>
-                        <p className="text-[10px] text-stone-400 font-mono tabular-nums">
-                          {selectedDateLong}
-                          {" · "}
-                          {selectedTime}
-                        </p>
+                <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  {/* Top row: ID + status + amount */}
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="mb-1 flex flex-wrap items-center gap-3">
+                        <h2 className="truncate font-mono text-xl font-semibold text-slate-900">
+                          {selectedOrder.id}
+                        </h2>
+                        <StatusPill status={selectedOrder.status} />
                       </div>
-                      {/* Total amount */}
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">
-                          Total
-                        </p>
-                        <p className="text-base font-extrabold text-stone-900 font-mono tabular-nums">
-                          ₹{selectedFinancials?.total.toLocaleString("en-IN")}
-                        </p>
-                      </div>
+                      <p className="font-mono text-xs text-slate-500">
+                        {selectedDateLong} · {selectedTime}
+                      </p>
                     </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                        Total
+                      </p>
+                      <p className="font-mono text-xl font-bold text-slate-900">
+                        ₹{selectedFinancials?.total.toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                  </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      {/* Primary Action: Next Status */}
-                      {NEXT_STATUS_BUTTON[selectedOrder.status] && (
-                        <button
-                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 active:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold transition-all shadow-sm shadow-indigo-100"
-                          onClick={handleOpenConfirmNext}
+                  {/* Action Buttons */}
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    {/* Primary Action: Next Status */}
+                    {NEXT_STATUS_BUTTON[selectedOrder.status] && (
+                      <button
+                        className="flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                        onClick={handleOpenConfirmNext}
+                      >
+                        {NEXT_STATUS_BUTTON[selectedOrder.status]!.icon}
+                        <span>
+                          {NEXT_STATUS_BUTTON[selectedOrder.status]!.label}
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Utility Group */}
+                    <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                      {/* Invoice Dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="flex flex-1 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 sm:flex-none">
+                            <FileText size={16} />
+                            <span>Invoice</span>
+                            <ChevronDown size={14} className="text-slate-400" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-48 rounded-md border-slate-200"
                         >
-                          {NEXT_STATUS_BUTTON[selectedOrder.status]!.icon}
-                          <span>
-                            {NEXT_STATUS_BUTTON[selectedOrder.status]!.label}
-                          </span>
-                        </button>
-                      )}
-
-                      {/* Utility Group */}
-                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                        {/* Invoice Dropdown */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm">
-                              <FileText size={14} />
-                              <span>Invoice</span>
-                              <ChevronDown size={12} className="opacity-50" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-48 p-1 bg-white border-stone-200 shadow-xl rounded-xl"
+                          <DropdownMenuItem
+                            onClick={handlePrintInvoice}
+                            className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700"
                           >
-                            <DropdownMenuLabel className="px-3 py-2 text-[10px] text-stone-400 uppercase tracking-widest">
-                              Documents
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator className="mx-1 bg-stone-100" />
-                            <DropdownMenuItem
-                              onClick={handlePrintInvoice}
-                              className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-xs rounded-lg focus:bg-stone-50 font-medium text-stone-700"
-                            >
-                              <Printer size={14} className="text-stone-400" />{" "}
-                              Print Invoice
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            <Printer size={14} className="text-slate-400" />
+                            Print Invoice
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                        {/* Return Button (Conditional) */}
+                      {/* Return Button (Conditional) */}
+                      {STATUS_FLOW[selectedOrder.status].includes(
+                        OrderStatus.RETURNED,
+                      ) &&
+                        !STATUS_FLOW[selectedOrder.status].includes(
+                          OrderStatus.DELIVERED,
+                        ) && (
+                          <button
+                            className="flex flex-1 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 sm:flex-none"
+                            onClick={handleOpenConfirmReturn}
+                          >
+                            <RotateCcw size={14} /> Return
+                          </button>
+                        )}
+
+                      {/* Danger Zone */}
+                      <div className="flex w-full gap-3 sm:w-auto">
                         {STATUS_FLOW[selectedOrder.status].includes(
-                          OrderStatus.RETURNED,
-                        ) &&
-                          !STATUS_FLOW[selectedOrder.status].includes(
-                            OrderStatus.DELIVERED,
-                          ) && (
+                          OrderStatus.CANCELLED,
+                        ) && (
                             <button
-                              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white active:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-bold transition-all shadow-sm"
-                              onClick={handleOpenConfirmReturn}
-                            >
-                              <RotateCcw size={14} /> Return
-                            </button>
-                          )}
-
-                        {/* Danger Zone */}
-                        <div className="flex gap-2 w-full sm:w-auto">
-                          {STATUS_FLOW[selectedOrder.status].includes(
-                            OrderStatus.CANCELLED,
-                          ) && (
-                            <button
-                              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-50/50 active:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold transition-all"
+                              className="flex flex-1 items-center justify-center gap-2 rounded-md bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:flex-none"
                               onClick={handleOpenConfirmCancel}
                             >
                               <XCircle size={14} /> Cancel
                             </button>
                           )}
-                          <button
-                            className="flex items-center justify-center p-2.5 rounded-xl bg-white active:bg-rose-50 text-rose-400 border border-stone-200 hover:border-rose-200 hover:text-rose-600 transition-all shadow-sm"
-                            onClick={handleOpenDeleteDialog}
-                            aria-label="Delete Order"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                        <button
+                          className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-rose-200 hover:text-rose-600"
+                          onClick={handleOpenDeleteDialog}
+                          aria-label="Delete Order"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
-
-                    {/* Customer Meta — 2-col grid on mobile, 4-col on sm+ */}
-                    <div className="mt-3 pt-3 border-t border-stone-100 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
-                      {[
-                        {
-                          icon: <User size={11} />,
-                          label: "Customer",
-                          value: selectedOrder.customerName,
-                        },
-                        {
-                          icon: <Mail size={11} />,
-                          label: "Email",
-                          value: selectedOrder.email,
-                        },
-                        {
-                          icon: <Phone size={11} />,
-                          label: "Phone",
-                          value: selectedOrder.phone ?? "Not provided",
-                        },
-                        {
-                          icon: <CreditCard size={11} />,
-                          label: "Payment",
-                          value: (
-                            <span className="flex items-center gap-1 flex-wrap">
-                              <span>
-                                {selectedOrder.paymentMethod ?? "Pending"}
-                              </span>
-                              <span
-                                className={cn(
-                                  "text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide",
-                                  getPaymentTone(selectedOrder.paymentStatus),
-                                )}
-                              >
-                                {selectedOrder.paymentStatus ?? "UNPAID"}
-                              </span>
-                            </span>
-                          ),
-                        },
-                        {
-                          icon: <Hash size={11} />,
-                          label: "Items",
-                          value: `${selectedOrderItems.reduce((sum, item) => sum + item.quantity, 0)} unit${selectedOrderItems.reduce((sum, item) => sum + item.quantity, 0) !== 1 ? "s" : ""}`,
-                        },
-                        {
-                          icon: <Package size={11} />,
-                          label: "Subtotal",
-                          value: formatCurrency(
-                            selectedFinancials?.subtotal ??
-                              selectedOrder.subtotal ??
-                              0,
-                          ),
-                        },
-                      ].map(({ icon, label, value }) => (
-                        <div key={label}>
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <span className="text-stone-400">{icon}</span>
-                            <span className="text-[9px] uppercase tracking-widest font-bold text-stone-400">
-                              {label}
-                            </span>
-                          </div>
-                          <div className="text-xs font-semibold text-stone-800 truncate">
-                            {value as React.ReactNode}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {selectedOrder.paymentTransactionId && (
-                      <div className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-stone-50 border border-stone-100 rounded-lg overflow-hidden">
-                        <span className="text-[10px] text-stone-400 font-mono uppercase tracking-wider font-bold flex-shrink-0">
-                          TXN
-                        </span>
-                        <span className="font-mono text-xs text-stone-600 truncate">
-                          {selectedOrder.paymentTransactionId}
-                        </span>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Customer Meta */}
+                  <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-6 sm:grid-cols-2 xl:grid-cols-5">
+                    {[
+                      {
+                        icon: <User size={14} />,
+                        label: "Customer",
+                        value: selectedOrder.customerName,
+                      },
+                      {
+                        icon: <Mail size={14} />,
+                        label: "Email",
+                        value: selectedOrder.email,
+                      },
+                      {
+                        icon: <Phone size={14} />,
+                        label: "Phone",
+                        value: selectedOrder.phone ?? "Not provided",
+                      },
+                      {
+                        icon: <CreditCard size={14} />,
+                        label: "Payment",
+                        value: (
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span>
+                              {selectedOrder.paymentMethod ?? "Pending"}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded-md px-1.5 py-0.5 text-xs font-medium",
+                                getPaymentTone(selectedOrder.paymentStatus),
+                              )}
+                            >
+                              {selectedOrder.paymentStatus ?? "UNPAID"}
+                            </span>
+                          </span>
+                        ),
+                      },
+                      {
+                        icon: <Package size={14} />,
+                        label: "Subtotal",
+                        value: formatCurrency(
+                          selectedFinancials?.subtotal ??
+                          selectedOrder.subtotal ??
+                          0,
+                        ),
+                      },
+                    ].map(({ icon, label, value }) => (
+                      <div key={label}>
+                        <div className="mb-1 flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                          {icon}
+                          <span>{label}</span>
+                        </div>
+                        <div className="truncate text-sm font-semibold text-slate-900">
+                          {value as React.ReactNode}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedOrder.paymentTransactionId && (
+                    <div className="mt-4 flex items-center gap-3 rounded-md bg-slate-50 px-4 py-2">
+                      <span className="flex-shrink-0 text-xs font-medium uppercase tracking-wider text-slate-500">
+                        Transaction ID
+                      </span>
+                      <span className="truncate font-mono text-sm text-slate-900">
+                        {selectedOrder.paymentTransactionId}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* ── ORDER ITEMS ── */}
                 <CollapsibleSection
-                  icon={<Package size={12} />}
+                  icon={<Package size={16} />}
                   title="Order Items"
                   badge={
-                    <span className="text-[10px] font-mono font-bold text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs font-medium text-slate-600">
                       {selectedOrderItems.length}
                     </span>
                   }
@@ -1122,28 +1000,26 @@ const OrderManager = () => {
                   {selectedOrderItems.length > 0 ? (
                     <>
                       {/* Desktop table */}
-                      <div className="hidden sm:block overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-stone-100 bg-stone-50/30">
-                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                                Product
-                              </th>
-                              <th className="px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                      <div className="hidden overflow-x-auto sm:block">
+                        <table className="w-full text-left text-sm text-slate-600">
+                          <thead className="bg-slate-50/50 text-xs text-slate-500">
+                            <tr className="border-b border-slate-200">
+                              <th className="px-5 py-3 font-medium">Product</th>
+                              <th className="px-5 py-3 font-medium">
                                 Traceability
                               </th>
-                              <th className="px-3 py-2.5 text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                              <th className="px-5 py-3 text-center font-medium">
                                 Qty
                               </th>
-                              <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                              <th className="px-5 py-3 text-right font-medium">
                                 Unit
                               </th>
-                              <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                              <th className="px-5 py-3 text-right font-medium">
                                 Total
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-stone-50">
+                          <tbody className="divide-y divide-slate-100">
                             {selectedOrderItems.map((item: OrderItem) => {
                               const inv =
                                 aggregatedInventory.get(item.variantId) ||
@@ -1155,11 +1031,11 @@ const OrderManager = () => {
                               return (
                                 <tr
                                   key={item.id}
-                                  className="hover:bg-stone-50/60 transition-colors"
+                                  className="transition-colors hover:bg-slate-50/50"
                                 >
-                                  <td className="px-4 py-3">
+                                  <td className="px-5 py-4">
                                     <div className="flex items-center gap-3">
-                                      <div className="h-9 w-9 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
+                                      <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
                                         <img
                                           src={item.image ?? FALLBACK_IMG}
                                           alt={item.name}
@@ -1168,27 +1044,27 @@ const OrderManager = () => {
                                         />
                                       </div>
                                       <div className="min-w-0">
-                                        <p className="font-semibold text-stone-800 text-xs leading-tight line-clamp-1 tracking-tight">
+                                        <p className="line-clamp-1 text-sm font-semibold text-slate-900">
                                           {item.name}
                                         </p>
-                                        <p className="text-[10px] text-stone-400 font-mono mt-0.5">
+                                        <p className="mt-0.5 font-mono text-xs text-slate-500">
                                           {item.sku}
                                         </p>
-                                        <p className="mt-0.5 text-[10px] text-stone-400">
+                                        <p className="mt-0.5 text-xs text-slate-500">
                                           {item.category} · Ref{" "}
                                           {item.lineReference}
                                         </p>
                                         {isLow && (
-                                          <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 mt-0.5">
-                                            <AlertTriangle size={9} /> Low:{" "}
+                                          <span className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-600">
+                                            <AlertTriangle size={12} /> Low:{" "}
                                             {inv.quantity} left
                                           </span>
                                         )}
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="px-3 py-3">
-                                    <div className="space-y-1">
+                                  <td className="px-5 py-4">
+                                    <div className="space-y-1.5">
                                       {[
                                         ["Product", item.productNumber],
                                         ["Part", item.partNumber],
@@ -1196,27 +1072,27 @@ const OrderManager = () => {
                                       ].map(([label, value]) => (
                                         <div
                                           key={label}
-                                          className="flex items-center gap-2 text-[10px]"
+                                          className="flex items-center gap-2 text-xs"
                                         >
-                                          <span className="w-11 rounded bg-stone-100 px-1.5 py-0.5 text-center font-semibold uppercase tracking-wide text-stone-500">
+                                          <span className="w-14 font-medium text-slate-500">
                                             {label}
                                           </span>
-                                          <span className="truncate font-mono text-stone-700">
+                                          <span className="truncate font-mono text-slate-900">
                                             {value || "-"}
                                           </span>
                                         </div>
                                       ))}
                                     </div>
                                   </td>
-                                  <td className="px-3 py-3 text-center">
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-stone-100 text-stone-700 font-bold text-xs border border-stone-200">
+                                  <td className="px-5 py-4 text-center">
+                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700">
                                       {item.quantity}
                                     </span>
                                   </td>
-                                  <td className="px-3 py-3 text-right text-stone-500 text-xs font-mono tabular-nums">
+                                  <td className="px-5 py-4 text-right font-mono text-sm tabular-nums text-slate-600">
                                     ₹{item.price.toLocaleString("en-IN")}
                                   </td>
-                                  <td className="px-4 py-3 text-right font-bold text-stone-900 text-xs font-mono tabular-nums">
+                                  <td className="px-5 py-4 text-right font-mono text-sm font-medium tabular-nums text-slate-900">
                                     ₹
                                     {(
                                       item.price * item.quantity
@@ -1230,10 +1106,10 @@ const OrderManager = () => {
                       </div>
 
                       {/* Mobile cards */}
-                      <div className="sm:hidden divide-y divide-stone-100">
+                      <div className="divide-y divide-slate-100 sm:hidden">
                         {selectedOrderItems.map((item: OrderItem) => (
-                          <div key={item.id} className="p-3 flex gap-3">
-                            <div className="h-12 w-12 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
+                          <div key={item.id} className="flex gap-3 p-4">
+                            <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
                               <img
                                 src={item.image ?? FALLBACK_IMG}
                                 alt={item.name}
@@ -1241,17 +1117,14 @@ const OrderManager = () => {
                                 onError={handleImgError}
                               />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-stone-800 text-xs tracking-tight leading-tight">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold leading-tight tracking-tight text-slate-900">
                                 {item.name}
                               </p>
-                              <p className="text-[10px] text-stone-400 font-mono mt-0.5">
+                              <p className="mt-0.5 font-mono text-xs text-slate-500">
                                 {item.sku}
                               </p>
-                              <p className="mt-0.5 text-[10px] text-stone-400">
-                                {item.category} · Ref {item.lineReference}
-                              </p>
-                              <div className="mt-2 grid grid-cols-1 gap-1 rounded-lg border border-stone-100 bg-stone-50/70 p-2">
+                              <div className="mt-3 space-y-1.5 rounded-md border border-slate-100 bg-slate-50 p-3">
                                 {[
                                   ["Product", item.productNumber],
                                   ["Part", item.partNumber],
@@ -1259,26 +1132,23 @@ const OrderManager = () => {
                                 ].map(([label, value]) => (
                                   <div
                                     key={label}
-                                    className="flex items-center justify-between gap-2 text-[10px]"
+                                    className="flex items-center justify-between gap-2 text-xs"
                                   >
-                                    <span className="font-semibold uppercase tracking-wide text-stone-400">
+                                    <span className="font-medium text-slate-500">
                                       {label}
                                     </span>
-                                    <span className="truncate font-mono text-stone-700">
+                                    <span className="truncate font-mono text-slate-900">
                                       {value || "-"}
                                     </span>
                                   </div>
                                 ))}
                               </div>
-                              <div className="flex items-center justify-between mt-1.5">
-                                <span className="text-xs text-stone-400">
-                                  ×
-                                  <strong className="text-stone-700">
-                                    {item.quantity}
-                                  </strong>{" "}
-                                  · ₹{item.price.toLocaleString("en-IN")}
+                              <div className="mt-3 flex items-center justify-between">
+                                <span className="text-sm text-slate-500">
+                                  {item.quantity} × ₹
+                                  {item.price.toLocaleString("en-IN")}
                                 </span>
-                                <span className="font-bold text-stone-900 text-sm font-mono">
+                                <span className="font-mono text-sm font-medium text-slate-900">
                                   ₹
                                   {(item.price * item.quantity).toLocaleString(
                                     "en-IN",
@@ -1290,42 +1160,42 @@ const OrderManager = () => {
                         ))}
                       </div>
 
-                      {/* Financials Footer — uses memoized selectedFinancials */}
+                      {/* Financials Footer */}
                       {selectedFinancials && (
-                        <div className="px-4 py-3 border-t border-stone-100 bg-stone-50/50">
-                          <div className="ml-auto max-w-[200px] space-y-1">
+                        <div className="border-t border-slate-200 bg-slate-50/50 p-5">
+                          <div className="ml-auto w-full max-w-xs space-y-2">
                             {[
                               {
                                 label: "Subtotal",
                                 value: `₹${selectedFinancials.subtotal.toLocaleString("en-IN")}`,
-                                cls: "text-stone-600",
+                                cls: "text-slate-700",
                               },
                               {
                                 label: "Shipping",
                                 value: "Free",
-                                cls: "text-emerald-600 font-semibold",
+                                cls: "text-emerald-600 font-medium",
                               },
                               {
                                 label: "GST (18%)",
                                 value: `₹${selectedFinancials.tax.toLocaleString("en-IN")}`,
-                                cls: "text-stone-600",
+                                cls: "text-slate-700",
                               },
                             ].map((row) => (
                               <div
                                 key={row.label}
-                                className="flex justify-between text-xs font-mono tabular-nums"
+                                className="flex justify-between text-sm font-mono tabular-nums"
                               >
-                                <span className="text-stone-400">
+                                <span className="text-slate-500">
                                   {row.label}
                                 </span>
                                 <span className={row.cls}>{row.value}</span>
                               </div>
                             ))}
-                            <div className="flex justify-between items-center pt-2 border-t border-stone-200 mt-1">
-                              <span className="font-bold text-stone-700 text-xs">
+                            <div className="mt-3 border-t border-slate-200 pt-3 flex items-center justify-between">
+                              <span className="text-sm font-semibold text-slate-900">
                                 Total
                               </span>
-                              <span className="text-sm font-extrabold text-stone-900 font-mono tabular-nums">
+                              <span className="font-mono text-lg font-bold text-slate-900 tabular-nums">
                                 ₹
                                 {selectedFinancials.total.toLocaleString(
                                   "en-IN",
@@ -1339,10 +1209,10 @@ const OrderManager = () => {
                   ) : (
                     <div className="p-8 text-center">
                       <Package
-                        size={22}
-                        className="mx-auto text-stone-300 mb-2"
+                        size={20}
+                        className="mx-auto mb-2 text-slate-400"
                       />
-                      <p className="text-xs text-stone-400">
+                      <p className="text-sm text-slate-500">
                         No items in this order
                       </p>
                     </div>
@@ -1350,35 +1220,30 @@ const OrderManager = () => {
                 </CollapsibleSection>
 
                 {/* ── BOTTOM GRID: Shipping, Inventory, Timeline ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   {/* Shipping Address */}
-                  <CollapsibleSection
-                    icon={<MapPin size={12} />}
-                    title="Shipping"
-                  >
+                  <CollapsibleSection icon={<MapPin size={16} />} title="Shipping">
                     <div className="p-5">
                       {selectedOrder.shippingStreet ? (
-                        <div className="bg-stone-50/60 rounded-xl p-4 border border-stone-200/50 shadow-sm flex flex-col space-y-1 relative overflow-hidden">
-                          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-400/50" />
-                          <p className="font-black text-stone-900 tracking-tight text-sm mb-1">
+                        <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                          <p className="mb-2 text-sm font-semibold text-slate-900">
                             {selectedOrder.customerName}
                           </p>
-                          <p className="text-xs text-stone-600 font-medium">
-                            {selectedOrder.shippingStreet}
-                          </p>
-                          <p className="text-xs text-stone-600 font-medium">
-                            {selectedOrder.shippingCity},{" "}
-                            {selectedOrder.shippingState}
-                          </p>
-                          <p className="font-mono text-[11px] text-stone-500 font-bold tracking-widest uppercase mt-2 pt-2 border-t border-stone-200/50">
-                            {selectedOrder.shippingZip}{" "}
-                            <span className="opacity-40 mx-1">•</span>{" "}
-                            {selectedOrder.shippingCountry}
-                          </p>
+                          <div className="space-y-1 text-sm text-slate-600">
+                            <p>{selectedOrder.shippingStreet}</p>
+                            <p>
+                              {selectedOrder.shippingCity},{" "}
+                              {selectedOrder.shippingState}
+                            </p>
+                            <p className="pt-2 font-mono text-xs text-slate-500">
+                              {selectedOrder.shippingZip} •{" "}
+                              {selectedOrder.shippingCountry}
+                            </p>
+                          </div>
                         </div>
                       ) : (
-                        <div className="bg-stone-50/50 rounded-xl p-6 border border-stone-200/40 border-dashed text-center">
-                          <p className="text-xs text-stone-400 font-semibold tracking-wide">
+                        <div className="rounded-md border border-dashed border-slate-200 p-6 text-center">
+                          <p className="text-sm font-medium text-slate-500">
                             No address provided
                           </p>
                         </div>
@@ -1388,10 +1253,10 @@ const OrderManager = () => {
 
                   {/* Inventory Snapshot */}
                   <CollapsibleSection
-                    icon={<Warehouse size={12} />}
+                    icon={<Warehouse size={16} />}
                     title="Inventory Snapshot"
                   >
-                    <div className="p-5 flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 p-5">
                       {selectedOrderItems.map((item: OrderItem) => {
                         const inv =
                           aggregatedInventory.get(item.variantId) ||
@@ -1404,25 +1269,25 @@ const OrderManager = () => {
                         return (
                           <div
                             key={item.id}
-                            className="flex items-center justify-between gap-3 bg-stone-50/40 border border-stone-100 p-3 rounded-xl hover:bg-stone-50/80 transition-colors"
+                            className="flex items-center justify-between gap-4 rounded-md border border-slate-200 p-3 hover:bg-slate-50"
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="text-[13px] font-bold text-stone-800 truncate tracking-tight">
+                              <p className="truncate text-sm font-medium text-slate-900">
                                 {item.name}
                               </p>
-                              <p className="text-[10px] text-stone-400 font-mono font-bold mt-0.5">
+                              <p className="mt-0.5 font-mono text-xs text-slate-500">
                                 {item.sku}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex flex-shrink-0 items-center gap-2">
                               <Tooltip>
                                 <TooltipTrigger>
                                   <span
                                     className={cn(
-                                      "text-xs font-bold px-2 py-1 rounded-md font-mono tabular-nums shadow-sm",
+                                      "rounded-md border px-2.5 py-1 font-mono text-xs font-medium tabular-nums",
                                       isLow
-                                        ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
-                                        : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+                                        ? "border-amber-200 bg-amber-50 text-amber-700"
+                                        : "border-emerald-200 bg-emerald-50 text-emerald-700",
                                     )}
                                   >
                                     {available}
@@ -1430,19 +1295,16 @@ const OrderManager = () => {
                                 </TooltipTrigger>
                                 <TooltipContent
                                   side="left"
-                                  className="text-xs font-semibold px-2 py-1.5 shadow-xl rounded-lg border-stone-200"
+                                  className="rounded-md border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-md"
                                 >
                                   {available} available{" "}
-                                  <span className="text-stone-300 mx-1">•</span>{" "}
+                                  <span className="mx-1 text-slate-300">•</span>{" "}
                                   {reserved} reserved
                                 </TooltipContent>
                               </Tooltip>
                               {isLow && (
-                                <div className="bg-amber-100 p-1 rounded-md">
-                                  <AlertTriangle
-                                    size={12}
-                                    className="text-amber-600"
-                                  />
+                                <div className="rounded-md bg-amber-100 p-1.5 text-amber-600">
+                                  <AlertTriangle size={14} />
                                 </div>
                               )}
                             </div>
@@ -1454,67 +1316,65 @@ const OrderManager = () => {
 
                   {/* Order Timeline */}
                   <CollapsibleSection
-                    icon={<Clock size={12} />}
+                    icon={<Clock size={16} />}
                     title="Timeline"
                     defaultOpen={false}
                   >
-                    <div className="p-5">
+                    <div className="p-6">
                       {!(
                         selectedOrder.logs && selectedOrder.logs.length > 0
                       ) ? (
-                        <div className="bg-stone-50/50 rounded-xl p-6 border border-stone-200/40 border-dashed text-center">
-                          <p className="text-xs text-stone-400 font-semibold tracking-wide">
+                        <div className="rounded-md border border-dashed border-slate-200 p-6 text-center">
+                          <p className="text-sm font-medium text-slate-500">
                             No timeline data available
                           </p>
                         </div>
                       ) : (
-                        <div className="relative pl-5 border-l-2 border-indigo-100 space-y-6">
+                        <div className="space-y-6 border-l-2 border-slate-100 pl-6">
                           {(selectedOrder.logs || []).map(
                             (log: OrderLog, idx: number) => {
                               const isLatest =
-                                idx === (selectedOrder.logs || []).length - 1;
+                                idx ===
+                                (selectedOrder.logs || []).length - 1;
                               const cfg = STATUS_CONFIG[log.status];
                               return (
-                                <div key={idx} className="relative group">
+                                <div key={idx} className="relative">
                                   <div
                                     className={cn(
-                                      "absolute -left-[27px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white ring-4 transition-all duration-300",
+                                      "absolute -left-[31px] top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white",
                                       isLatest
-                                        ? `${cfg.dotClass} ring-indigo-100 scale-110 shadow-sm`
-                                        : "bg-stone-300 ring-stone-50 group-hover:bg-stone-400 group-hover:scale-110",
+                                        ? `${cfg.dotClass} ring-2 ring-slate-200`
+                                        : "bg-slate-300",
                                     )}
                                   />
-                                  <div className="bg-white/50">
-                                    <div className="flex items-center gap-2 mb-1">
+                                  <div>
+                                    <div className="mb-1 flex items-center gap-2">
                                       <span
                                         className={cn(
-                                          "text-xs font-black tracking-widest uppercase",
+                                          "text-sm font-semibold",
                                           isLatest
-                                            ? "text-stone-900"
-                                            : "text-stone-500",
+                                            ? "text-slate-900"
+                                            : "text-slate-500",
                                         )}
                                       >
                                         {cfg.label}
                                       </span>
                                       {isLatest && (
-                                        <span className="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">
+                                        <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-600">
                                           Current
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[10px] text-stone-400 font-mono font-bold tracking-wide tabular-nums">
+                                    <p className="font-mono text-xs font-medium tabular-nums text-slate-500">
                                       {new Date(log.timestamp).toLocaleString(
                                         "en-IN",
                                         TIMELINE_DATE_OPTS,
                                       )}
                                     </p>
                                     {log.note && (
-                                      <div className="mt-2.5 relative">
-                                        <div className="absolute left-3 top-0 w-px h-full bg-stone-100" />
-                                        <p className="text-[11px] font-medium text-stone-600 bg-stone-50 pl-4 pr-3 py-2.5 rounded-r-xl rounded-l-md border border-stone-200/50 shadow-sm leading-relaxed border-l-4 border-l-indigo-300">
-                                          {log.note}
-                                        </p>
-                                      </div>
+                                      <p className="mt-2 rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+                                        {log.note}
+                                      </p>
                                     )}
                                   </div>
                                 </div>
@@ -1527,10 +1387,10 @@ const OrderManager = () => {
                   </CollapsibleSection>
 
                   <CollapsibleSection
-                    icon={<CreditCard size={12} />}
+                    icon={<CreditCard size={16} />}
                     title="Payments"
                     badge={
-                      <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-stone-200/60 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600">
                         {(selectedOrder.payments || []).length}
                       </span>
                     }
