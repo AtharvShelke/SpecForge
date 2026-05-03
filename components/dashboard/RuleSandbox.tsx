@@ -158,46 +158,12 @@ const RuleSandbox: React.FC<RuleSandboxProps> = ({ rules }) => {
         const result = await response.json();
         setTestResult(result);
       } else {
-        // Mock result for demo
-        const mockResult: TestResult = {
-          isCompatible: false,
-          summary: {
-            totalChecks: 3,
-            passed: 2,
-            failed: 1,
-            errors: 1,
-            warnings: 0,
-          },
-          details: [
-            {
-              ruleId: "1",
-              ruleName: "CPU-Motherboard Socket Match",
-              passed: true,
-              message: "OK",
-              severity: "ERROR",
-            },
-            {
-              ruleId: "2",
-              ruleName: "PSU Wattage Sufficient",
-              passed: false,
-              message: "Total system TDP (703W + 100W headroom) exceeds PSU capacity (650W)",
-              severity: "ERROR",
-              sourceValue: 650,
-              targetValue: 803,
-            },
-            {
-              ruleId: "3",
-              ruleName: "GPU Compatibility",
-              passed: true,
-              message: "OK",
-              severity: "INFO",
-            },
-          ],
-        };
-        setTestResult(mockResult);
+        console.error("API request failed:", response.statusText);
+        alert("Failed to run compatibility test. Please try again.");
       }
     } catch (error) {
       console.error("Failed to run test:", error);
+      alert("Failed to run compatibility test. Please check your connection.");
     } finally {
       setLoading(false);
     }

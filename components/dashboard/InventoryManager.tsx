@@ -241,6 +241,7 @@ const InventoryManager = () => {
     fetchInventoryPage,
     syncData,
     isLoading,
+    categories,
   } = useAdmin() as unknown as {
     inventory: InventorySkuSummary[];
     stockMovements: StockMovementRecord[];
@@ -262,6 +263,7 @@ const InventoryManager = () => {
     }>;
     syncData: () => Promise<void>;
     isLoading: boolean;
+    categories: any[];
   };
 
   const [adjustmentModal, setAdjustmentModal] = useState<{
@@ -490,7 +492,10 @@ const InventoryManager = () => {
       {};
     const arr = Array.isArray(inventory) ? inventory : [];
     for (const i of arr) {
-      const cat = i.variant?.product?.category || "Uncategorised";
+      const cat = i.variant?.product?.category || 
+                  i.variant?.product?.subCategory?.category?.name ||
+                  i.variant?.product?.subCategory?.name ||
+                  "Other";
       if (!map[cat]) map[cat] = { units: 0, value: 0, count: 0 };
       map[cat].units += i.quantity;
       map[cat].value += i.quantity * i.costPrice;
@@ -501,8 +506,13 @@ const InventoryManager = () => {
       .slice(0, 5);
   }, [inventory]);
   const inventoryCategories = useMemo(
-    () => categoryBreakdown.map(([cat]) => cat),
-    [categoryBreakdown],
+    () =>
+      (categories ?? [])
+        .map((category) =>
+          typeof category === "string" ? category : category.name,
+        )
+        .filter(Boolean),
+    [categories],
   );
 
   const kpiCards = useMemo(

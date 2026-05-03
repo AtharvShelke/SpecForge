@@ -118,27 +118,16 @@ export default function ImageUploader({
 
   if (minimal) {
     return (
-      <div
-        onDrop={(e) => {
-          e.preventDefault();
-          if (isUploading) return;
-          const file = e.dataTransfer.files?.[0];
+      <input
+        type="file"
+        accept="image/*"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        disabled={isUploading}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
           if (file) handleFile(file);
         }}
-        onDragOver={(e) => e.preventDefault()}
-        className="absolute inset-0 z-50 cursor-pointer"
-      >
-        <input
-          type="file"
-          accept="image/*"
-          className="absolute inset-0 opacity-0 cursor-pointer"
-          disabled={isUploading}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
-          }}
-        />
-      </div>
+      />
     );
   }
 

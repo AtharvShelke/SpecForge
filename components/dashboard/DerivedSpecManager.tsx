@@ -41,7 +41,7 @@ import {
 interface DerivedSpec {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   resultSpecId: string;
   formula: string;
   createdAt: string;
@@ -78,46 +78,22 @@ const DerivedSpecManager: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const mockDerivedSpecs: DerivedSpec[] = [
-        {
-          id: "1",
-          name: "Total TDP",
-          description: "Total thermal design power of all components",
-          resultSpecId: "spec1",
-          formula: "SUM(CPU.TDP, GPU.TDP)",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          resultSpec: {
-            id: "spec1",
-            name: "Total_TDP",
-            subCategoryId: "cat1",
-          },
-        },
-        {
-          id: "2",
-          name: "PSU Headroom",
-          description: "Available power capacity after component requirements",
-          resultSpecId: "spec2",
-          formula: "SUBTRACT(PSU.Wattage, Total_TDP)",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          resultSpec: {
-            id: "spec2",
-            name: "PSU_Headroom",
-            subCategoryId: "cat2",
-          },
-        },
-      ];
+      const [derivedSpecsRes, specsRes] = await Promise.all([
+        fetch('/api/admin/derived-specs'),
+        fetch('/api/catalog/specs')
+      ]);
 
-      const mockSpecs: SpecDefinition[] = [
-        { id: "spec1", name: "Total_TDP", subCategoryId: "cat1" },
-        { id: "spec2", name: "PSU_Headroom", subCategoryId: "cat2" },
-        { id: "spec3", name: "TDP", subCategoryId: "cat3" },
-        { id: "spec4", name: "Wattage", subCategoryId: "cat4" },
-      ];
+      if (!derivedSpecsRes.ok || !specsRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
 
-      setDerivedSpecs(mockDerivedSpecs);
-      setSpecs(mockSpecs);
+      const [derivedSpecs, specs] = await Promise.all([
+        derivedSpecsRes.json(),
+        specsRes.json()
+      ]);
+
+      setDerivedSpecs(derivedSpecs);
+      setSpecs(specs);
     } catch (error) {
       console.error("Failed to fetch derived specs:", error);
     } finally {
@@ -157,25 +133,25 @@ const DerivedSpecManager: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      if (editingSpec) {
-        setDerivedSpecs(prev =>
-          prev.map(spec =>
-            spec.id === editingSpec.id
-              ? { ...spec, ...formData, updatedAt: new Date().toISOString() }
-              : spec
-          )
-        );
-      } else {
-        const newSpec: DerivedSpec = {
-          id: Date.now().toString(),
-          ...formData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setDerivedSpecs(prev => [...prev, newSpec]);
+      const url = editingSpec 
+        ? `/api/admin/derived-specs/${editingSpec.id}`
+        : '/api/admin/derived-specs';
+      
+      const method = editingSpec ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save derived spec');
       }
+
       setIsDialogOpen(false);
       resetForm();
+      fetchData();
     } catch (error) {
       console.error("Failed to save derived spec:", error);
     }
@@ -184,6 +160,14 @@ const DerivedSpecManager: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this derived spec?")) return;
     try {
+      const res = await fetch(`/api/admin/derived-specs/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to delete derived spec');
+      }
+
       setDerivedSpecs(prev => prev.filter(spec => spec.id !== id));
     } catch (error) {
       console.error("Failed to delete derived spec:", error);

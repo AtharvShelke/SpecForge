@@ -70,3 +70,12 @@ export async function updateCustomer(
     throw err;
   }
 }
+
+export async function deleteCustomer(id: string) {
+  try {
+    return await prisma.customer.delete({ where: { id } });
+  } catch (err: any) {
+    if (err.code === "P2025") throw new ServiceError("Customer not found", 404);
+    throw err;
+  }
+}

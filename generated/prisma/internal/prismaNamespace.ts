@@ -409,6 +409,8 @@ export const ModelName = {
   InvoiceLineItem: 'InvoiceLineItem',
   InvoiceAuditEvent: 'InvoiceAuditEvent',
   TaxSettings: 'TaxSettings',
+  PaymentMethod: 'PaymentMethod',
+  AppSettings: 'AppSettings',
   PaymentTransaction: 'PaymentTransaction',
   PaymentProof: 'PaymentProof',
   AuditLog: 'AuditLog',
@@ -420,6 +422,7 @@ export const ModelName = {
   CompatibilityRule: 'CompatibilityRule',
   CompatibilityScope: 'CompatibilityScope',
   DerivedSpec: 'DerivedSpec',
+  DerivedSpecValue: 'DerivedSpecValue',
   BuildCompatibilityResult: 'BuildCompatibilityResult',
   CompatibilityCheck: 'CompatibilityCheck',
   SlotConstraint: 'SlotConstraint',
@@ -443,7 +446,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "brand" | "category" | "subCategory" | "categoryHierarchy" | "specDefinition" | "variantSpec" | "specOptionDependency" | "specOption" | "productMedia" | "product" | "productVariant" | "customer" | "order" | "orderItem" | "orderLog" | "shipmentTracking" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "taxSettings" | "paymentTransaction" | "paymentProof" | "auditLog" | "inventoryItem" | "reservation" | "build" | "buildItem" | "partSlot" | "compatibilityRule" | "compatibilityScope" | "derivedSpec" | "buildCompatibilityResult" | "compatibilityCheck" | "slotConstraint" | "variantCompatibilityCache" | "subCategorySlot" | "builderConfig" | "builderUIRule" | "filterOverride"
+    modelProps: "user" | "brand" | "category" | "subCategory" | "categoryHierarchy" | "specDefinition" | "variantSpec" | "specOptionDependency" | "specOption" | "productMedia" | "product" | "productVariant" | "customer" | "order" | "orderItem" | "orderLog" | "shipmentTracking" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "taxSettings" | "paymentMethod" | "appSettings" | "paymentTransaction" | "paymentProof" | "auditLog" | "inventoryItem" | "reservation" | "build" | "buildItem" | "partSlot" | "compatibilityRule" | "compatibilityScope" | "derivedSpec" | "derivedSpecValue" | "buildCompatibilityResult" | "compatibilityCheck" | "slotConstraint" | "variantCompatibilityCache" | "subCategorySlot" | "builderConfig" | "builderUIRule" | "filterOverride"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2297,6 +2300,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PaymentMethod: {
+      payload: Prisma.$PaymentMethodPayload<ExtArgs>
+      fields: Prisma.PaymentMethodFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PaymentMethodFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PaymentMethodFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>
+        }
+        findFirst: {
+          args: Prisma.PaymentMethodFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PaymentMethodFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>
+        }
+        findMany: {
+          args: Prisma.PaymentMethodFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>[]
+        }
+        create: {
+          args: Prisma.PaymentMethodCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>
+        }
+        createMany: {
+          args: Prisma.PaymentMethodCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PaymentMethodCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>[]
+        }
+        delete: {
+          args: Prisma.PaymentMethodDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>
+        }
+        update: {
+          args: Prisma.PaymentMethodUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>
+        }
+        deleteMany: {
+          args: Prisma.PaymentMethodDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PaymentMethodUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PaymentMethodUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>[]
+        }
+        upsert: {
+          args: Prisma.PaymentMethodUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentMethodPayload>
+        }
+        aggregate: {
+          args: Prisma.PaymentMethodAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePaymentMethod>
+        }
+        groupBy: {
+          args: Prisma.PaymentMethodGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PaymentMethodGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PaymentMethodCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PaymentMethodCountAggregateOutputType> | number
+        }
+      }
+    }
+    AppSettings: {
+      payload: Prisma.$AppSettingsPayload<ExtArgs>
+      fields: Prisma.AppSettingsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AppSettingsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AppSettingsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>
+        }
+        findFirst: {
+          args: Prisma.AppSettingsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AppSettingsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>
+        }
+        findMany: {
+          args: Prisma.AppSettingsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>[]
+        }
+        create: {
+          args: Prisma.AppSettingsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>
+        }
+        createMany: {
+          args: Prisma.AppSettingsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AppSettingsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>[]
+        }
+        delete: {
+          args: Prisma.AppSettingsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>
+        }
+        update: {
+          args: Prisma.AppSettingsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>
+        }
+        deleteMany: {
+          args: Prisma.AppSettingsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AppSettingsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AppSettingsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>[]
+        }
+        upsert: {
+          args: Prisma.AppSettingsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingsPayload>
+        }
+        aggregate: {
+          args: Prisma.AppSettingsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAppSettings>
+        }
+        groupBy: {
+          args: Prisma.AppSettingsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppSettingsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AppSettingsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppSettingsCountAggregateOutputType> | number
+        }
+      }
+    }
     PaymentTransaction: {
       payload: Prisma.$PaymentTransactionPayload<ExtArgs>
       fields: Prisma.PaymentTransactionFieldRefs
@@ -3108,6 +3259,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.DerivedSpecCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.DerivedSpecCountAggregateOutputType> | number
+        }
+      }
+    }
+    DerivedSpecValue: {
+      payload: Prisma.$DerivedSpecValuePayload<ExtArgs>
+      fields: Prisma.DerivedSpecValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DerivedSpecValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DerivedSpecValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>
+        }
+        findFirst: {
+          args: Prisma.DerivedSpecValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DerivedSpecValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>
+        }
+        findMany: {
+          args: Prisma.DerivedSpecValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>[]
+        }
+        create: {
+          args: Prisma.DerivedSpecValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>
+        }
+        createMany: {
+          args: Prisma.DerivedSpecValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DerivedSpecValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>[]
+        }
+        delete: {
+          args: Prisma.DerivedSpecValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>
+        }
+        update: {
+          args: Prisma.DerivedSpecValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.DerivedSpecValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DerivedSpecValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DerivedSpecValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.DerivedSpecValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DerivedSpecValuePayload>
+        }
+        aggregate: {
+          args: Prisma.DerivedSpecValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDerivedSpecValue>
+        }
+        groupBy: {
+          args: Prisma.DerivedSpecValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DerivedSpecValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DerivedSpecValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DerivedSpecValueCountAggregateOutputType> | number
         }
       }
     }
@@ -4129,6 +4354,32 @@ export const TaxSettingsScalarFieldEnum = {
 export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
 
 
+export const PaymentMethodScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  label: 'label',
+  icon: 'icon',
+  color: 'color',
+  placeholder: 'placeholder',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PaymentMethodScalarFieldEnum = (typeof PaymentMethodScalarFieldEnum)[keyof typeof PaymentMethodScalarFieldEnum]
+
+
+export const AppSettingsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppSettingsScalarFieldEnum = (typeof AppSettingsScalarFieldEnum)[keyof typeof AppSettingsScalarFieldEnum]
+
+
 export const PaymentTransactionScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
@@ -4272,11 +4523,25 @@ export const DerivedSpecScalarFieldEnum = {
   description: 'description',
   resultSpecId: 'resultSpecId',
   formula: 'formula',
+  formulaType: 'formulaType',
+  inputSpecIds: 'inputSpecIds',
+  enabled: 'enabled',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type DerivedSpecScalarFieldEnum = (typeof DerivedSpecScalarFieldEnum)[keyof typeof DerivedSpecScalarFieldEnum]
+
+
+export const DerivedSpecValueScalarFieldEnum = {
+  id: 'id',
+  derivedSpecId: 'derivedSpecId',
+  buildId: 'buildId',
+  value: 'value',
+  computedAt: 'computedAt'
+} as const
+
+export type DerivedSpecValueScalarFieldEnum = (typeof DerivedSpecValueScalarFieldEnum)[keyof typeof DerivedSpecValueScalarFieldEnum]
 
 
 export const BuildCompatibilityResultScalarFieldEnum = {
@@ -4734,6 +4999,20 @@ export type ListEnumCompatibilitySeverityFieldRefInput<$PrismaModel> = FieldRefI
 
 
 /**
+ * Reference to a field of type 'DerivedSpecType'
+ */
+export type EnumDerivedSpecTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DerivedSpecType'>
+    
+
+
+/**
+ * Reference to a field of type 'DerivedSpecType[]'
+ */
+export type ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DerivedSpecType[]'>
+    
+
+
+/**
  * Reference to a field of type 'BuilderRuleAction'
  */
 export type EnumBuilderRuleActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BuilderRuleAction'>
@@ -4866,6 +5145,8 @@ export type GlobalOmitConfig = {
   invoiceLineItem?: Prisma.InvoiceLineItemOmit
   invoiceAuditEvent?: Prisma.InvoiceAuditEventOmit
   taxSettings?: Prisma.TaxSettingsOmit
+  paymentMethod?: Prisma.PaymentMethodOmit
+  appSettings?: Prisma.AppSettingsOmit
   paymentTransaction?: Prisma.PaymentTransactionOmit
   paymentProof?: Prisma.PaymentProofOmit
   auditLog?: Prisma.AuditLogOmit
@@ -4877,6 +5158,7 @@ export type GlobalOmitConfig = {
   compatibilityRule?: Prisma.CompatibilityRuleOmit
   compatibilityScope?: Prisma.CompatibilityScopeOmit
   derivedSpec?: Prisma.DerivedSpecOmit
+  derivedSpecValue?: Prisma.DerivedSpecValueOmit
   buildCompatibilityResult?: Prisma.BuildCompatibilityResultOmit
   compatibilityCheck?: Prisma.CompatibilityCheckOmit
   slotConstraint?: Prisma.SlotConstraintOmit

@@ -76,6 +76,8 @@ export const ModelName = {
   InvoiceLineItem: 'InvoiceLineItem',
   InvoiceAuditEvent: 'InvoiceAuditEvent',
   TaxSettings: 'TaxSettings',
+  PaymentMethod: 'PaymentMethod',
+  AppSettings: 'AppSettings',
   PaymentTransaction: 'PaymentTransaction',
   PaymentProof: 'PaymentProof',
   AuditLog: 'AuditLog',
@@ -87,6 +89,7 @@ export const ModelName = {
   CompatibilityRule: 'CompatibilityRule',
   CompatibilityScope: 'CompatibilityScope',
   DerivedSpec: 'DerivedSpec',
+  DerivedSpecValue: 'DerivedSpecValue',
   BuildCompatibilityResult: 'BuildCompatibilityResult',
   CompatibilityCheck: 'CompatibilityCheck',
   SlotConstraint: 'SlotConstraint',
@@ -500,6 +503,32 @@ export const TaxSettingsScalarFieldEnum = {
 export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
 
 
+export const PaymentMethodScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  label: 'label',
+  icon: 'icon',
+  color: 'color',
+  placeholder: 'placeholder',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PaymentMethodScalarFieldEnum = (typeof PaymentMethodScalarFieldEnum)[keyof typeof PaymentMethodScalarFieldEnum]
+
+
+export const AppSettingsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppSettingsScalarFieldEnum = (typeof AppSettingsScalarFieldEnum)[keyof typeof AppSettingsScalarFieldEnum]
+
+
 export const PaymentTransactionScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
@@ -643,11 +672,25 @@ export const DerivedSpecScalarFieldEnum = {
   description: 'description',
   resultSpecId: 'resultSpecId',
   formula: 'formula',
+  formulaType: 'formulaType',
+  inputSpecIds: 'inputSpecIds',
+  enabled: 'enabled',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type DerivedSpecScalarFieldEnum = (typeof DerivedSpecScalarFieldEnum)[keyof typeof DerivedSpecScalarFieldEnum]
+
+
+export const DerivedSpecValueScalarFieldEnum = {
+  id: 'id',
+  derivedSpecId: 'derivedSpecId',
+  buildId: 'buildId',
+  value: 'value',
+  computedAt: 'computedAt'
+} as const
+
+export type DerivedSpecValueScalarFieldEnum = (typeof DerivedSpecValueScalarFieldEnum)[keyof typeof DerivedSpecValueScalarFieldEnum]
 
 
 export const BuildCompatibilityResultScalarFieldEnum = {

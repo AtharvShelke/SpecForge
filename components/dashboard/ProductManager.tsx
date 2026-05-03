@@ -424,6 +424,7 @@ interface ProductFormState extends Omit<Partial<Product>, "specs"> {
   stock?: number;
   sku?: string;
   images: string[];
+  subCategoryId?: string;
 }
 
 type ProductSchemaAttribute = {
@@ -486,6 +487,7 @@ const ProductManager = () => {
     updateProduct,
     deleteProduct,
     categories,
+    subCategories,
     brands,
     schemas,
     syncData,
@@ -496,6 +498,7 @@ const ProductManager = () => {
     updateProduct: (...args: any[]) => Promise<void>;
     deleteProduct: (id: string) => Promise<void>;
     categories: Array<Category | string>;
+    subCategories: any[];
     brands: Brand[];
     schemas: ProductSchema[];
     syncData: () => Promise<void>;
@@ -623,6 +626,14 @@ const ProductManager = () => {
     [currentProduct.category, brands],
   );
 
+  const availableSubCategories = useMemo(
+    () =>
+      (subCategories ?? []).filter(
+        (sub) => sub.category?.name === currentProduct.category,
+      ),
+    [subCategories, currentProduct.category],
+  );
+
   const handleUploadComplete = useCallback((url: string) => {
     setPreviewUrl(url);
     setTimeout(() => {
@@ -672,6 +683,7 @@ const ProductManager = () => {
           stock: parsedStock,
           images: currentProduct.images,
           costPrice: newProductCost,
+          subCategoryId: currentProduct.subCategoryId,
         } as any);
       } else {
         const newProduct: Product = {
@@ -692,6 +704,7 @@ const ProductManager = () => {
           description: currentProduct.description || "",
           specs: apiSpecs,
           costPrice: newProductCost,
+          subCategoryId: currentProduct.subCategoryId,
         } as Product;
         await addProduct(newProduct, parsedStock, newProductCost);
       }
@@ -722,6 +735,7 @@ const ProductManager = () => {
         ? product.media.map((m: any) => m.url)
         : [product.image || "https://picsum.photos/300/300"],
       specs: specsToFlat(product.specs),
+      subCategoryId: product.subCategoryId || "",
     });
     setPreviewUrl(product.media?.[0]?.url || product.image || null);
     setIsEditing(true);
@@ -756,6 +770,7 @@ const ProductManager = () => {
     setCurrentProduct((prev) => ({
       ...prev,
       category: val,
+      subCategoryId: "",
       specs: { brand: "" },
     }));
   }, []);
@@ -1016,6 +1031,30 @@ const ProductManager = () => {
                       </Select>
                     </div>
                     <div>
+                      <FieldLabel required>Subcategory</FieldLabel>
+                      <Select
+                        value={currentProduct.subCategoryId || ""}
+                        onValueChange={(val) =>
+                          setCurrentProduct((prev) => ({
+                            ...prev,
+                            subCategoryId: val,
+                          }))
+                        }
+                        disabled={!currentProduct.category}
+                      >
+                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
+                          <SelectValue placeholder="Select subcategory..." />
+                        </SelectTrigger>
+                        <SelectContent className="border-slate-200 bg-white">
+                          {availableSubCategories.map((sub: any) => (
+                            <SelectItem key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <FieldLabel required>Brand</FieldLabel>
                       <Select
                         value={(currentProduct.specs?.brand as string) || ""}
@@ -1220,14 +1259,14 @@ const ProductManager = () => {
                   ))}
                   <div
                     className={cn(
-                      "group flex aspect-square flex-col items-center justify-center rounded-md border-2 border-dashed transition-colors",
+                      "group relative flex aspect-square flex-col items-center justify-center rounded-md border-2 border-dashed transition-colors overflow-hidden",
                       isMediaUploading
                         ? "border-slate-300 bg-slate-50 cursor-wait"
                         : "border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100",
                     )}
                   >
                     {isMediaUploading ? (
-                      <div className="flex flex-col items-center gap-2">
+                      <div className="flex flex-col items-center gap-2 pointer-events-none">
                         <Loader2
                           size={24}
                           className="animate-spin text-slate-600"
@@ -1249,18 +1288,16 @@ const ProductManager = () => {
                         </span>
                       </div>
                     )}
-                    <div className="absolute inset-0 z-10 opacity-0 cursor-pointer">
-                      <ProductMediaUploader
-                        minimal
-                        onUploadStart={() => setIsMediaUploading(true)}
-                        onProgress={(p) => setUploadProgress(p)}
-                        onUploadComplete={(url) => {
-                          setIsMediaUploading(false);
-                          setUploadProgress(0);
-                          handleUploadComplete(url);
-                        }}
-                      />
-                    </div>
+                    <ProductMediaUploader
+                      minimal
+                      onUploadStart={() => setIsMediaUploading(true)}
+                      onProgress={(p) => setUploadProgress(p)}
+                      onUploadComplete={(url) => {
+                        setIsMediaUploading(false);
+                        setUploadProgress(0);
+                        handleUploadComplete(url);
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3">

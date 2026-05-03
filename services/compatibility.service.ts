@@ -255,7 +255,7 @@ export async function checkBuildCompatibility(buildId: string) {
   if (!build) throw new ServiceError("Build not found", 404);
 
   const buildItems = build.items;
-  const context = buildCompatibilityContext(buildItems);
+  const context = await buildCompatibilityContext(buildItems);
 
   if (buildItems.length < 2) {
     return {
@@ -325,7 +325,7 @@ export async function testRules(variantIds: string[]) {
     variant: v,
   }));
 
-  const context = buildCompatibilityContext(mockItems);
+  const context = await buildCompatibilityContext(mockItems);
   const results = await evaluateAllRules(mockItems, context);
 
   const isCompatible = results.every((r) => r.passed || r.severity !== "ERROR");
@@ -364,7 +364,7 @@ export async function debugRule(ruleId: string, variantIds: string[]) {
     variant: v,
   }));
 
-  const context = buildCompatibilityContext(mockItems);
+  const context = await buildCompatibilityContext(mockItems);
 
   // Evaluate just this one rule
   const trace: any[] = [];

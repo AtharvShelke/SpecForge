@@ -167,6 +167,16 @@ export type InvoiceAuditEvent = Prisma.InvoiceAuditEventModel
  */
 export type TaxSettings = Prisma.TaxSettingsModel
 /**
+ * Model PaymentMethod
+ * 
+ */
+export type PaymentMethod = Prisma.PaymentMethodModel
+/**
+ * Model AppSettings
+ * 
+ */
+export type AppSettings = Prisma.AppSettingsModel
+/**
  * Model PaymentTransaction
  * 
  */
@@ -221,6 +231,11 @@ export type CompatibilityScope = Prisma.CompatibilityScopeModel
  * 
  */
 export type DerivedSpec = Prisma.DerivedSpecModel
+/**
+ * Model DerivedSpecValue
+ * 
+ */
+export type DerivedSpecValue = Prisma.DerivedSpecValueModel
 /**
  * Model BuildCompatibilityResult
  * 

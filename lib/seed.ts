@@ -450,6 +450,7 @@ const CATEGORY_TREE: SeedCategory[] = [
           },
           { name: "Speed (MT/s)", valueType: SpecValueType.NUMBER, isFilterable: true, isRange: true, filterGroup: "Performance", options: [] },
           { name: "CAS Latency", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
+          { name: "Timings", valueType: SpecValueType.STRING, isFilterable: false, options: [] },
           { name: "Voltage", valueType: SpecValueType.NUMBER, isFilterable: false, options: [] },
           { name: "RGB", valueType: SpecValueType.BOOLEAN, isFilterable: true, filterGroup: "Features", options: [] },
           {
@@ -2398,22 +2399,29 @@ interface DerivedSpecSeed {
   resultSpecName: string;
   resultSpecSubCategory: string;
   formula: string;
+  formulaType?: "AGGREGATION" | "CALCULATION" | "CONDITIONAL" | "REFERENCE";
+  inputSpecIds?: string[];
+  enabled?: boolean;
 }
 
 const DERIVED_SPECS: DerivedSpecSeed[] = [
   {
     name: "Total TDP",
     description: "Combined TDP of CPU and GPU for PSU sizing",
-    resultSpecName: "TDP (W)",
+    resultSpecName: "Wattage",
     resultSpecSubCategory: "ATX PSU",
     formula: "SUM(CPU.TDP, GPU.TDP)",
+    formulaType: "AGGREGATION",
+    enabled: true,
   },
   {
     name: "Total Power Draw",
     description: "Estimated total system power draw with 20% headroom",
-    resultSpecName: "TDP (W)",
+    resultSpecName: "Wattage",
     resultSpecSubCategory: "ATX PSU",
     formula: "MULTIPLY(SUM(CPU.TDP, GPU.TDP), 1.2)",
+    formulaType: "CALCULATION",
+    enabled: true,
   },
   {
     name: "Remaining Cooler Clearance",
@@ -2421,6 +2429,59 @@ const DERIVED_SPECS: DerivedSpecSeed[] = [
     resultSpecName: "Height (mm)",
     resultSpecSubCategory: "Air Cooler",
     formula: "SUBTRACT(CASE.Max CPU Cooler Height, COOLER.Height)",
+    formulaType: "CALCULATION",
+    enabled: true,
+  },
+  {
+    name: "Total RAM Capacity",
+    description: "Combined RAM capacity across all modules",
+    resultSpecName: "Capacity",
+    resultSpecSubCategory: "DDR5 RAM",
+    formula: "SUM(RAM.Capacity)",
+    formulaType: "AGGREGATION",
+    enabled: true,
+  },
+  {
+    name: "PSU Headroom",
+    description: "Available power capacity after component usage",
+    resultSpecName: "Wattage",
+    resultSpecSubCategory: "ATX PSU",
+    formula: "SUBTRACT(PSU.Wattage, derived.Total TDP)",
+    formulaType: "CALCULATION",
+    enabled: true,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7.1 DERIVED SPEC VALUES (Sample computed values)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface DerivedSpecValueSeed {
+  derivedSpecName: string;
+  buildId: string;
+  value: any;
+}
+
+const DERIVED_SPEC_VALUES: DerivedSpecValueSeed[] = [
+  {
+    derivedSpecName: "Total TDP",
+    buildId: "sample-build-1",
+    value: 285,
+  },
+  {
+    derivedSpecName: "Total Power Draw",
+    buildId: "sample-build-1", 
+    value: 342,
+  },
+  {
+    derivedSpecName: "Total RAM Capacity",
+    buildId: "sample-build-1",
+    value: 32,
+  },
+  {
+    derivedSpecName: "PSU Headroom",
+    buildId: "sample-build-1",
+    value: 215,
   },
 ];
 
@@ -2498,6 +2559,146 @@ const BUILDER_UI_RULES: BuilderUIRuleSeed[] = [
     priority: 9,
     enabled: true,
     metadata: { warningMessage: "Low wattage PSU may not support high-end GPUs" },
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8.1 BUILD COMPATIBILITY RESULTS (Sample build validation results)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface BuildCompatibilityResultSeed {
+  buildId: string;
+  isCompatible: boolean;
+}
+
+interface CompatibilityCheckSeed {
+  resultId: string;
+  ruleName: string;
+  sourceVariantId?: string;
+  targetVariantId?: string;
+  passed: boolean;
+  message: string;
+  severity: "ERROR" | "WARNING" | "INFO";
+}
+
+const BUILD_COMPATIBILITY_RESULTS: BuildCompatibilityResultSeed[] = [
+  {
+    buildId: "sample-build-1",
+    isCompatible: true,
+  },
+  {
+    buildId: "sample-build-2", 
+    isCompatible: false,
+  },
+];
+
+const COMPATIBILITY_CHECKS: CompatibilityCheckSeed[] = [
+  {
+    resultId: "sample-build-1",
+    ruleName: "CPU Socket Compatibility",
+    passed: true,
+    message: "CPU socket matches motherboard socket",
+    severity: "INFO",
+  },
+  {
+    resultId: "sample-build-1",
+    ruleName: "Power Supply Capacity",
+    passed: true,
+    message: "PSU wattage sufficient for total system power",
+    severity: "INFO",
+  },
+  {
+    resultId: "sample-build-2",
+    ruleName: "CPU Socket Compatibility", 
+    passed: false,
+    message: "CPU socket AM5 does not match motherboard socket LGA1700",
+    severity: "ERROR",
+  },
+  {
+    resultId: "sample-build-2",
+    ruleName: "Memory Type Compatibility",
+    passed: false,
+    message: "DDR5 RAM not compatible with DDR4 motherboard",
+    severity: "ERROR",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8.2 VARIANT COMPATIBILITY CACHE (Sample cached compatibility results)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface VariantCompatibilityCacheSeed {
+  variantAId: string;
+  variantBId: string;
+  compatible: boolean;
+  message?: string;
+}
+
+const VARIANT_COMPATIBILITY_CACHE: VariantCompatibilityCacheSeed[] = [
+  {
+    variantAId: "cpu-intel-i7-13700k",
+    variantBId: "mobo-asus-z790-a",
+    compatible: true,
+    message: "Compatible - LGA1700 socket match",
+  },
+  {
+    variantAId: "cpu-intel-i7-13700k",
+    variantBId: "mobo-msi-b650-a",
+    compatible: false,
+    message: "Incompatible - Socket mismatch (LGA1700 vs AM5)",
+  },
+  {
+    variantAId: "gpu-rtx-4070",
+    variantBId: "psu-corsair-750w",
+    compatible: true,
+    message: "Compatible - Sufficient power capacity",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8.3 FILTER OVERRIDES (Category-specific filter customizations)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FilterOverrideSeed {
+  specDefinitionName: string;
+  categoryName: string;
+  labelOverride?: string;
+  hidden?: boolean;
+  displayOrder?: number;
+  groupOverride?: string;
+}
+
+const FILTER_OVERRIDES: FilterOverrideSeed[] = [
+  {
+    specDefinitionName: "TDP (W)",
+    categoryName: "Processor",
+    labelOverride: "Power Consumption",
+    displayOrder: 1,
+    groupOverride: "Performance",
+  },
+  {
+    specDefinitionName: "TDP (W)",
+    categoryName: "Graphics Card",
+    labelOverride: "Board Power",
+    displayOrder: 2,
+    groupOverride: "Power",
+  },
+  {
+    specDefinitionName: "VRAM (GB)",
+    categoryName: "Graphics Card",
+    labelOverride: "Memory Size",
+    displayOrder: 1,
+    groupOverride: "Performance",
+  },
+  {
+    specDefinitionName: "Process Node",
+    categoryName: "Processor",
+    hidden: true,
+  },
+  {
+    specDefinitionName: "L3 Cache (MB)",
+    categoryName: "Processor",
+    hidden: true,
   },
 ];
 
@@ -3018,8 +3219,153 @@ async function main() {
       await prisma.derivedSpec.create({
         data: {
           name: ds.name,
+          description: ds.description,
           resultSpecId,
           formula: ds.formula,
+          formulaType: ds.formulaType || "AGGREGATION",
+          inputSpecIds: ds.inputSpecIds || [],
+          enabled: ds.enabled !== undefined ? ds.enabled : true,
+        },
+      });
+    }
+  }
+
+  // ── 7.05 Sample Builds ──────────────────────────────────────────────────────
+  console.log("  → Seeding sample builds...");
+  const sampleBuilds = [
+    { id: "sample-build-1", name: "Sample Build 1" },
+    { id: "sample-build-2", name: "Sample Build 2" },
+  ];
+  for (const b of sampleBuilds) {
+    const existing = await prisma.build.findUnique({ where: { id: b.id } });
+    if (!existing) {
+      await prisma.build.create({ data: b });
+    }
+  }
+
+  // ── 7.1 Derived Spec Values ─────────────────────────────────────────────────
+  console.log("  → Seeding derived spec values...");
+  for (const dsv of DERIVED_SPEC_VALUES) {
+    const derivedSpec = await prisma.derivedSpec.findUnique({ where: { name: dsv.derivedSpecName } });
+    if (!derivedSpec) {
+      console.warn(`    ⚠ Derived spec not found: ${dsv.derivedSpecName}`);
+      continue;
+    }
+
+    const existing = await prisma.derivedSpecValue.findUnique({
+      where: { derivedSpecId_buildId: { derivedSpecId: derivedSpec.id, buildId: dsv.buildId } }
+    });
+    if (!existing) {
+      await prisma.derivedSpecValue.create({
+        data: {
+          derivedSpecId: derivedSpec.id,
+          buildId: dsv.buildId,
+          value: dsv.value,
+        },
+      });
+    }
+  }
+
+  // ── 7.2 Build Compatibility Results ────────────────────────────────────────
+  console.log("  → Seeding build compatibility results...");
+  for (const bcr of BUILD_COMPATIBILITY_RESULTS) {
+    const existing = await prisma.buildCompatibilityResult.findFirst({ where: { buildId: bcr.buildId } });
+    if (!existing) {
+      await prisma.buildCompatibilityResult.create({
+        data: {
+          id: `bcr-${bcr.buildId}`,
+          buildId: bcr.buildId,
+          isCompatible: bcr.isCompatible,
+        },
+      });
+    }
+  }
+
+  // ── 7.25 Compatibility Rules ───────────────────────────────────────────────
+  console.log("  → Seeding compatibility rules...");
+  const sampleRules = Array.from(new Set(COMPATIBILITY_CHECKS.map(c => c.ruleName)));
+  for (const ruleName of sampleRules) {
+    const existing = await prisma.compatibilityRule.findFirst({ where: { id: ruleName } });
+    if (!existing) {
+      await prisma.compatibilityRule.create({
+        data: {
+          id: ruleName,
+          name: ruleName,
+          type: "PAIR",
+          message: `Rule for ${ruleName}`,
+          severity: "WARNING",
+          enabled: true,
+        }
+      });
+    }
+  }
+
+  // ── 7.3 Compatibility Checks ───────────────────────────────────────────────
+  console.log("  → Seeding compatibility checks...");
+  for (const cc of COMPATIBILITY_CHECKS) {
+    const result = await prisma.buildCompatibilityResult.findFirst({ where: { buildId: cc.resultId } });
+    if (!result) {
+      console.warn(`    ⚠ Build compatibility result not found: ${cc.resultId}`);
+      continue;
+    }
+
+    const existing = await prisma.compatibilityCheck.findFirst({
+      where: { resultId: result.id, ruleId: cc.ruleName }
+    });
+    if (!existing) {
+      await prisma.compatibilityCheck.create({
+        data: {
+          resultId: result.id,
+          ruleId: cc.ruleName,
+          sourceVariantId: cc.sourceVariantId,
+          targetVariantId: cc.targetVariantId,
+          passed: cc.passed,
+          message: cc.message,
+          severity: cc.severity,
+        },
+      });
+    }
+  }
+
+  // ── 7.4 Variant Compatibility Cache ───────────────────────────────────────────
+  console.log("  → Seeding variant compatibility cache...");
+  for (const vcc of VARIANT_COMPATIBILITY_CACHE) {
+    const existing = await prisma.variantCompatibilityCache.findUnique({
+      where: { variantAId_variantBId: { variantAId: vcc.variantAId, variantBId: vcc.variantBId } }
+    });
+    if (!existing) {
+      await prisma.variantCompatibilityCache.create({
+        data: {
+          variantAId: vcc.variantAId,
+          variantBId: vcc.variantBId,
+          compatible: vcc.compatible,
+          message: vcc.message,
+        },
+      });
+    }
+  }
+
+  // ── 7.5 Filter Overrides ─────────────────────────────────────────────────────
+  console.log("  → Seeding filter overrides...");
+  for (const fo of FILTER_OVERRIDES) {
+    const specDef = await prisma.specDefinition.findFirst({ where: { name: fo.specDefinitionName } });
+    if (!specDef) {
+      console.warn(`    ⚠ Spec definition not found: ${fo.specDefinitionName}`);
+      continue;
+    }
+
+    const existing = await prisma.filterOverride.findUnique({
+      where: { specDefinitionId_categoryName: { specDefinitionId: specDef.id, categoryName: fo.categoryName } }
+    });
+    if (!existing) {
+      await prisma.filterOverride.create({
+        data: {
+          specDefinitionId: specDef.id,
+          categoryName: fo.categoryName,
+          labelOverride: fo.labelOverride,
+          hidden: fo.hidden || false,
+          displayOrder: fo.displayOrder || 0,
+          groupOverride: fo.groupOverride,
         },
       });
     }
@@ -3399,6 +3745,34 @@ async function main() {
   const existingProfile = await prisma.billingProfile.findFirst();
   if (!existingProfile) {
     await prisma.billingProfile.create({ data: BILLING_PROFILE });
+  }
+
+  // ── 14. Payment Methods ───────────────────────────────────────────────────
+  console.log("  → Seeding payment methods...");
+  const PAYMENT_METHODS = [
+    { code: 'cash', label: 'Cash', color: 'text-emerald-700 bg-emerald-50 border-emerald-300', placeholder: null },
+    { code: 'upi', label: 'UPI', color: 'text-violet-700 bg-violet-50 border-violet-300', placeholder: 'UPI Ref / UTR' },
+    { code: 'card', label: 'Card', color: 'text-blue-700 bg-blue-50 border-blue-300', placeholder: 'Last 4 digits' },
+    { code: 'bank_transfer', label: 'Bank Transfer', color: 'text-slate-700 bg-slate-50 border-slate-300', placeholder: 'NEFT/RTGS Ref' },
+  ];
+  for (const pm of PAYMENT_METHODS) {
+    const existing = await prisma.paymentMethod.findUnique({ where: { code: pm.code } });
+    if (!existing) {
+      await prisma.paymentMethod.create({ data: pm });
+    }
+  }
+
+  // ── 15. App Settings ───────────────────────────────────────────────────
+  console.log("  → Seeding app settings...");
+  const APP_SETTINGS = [
+    { key: 'default_country', value: 'India' },
+    { key: 'default_currency', value: 'INR' },
+  ];
+  for (const setting of APP_SETTINGS) {
+    const existing = await prisma.appSettings.findUnique({ where: { key: setting.key } });
+    if (!existing) {
+      await prisma.appSettings.create({ data: setting });
+    }
   }
 
   console.log("✅ Seed complete.");

@@ -13,7 +13,6 @@ import {
 import { CatalogProvider, useCatalog } from "./CatalogContext";
 import { InventoryProvider, useInventory } from "./InventoryContext";
 import { OrderProvider, useOrder } from "./OrderContext";
-import { BillingProvider, useBilling } from "./BillingContext";
 import { BuildProvider, useBuild } from "./BuildContext";
 import type { CategoryNode } from "@/types";
 import { apiFetch } from "@/lib/helpers";
@@ -30,7 +29,6 @@ interface AdminContextType {
   catalog: ReturnType<typeof useCatalog>;
   inventory: any;
   orders: any;
-  billing: ReturnType<typeof useBilling>;
   builds: ReturnType<typeof useBuild>;
 
   [key: string]: any;
@@ -46,14 +44,12 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
   const catalog = useCatalog();
   const inventory = useInventory();
   const orders = useOrder();
-  const billing = useBilling();
   const builds = useBuild();
 
   const isLoading =
     catalog.loading ||
     inventory.loading ||
     orders.loading ||
-    billing.loading ||
     builds.loading;
 
   const syncData = useCallback(async () => {
@@ -69,14 +65,13 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         inventory.refreshInventory(),
         inventory.refreshReservations(),
         orders.refreshOrders(),
-        billing.refreshInvoices(),
         builds.refreshBuilds(),
         builds.refreshBuildGuides(),
       ]);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     }
-  }, [catalog, inventory, orders, billing, builds]);
+  }, [catalog, inventory, orders, builds]);
 
   useEffect(() => {
     if (hydratedTabsRef.current.has(activeTab)) return;
@@ -101,11 +96,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       ],
       brands: [catalog.refreshBrands, catalog.refreshCategories],
       "saved-builds": [builds.refreshBuildGuides],
-      billing: [
-        billing.refreshInvoices,
-        billing.refreshCustomers,
-        billing.refreshBillingProfile,
-      ],
       "builder-config": [],
       compatibility: [],
       "tax-settings": [],
@@ -114,9 +104,8 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
     void Promise.allSettled(
       (loaders[activeTab] ?? []).map((loader) => loader()),
     );
-  }, [activeTab, billing, builds, catalog, inventory, orders]);
+  }, [activeTab, builds, catalog, inventory, orders]);
 
-  
   const noop = useCallback(async () => {}, []);
 
   const updateCategories = useCallback(
@@ -314,7 +303,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       inventoryContext: inventory,
       orders: orders.orders,
       ordersContext: orders,
-      billing,
       builds,
 
       products: catalog.products,
@@ -369,8 +357,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       error,
       catalog,
-      
-      billing,
       builds,
       inventory,
       orders,
@@ -398,11 +384,9 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
     <CatalogProvider autoLoad={false}>
       <InventoryProvider autoLoad={false}>
         <OrderProvider autoLoad={false}>
-          <BillingProvider autoLoad={false}>
             <BuildProvider autoLoad={false}>
               <AdminInnerProvider>{children}</AdminInnerProvider>
             </BuildProvider>
-          </BillingProvider>
         </OrderProvider>
       </InventoryProvider>
     </CatalogProvider>

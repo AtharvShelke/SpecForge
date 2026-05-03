@@ -42,19 +42,38 @@ export async function listInvoices(filters?: {
   status?: string;
   customerId?: string;
   orderId?: string;
+  page?: number;
+  limit?: number;
 }) {
   const where: any = {};
   if (filters?.status) where.status = filters.status;
   if (filters?.customerId) where.customerId = filters.customerId;
   if (filters?.orderId) where.orderId = filters.orderId;
 
+  const page = Math.max(1, Number(filters?.page ?? 1));
+  const limit = Math.min(100, Math.max(1, Number(filters?.limit ?? 25)));
+
   return prisma.invoice.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: {
-      customer: true,
-      lineItems: true,
-      audit: { orderBy: { createdAt: "desc" } },
+    skip: (page - 1) * limit,
+    take: limit,
+    select: {
+      id: true,
+      invoiceNumber: true,
+      status: true,
+      total: true,
+      amountDue: true,
+      createdAt: true,
+      dueDate: true,
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      orderId: true,
     },
   });
 }

@@ -192,6 +192,7 @@ model Product {
   @@index([deletedAt])
   @@index([status, name])
   @@index([deletedAt, status, createdAt])
+  @@index([deletedAt, status, subCategoryId])
 }
 
 model ProductVariant {
@@ -220,6 +221,7 @@ model ProductVariant {
   @@index([deletedAt])
   @@index([productId, deletedAt])
   @@index([status, deletedAt])
+  @@index([productId, deletedAt, price])
 }
 
 model Customer {
@@ -463,6 +465,28 @@ model TaxSettings {
   updatedAt       DateTime @updatedAt
 }
 
+model PaymentMethod {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  label       String
+  icon        String?
+  color       String?
+  placeholder String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([enabled])
+}
+
+model AppSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model PaymentTransaction {
   id             String            @id @default(uuid())
   orderId        String
@@ -625,14 +649,34 @@ model CompatibilityScope {
 }
 
 model DerivedSpec {
-  id           String         @id @default(uuid())
-  name         String         @unique
-  description  String?
-  resultSpecId String
-  formula      String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  resultSpec   SpecDefinition @relation(fields: [resultSpecId], references: [id])
+  id              String         @id @default(uuid())
+  name            String         @unique
+  description     String?
+  resultSpecId    String
+  formula         String
+  formulaType     DerivedSpecType @default(AGGREGATION)
+  inputSpecIds    Json           @default("[]")
+  enabled         Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  resultSpec      SpecDefinition @relation(fields: [resultSpecId], references: [id])
+  computedValues  DerivedSpecValue[]
+
+  @@index([enabled])
+  @@index([resultSpecId])
+}
+
+model DerivedSpecValue {
+  id             String      @id @default(uuid())
+  derivedSpecId  String
+  buildId        String
+  value          Json
+  computedAt     DateTime    @default(now())
+  derivedSpec    DerivedSpec @relation(fields: [derivedSpecId], references: [id], onDelete: Cascade)
+
+  @@unique([derivedSpecId, buildId])
+  @@index([buildId])
+  @@index([derivedSpecId])
 }
 
 model BuildCompatibilityResult {
@@ -873,4 +917,11 @@ enum BuilderRuleAction {
   LOCK_CATEGORY
   AUTO_SELECT
   SHOW_WARNING
+}
+
+enum DerivedSpecType {
+  AGGREGATION
+  CALCULATION
+  CONDITIONAL
+  REFERENCE
 }

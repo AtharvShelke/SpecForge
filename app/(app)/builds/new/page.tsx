@@ -18,9 +18,11 @@ import {
 } from "@/types";
 import {
   CATEGORY_LABELS,
-  CATEGORY_NAMES,
+  FALLBACK_CATEGORY_NAMES,
   sameCategory,
+  updateCategoryLabels,
 } from "@/lib/categoryUtils";
+import { useCategories } from "@/hooks/useCategories";
 import {
   Cpu,
   Monitor,
@@ -55,6 +57,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import BuildShareDialog from "@/components/build/BuildShareDialog";
+import BuildCompatibilityPanel from "@/components/build/BuildCompatibilityPanel";
+import BuildExportPanel from "@/components/build/BuildExportPanel";
 import { useProductFilters } from "@/hooks/useProductFilters";
 import { useCatalogListing } from "@/hooks/useCatalogListing";
 import CatalogFiltersSidebar from "@/app/(app)/products/components/CatalogFiltersSidebar";
@@ -165,51 +170,51 @@ const PAGE_STYLES = `
 /* ─────────────────────────────── Constants ──────────────────────────────── */
 // Defined outside component — never recreated on render
 const CORE_CATEGORIES: string[] = [
-  CATEGORY_NAMES.PROCESSOR,
-  CATEGORY_NAMES.MOTHERBOARD,
-  CATEGORY_NAMES.RAM,
-  CATEGORY_NAMES.GPU,
-  CATEGORY_NAMES.STORAGE,
-  CATEGORY_NAMES.PSU,
-  CATEGORY_NAMES.CABINET,
-  CATEGORY_NAMES.COOLER,
+  FALLBACK_CATEGORY_NAMES.PROCESSOR,
+  FALLBACK_CATEGORY_NAMES.MOTHERBOARD,
+  FALLBACK_CATEGORY_NAMES.RAM,
+  FALLBACK_CATEGORY_NAMES.GPU,
+  FALLBACK_CATEGORY_NAMES.STORAGE,
+  FALLBACK_CATEGORY_NAMES.PSU,
+  FALLBACK_CATEGORY_NAMES.CABINET,
+  FALLBACK_CATEGORY_NAMES.COOLER,
 ];
 
 const CAT_ICONS: Record<string, React.ElementType> = {
-  [CATEGORY_NAMES.PROCESSOR]: Cpu,
-  [CATEGORY_NAMES.MOTHERBOARD]: Layers,
-  [CATEGORY_NAMES.RAM]: HardDrive,
-  [CATEGORY_NAMES.GPU]: Monitor,
-  [CATEGORY_NAMES.STORAGE]: HardDrive,
-  [CATEGORY_NAMES.PSU]: Zap,
-  [CATEGORY_NAMES.CABINET]: Box,
-  [CATEGORY_NAMES.COOLER]: Fan,
-  [CATEGORY_NAMES.MONITOR]: Monitor,
-  [CATEGORY_NAMES.PERIPHERAL]: Keyboard,
-  [CATEGORY_NAMES.NETWORKING]: Wifi,
+  [FALLBACK_CATEGORY_NAMES.PROCESSOR]: Cpu,
+  [FALLBACK_CATEGORY_NAMES.MOTHERBOARD]: Layers,
+  [FALLBACK_CATEGORY_NAMES.RAM]: HardDrive,
+  [FALLBACK_CATEGORY_NAMES.GPU]: Monitor,
+  [FALLBACK_CATEGORY_NAMES.STORAGE]: HardDrive,
+  [FALLBACK_CATEGORY_NAMES.PSU]: Zap,
+  [FALLBACK_CATEGORY_NAMES.CABINET]: Box,
+  [FALLBACK_CATEGORY_NAMES.COOLER]: Fan,
+  [FALLBACK_CATEGORY_NAMES.MONITOR]: Monitor,
+  [FALLBACK_CATEGORY_NAMES.PERIPHERAL]: Keyboard,
+  [FALLBACK_CATEGORY_NAMES.NETWORKING]: Wifi,
 };
 
 const CAT_SHORT: Record<string, string> = {
-  [CATEGORY_NAMES.PROCESSOR]: "CPU",
-  [CATEGORY_NAMES.MOTHERBOARD]: "Mobo",
-  [CATEGORY_NAMES.RAM]: "RAM",
-  [CATEGORY_NAMES.GPU]: "GPU",
-  [CATEGORY_NAMES.STORAGE]: "SSD",
-  [CATEGORY_NAMES.PSU]: "PSU",
-  [CATEGORY_NAMES.CABINET]: "Case",
-  [CATEGORY_NAMES.COOLER]: "Cooler",
+  [FALLBACK_CATEGORY_NAMES.PROCESSOR]: "CPU",
+  [FALLBACK_CATEGORY_NAMES.MOTHERBOARD]: "Mobo",
+  [FALLBACK_CATEGORY_NAMES.RAM]: "RAM",
+  [FALLBACK_CATEGORY_NAMES.GPU]: "GPU",
+  [FALLBACK_CATEGORY_NAMES.STORAGE]: "SSD",
+  [FALLBACK_CATEGORY_NAMES.PSU]: "PSU",
+  [FALLBACK_CATEGORY_NAMES.CABINET]: "Case",
+  [FALLBACK_CATEGORY_NAMES.COOLER]: "Cooler",
 };
 
 const CAT_DESCRIPTIONS: Record<string, string> = {
-  [CATEGORY_NAMES.PROCESSOR]: "The brain of your build - AMD or Intel.",
-  [CATEGORY_NAMES.MOTHERBOARD]:
+  [FALLBACK_CATEGORY_NAMES.PROCESSOR]: "The brain of your build - AMD or Intel.",
+  [FALLBACK_CATEGORY_NAMES.MOTHERBOARD]:
     "Connects everything. Must match your CPU socket.",
-  [CATEGORY_NAMES.RAM]: "System memory. Must match your motherboard DDR type.",
-  [CATEGORY_NAMES.GPU]: "Graphics card for gaming and creative work.",
-  [CATEGORY_NAMES.STORAGE]: "NVMe SSDs for fast load times.",
-  [CATEGORY_NAMES.PSU]: "Power supply - must handle your total wattage.",
-  [CATEGORY_NAMES.CABINET]: "The case. Must fit your motherboard and GPU.",
-  [CATEGORY_NAMES.COOLER]: "Keep your CPU cool under load.",
+  [FALLBACK_CATEGORY_NAMES.RAM]: "System memory. Must match your motherboard DDR type.",
+  [FALLBACK_CATEGORY_NAMES.GPU]: "Graphics card for gaming and creative work.",
+  [FALLBACK_CATEGORY_NAMES.STORAGE]: "NVMe SSDs for fast load times.",
+  [FALLBACK_CATEGORY_NAMES.PSU]: "Power supply - must handle your total wattage.",
+  [FALLBACK_CATEGORY_NAMES.CABINET]: "The case. Must fit your motherboard and GPU.",
+  [FALLBACK_CATEGORY_NAMES.COOLER]: "Keep your CPU cool under load.",
 };
 
 // Static animation variants — defined once outside component
@@ -227,7 +232,7 @@ function estimatePowerStats(cart: CartItem[], powerDefaults: BuilderSettings["po
   let psuCap: number | null = null;
   for (const item of cart) {
     const s = specsToFlat(item.specs);
-    if (sameCategory(item.category, CATEGORY_NAMES.PSU)) {
+    if (sameCategory(item.category, FALLBACK_CATEGORY_NAMES.PSU)) {
       const cap = Number(s.wattage);
       if (!isNaN(cap)) psuCap = cap;
     }
@@ -236,10 +241,10 @@ function estimatePowerStats(cart: CartItem[], powerDefaults: BuilderSettings["po
       w += n * item.quantity;
       continue;
     }
-    if (sameCategory(item.category, CATEGORY_NAMES.PROCESSOR)) w += powerDefaults.cpuDefaultWattage;
-    if (sameCategory(item.category, CATEGORY_NAMES.GPU)) w += powerDefaults.gpuDefaultWattage;
-    if (sameCategory(item.category, CATEGORY_NAMES.RAM)) w += powerDefaults.ramWattagePerStick * item.quantity;
-    if (sameCategory(item.category, CATEGORY_NAMES.STORAGE))
+    if (sameCategory(item.category, FALLBACK_CATEGORY_NAMES.PROCESSOR)) w += powerDefaults.cpuDefaultWattage;
+    if (sameCategory(item.category, FALLBACK_CATEGORY_NAMES.GPU)) w += powerDefaults.gpuDefaultWattage;
+    if (sameCategory(item.category, FALLBACK_CATEGORY_NAMES.RAM)) w += powerDefaults.ramWattagePerStick * item.quantity;
+    if (sameCategory(item.category, FALLBACK_CATEGORY_NAMES.STORAGE))
       w += powerDefaults.storageWattagePerDrive * item.quantity;
   }
   return { wattage: w, psuCap };
@@ -429,12 +434,12 @@ function validateBuild(items: CartItem[] = [], powerDefaults: BuilderSettings["p
 } {
   const issues: BuildIssue[] = [];
   const cpu = items.find((i) =>
-    sameCategory(i.category, CATEGORY_NAMES.PROCESSOR),
+    sameCategory(i.category, FALLBACK_CATEGORY_NAMES.PROCESSOR),
   );
   const mobo = items.find((i) =>
-    sameCategory(i.category, CATEGORY_NAMES.MOTHERBOARD),
+    sameCategory(i.category, FALLBACK_CATEGORY_NAMES.MOTHERBOARD),
   );
-  const ram = items.find((i) => sameCategory(i.category, CATEGORY_NAMES.RAM));
+  const ram = items.find((i) => sameCategory(i.category, FALLBACK_CATEGORY_NAMES.RAM));
   const { wattage, psuCap } = estimatePowerStats(items, powerDefaults);
 
   if (cpu && mobo) {
@@ -1659,6 +1664,7 @@ export default function PCBuilderPage() {
   } = useShop();
   const { isBuildMode, toggleBuildMode, saveCurrentBuild, builderSettings } = useBuild();
   const { toast } = useToast();
+  const { categories: dynamicCategories } = useCategories();
 
   useEffect(() => {
     if (categories.length === 0) {
@@ -1666,10 +1672,18 @@ export default function PCBuilderPage() {
     }
   }, [categories.length, refreshCategories]);
 
+  // Update category labels when dynamic categories are loaded
+  useEffect(() => {
+    if (dynamicCategories.length > 0) {
+      updateCategoryLabels(dynamicCategories);
+    }
+  }, [dynamicCategories]);
+
   const [activeStep, setActiveStep] = useState<string>(CORE_CATEGORIES[0]);
   const [showIncompat, setShowIncompat] = useState(false);
   const [isBuildSummaryOpen, setIsBuildSummaryOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [viewerRole, setViewerRole] = useState<Role | null>(null);
   const [page, setPage] = useState(1);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -1732,10 +1746,10 @@ export default function PCBuilderPage() {
   // Cache CPU/mobo specs from cart to avoid repeated specsToFlat calls inside fetch effect
   const cartSpecsCache = useMemo(() => {
     const cpu = cart.find((i) =>
-      sameCategory(i.category, CATEGORY_NAMES.PROCESSOR),
+      sameCategory(i.category, FALLBACK_CATEGORY_NAMES.PROCESSOR),
     );
     const mobo = cart.find((i) =>
-      sameCategory(i.category, CATEGORY_NAMES.MOTHERBOARD),
+      sameCategory(i.category, FALLBACK_CATEGORY_NAMES.MOTHERBOARD),
     );
     return {
       cpuSocket: cpu ? String(specsToFlat(cpu.specs).socket ?? "") : "",
@@ -1848,6 +1862,8 @@ export default function PCBuilderPage() {
 
   const handleOpenSave = useCallback(() => setSaveOpen(true), []);
   const handleCloseSave = useCallback(() => setSaveOpen(false), []);
+  const handleOpenShare = useCallback(() => setShareOpen(true), []);
+  const handleCloseShare = useCallback(() => setShareOpen(false), []);
   const handleToggleIncompat = useCallback(
     () => setShowIncompat((p) => !p),
     [],
@@ -2076,7 +2092,7 @@ export default function PCBuilderPage() {
         </main>
 
         {/* ── RIGHT SIDEBAR ─────────────────────────────────────── */}
-        <aside className="hidden xl:flex flex-col overflow-hidden w-[300px] sticky top-0 self-start">
+        <aside className="hidden xl:flex flex-col overflow-hidden w-[300px] sticky top-0 self-start gap-4">
           <BuildSummaryPanel
             cart={cart}
             onRemove={handleRemove}
@@ -2084,9 +2100,23 @@ export default function PCBuilderPage() {
             powerDefaults={builderSettings.powerDefaults}
             activeStep={activeStep}
             onSave={isAdmin ? handleOpenSave : undefined}
-            onShare={undefined}
+            onShare={handleOpenShare}
             onCheckout={handleCartOpen}
           />
+          
+          {cart.length > 0 && (
+            <>
+              <BuildCompatibilityPanel
+                cart={cart}
+                powerDefaults={builderSettings.powerDefaults}
+              />
+              
+              <BuildExportPanel
+                cart={cart}
+                buildName="My PC Build"
+              />
+            </>
+          )}
         </aside>
       </div>
 
@@ -2129,20 +2159,36 @@ export default function PCBuilderPage() {
           side="right"
           className="p-0 w-full max-w-[320px] overflow-hidden"
         >
-          <div className="h-full">
-            <BuildSummaryPanel
-              cart={cart}
-              onRemove={handleRemove}
-              onStepClick={handleStepClick}
-              powerDefaults={builderSettings.powerDefaults}
-              activeStep={activeStep}
-              onSave={isAdmin ? handleOpenSave : undefined}
-              onShare={undefined}
-              onCheckout={() => {
-                setIsBuildSummaryOpen(false);
-                handleCartOpen();
-              }}
-            />
+          <div className="h-full overflow-y-auto">
+            <div className="space-y-4">
+              <BuildSummaryPanel
+                cart={cart}
+                onRemove={handleRemove}
+                onStepClick={handleStepClick}
+                powerDefaults={builderSettings.powerDefaults}
+                activeStep={activeStep}
+                onSave={isAdmin ? handleOpenSave : undefined}
+                onShare={handleOpenShare}
+                onCheckout={() => {
+                  setIsBuildSummaryOpen(false);
+                  handleCartOpen();
+                }}
+              />
+              
+              {cart.length > 0 && (
+                <>
+                  <BuildCompatibilityPanel
+                    cart={cart}
+                    powerDefaults={builderSettings.powerDefaults}
+                  />
+                  
+                  <BuildExportPanel
+                    cart={cart}
+                    buildName="My PC Build"
+                  />
+                </>
+              )}
+            </div>
           </div>
         </SheetContent>
       </Sheet>
@@ -2194,6 +2240,14 @@ export default function PCBuilderPage() {
           <SaveDialog onClose={handleCloseSave} onSave={handleSave} />
         )}
       </AnimatePresence>
+
+      {/* Share dialog */}
+      <BuildShareDialog
+        open={shareOpen}
+        onOpenChange={handleCloseShare}
+        cart={cart}
+        buildName="My PC Build"
+      />
     </div>
   );
 }

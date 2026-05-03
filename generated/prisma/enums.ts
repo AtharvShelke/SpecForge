@@ -205,3 +205,13 @@ export const BuilderRuleAction = {
 } as const
 
 export type BuilderRuleAction = (typeof BuilderRuleAction)[keyof typeof BuilderRuleAction]
+
+
+export const DerivedSpecType = {
+  AGGREGATION: 'AGGREGATION',
+  CALCULATION: 'CALCULATION',
+  CONDITIONAL: 'CONDITIONAL',
+  REFERENCE: 'REFERENCE'
+} as const
+
+export type DerivedSpecType = (typeof DerivedSpecType)[keyof typeof DerivedSpecType]

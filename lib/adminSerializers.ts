@@ -157,3 +157,16 @@ export function serializeBrand(brand: any) {
 export function serializeBrands(brands: any[]) {
   return brands.map(serializeBrand);
 }
+
+export function serializeDerivedSpec(spec: any) {
+  return {
+    ...spec,
+    inputSpecIds: Array.isArray(spec?.inputSpecIds) ? spec.inputSpecIds : [],
+    createdAt: spec?.createdAt?.toISOString() || spec?.createdAt,
+    updatedAt: spec?.updatedAt?.toISOString() || spec?.updatedAt,
+  };
+}
+
+export function serializeDerivedSpecs(specs: any[]) {
+  return specs.map(serializeDerivedSpec);
+}

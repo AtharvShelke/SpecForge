@@ -21,9 +21,6 @@ const CategoryManager = lazy(
 );
 const BrandManager = lazy(() => import("@/components/dashboard/BrandManager"));
 
-const BillingInvoices = lazy(
-  () => import("@/components/dashboard/BillingInvoices"),
-);
 const BuilderConfigManager = lazy(
   () => import("@/components/dashboard/builder-config/BuilderConfigManager"),
 );
@@ -113,12 +110,7 @@ const AdminDashboardContent = memo(function AdminDashboardContent() {
           <BrandManager />
         </TabViewport>
       )}
-      {activeTab === "billing" && (
-        <TabViewport>
-          <BillingInvoices />
-        </TabViewport>
-      )}
-      {activeTab === "builder-config" && (
+            {activeTab === "builder-config" && (
         <TabViewport>
           <BuilderConfigManager />
         </TabViewport>

@@ -27,24 +27,38 @@ export class CatalogService {
   static async getProducts(filter?: AdvancedFilter) {
     if (!filter) {
       return prisma.product.findMany({
-        include: {
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          brandId: true,
+          subCategoryId: true,
+          brand: { select: { id: true, name: true } },
+          subCategory: { 
+            select: { 
+              id: true, 
+              name: true, 
+              category: { select: { id: true, name: true } } 
+            } 
+          },
+          media: { 
+            where: { sortOrder: 0 },
+            take: 1,
+            select: { id: true, url: true, altText: true } 
+          },
           variants: {
             where: { deletedAt: null },
-            include: {
-              variantSpecs: {
-                include: {
-                  spec: true,
-                  option: true,
-                },
-              },
-              inventoryItems: true,
+            select: {
+              id: true,
+              price: true,
+              compareAtPrice: true,
+              status: true,
             },
+            orderBy: { price: "asc" },
           },
-          brand: true,
-          subCategory: { include: { category: true } },
-          media: { orderBy: { sortOrder: "asc" } },
         },
-        where: { deletedAt: null },
       });
     }
 
@@ -89,21 +103,36 @@ export class CatalogService {
 
     return prisma.product.findMany({
       where,
-      include: {
-        variants: {
-          include: {
-            variantSpecs: {
-              include: {
-                spec: true,
-                option: true,
-              },
-            },
-            inventoryItems: true,
-          },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        brandId: true,
+        subCategoryId: true,
+        brand: { select: { id: true, name: true } },
+        subCategory: { 
+          select: { 
+            id: true, 
+            name: true, 
+            category: { select: { id: true, name: true } } 
+          } 
         },
-        brand: true,
-        subCategory: { include: { category: true } },
-        media: { orderBy: { sortOrder: "asc" } },
+        media: { 
+          where: { sortOrder: 0 },
+          take: 1,
+          select: { id: true, url: true, altText: true } 
+        },
+        variants: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            price: true,
+            compareAtPrice: true,
+            status: true,
+          },
+          orderBy: { price: "asc" },
+        },
       },
     });
   }
@@ -437,24 +466,27 @@ export class CatalogService {
 
     if (brands.length === 0) return brands;
 
-    const categoriesByBrandId = (
-      await prisma.product.findMany({
-        where: {
-          deletedAt: null,
-          brandId: { in: brands.map((brand) => brand.id) },
-        },
-        select: {
-          brandId: true,
-          subCategory: {
-            select: {
-              category: {
-                select: { name: true },
-              },
+    const uniqueCategoryPairs = await prisma.product.findMany({
+      where: {
+        deletedAt: null,
+        brandId: { in: brands.map((brand) => brand.id) },
+      },
+      distinct: ["brandId", "subCategoryId"],
+      select: {
+        brandId: true,
+        subCategory: {
+          select: {
+            category: {
+              select: { name: true },
             },
           },
         },
-      })
-    ).reduce<Map<string, Set<string>>>((map, product) => {
+      },
+    });
+
+    const categoriesByBrandId = uniqueCategoryPairs.reduce<
+      Map<string, Set<string>>
+    >((map, product) => {
       if (!product.brandId) return map;
       const categoryName = product.subCategory?.category?.name;
       if (!categoryName) return map;

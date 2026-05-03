@@ -619,6 +619,13 @@ export type EnumCompatibilitySeverityWithAggregatesFilter<$PrismaModel = never> 
   _max?: Prisma.NestedEnumCompatibilitySeverityFilter<$PrismaModel>
 }
 
+export type EnumDerivedSpecTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.DerivedSpecType | Prisma.EnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDerivedSpecTypeFilter<$PrismaModel> | $Enums.DerivedSpecType
+}
+
 export type JsonFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
@@ -641,6 +648,16 @@ export type JsonFilterBase<$PrismaModel = never> = {
   gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
+export type EnumDerivedSpecTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DerivedSpecType | Prisma.EnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDerivedSpecTypeWithAggregatesFilter<$PrismaModel> | $Enums.DerivedSpecType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDerivedSpecTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDerivedSpecTypeFilter<$PrismaModel>
 }
 
 export type JsonWithAggregatesFilter<$PrismaModel = never> =
@@ -1265,6 +1282,23 @@ export type NestedEnumCompatibilitySeverityWithAggregatesFilter<$PrismaModel = n
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumCompatibilitySeverityFilter<$PrismaModel>
   _max?: Prisma.NestedEnumCompatibilitySeverityFilter<$PrismaModel>
+}
+
+export type NestedEnumDerivedSpecTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.DerivedSpecType | Prisma.EnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDerivedSpecTypeFilter<$PrismaModel> | $Enums.DerivedSpecType
+}
+
+export type NestedEnumDerivedSpecTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DerivedSpecType | Prisma.EnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DerivedSpecType[] | Prisma.ListEnumDerivedSpecTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDerivedSpecTypeWithAggregatesFilter<$PrismaModel> | $Enums.DerivedSpecType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDerivedSpecTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDerivedSpecTypeFilter<$PrismaModel>
 }
 
 export type NestedJsonFilter<$PrismaModel = never> =
