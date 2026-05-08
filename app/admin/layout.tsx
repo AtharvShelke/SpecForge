@@ -2,25 +2,12 @@
 'use client';
 
 import { useState, useCallback, memo, type ReactNode } from 'react';
-import { AdminProvider, useAdmin } from "@/context/AdminContext";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ADMIN_TAB_LABELS, getAdminTab } from "@/components/admin/adminTabs";
 import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { AdminHeader } from "@/components/dashboard/AdminHeader";
-import { useRouter } from "next/navigation";
 
 // ── Constants (module scope — never recreated) ────────────────────────────────
-
-const TAB_LABELS: Record<string, string> = {
-    overview:       'Overview',
-    orders:         'Orders',
-    products:       'Products',
-    inventory:      'Inventory',
-    categories:     'Categories',
-    brands:         'Brands',
-    'saved-builds': 'Saved Builds',
-    billing:        'Billing & Invoices',
-    cms:            'CMS',
-    marketing:      'Marketing',
-} as const;
 
 const SHELL_STYLE = {
     fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif",
@@ -29,9 +16,11 @@ const SHELL_STYLE = {
 // ── AdminShell ────────────────────────────────────────────────────────────────
 
 const AdminShell = memo(function AdminShell({ children }: { children: ReactNode }) {
-    const { activeTab, setActiveTab } = useAdmin();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const activeTab = getAdminTab(searchParams.get('tab'));
 
     const handleLogout = useCallback(async () => {
         await fetch("/api/logout", { method: "POST" });
@@ -41,6 +30,14 @@ const AdminShell = memo(function AdminShell({ children }: { children: ReactNode 
 
     const handleMenuClick = useCallback(() => setIsSidebarOpen(true), []);
 
+    const handleTabChange = useCallback((tab: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (tab === 'overview') params.delete('tab');
+        else params.set('tab', tab);
+        const query = params.toString();
+        router.push(query ? `${pathname}?${query}` : pathname);
+    }, [pathname, router, searchParams]);
+
     return (
         <div
             className="flex h-screen bg-stone-50 overflow-hidden antialiased"
@@ -48,7 +45,7 @@ const AdminShell = memo(function AdminShell({ children }: { children: ReactNode 
         >
             <AdminSidebar
                 activeTab={activeTab}
-                setActiveTab={setActiveTab}
+                setActiveTab={handleTabChange}
                 onLogout={handleLogout}
                 isOpen={isSidebarOpen}
                 setIsOpen={setIsSidebarOpen}
@@ -58,7 +55,7 @@ const AdminShell = memo(function AdminShell({ children }: { children: ReactNode 
                 <AdminHeader
                     onLogout={handleLogout}
                     onMenuClick={handleMenuClick}
-                    title={TAB_LABELS[activeTab] ?? 'Admin'}
+                    title={ADMIN_TAB_LABELS[activeTab] ?? 'Admin'}
                 />
 
                 <main className="flex-1 overflow-y-auto overflow-x-hidden bg-stone-50">
@@ -74,11 +71,5 @@ const AdminShell = memo(function AdminShell({ children }: { children: ReactNode 
 // ── AdminLayout ───────────────────────────────────────────────────────────────
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-    return (
-        <AdminProvider>
-            <AdminShell>
-                {children}
-            </AdminShell>
-        </AdminProvider>
-    );
+    return <AdminShell>{children}</AdminShell>;
 }

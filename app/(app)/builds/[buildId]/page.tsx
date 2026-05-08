@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
 import { BuildGuide, CartItem, CompatibilityLevel, Category } from '@/types';
-import { validateBuild } from '@/services/compatibility';
+import { validateBuild } from '@/lib/calculations/compatibility';
 import {
     Upload,
     Cpu,
@@ -21,20 +21,7 @@ import {
 import Link from 'next/link';
 
 // Category Icon Map
-const CATEGORY_ICON: Record<Category, ReactNode> = {
-    [Category.PROCESSOR]: <Cpu size={14} />,
-    [Category.GPU]: <Monitor size={14} />,
-    [Category.RAM]: <Cpu size={14} />,
-    [Category.MOTHERBOARD]: <Cpu size={14} />,
-    [Category.STORAGE]: <HardDrive size={14} />,
-    [Category.PSU]: <Zap size={14} />,
-    [Category.CABINET]: <Box size={14} />,
-    [Category.COOLER]: <Cpu size={14} />,
-    [Category.MONITOR]: <Monitor size={14} />,
-    [Category.PERIPHERAL]: <Monitor size={14} />,
-    [Category.NETWORKING]: <HardDrive size={14} />,
-    [Category.LAPTOP]: <Laptop size={14} />,
-};
+
 
 export default function SharedBuildPage() {
     const params = useParams();
@@ -174,8 +161,8 @@ export default function SharedBuildPage() {
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-zinc-900 text-base">{(item as any).variant?.product?.name}</h3>
                                     <div className="flex items-center gap-2 text-sm text-zinc-500 mt-1">
-                                        <span className="text-zinc-400">{(item as any).variant?.product ? CATEGORY_ICON[(item as any).variant.product.category as Category] : null}</span>
-                                        {(item as any).variant?.product?.category}
+                                        
+                                        {(item as any).variant?.product?.category?.name || 'Uncategorized'}
                                         {item.quantity > 1 && <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md text-xs font-medium ml-2">Qty {item.quantity}</span>}
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 mt-2">

@@ -1,12 +1,12 @@
 'use client'
 
-import { useMemo, useCallback, memo } from 'react'
+import { useMemo, useCallback, memo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { ShoppingBag, ArrowRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { useShop } from '@/context/ShopContext'
-import { filterGpuTier } from '@/services/filterGpuTier'
+import { filterGpuTier } from '@/lib/calculations/product'
 import { Product } from '@/types'
 
 // ── Animation variants (defined once at module scope, never recreated) ────────
@@ -119,10 +119,17 @@ const GpuPremiumCard = memo(function GpuPremiumCard({
 // ── GpuTierSection ────────────────────────────────────────────────────────────
 
 export default function GpuTierSection() {
-    const { products, addToCart } = useShop()
+    const { addToCart } = useShop()
+    const [products, setProducts] = useState<Product[]>([])
     const { scrollYProgress } = useScroll()
 
-    // useTransform is already memoised internally by framer-motion
+    // Fetch products
+    useEffect(() => {
+        fetch('/api/products?category=GPU&limit=100')
+            .then(r => r.json())
+            .then(data => setProducts(data.products ?? data))
+            .catch(err => console.error('Failed to fetch GPU products:', err))
+    }, [])
     const yTransform = useTransform(scrollYProgress, [0, 1], [100, -100])
 
     const enthusiastGpus = useMemo(

@@ -1,13 +1,10 @@
 'use server';
 
-import { Category, OrderStatus } from "@/generated/prisma/enums";
+import { OrderStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { calculateOrderFinancials } from "@/lib/gst";
-import { sendMail } from "@/services/mailService";
-
-
-const CategoryEnum = z.nativeEnum(Category);
+import { calculateOrderFinancials } from '@/lib/tax-engine';
+import { sendMail } from "@/lib/services/mail";
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
@@ -41,7 +38,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             const productIds = data.items.map(i => i.productId);
             const products = await tx.product.findMany({
                 where: { id: { in: productIds } },
-                include: { variants: { include: { warehouseInventories: true } }, media: true }
+                include: { variants: { include: { inventoryItems: true } }, media: true }
             });
 
             // Fast lookup map
@@ -62,8 +59,8 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                 const variant = product.variants?.[0]; // Defaulting to first variant mapped
                 if (!variant) throw new Error(`Product variant missing for ${product.name}`);
 
-                // For now grab the first warehouse inventory
-                const inv = variant.warehouseInventories[0];
+                // For now grab the first inventory item
+                const inv = variant.inventoryItems[0];
                 if (!inv || inv.quantity < item.quantity) {
                     throw new Error(`Insufficient stock for product ${product.name}`);
                 }
@@ -75,11 +72,14 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                 orderItemsData.push({
                     variantId: variant.id,
                     name: product.name,
-                    category: product.category,
+                    categoryId: product.categoryId,
                     price: variant.price,
                     quantity: item.quantity,
                     image: product.media?.[0]?.url || '',
                     sku: variant.sku,
+                    variant: {
+                        connect: { id: variant.id }
+                    }
                 });
 
                 // Prepare stock reduction
@@ -90,14 +90,10 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                 });
 
                 stockMovements.push({
-                    warehouseInventoryId: inv.id,
-                    warehouseId: inv.warehouseId,
+                    variantId: variant.id,
                     type: "RESERVE" as const,
                     quantity: item.quantity,
-                    previousQuantity: inv.quantity,
-                    newQuantity: inv.quantity - item.quantity,
-                    reason: `Order checkout`,
-                    performedBy: "System",
+                    note: `Order checkout`,
                 });
             }
 
@@ -140,7 +136,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
             // 4. Batch update inventory
             for (const update of inventoryUpdates) {
-                await tx.warehouseInventory.update({
+                await tx.inventoryItem.update({
                     where: { id: update.id },
                     data: {
                         quantity: update.quantity,
@@ -154,14 +150,11 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             if (stockMovements.length > 0) {
                 await tx.stockMovement.createMany({
                     data: stockMovements.map(sm => ({
-                        reason: `${sm.reason} ${orderId}`,
-                        warehouseInventoryId: sm.warehouseInventoryId,
-                        warehouseId: sm.warehouseId,
+                        reason: `${sm.note} ${orderId}`,
+                        variantId: sm.variantId,
                         type: sm.type as "RESERVE",
                         quantity: sm.quantity,
-                        previousQuantity: sm.previousQuantity,
-                        newQuantity: sm.newQuantity,
-                        performedBy: sm.performedBy
+                        note: sm.note
                     }))
                 });
             }

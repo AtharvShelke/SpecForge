@@ -2,7 +2,6 @@
 'use client';
 
 import React, { memo } from 'react';
-import { useAdmin } from '@/context/AdminContext';
 import {
     Bell,
     Menu,
@@ -27,9 +26,6 @@ interface AdminHeaderProps {
 }
 
 export const AdminHeader = memo<AdminHeaderProps>(({ onLogout, onMenuClick, title }) => {
-    // Destructure only what's needed — avoids re-render if other context values change
-    const { syncData, isLoading } = useAdmin();
-
     return (
         <header className="h-[60px] bg-white border-b border-stone-100 sticky top-0 z-30 px-5 lg:px-6 flex items-center justify-between gap-4">
 
@@ -53,16 +49,10 @@ export const AdminHeader = memo<AdminHeaderProps>(({ onLogout, onMenuClick, titl
                     <span className="text-[11px] font-bold text-emerald-600 tracking-tight">Live</span>
                 </div>
 
-                {/* Sync Button — passes syncData directly, no wrapping arrow */}
-                <button
-                    onClick={syncData}
-                    disabled={isLoading}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-500 hover:text-stone-800 transition-all group"
-                    title="Sync Data"
-                >
-                    <RefreshCw size={13} className={cn("transition-transform duration-500", isLoading && "animate-spin")} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline group-hover:block transition-all">Sync</span>
-                </button>
+                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-50 border border-stone-200 text-stone-500">
+                    <RefreshCw size={13} className={cn("transition-transform duration-500")} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Live Data</span>
+                </div>
             </div>
 
             {/* Right: bell + user */}
@@ -96,7 +86,7 @@ export const AdminHeader = memo<AdminHeaderProps>(({ onLogout, onMenuClick, titl
                     >
                         <DropdownMenuLabel className="px-2.5 py-2">
                             <p className="text-xs font-bold text-stone-900">Admin User</p>
-                            <p className="text-[10px] text-stone-400 font-mono mt-0.5">admin@nexusos.com</p>
+                            <p className="text-[10px] text-stone-400 font-mono mt-0.5">admin@specforge.com</p>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator className="bg-stone-100 my-1" />
                         <DropdownMenuItem

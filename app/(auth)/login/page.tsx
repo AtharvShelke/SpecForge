@@ -64,7 +64,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Cpu className="w-6 h-6 text-zinc-950" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">Nexus Hardware</span>
+            <span className="text-2xl font-bold tracking-tight">SpecForge</span>
           </Link>
         </div>
 
@@ -78,12 +78,12 @@ export default function LoginPage() {
             </h1>
           </div>
           <p className="text-lg text-zinc-400 leading-relaxed">
-            The professional command center for monitoring and scaling Nexus hardware clusters with millisecond latency.
+            The professional command center for monitoring and scaling SpecForge hardware clusters with millisecond latency.
           </p>
         </div>
 
         <div className="relative z-10 flex items-center gap-6 text-sm text-zinc-500 font-medium">
-          <span>&copy; {new Date().getFullYear()} Nexus Inc.</span>
+          <span>&copy; {new Date().getFullYear()} SpecForge Inc.</span>
           <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
           <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
         </div>
@@ -97,7 +97,7 @@ export default function LoginPage() {
             <div className="w-9 h-9 bg-zinc-950 rounded-lg flex items-center justify-center">
               <Cpu className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-zinc-950">Nexus</span>
+            <span className="text-2xl font-bold tracking-tight text-zinc-950">SpecForge</span>
           </div>
 
           <div className="text-center lg:text-left space-y-3 mb-10">
@@ -116,7 +116,7 @@ export default function LoginPage() {
                     {...form.register("email")}
                     type="email"
                     disabled={loading}
-                    placeholder="admin@nexus.com"
+                    placeholder="admin@specforge.com"
                     className={cn(
                       "flex h-12 w-full rounded-xl border bg-white px-4 py-2 text-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 shadow-sm",
                       form.formState.errors.email

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Cpu,
@@ -8,20 +8,20 @@ import {
     HardDrive,
     Zap,
     Box,
-    Video,
-    Briefcase,
-    Gamepad2,
-    ArrowRight,
-    ChevronDown,
-    ChevronUp,
-    CheckCircle2,
     Sparkles,
     BookOpen,
+    Gamepad2,
+    Video,
+    CheckCircle2,
+    ChevronUp,
+    ChevronDown,
+    ArrowRight,
 } from 'lucide-react';
 import { useShop } from '@/context/ShopContext';
 import { useRouter } from 'next/navigation';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
+import { Product } from '@/types';
 import { Container } from '@/components/layout/Container';
 import { Section } from '@/components/layout/Section';
 
@@ -206,7 +206,10 @@ const BUDGET_MIN: Record<BudgetLabel, number> = {
 function getMatchedProductsForGuide(guide: Guide, products: any[]) {
     return guide.components.map(comp => {
         const searchTerms = comp.name.toLowerCase().split(' ').filter(word => word.length > 2);
-        let matched = products.find(p => searchTerms.some(term => p.name.toLowerCase().includes(term)) && p.category.toLowerCase() === comp.category.toLowerCase());
+        let matched = products.find(p => {
+            const productCategory = typeof p.category === 'string' ? p.category : p.category?.slug;
+            return searchTerms.some(term => p.name.toLowerCase().includes(term)) && productCategory?.toLowerCase() === comp.category.toLowerCase();
+        });
 
         if (!matched) {
             matched = products.find(p => p.name.toLowerCase().includes(comp.name.toLowerCase()) || comp.name.toLowerCase().includes(p.name.toLowerCase()));
@@ -322,8 +325,17 @@ const GuideCard: React.FC<{ guide: Guide; products: any[]; onStartBuild: () => v
 // -------------------------------------------------------------------
 export default function BuildGuidesPage() {
     const [activeFilter, setActiveFilter] = useState<BudgetLabel>('All Builds');
-    const { products, loadCart, setCartOpen } = useShop();
+    const [products, setProducts] = useState<Product[]>([]);
+    const { loadCart, setCartOpen } = useShop();
     const router = useRouter();
+
+    // Fetch products
+    useEffect(() => {
+        fetch('/api/products?limit=5000')
+            .then(r => r.json())
+            .then(data => setProducts(data.products ?? data))
+            .catch(err => console.error('Failed to fetch products:', err));
+    }, []);
 
     const filtered = GUIDES.filter((g) => {
         const min = BUDGET_MIN[activeFilter];

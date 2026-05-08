@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { ChevronDown, ChevronRight, X, Wrench, Check, Filter, SlidersHorizontal, Search } from 'lucide-react';
-import { CategoryNode } from '../data/categoryTree';
 import { useShop } from '../context/ShopContext';
-import { useBuild } from '../context/BuildContext';
-import { Category, Product, FilterDefinition, CategoryFilterConfig } from '../types';
+import { Product, FilterDefinition, CategoryFilterConfig, CategoryNode } from '../types';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface SidebarProps {
   nodes: CategoryNode[];
@@ -14,8 +13,8 @@ interface SidebarProps {
   onCloseMobile?: () => void;
   priceRange: { min: number; max: number };
   onPriceChange: (min: number, max: number) => void;
-  activeCategory?: Category;
-  onBuildStepChange?: (category: Category) => void;
+  activeCategory?: string;
+  onBuildStepChange?: (category: string) => void;
   currentProducts: Product[];
   dynamicFilters?: { brands: string[], specs: Record<string, string[]> } | null;
   selectedFilters: Record<string, string[]>;
@@ -165,8 +164,33 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarSearchTerm,
   onSidebarSearchChange,
 }) => {
-  const { cart, filterConfigs } = useShop();
-  const { isBuildMode, toggleBuildMode } = useBuild();
+  const { cart } = useShop();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const isBuildMode = searchParams.get('mode') === 'build';
+
+  const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
+
+  // Fetch filter configs
+  useEffect(() => {
+    if (!activeCategory) {
+      setFilterConfigs([]);
+      return;
+    }
+
+    fetch(`/api/categories/filters?category=${activeCategory}`)
+      .then(res => res.json())
+      .then(setFilterConfigs)
+      .catch(err => console.error('Failed to fetch filter configs:', err));
+  }, [activeCategory]);
+
+  const toggleBuildMode = useCallback(() => {
+    if (isBuildMode) {
+      router.push(window.location.pathname);
+    } else {
+      router.push(`${window.location.pathname}?mode=build`);
+    }
+  }, [isBuildMode, router]);
 
   const categoryFilters = useMemo(() => {
     if (!activeCategory) {
@@ -175,7 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { label: 'Availability', key: 'stock_status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] }
       ] as FilterDefinition[];
     }
-    return filterConfigs.find((c: CategoryFilterConfig) => c.category === activeCategory)?.filters || [];
+    return filterConfigs.find((c: CategoryFilterConfig) => (typeof c.category === 'string' ? c.category : c.category?.slug) === activeCategory)?.filters || [];
   }, [activeCategory, filterConfigs]);
 
   const visibleFilters = useMemo(() => {

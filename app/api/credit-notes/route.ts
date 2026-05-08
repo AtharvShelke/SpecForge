@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { createCreditNote } from "@/services/invoiceService";
+import { createCreditNote } from "@/lib/services/invoice";
 
 const creditNoteLineItemSchema = z.object({
     name: z.string().min(1),

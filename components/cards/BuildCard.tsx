@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Cpu, MonitorSpeaker, MemoryStick, HardDrive, ChevronRight, Sparkles } from 'lucide-react'
-import { calculateBuildPrice } from '@/services/buildPrice'
+import { calculateBuildPrice } from '@/lib/calculations/pricing'
 
 const COMPONENT_ICONS: Record<string, React.ElementType> = {
     PROCESSOR: Cpu,

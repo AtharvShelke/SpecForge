@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import Link from 'next/link';
 
 interface NavItem {
     label: string;
@@ -32,7 +33,6 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Brands',       icon: Bookmark,        key: 'brands',       group: 'secondary' },
     { label: 'Saved Builds', icon: Layers,          key: 'saved-builds', group: 'secondary' },
     // { label: 'Billing & Invoices', icon: CreditCard, key: 'billing', group: 'secondary' },
-    { label: 'Marketing',    icon: Megaphone,       key: 'marketing',    group: 'secondary' },
 ];
 
 // Pre-split at module load — .filter() never runs inside the component
@@ -119,10 +119,10 @@ export const AdminSidebar = memo<AdminSidebarProps>(({
                     <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
                         <Layers className="w-3.5 h-3.5 text-white" strokeWidth={2} />
                     </div>
-                    <div className="min-w-0">
-                        <h1 className="text-sm font-bold text-stone-900 tracking-tight leading-none">Nexus OS</h1>
+                    <Link href="/"  className="min-w-0">
+                        <h1 className="text-sm font-bold text-stone-900 tracking-tight leading-none">SpecForge</h1>
                         <p className="text-[10px] text-stone-400 mt-0.5 font-bold tracking-[0.12em] uppercase">Admin Hub</p>
-                    </div>
+                    </Link>
                     <button
                         className="ml-auto lg:hidden p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
                         onClick={handleOverlayClick}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, memo, Fragment } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { validateBuild } from '@/services/compatibility';
+import { validateBuild } from '@/lib/calculations/compatibility';
 import {
     Package, Search, Clock, CheckCircle2, Truck, PackageCheck,
     XCircle, MapPin, CreditCard, MessageCircle, ShoppingCart,
@@ -171,7 +171,19 @@ const TimelineStep = memo(function TimelineStep({
 // ── TrackOrderPage ────────────────────────────────────────────────────────────
 
 export default function TrackOrderPage() {
-    const { orders, refreshOrders, addToCart, clearCart, setCartOpen } = useShop();
+    const { addToCart, clearCart, setCartOpen } = useShop();
+    const [orders, setOrders] = useState<Order[]>([]);
+
+    const refreshOrders = useCallback(async (email?: string) => {
+        try {
+            const url = email ? `/api/orders?email=${encodeURIComponent(email)}` : '/api/orders';
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.orders) setOrders(data.orders);
+        } catch (err) {
+            console.error('Failed to fetch orders:', err);
+        }
+    }, []);
 
     useEffect(() => { refreshOrders(); }, [refreshOrders]);
 

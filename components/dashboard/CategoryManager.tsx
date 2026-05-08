@@ -2,8 +2,8 @@
 
 import React, { useMemo, useState, useEffect, useCallback, memo } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { useAdmin } from '@/context/AdminContext';
-import { Category, CategoryNode, FilterDefinition } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+import { CategoryNode, FilterDefinition, CategoryFilterConfig, AttributeDefinition, CategorySchema } from '@/types';
 import {
     ChevronDown,
     ChevronRight,
@@ -20,6 +20,7 @@ import {
     CheckCircle2,
     FolderOpen,
     RefreshCw,
+    Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Category } from '@/generated/prisma';
 
 // ─────────────────────────────────────────────────────────────
 // SHARED PRIMITIVES
@@ -117,9 +119,10 @@ const PILL_CLASSES: Record<string, string> = {
     teal: 'bg-teal-50 text-teal-700 ring-teal-200',
     amber: 'bg-amber-50 text-amber-700 ring-amber-200',
     violet: 'bg-violet-50 text-violet-700 ring-violet-200',
+    rose: 'bg-rose-50 text-rose-700 ring-rose-200',
 };
 
-const Pill = memo(({ children, color = 'stone' }: { children: React.ReactNode; color?: 'stone' | 'indigo' | 'teal' | 'amber' | 'violet' }) => (
+const Pill = memo(({ children, color = 'stone' }: { children: React.ReactNode; color?: 'stone' | 'indigo' | 'teal' | 'amber' | 'violet' | 'rose' }) => (
     <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ring-1 whitespace-nowrap', PILL_CLASSES[color])}>
         {children}
     </span>
@@ -173,12 +176,14 @@ const NodeForm = memo(({
     setNodeForm,
     onSave,
     onCancel,
+    dbCategories,
 }: {
     title: string;
     nodeForm: Partial<CategoryNode>;
     setNodeForm: (v: Partial<CategoryNode>) => void;
     onSave: () => void;
     onCancel: () => void;
+    dbCategories: Category[];
 }) => (
     <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
         <SectionLabel icon={<Edit size={11} />}>{title}</SectionLabel>
@@ -197,16 +202,19 @@ const NodeForm = memo(({
             <div className="space-y-1">
                 <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Category Mapping</span>
                 <Select
-                    value={nodeForm.category ?? 'none'}
-                    onValueChange={val => setNodeForm({ ...nodeForm, category: val === 'none' ? undefined : val as Category })}
+                    value={typeof nodeForm.category === 'string' ? nodeForm.category : nodeForm.category?.slug ?? 'none'}
+                    onValueChange={val => setNodeForm({ 
+                        ...nodeForm, 
+                        category: val === 'none' ? undefined : dbCategories.find(c => c.slug === val) 
+                    })}
                 >
                     <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="none" className="text-xs italic text-stone-400">No Mapping</SelectItem>
-                        {Object.values(Category).map(c => (
-                            <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
+                        {dbCategories.map(c => (
+                            <SelectItem key={c.slug} value={c.slug} className="text-xs">{c.name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -239,7 +247,6 @@ NodeForm.displayName = 'NodeForm';
 // Stable empty children array reference
 const EMPTY_CHILDREN: any[] = [];
 
-const CATEGORY_VALUES = Object.values(Category);
 
 interface TreeNodeProps {
     node: any;
@@ -256,6 +263,7 @@ interface TreeNodeProps {
     onDelete: (path: string, label: string) => void;
     onSave: () => void;
     onCancel: () => void;
+    dbCategories: Category[];
     children?: React.ReactNode;
 }
 
@@ -274,6 +282,7 @@ const TreeNode = memo(({
     onDelete,
     onSave,
     onCancel,
+    dbCategories,
     children,
 }: TreeNodeProps) => {
     const hasChildren = node.children && node.children.length > 0;
@@ -312,7 +321,7 @@ const TreeNode = memo(({
                     <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{node.label}</p>
                     {(node.category || node.brand) && (
                         <div className="flex flex-wrap gap-1 mt-0.5">
-                            {node.category && <Pill color="indigo">{node.category}</Pill>}
+                            {node.category && <Pill color="indigo">{typeof node.category === 'string' ? node.category : node.category.name}</Pill>}
                             {node.brand && <Pill color="stone">{node.brand}</Pill>}
                         </div>
                     )}
@@ -332,6 +341,7 @@ const TreeNode = memo(({
                         setNodeForm={setNodeForm}
                         onSave={onSave}
                         onCancel={onCancel}
+                        dbCategories={dbCategories}
                     />
                 </div>
             )}
@@ -344,6 +354,7 @@ const TreeNode = memo(({
                         setNodeForm={setNodeForm}
                         onSave={onSave}
                         onCancel={onCancel}
+                        dbCategories={dbCategories}
                     />
                 </div>
             )}
@@ -401,42 +412,216 @@ const FilterCard = memo(({ filter, idx, onEdit, onDelete }: FilterCardProps) => 
 FilterCard.displayName = 'FilterCard';
 
 // ─────────────────────────────────────────────────────────────
+// ATTRIBUTE CARD — for schema management
+// ─────────────────────────────────────────────────────────────
+
+interface AttributeCardProps {
+    attribute: AttributeDefinition;
+    idx: number;
+    onEdit: (idx: number, attribute: AttributeDefinition) => void;
+    onDelete: (idx: number) => void;
+}
+
+const AttributeCard = memo(({ attribute, idx, onEdit, onDelete }: AttributeCardProps) => {
+    const handleEdit = useCallback(() => onEdit(idx, attribute), [onEdit, idx, attribute]);
+    const handleDelete = useCallback(() => onDelete(idx), [onDelete, idx]);
+
+    return (
+        <div className="group flex items-start justify-between gap-2 px-3 py-3 rounded-xl border border-stone-100 bg-white hover:border-stone-200 hover:shadow-sm transition-all duration-150">
+            <div className="min-w-0 space-y-1.5 flex-1">
+                <p className="text-xs font-bold text-stone-800 tracking-tight truncate">{attribute.label}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold text-stone-400 bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded">
+                        {attribute.key}
+                    </span>
+                    <Pill color={attribute.required ? 'rose' : 'stone'}>
+                        {attribute.required ? 'Required' : 'Optional'}
+                    </Pill>
+                    <Pill color="violet">{attribute.type}</Pill>
+                    {attribute.unit && (
+                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                            {attribute.unit}
+                        </span>
+                    )}
+                    {attribute.options && attribute.options.length > 0 && (
+                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                            {attribute.options.length} opts
+                        </span>
+                    )}
+                </div>
+            </div>
+            <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 shrink-0 pt-0.5">
+                <ActionBtn onClick={handleEdit}><Edit size={12} /></ActionBtn>
+                <ActionBtn danger onClick={handleDelete}><Trash size={12} /></ActionBtn>
+            </div>
+        </div>
+    );
+});
+AttributeCard.displayName = 'AttributeCard';
+
+// ─────────────────────────────────────────────────────────────
 // STABLE INITIAL FORM VALUES — defined outside to avoid GC churn
 // ─────────────────────────────────────────────────────────────
 
 const EMPTY_NODE_FORM: Partial<CategoryNode> = { label: '', category: undefined, brand: '', query: '' };
 const EMPTY_FILTER_FORM: Partial<FilterDefinition> = { key: '', label: '', type: 'checkbox', options: [] };
+const EMPTY_SCHEMA_FORM: Partial<AttributeDefinition> = { key: '', label: '', type: 'text', required: false, options: [], unit: '', sortOrder: 0 };
 
 // ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 
 const CategoryManager = () => {
-    const { categories, refreshCategories, refreshFilterConfigs: refreshShopFilterConfigs } = useShop();
-    const { updateCategories, filterConfigs, updateFilterConfig, syncData, isLoading } = useAdmin();
+    const { toast } = useToast();
+    const [categories, setCategories] = useState<CategoryNode[]>([]);
+    const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
+    const [schemaConfigs, setSchemaConfigs] = useState<CategorySchema[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => { refreshCategories(); }, [refreshCategories]);
+    const [configMode, setConfigMode] = useState<'hierarchy' | 'filters' | 'schemas'>('hierarchy');
+    const [dbCategories, setDbCategories] = useState<Category[]>([]);
+    const [selectedCatForFilters, setSelectedCatForFilters] = useState<string>('');
+    const [editingFilterIdx, setEditingFilterIdx] = useState<number | null>(null);
+    const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
+    const [showFilterModal, setShowFilterModal] = useState(false);
 
-    // ── Hierarchy state ──
+    const [selectedCatForSchemas, setSelectedCatForSchemas] = useState<string>('');
+    const [editingSchemaIdx, setEditingSchemaIdx] = useState<number | null>(null);
+    const [schemaForm, setSchemaForm] = useState<Partial<AttributeDefinition>>(EMPTY_SCHEMA_FORM);
+    const [showSchemaModal, setShowSchemaModal] = useState(false);
+
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const [editingNodePath, setEditingNodePath] = useState<string | null>(null);
     const [nodeForm, setNodeForm] = useState<Partial<CategoryNode>>(EMPTY_NODE_FORM);
     const [isAddingRoot, setIsAddingRoot] = useState(false);
 
-    // ── Filter config state ──
-    const [configMode, setConfigMode] = useState<'hierarchy' | 'filters'>('hierarchy');
-    const [selectedCatForFilters, setSelectedCatForFilters] = useState<Category>(Category.PROCESSOR);
-    const [editingFilterIdx, setEditingFilterIdx] = useState<number | null>(null);
-    const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
-    const [showFilterModal, setShowFilterModal] = useState(false);
-
-    // ── Delete confirm state ──
     const [deleteConfirm, setDeleteConfirm] = useState<{
         type: 'filter' | 'node';
         filterIdx?: number;
         nodePath?: string;
         label: string;
     } | null>(null);
+
+    // Refresh categories
+    const refreshCategories = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories/hierarchy');
+            const data = await res.json();
+            setCategories(data);
+        } catch (err) {
+            console.error('Failed to fetch categories:', err);
+        }
+    }, []);
+
+    // Refresh filter configs
+    const refreshFilterConfigs = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories/filters');
+            const data = await res.json();
+            setFilterConfigs(data);
+        } catch (err) {
+            console.error('Failed to fetch filter configs:', err);
+        }
+    }, []);
+
+    // Refresh schema configs
+    const refreshSchemaConfigs = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories/schemas');
+            const data = await res.json();
+            setSchemaConfigs(data);
+        } catch (err) {
+            console.error('Failed to fetch schema configs:', err);
+        }
+    }, []);
+
+    // Fetch DB categories for dropdowns
+    const fetchDbCategories = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories');
+            const data = await res.json();
+            setDbCategories(data);
+            if (data.length > 0 && !selectedCatForFilters) {
+                setSelectedCatForFilters(data[0].slug);
+            }
+            if (data.length > 0 && !selectedCatForSchemas) {
+                setSelectedCatForSchemas(data[0].slug);
+            }
+        } catch (err) {
+            console.error('Failed to fetch DB categories:', err);
+        }
+    }, [selectedCatForFilters, selectedCatForSchemas]);
+
+    // Sync data
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
+        await Promise.all([refreshCategories(), refreshFilterConfigs(), refreshSchemaConfigs(), fetchDbCategories()]);
+        setIsLoading(false);
+    }, [refreshCategories, refreshFilterConfigs, refreshSchemaConfigs, fetchDbCategories]);
+
+    // Initial data fetch
+    useEffect(() => {
+        syncData();
+    }, [syncData]);
+
+    // Update categories
+    const updateCategories = useCallback(async (nodes: CategoryNode[]) => {
+        try {
+            const res = await fetch('/api/categories/hierarchy', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nodes),
+            });
+            if (res.ok) {
+                toast({ title: 'Categories updated' });
+                await refreshCategories();
+            } else {
+                const data = await res.json();
+                toast({ title: 'Update Failed', description: JSON.stringify(data.error), variant: 'destructive' });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [refreshCategories, toast]);
+
+    // Update filter config
+    const updateFilterConfig = useCallback(async (categorySlug: string, filters: FilterDefinition[]) => {
+        try {
+            const res = await fetch('/api/categories/filters', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categorySlug, filters }),
+            });
+            if (res.ok) {
+                toast({ title: 'Filters updated' });
+                await refreshFilterConfigs();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [refreshFilterConfigs, toast]);
+
+    // Update schema config
+    const updateSchemaConfig = useCallback(async (categorySlug: string, attributes: AttributeDefinition[]) => {
+        try {
+            const res = await fetch('/api/categories/schemas', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categorySlug, attributes }),
+            });
+            if (res.ok) {
+                toast({ title: 'Schema updated' });
+                await refreshSchemaConfigs();
+            } else {
+                const data = await res.json();
+                toast({ title: 'Update Failed', description: JSON.stringify(data.error), variant: 'destructive' });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [refreshSchemaConfigs, toast]);
+
+
 
     // ─── Memoized callbacks — prevent child re-renders ───
 
@@ -500,7 +685,7 @@ const CategoryManager = () => {
     }, [categories, updateCategories, refreshCategories]);
 
     const activeFilters = useMemo(() =>
-        filterConfigs.find(c => c.category === selectedCatForFilters)?.filters || EMPTY_CHILDREN,
+        filterConfigs.find(c => c.category?.slug === selectedCatForFilters)?.filters || EMPTY_CHILDREN,
         [filterConfigs, selectedCatForFilters]
     );
 
@@ -530,8 +715,8 @@ const CategoryManager = () => {
     const confirmDeleteFilter = useCallback((idx: number) => {
         const newFilters = [...activeFilters];
         newFilters.splice(idx, 1);
-        updateFilterConfig(selectedCatForFilters, newFilters).then(() => refreshShopFilterConfigs());
-    }, [activeFilters, updateFilterConfig, selectedCatForFilters, refreshShopFilterConfigs]);
+        updateFilterConfig(selectedCatForFilters, newFilters).then(() => refreshFilterConfigs());
+    }, [activeFilters, updateFilterConfig, selectedCatForFilters, refreshFilterConfigs]);
 
     const handleConfirmDelete = useCallback(() => {
         if (!deleteConfirm) return;
@@ -565,8 +750,51 @@ const CategoryManager = () => {
     const handleSyncData = useCallback(() => syncData(), [syncData]);
 
     const handleCatForFiltersChange = useCallback((val: string) =>
-        setSelectedCatForFilters(val as Category),
+        setSelectedCatForFilters(val),
     []);
+
+    const handleCatForSchemasChange = useCallback((val: string) =>
+        setSelectedCatForSchemas(val),
+    []);
+
+    const activeAttributes = useMemo(() =>
+        schemaConfigs.find(c => c.category?.slug === selectedCatForSchemas)?.attributes || [],
+        [schemaConfigs, selectedCatForSchemas]
+    );
+
+    const handleSaveSchema = useCallback(() => {
+        if (!schemaForm.key || !schemaForm.label) return;
+        const newAttributes = [...activeAttributes];
+        const attributeData = schemaForm as AttributeDefinition;
+        if (editingSchemaIdx !== null) newAttributes[editingSchemaIdx] = attributeData;
+        else newAttributes.push(attributeData);
+        updateSchemaConfig(selectedCatForSchemas, newAttributes);
+        setShowSchemaModal(false);
+        setSchemaForm(EMPTY_SCHEMA_FORM);
+        setEditingSchemaIdx(null);
+    }, [schemaForm, activeAttributes, editingSchemaIdx, updateSchemaConfig, selectedCatForSchemas]);
+
+    const handleDeleteSchema = useCallback((idx: number) => {
+        const newAttributes = [...activeAttributes];
+        newAttributes.splice(idx, 1);
+        updateSchemaConfig(selectedCatForSchemas, newAttributes).then(() => refreshSchemaConfigs());
+    }, [activeAttributes, updateSchemaConfig, selectedCatForSchemas, refreshSchemaConfigs]);
+
+    const handleEditSchema = useCallback((idx: number, attribute: AttributeDefinition) => {
+        setEditingSchemaIdx(idx);
+        setSchemaForm(attribute);
+        setShowSchemaModal(true);
+    }, []);
+
+    const openAddSchema = useCallback(() => {
+        setShowSchemaModal(true);
+        setEditingSchemaIdx(null);
+        setSchemaForm(EMPTY_SCHEMA_FORM);
+    }, []);
+
+    const closeSchemaModal = useCallback((open: boolean) => {
+        setShowSchemaModal(open);
+    }, []);
 
     // ─── Tree renderer — memoized with useCallback, stable deps ───
     const renderTree = useCallback((nodes: any[], pathPrefix = '', depth = 0): React.ReactNode =>
@@ -594,6 +822,7 @@ const CategoryManager = () => {
                     onDelete={deleteNode}
                     onSave={saveNode}
                     onCancel={cancelNodeEdit}
+                    dbCategories={dbCategories}
                 >
                     {hasChildren && isExpanded
                         ? renderTree(node.children, `${currentPath}-`, depth + 1)
@@ -651,7 +880,7 @@ const CategoryManager = () => {
                         <span className="hidden sm:inline">Sync</span>
                     </button>
                     <div className="flex items-center gap-px bg-stone-100 p-1 rounded-xl border border-stone-200">
-                        {(['hierarchy', 'filters'] as const).map(mode => (
+                        {(['hierarchy', 'filters', 'schemas'] as const).map(mode => (
                             <button
                                 key={mode}
                                 type="button"
@@ -663,9 +892,9 @@ const CategoryManager = () => {
                                         : 'text-stone-400 hover:text-stone-700'
                                 )}
                             >
-                                {mode === 'hierarchy' ? <Layers size={11} /> : <ListFilter size={11} />}
+                                {mode === 'hierarchy' ? <Layers size={11} /> : mode === 'filters' ? <ListFilter size={11} /> : <Settings size={11} />}
                                 <span className="hidden sm:inline">
-                                    {mode === 'hierarchy' ? 'Hierarchy' : 'Filters'}
+                                    {mode === 'hierarchy' ? 'Hierarchy' : mode === 'filters' ? 'Filters' : 'Schemas'}
                                 </span>
                             </button>
                         ))}
@@ -704,6 +933,7 @@ const CategoryManager = () => {
                                     setNodeForm={setNodeForm}
                                     onSave={saveNode}
                                     onCancel={cancelAddRoot}
+                                    dbCategories={dbCategories}
                                 />
                             </div>
                         )}
@@ -765,8 +995,8 @@ const CategoryManager = () => {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {CATEGORY_VALUES.map(c => (
-                                            <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
+                                        {dbCategories.map(c => (
+                                            <SelectItem key={c.slug} value={c.slug} className="text-xs">{c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -799,6 +1029,82 @@ const CategoryManager = () => {
                                         idx={idx}
                                         onEdit={handleEditFilter}
                                         onDelete={handleDeleteFilter}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </Panel>
+            )}
+
+            {/* ══════════════════════════════════════ */}
+            {/*  SCHEMAS MODE                          */}
+            {/* ══════════════════════════════════════ */}
+            {configMode === 'schemas' && (
+                <Panel stripe="violet">
+                    <PanelHeader
+                        icon={<Settings size={12} />}
+                        right={
+                            <button
+                                type="button"
+                                onClick={openAddSchema}
+                                className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold uppercase tracking-widest bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm flex-shrink-0"
+                            >
+                                <Plus size={11} />
+                                <span className="hidden sm:inline">Add Attribute</span>
+                                <span className="sm:hidden">Add</span>
+                            </button>
+                        }
+                    >
+                        Attribute Schema Configuration
+                    </PanelHeader>
+
+                    <div className="px-3 sm:px-5 py-3 space-y-3">
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-xl flex-wrap sm:flex-nowrap">
+                            <SectionLabel icon={<Layers size={11} />}>Category</SectionLabel>
+                            <div className="flex-1 min-w-0">
+                                <Select
+                                    value={selectedCatForSchemas}
+                                    onValueChange={handleCatForSchemasChange}
+                                >
+                                    <SelectTrigger className="h-8 text-xs border-stone-200 bg-white rounded-lg w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dbCategories.map(c => (
+                                            <SelectItem key={c.slug} value={c.slug} className="text-xs">{c.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <span className="text-[10px] font-bold font-mono text-stone-400 bg-white border border-stone-200 px-2 py-0.5 rounded-md flex-shrink-0">
+                                {activeAttributes.length} attribute{activeAttributes.length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+
+                        {activeAttributes.length === 0 ? (
+                            <div className="py-12 flex flex-col items-center gap-3">
+                                <Settings size={24} className="text-stone-200" />
+                                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+                                    No attributes defined
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={openAddSchema}
+                                    className="text-[10px] font-bold text-violet-600 uppercase tracking-widest hover:underline"
+                                >
+                                    Add first attribute →
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                {activeAttributes.map((attribute, idx) => (
+                                    <AttributeCard
+                                        key={`${attribute.key}-${idx}`}
+                                        attribute={attribute}
+                                        idx={idx}
+                                        onEdit={handleEditSchema}
+                                        onDelete={handleDeleteSchema}
                                     />
                                 ))}
                             </div>
@@ -886,6 +1192,129 @@ const CategoryManager = () => {
                             className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
                         >
                             Save Filter
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ══════════════════════════════════════ */}
+            {/*  SCHEMA MODAL                          */}
+            {/* ══════════════════════════════════════ */}
+            <Dialog open={showSchemaModal} onOpenChange={closeSchemaModal}>
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg bg-white border-stone-200 rounded-2xl shadow-xl">
+                    <div className="h-0.5 w-full bg-gradient-to-r from-violet-400 via-violet-500 to-indigo-400 -mt-6 mb-4 rounded-t-2xl" />
+                    <DialogHeader className="pb-2">
+                        <DialogTitle className="text-sm font-bold text-stone-800 tracking-tight">
+                            {editingSchemaIdx !== null ? 'Edit Attribute' : 'New Attribute'}
+                        </DialogTitle>
+                        <DialogDescription className="text-[11px] text-stone-400">
+                            Configuring attributes for:{' '}
+                            <span className="font-bold text-stone-600">{selectedCatForSchemas}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-3 py-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {[
+                                { label: 'Attribute Key', field: 'key', placeholder: 'e.g. socket', mono: true },
+                                { label: 'Display Label', field: 'label', placeholder: 'e.g. Socket Type', mono: false },
+                            ].map(({ label, field, placeholder, mono }) => (
+                                <div key={field} className="space-y-1">
+                                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">{label}</span>
+                                    <Input
+                                        placeholder={placeholder}
+                                        value={(schemaForm as any)[field] ?? ''}
+                                        onChange={e => setSchemaForm(prev => ({ ...prev, [field]: e.target.value }))}
+                                        className={cn(
+                                            'h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-violet-300 focus:ring-violet-500/20 placeholder:text-stone-400',
+                                            mono && 'font-mono'
+                                        )}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Type</span>
+                                <Select
+                                    value={schemaForm.type}
+                                    onValueChange={val => setSchemaForm(prev => ({ ...prev, type: val as 'text' | 'number' | 'select' | 'boolean' | 'multi-select' }))}
+                                >
+                                    <SelectTrigger className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="text" className="text-xs">Text</SelectItem>
+                                        <SelectItem value="number" className="text-xs">Number</SelectItem>
+                                        <SelectItem value="select" className="text-xs">Select (Dropdown)</SelectItem>
+                                        <SelectItem value="boolean" className="text-xs">Boolean</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Unit (Optional)</span>
+                                <Input
+                                    placeholder="e.g. GHz, W"
+                                    value={schemaForm.unit ?? ''}
+                                    onChange={e => setSchemaForm(prev => ({ ...prev, unit: e.target.value }))}
+                                    className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-violet-300 focus:ring-violet-500/20 placeholder:text-stone-400"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-xl">
+                            <input
+                                type="checkbox"
+                                id="required"
+                                checked={schemaForm.required}
+                                onChange={e => setSchemaForm(prev => ({ ...prev, required: e.target.checked }))}
+                                className="w-4 h-4 rounded border-stone-300 text-violet-600 focus:ring-violet-500"
+                            />
+                            <label htmlFor="required" className="text-xs font-semibold text-stone-700">Required field</label>
+                        </div>
+
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Options (for select type)</span>
+                            <Textarea
+                                placeholder="AM4, AM5, LGA1700  (comma-separated)"
+                                value={(schemaForm.options || []).join(', ')}
+                                onChange={e => setSchemaForm(prev => ({
+                                    ...prev,
+                                    options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                }))}
+                                className="min-h-[72px] text-xs font-medium border-stone-200 bg-stone-50 rounded-lg resize-none focus:bg-white focus:border-violet-300 focus:ring-violet-500/20 placeholder:text-stone-400"
+                            />
+                            <p className="text-[10px] text-stone-400">Separate values with commas. Only for select type.</p>
+                        </div>
+
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em]">Sort Order</span>
+                            <Input
+                                type="number"
+                                placeholder="0"
+                                value={schemaForm.sortOrder ?? 0}
+                                onChange={e => setSchemaForm(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                                className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-violet-300 focus:ring-violet-500/20 placeholder:text-stone-400"
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 pt-2 flex-row">
+                        <button
+                            type="button"
+                            onClick={() => setShowSchemaModal(false)}
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest border border-stone-200 text-stone-500 rounded-lg hover:bg-stone-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSaveSchema}
+                            className="flex-1 h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm"
+                        >
+                            Save Attribute
                         </button>
                     </DialogFooter>
                 </DialogContent>

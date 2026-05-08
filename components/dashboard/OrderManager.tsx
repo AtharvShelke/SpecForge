@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
-import { useAdmin } from '@/context/AdminContext';
-import { Order, OrderStatus } from '@/types';
+import { Order, OrderStatus, InventoryItem } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
   Clock,
@@ -230,10 +230,88 @@ OrderRow.displayName = 'OrderRow';
    MAIN ORDER MANAGER
 ───────────────────────────────────────────────────────────────*/
 const OrderManager = () => {
-  const {
-    orders, updateOrderStatus, deleteOrder,
-    inventory, syncData, isLoading,
-  } = useAdmin();
+  const { toast } = useToast();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch orders
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/orders');
+      const data = await res.json();
+      if (data.orders) setOrders(data.orders);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+    }
+  }, []);
+
+  // Fetch inventory
+  const fetchInventory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/inventory?limit=3000');
+      const data = await res.json();
+      setInventory(data.items ?? (Array.isArray(data) ? data : []));
+    } catch (err) {
+      console.error('Failed to fetch inventory:', err);
+    }
+  }, []);
+
+  // Sync data (refresh both orders and inventory)
+  const syncData = useCallback(async () => {
+    setIsLoading(true);
+    await Promise.all([fetchOrders(), fetchInventory()]);
+    setIsLoading(false);
+  }, [fetchOrders, fetchInventory]);
+
+  // Update order status
+  const updateOrderStatus = useCallback(async (orderId: string, newStatus: OrderStatus, note?: string) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, note }),
+      });
+      if (res.ok) {
+        toast({ title: 'Order status updated' });
+        await Promise.all([fetchOrders(), fetchInventory()]);
+      } else {
+        const data = await res.json();
+        toast({ title: 'Update Failed', description: data.error || 'Could not update order status', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [fetchOrders, fetchInventory, toast]);
+
+  // Delete order
+  const deleteOrder = useCallback(async (orderId: string) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast({ title: 'Order deleted' });
+        await Promise.all([fetchOrders(), fetchInventory()]);
+      } else {
+        const data = await res.json();
+        toast({ title: 'Delete Failed', description: data.error || 'Could not delete order', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [fetchOrders, fetchInventory, toast]);
+
+  // Initial data fetch
+  useEffect(() => {
+    syncData();
+  }, [syncData]);
+
+  // Poll orders every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
 
   // Aggregate inventory by variantId across all warehouses
   const aggregatedInventory = useMemo(() => {
@@ -342,7 +420,7 @@ const OrderManager = () => {
     setIsUpdating(true);
     try {
       // Removed the pointless constructor.name async check — updateOrderStatus is
-      // always async (it's defined with async in AdminContext); just await it directly
+      // always async; just await it directly
       await updateOrderStatus(orderId, newStatus);
       setConfirmDialog(d => ({ ...d, open: false }));
     } catch (error) {

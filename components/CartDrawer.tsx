@@ -1,10 +1,12 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { useBuild } from '@/context/BuildContext';
+import { useToast } from '@/hooks/use-toast';
 import { X, Trash2, AlertOctagon, CheckCircle2, AlertTriangle, CreditCard, Save, ShoppingBag } from 'lucide-react';
 import { CompatibilityLevel, CompatibilityIssue } from '@/types';
 import Link from 'next/link';
+import { validateBuild } from '@/lib/calculations/compatibility';
+import { getBaseUrl } from '@/lib/utils';
 
 const CartDrawer: React.FC = () => {
   const {
@@ -16,11 +18,45 @@ const CartDrawer: React.FC = () => {
     cartTotal,
     clearCart
   } = useShop();
+  const { toast } = useToast();
 
-  const {
-    compatibilityReport,
-    saveCurrentBuild,
-  } = useBuild();
+  // Compute compatibility report locally from cart
+  const compatibilityReport = useMemo(() => validateBuild(cart), [cart]);
+
+  // Save current build via direct API call
+  const saveCurrentBuild = useCallback(async (title: string, description = '') => {
+    if (cart.length === 0) return;
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/build-guides`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: title,
+          total: cartTotal,
+          items: cart.map(i => ({
+            productId: i.id,
+            variantId: i.selectedVariant?.id ?? i.variants?.[0]?.id ?? '',
+            quantity: i.quantity,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        toast({ title: 'Build Guide saved successfully' });
+      } else {
+        const errData = await res.json();
+        console.error('Failed to save build guide API:', errData);
+        toast({
+          title: 'Failed to save build guide',
+          description: JSON.stringify(errData.error ?? errData),
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save build guide:', err);
+      toast({ title: 'Error', description: 'Network error while saving build guide', variant: 'destructive' });
+    }
+  }, [cart, cartTotal, toast]);
 
   const [isNaming, setIsNaming] = useState(false);
   const [buildName, setBuildName] = useState('');
@@ -134,7 +170,7 @@ const CartDrawer: React.FC = () => {
                           </p>
                         </div>
                         <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mt-0.5">
-                          {product.category}
+                          {product.category?.name || 'Uncategorized'}
                         </p>
 
                         <div className="flex-1 flex items-end justify-between mt-2">

@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
-import { useShop } from '@/context/ShopContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Package,
     Truck,
-    CheckCircle,
+    CheckCircle2,
     Clock,
     XCircle,
+    Download,
+    ArrowRight,
     MapPin,
     CreditCard,
 } from 'lucide-react';
@@ -15,7 +16,17 @@ import { Order, OrderStatus } from '@/types';
 import Link from 'next/link';
 
 const Orders: React.FC = () => {
-    const { orders, refreshOrders } = useShop();
+    const [orders, setOrders] = useState<Order[]>([]);
+
+    const refreshOrders = useCallback(async () => {
+        try {
+            const res = await fetch('/api/orders');
+            const data = await res.json();
+            if (data.orders) setOrders(data.orders);
+        } catch (err) {
+            console.error('Failed to fetch orders:', err);
+        }
+    }, []);
 
     React.useEffect(() => {
         refreshOrders();
@@ -27,10 +38,10 @@ const Orders: React.FC = () => {
 
     const statusMeta: Record<OrderStatus, { icon: any; color: string }> = {
         [OrderStatus.PENDING]: { icon: Clock, color: 'text-yellow-600' },
-        [OrderStatus.PAID]: { icon: CheckCircle, color: 'text-blue-600' },
+        [OrderStatus.PAID]: { icon: CheckCircle2, color: 'text-blue-600' },
         [OrderStatus.PROCESSING]: { icon: Package, color: 'text-purple-600' },
         [OrderStatus.SHIPPED]: { icon: Truck, color: 'text-indigo-600' },
-        [OrderStatus.DELIVERED]: { icon: CheckCircle, color: 'text-green-600' },
+        [OrderStatus.DELIVERED]: { icon: CheckCircle2, color: 'text-green-600' },
         [OrderStatus.CANCELLED]: { icon: XCircle, color: 'text-red-600' },
         [OrderStatus.RETURNED]: { icon: XCircle, color: 'text-orange-600' },
     };

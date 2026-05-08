@@ -2,47 +2,111 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-const CategoryEnum = z.enum([
-  "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-  "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
-]);
-
 const createBrandSchema = z.object({
   name: z.string().min(1).trim(),
-  categories: z.array(CategoryEnum).default([]),
+  categories: z.array(z.string().min(1)).default([]),
 });
 
-// ── Stable cache headers for GET (revalidate every 30s via stale-while-revalidate) ──
 const CACHE_HEADERS = {
   "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
 };
 
-// ── GET /api/brands ─────────────────────────────────────
+function normalizeIdentifier(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+async function loadCategoryResolver() {
+  const [definitions, categories] = await Promise.all([
+    prisma.categoryDefinition.findMany({
+      where: { isActive: true },
+      select: { code: true, label: true, shortLabel: true },
+    }),
+    prisma.category.findMany({
+      select: { id: true, name: true, slug: true },
+    }),
+  ]);
+
+  return {
+    resolveCategoryIds(inputs: string[]) {
+      const requested = new Set(inputs.map((input) => normalizeIdentifier(input)).filter(Boolean));
+      const matches = new Set<number>();
+
+      for (const category of categories) {
+        const categoryKeys = new Set([
+          normalizeIdentifier(category.name),
+          normalizeIdentifier(category.slug),
+        ]);
+
+        const definition = definitions.find((item) => {
+          const definitionKeys = [
+            normalizeIdentifier(item.code),
+            normalizeIdentifier(item.label),
+            normalizeIdentifier(item.shortLabel),
+            normalizeIdentifier(slugify(item.label)),
+          ].filter(Boolean);
+
+          return definitionKeys.some((key) => categoryKeys.has(key));
+        });
+
+        const candidateKeys = new Set([
+          ...categoryKeys,
+          normalizeIdentifier(definition?.code),
+          normalizeIdentifier(definition?.label),
+          normalizeIdentifier(definition?.shortLabel),
+        ]);
+
+        if ([...candidateKeys].some((key) => requested.has(key))) {
+          matches.add(category.id);
+        }
+      }
+
+      return [...matches];
+    },
+  };
+}
+
 export async function GET() {
   try {
-    // Single optimized query — no N+1, minimal payload via select
     const brands = await prisma.brand.findMany({
       orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        categories: true,
-        createdAt: true,
+      include: {
+        brandCategories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
         _count: { select: { products: true } },
       },
     });
 
-    return NextResponse.json(brands, { headers: CACHE_HEADERS });
+    return NextResponse.json(
+      brands.map(({ brandCategories, ...brand }) => ({
+        ...brand,
+        categories: brandCategories.map((item) => item.category),
+      })),
+      { headers: CACHE_HEADERS }
+    );
   } catch (error) {
     console.error("GET /api/brands error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// ── POST /api/brands ────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    // Parse body and validate in parallel-friendly flow (no blocking await before validation)
     const body = await req.json();
     const parsed = createBrandSchema.safeParse(body);
 
@@ -50,26 +114,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
     }
 
-    const data = parsed.data;
+    const resolver = await loadCategoryResolver();
+    const categoryIds = resolver.resolveCategoryIds(parsed.data.categories);
 
-    // Use upsert-style conflict detection via a single atomic DB round-trip
-    // instead of findUnique + create (two round-trips = 2x latency)
     try {
       const brand = await prisma.brand.create({
-        data: { name: data.name, categories: data.categories },
-        // Return only what the client needs — avoids fetching unused fields
-        select: {
-          id: true,
-          name: true,
-          categories: true,
-          createdAt: true,
+        data: {
+          name: parsed.data.name,
+          brandCategories: categoryIds.length
+            ? {
+                create: categoryIds.map((categoryId) => ({
+                  category: { connect: { id: categoryId } },
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          brandCategories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                },
+              },
+            },
+          },
         },
       });
 
-      return NextResponse.json(brand, { status: 201 });
+      return NextResponse.json({
+        id: brand.id,
+        name: brand.name,
+        createdAt: brand.createdAt,
+        updatedAt: brand.updatedAt,
+        categories: brand.brandCategories.map((item) => item.category),
+      }, { status: 201 });
     } catch (dbError: unknown) {
-      // P2002 = Prisma unique constraint violation — catches the race condition
-      // that the two-query pattern couldn't handle anyway
       if (
         typeof dbError === "object" &&
         dbError !== null &&
@@ -78,7 +160,7 @@ export async function POST(req: NextRequest) {
       ) {
         return NextResponse.json({ error: "Brand name already exists" }, { status: 409 });
       }
-      throw dbError; // re-throw anything else to the outer catch
+      throw dbError;
     }
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -114,7 +114,7 @@ export default memo(function StorefrontFooter() {
                             <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-white/10 border border-white/20 shadow-sm transition-transform group-hover:scale-110">
                                 <Cpu className="h-5 w-5 text-indigo-400" />
                             </div>
-                            <span className="font-bold tracking-tight text-xl text-white">Nexus</span>
+                            <span className="font-bold tracking-tight text-xl text-white">SpecForge</span>
                         </Link>
                         <p className="text-zinc-500 text-sm mb-4 sm:mb-6 leading-relaxed">
                             We empower gamers and professionals with the best hardware choices on the planet. Built by enthusiasts, for enthusiasts.
@@ -135,7 +135,7 @@ export default memo(function StorefrontFooter() {
 
                 {/* Bottom bar */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-2 sm:gap-4 text-xs font-medium text-zinc-500">
-                    <p>© {CURRENT_YEAR} Nexus Hardware. All rights reserved.</p>
+                    <p>© {CURRENT_YEAR} SpecForge. All rights reserved.</p>
                     <div className="flex items-center gap-1.5">
                         <span>Designed & Built by</span>
                         <a

@@ -1,37 +1,57 @@
 // ──────────────────────────────────────────────────────
-// ENUMS — Must match schema.prisma exactly
+// CATEGORY INTERFACE — Matches Prisma Category model
 // ──────────────────────────────────────────────────────
 
-export enum Category {
-  PROCESSOR = 'PROCESSOR',
-  GPU = 'GPU',
-  MOTHERBOARD = 'MOTHERBOARD',
-  RAM = 'RAM',
-  STORAGE = 'STORAGE',
-  PSU = 'PSU',
-  CABINET = 'CABINET',
-  COOLER = 'COOLER',
-  MONITOR = 'MONITOR',
-  PERIPHERAL = 'PERIPHERAL',
-  NETWORKING = 'NETWORKING',
-  LAPTOP = 'LAPTOP',
+export interface Category {
+  id: number;
+  shortLabel:string;
+  label:string;
+  code:string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  isActive: boolean;
+  categoryDefinitionId?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
-/** Display labels for categories (frontend-only) */
-export const CATEGORY_LABELS: Record<Category, string> = {
-  [Category.PROCESSOR]: 'Processor',
-  [Category.GPU]: 'Graphics Card',
-  [Category.MOTHERBOARD]: 'Motherboard',
-  [Category.RAM]: 'RAM',
-  [Category.STORAGE]: 'Storage',
-  [Category.PSU]: 'Power Supply',
-  [Category.CABINET]: 'Cabinet',
-  [Category.COOLER]: 'Cooler',
-  [Category.MONITOR]: 'Monitor',
-  [Category.PERIPHERAL]: 'Peripheral',
-  [Category.NETWORKING]: 'Networking',
-  [Category.LAPTOP]: 'Laptop',
-};
+export interface CategoryDefinition {
+  id?: string;
+  code: string;
+  label: string;
+  shortLabel?: string | null;
+  description?: string | null;
+  icon?: string | null;
+  displayOrder: number;
+  featuredOrder?: number | null;
+  stepOrder?: number | null;
+  isInBuildSequence?: boolean;
+  isActive: boolean;
+  showInFeatured: boolean;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface BuildSequenceItem {
+  id?: string;
+  categoryId: string;
+  stepOrder: number;
+  category: CategoryDefinition;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface CategoryRelationship {
+  id?: string;
+  fromCategoryCode?: string | null;
+  toCategoryCode?: string | null;
+  relationshipType: string;
+  sortOrder: number;
+  metadata?: Record<string, unknown> | null;
+  createdAt?: string | Date;
+}
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -105,7 +125,7 @@ export interface ProductVariant {
   createdAt: string;
   updatedAt: string;
   product?: Product; // parent relation
-  warehouseInventories?: WarehouseInventory[];
+  inventoryItems?: InventoryItem[];
 }
 
 export interface Product {
@@ -285,10 +305,11 @@ export interface Warehouse {
   updatedAt: string;
 }
 
-export interface WarehouseInventory {
+export interface InventoryItem {
   id: string;
   variantId: string;
-  warehouseId: string;
+  partNumber?: string;
+  serialNumber?: string;
   quantity: number;
   reserved: number;
   reorderLevel: number;
@@ -297,25 +318,19 @@ export interface WarehouseInventory {
   lastUpdated?: string;
 
   variant?: ProductVariant;
-  warehouse?: Warehouse;
 }
 
 export interface StockMovement {
   id: string;
-  warehouseInventoryId: string;
-  warehouseId: string;
+  orderId?: string;
+  variantId: string;
   type: StockMovementType;
   quantity: number;
-  previousQuantity: number;
-  newQuantity: number;
-  reason?: string;
-  performedBy: string;
-  orderId?: string;
-  purchaseOrderId?: string;
+  note?: string;
   createdAt: string;
   // Added for frontend compatibility/lookup
-  sku: string;
-  date: string;
+  sku?: string;
+  date?: string;
 }
 
 // ──────────────────────────────────────────────────────
@@ -456,7 +471,7 @@ export interface BuildGuide {
   id: string;
   title: string;
   description?: string;
-  category: string;
+  category: Category;
   total: number;
   createdAt: string;   // ISO DateTime
   updatedAt: string;

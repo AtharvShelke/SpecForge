@@ -28,7 +28,14 @@ export async function GET(req: NextRequest) {
         if (category && category !== "all") {
             dbWhere.variant = {
                 ...(dbWhere.variant || {}),
-                product: { category }
+                product: {
+                    category: {
+                        OR: [
+                            { slug: category },
+                            { categoryDefinition: { code: category } }
+                        ]
+                    }
+                }
             };
         }
 
@@ -38,7 +45,7 @@ export async function GET(req: NextRequest) {
         } else if (fStockStatus === "low") {
             // Use raw SQL to efficiently find items where quantity > 0 AND quantity <= reorderLevel
             const lowStockIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
-                `SELECT id FROM "WarehouseInventory" WHERE quantity > 0 AND quantity <= "reorderLevel"`
+                `SELECT id FROM "InventoryItem" WHERE quantity > 0 AND quantity <= "reorderLevel"`
             );
             dbWhere.id = { in: lowStockIds.map(r => r.id) };
         } else if (fStockStatus === "in") {
@@ -47,8 +54,8 @@ export async function GET(req: NextRequest) {
 
         // Execute count + paginated query in parallel
         const [total, items] = await Promise.all([
-            prisma.warehouseInventory.count({ where: dbWhere }),
-            prisma.warehouseInventory.findMany({
+            prisma.inventoryItem.count({ where: dbWhere }),
+            prisma.inventoryItem.findMany({
                 where: dbWhere,
                 select: {
                     id: true,
@@ -59,7 +66,6 @@ export async function GET(req: NextRequest) {
                     costPrice: true,
                     location: true,
                     lastUpdated: true,
-                    warehouseId: true,
                     variant: {
                         select: {
                             id: true,
@@ -70,7 +76,13 @@ export async function GET(req: NextRequest) {
                                 select: {
                                     id: true,
                                     name: true,
-                                    category: true,
+                                    category: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            slug: true,
+                                        }
+                                    },
                                     brand: { select: { id: true, name: true } },
                                     media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
                                 },

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { PurchaseOrderStatus } from "@/generated/prisma/enums";
 
+// NOTE: PurchaseOrder models don't exist in current schema
+// This functionality is disabled until proper models are implemented
 
 const createPoItemSchema = z.object({
     variantId: z.string().uuid(),
@@ -18,37 +19,11 @@ const createPurchaseOrderSchema = z.object({
 });
 
 // ── GET /api/inventory/purchase-orders ─────────────────
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
     try {
-        const { searchParams } = new URL(req.url);
-        const status = searchParams.get("status") as PurchaseOrderStatus | null;
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 200);
-
-        const where = status ? { status } : undefined;
-
-        const [orders, total] = await Promise.all([
-            prisma.purchaseOrder.findMany({
-                where,
-                include: {
-                    supplier: true,
-                    warehouse: true,
-                    items: {
-                        include: {
-                            variant: {
-                                include: { product: { select: { name: true } } },
-                            },
-                        },
-                    },
-                },
-                orderBy: { createdAt: "desc" },
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
-            prisma.purchaseOrder.count({ where }),
-        ]);
-
-        return NextResponse.json({ orders, total, page, limit });
+        return NextResponse.json({ 
+            error: "Purchase Order functionality not available - models not implemented in current schema" 
+        }, { status: 501 });
     } catch (error) {
         console.error("GET /api/inventory/purchase-orders error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -56,38 +31,12 @@ export async function GET(req: NextRequest) {
 }
 
 // ── POST /api/inventory/purchase-orders ────────────────
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
     try {
-        const body = await req.json();
-        const data = createPurchaseOrderSchema.parse(body);
-
-        const po = await prisma.purchaseOrder.create({
-            data: {
-                supplierId: data.supplierId,
-                warehouseId: data.warehouseId,
-                expectedDelivery: data.expectedDelivery ? new Date(data.expectedDelivery) : null,
-                items: {
-                    create: data.items,
-                },
-            },
-            include: {
-                supplier: true,
-                warehouse: true,
-                items: {
-                    include: {
-                        variant: {
-                            include: { product: { select: { name: true } } },
-                        },
-                    },
-                },
-            },
-        });
-
-        return NextResponse.json(po, { status: 201 });
+        return NextResponse.json({ 
+            error: "Purchase Order functionality not available - models not implemented in current schema" 
+        }, { status: 501 });
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 });
-        }
         console.error("POST /api/inventory/purchase-orders error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }

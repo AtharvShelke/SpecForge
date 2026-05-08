@@ -5,58 +5,34 @@ import { memo, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, Plus, ArrowRight, Package } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
-import { Product, Category, CATEGORY_LABELS } from '@/types'
-
-// ── Animation variants ────────────────────────────────────────────────────────
+import { Product } from '@/types'
+import { useCategories } from '@/hooks/useCategories'
 
 const cardVariants = {
-  hidden:  { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0  },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
 }
 
 const VIEWPORT = { once: true, margin: '-40px' } as const
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 interface Props {
-  products:  Product[]
+  products: Product[]
   addToCart: (p: Product) => void
 }
-
-// ── Category order ────────────────────────────────────────────────────────────
-
-const CATEGORY_ORDER: Category[] = [
-  Category.GPU,
-  Category.PROCESSOR,
-  Category.MOTHERBOARD,
-  Category.RAM,
-  Category.STORAGE,
-  Category.PSU,
-  Category.CABINET,
-  Category.COOLER,
-  Category.MONITOR,
-  Category.PERIPHERAL,
-  Category.NETWORKING,
-  Category.LAPTOP,
-]
-
-// ── ProductCard ───────────────────────────────────────────────────────────────
 
 const ProductCard = memo(function ProductCard({
   product,
   onAddToCart,
   index,
 }: {
-  product:     Product
+  product: Product
   onAddToCart: (p: Product) => void
-  index:       number
+  index: number
 }) {
-  const price        = product.variants?.[0]?.price ?? 0
- 
-  const image        = product.media?.[0]?.url
-  const brand        = product.brand?.name
+  const price = product.variants?.[0]?.price ?? 0
+  const image = product.media?.[0]?.url
+  const brand = product.brand?.name
   const isOutOfStock = product.variants?.[0]?.status === 'OUT_OF_STOCK'
- 
 
   const handleAddToCart = useCallback(
     (e: React.MouseEvent) => {
@@ -76,9 +52,7 @@ const ProductCard = memo(function ProductCard({
       transition={{ delay: Math.min(index % 8, 7) * 0.05, duration: 0.45, ease: 'easeOut' }}
       className="group relative flex flex-col bg-white rounded-2xl overflow-hidden hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.12)] transition-all duration-300 border border-zinc-100 hover:border-zinc-200"
     >
-      {/* Badges */}
       <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
-        
         {index < 4 && (
           <span className="px-2 py-0.5 bg-zinc-950 text-white text-[9px] font-black tracking-widest uppercase rounded-full flex items-center gap-1">
             <TrendingUp size={9} /> Hot
@@ -86,14 +60,12 @@ const ProductCard = memo(function ProductCard({
         )}
       </div>
 
-      {/* Out of stock overlay */}
       {isOutOfStock && (
         <div className="absolute inset-0 z-20 bg-white/70 flex items-center justify-center rounded-2xl">
           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Out of Stock</span>
         </div>
       )}
 
-      {/* Image */}
       <Link
         href={`/products/${product.id}`}
         className="relative bg-zinc-50 aspect-square overflow-hidden flex items-center justify-center p-4 sm:p-6"
@@ -113,7 +85,6 @@ const ProductCard = memo(function ProductCard({
           <Package size={28} className="text-zinc-300" />
         )}
 
-        {/* Floating add to cart */}
         {!isOutOfStock && (
           <button
             onClick={handleAddToCart}
@@ -127,7 +98,6 @@ const ProductCard = memo(function ProductCard({
         )}
       </Link>
 
-      {/* Info */}
       <div className="p-3 sm:p-4 flex flex-col flex-1">
         {brand && (
           <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">{brand}</p>
@@ -141,14 +111,11 @@ const ProductCard = memo(function ProductCard({
           <span className="text-sm sm:text-base font-black text-zinc-950 tracking-tight">
             ₹{price.toLocaleString('en-IN')}
           </span>
-         
         </div>
       </div>
     </motion.div>
   )
 })
-
-// ── Tab pill ──────────────────────────────────────────────────────────────────
 
 function TabPill({
   label, count, active, onClick,
@@ -170,22 +137,21 @@ function TabPill({
   )
 }
 
-// ── FeaturedProductsSection ───────────────────────────────────────────────────
-
 export default function FeaturedProductsSection({ products, addToCart }: Props) {
-  // Filter to only ACTIVE products
-  
+  const { categories, getLabel } = useCategories()
+  const categoryOrder = categories
+    .filter((category) => category.showInFeatured)
+    .sort((a, b) => (a.featuredOrder ?? a.displayOrder) - (b.featuredOrder ?? b.displayOrder))
+    .map((category) => category.code)
 
-  // Build category map in fixed order — only cats with products
-  const categoryMap = CATEGORY_ORDER.reduce<Record<string, Product[]>>((acc, cat) => {
-    const items = products.filter(p => p.category === cat)
+  const categoryMap = categoryOrder.reduce<Record<string, Product[]>>((acc, cat) => {
+    const items = products.filter((product) => (typeof product.category === 'string' ? product.category : product.category?.slug) === cat)
     if (items.length > 0) acc[cat] = items
     return acc
   }, {})
 
-  const availableCats = Object.keys(categoryMap) as Category[]
-
-  const [activeTab, setActiveTab] = useState<'ALL' | Category>('ALL')
+  const availableCats = Object.keys(categoryMap)
+  const [activeTab, setActiveTab] = useState<'ALL' | string>('ALL')
 
   const shownProducts =
     activeTab === 'ALL'
@@ -197,8 +163,6 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
   return (
     <section className="py-10 sm:py-16 md:py-20 bg-white" id="featured-products">
       <Container>
-
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-zinc-950 tracking-tighter">
@@ -217,7 +181,6 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
           </Link>
         </div>
 
-        {/* Category tabs */}
         <div
           className="flex gap-2 overflow-x-auto pb-3 mb-6 sm:mb-8"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -228,18 +191,17 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
             active={activeTab === 'ALL'}
             onClick={() => setActiveTab('ALL')}
           />
-          {availableCats.map(cat => (
+          {availableCats.map((cat) => (
             <TabPill
               key={cat}
-              label={CATEGORY_LABELS[cat as Category]}
+              label={getLabel(cat)}
               count={categoryMap[cat].length}
               active={activeTab === cat}
-              onClick={() => setActiveTab(cat as Category)}
+              onClick={() => setActiveTab(cat)}
             />
           ))}
         </div>
 
-        {/* Product grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {shownProducts.map((product, i) => (
             <ProductCard
@@ -251,14 +213,13 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
           ))}
         </div>
 
-        {/* See all CTA */}
         {activeTab !== 'ALL' && (categoryMap[activeTab]?.length ?? 0) > 0 && (
           <div className="mt-8 text-center">
             <Link
               href={`/products?category=${activeTab}`}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
             >
-              See all {CATEGORY_LABELS[activeTab as Category]} ({categoryMap[activeTab]?.length})
+              See all {getLabel(activeTab)} ({categoryMap[activeTab]?.length})
               <ArrowRight size={14} />
             </Link>
           </div>
@@ -275,7 +236,6 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
             </Link>
           </div>
         )}
-
       </Container>
     </section>
   )

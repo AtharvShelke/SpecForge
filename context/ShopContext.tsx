@@ -1,14 +1,10 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import {
     createContext, useContext, useState, useEffect,
-    useRef, useCallback, useMemo, type ReactNode,
+    useCallback, useMemo, type ReactNode,
 } from 'react';
-import {
-    CartItem, Product, CategoryNode, Brand,
-    Order, CategoryFilterConfig,
-} from '../types';
+import { CartItem, Product } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,25 +22,12 @@ interface ShopContextType {
     compareItems: Product[];
     addToCompare: (product: Product) => void;
     removeFromCompare: (productId: string) => void;
-    products: Product[];
-    refreshProducts: () => Promise<void>;
-    categories: CategoryNode[];
-    refreshCategories: () => Promise<void>;
-    brands: Brand[];
-    refreshBrands: () => Promise<void>;
-    orders: Order[];
-    refreshOrders: (email?: string) => Promise<void>;
-    filterConfigs: CategoryFilterConfig[];
-    refreshFilterConfigs: () => Promise<void>;
-    placeOrder: (customerName: string, email: string) => void;
-    isLoading: boolean;
-    initBuildGuides: any[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const CART_KEY = 'nexus_cart';
-const COMPARE_KEY = 'nexus_compare';
+const CART_KEY = 'specforge_cart';
+const COMPARE_KEY = 'specforge_compare';
 
 // Reads from localStorage safely — returns null on SSR or parse failure
 function readStorage<T>(key: string): T | null {
@@ -64,119 +47,29 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { toast } = useToast();
-    const pathname = usePathname();
 
-    const [isLoading, setIsLoading] = useState(true);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<CategoryNode[]>([]);
-    const [brands, setBrands] = useState<Brand[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [compareItems, setCompareItems] = useState<Product[]>([]);
     const [isCartOpen, setCartOpen] = useState(false);
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
-    const [initBuildGuides, setInitBuildGuides] = useState<any[]>([]);
-    // ── Refresh functions ─────────────────────────────────────────────────────
-    // Each has an empty dep array — they only call stable setter functions.
 
-    const refreshProducts = useCallback(async () => {
-        try {
-            const res = await fetch('/api/products?limit=1000');
-            const data = await res.json();
-            if (data.products) setProducts(data.products);
-        } catch (err) {
-            console.error('Failed to fetch products:', err);
-        }
-    }, []);
-
-    const refreshCategories = useCallback(async () => {
-        try {
-            const res = await fetch('/api/categories/hierarchy');
-            const data = await res.json();
-            setCategories(data);
-        } catch (err) {
-            console.error('Failed to fetch categories:', err);
-        }
-    }, []);
-
-    const refreshBrands = useCallback(async () => {
-        try {
-            const res = await fetch('/api/brands');
-            const data = await res.json();
-            setBrands(data);
-        } catch (err) {
-            console.error('Failed to fetch brands:', err);
-        }
-    }, []);
-
-    const refreshOrders = useCallback(async (email?: string) => {
-        try {
-            const url = email ? `/api/orders?email=${encodeURIComponent(email)}` : '/api/orders';
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data.orders) setOrders(data.orders);
-        } catch (err) {
-            console.error('Failed to fetch orders:', err);
-        }
-    }, []);
-
-    const refreshFilterConfigs = useCallback(async () => {
-        try {
-            const res = await fetch('/api/categories/filters');
-            const data = await res.json();
-            setFilterConfigs(data);
-        } catch (err) {
-            console.error('Failed to fetch filter configs:', err);
-        }
-    }, []);
-
-    // ── Initialisation — runs once, skipped on admin routes ──────────────────
-
-    // In ShopContext.tsx — replace the init useEffect block
-
-    const hasInitialized = useRef(false);
+    // ── Load cart/compare from localStorage on mount ─────────────────────
 
     useEffect(() => {
-        if (pathname?.startsWith('/admin')) {
-            setIsLoading(false);
-            return;
-        }
-        if (hasInitialized.current) return;
-        hasInitialized.current = true;
-
         const savedCart = readStorage<CartItem[]>(CART_KEY);
         const savedCompare = readStorage<Product[]>(COMPARE_KEY);
         if (savedCart) setCart(savedCart);
         if (savedCompare) setCompareItems(savedCompare);
+    }, []);
 
-        setIsLoading(true);
-        fetch('/api/init')
-            .then(res => res.json())
-            .then(({ products, categories, brands, filterConfigs, buildGuides }) => {
-                if (products) setProducts(products);
-                if (categories) setCategories(categories);
-                if (brands) setBrands(brands);
-                if (filterConfigs) setFilterConfigs(filterConfigs);
-                if (buildGuides) setInitBuildGuides(buildGuides);
-            })
-            .catch(err => console.error('Failed to initialize shop data:', err))
-            .finally(() => setIsLoading(false));
-    }, [pathname]);
-
-    // pathname is stable across the session (provider mounts once) but listed
-    // to satisfy the linter. The hasInitialized guard ensures single execution.
-
-    // ── Persist cart / compare (skip during initial load to avoid flash) ──────
+    // ── Persist cart / compare ────────────────────────────────────────────
 
     useEffect(() => {
-        if (isLoading) return;
         try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { }
-    }, [cart, isLoading]);
+    }, [cart]);
 
     useEffect(() => {
-        if (isLoading) return;
         try { localStorage.setItem(COMPARE_KEY, JSON.stringify(compareItems)); } catch { }
-    }, [compareItems, isLoading]);
+    }, [compareItems]);
 
     // ── Cart actions ──────────────────────────────────────────────────────────
 
@@ -257,38 +150,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // ── Checkout ──────────────────────────────────────────────────────────────
 
-    const placeOrder = useCallback((customerName: string, email: string) => {
-        if (cart.length === 0) return;
-        fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: `ORD-${Math.random().toString(36).substring(2, 11).toUpperCase()}`,
-                customerName,
-                email,
-                items: cart.map(item => ({
-                    productId: item.id,
-                    variantId: item.selectedVariant?.id ?? '',
-                    name: item.name,
-                    category: item.category,
-                    price: item.selectedVariant?.price ?? 0,
-                    quantity: item.quantity,
-                    image: item.media?.[0]?.url ?? '',
-                    sku: item.selectedVariant?.sku ?? '',
-                })),
-                total: cartTotal,
-            }),
-        })
-            .then(res => {
-                if (res.ok) {
-                    toast({ title: 'Order placed successfully!' });
-                    setCart([]);
-                    setCartOpen(false);
-                }
-            })
-            .catch(err => console.error('Failed to place order:', err));
-    }, [cart, cartTotal, toast]);
-
     // ── Context value ─────────────────────────────────────────────────────────
 
     const value = useMemo<ShopContextType>(() => ({
@@ -304,26 +165,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         compareItems,
         addToCompare,
         removeFromCompare,
-        products,
-        refreshProducts,
-        categories,
-        refreshCategories,
-        brands,
-        refreshBrands,
-        orders,
-        refreshOrders,
-        filterConfigs,
-        refreshFilterConfigs,
-        placeOrder,
-        isLoading,
-        initBuildGuides,
     }), [
         cart, addToCart, removeFromCart, updateQuantity, clearCart, loadCart, cartTotal,
         isCartOpen, compareItems, addToCompare, removeFromCompare,
-        products, refreshProducts, categories, refreshCategories,
-        brands, refreshBrands, orders, refreshOrders,
-        filterConfigs, refreshFilterConfigs, placeOrder, isLoading,
-        initBuildGuides,
     ]);
 
     return (

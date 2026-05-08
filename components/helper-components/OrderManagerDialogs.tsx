@@ -7,7 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Order, OrderStatus, WarehouseInventory } from '@/types';
+import { Order, OrderStatus, InventoryItem } from '@/types';
 import { StatusBadge } from './OrderManagerHelper';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ interface ConfirmStatusDialogProps {
     }>>;
     confirmStatusUpdate: () => void;
     selectedOrder: Order | null;
-    inventoryArray: WarehouseInventory[];
+    inventoryArray: InventoryItem[];
     isUpdating: boolean;
 }
 

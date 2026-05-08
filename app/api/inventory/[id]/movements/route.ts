@@ -20,8 +20,18 @@ export async function GET(
 ) {
     try {
         const { id: sku } = await params;
+        // First find the variant by SKU
+        const variant = await prisma.productVariant.findUnique({
+            where: { sku },
+            select: { id: true }
+        });
+        
+        if (!variant) {
+            return NextResponse.json({ error: "Variant not found" }, { status: 404 });
+        }
+
         const movements = await prisma.stockMovement.findMany({
-            where: { warehouseInventory: { variant: { sku } } },
+            where: { variantId: variant.id },
             orderBy: { createdAt: "desc" },
             take: 100,
         });
@@ -44,7 +54,7 @@ export async function POST(
         const data = createMovementSchema.parse(body);
 
         const result = await prisma.$transaction(async (tx) => {
-            const inv = await tx.warehouseInventory.findFirst({
+            const inv = await tx.inventoryItem.findFirst({
                 where: { variant: { sku } }
             });
             if (!inv) throw new Error("NOT_FOUND");
@@ -74,7 +84,7 @@ export async function POST(
             const newQty = Math.max(0, inv.quantity + qtyDelta);
             const newReserved = Math.max(0, inv.reserved + reservedDelta);
 
-            await tx.warehouseInventory.update({
+            await tx.inventoryItem.update({
                 where: { id: inv.id },
                 data: {
                     quantity: newQty,
@@ -91,14 +101,10 @@ export async function POST(
 
             const movement = await tx.stockMovement.create({
                 data: {
-                    warehouseInventoryId: inv.id,
-                    warehouseId: inv.warehouseId,
+                    variantId: inv.variantId,
                     type: data.type,
                     quantity: data.quantity,
-                    previousQuantity: inv.quantity,
-                    newQuantity: newQty,
-                    reason: data.reason,
-                    performedBy: data.performedBy,
+                    note: data.reason,
                 },
             });
 

@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo, Suspense } from 'react';
-import { useBuild } from '@/context/BuildContext';
-import { validateBuild } from '@/services/compatibility';
+import { useShop } from '@/context/ShopContext';
+import { validateBuild } from '@/lib/calculations/compatibility';
 import {
   Save, Upload, Share2, Cpu, Monitor, HardDrive, Zap, Box, X,
   CheckCircle2, AlertTriangle, AlertOctagon, Link2, ArrowRight, Calendar, Layers,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Category, CompatibilityLevel, BuildGuide, CartItem } from '@/types';
+import { Category, CompatibilityLevel, BuildGuide, CartItem, Product } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
@@ -17,22 +17,7 @@ import { getBaseUrl } from '@/lib/utils';
 
 // ── Constants (module scope — never recreated) ────────────────────────────────
 
-// JSX elements as icon values force React to re-create them on every render.
-// Store component references instead and render them at use-site.
-const CATEGORY_ICON_COMPONENTS: Record<Category, React.ElementType> = {
-  [Category.PROCESSOR]:  Cpu,
-  [Category.GPU]:        Monitor,
-  [Category.RAM]:        Layers,
-  [Category.MOTHERBOARD]:Cpu,
-  [Category.STORAGE]:    HardDrive,
-  [Category.PSU]:        Zap,
-  [Category.CABINET]:    Box,
-  [Category.COOLER]:     Zap,
-  [Category.MONITOR]:    Monitor,
-  [Category.PERIPHERAL]: Monitor,
-  [Category.NETWORKING]: HardDrive,
-  [Category.LAPTOP]:     Monitor,
-};
+
 
 // Compat display config — plain object, never recreated
 const COMPAT_CHIP_CONFIG = {
@@ -55,9 +40,9 @@ const MODAL_SHEET_TRANS   = { type: 'spring', damping: 25, stiffness: 300 } as c
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getCoverImage(build: BuildGuide): string | null {
-  const gpu = build.items.find(i => i.variant?.product?.category === Category.GPU);
+  const gpu = build.items.find(i => i.variant?.product?.category?.name.toUpperCase() === 'GPU');
   if (gpu?.variant?.product) return gpu.variant.product.media?.[0]?.url ?? null;
-  const cpu = build.items.find(i => i.variant?.product?.category === Category.PROCESSOR);
+  const cpu = build.items.find(i => i.variant?.product?.category?.name.toUpperCase() === 'PROCESSOR');
   if (cpu?.variant?.product) return cpu.variant.product.media?.[0]?.url ?? null;
   return build.items[0]?.variant?.product?.media?.[0]?.url ?? null;
 }
@@ -172,7 +157,7 @@ const BuildModal = memo(function BuildModal({
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-zinc-900 text-[13px] truncate">{item.variant?.product?.name}</p>
                   <p className="text-[9px] font-bold text-zinc-400 uppercase">
-                    {item.variant?.product?.category} {item.quantity > 1 && `×${item.quantity}`}
+                    {item.variant?.product?.category?.name} {item.quantity > 1 && `×${item.quantity}`}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
@@ -267,12 +252,9 @@ const BuildCard = memo(function BuildCard({
 
         <div className="space-y-1 mb-4">
           {build.items.slice(0, 2).map((item) => {
-            const IconComp = item.variant?.product
-              ? CATEGORY_ICON_COMPONENTS[item.variant.product.category as Category]
-              : null;
+
             return (
               <div key={item.id} className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 bg-zinc-50 px-2 py-1 rounded-md">
-                <span className="shrink-0 opacity-60">{IconComp && <IconComp size={12} />}</span>
                 <span className="truncate">{item.variant?.product?.name}</span>
               </div>
             );
@@ -319,13 +301,86 @@ const BuildCard = memo(function BuildCard({
 // ── BuildsContent ─────────────────────────────────────────────────────────────
 
 function BuildsContent() {
-  const { buildGuides, loadBuild, refreshBuildGuides } = useBuild();
+  const { loadCart, setCartOpen } = useShop();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [buildGuides, setBuildGuides] = useState<BuildGuide[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeBuild, setActiveBuild] = useState<BuildGuide | null>(null);
   const [copiedId,    setCopiedId]    = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Fetch products
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/products?limit=5000`);
+      const data = await res.json();
+      setProducts(data.products ?? data);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+    }
+  }, []);
+
+  // Refresh build guides
+  const refreshBuildGuides = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/build-guides`);
+      const data = await res.json();
+      setBuildGuides(data);
+    } catch (err) {
+      console.error('Failed to fetch build guides:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Load build into cart
+  const loadBuild = useCallback(async (buildId: string) => {
+    setIsLoading(true);
+    try {
+      let build = buildGuides.find(b => b.id === buildId);
+      if (!build) {
+        const res = await fetch(`${getBaseUrl()}/api/build-guides/${buildId}`);
+        if (res.ok) build = await res.json();
+      }
+
+      if (!build) {
+        toast({ title: 'Build not found', variant: 'destructive' });
+        return;
+      }
+
+      const newCart: CartItem[] = [];
+      for (const item of build.items) {
+        const fullProduct = item.variant?.product;
+        if (fullProduct && item.variant) {
+          newCart.push({ ...fullProduct, quantity: item.quantity, selectedVariant: item.variant });
+        } else {
+          const product = products.find(p => p.variants?.some(v => v.id === item.variantId));
+          if (product) {
+            const variant = product.variants?.find(v => v.id === item.variantId) ?? product.variants?.[0];
+            if (variant) {
+              newCart.push({ ...product, quantity: item.quantity, selectedVariant: variant });
+            }
+          }
+        }
+      }
+
+      loadCart(newCart);
+      toast({ title: 'Build Guide loaded', description: 'Items added to your cart.' });
+      setCartOpen(true);
+    } catch (err) {
+      console.error('Failed to load build guide:', err);
+      toast({ title: 'Error', description: 'Could not load Build Guide', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [buildGuides, products, loadCart, setCartOpen, toast]);
+
   // Refresh build guides on mount
-  useEffect(() => { refreshBuildGuides(); }, [refreshBuildGuides]);
+  useEffect(() => {
+    refreshBuildGuides();
+    fetchProducts();
+  }, [refreshBuildGuides, fetchProducts]);
 
   const handleCopyDirect = useCallback(async (e: React.MouseEvent, build: BuildGuide) => {
     e.stopPropagation();

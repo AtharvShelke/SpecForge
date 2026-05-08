@@ -2,47 +2,41 @@
 
 import React, { useMemo } from 'react';
 import { useShop } from '../../context/ShopContext';
-import { useBuild } from '../../context/BuildContext';
-import { Category } from '../../types';
-import { Check, XCircle, AlertTriangle, ChevronRight, Monitor, Cpu, HardDrive, Keyboard, Mouse, Headphones, ShieldQuestion } from 'lucide-react';
+import { Check, XCircle, AlertTriangle, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { BUILD_SEQUENCE } from '../../data/categoryTree';
+import { validateBuild } from '@/lib/calculations/compatibility';
+import { useSearchParams } from 'next/navigation';
+import { useBuildSequence } from '@/hooks/useBuildSequence';
+import { useCategories } from '@/hooks/useCategories';
 
 interface BuildProgressSidebarProps {
-    activeCategory?: Category;
-    onStepClick: (category: Category) => void;
+    activeCategory?: string;
+    onStepClick: (category: string) => void;
 }
 
 import { motion, AnimatePresence } from 'framer-motion';
-
-const CATEGORY_ICONS: Record<string, any> = {
-    [Category.PROCESSOR]: Cpu,
-    [Category.MOTHERBOARD]: ShieldQuestion, // Fallback icon
-    [Category.RAM]: HardDrive,
-    [Category.STORAGE]: HardDrive,
-    [Category.GPU]: ShieldQuestion,
-    [Category.PSU]: ShieldQuestion,
-    [Category.CABINET]: ShieldQuestion,
-    [Category.COOLER]: ShieldQuestion,
-    [Category.MONITOR]: Monitor,
-    [Category.PERIPHERAL]: Keyboard,
-};
-
 const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCategory, onStepClick }) => {
     const { cart } = useShop();
-    const { isBuildMode, compatibilityReport } = useBuild();
+    const searchParams = useSearchParams();
+    const isBuildMode = searchParams.get('mode') === 'build';
+    const { buildSequence } = useBuildSequence();
+    const { getLabel } = useCategories();
+    const buildSequenceCodes = buildSequence.map((item) => item.category.code);
+
+    // Compute compatibility report locally from cart
+    const compatibilityReport = useMemo(() => validateBuild(cart), [cart]);
 
     const buildSteps = useMemo(() => {
-        return BUILD_SEQUENCE.map((cat, index) => {
-            const item = cart.find(i => i.category === cat);
+        return buildSequenceCodes.map((cat, index) => {
+            const item = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === cat);
             return {
                 category: cat,
-                label: cat.charAt(0) + cat.slice(1).toLowerCase().replace('_', ' '),
+                label: getLabel(cat),
                 item,
                 step: index + 1
             };
         });
-    }, [cart]);
+    }, [buildSequenceCodes, cart, getLabel]);
 
     return (
         <AnimatePresence>
@@ -59,7 +53,7 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
                             <h3 className="font-bold text-zinc-900 heading-font mb-1 flex items-center justify-between">
                                 <span>Your Build</span>
                                 <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
-                                    {cart.length} / {BUILD_SEQUENCE.length} Parts
+                                    {cart.length} / {buildSteps.length} Parts
                                 </span>
                             </h3>
 

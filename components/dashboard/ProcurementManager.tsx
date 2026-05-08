@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useAdmin } from '@/context/AdminContext';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { PurchaseOrder, Supplier, PurchaseOrderStatus } from '@/types';
 import {
     PackagePlus, Truck, Search, Plus, ExternalLink, Calendar, PlusCircle, CheckCircle, PackageOpen, LayoutGrid, List, MoreVertical, Building2, UserCircle2, ArrowRightLeft, FileText, RefreshCw
@@ -20,11 +19,95 @@ import { Label } from '@/components/ui/label';
 import { Trash } from 'lucide-react';
 
 const ProcurementManager = () => {
-    const {
-        suppliers, purchaseOrders, inventory, warehouses, products,
-        createPurchaseOrder, receivePurchaseOrder, createSupplier, updateSupplier,
-        syncData, isLoading
-    } = useAdmin();
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+    const [inventory, setInventory] = useState<any[]>([]);
+    const [warehouses, setWarehouses] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const fetchProcurementData = useCallback(async () => {
+        try {
+            const [suppliersRes, poRes, inventoryRes, warehousesRes, productsRes] = await Promise.all([
+                fetch('/api/procurement/suppliers'),
+                fetch('/api/procurement/purchase-orders'),
+                fetch('/api/inventory?limit=3000'),
+                fetch('/api/warehouses'),
+                fetch('/api/products?fields=minimal&limit=5000'),
+            ]);
+            setSuppliers(await suppliersRes.json());
+            setPurchaseOrders(await poRes.json());
+            const invData = await inventoryRes.json();
+            setInventory(invData.items ?? (Array.isArray(invData) ? invData : []));
+            setWarehouses(await warehousesRes.json());
+            const prodData = await productsRes.json();
+            setProducts(prodData.products ?? prodData);
+        } catch (err) {
+            console.error('Failed to fetch procurement data:', err);
+        }
+    }, []);
+
+    const createPurchaseOrder = useCallback(async (po: Partial<PurchaseOrder>) => {
+        try {
+            const res = await fetch('/api/procurement/purchase-orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(po),
+            });
+            if (res.ok) await fetchProcurementData();
+        } catch (err) {
+            console.error('Failed to create purchase order:', err);
+        }
+    }, [fetchProcurementData]);
+
+    const receivePurchaseOrder = useCallback(async (id: string, items: any[]) => {
+        try {
+            const res = await fetch(`/api/procurement/purchase-orders/${id}/receive`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items }),
+            });
+            if (res.ok) await fetchProcurementData();
+        } catch (err) {
+            console.error('Failed to receive purchase order:', err);
+        }
+    }, [fetchProcurementData]);
+
+    const createSupplier = useCallback(async (supplier: Partial<Supplier>) => {
+        try {
+            const res = await fetch('/api/procurement/suppliers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(supplier),
+            });
+            if (res.ok) await fetchProcurementData();
+        } catch (err) {
+            console.error('Failed to create supplier:', err);
+        }
+    }, [fetchProcurementData]);
+
+    const updateSupplier = useCallback(async (id: string, supplier: Partial<Supplier>) => {
+        try {
+            const res = await fetch(`/api/procurement/suppliers/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(supplier),
+            });
+            if (res.ok) await fetchProcurementData();
+        } catch (err) {
+            console.error('Failed to update supplier:', err);
+        }
+    }, [fetchProcurementData]);
+
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
+        await fetchProcurementData();
+        setIsLoading(false);
+    }, [fetchProcurementData]);
+
+    useEffect(() => {
+        fetchProcurementData();
+    }, [fetchProcurementData]);
 
     const [activeTab, setActiveTab] = useState<'POs' | 'Suppliers'>('POs');
 

@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, memo } from 'react';
-
-import { useAdmin } from '@/context/AdminContext';
-import { Category } from '@/types';
+import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import { Category, Brand } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 import {
     Trash,
     Plus,
@@ -161,7 +160,7 @@ const BrandCard = memo(({ brand, onDelete }: {
                 {brand.categories.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                         {brand.categories.map(cat => (
-                            <CategoryPill key={cat} label={cat} />
+                            <CategoryPill key={cat?.id} label={cat?.name} />
                         ))}
                     </div>
                 ) : (
@@ -178,8 +177,7 @@ const BrandCard = memo(({ brand, onDelete }: {
 });
 BrandCard.displayName = 'BrandCard';
 
-// Precompute category values once at module level — never recreated
-const ALL_CATEGORIES = Object.values(Category);
+// Removed static ALL_CATEGORIES as Category is now a dynamic DB model
 
 // ─────────────────────────────────────────────────────────────
 // CATEGORY CHIP — memoized toggle chip for the mobile selector
@@ -202,7 +200,7 @@ const CategoryChip = memo(({ cat, active, onToggle }: {
             )}
         >
             {active && <CheckCircle2 size={9} />}
-            {cat}
+            {cat?.name}
         </button>
     );
 });
@@ -234,7 +232,7 @@ const DesktopCategoryRow = memo(({ cat, active, onToggle }: {
             >
                 {active && <CheckCircle2 size={9} className="text-white" />}
             </div>
-            <span className="text-[11px] font-semibold">{cat}</span>
+            <span className="text-[11px] font-semibold">{cat?.name}</span>
         </button>
     );
 });
@@ -244,7 +242,77 @@ DesktopCategoryRow.displayName = 'DesktopCategoryRow';
 // BRAND MANAGER
 // ─────────────────────────────────────────────────────────────
 const BrandManager = () => {
-    const { brands, addBrand, deleteBrand, syncData, isLoading } = useAdmin();
+    const { toast } = useToast();
+    const [brands, setBrands] = useState<Brand[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Fetch categories
+    const fetchCategories = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories');
+            if (res.ok) {
+                const data = await res.json();
+                // Ensure data is an array of Category objects
+                setCategories(Array.isArray(data) ? data : []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch categories:', err);
+        }
+    }, []);
+
+    // Fetch brands
+    const fetchBrands = useCallback(async () => {
+        try {
+            const res = await fetch('/api/brands');
+            setBrands(await res.json());
+        } catch (err) {
+            console.error('Failed to fetch brands:', err);
+        }
+    }, []);
+
+    // Initial fetch
+    useEffect(() => {
+        fetchCategories();
+        fetchBrands();
+    }, [fetchCategories, fetchBrands]);
+
+    // Sync data
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
+        await Promise.all([fetchCategories(), fetchBrands()]);
+        setIsLoading(false);
+    }, [fetchCategories, fetchBrands]);
+
+    // Add brand
+    const addBrand = useCallback(async (brand: Partial<Brand>) => {
+        try {
+            const res = await fetch('/api/brands', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(brand),
+            });
+            if (res.ok) {
+                toast({ title: 'Brand added' });
+                await fetchBrands();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [fetchBrands, toast]);
+
+    // Delete brand
+    const deleteBrand = useCallback(async (brandId: string) => {
+        try {
+            const res = await fetch(`/api/brands/${brandId}`, { method: 'DELETE' });
+            if (res.ok) {
+                toast({ title: 'Brand deleted' });
+                await fetchBrands();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [fetchBrands, toast]);
 
     const [newBrandName, setNewBrandName] = useState('');
     const [selectedCats, setSelectedCats] = useState<Category[]>([]);
@@ -258,7 +326,8 @@ const BrandManager = () => {
         addBrand({
             id: `brand-${Date.now()}`,
             name: newBrandName.trim(),
-            categories: selectedCats,
+            // Send names as expected by the API (based on route.ts)
+            categories: selectedCats.map(c => c.name) as any,
         });
 
         setNewBrandName('');
@@ -268,7 +337,7 @@ const BrandManager = () => {
 
     const toggleCat = useCallback((cat: Category) =>
         setSelectedCats(prev =>
-            prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+            prev.some(c => c.id === cat.id) ? prev.filter(c => c.id !== cat.id) : [...prev, cat]
         ), []);
 
     const handleDelete = useCallback((brandId: string, brandName: string) => {
@@ -290,8 +359,8 @@ const BrandManager = () => {
 
     const canSubmit = newBrandName.trim().length > 0 && selectedCats.length > 0;
 
-    // Pre-build a Set for O(1) active lookups instead of Array.includes O(n)
-    const selectedCatSet = useMemo(() => new Set(selectedCats), [selectedCats]);
+    // Pre-build a Set for O(1) active lookups
+    const selectedCatSet = useMemo(() => new Set(selectedCats.map(c => c.id)), [selectedCats]);
 
     const brandsCount = brands.length;
 
@@ -375,11 +444,11 @@ const BrandManager = () => {
 
                                     {/* Mobile chip grid */}
                                     <div className="lg:hidden flex flex-wrap gap-1.5 p-2 rounded-lg border border-stone-200 bg-stone-50/50">
-                                        {ALL_CATEGORIES.map(cat => (
+                                        {categories.map(cat => (
                                             <CategoryChip
-                                                key={cat}
+                                                key={cat.id}
                                                 cat={cat}
-                                                active={selectedCatSet.has(cat)}
+                                                active={selectedCatSet.has(cat.id)}
                                                 onToggle={toggleCat}
                                             />
                                         ))}
@@ -389,11 +458,11 @@ const BrandManager = () => {
                                     <div className="hidden lg:block rounded-lg border border-stone-200 overflow-hidden">
                                         <ScrollArea className="h-[200px]">
                                             <div className="p-1.5 space-y-0.5">
-                                                {ALL_CATEGORIES.map(cat => (
+                                                {categories.map(cat => (
                                                     <DesktopCategoryRow
-                                                        key={cat}
+                                                        key={cat.id}
                                                         cat={cat}
-                                                        active={selectedCatSet.has(cat)}
+                                                        active={selectedCatSet.has(cat.id)}
                                                         onToggle={toggleCat}
                                                     />
                                                 ))}

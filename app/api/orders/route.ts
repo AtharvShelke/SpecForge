@@ -2,14 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateOrderFinancials } from "@/lib/tax-engine";
-import { reserveInventory, InsufficientStockError } from "@/services/inventoryService";
-import { createPaymentTransaction } from "@/services/paymentService";
-import { sendMail } from "@/services/mailService";
-
-const CategoryEnum = z.enum([
-    "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
-]);
+import { reserveInventory, InsufficientStockError } from "@/lib/services/inventory";
+import { createPaymentTransaction } from "@/lib/services/payment";
+import { sendMail } from "@/lib/services/mail";
 
 const OrderStatusEnum = z.enum([
     "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED",
@@ -22,7 +17,7 @@ const orderItemSchema = z.object({
     productId: z.string().min(1),
     variantId: z.string().min(1),
     name: z.string().min(1),
-    category: CategoryEnum,
+    categoryId: z.number().int().positive(),
     price: z.number().positive(),
     quantity: z.number().int().positive(),
     image: z.string().optional(),
@@ -97,7 +92,7 @@ export async function GET(req: NextRequest) {
                     paymentStatus: true,
                     createdAt: true,
                     items: {
-                        select: { id: true, variantId: true, name: true, category: true, price: true, quantity: true, image: true, sku: true },
+                        select: { id: true, variantId: true, name: true, categoryId: true, price: true, quantity: true, image: true, sku: true },
                     },
                     logs: {
                         select: { id: true, status: true, timestamp: true, note: true },
@@ -187,7 +182,7 @@ export async function POST(req: NextRequest) {
                         create: data.items.map((item) => ({
                             variantId: item.variantId,
                             name: item.name,
-                            category: item.category,
+                            categoryId: item.categoryId,
                             price: item.price,
                             quantity: item.quantity,
                             image: item.image,

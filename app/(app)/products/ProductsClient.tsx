@@ -1,24 +1,23 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback, memo, Suspense } from 'react';
-import { Category, Product, CompatibilityLevel, specsToFlat } from '@/types';
+import { Category, CategoryNode, Product, CompatibilityLevel, specsToFlat } from '@/types';
 import { useShop } from '@/context/ShopContext';
-import { useBuild } from '@/context/BuildContext';
 import {
     Search, Plus, CheckCircle, AlertTriangle, XCircle, Filter,
     Grid2x2, ChevronLeft, ChevronRight, ChevronDown, List,
     BarChart2, ArrowUpDown, ArrowLeft, SlidersHorizontal, X, Zap,
     Check, Hammer
 } from 'lucide-react';
-import { validateBuild } from '@/services/compatibility';
+import { validateBuild } from '@/lib/calculations/compatibility';
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar';
-import { CategoryNode, BUILD_SEQUENCE } from '@/data/categoryTree';
 import { PageLayout } from '@/components/layout/PageLayout';
 import Image from 'next/image';
 import BuildProgressSidebar from '@/components/build/BuildProgressSidebar';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBuildSequence } from '@/hooks/useBuildSequence';
 
 // ── Constants (module scope — never recreated) ────────────────────────────────
 
@@ -132,7 +131,7 @@ const ProductCard = memo(function ProductCard({ product, inCart, cartQuantity, i
                 </Link>
                 <div className="flex-1 p-4 flex flex-col justify-between">
                     <div>
-                        <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-semibold">{product.category}</p>
+                        <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-semibold">{product.category?.name || 'Uncategorized'}</p>
                         <h3 className="text-sm font-semibold text-zinc-900 mt-1 line-clamp-2">{product.name}</h3>
                         {specKeys.length > 0 && (
                             <p className="text-[11px] text-zinc-400 mt-1">{specKeys.map(k => flatSpecs[k]).join(' · ')}</p>
@@ -178,7 +177,7 @@ const ProductCard = memo(function ProductCard({ product, inCart, cartQuantity, i
                 )}
             </Link>
             <div className="p-4 flex flex-col gap-1">
-                <p className="text-[10px] uppercase text-zinc-400 font-semibold">{product.category}</p>
+                <p className="text-[10px] uppercase text-zinc-400 font-semibold">{product.category?.name || 'Uncategorized'}</p>
                 <h3 className="text-sm font-semibold text-zinc-900 line-clamp-2">{product.name}</h3>
                 <div className="flex items-center justify-between mt-2">
                     <span className="text-base font-semibold">₹{price.toLocaleString('en-IN')}</span>
@@ -196,10 +195,35 @@ const ProductCard = memo(function ProductCard({ product, inCart, cartQuantity, i
 // ── ProductsContent ───────────────────────────────────────────────────────────
 
 const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
-    const { addToCart, removeFromCart, updateQuantity, cart, compareItems, addToCompare, removeFromCompare, categories } = useShop();
-    const { isBuildMode, toggleBuildMode } = useBuild();
+    const { addToCart, removeFromCart, updateQuantity, cart, compareItems, addToCompare, removeFromCompare } = useShop();
     const searchParams   = useSearchParams();
     const pathname       = usePathname();
+    const router         = useRouter();
+    const { buildSequence } = useBuildSequence();
+    const buildSequenceCodes = useMemo(
+        () => buildSequence.map((item) => item.category.code),
+        [buildSequence],
+    );
+
+    const [categories, setCategories] = useState<CategoryNode[]>([]);
+
+    // Fetch categories
+    useEffect(() => {
+        fetch('/api/categories/hierarchy')
+            .then(res => res.json())
+            .then(setCategories)
+            .catch(err => console.error('Failed to fetch categories:', err));
+    }, []);
+
+    const isBuildMode = searchParams.get('mode') === 'build';
+
+    const toggleBuildMode = useCallback(() => {
+        if (isBuildMode) {
+            router.push(pathname);
+        } else {
+            router.push(`${pathname}?mode=build`);
+        }
+    }, [isBuildMode, router, pathname]);
 
     const initialCategoryParam = searchParams.get('category');
     const initialQueryParam    = searchParams.get('q');
@@ -208,7 +232,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const initialTab = useMemo(() => {
         if (initialQueryParam) return null;
         if (initialCategoryParam && categories.length > 0) {
-            const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
+            const found = categories.find(n => n.label === initialCategoryParam || (typeof n.category === 'string' ? n.category : n.category?.slug) === initialCategoryParam);
             if (found) return found;
         }
         return categories.length > 0 ? ALL_PRODUCTS_TAB : null;
@@ -276,7 +300,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             const q = searchParams.get('q');
             if (q) { setActiveTab(null); return; }
             if (initialCategoryParam) {
-                const found = categories.find(n => n.label === initialCategoryParam || n.category === initialCategoryParam);
+                const found = categories.find(n => n.label === initialCategoryParam || (typeof n.category === 'string' ? n.category : n.category?.slug) === initialCategoryParam);
                 if (found) { setActiveTab(found); return; }
             }
             setActiveTab(ALL_PRODUCTS_TAB);
@@ -370,19 +394,19 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         const cartAdded   = cart.length > prevCartLength.current;
         const modeToggled = isBuildMode && !prevBuildMode.current;
         if (cartAdded || modeToggled) {
-            const nextMissingCat = BUILD_SEQUENCE.find(cat => !cart.some(item => item.category === cat));
+            const nextMissingCat = buildSequenceCodes.find(cat => !cart.some(item => (typeof item.category === 'string' ? item.category : item.category?.slug) === cat));
             if (nextMissingCat) {
-                const nextNode = categories.find(node => node.category === nextMissingCat);
+                const nextNode = categories.find(node => (typeof node.category === 'string' ? node.category : node.category?.slug) === nextMissingCat);
                 if (nextNode) { setActiveTab(nextNode); setSelectedFilters({}); }
             }
         }
         prevCartLength.current = cart.length;
         prevBuildMode.current  = isBuildMode;
-    }, [cart, isBuildMode, categories]);
+    }, [buildSequenceCodes, cart, isBuildMode, categories]);
 
     // ── Handlers (stable references with useCallback) ─────────────────────────
     const handleBuildCategorySelect = useCallback((category: Category) => {
-        const node = categories.find(n => n.category === category);
+        const node = categories.find(n => (typeof n.category === 'string' ? n.category : n.category?.slug) === category.slug);
         if (node) setActiveTab(node);
     }, [categories]);
 
@@ -435,19 +459,20 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             setIsLoadingProducts(true);
             try {
                 const params = new URLSearchParams();
-                if (activeTab?.category) params.set('category', String(activeTab.category));
+                if (activeTab?.category) params.set('category', typeof activeTab.category === 'string' ? activeTab.category : activeTab.category.slug);
                 if (selectedNode?.brand) params.set('nodeBrand', selectedNode.brand);
                 if (selectedNode?.query) params.set('nodeQuery', selectedNode.query);
 
                 if (isBuildMode) {
-                    const cpu      = cart.find(i => i.category === Category.PROCESSOR);
-                    const mobo     = cart.find(i => i.category === Category.MOTHERBOARD);
+                    const cpu      = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'processor');
+                    const mobo     = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'motherboard');
                     const activeCat = activeTab?.category;
+                    const activeCatSlug = typeof activeCat === 'string' ? activeCat : activeCat?.slug;
                     const cpuSpecs  = cpu  ? specsToFlat(cpu.specs)  : null;
                     const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
-                    if (activeCat === Category.MOTHERBOARD && cpuSpecs?.socket)  params.set('f_specs.socket', cpuSpecs.socket as string);
-                    if (activeCat === Category.PROCESSOR   && moboSpecs?.socket) params.set('f_specs.socket', moboSpecs.socket as string);
-                    if (activeCat === Category.RAM && (cpuSpecs || moboSpecs)) {
+                    if (activeCatSlug === 'motherboard' && cpuSpecs?.socket)  params.set('f_specs.socket', cpuSpecs.socket as string);
+                    if (activeCatSlug === 'processor'   && moboSpecs?.socket) params.set('f_specs.socket', moboSpecs.socket as string);
+                    if (activeCatSlug === 'ram' && (cpuSpecs || moboSpecs)) {
                         const type = moboSpecs?.ramType ?? cpuSpecs?.ramType;
                         if (type) params.set('f_specs.ramType', type as string);
                     }

@@ -1,8 +1,8 @@
 import { Order } from "@/types";
 
 export const BILLING_PROFILE = {
-  companyName: 'Nexus Hardware Store',
-  email: 'billing@nexushardware.com',
+  companyName: 'SpecForge',
+  email: 'billing@specforge.com',
   addressLine1: '123, Tech Park',
   addressLine2: 'MG Road',
   city: 'Bengaluru',

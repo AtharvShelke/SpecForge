@@ -5,7 +5,7 @@ import { memo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Cpu, MonitorSpeaker, MemoryStick, HardDrive, ArrowRight, Zap, ArrowUpRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
-import { calculateBuildPrice } from '@/services/buildPrice'
+import { calculateBuildPrice } from '@/lib/calculations/pricing'
 
 // ── Constants (module scope — never recreated) ────────────────────────────────
 

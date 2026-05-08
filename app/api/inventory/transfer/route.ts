@@ -3,8 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const transferSchema = z.object({
-    sourceWarehouseId: z.string().uuid(),
-    targetWarehouseId: z.string().uuid(),
     variantId: z.string().uuid(),
     quantity: z.number().int().positive(),
     reason: z.string().optional(),
@@ -16,94 +14,38 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const data = transferSchema.parse(body);
 
-        if (data.sourceWarehouseId === data.targetWarehouseId) {
-            return NextResponse.json(
-                { error: "Source and target warehouses must be different" },
-                { status: 400 }
-            );
-        }
-
+        
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Verify source inventory item & balance
-            const sourceInv = await tx.warehouseInventory.findUnique({
-                where: {
-                    variantId_warehouseId: {
-                        variantId: data.variantId,
-                        warehouseId: data.sourceWarehouseId,
-                    },
-                },
+            // 1. Verify inventory item & balance
+            const inv = await tx.inventoryItem.findFirst({
+                where: { variantId: data.variantId },
             });
 
-            if (!sourceInv || sourceInv.quantity < data.quantity) {
+            if (!inv || inv.quantity < data.quantity) {
                 throw new Error("INSUFFICIENT_STOCK");
             }
 
-            // 2. Find target inventory item
-            const targetInv = await tx.warehouseInventory.findUnique({
-                where: {
-                    variantId_warehouseId: {
-                        variantId: data.variantId,
-                        warehouseId: data.targetWarehouseId,
-                    },
+            // 2. Update inventory quantity
+            const updatedInv = await tx.inventoryItem.update({
+                where: { id: inv.id },
+                data: { 
+                    quantity: inv.quantity - data.quantity,
+                    lastUpdated: new Date(),
                 },
             });
 
-            const newTargetQty = (targetInv?.quantity || 0) + data.quantity;
-            let updatedTarget;
-
-            if (targetInv) {
-                updatedTarget = await tx.warehouseInventory.update({
-                    where: { id: targetInv.id },
-                    data: { quantity: newTargetQty, lastUpdated: new Date() },
-                });
-            } else {
-                updatedTarget = await tx.warehouseInventory.create({
-                    data: {
-                        variantId: data.variantId,
-                        warehouseId: data.targetWarehouseId,
-                        quantity: newTargetQty,
-                        reorderLevel: sourceInv.reorderLevel,
-                        costPrice: sourceInv.costPrice,
-                    },
-                });
-            }
-
-            // 3. Perform deductions
-            const newSourceQty = sourceInv.quantity - data.quantity;
-            const updatedSource = await tx.warehouseInventory.update({
-                where: { id: sourceInv.id },
-                data: { quantity: newSourceQty, lastUpdated: new Date() },
-            });
-
-            // 4. Log movements
+            // 3. Log movement
             await tx.stockMovement.create({
                 data: {
-                    warehouseInventoryId: sourceInv.id,
-                    warehouseId: data.sourceWarehouseId,
+                    variantId: data.variantId,
                     type: "OUTWARD",
                     quantity: data.quantity,
-                    previousQuantity: sourceInv.quantity,
-                    newQuantity: newSourceQty,
-                    reason: data.reason || "Warehouse Transfer (Out)",
-                    performedBy: "Admin",
-                },
-            });
-
-            await tx.stockMovement.create({
-                data: {
-                    warehouseInventoryId: updatedTarget.id,
-                    warehouseId: data.targetWarehouseId,
-                    type: "INWARD",
-                    quantity: data.quantity,
-                    previousQuantity: targetInv?.quantity || 0,
-                    newQuantity: newTargetQty,
-                    reason: data.reason || "Warehouse Transfer (In)",
-                    performedBy: "Admin",
+                    note: data.reason || "Inventory Transfer",
                 },
             });
 
             // Recalculate global stock for safely turning out of stock
-            const allInv = await tx.warehouseInventory.aggregate({
+            const allInv = await tx.inventoryItem.aggregate({
                 where: { variantId: data.variantId },
                 _sum: { quantity: true }
             });
@@ -114,7 +56,7 @@ export async function POST(req: NextRequest) {
                 });
             }
 
-            return { updatedSource, updatedTarget };
+            return { updatedInv };
         });
 
         return NextResponse.json(result);

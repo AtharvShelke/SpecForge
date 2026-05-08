@@ -1,179 +1,171 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
-
-// ── Schema Definitions ───────────────────────────────────
-// Defined outside handlers so they are parsed once at module load,
-// not re-instantiated on every request.
-
-const CategoryEnum = z.enum([
-    "PROCESSOR", "GPU", "MOTHERBOARD", "RAM", "STORAGE",
-    "PSU", "CABINET", "COOLER", "MONITOR", "PERIPHERAL", "NETWORKING", "LAPTOP",
-]);
-
-const FilterTypeEnum = z.enum(["checkbox", "range", "boolean"]);
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
 
 const filterSchema = z.object({
-    key: z.string().min(1),
-    label: z.string().min(1),
-    type: FilterTypeEnum,
-    options: z.array(z.string()).default([]),
-    min: z.number().optional(),
-    max: z.number().optional(),
-    dependencyKey: z.string().optional(),
-    dependencyValue: z.string().optional(),
-    sortOrder: z.number().int().default(0),
+  key: z.string().min(1),
+  label: z.string().min(1),
+  type: z.enum(['checkbox', 'range', 'boolean', 'search', 'dropdown']),
+  options: z.array(z.string()).default([]),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  dependencyKey: z.string().optional(),
+  dependencyValue: z.string().optional(),
+  sortOrder: z.number().int().default(0),
 });
 
 const updateFilterBody = z.object({
-    category: CategoryEnum,
-    filters: z.array(filterSchema),
+  categoryCode: z.string().min(1).optional(),
+  category: z.string().min(1).optional(),
+  filters: z.array(filterSchema),
+}).superRefine((value, ctx) => {
+  if (!value.categoryCode && !value.category) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'categoryCode is required',
+      path: ['categoryCode'],
+    });
+  }
 });
 
-// ── Shared select shape ──────────────────────────────────
-// Reused in both GET and PUT to avoid duplication and ensure
-// consistent projection — only fetching columns we actually need.
 const FILTER_SELECT = {
-    id: true,
-    key: true,
-    label: true,
-    type: true,
-    options: true,
-    min: true,
-    max: true,
-    dependencyKey: true,
-    dependencyValue: true,
-    sortOrder: true,
+  id: true,
+  key: true,
+  label: true,
+  type: true,
+  options: true,
+  min: true,
+  max: true,
+  dependencyKey: true,
+  dependencyValue: true,
+  sortOrder: true,
 } as const;
 
 const CONFIG_SELECT = {
-    id: true,
-    category: true,
-    filters: {
-        select: FILTER_SELECT,
-        orderBy: { sortOrder: "asc" as const },
+  id: true,
+  categoryDefinition: {
+    select: {
+      id: true,
+      code: true,
+      label: true,
+      shortLabel: true,
     },
+  },
+  filters: {
+    select: FILTER_SELECT,
+    orderBy: { sortOrder: 'asc' as const },
+  },
 } as const;
 
-// ── In-memory cache for GET ──────────────────────────────
-// Safe because filter configs are infrequently written (admin-only PUT).
-// TTL of 60 s avoids stale data after a PUT without requiring Redis.
-// Cache is per-process; in multi-instance deployments the worst case is
-// serving data that is up to TTL seconds old, which is acceptable here.
-const CACHE_TTL_MS = 60_000;
-interface CacheEntry { data: unknown; expiresAt: number }
-const filterCache = new Map<string, CacheEntry>();
-
-function getCached(key: string): unknown | null {
-    const entry = filterCache.get(key);
-    if (!entry || Date.now() > entry.expiresAt) return null;
-    return entry.data;
+function mapConfig(config: {
+  id: string;
+  categoryDefinition: {
+    id: string;
+    code: string;
+    label: string;
+    shortLabel: string | null;
+  };
+  filters: Array<{
+    id: string;
+    key: string;
+    label: string;
+    type: string;
+    options: string[];
+    min: number | null;
+    max: number | null;
+    dependencyKey: string | null;
+    dependencyValue: string | null;
+    sortOrder: number;
+  }>;
+}) {
+  return {
+    id: config.id,
+    categoryCode: config.categoryDefinition.code,
+    category: config.categoryDefinition.code,
+    categoryDefinition: config.categoryDefinition,
+    filters: config.filters,
+  };
 }
 
-function setCache(key: string, data: unknown): void {
-    filterCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
-}
-
-function invalidateCache(category?: string): void {
-    // Invalidate the specific category key AND the "all" key so
-    // a subsequent GET always returns fresh data after a PUT.
-    filterCache.delete(category ?? "");
-    filterCache.delete("__all__");
-}
-
-// ── GET /api/categories/filters ─────────────────────────
 export async function GET(req: NextRequest) {
-    try {
-        const { searchParams } = new URL(req.url);
-        const raw = searchParams.get("category");
-
-        // Validate the category param once; reuse the parsed value.
-        const parsed = raw ? CategoryEnum.safeParse(raw) : null;
-        const category = parsed?.success ? parsed.data : null;
-
-        // Cache key: use category value or a sentinel for "fetch all".
-        const cacheKey = category ?? "__all__";
-        const cached = getCached(cacheKey);
-        if (cached) {
-            return NextResponse.json(cached);
+  try {
+    const categoryCode = req.nextUrl.searchParams.get('category');
+    const where = categoryCode
+      ? {
+          categoryDefinition: {
+            code: categoryCode,
+          },
         }
+      : undefined;
 
-        // Single query — Prisma generates one JOIN instead of separate
-        // child queries because we use nested `select` (not a lazy load).
-        const configs = await prisma.categoryFilterConfig.findMany({
-            where: category ? { category } : undefined,
-            select: CONFIG_SELECT,
-        });
+    const configs = await prisma.categoryFilterConfig.findMany({
+      where,
+      select: CONFIG_SELECT,
+    });
 
-        setCache(cacheKey, configs);
-        return NextResponse.json(configs);
-    } catch (error) {
-        console.error("GET /api/categories/filters error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
+    return NextResponse.json(configs.map(mapConfig));
+  } catch (error) {
+    console.error('GET /api/categories/filters error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
-// ── PUT /api/categories/filters ─────────────────────────
 export async function PUT(req: NextRequest) {
-    try {
-        // Parse body and validate in one step; bail early on bad input
-        // before touching the database.
-        const body = await req.json();
-        const data = updateFilterBody.parse(body);
+  try {
+    const data = updateFilterBody.parse(await req.json());
+    const categoryCode = data.categoryCode ?? data.category!;
 
-        // Use upsert instead of findUnique + conditional create.
-        // This collapses two round-trips into one and is race-condition-safe.
-        const result = await prisma.$transaction(async (tx) => {
-            const config = await tx.categoryFilterConfig.upsert({
-                where: { category: data.category },
-                create: { category: data.category },
-                update: {},           // no scalar fields to update on the parent
-                select: { id: true }, // fetch only the id we need next
-            });
+    const categoryDefinition = await prisma.categoryDefinition.findUnique({
+      where: { code: categoryCode },
+      select: { id: true },
+    });
 
-            // deleteMany + createMany is the fastest bulk-replace pattern
-            // in Prisma — a single DELETE and a single multi-row INSERT,
-            // rather than individual upserts per filter row.
-            await tx.filterDefinition.deleteMany({
-                where: { categoryFilterConfigId: config.id },
-            });
-
-            await tx.filterDefinition.createMany({
-                data: data.filters.map((f) => ({
-                    categoryFilterConfigId: config.id,
-                    key: f.key,
-                    label: f.label,
-                    type: f.type,
-                    options: f.options,
-                    min: f.min ?? null,
-                    max: f.max ?? null,
-                    dependencyKey: f.dependencyKey ?? null,
-                    dependencyValue: f.dependencyValue ?? null,
-                    sortOrder: f.sortOrder,
-                })),
-            });
-
-            // Final read — after the writes have committed inside the
-            // transaction — returns exactly the same shape as GET.
-            return tx.categoryFilterConfig.findUnique({
-                where: { id: config.id },
-                select: CONFIG_SELECT,
-            });
-        }, {
-            // Cap the transaction wall-clock time to avoid long-held locks
-            // under load. Adjust upward if filter lists are very large.
-            timeout: 10_000,
-        });
-
-        // Bust cache so the next GET reflects the new data immediately.
-        invalidateCache(data.category);
-
-        return NextResponse.json(result);
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 });
-        }
-        console.error("PUT /api/categories/filters error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (!categoryDefinition) {
+      return NextResponse.json({ error: 'Unknown category code' }, { status: 404 });
     }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const config = await tx.categoryFilterConfig.upsert({
+        where: { categoryDefinitionId: categoryDefinition.id },
+        create: { categoryDefinitionId: categoryDefinition.id },
+        update: {},
+        select: { id: true },
+      });
+
+      await tx.filterDefinition.deleteMany({
+        where: { categoryFilterConfigId: config.id },
+      });
+
+      if (data.filters.length > 0) {
+        await tx.filterDefinition.createMany({
+          data: data.filters.map((filter) => ({
+            categoryFilterConfigId: config.id,
+            key: filter.key,
+            label: filter.label,
+            type: filter.type,
+            options: filter.options,
+            min: filter.min ?? null,
+            max: filter.max ?? null,
+            dependencyKey: filter.dependencyKey ?? null,
+            dependencyValue: filter.dependencyValue ?? null,
+            sortOrder: filter.sortOrder,
+          })),
+        });
+      }
+
+      return tx.categoryFilterConfig.findUnique({
+        where: { id: config.id },
+        select: CONFIG_SELECT,
+      });
+    });
+
+    return NextResponse.json(result ? mapConfig(result) : null);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+
+    console.error('PUT /api/categories/filters error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

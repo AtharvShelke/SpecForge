@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useAdmin } from '@/context/AdminContext';
-import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec } from '@/types';
+import React, { useDeferredValue, useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec, Brand, CategorySchema, CategoryDefinition } from '@/types';
 import {
     Edit,
     Plus,
@@ -177,7 +176,7 @@ const DesktopProductRow = memo(({ product, onEdit, onDelete }: {
             </td>
             <td className="px-3 py-3 whitespace-nowrap">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full">
-                    {product.category}
+                    {product.category?.name || 'Uncategorized'}
                 </span>
             </td>
             <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap text-xs font-semibold text-stone-500">
@@ -263,7 +262,7 @@ const MobileProductCard = memo(({ product, onEdit, onDelete }: {
                 <p className="text-xs font-semibold text-stone-800 truncate tracking-tight">{product.name}</p>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full">
-                        {product.category}
+                        {product.category?.name || 'Uncategorized'}
                     </span>
                     <StockPill product={product} variant={firstVar} />
                 </div>
@@ -309,8 +308,9 @@ const MobileProductCard = memo(({ product, onEdit, onDelete }: {
 });
 MobileProductCard.displayName = 'MobileProductCard';
 
-interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
+interface ProductFormState extends Omit<Partial<Product>, 'specs' | 'category'> {
     specs: ProductSpecsFlat;
+    category: string;
     price?: number;
     stock?: number;
     sku?: string;
@@ -319,7 +319,7 @@ interface ProductFormState extends Omit<Partial<Product>, 'specs'> {
 
 const EMPTY_FORM: ProductFormState = {
     id: '', sku: '', name: '', price: 0, stock: 0,
-    category: Category.PROCESSOR,
+    category: '',
     images: ['https://picsum.photos/300/300'],
     specs: { brand: '' }, description: ''
 };
@@ -328,7 +328,117 @@ const EMPTY_FORM: ProductFormState = {
 // MAIN
 // ─────────────────────────────────────────────────────────────
 const ProductManager = () => {
-    const { products, addProduct, updateProduct, deleteProduct, categories, brands, schemas, syncData, isLoading } = useAdmin();
+    const { toast } = useToast();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [brands, setBrands] = useState<Brand[]>([]);
+    const [schemas, setSchemas] = useState<CategorySchema[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Fetch products
+    const fetchProducts = useCallback(async () => {
+        try {
+            const res = await fetch('/api/products?fields=minimal&limit=5000');
+            const data = await res.json();
+            setProducts(data.products ?? data);
+        } catch (err) {
+            console.error('Failed to fetch products:', err);
+        }
+    }, []);
+
+    // Fetch categories
+    const fetchCategories = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories');
+            const data = await res.json();
+            console.log("Categories Response ", data)
+            setCategories(data);
+        } catch (err) {
+            console.error('Failed to fetch categories:', err);
+        }
+    }, []);
+
+    // Fetch brands
+    const fetchBrands = useCallback(async () => {
+        try {
+            const res = await fetch('/api/brands');
+            setBrands(await res.json());
+        } catch (err) {
+            console.error('Failed to fetch brands:', err);
+        }
+    }, []);
+
+    // Fetch schemas
+    const fetchSchemas = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories/schemas');
+            setSchemas(await res.json());
+        } catch (err) {
+            console.error('Failed to fetch schemas:', err);
+        }
+    }, []);
+
+    // Sync data
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
+        await Promise.all([fetchProducts(), fetchCategories(), fetchBrands(), fetchSchemas()]);
+        setIsLoading(false);
+    }, [fetchProducts, fetchCategories, fetchBrands, fetchSchemas]);
+
+    // Add product
+    const addProduct = useCallback(async (product: Partial<Product>, initialStock: number, costPrice: number) => {
+        try {
+            const res = await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...product, stock: initialStock, costPrice }),
+            });
+            if (res.ok) {
+                toast({ title: 'Product added' });
+                await fetchProducts();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [fetchProducts, toast]);
+
+    // Update product
+    const updateProduct = useCallback(async (product: Product) => {
+        try {
+            const res = await fetch(`/api/products/${product.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product),
+            });
+            if (res.ok) {
+                toast({ title: 'Product updated' });
+                await fetchProducts();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [fetchProducts, toast]);
+
+    // Delete product
+    const deleteProduct = useCallback(async (productId: string) => {
+        setProducts(prev => prev.filter(p => p.id !== productId));
+        try {
+            const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            toast({ title: 'Product deleted' });
+            fetchProducts();
+        } catch (err: any) {
+            console.error(err);
+            toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+            fetchProducts();
+        }
+    }, [fetchProducts, toast]);
+
+    // Initial data fetch
+    useEffect(() => {
+        syncData();
+    }, [syncData]);
 
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -351,7 +461,7 @@ const ProductManager = () => {
     const currentCategory = searchParams.get("category") || "all";
     const currentSearchQuery = searchParams.get("q") || "";
     const [searchTerm, setSearchTerm] = useState(currentSearchQuery);
-    const debouncedSearch = useDebounce(searchTerm, 500);
+    const deferredSearch = useDeferredValue(searchTerm);
     const currentStockStatus = searchParams.get("f_stock_status") || "all";
     const currentMinPrice = searchParams.get("minPrice") || "";
     const currentMaxPrice = searchParams.get("maxPrice") || "";
@@ -360,10 +470,6 @@ const ProductManager = () => {
 
     // Stable ref for search params string to avoid stale closure in fetch effect
     const searchParamsStr = searchParams.toString();
-
-    useEffect(() => {
-        if (debouncedSearch !== currentSearchQuery) updateQueryParams({ q: debouncedSearch });
-    }, [debouncedSearch]);
 
     useEffect(() => {
         if (isEditing) return;
@@ -375,8 +481,9 @@ const ProductManager = () => {
                 if (!query.has("limit")) query.set("limit", "10");
                 if (!query.has("page")) query.set("page", "1");
                 const res = await fetch(`/api/products?${query.toString()}`);
+                const data = await res.json()
+                console.log(data);
                 if (!cancelled && res.ok) {
-                    const data = await res.json();
                     setPaginatedProducts(data.products);
                     setTotalProducts(data.total);
                 }
@@ -399,11 +506,15 @@ const ProductManager = () => {
         router.push(`${pathname}?${params.toString()}`);
     }, [searchParams, pathname, router]);
 
+    useEffect(() => {
+        if (deferredSearch !== currentSearchQuery) updateQueryParams({ q: deferredSearch });
+    }, [currentSearchQuery, deferredSearch, updateQueryParams]);
+
     const [currentProduct, setCurrentProduct] = useState<ProductFormState>(EMPTY_FORM);
     const [newProductCost, setNewProductCost] = useState(0);
 
     const currentSchema = useMemo(() => {
-        const schema = schemas.find(s => s.category === currentProduct.category);
+        const schema = schemas.find(s => s.category?.slug === currentProduct.category);
         if (!schema) return [];
         return schema.attributes.filter(attr => {
             if (!attr.dependencyKey) return true;
@@ -413,7 +524,7 @@ const ProductManager = () => {
     }, [currentProduct.category, currentProduct.specs, schemas]);
 
     const availableBrands = useMemo(() =>
-        brands.filter(b => b.categories.includes(currentProduct.category as Category)),
+        brands.filter(b => b.categories.some(c => c.slug === currentProduct.category)),
         [currentProduct.category, brands]
     );
 
@@ -428,53 +539,63 @@ const ProductManager = () => {
 
     const generateSKU = useCallback((product: ProductFormState): string => {
         if (product.sku?.trim()) return product.sku.trim();
-        const catPrefix = product.category?.substring(0, 3).toUpperCase() || 'PRD';
+        const categoryObj = categories.find(c => c.slug === product.category);
+        const catPrefix = categoryObj?.name?.substring(0, 3).toUpperCase() || 'PRD';
         const brandPrefix = String(product.specs?.brand || '').substring(0, 3).toUpperCase() || 'XXX';
         return `${catPrefix}-${brandPrefix}-${Date.now().toString().slice(-6)}`;
-    }, []);
+    }, [categories]);
 
     const handleSave = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentProduct.name?.trim()) { alert('Product name is required'); return; }
         if (!currentProduct.specs?.brand) { alert('Brand is required'); return; }
+        
         const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
+        const selectedCategory = categories.find(c => c.slug === currentProduct.category);
+        
         if (currentProduct.id && products.find(p => p.id === currentProduct.id)) {
-            await updateProduct({ ...currentProduct, specs: apiSpecs, price: currentProduct.price, stock: currentProduct.stock, images: currentProduct.images } as any);
+            await updateProduct({ 
+                ...currentProduct, 
+                specs: apiSpecs, 
+                category: selectedCategory,
+                price: currentProduct.price, 
+                stock: currentProduct.stock, 
+                images: currentProduct.images 
+            } as any);
         } else {
-            const newProduct: Product = {
-                ...currentProduct, id: `prod-${Date.now()}`,
+            const newProduct = {
+                ...currentProduct,
+                id: `prod-${Date.now()}`,
                 sku: generateSKU(currentProduct),
-                name: currentProduct.name || '', price: currentProduct.price || 0,
+                name: currentProduct.name || '',
+                price: currentProduct.price || 0,
                 stock: currentProduct.stock || 0,
-                category: currentProduct.category || Category.PROCESSOR,
+                category: selectedCategory,
                 images: currentProduct.images.length > 0 ? currentProduct.images : ['https://picsum.photos/300/300'],
-                description: currentProduct.description || '', specs: apiSpecs
-            } as Product;
-            await addProduct(newProduct, currentProduct.stock || 0, newProductCost);
+                description: currentProduct.description || '',
+                specs: apiSpecs
+            };
+            await addProduct(newProduct as any, currentProduct.stock || 0, newProductCost);
         }
         setRefreshTrigger(p => !p);
         setIsEditing(false);
-        resetForm();
-    }, [currentProduct, products, updateProduct, addProduct, newProductCost, generateSKU]);
-
-    const handleEdit = useCallback((product: Product) => {
-        const firstVariant = product.variants?.[0];
-        const mainStock = firstVariant?.warehouseInventories?.find((inv: any) => inv.warehouse?.code === 'MAIN')?.quantity
-            || firstVariant?.warehouseInventories?.[0]?.quantity || 0;
-        setCurrentProduct({
-            ...product,
-            sku: firstVariant?.sku || '', price: firstVariant?.price || 0, stock: mainStock,
-            images: product.media?.length ? product.media.map((m: any) => m.url) : [product.image || 'https://picsum.photos/300/300'],
-            specs: specsToFlat(product.specs)
-        });
-        setPreviewUrl(product.media?.[0]?.url || product.image || null);
-        setIsEditing(true);
-    }, []);
+    }, [currentProduct, products, addProduct, updateProduct, categories, generateSKU, newProductCost]);
 
     const handleDelete = useCallback(async (productId: string) => {
         await deleteProduct(productId);
         setRefreshTrigger(p => !p);
     }, [deleteProduct]);
+
+    const handleEdit = useCallback((product: Product) => {
+        const productFormState: ProductFormState = {
+            ...product,
+            specs: specsToFlat(product.specs),
+            category: product.category?.slug || '',
+            images: product.media?.map(m => m.url) || []
+        };
+        setCurrentProduct(productFormState);
+        setIsEditing(true);
+    }, []);
 
     const resetForm = useCallback(() => {
         setCurrentProduct(EMPTY_FORM);
@@ -485,13 +606,13 @@ const ProductManager = () => {
     const handleAddNew = useCallback(() => { resetForm(); setIsEditing(true); }, [resetForm]);
 
     const handleCategoryChange = useCallback((val: string) => {
-        setCurrentProduct(prev => ({ ...prev, category: val as Category, specs: { brand: '' } }));
+        setCurrentProduct(prev => ({ ...prev, category: val, specs: { brand: '' } }));
     }, []);
 
     const handleSpecChange = useCallback((key: string, value: string | number | string[]) => {
         setCurrentProduct(prev => {
             let newSpecs = { ...prev.specs, [key]: value };
-            const schema = schemas.find(s => s.category === prev.category);
+            const schema = schemas.find(s => s.category?.slug === prev.category);
             if (schema) {
                 schema.attributes.forEach(attr => {
                     const depKey = attr.key === 'socket' ? 'brand' : attr.dependencyKey;
@@ -562,14 +683,14 @@ const ProductManager = () => {
             totalVal += price;
             if (price > 0) prices.push(price);
 
-            const stock = firstVar?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+            const stock = firstVar?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
             if (!firstVar || stock <= 0) outOfStock++;
 
-            const cat = p.category || 'Other';
-            catSet.add(cat);
-            if (!catMap[cat]) catMap[cat] = { count: 0, value: 0 };
-            catMap[cat].count++;
-            catMap[cat].value += price;
+            const catName = p.category?.name || 'Other';
+            catSet.add(catName);
+            if (!catMap[catName]) catMap[catName] = { count: 0, value: 0 };
+            catMap[catName].count++;
+            catMap[catName].value += price;
 
             const b = p.brand?.name || 'Generic';
             if (p.brand?.name) brandSet.add(p.brand.name);
@@ -689,8 +810,8 @@ const ProductManager = () => {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
-                                                    {Object.values(Category).map(cat => (
-                                                        <SelectItem key={cat} value={cat} className="text-xs py-2 focus:bg-stone-50">{cat}</SelectItem>
+                                                    {categories.map((cat) => (
+                                                        <SelectItem key={cat.id} value={cat.code} className="text-xs py-2 focus:bg-stone-50">{cat.shortLabel || cat.label}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -1147,8 +1268,8 @@ const ProductManager = () => {
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 shadow-md">
                                     <SelectItem value="all" className="text-xs focus:bg-stone-50">All Categories</SelectItem>
-                                    {Object.values(Category).map(cat => (
-                                        <SelectItem key={cat} value={cat} className="text-xs focus:bg-stone-50">{cat}</SelectItem>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.code} className="text-xs focus:bg-stone-50">{cat.shortLabel || cat.label}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

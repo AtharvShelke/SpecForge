@@ -1,34 +1,95 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { Category } from "@/generated/prisma/client";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { getCategoryDefinitions } from '@/lib/services/categoryService';
 
-// ── Computed once at module load time (not per-request) ──────────────
-// Object.values on a const enum is a pure JS operation with zero I/O.
-// There is no reason to recompute it on every request.
-const CATEGORY_VALUES: string[] = Object.values(Category);
+const categoryPayloadSchema = z.object({
+  code: z.string().min(1).transform((value) => value.trim().toUpperCase()),
+  label: z.string().min(1).transform((value) => value.trim()),
+  shortLabel: z.string().trim().optional().nullable(),
+  description: z.string().trim().optional().nullable(),
+  icon: z.string().trim().optional().nullable(),
+  displayOrder: z.number().int().min(0).default(0),
+  featuredOrder: z.number().int().min(0).optional().nullable(),
+  isActive: z.boolean().default(true),
+  showInFeatured: z.boolean().default(false),
+});
 
-// ── Pre-serialized JSON string ────────────────────────────────────────
-// NextResponse.json() calls JSON.stringify internally on every request.
-// Since the payload is static, stringify it once and reuse the string.
-const CATEGORY_JSON = JSON.stringify(CATEGORY_VALUES);
+const categoryUpdateSchema = categoryPayloadSchema.extend({
+  id: z.string().min(1),
+});
 
-// ── Shared response headers ───────────────────────────────────────────
-// - no-store is intentionally NOT used: this data is static and safe to cache.
-// - s-maxage=3600: CDN/edge caches the response for 1 hour.
-// - stale-while-revalidate=86400: serves stale instantly while refreshing
-//   in the background. Enum values only change on a redeploy anyway.
-const RESPONSE_HEADERS = {
-  "Content-Type": "application/json",
-  "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-};
+export async function GET(req: NextRequest) {
+  const includeInactive = req.nextUrl.searchParams.get('includeInactive') === 'true';
+  const categories = await getCategoryDefinitions(includeInactive);
 
-export async function GET(_req: NextRequest) {
-  return new Response(CATEGORY_JSON, {
-    status: 200,
-    headers: RESPONSE_HEADERS,
+  return NextResponse.json(categories, {
+    headers: {
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+    },
   });
 }
 
-// Tell Next.js to render this route statically at build time.
-// The handler will not spin up a serverless function at all for cached hits.
-export const dynamic = "force-static";
-export const revalidate = 3600; // ISR: regenerate at most once per hour
+export async function POST(req: NextRequest) {
+  try {
+    const payload = categoryPayloadSchema.parse(await req.json());
+
+    const category = await prisma.categoryDefinition.create({
+      data: payload,
+      include: {
+        buildSequence: {
+          select: {
+            stepOrder: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      ...category,
+      stepOrder: category.buildSequence?.stepOrder ?? null,
+      isInBuildSequence: Boolean(category.buildSequence),
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+
+    console.error('POST /api/categories error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const payload = categoryUpdateSchema.parse(await req.json());
+    const { id, ...data } = payload;
+
+    const category = await prisma.categoryDefinition.update({
+      where: { id },
+      data,
+      include: {
+        buildSequence: {
+          select: {
+            stepOrder: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      ...category,
+      stepOrder: category.buildSequence?.stepOrder ?? null,
+      isInBuildSequence: Boolean(category.buildSequence),
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+
+    console.error('PATCH /api/categories error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export const dynamic = 'force-dynamic';

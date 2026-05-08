@@ -14,7 +14,7 @@ import {
     Plus,
 } from 'lucide-react';
 import { CompatibilityLevel, specsToFlat, Product } from '@/types';
-import { validateBuild } from '@/services/compatibility';
+import { validateBuild } from '@/lib/calculations/compatibility';
 
 // ── Constants (module scope — never recreated) ────────────────────────────────
 
@@ -170,7 +170,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
 
     const inCart        = useMemo(() => cart.find((c: any) => c.id === product.id), [cart, product.id]);
     const statusInfo    = STATUS_CONFIG[status] ?? STATUS_CONFIG.IN_STOCK;
-    const highlights    = CATEGORY_HIGHLIGHTS[product.category] ?? [];
+    const highlights    = CATEGORY_HIGHLIGHTS[typeof product.category === 'string' ? product.category : product.category?.slug] ?? [];
 
     const report = useMemo(() => {
         const hypotheticalCart = [...cart, { ...product, quantity: 1 } as any];
@@ -204,8 +204,8 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
                             <ChevronRight size={10} className="shrink-0" />
                             <Link href="/products" className="hover:text-zinc-700 transition-colors shrink-0">Products</Link>
                             <ChevronRight size={10} className="shrink-0" />
-                            <Link href={`/products?category=${product.category}`} className="hover:text-zinc-700 transition-colors capitalize shrink-0">
-                                {product.category.toLowerCase()}
+                            <Link href={`/products?category=${typeof product.category === 'string' ? product.category : product.category?.slug}`} className="hover:text-zinc-700 transition-colors capitalize shrink-0">
+                                {(typeof product.category === 'string' ? product.category : product.category?.name)?.toLowerCase() || 'Uncategorized'}
                             </Link>
                             <ChevronRight size={10} className="shrink-0" />
                             <span className="text-zinc-700 font-medium truncate">{product.name}</span>
@@ -237,7 +237,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
                             </div>
 
                             <div className="absolute top-3 left-3 px-2 py-0.5 bg-white/90 backdrop-blur border border-zinc-200 rounded-full text-[9px] font-bold uppercase tracking-widest text-zinc-500">
-                                {product.category}
+                                {product.category?.name || 'Uncategorized'}
                             </div>
 
                             {hasDiscount && (
@@ -278,7 +278,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
 
                         <div>
                             <p className="text-[9px] font-bold uppercase tracking-widest text-indigo-500 mb-1">
-                                {(flatSpecs.brand as string) || product.category}
+                                {(flatSpecs.brand as string) || (typeof product.category === 'string' ? product.category : product.category?.name) || 'Uncategorized'}
                             </p>
                             <h1 className="text-sm sm:text-base lg:text-lg font-bold text-zinc-900 leading-snug">
                                 {product.name}

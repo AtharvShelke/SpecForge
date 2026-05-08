@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { useAdmin } from '@/context/AdminContext';
 import type {
   Invoice,
   InvoiceStatus,
@@ -109,9 +108,9 @@ import { cn } from '@/lib/utils';
 
 const BILLING_PROFILE: BillingProfile = {
   id: 'prof_default',
-  companyName: 'Nexus Hardware Store',
-  legalName: 'Nexus Hardware Private Limited',
-  email: 'billing@nexushardware.com',
+  companyName: 'SpecForge',
+  legalName: 'SpecForge Private Limited',
+  email: 'billing@specforge.com',
   phone: '+91 80000 12345',
   addressLine1: '123, Tech Park',
   addressLine2: 'MG Road',
@@ -1084,13 +1083,153 @@ const StatsBar = ({ invoices }: { invoices: Invoice[] }) => {
 type PageView = 'list' | 'pos';
 
 const BillingInvoices: React.FC = () => {
-  const { products } = useShop();
-  const {
-    invoices, refreshInvoices, createInvoice, updateInvoice, voidInvoice,
-    inventory, customers, refreshCustomers, createCustomer,
-    billingProfile, refreshBillingProfile, saveBillingProfile,
-    isLoading, syncData
-  } = useAdmin();
+  const [products, setProducts] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [billingProfile, setBillingProfile] = useState<BillingProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Refresh invoices
+  const refreshInvoices = useCallback(async () => {
+    try {
+      const res = await fetch('/api/billing/invoices');
+      setInvoices(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch invoices:', err);
+    }
+  }, []);
+
+  // Create invoice
+  const createInvoice = useCallback(async (invoice: Partial<Invoice>) => {
+    try {
+      const res = await fetch('/api/billing/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoice),
+      });
+      if (res.ok) {
+        await refreshInvoices();
+      }
+    } catch (err) {
+      console.error('Failed to create invoice:', err);
+    }
+  }, [refreshInvoices]);
+
+  // Update invoice
+  const updateInvoice = useCallback(async (id: string, invoice: Partial<Invoice>) => {
+    try {
+      const res = await fetch(`/api/billing/invoices/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoice),
+      });
+      if (res.ok) {
+        await refreshInvoices();
+      }
+    } catch (err) {
+      console.error('Failed to update invoice:', err);
+    }
+  }, [refreshInvoices]);
+
+  // Void invoice
+  const voidInvoice = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/billing/invoices/${id}/void`, { method: 'POST' });
+      if (res.ok) {
+        await refreshInvoices();
+      }
+    } catch (err) {
+      console.error('Failed to void invoice:', err);
+    }
+  }, [refreshInvoices]);
+
+  // Refresh customers
+  const refreshCustomers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/billing/customers');
+      setCustomers(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch customers:', err);
+    }
+  }, []);
+
+  // Create customer
+  const createCustomer = useCallback(async (customer: Partial<Customer>) => {
+    try {
+      const res = await fetch('/api/billing/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customer),
+      });
+      if (res.ok) {
+        await refreshCustomers();
+      }
+    } catch (err) {
+      console.error('Failed to create customer:', err);
+    }
+  }, [refreshCustomers]);
+
+  // Refresh billing profile
+  const refreshBillingProfile = useCallback(async () => {
+    try {
+      const res = await fetch('/api/billing/profile');
+      setBillingProfile(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch billing profile:', err);
+    }
+  }, []);
+
+  // Save billing profile
+  const saveBillingProfile = useCallback(async (profile: Partial<BillingProfile>) => {
+    try {
+      const res = await fetch('/api/billing/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      if (res.ok) {
+        await refreshBillingProfile();
+      }
+    } catch (err) {
+      console.error('Failed to save billing profile:', err);
+    }
+  }, [refreshBillingProfile]);
+
+  // Sync data
+  const syncData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [productsRes, invoicesRes, inventoryRes, customersRes, billingRes] = await Promise.all([
+        fetch('/api/products?limit=1000'),
+        fetch('/api/billing/invoices'),
+        fetch('/api/inventory'),
+        fetch('/api/billing/customers'),
+        fetch('/api/billing/profile'),
+      ]);
+
+      const productsData = await productsRes.json();
+      const invoicesData = await invoicesRes.json();
+      const inventoryData = await inventoryRes.json();
+      const customersData = await customersRes.json();
+      const billingData = await billingRes.json();
+
+      setProducts(productsData.products ?? productsData);
+      setInvoices(invoicesData);
+      setInventory(inventoryData);
+      setCustomers(customersData);
+      setBillingProfile(billingData);
+    } catch (err) {
+      console.error('Failed to sync billing data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    syncData();
+  }, [syncData]);
 
   const [view, setView] = useState<PageView>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1104,7 +1243,7 @@ const BillingInvoices: React.FC = () => {
   const enrichedProducts = useMemo<(Product & { stock: number })[]>(() => {
     const inventoryArr = Array.isArray(inventory) ? inventory : [];
     return products.map(p => {
-      const inv = inventoryArr.find(i => p.variants?.some(v => v.id === i.variantId));
+      const inv = inventoryArr.find((i: any) => p.variants?.some((v: any) => v?.id === i?.variantId));
       return { ...p, stock: inv?.quantity ?? 0 };
     });
   }, [products, inventory]);

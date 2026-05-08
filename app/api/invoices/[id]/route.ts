@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   isInvoiceImmutable,
   isValidInvoiceTransition,
-} from "@/services/invoiceService";
+} from "@/lib/services/invoice";
 
 const InvoiceStatusEnum = z.enum([
   "DRAFT",

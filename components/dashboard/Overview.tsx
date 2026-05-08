@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useMemo, memo, useCallback } from 'react';
-import { useShop } from '@/context/ShopContext';
-import { useAdmin } from '@/context/AdminContext';
+import React, { useEffect, useState, memo, useCallback, useMemo } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Order, Product, InventoryItem } from '@/types';
 import { OrderStatus } from '@/types';
+import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   ClipboardList,
@@ -203,7 +204,63 @@ DesktopOrderRow.displayName = 'DesktopOrderRow';
 // MAIN OVERVIEW
 // ─────────────────────────────────────────────────────────────
 const Overview = () => {
-  const { orders, inventory, products, syncData, isLoading, setActiveTab } = useAdmin();
+  const { toast } = useToast();
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch orders
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/orders');
+      const data = await res.json();
+      setOrders(data.orders ?? []);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+    }
+  }, []);
+
+  // Fetch inventory
+  const fetchInventory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/inventory?limit=3000');
+      const data = await res.json();
+      setInventory(data.items ?? (Array.isArray(data) ? data : []));
+    } catch (err) {
+      console.error('Failed to fetch inventory:', err);
+    }
+  }, []);
+
+  // Fetch products
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/products?fields=minimal&limit=5000');
+      const data = await res.json();
+      setProducts(data.products ?? data);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+    }
+  }, []);
+
+  // Sync data
+  const syncData = useCallback(async () => {
+    setIsLoading(true);
+    await Promise.all([fetchOrders(), fetchInventory(), fetchProducts()]);
+    setIsLoading(false);
+    toast({ title: 'Data synced' });
+  }, [fetchOrders, fetchInventory, fetchProducts, toast]);
+
+  // Set active tab (navigate to a tab)
+  const setActiveTab = useCallback((tab: string) => {
+    router.push(`/admin?tab=${tab}`);
+  }, [router]);
+
+  // Initial data fetch
+  useEffect(() => {
+    syncData();
+  }, [syncData]);
 
   // ── Derived metrics — all in one pass over orders to avoid multiple iterations ──
   const {
@@ -275,7 +332,7 @@ const Overview = () => {
 
   const lowStockProducts = useMemo(() =>
     products.filter(p => {
-      const stock = p.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+      const stock = p.variants?.[0]?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
       return stock <= 5;
     }),
     [products]
@@ -283,7 +340,7 @@ const Overview = () => {
 
   const outOfStockProducts = useMemo(() =>
     products.filter(p => {
-      const stock = p.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+      const stock = p.variants?.[0]?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
       return stock <= 0;
     }),
     [products]
@@ -700,7 +757,7 @@ const Overview = () => {
 
               {/* Top alerts */}
               {lowStockProducts.slice(0, 3).map(product => {
-                const stock = product.variants?.[0]?.warehouseInventories?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+                const stock = product.variants?.[0]?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
                 return (
                   <div key={product.id} className="flex items-center justify-between gap-2 px-2 py-2 bg-amber-50/60 border border-amber-100 rounded-lg">
                     <div className="min-w-0">

@@ -1,17 +1,15 @@
 'use client';
 
 import React, {
-    useState, useMemo, useEffect, useCallback, useRef, memo,
+    Suspense, useState, useMemo, useEffect, useCallback, useRef, memo,
 } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useShop } from '@/context/ShopContext';
-import { useBuild } from '@/context/BuildContext';
-import { validateBuild } from '@/services/compatibility';
-import { BUILD_SEQUENCE } from '@/data/categoryTree';
+import { validateBuild } from '@/lib/calculations/compatibility';
 import {
-    Category, CATEGORY_LABELS, Product, CartItem, CompatibilityLevel, specsToFlat,
+    Category, Product, CartItem, CompatibilityLevel, specsToFlat,
 } from '@/types';
 import {
     Cpu, Monitor, HardDrive, Zap, Box, Fan, Keyboard, Wifi, Layers,
@@ -22,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { useBuildSequence } from '@/hooks/useBuildSequence';
 
 /* ─────────────────────────────── Styles ─────────────────────────────────── */
 const PAGE_STYLES = `
@@ -117,48 +116,6 @@ const PAGE_STYLES = `
   }
 `;
 
-/* ─────────────────────────────── Constants ──────────────────────────────── */
-// Defined outside component — never recreated on render
-const CORE_CATEGORIES: Category[] = [
-    Category.PROCESSOR, Category.MOTHERBOARD, Category.RAM,
-    Category.GPU, Category.STORAGE, Category.PSU, Category.CABINET, Category.COOLER,
-];
-
-const CAT_ICONS: Record<string, React.FC<any>> = {
-    [Category.PROCESSOR]:   Cpu,
-    [Category.MOTHERBOARD]: Layers,
-    [Category.RAM]:         HardDrive,
-    [Category.GPU]:         Monitor,
-    [Category.STORAGE]:     HardDrive,
-    [Category.PSU]:         Zap,
-    [Category.CABINET]:     Box,
-    [Category.COOLER]:      Fan,
-    [Category.MONITOR]:     Monitor,
-    [Category.PERIPHERAL]:  Keyboard,
-    [Category.NETWORKING]:  Wifi,
-};
-
-const CAT_SHORT: Record<string, string> = {
-    [Category.PROCESSOR]:   'CPU',
-    [Category.MOTHERBOARD]: 'Mobo',
-    [Category.RAM]:         'RAM',
-    [Category.GPU]:         'GPU',
-    [Category.STORAGE]:     'SSD',
-    [Category.PSU]:         'PSU',
-    [Category.CABINET]:     'Case',
-    [Category.COOLER]:      'Cooler',
-};
-
-const CAT_DESCRIPTIONS: Record<string, string> = {
-    [Category.PROCESSOR]:   'The brain of your build — AMD or Intel.',
-    [Category.MOTHERBOARD]: 'Connects everything. Must match your CPU socket.',
-    [Category.RAM]:         'System memory. Must match your motherboard DDR type.',
-    [Category.GPU]:         'Graphics card for gaming and creative work.',
-    [Category.STORAGE]:     'NVMe SSDs for fast load times.',
-    [Category.PSU]:         'Power supply — must handle your total wattage.',
-    [Category.CABINET]:     'The case. Must fit your motherboard and GPU.',
-    [Category.COOLER]:      'Keep your CPU cool under load.',
-};
 
 // Static animation variants — defined once outside component
 const MOTION_SPRING = { type: 'spring', stiffness: 400, damping: 30 } as const;
@@ -172,16 +129,16 @@ function estimatePowerStats(cart: CartItem[]): { wattage: number; psuCap: number
     let psuCap: number | null = null;
     for (const item of cart) {
         const s = specsToFlat(item.specs);
-        if (item.category === Category.PSU) {
+        if (item.category?.name.toUpperCase() === 'PSU') {
             const cap = Number(s.wattage);
             if (!isNaN(cap)) psuCap = cap;
         }
         const n = Number(s.wattage);
         if (!isNaN(n) && n > 0) { w += n * item.quantity; continue; }
-        if (item.category === Category.PROCESSOR) w += 65;
-        if (item.category === Category.GPU) w += 150;
-        if (item.category === Category.RAM) w += 5 * item.quantity;
-        if (item.category === Category.STORAGE) w += 5 * item.quantity;
+        if (item.category?.name.toUpperCase() === 'PROCESSOR') w += 65;
+        if (item.category?.name.toUpperCase() === 'GPU') w += 150;
+        if (item.category?.name.toUpperCase() === 'RAM') w += 5 * item.quantity;
+        if (item.category?.name.toUpperCase() === 'STORAGE') w += 5 * item.quantity;
     }
     return { wattage: w, psuCap };
 }
@@ -346,7 +303,7 @@ const ProductCard: React.FC<{
                 <p className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate ${
                     isInCart ? 'text-indigo-500' : 'text-zinc-400'
                 }`}>
-                    {CATEGORY_LABELS[product.category] || product.category}
+                    {product.category?.name.toUpperCase() || product.category?.name}
                 </p>
 
                 <Link
@@ -428,13 +385,14 @@ ProductCard.displayName = 'ProductCard';
 /* ─────────────────────────────── BuildSummaryPanel ──────────────────────── */
 const BuildSummaryPanel: React.FC<{
     cart: CartItem[];
+    coreCategories: Category[];
     onRemove: (id: string) => void;
     onStepClick: (cat: Category) => void;
     activeStep: Category;
     onSave: () => void;
     onShare: () => void;
     onCheckout: () => void;
-}> = memo(({ cart, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
+}> = memo(({ cart, coreCategories, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
     const report = useMemo(() => validateBuild(cart), [cart]);
     const totalPrice = useMemo(
         () => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0),
@@ -446,10 +404,10 @@ const BuildSummaryPanel: React.FC<{
         ? Math.min((wattage / psuCap) * 100, 100)
         : Math.min((wattage / 800) * 100, 100);
     const completedCount = useMemo(
-        () => CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length,
-        [cart],
+        () => coreCategories.filter(cat => cart.some(i => i.category?.name === cat.name)).length,
+        [cart, coreCategories],
     );
-    const progressPct = (completedCount / CORE_CATEGORIES.length) * 100;
+    const progressPct = coreCategories.length > 0 ? (completedCount / coreCategories.length) * 100 : 0;
 
     return (
         <div className="flex flex-col h-full bg-white border-l border-zinc-100">
@@ -484,7 +442,7 @@ const BuildSummaryPanel: React.FC<{
 
                 <div className="mt-3">
                     <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] text-zinc-400 font-medium">{completedCount}/{CORE_CATEGORIES.length} components</span>
+                        <span className="text-[10px] text-zinc-400 font-medium">{completedCount}/{coreCategories.length} components</span>
                         <span className="text-[10px] font-bold text-indigo-500">{Math.round(progressPct)}%</span>
                     </div>
                     <div className="h-1 bg-zinc-100 rounded-full overflow-hidden">
@@ -499,14 +457,14 @@ const BuildSummaryPanel: React.FC<{
 
             {/* Component rows */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-0.5">
-                {CORE_CATEGORIES.map(cat => {
-                    const item = cart.find(i => i.category === cat);
-                    const isActive = activeStep === cat;
-                    const CatIcon = CAT_ICONS[cat] || Box;
+                {coreCategories.map(cat => {
+                    const item = cart.find(i => i.category?.name === cat.name);
+                    const isActive = activeStep?.name === cat.name;
+                    
 
                     return (
                         <div
-                            key={cat}
+                            key={cat?.name}
                             role="button"
                             tabIndex={0}
                             onClick={() => onStepClick(cat)}
@@ -520,17 +478,17 @@ const BuildSummaryPanel: React.FC<{
                             <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                                 item ? 'bg-indigo-100' : isActive ? 'bg-indigo-50' : 'bg-zinc-100'
                             }`}>
-                                {item
-                                    ? <Check size={13} strokeWidth={2.5} className="text-indigo-600" />
-                                    : <CatIcon size={13} className={isActive ? 'text-indigo-500' : 'text-zinc-400'} />
-                                }
+                                
+                                    <Check size={13} strokeWidth={2.5} className="text-indigo-600" />
+                                    
+                                
                             </div>
 
                             <div className="flex-1 min-w-0">
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${
                                     item ? 'text-zinc-900' : isActive ? 'text-indigo-600' : 'text-zinc-400'
                                 }`}>
-                                    {CAT_SHORT[cat] || CATEGORY_LABELS[cat]}
+                                    {cat?.name}
                                 </p>
                                 <p className={`text-[11px] truncate leading-none mt-0.5 ${
                                     item ? 'text-zinc-500' : 'text-zinc-300 italic'
@@ -672,12 +630,11 @@ SaveDialog.displayName = 'SaveDialog';
 const NavItem: React.FC<{
     cat: Category; isActive: boolean; isCompleted: boolean; onClick: () => void;
 }> = memo(({ cat, isActive, isCompleted, onClick }) => {
-    const CatIcon = CAT_ICONS[cat] || Box;
     return (
         <button
             type="button"
             onClick={onClick}
-            title={CATEGORY_LABELS[cat] || cat}
+            title={cat?.name}
             className={`relative group w-full flex flex-col items-center gap-1 py-2.5 transition-all ${
                 isActive ? 'nav-item-active' : ''
             }`}
@@ -691,13 +648,13 @@ const NavItem: React.FC<{
             }`}>
                 {isCompleted && !isActive
                     ? <Check size={16} strokeWidth={2.5} />
-                    : <CatIcon size={16} />
+                    : null
                 }
             </div>
             <span className={`text-[9px] font-bold uppercase tracking-tight leading-none ${
                 isActive ? 'text-indigo-600' : isCompleted ? 'text-emerald-600' : 'text-zinc-400'
             }`}>
-                {CAT_SHORT[cat] || 'Part'}
+                {cat?.name.toUpperCase() || cat?.name}
             </span>
         </button>
     );
@@ -712,13 +669,82 @@ const SKELETON_ITEMS = Array.from({ length: 12 }, (_, i) => i);
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════════════════ */
-export default function PCBuilderPage() {
+function PCBuilderPageContent() {
     const router = useRouter();
-    const { cart, addToCart, removeFromCart, setCartOpen } = useShop();
-    const { isBuildMode, toggleBuildMode, saveCurrentBuild, generateShareLink } = useBuild();
+    const searchParams = useSearchParams();
+    const { cart, addToCart, removeFromCart, setCartOpen, cartTotal } = useShop();
     const { toast } = useToast();
 
-    const [activeStep, setActiveStep] = useState<Category>(Category.PROCESSOR);
+    const isBuildMode = searchParams.get('mode') === 'build';
+
+    const toggleBuildMode = useCallback(() => {
+        if (isBuildMode) {
+            router.push(window.location.pathname);
+        } else {
+            router.push(`${window.location.pathname}?mode=build`);
+        }
+    }, [isBuildMode, router]);
+
+    const saveCurrentBuild = useCallback(async (title: string, description = '') => {
+        if (cart.length === 0) return;
+        try {
+            const res = await fetch('/api/build-guides', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: title,
+                    total: cartTotal,
+                    items: cart.map(i => ({
+                        productId: i.id,
+                        variantId: i.selectedVariant?.id ?? i.variants?.[0]?.id ?? '',
+                        quantity: i.quantity,
+                    })),
+                }),
+            });
+
+            if (res.ok) {
+                toast({ title: 'Build Guide saved successfully' });
+            } else {
+                const errData = await res.json();
+                toast({
+                    title: 'Failed to save build guide',
+                    description: JSON.stringify(errData.error ?? errData),
+                    variant: 'destructive',
+                });
+            }
+        } catch (err) {
+            console.error('Failed to save build guide:', err);
+            toast({ title: 'Error', description: 'Network error while saving build guide', variant: 'destructive' });
+        }
+    }, [cart, cartTotal, toast]);
+
+    const generateShareLink = useCallback((): string => {
+        if (cart.length === 0) return '';
+        try {
+            const minimalCart = cart.map(item => [
+                item.selectedVariant?.id ?? item.variants?.[0]?.id,
+                item.quantity,
+            ]);
+            const encoded = btoa(encodeURIComponent(JSON.stringify(minimalCart)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            const url = new URL('/builds', window.location.origin);
+            url.searchParams.set('share', encoded);
+            return url.toString();
+        } catch (err) {
+            console.error('Error generating share link:', err);
+            return '';
+        }
+    }, [cart]);
+
+    const { buildSequence } = useBuildSequence();
+    const coreCategories = useMemo(
+        () => buildSequence.map((item) => ({
+            ...item?.category,
+            name: item?.category?.label || ''
+        } as unknown as Category)),
+        [buildSequence],
+    );
+    const [activeStep, setActiveStep] = useState<Category>(coreCategories[0]);
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -731,6 +757,13 @@ export default function PCBuilderPage() {
     // Only run once on mount — stable empty dep array
     useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    useEffect(() => {
+        if (coreCategories.length === 0) return;
+        if (!activeStep || !coreCategories.includes(activeStep)) {
+            setActiveStep(coreCategories[0]);
+        }
+    }, [activeStep, coreCategories]);
+
     // Debounce search
     useEffect(() => {
         const t = setTimeout(() => setDebounced(searchTerm), 300);
@@ -739,8 +772,8 @@ export default function PCBuilderPage() {
 
     // Cache CPU/mobo specs from cart to avoid repeated specsToFlat calls inside fetch effect
     const cartSpecsCache = useMemo(() => {
-        const cpu = cart.find(i => i.category === Category.PROCESSOR);
-        const mobo = cart.find(i => i.category === Category.MOTHERBOARD);
+        const cpu = cart.find(i => i.category?.name.toUpperCase() === 'PROCESSOR');
+        const mobo = cart.find(i => i.category?.name.toUpperCase() === 'MOTHERBOARD');
         return {
             cpuSocket: cpu ? String(specsToFlat(cpu.specs).socket ?? '') : '',
             moboSocket: mobo ? String(specsToFlat(mobo.specs).socket ?? '') : '',
@@ -750,12 +783,14 @@ export default function PCBuilderPage() {
     }, [cart]);
 
     useEffect(() => {
+        if (!activeStep) return;
+
         let cancelled = false;
         (async () => {
             setIsLoading(true);
             try {
                 const p = new URLSearchParams();
-                p.set('category', activeStep);
+                p.set('category', activeStep?.name.toUpperCase() ?? '');
                 p.set('limit', '48');
                 p.set('page', '1');
                 if (debounced) p.set('q', debounced);
@@ -763,9 +798,9 @@ export default function PCBuilderPage() {
 
                 if (!showIncompat) {
                     const { cpuSocket, moboSocket, moboRamType, cpuRamType } = cartSpecsCache;
-                    if (activeStep === Category.MOTHERBOARD && cpuSocket) p.set('f_specs.socket', cpuSocket);
-                    if (activeStep === Category.PROCESSOR && moboSocket) p.set('f_specs.socket', moboSocket);
-                    if (activeStep === Category.RAM) {
+                    if (activeStep?.name.toUpperCase() === 'MOTHERBOARD' && cpuSocket) p.set('f_specs.socket', cpuSocket);
+                    if (activeStep?.name.toUpperCase() === 'PROCESSOR' && moboSocket) p.set('f_specs.socket', moboSocket);
+                    if (activeStep?.name.toUpperCase() === 'RAM') {
                         const type = moboRamType || cpuRamType;
                         if (type) p.set('f_specs.ramType', type);
                     }
@@ -794,8 +829,8 @@ export default function PCBuilderPage() {
         // Defer step advance to avoid blocking the current render
         setTimeout(() => {
             setActiveStep(prev => {
-                const next = CORE_CATEGORIES.find(
-                    cat => cat !== product.category && !cart.some(i => i.category === cat)
+                const next = coreCategories.find(
+                    cat => cat.name !== product.category.name && !cart.some(i => i.category.name === cat.name)
                 );
                 return next ?? prev;
             });
@@ -871,7 +906,7 @@ export default function PCBuilderPage() {
     );
     const compatReport = useMemo(() => validateBuild(cart), [cart]);
     const completedCount = useMemo(
-        () => CORE_CATEGORIES.filter(cat => cart.some(i => i.category === cat)).length,
+        () => coreCategories.filter(cat => cart.some(i => i.category === cat)).length,
         [cart],
     );
     const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
@@ -891,8 +926,8 @@ export default function PCBuilderPage() {
 
     // Stable callback refs for nav items
     const navClickHandlers = useMemo(
-        () => Object.fromEntries(CORE_CATEGORIES.map(cat => [cat, () => handleStepClick(cat)])),
-        [handleStepClick],
+        () => Object.fromEntries(coreCategories.map(cat => [cat, () => handleStepClick(cat)])),
+        [coreCategories, handleStepClick],
     );
 
     return (
@@ -961,13 +996,13 @@ export default function PCBuilderPage() {
 
                 {/* ── LEFT NAV (desktop only) ─────────────────────────────── */}
                 <aside className="hidden xl:flex flex-col items-center py-4 px-2 gap-0.5 border-r border-zinc-100 bg-white overflow-y-auto">
-                    {CORE_CATEGORIES.map(cat => (
+                    {coreCategories.map(cat => (
                         <NavItem
-                            key={cat}
+                            key={cat?.id}
                             cat={cat}
-                            isActive={activeStep === cat}
-                            isCompleted={cart.some(i => i.category === cat)}
-                            onClick={navClickHandlers[cat]}
+                            isActive={activeStep?.name === cat.name}
+                            isCompleted={cart.some(i => i.category?.name === cat.name)}
+                            onClick={navClickHandlers[cat?.name]}
                         />
                     ))}
                 </aside>
@@ -978,15 +1013,14 @@ export default function PCBuilderPage() {
                     {/* Mobile step strip */}
                     <div className="xl:hidden border-b border-zinc-100 bg-white flex-shrink-0">
                         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide px-3 sm:px-4 py-2.5">
-                            {CORE_CATEGORIES.map(cat => {
-                                const CatIcon = CAT_ICONS[cat] || Box;
+                            {coreCategories.map(cat => {
                                 const isActive = activeStep === cat;
                                 const isDone = cart.some(i => i.category === cat);
                                 return (
                                     <button
-                                        key={cat}
+                                        key={cat?.id}
                                         type="button"
-                                        onClick={navClickHandlers[cat]}
+                                        onClick={navClickHandlers[cat?.name]}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full whitespace-nowrap flex-shrink-0 transition-all ${
                                             isActive
                                                 ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
@@ -997,9 +1031,9 @@ export default function PCBuilderPage() {
                                     >
                                         {isDone && !isActive
                                             ? <Check size={10} strokeWidth={2.5} />
-                                            : <CatIcon size={10} />
+                                            : null
                                         }
-                                        {CAT_SHORT[cat] || CATEGORY_LABELS[cat]}
+                                        {cat?.name}
                                     </button>
                                 );
                             })}
@@ -1010,7 +1044,7 @@ export default function PCBuilderPage() {
                     <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-white border-b border-zinc-100 z-20">
                         <AnimatePresence mode="wait">
                             <motion.div
-                                key={activeStep}
+                                key={activeStep?.id}
                                 initial={{ opacity: 0, y: -4 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 4 }}
@@ -1019,16 +1053,16 @@ export default function PCBuilderPage() {
                                 <div className="flex items-start sm:items-center justify-between gap-3 mb-2.5 flex-wrap sm:flex-nowrap">
                                     <div className="flex items-center gap-2">
                                         <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none">
-                                            {CATEGORY_LABELS[activeStep] || activeStep}
+                                            {activeStep?.name}
                                         </h2>
-                                        {cart.some(i => i.category === activeStep) && (
+                                        {cart.some(i => i.category?.name === activeStep?.name) && (
                                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex-shrink-0">
                                                 <Check size={9} strokeWidth={2.5} /> Selected
                                             </span>
                                         )}
                                     </div>
                                     <p className="text-xs text-zinc-400 hidden sm:block text-right leading-snug max-w-xs">
-                                        {CAT_DESCRIPTIONS[activeStep] || `Select your ${CATEGORY_LABELS[activeStep]}.`}
+                                        {activeStep?.description || `Select your ${activeStep?.name}.`}
                                     </p>
                                 </div>
 
@@ -1042,7 +1076,7 @@ export default function PCBuilderPage() {
                                             type="text"
                                             value={searchTerm}
                                             onChange={e => setSearchTerm(e.target.value)}
-                                            placeholder={`Search ${CATEGORY_LABELS[activeStep]}…`}
+                                            placeholder={`Search ${activeStep?.name}…`}
                                             className="w-full h-8 pl-9 pr-8 bg-zinc-50 border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
                                         />
                                         {searchTerm && (
@@ -1164,6 +1198,7 @@ export default function PCBuilderPage() {
                 <aside className="hidden xl:flex flex-col overflow-hidden">
                     <BuildSummaryPanel
                         cart={cart}
+                        coreCategories={coreCategories}
                         onRemove={handleRemove}
                         onStepClick={handleStepClick}
                         activeStep={activeStep}
@@ -1193,7 +1228,7 @@ export default function PCBuilderPage() {
                         </span>
                     )}
                     <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 px-2.5 py-1 rounded-full flex-shrink-0">
-                        {completedCount}/{CORE_CATEGORIES.length}
+                        {completedCount}/{coreCategories.length}
                     </span>
                     <button
                         type="button"
@@ -1221,5 +1256,13 @@ export default function PCBuilderPage() {
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+export default function PCBuilderPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-stone-50" />}>
+            <PCBuilderPageContent />
+        </Suspense>
     );
 }

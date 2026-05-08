@@ -1,113 +1,269 @@
-'use client'
+import StorefrontPageClient from '@/components/storefront/StorefrontPageClient'
+import { prisma } from '@/lib/prisma'
+import { CategoryNode } from '@/types'
 
-import { useMemo, useEffect, useState, lazy, Suspense } from 'react'
-
-import { PageLayout } from '@/components/layout/PageLayout'
-import { useShop } from '@/context/ShopContext'
-
-// Above-fold sections — eagerly imported (critical path)
-import HeroSection from '@/components/storefront/HeroSection'
-import CategorySection from '@/components/storefront/CategorySection'
-import BrandShowcase from '@/components/storefront/BrandShowcase'
-import { useBuild } from '@/context/BuildContext'
-
-// Below-fold sections — lazily imported (deferred bundle chunks)
-const FeaturedProductsSection = lazy(() => import('@/components/storefront/FeaturedProductsSection'))
-const GpuTierSection = lazy(() => import('@/components/storefront/GpuTierSection'))
-const FeaturedBuildsSection = lazy(() => import('@/components/storefront/FeaturedBuildsSection'))
-const CustomBuilderSection = lazy(() => import('@/components/storefront/CustomBuilderSection'))
-const TrustSection = lazy(() => import('@/components/storefront/TrustSection'))
-const StorefrontFooter = lazy(() => import('@/components/storefront/StorefrontFooter'))
-const ScrollTopButton = lazy(() => import('@/components/ui/ScrollTopButton'))
-
-// ── Shared loading skeleton ───────────────────────────────────────────────────
-
-function SectionSkeleton() {
-  return (
-    <div className="w-full py-24 flex items-center justify-center" aria-hidden="true">
-      <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white/40 animate-spin" />
-    </div>
-  )
+type CategoryDefinitionRecord = {
+  code: string
+  label: string
+  shortLabel: string | null
 }
 
-// ── Loading screen ────────────────────────────────────────────────────────────
-
-function StoreLoadingScreen() {
-  return (
-    <PageLayout bgClass="bg-zinc-950">
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-2 border-white/10 border-t-white/60 animate-spin" />
-        </div>
-        <p className="text-zinc-500 text-sm font-medium">Loading Store...</p>
-      </div>
-    </PageLayout>
-  )
+type HierarchyRecord = {
+  id: string
+  label: string
+  categoryDefinitionId: string | null
+  categoryDefinition: { id: string; code: string; label: string; shortLabel: string | null } | null
+  query: string | null
+  brand: string | null
+  parentId: string | null
+  sortOrder: number
 }
 
-// ── StorefrontPage ────────────────────────────────────────────────────────────
+type RawSpec = {
+  id: string
+  productId: string
+  value: string
+  filterValue: {
+    filterDefinition: {
+      key: string
+    } | null
+  } | null
+}
 
-export default function StorefrontPage() {
-  const { products, categories, brands, addToCart, isLoading } = useShop()
+function normalizeIdentifier(value: string | null | undefined) {
+  return (value ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
+}
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
 
+function resolveCategoryCode(
+  category: { id: number; name: string; slug: string } | null,
+  definitions: CategoryDefinitionRecord[]
+) {
+  if (!category) return undefined
 
-  const { buildGuides } = useBuild()
-  const builds = buildGuides.slice(0, 4)
+  const categoryKeys = new Set([
+    normalizeIdentifier(category.name),
+    normalizeIdentifier(category.slug),
+  ])
 
- 
+  const definition = definitions.find((item) => {
+    const definitionKeys = [
+      normalizeIdentifier(item.code),
+      normalizeIdentifier(item.label),
+      normalizeIdentifier(item.shortLabel),
+      normalizeIdentifier(slugify(item.label)),
+    ].filter(Boolean)
 
-  const productCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    for (const p of products) {
-      if (p.status === 'ACTIVE') {
-        counts[p.category] = (counts[p.category] ?? 0) + 1
-      }
+    return definitionKeys.some((key) => categoryKeys.has(key))
+  })
+
+  return definition?.code ?? category.slug ?? category.name
+}
+
+function mapSpec(spec: RawSpec) {
+  return {
+    id: spec.id,
+    productId: spec.productId,
+    key: spec.filterValue?.filterDefinition?.key ?? '',
+    value: spec.value,
+  }
+}
+
+function buildTree(records: HierarchyRecord[]): CategoryNode[] {
+  const map = new Map<string, CategoryNode & { id: string; parentId?: string | null; sortOrder?: number }>()
+  const roots: CategoryNode[] = []
+
+  for (const record of records) {
+    map.set(record.id, {
+      id: record.id,
+      label: record.label,
+      category: record.categoryDefinition?.code as any,
+      query: record.query ?? undefined,
+      brand: record.brand ?? undefined,
+      parentId: record.parentId ?? undefined,
+      sortOrder: record.sortOrder,
+      children: [],
+    })
+  }
+
+  for (const record of records) {
+    const node = map.get(record.id)!
+    if (record.parentId && map.has(record.parentId)) {
+      map.get(record.parentId)!.children!.push(node)
+    } else {
+      roots.push(node)
     }
-    return counts
-  }, [products])
+  }
 
-  if (isLoading) return <StoreLoadingScreen />
+  return roots
+}
+
+export const revalidate = 60
+
+export default async function StorefrontPage() {
+  const [products, categoryRecords, brands, buildGuides, categoryDefinitions] = await Promise.all([
+    prisma.product.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: { name: 'asc' },
+      take: 1000,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        variants: {
+          select: {
+            id: true,
+            productId: true,
+            sku: true,
+            price: true,
+            compareAtPrice: true,
+            attributes: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        specs: {
+          select: {
+            id: true,
+            productId: true,
+            value: true,
+            filterValue: {
+              select: {
+                filterDefinition: {
+                  select: {
+                    key: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        media: {
+          select: { id: true, productId: true, url: true, altText: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+        tags: true,
+        brand: { select: { id: true, name: true, createdAt: true, updatedAt: true } },
+      },
+    }),
+    prisma.categoryHierarchy.findMany({
+      select: {
+        id: true,
+        label: true,
+        categoryDefinitionId: true,
+        categoryDefinition: {
+          select: {
+            id: true,
+            code: true,
+            label: true,
+            shortLabel: true,
+          },
+        },
+        query: true,
+        brand: true,
+        parentId: true,
+        sortOrder: true,
+      },
+      orderBy: { sortOrder: 'asc' },
+    }),
+    prisma.brand.findMany({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { products: true } } },
+    }),
+    prisma.buildGuide.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 4,
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    category: {
+                      select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                      },
+                    },
+                    media: { orderBy: { sortOrder: 'asc' } },
+                    brand: true,
+                    tags: true,
+                    specs: {
+                      select: {
+                        id: true,
+                        productId: true,
+                        value: true,
+                        filterValue: {
+                          select: {
+                            filterDefinition: {
+                              select: {
+                                key: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    variants: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.categoryDefinition.findMany({
+      where: { isActive: true },
+      select: {
+        code: true,
+        label: true,
+        shortLabel: true,
+      },
+    }),
+  ])
+
+  const categories = buildTree(categoryRecords)
+  const storefrontBrands = brands.map(({ _count, ...brand }) => brand)
+  const storefrontProducts = products.map((product) => ({
+    ...product,
+    category: resolveCategoryCode(product.category, categoryDefinitions),
+    specs: product.specs.map(mapSpec),
+  }))
+  const storefrontBuildGuides = buildGuides.map((buildGuide) => ({
+    ...buildGuide,
+    items: buildGuide.items.map((item) => ({
+      ...item,
+      variant: {
+        ...item.variant,
+        product: {
+          ...item.variant.product,
+          category: resolveCategoryCode(item.variant.product.category, categoryDefinitions),
+          specs: item.variant.product.specs.map(mapSpec),
+        },
+      },
+    })),
+  }))
 
   return (
-    <PageLayout bgClass="bg-zinc-950">
-      {/* Above fold — no Suspense boundary needed */}
-      <HeroSection />
-      <CategorySection
-        categories={categories}
-        productCounts={productCounts}
-      />
-      <BrandShowcase brands={brands} />
-
-      {/* Below fold — lazy loaded, each in its own Suspense boundary
-          so one slow section never blocks the others */}
-      <Suspense fallback={<SectionSkeleton />}>
-        <FeaturedProductsSection
-          products={products}
-          addToCart={addToCart}
-        />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <GpuTierSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <FeaturedBuildsSection builds={builds} />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <CustomBuilderSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <TrustSection />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <StorefrontFooter />
-        <ScrollTopButton />
-      </Suspense>
-    </PageLayout>
+    <StorefrontPageClient
+      products={storefrontProducts as any}
+      categories={categories}
+      brands={storefrontBrands as any}
+      buildGuides={storefrontBuildGuides as any}
+    />
   )
 }

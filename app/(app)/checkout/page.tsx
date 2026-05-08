@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useRouter } from 'next/navigation';
 import { processCheckout } from '@/app/actions/checkout';
-import { calculateOrderFinancials } from '@/lib/gst';
+import { calculateOrderFinancials } from '@/lib/tax-engine';
 import { CreditCard, ShoppingBag, ArrowLeft, CheckCircle2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 

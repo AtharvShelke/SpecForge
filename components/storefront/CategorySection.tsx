@@ -5,33 +5,26 @@ import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
-import { CategoryNode, Category, CATEGORY_LABELS } from '@/types'
+import { CategoryNode } from '@/types'
+import { useCategories } from '@/hooks/useCategories'
 
 // ── Constants (outside component — never recreated) ───────────────────────────
 
 const CATEGORY_IMAGES: Record<string, string> = {
-    PROCESSOR:   '/images/category_section/proc.avif',
-    GPU:         '/images/category_section/gpu.avif',
-    MOTHERBOARD: '/images/category_section/mobo.avif',
-    RAM:         '/images/category_section/ram.webp',
-    STORAGE:     '/images/category_section/drive.avif',
-    CABINET:     '/images/category_section/cab.avif',
-    MONITOR:     '/images/category_section/mon.webp',
+    processor:   '/images/category_section/proc.avif',
+    gpu:         '/images/category_section/gpu.avif',
+    motherboard: '/images/category_section/mobo.avif',
+    ram:         '/images/category_section/ram.webp',
+    storage:     '/images/category_section/drive.avif',
+    cabinet:     '/images/category_section/cab.avif',
+    monitor:     '/images/category_section/mon.webp',
 }
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=2000&auto=format&fit=crop'
 
 // Fixed 6-item order — no mobile/desktop branching needed at this level
 // MONITOR simply becomes a 7th card shown via CSS on mobile only (col-span-6 hidden md:hidden)
-const ALLOWED = ['GPU', 'PROCESSOR', 'MOTHERBOARD', 'RAM', 'STORAGE', 'CABINET', 'MONITOR'] as const
-
-const FALLBACK_CATS = (Object.values(Category) as string[])
-    .slice(0, 7)
-    .map(c => ({
-        category: c,
-        label: CATEGORY_LABELS[c as Category] ?? c,
-        children: [] as CategoryNode[],
-    }))
+const ALLOWED = ['gpu', 'processor', 'motherboard', 'ram', 'storage', 'cabinet', 'monitor'] as const
 
 // Animation variants (defined once, outside component)
 const cardVariants = {
@@ -128,18 +121,31 @@ interface Props {
 }
 
 export default function CategorySection({ categories, productCounts }: Props) {
+    const { categories: categoryDefinitions, getLabel } = useCategories()
+    const fallbackCats = categoryDefinitions
+        .filter((category) => ALLOWED.includes(category.code as typeof ALLOWED[number]))
+        .map((category) => ({
+            category: category.code.toLowerCase(),
+            label: category.label || getLabel(category.code),
+            children: [] as CategoryNode[],
+        }))
+
     const cats = useMemo(() => {
         const source: { category: string; label: string }[] = categories?.length
-            ? (categories as { category: string; label: string }[]).filter(c =>
-                ALLOWED.includes(c.category as typeof ALLOWED[number])
-              )
-            : FALLBACK_CATS
+            ? (categories as CategoryNode[]).filter(c => {
+                const catSlug = typeof c.category === 'string' ? c.category : c.category?.slug;
+                return catSlug && ALLOWED.includes(catSlug as typeof ALLOWED[number]);
+              }).map(c => ({
+                category: typeof c.category === 'string' ? c.category : c.category?.slug || '',
+                label: c.label,
+              }))
+            : fallbackCats
 
         // Return in ALLOWED order so layout is deterministic
         return ALLOWED
             .map(key => source.find(c => c.category === key))
             .filter((c): c is { category: string; label: string } => !!c)
-    }, [categories])
+    }, [categories, fallbackCats])
 
     return (
         <section className="py-10 sm:py-20 md:py-24 bg-white overflow-hidden" id="categories">

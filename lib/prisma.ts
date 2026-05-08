@@ -1,13 +1,19 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client";
+
 import { Pool } from "pg";
+import { PrismaClient } from "@/generated/prisma";
 
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
+
+const shouldUseSsl =
+  process.env.DATABASE_SSL === "true" ||
+  /sslmode=require/i.test(connectionString) ||
+  /ssl=true/i.test(connectionString);
 
 const prismaClientSingleton = () => {
   const pool = new Pool({
@@ -29,9 +35,7 @@ const prismaClientSingleton = () => {
     // ── SSL ───────────────────────────────────────────────────────
     // rejectUnauthorized: false accepts self-signed certs (e.g. Supabase, RDS).
     // Set to true + supply a CA cert in production if your provider supports it.
-    ssl: process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : false,
+    ssl: shouldUseSsl ? { rejectUnauthorized: false } : false,
   });
 
   // Surface pool-level errors so they don't become silent failures

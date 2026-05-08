@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
                         <Cpu className="h-3.5 w-3.5 text-zinc-900" />
                     </div>
                     <p className="text-sm text-zinc-500 font-medium">
-                        © {new Date().getFullYear()} Nexus Hardware. All rights reserved.
+                        © {new Date().getFullYear()} SpecForge. All rights reserved.
                     </p>
                 </div>
 

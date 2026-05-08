@@ -1,10 +1,10 @@
 
-import { Category, CategoryFilterConfig } from '../types';
+import { CategoryFilterConfig } from '../types';
 
 export const FILTER_CONFIG: CategoryFilterConfig[] = [
   // ─── PROCESSOR ─────────────────────────────────────────────────────────────
   {
-    category: Category.PROCESSOR,
+    category: 'processor' as any,
     filters: [
       // Universal filters
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AMD', 'Intel'] },
@@ -30,7 +30,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── CPU COOLER ────────────────────────────────────────────────────────────
   {
-    category: Category.COOLER,
+    category: 'cooler' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AEROCOOL', 'ALSEYE', 'Ant Esports', 'ANTEC', 'ARCTIC', 'Cooler Master', 'Corsair', 'DeepCool', 'Lian Li', 'Noctua', 'NZXT'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -44,7 +44,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── MOTHERBOARD ───────────────────────────────────────────────────────────
   {
-    category: Category.MOTHERBOARD,
+    category: 'motherboard' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ASROCK', 'ASUS', 'GIGABYTE', 'MSI'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -66,7 +66,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── GRAPHICS CARD ─────────────────────────────────────────────────────────
   {
-    category: Category.GPU,
+    category: 'gpu' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ASROCK', 'ASUS', 'GALAX', 'GIGABYTE', 'INNO3D', 'MSI', 'Sapphire', 'Zotac'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -80,7 +80,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── RAM ───────────────────────────────────────────────────────────────────
   {
-    category: Category.RAM,
+    category: 'ram' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ACER', 'ADATA', 'CORSAIR', 'CRUCIAL', 'EVM', 'G.Skill', 'Kingston', 'TeamGroup'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -94,7 +94,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── STORAGE ───────────────────────────────────────────────────────────────
   {
-    category: Category.STORAGE,
+    category: 'storage' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ACER', 'ADATA', 'ADDLINK', 'Ant Esports', 'ASUS', 'Crucial', 'Kingston', 'Samsung', 'Seagate', 'Western Digital'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -106,7 +106,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── SMPS (PSU) ────────────────────────────────────────────────────────────
   {
-    category: Category.PSU,
+    category: 'psu' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['Ant Esports', 'ANTEC', 'ASUS', 'COOLER MASTER', 'CORSAIR', 'DeepCool', 'MSI', 'Seasonic'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -122,7 +122,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── CABINET ───────────────────────────────────────────────────────────────
   {
-    category: Category.CABINET,
+    category: 'cabinet' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AEROCOOL', 'Ant Esports', 'ANTEC', 'ARCTIC', 'ASUS', 'Cooler Master', 'Corsair', 'Lian Li', 'NZXT'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -134,7 +134,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── MONITOR ───────────────────────────────────────────────────────────────
   {
-    category: Category.MONITOR,
+    category: 'monitor' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['AOC', 'ASUS', 'BENQ', 'COOLER MASTER', 'DELL', 'LG', 'MSI', 'Samsung', 'ViewSonic'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -151,7 +151,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── PERIPHERALS ───────────────────────────────────────────────────────────
   {
-    category: Category.PERIPHERAL,
+    category: 'peripheral' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox' },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -162,7 +162,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── NETWORKING ────────────────────────────────────────────────────────────
   {
-    category: Category.NETWORKING,
+    category: 'networking' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox' },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },
@@ -172,7 +172,7 @@ export const FILTER_CONFIG: CategoryFilterConfig[] = [
 
   // ─── LAPTOP ────────────────────────────────────────────────────────────────
   {
-    category: Category.LAPTOP,
+    category: 'laptop' as any,
     filters: [
       { key: 'specs.brand', label: 'Manufacturer', type: 'checkbox', options: ['ACER', 'ASUS', 'HP', 'MSI', 'Lenovo', 'Dell'] },
       { key: 'stock_status', label: 'Stock Status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] },

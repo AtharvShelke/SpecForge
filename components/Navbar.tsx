@@ -87,9 +87,9 @@ export default function Navbar() {
               />
             </div>
             <span className="font-bold text-lg tracking-tight">
-              Nexus
+              Spec
               <span className={isLanding ? "text-blue-400" : "text-indigo-500"}>
-                Hardware
+                Forge
               </span>
             </span>
           </Link>

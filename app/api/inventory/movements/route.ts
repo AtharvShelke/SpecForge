@@ -11,22 +11,11 @@ export async function GET(req: NextRequest) {
         const movements = await prisma.stockMovement.findMany({
             select: {
                 id: true,
-                warehouseInventoryId: true,
-                warehouseId: true,
+                variantId: true,
                 type: true,
                 quantity: true,
-                previousQuantity: true,
-                newQuantity: true,
-                reason: true,
-                performedBy: true,
+                note: true,
                 createdAt: true,
-                warehouseInventory: {
-                    select: {
-                        variant: {
-                            select: { sku: true }
-                        }
-                    },
-                },
             },
             orderBy: { createdAt: "desc" },
             skip: (page - 1) * limit,
@@ -36,17 +25,13 @@ export async function GET(req: NextRequest) {
         // Map database fields to frontend expectations
         const formattedMovements = movements.map((m) => ({
             id: m.id,
-            warehouseInventoryId: m.warehouseInventoryId,
-            warehouseId: m.warehouseId,
+            variantId: m.variantId,
             type: m.type,
             quantity: m.quantity,
-            previousQuantity: m.previousQuantity,
-            newQuantity: m.newQuantity,
-            reason: m.reason,
-            performedBy: m.performedBy,
+            reason: m.note,
             createdAt: m.createdAt.toISOString(),
             date: m.createdAt.toISOString(),
-            sku: m.warehouseInventory?.variant?.sku || 'N/A',
+            sku: 'N/A', // Would need separate query to get SKU
         }));
 
         return NextResponse.json(formattedMovements);

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { confirmInventory, restoreInventory } from "@/services/inventoryService";
-import { generateOrderInvoice } from "@/services/invoiceService";
+import { confirmInventory, restoreInventory } from "@/lib/services/inventory";
+import { generateOrderInvoice } from "@/lib/services/invoice";
 
 const OrderStatusEnum = z.enum([
     "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED",

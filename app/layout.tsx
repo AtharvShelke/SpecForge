@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ShopProvider } from "@/context/ShopContext";
-import { BuildProvider } from "@/context/BuildContext";
 import Navbar from "@/components/Navbar";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -63,15 +62,12 @@ export default function RootLayout({
           routerConfig={extractRouterConfig(ourFileRouter)}
         />
         <ShopProvider>
-          <BuildProvider>
+          <main className="min-h-screen pb-16 md:pb-0">
+            {children}
+          </main>
+          <CartDrawer />
 
-            <main className="min-h-screen pb-16 md:pb-0">
-              {children}
-            </main>
-            <CartDrawer />
-
-            <Toaster />
-          </BuildProvider>
+          <Toaster />
         </ShopProvider>
       </body>
     </html>

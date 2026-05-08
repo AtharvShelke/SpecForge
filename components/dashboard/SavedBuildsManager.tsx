@@ -17,7 +17,6 @@ import {
     Layers,
     Clock,
 } from 'lucide-react';
-import { useAdmin } from '@/context/AdminContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
@@ -339,7 +338,24 @@ const EDIT_FIELDS = [
 
 export default function SavedBuildsManager() {
     const { toast } = useToast();
-    const { savedBuilds: builds, refreshSavedBuilds: fetchBuilds, syncData, isLoading } = useAdmin();
+    const [builds, setBuilds] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const fetchBuilds = useCallback(async () => {
+        try {
+            const res = await fetch('/api/build-guides');
+            setBuilds(await res.json());
+        } catch (err) {
+            console.error('Failed to fetch builds:', err);
+        }
+    }, []);
+
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
+        await fetchBuilds();
+        setIsLoading(false);
+    }, [fetchBuilds]);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [editingBuild, setEditingBuild] = useState<any | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);

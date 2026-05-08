@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback, useRef, FormEvent, memo } from 'react';
-import { useAdmin } from '@/context/AdminContext';
-import { StockMovementType } from '@/types';
+import React, { useDeferredValue, useState, useMemo, useEffect, useCallback, useRef, FormEvent, memo } from 'react';
+import { StockMovementType, StockMovement } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 import {
     AlertTriangle,
     ArrowDownRight,
@@ -18,7 +18,7 @@ import {
     RefreshCw,
     MoveHorizontal,
     History,
-    Warehouse,
+    Warehouse as WarehouseIcon,
     BarChart3,
     ShieldAlert,
     Zap,
@@ -28,7 +28,7 @@ import {
     SlidersHorizontal,
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { WarehouseInventory, Category } from '@/types';
+import { InventoryItem, Category } from '@/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import {
@@ -47,7 +47,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useDebounce } from '@/hooks/useDebounce';
 
 /* ─────────────────────────────────────────────────────────────
    MODULE-LEVEL CONSTANTS — never reallocated on render
@@ -157,19 +156,91 @@ CollapsibleSection.displayName = 'CollapsibleSection';
    MAIN
 ───────────────────────────────────────────────────────────────*/
 const InventoryManager = () => {
-    const { inventory, stockMovements, adjustStock, transferStock, refreshInventory, syncData, isLoading } = useAdmin();
+    const { toast } = useToast();
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
+
+    const refreshCategories = useCallback(async () => {
+        try {
+            const res = await fetch('/api/categories');
+            if (res.ok) {
+                const data = await res.json();
+               
+                setCategories(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch categories:", err);
+        }
+    }, []);
+
+    // Fetch inventory
+    const refreshInventory = useCallback(async () => {
+        try {
+            const res = await fetch('/api/inventory?limit=3000');
+            const data = await res.json();
+            setInventory(data.items ?? (Array.isArray(data) ? data : []));
+        } catch (err) {
+            console.error(err);
+        }
+    }, []);
+
+    // Fetch stock movements
+    const refreshStockMovements = useCallback(async () => {
+        try {
+            const res = await fetch('/api/inventory/movements');
+            setStockMovements(await res.json());
+        } catch (err) {
+            console.error(err);
+        }
+    }, []);
+
+   
+
+    // Sync data
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
+        await Promise.all([refreshInventory(), refreshStockMovements(), refreshCategories()]);
+        setIsLoading(false);
+    }, [refreshInventory, refreshStockMovements, refreshCategories]);
+
+    // Adjust stock
+    const adjustStock = useCallback(async (
+        warehouseInventoryId: string, quantity: number, type: StockMovementType, reason?: string,
+    ) => {
+        try {
+            const res = await fetch(`/api/inventory/${warehouseInventoryId}/movements`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, quantity, reason }),
+            });
+            if (res.ok) {
+                toast({ title: 'Stock adjusted' });
+                await Promise.all([refreshInventory(), refreshStockMovements()]);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }, [refreshInventory, refreshStockMovements, toast]);
+
+    
+
+    // Initial data fetch
+    useEffect(() => {
+        Promise.all([refreshInventory(), refreshStockMovements(), refreshCategories()]);
+    }, [refreshInventory, refreshStockMovements, refreshCategories]);
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
         isOpen: boolean; sku: string; currentQty: number;
     } | null>(null);
 
     const [transferModal, setTransferModal] = useState<{
-        isOpen: boolean; sku: string; variantId: string; sourceWarehouseId: string; currentQty: number;
+        isOpen: boolean; sku: string; variantId: string; currentQty: number;
     } | null>(null);
 
-    const [transferTarget, setTransferTarget] = useState<string>('');
-    const [transferQty, setTransferQty] = useState<number>(0);
-    const [transferReason, setTransferReason] = useState<string>('');
+ 
     const [adjType, setAdjType] = useState<StockMovementType>('INWARD');
     const [adjQty, setAdjQty] = useState(0);
     const [adjReason, setAdjReason] = useState('');
@@ -194,7 +265,7 @@ const InventoryManager = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const [paginatedInventory, setPaginatedInventory] = useState<WarehouseInventory[]>([]);
+    const [paginatedInventory, setPaginatedInventory] = useState<InventoryItem[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [isLoadingInventory, setIsLoadingInventory] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(false);
@@ -207,8 +278,7 @@ const InventoryManager = () => {
 
     const [searchTerm, setSearchTerm] = useState(currentSearch);
     useEffect(() => { setSearchTerm(currentSearch); }, [currentSearch]);
-
-    const debouncedSearch = useDebounce(searchTerm, 500);
+    const deferredSearch = useDeferredValue(searchTerm);
 
     // Stable — was recreated every render, causing all pagination/filter buttons
     // to receive new onClick props and forcing their re-render
@@ -225,8 +295,8 @@ const InventoryManager = () => {
     }, [searchParams, router, pathname]);
 
     useEffect(() => {
-        if (debouncedSearch !== currentSearch) updateQueryParams({ q: debouncedSearch });
-    }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+        if (deferredSearch !== currentSearch) updateQueryParams({ q: deferredSearch });
+    }, [currentSearch, deferredSearch, updateQueryParams]);
 
     // Use AbortController to cancel in-flight fetch when params change,
     // preventing stale responses from updating state out of order
@@ -279,19 +349,9 @@ const InventoryManager = () => {
         }
     }, [adjustmentModal, adjQty, adjType, adjReason, adjustStock]);
 
-    const handleTransfer = useCallback(async (e: FormEvent) => {
-        e.preventDefault();
-        if (transferModal && transferQty > 0 && transferTarget) {
-            try {
-                await transferStock(transferModal.sourceWarehouseId, transferTarget, transferModal.variantId, transferQty, transferReason);
-                setTransferModal(null); setTransferQty(0); setTransferTarget(''); setTransferReason('');
-                setRefreshTrigger(prev => !prev);
-            } catch (err) { console.error("Transfer failed", err); }
-        }
-    }, [transferModal, transferQty, transferTarget, transferReason, transferStock]);
+
 
     const handleCloseAdjustment = useCallback(() => setAdjustmentModal(null), []);
-    const handleCloseTransfer = useCallback(() => setTransferModal(null), []);
     const handleToggleFilters = useCallback(() => setShowFilters(f => !f), []);
 
     const handleRefreshSync = useCallback(async () => {
@@ -309,7 +369,11 @@ const InventoryManager = () => {
     }, [updateQueryParams, currentPage]);
 
     const handleCategoryChange = useCallback((val: string) => {
-        updateQueryParams({ category: val });
+        if (val === 'all') {
+            updateQueryParams({ category: '' });
+        } else {
+            updateQueryParams({ category: val });
+        }
     }, [updateQueryParams]);
 
     const handleStockStatusChange = useCallback((val: string) => {
@@ -357,7 +421,7 @@ const InventoryManager = () => {
         const map: Record<string, { units: number; value: number; count: number }> = {};
         const arr = Array.isArray(inventory) ? inventory : [];
         for (const i of arr) {
-            const cat = i.variant?.product?.category || 'Uncategorised';
+            const cat = i.variant?.product?.category?.name || 'Uncategorised';
             if (!map[cat]) map[cat] = { units: 0, value: 0, count: 0 };
             map[cat].units += i.quantity;
             map[cat].value += i.quantity * i.costPrice;
@@ -552,7 +616,7 @@ const InventoryManager = () => {
 
                 {/* Stock Utilisation */}
                 <CollapsibleSection
-                    icon={<Warehouse size={12} />}
+                    icon={<WarehouseIcon size={12} />}
                     title="Stock Utilisation"
                     accentClass="bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-300"
                 >
@@ -623,8 +687,10 @@ const InventoryManager = () => {
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-stone-200 text-stone-800 shadow-md">
                                     <SelectItem value="all" className="text-xs focus:bg-stone-50">All Categories</SelectItem>
-                                    {Object.values(Category).map(cat => (
-                                        <SelectItem key={cat} value={cat} className="text-xs focus:bg-stone-50">{cat}</SelectItem>
+                                    {categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.code} className="text-xs focus:bg-stone-50">
+                                            {cat.shortLabel || cat.label}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -674,7 +740,7 @@ const InventoryManager = () => {
                                         </p>
                                     </td>
                                 </tr>
-                            ) : paginatedInventory.map((item: WarehouseInventory) => {
+                            ) : paginatedInventory.map((item: InventoryItem) => {
                                 const variant = item.variant;
                                 const product = variant?.product;
                                 const costValue = item.quantity * item.costPrice;
@@ -695,7 +761,7 @@ const InventoryManager = () => {
                                                         {product?.name || 'Undefined Product'}
                                                     </p>
                                                     <span className="text-[10px] text-stone-400 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded font-medium">
-                                                        {product?.category || 'Standard'}
+                                                        {product?.category?.name || 'Standard'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -733,7 +799,6 @@ const InventoryManager = () => {
                                                         isOpen: true,
                                                         sku: variant?.sku || item.variantId,
                                                         variantId: item.variantId,
-                                                        sourceWarehouseId: item.warehouseId,
                                                         currentQty: item.quantity,
                                                     })}
                                                 >
@@ -770,7 +835,7 @@ const InventoryManager = () => {
                                     ? 'No items match filters' : 'Inventory is empty'}
                             </p>
                         </div>
-                    ) : paginatedInventory.map((item: WarehouseInventory) => {
+                    ) : paginatedInventory.map((item: InventoryItem) => {
                         const variant = item.variant;
                         const product = variant?.product;
                         const isLow = item.quantity > 0 && item.quantity <= item.reorderLevel;
@@ -810,7 +875,6 @@ const InventoryManager = () => {
                                             isOpen: true,
                                             sku: variant?.sku || item.variantId,
                                             variantId: item.variantId,
-                                            sourceWarehouseId: item.warehouseId,
                                             currentQty: item.quantity,
                                         })}
                                     >
@@ -895,13 +959,13 @@ const InventoryManager = () => {
                             ) : stockMovements.slice(0, 20).map(mov => (
                                 <tr key={mov.id} className="hover:bg-stone-50/60 transition-colors">
                                     <td className="px-4 py-2.5 whitespace-nowrap text-[11px] font-mono text-stone-400 tabular-nums">
-                                        {new Date(mov.date).toLocaleDateString('en-IN', DATE_OPTS_MOV)}
+                                        {new Date(mov.date || mov.createdAt).toLocaleDateString('en-IN', DATE_OPTS_MOV)}
                                     </td>
                                     <td className="px-3 py-2.5 whitespace-nowrap text-xs font-mono font-semibold text-stone-700">{mov.sku}</td>
                                     <td className="px-3 py-2.5 whitespace-nowrap"><MovTypeBadge type={mov.type} /></td>
                                     <td className="px-3 py-2.5 whitespace-nowrap text-right text-xs font-bold font-mono text-stone-900 tabular-nums">{mov.quantity}</td>
                                     <td className="hidden md:table-cell px-4 py-2.5 text-xs text-stone-400 max-w-[200px]">
-                                        <span className="line-clamp-1">{mov.reason || '—'}</span>
+                                        <span className="line-clamp-1">{mov.note || '—'}</span>
                                     </td>
                                 </tr>
                             ))}
@@ -919,8 +983,8 @@ const InventoryManager = () => {
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs font-mono font-semibold text-stone-700 truncate">{mov.sku}</p>
                                 <p className="text-[10px] text-stone-400 font-mono">
-                                    {new Date(mov.date).toLocaleDateString('en-IN', DATE_OPTS_MOV_MOBILE)}
-                                    {mov.reason && <span> · {mov.reason}</span>}
+                                    {new Date(mov.date || mov.createdAt).toLocaleDateString('en-IN', DATE_OPTS_MOV_MOBILE)}
+                                    {mov.note && <span> · {mov.note}</span>}
                                 </p>
                             </div>
                             <span className="text-sm font-bold font-mono text-stone-900 tabular-nums flex-shrink-0">{mov.quantity}</span>
@@ -991,57 +1055,7 @@ const InventoryManager = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* ─── TRANSFER DIALOG ─── */}
-            <Dialog open={!!transferModal} onOpenChange={handleCloseTransfer}>
-                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md bg-white border-stone-200 shadow-xl rounded-xl">
-                    <div className="h-0.5 w-full bg-gradient-to-r from-violet-400 to-indigo-400 -mt-6 mb-4 rounded-t-xl" />
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-bold text-stone-900 tracking-tight">Warehouse Transfer</DialogTitle>
-                        <DialogDescription className="text-xs text-stone-400">
-                            SKU: <span className="font-mono font-semibold text-stone-600">{transferModal?.sku}</span>
-                        </DialogDescription>
-                    </DialogHeader>
-                    {transferModal && (
-                        <div className="space-y-3 py-1">
-                            <div className="px-3 py-2.5 bg-stone-50 border border-stone-100 rounded-lg flex items-center justify-between gap-2">
-                                <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex-shrink-0">Available at Source</span>
-                                <span className="text-sm font-bold text-stone-900 font-mono truncate">
-                                    {transferModal.currentQty} units · <span className="text-stone-400 text-xs">{transferModal.sourceWarehouseId}</span>
-                                </span>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Destination Warehouse</label>
-                                <Input className="h-9 text-xs border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                    value={transferTarget} onChange={e => setTransferTarget(e.target.value)} placeholder="Facility ID…" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Quantity</label>
-                                <Input type="number" max={transferModal.currentQty}
-                                    className="h-9 text-sm font-bold border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                    value={transferQty} onChange={e => setTransferQty(Number(e.target.value))} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Reason</label>
-                                <textarea
-                                    className="w-full min-h-[72px] px-3 py-2 text-xs border border-stone-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none bg-white resize-none text-stone-700 placeholder:text-stone-400"
-                                    value={transferReason} onChange={e => setTransferReason(e.target.value)}
-                                    placeholder="Reason for transfer…" />
-                            </div>
-                        </div>
-                    )}
-                    <DialogFooter className="gap-2 pt-1 flex-row">
-                        <button onClick={handleCloseTransfer}
-                            className="flex-1 h-10 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
-                            Cancel
-                        </button>
-                        <button onClick={handleTransfer} disabled={!transferQty || !transferTarget}
-                            className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
-                            Confirm Transfer
-                        </button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
+            
             {/* ─── AUDIT LOG DIALOG ─── */}
             <Dialog open={auditLogModal} onOpenChange={setAuditLogModal}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 shadow-xl rounded-xl">
