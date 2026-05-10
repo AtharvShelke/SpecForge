@@ -23,15 +23,10 @@ function slugify(value: string) {
 }
 
 async function loadCategoryResolver() {
-  const [definitions, categories] = await Promise.all([
-    prisma.categoryDefinition.findMany({
-      where: { isActive: true },
-      select: { code: true, label: true, shortLabel: true },
-    }),
-    prisma.category.findMany({
-      select: { id: true, name: true, slug: true },
-    }),
-  ]);
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    select: { id: true, code: true, name: true, slug: true, shortLabel: true },
+  });
 
   return {
     resolveCategoryIds(inputs: string[]) {
@@ -39,27 +34,12 @@ async function loadCategoryResolver() {
       const matches = new Set<number>();
 
       for (const category of categories) {
-        const categoryKeys = new Set([
+        const candidateKeys = new Set([
+          normalizeIdentifier(category.code),
           normalizeIdentifier(category.name),
           normalizeIdentifier(category.slug),
-        ]);
-
-        const definition = definitions.find((item) => {
-          const definitionKeys = [
-            normalizeIdentifier(item.code),
-            normalizeIdentifier(item.label),
-            normalizeIdentifier(item.shortLabel),
-            normalizeIdentifier(slugify(item.label)),
-          ].filter(Boolean);
-
-          return definitionKeys.some((key) => categoryKeys.has(key));
-        });
-
-        const candidateKeys = new Set([
-          ...categoryKeys,
-          normalizeIdentifier(definition?.code),
-          normalizeIdentifier(definition?.label),
-          normalizeIdentifier(definition?.shortLabel),
+          normalizeIdentifier(category.shortLabel),
+          normalizeIdentifier(slugify(category.name)),
         ]);
 
         if ([...candidateKeys].some((key) => requested.has(key))) {

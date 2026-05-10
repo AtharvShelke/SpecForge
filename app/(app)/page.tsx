@@ -2,17 +2,19 @@ import StorefrontPageClient from '@/components/storefront/StorefrontPageClient'
 import { prisma } from '@/lib/prisma'
 import { CategoryNode } from '@/types'
 
-type CategoryDefinitionRecord = {
+type CategoryRecord = {
+  id: number
   code: string
-  label: string
+  name: string
+  slug: string
   shortLabel: string | null
 }
 
 type HierarchyRecord = {
   id: string
   label: string
-  categoryDefinitionId: string | null
-  categoryDefinition: { id: string; code: string; label: string; shortLabel: string | null } | null
+  categoryId: number | null
+  category: { id: number; code: string; name: string; shortLabel: string | null } | null
   query: string | null
   brand: string | null
   parentId: string | null
@@ -23,10 +25,8 @@ type RawSpec = {
   id: string
   productId: string
   value: string
-  filterValue: {
-    filterDefinition: {
-      key: string
-    } | null
+  attribute: {
+    key: string
   } | null
 }
 
@@ -42,35 +42,19 @@ function slugify(value: string) {
 }
 
 function resolveCategoryCode(
-  category: { id: number; name: string; slug: string } | null,
-  definitions: CategoryDefinitionRecord[]
+  category: { id: number; code: string; name: string; slug: string } | null,
+  categories: CategoryRecord[]
 ) {
   if (!category) return undefined
-
-  const categoryKeys = new Set([
-    normalizeIdentifier(category.name),
-    normalizeIdentifier(category.slug),
-  ])
-
-  const definition = definitions.find((item) => {
-    const definitionKeys = [
-      normalizeIdentifier(item.code),
-      normalizeIdentifier(item.label),
-      normalizeIdentifier(item.shortLabel),
-      normalizeIdentifier(slugify(item.label)),
-    ].filter(Boolean)
-
-    return definitionKeys.some((key) => categoryKeys.has(key))
-  })
-
-  return definition?.code ?? category.slug ?? category.name
+  const match = categories.find((item) => item.id === category.id)
+  return match?.code ?? category.code ?? category.slug ?? category.name
 }
 
 function mapSpec(spec: RawSpec) {
   return {
     id: spec.id,
     productId: spec.productId,
-    key: spec.filterValue?.filterDefinition?.key ?? '',
+    key: spec.attribute?.key ?? '',
     value: spec.value,
   }
 }
@@ -83,7 +67,7 @@ function buildTree(records: HierarchyRecord[]): CategoryNode[] {
     map.set(record.id, {
       id: record.id,
       label: record.label,
-      category: record.categoryDefinition?.code as any,
+      category: record.category?.code as any,
       query: record.query ?? undefined,
       brand: record.brand ?? undefined,
       parentId: record.parentId ?? undefined,
@@ -107,7 +91,7 @@ function buildTree(records: HierarchyRecord[]): CategoryNode[] {
 export const revalidate = 60
 
 export default async function StorefrontPage() {
-  const [products, categoryRecords, brands, buildGuides, categoryDefinitions] = await Promise.all([
+  const [products, categoryRecords, brands, buildGuides, categoriesMaster] = await Promise.all([
     prisma.product.findMany({
       where: { status: 'ACTIVE' },
       orderBy: { name: 'asc' },
@@ -116,6 +100,7 @@ export default async function StorefrontPage() {
         category: {
           select: {
             id: true,
+            code: true,
             name: true,
             slug: true,
           },
@@ -126,13 +111,9 @@ export default async function StorefrontPage() {
             id: true,
             productId: true,
             value: true,
-            filterValue: {
+            attribute: {
               select: {
-                filterDefinition: {
-                  select: {
-                    key: true,
-                  },
-                },
+                key: true,
               },
             },
           },
@@ -149,12 +130,12 @@ export default async function StorefrontPage() {
       select: {
         id: true,
         label: true,
-        categoryDefinitionId: true,
-        categoryDefinition: {
+        categoryId: true,
+        category: {
           select: {
             id: true,
             code: true,
-            label: true,
+            name: true,
             shortLabel: true,
           },
         },
@@ -176,11 +157,13 @@ export default async function StorefrontPage() {
         items: true,
       },
     }),
-    prisma.categoryDefinition.findMany({
+    prisma.category.findMany({
       where: { isActive: true },
       select: {
+        id: true,
         code: true,
-        label: true,
+        name: true,
+        slug: true,
         shortLabel: true,
       },
     }),
@@ -190,7 +173,7 @@ export default async function StorefrontPage() {
   const storefrontBrands = brands.map(({ _count, ...brand }) => brand)
   const storefrontProducts = products.map((product) => ({
     ...product,
-    category: resolveCategoryCode(product.category, categoryDefinitions),
+    category: resolveCategoryCode(product.category, categoriesMaster),
     specs: product.specs.map(mapSpec),
   }))
   const storefrontBuildGuides = buildGuides.map((buildGuide) => ({

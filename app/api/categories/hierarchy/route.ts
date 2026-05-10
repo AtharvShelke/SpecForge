@@ -11,24 +11,24 @@ interface CategoryHierarchyRecord {
   brand: string | null;
   parentId: string | null;
   sortOrder: number;
-  categoryDefinition: {
-    id: string;
+  category: {
+    id: number;
     code: string;
-    label: string;
+    name: string;
     shortLabel: string | null;
   } | null;
 }
 
-interface CategoryTreeNode extends CategoryHierarchyRecord {
+interface CategoryTreeNode extends Omit<CategoryHierarchyRecord, 'category'> {
   category: string | null;
-  categoryDefinitionId: string | null;
+  categoryId: number | null;
   children: CategoryTreeNode[];
 }
 
 interface FlatCategoryNode {
   id: string;
   label: string;
-  categoryDefinitionId: string | null;
+  categoryId: number | null;
   query: string | null;
   brand: string | null;
   parentId: string | null;
@@ -44,11 +44,11 @@ const HIERARCHY_SELECT = {
   brand: true,
   parentId: true,
   sortOrder: true,
-  categoryDefinition: {
+  category: {
     select: {
       id: true,
       code: true,
-      label: true,
+      name: true,
       shortLabel: true,
     },
   },
@@ -86,8 +86,8 @@ function buildCategoryTree(records: CategoryHierarchyRecord[]): CategoryTreeNode
   for (const record of records) {
     const treeNode: CategoryTreeNode = {
       ...record,
-      category: record.categoryDefinition?.code ?? null,
-      categoryDefinitionId: record.categoryDefinition?.id ?? null,
+      category: record.category?.code ?? null,
+      categoryId: record.category?.id ?? null,
       children: [],
     };
     nodeMap.set(record.id, treeNode);
@@ -115,26 +115,26 @@ function flattenCategoryTree(
     sortOrder?: number;
     children?: Array<any>;
   }>,
-  categoryDefinitionMap: Map<string, string>,
+  categoryMap: Map<string, number>,
   parentId: string | null
 ): FlatCategoryNode[] {
   const flatNodes: FlatCategoryNode[] = [];
 
   nodes.forEach((node, index) => {
     const nodeId = crypto.randomUUID();
-    const categoryDefinitionId = node.category 
-      ? categoryDefinitionMap.get(node.category) ?? null 
+    const categoryId = node.category 
+      ? categoryMap.get(node.category) ?? null 
       : null;
 
     // Validate that category exists if provided
-    if (node.category && !categoryDefinitionId) {
-      throw new Error(`Category definition not found for code: ${node.category}`);
+    if (node.category && !categoryId) {
+      throw new Error(`Category not found for code: ${node.category}`);
     }
 
     flatNodes.push({
       id: nodeId,
       label: node.label,
-      categoryDefinitionId,
+      categoryId,
       query: node.query ?? null,
       brand: node.brand ?? null,
       parentId,
@@ -143,7 +143,7 @@ function flattenCategoryTree(
 
     // Recursively process children
     if (node.children && node.children.length > 0) {
-      const childNodes = flattenCategoryTree(node.children, categoryDefinitionMap, nodeId);
+      const childNodes = flattenCategoryTree(node.children, categoryMap, nodeId);
       flatNodes.push(...childNodes);
     }
   });
@@ -186,7 +186,7 @@ export async function PUT(req: NextRequest) {
     const tree = CategoryHierarchySchema.parse(body);
 
     // Fetch all category definitions for validation
-    const categoryDefinitions = await prisma.categoryDefinition.findMany({
+    const categories = await prisma.category.findMany({
       select: {
         id: true,
         code: true,
@@ -195,14 +195,14 @@ export async function PUT(req: NextRequest) {
     });
 
     // Create map for efficient lookup
-    const categoryDefinitionMap = new Map(
-      categoryDefinitions
+    const categoryMap = new Map(
+      categories
         .filter(cat => cat.isActive) // Only use active categories
         .map((category) => [category.code, category.id])
     );
 
     // Flatten the tree and validate
-    const flatNodes = flattenCategoryTree(tree, categoryDefinitionMap, null);
+    const flatNodes = flattenCategoryTree(tree, categoryMap, null);
 
     // Use transaction for data integrity
     await prisma.$transaction(async (tx) => {

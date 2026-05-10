@@ -92,6 +92,14 @@ enum FilterType {
   dropdown
 }
 
+enum AttributeInputType {
+  text
+  number
+  boolean
+  select
+  multi_select
+}
+
 enum ProductStatus {
   DRAFT
   ACTIVE
@@ -122,24 +130,34 @@ model User {
 // ─────────────────────────────────────────────────
 
 model Category {
-  id                   Int      @id @default(autoincrement())
-  name                 String   @unique @db.VarChar(100)
-  slug                 String   @unique @db.VarChar(100)
-  description          String?  @db.Text
-  image                String?  @db.VarChar(500)
-  isActive             Boolean  @default(true) @map("is_active")
-  categoryDefinitionId String?  @map("category_definition_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  code           String   @unique @db.VarChar(100)
+  name           String   @unique @db.VarChar(100)
+  slug           String   @unique @db.VarChar(100)
+  shortLabel     String?  @map("short_label") @db.VarChar(100)
+  description    String?  @db.Text
+  image          String?  @db.VarChar(500)
+  icon           String?  @db.VarChar(100)
+  displayOrder   Int      @default(0) @map("display_order")
+  featuredOrder  Int?     @map("featured_order")
+  showInFeatured Boolean  @default(false) @map("show_in_featured")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  subcategories       Subcategory[]
-  products            Product[]
-  brandCategories     BrandCategory[]
-  orderItems          OrderItem[]
-  buildGuides         BuildGuide[]
-  categoryDefinition  CategoryDefinition? @relation(fields: [categoryDefinitionId], references: [id], onDelete: SetNull)
+  subcategories   Subcategory[]
+  products        Product[]
+  brandCategories BrandCategory[]
+  orderItems      OrderItem[]
+  buildGuides     BuildGuide[]
+  buildSequence   BuildSequence?
+  hierarchyNodes  CategoryHierarchy[]
+  attributes      CategoryAttribute[]
+  outgoingRules   CompatibilityRule[] @relation("CompatibilityRuleSource")
+  incomingRules   CompatibilityRule[] @relation("CompatibilityRuleTarget")
 
-  @@index([categoryDefinitionId])
+  @@index([isActive, displayOrder])
+  @@index([showInFeatured, featuredOrder])
   @@map("categories")
 }
 
@@ -154,8 +172,9 @@ model Subcategory {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  products Product[]
+  category   Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products   Product[]
+  attributes CategoryAttribute[]
 
   @@unique([categoryId, name])
   @@index([categoryId])
@@ -186,40 +205,16 @@ model Brand {
 }
 
 // ─────────────────────────────────────────────────
-// CATALOG — Category Hierarchy & Schema
+// CATALOG — Category Hierarchy, Attributes & Compatibility
 // ─────────────────────────────────────────────────
 
-model CategoryDefinition {
-  id             String   @id @default(uuid())
-  code           String   @unique
-  label          String
-  shortLabel     String?
-  description    String?
-  icon           String?
-  displayOrder   Int      @default(0)
-  featuredOrder  Int?
-  isActive       Boolean  @default(true)
-  showInFeatured Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  buildSequence  BuildSequence?
-  categorySchema CategorySchema?
-  filterConfig   CategoryFilterConfig?
-  hierarchies    CategoryHierarchy[]
-  categories     Category[]
-
-  @@index([isActive, displayOrder])
-  @@index([showInFeatured, featuredOrder])
-}
-
 model BuildSequence {
-  id         String             @id @default(cuid())
-  categoryId String             @unique
-  stepOrder  Int                @unique
-  category   CategoryDefinition @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id         String   @id @default(cuid())
+  categoryId Int      @unique @map("category_id")
+  stepOrder  Int      @unique
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([stepOrder])
 }
@@ -239,137 +234,118 @@ model CategoryRelationship {
 }
 
 model CategoryHierarchy {
-  id                   String  @id @default(uuid())
-  label                String
-  categoryDefinitionId String? @map("category_definition_id")
-  query                String?
-  brand                String?
-  parentId             String?
-  sortOrder            Int     @default(0)
+  id         String  @id @default(uuid())
+  label      String
+  categoryId Int?    @map("category_id")
+  query      String?
+  brand      String?
+  parentId   String?
+  sortOrder  Int     @default(0)
 
-  categoryDefinition CategoryDefinition? @relation(fields: [categoryDefinitionId], references: [id], onDelete: SetNull)
-  parent             CategoryHierarchy?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children           CategoryHierarchy[] @relation("CategoryTree")
+  category Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  parent   CategoryHierarchy?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children CategoryHierarchy[] @relation("CategoryTree")
 
   @@index([parentId])
   @@index([sortOrder])
-  @@index([categoryDefinitionId])
+  @@index([categoryId])
 }
 
-model CategorySchema {
-  id                   String   @id @default(uuid())
-  categoryDefinitionId String   @unique @map("category_definition_id")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+model CategoryAttribute {
+  id                    String             @id @default(uuid())
+  categoryId            Int                @map("category_id")
+  subcategoryId         Int?               @map("subcategory_id")
+  key                   String             @db.VarChar(100)
+  label                 String             @db.VarChar(150)
+  type                  AttributeInputType
+  isRequired            Boolean            @default(false) @map("is_required")
+  isFilterable          Boolean            @default(true) @map("is_filterable")
+  isComparable          Boolean            @default(true) @map("is_comparable")
+  filterType            FilterType?        @map("filter_type")
+  unit                  String?            @db.VarChar(50)
+  helpText              String?            @map("help_text") @db.Text
+  dependencyAttributeId String?            @map("dependency_attribute_id")
+  dependencyOptionId    String?            @map("dependency_option_id")
+  sortOrder             Int                @default(0) @map("sort_order")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
 
-  categoryDefinition CategoryDefinition    @relation(fields: [categoryDefinitionId], references: [id], onDelete: Cascade)
-  attributes         AttributeDefinition[]
+  category                   Category                  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategory                Subcategory?              @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  dependencyAttribute        CategoryAttribute?        @relation("AttributeDependency", fields: [dependencyAttributeId], references: [id], onDelete: SetNull)
+  dependentAttributes        CategoryAttribute[]       @relation("AttributeDependency")
+  dependencyOption           AttributeOption?          @relation("AttributeOptionDependency", fields: [dependencyOptionId], references: [id], onDelete: SetNull)
+  options                    AttributeOption[]
+  productSpecs               ProductSpec[]
+  sourceCompatibilityClauses CompatibilityRuleClause[] @relation("CompatibilityClauseSourceAttribute")
+  targetCompatibilityClauses CompatibilityRuleClause[] @relation("CompatibilityClauseTargetAttribute")
+
+  @@unique([categoryId, subcategoryId, key])
+  @@index([categoryId, sortOrder])
+  @@index([categoryId, isFilterable, sortOrder])
+  @@index([subcategoryId, sortOrder])
+  @@index([dependencyAttributeId])
+  @@index([dependencyOptionId])
+  @@map("category_attributes")
 }
 
-model AttributeDefinition {
-  id               String   @id @default(uuid())
-  key              String
-  label            String
-  type             String
-  required         Boolean  @default(false)
-  options          String[]
-  unit             String?
-  categorySchemaId String
-  dependencyKey    String?
-  dependencyValue  String?
-  sortOrder        Int      @default(0)
+model AttributeOption {
+  id          String   @id @default(uuid())
+  attributeId String   @map("attribute_id")
+  value       String   @db.VarChar(200)
+  slug        String   @db.VarChar(200)
+  sortOrder   Int      @default(0) @map("sort_order")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  categorySchema CategorySchema @relation(fields: [categorySchemaId], references: [id], onDelete: Cascade)
+  attribute           CategoryAttribute   @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  dependentAttributes CategoryAttribute[] @relation("AttributeOptionDependency")
+  productSpecs        ProductSpec[]
 
-  @@unique([categorySchemaId, key])
+  @@unique([attributeId, slug])
+  @@index([attributeId, sortOrder])
+  @@map("attribute_options")
 }
 
-model CategoryFilterConfig {
-  id                   String   @id @default(uuid())
-  categoryDefinitionId String   @unique @map("category_definition_id")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+model CompatibilityRule {
+  id               String             @id @default(uuid())
+  sourceCategoryId Int                @map("source_category_id")
+  targetCategoryId Int                @map("target_category_id")
+  name             String             @db.VarChar(150)
+  message          String?            @db.Text
+  severity         CompatibilityLevel @default(INCOMPATIBLE)
+  isActive         Boolean            @default(true) @map("is_active")
+  sortOrder        Int                @default(0) @map("sort_order")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
 
-  categoryDefinition CategoryDefinition @relation(fields: [categoryDefinitionId], references: [id], onDelete: Cascade)
-  filters            FilterDefinition[]
+  sourceCategory Category                  @relation("CompatibilityRuleSource", fields: [sourceCategoryId], references: [id], onDelete: Cascade)
+  targetCategory Category                  @relation("CompatibilityRuleTarget", fields: [targetCategoryId], references: [id], onDelete: Cascade)
+  clauses        CompatibilityRuleClause[]
 
-  @@index([categoryDefinitionId])
+  @@index([sourceCategoryId, targetCategoryId, isActive])
+  @@map("compatibility_rules")
 }
 
-model FilterDefinition {
-  id                     String     @id @default(uuid())
-  key                    String
-  label                  String
-  type                   FilterType
-  options                String[]
-  min                    Float?
-  max                    Float?
-  dependencyKey          String?
-  dependencyValue        String?
-  sortOrder              Int        @default(0)
-  categoryFilterConfigId String
+model CompatibilityRuleClause {
+  id                String  @id @default(uuid())
+  ruleId            String  @map("rule_id")
+  sourceAttributeId String  @map("source_attribute_id")
+  targetAttributeId String  @map("target_attribute_id")
+  operator          String  @db.VarChar(50)
+  sourceValue       String? @map("source_value") @db.VarChar(200)
+  targetValue       String? @map("target_value") @db.VarChar(200)
+  sortOrder         Int     @default(0) @map("sort_order")
 
-  categoryFilterConfig CategoryFilterConfig @relation(fields: [categoryFilterConfigId], references: [id], onDelete: Cascade)
-  values               FilterValue[]
-  childDependencies    FilterDependency[]   @relation("ChildFilter")
+  rule            CompatibilityRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  sourceAttribute CategoryAttribute @relation("CompatibilityClauseSourceAttribute", fields: [sourceAttributeId], references: [id], onDelete: Cascade)
+  targetAttribute CategoryAttribute @relation("CompatibilityClauseTargetAttribute", fields: [targetAttributeId], references: [id], onDelete: Cascade)
 
-  @@unique([categoryFilterConfigId, key])
-  @@index([categoryFilterConfigId])
-  @@index([categoryFilterConfigId, sortOrder])
-  @@index([categoryFilterConfigId, sortOrder, key])
-}
-
-// ─────────────────────────────────────────────────
-// FILTER SYSTEM — Values & Dependencies
-// ─────────────────────────────────────────────────
-
-model FilterValue {
-  id                 String   @id @default(uuid())
-  filterDefinitionId String
-  value              String   @db.VarChar(200)
-  slug               String   @db.VarChar(200)
-  displayOrder       Int      @default(0)
-  metadata           Json?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  filterDefinition   FilterDefinition     @relation(fields: [filterDefinitionId], references: [id], onDelete: Cascade)
-  parentDependencies FilterDependency[]   @relation("ParentFilterValue")
-  productAssignments ProductFilterValue[]
-  productSpecs       ProductSpec[]
-
-  @@unique([filterDefinitionId, slug])
-  @@index([filterDefinitionId])
-  @@index([slug])
-  @@map("filter_values")
-}
-
-model FilterDependency {
-  id                  String   @id @default(uuid())
-  parentFilterValueId String
-  childFilterId       String
-  createdAt           DateTime @default(now())
-
-  parentFilterValue FilterValue      @relation("ParentFilterValue", fields: [parentFilterValueId], references: [id], onDelete: Cascade)
-  childFilter       FilterDefinition @relation("ChildFilter", fields: [childFilterId], references: [id], onDelete: Cascade)
-
-  @@unique([parentFilterValueId, childFilterId])
-  @@index([parentFilterValueId])
-  @@index([childFilterId])
-  @@map("filter_dependencies")
-}
-
-model ProductFilterValue {
-  productId     String
-  filterValueId String
-  createdAt     DateTime @default(now())
-
-  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  filterValue FilterValue @relation(fields: [filterValueId], references: [id], onDelete: Cascade)
-
-  @@id([productId, filterValueId])
-  @@index([filterValueId])
-  @@map("product_filter_values")
+  @@index([ruleId, sortOrder])
+  @@index([sourceAttributeId])
+  @@index([targetAttributeId])
+  @@map("compatibility_rule_clauses")
 }
 
 // ─────────────────────────────────────────────────
@@ -410,10 +386,10 @@ model Product {
   version         Int           @default(1)
 
   // Moved from ProductVariant
-  sku            String?   @unique
+  sku            String? @unique
   price          Float?
   compareAtPrice Float?
-  stockStatus    String    @default("IN_STOCK") @map("stock_status")
+  stockStatus    String  @default("IN_STOCK") @map("stock_status")
 
   brandId String?
   brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
@@ -421,12 +397,11 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  category     Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  subcategory  Subcategory?         @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
-  specs        ProductSpec[]
-  media        ProductMedia[]
-  tags         Tag[]
-  filterValues ProductFilterValue[]
+  category        Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory     Subcategory?     @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  specs           ProductSpec[]
+  media           ProductMedia[]
+  tags            Tag[]
   orderItems      OrderItem[]
   buildGuideItems BuildGuideItem[]
   inventoryItems  InventoryItem[]
@@ -441,20 +416,25 @@ model Product {
   @@index([status, name])
 }
 
-
-
 model ProductSpec {
-  id            String  @id @default(uuid())
-  productId     String
-  filterValueId String
-  value         String
-  isHighlighted Boolean @default(false)
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  attributeId   String   @map("attribute_id")
+  optionId      String?  @map("option_id")
+  value         String   @db.VarChar(300)
+  valueNumber   Float?   @map("value_number")
+  valueBoolean  Boolean? @map("value_boolean")
+  isHighlighted Boolean  @default(false) @map("is_highlighted")
 
-  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  filterValue FilterValue @relation(fields: [filterValueId], references: [id], onDelete: Cascade)
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attribute CategoryAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  option    AttributeOption?  @relation(fields: [optionId], references: [id], onDelete: SetNull)
 
-  @@unique([productId, filterValueId])
-  @@index([filterValueId])
+  @@unique([productId, attributeId, value])
+  @@index([productId, attributeId])
+  @@index([attributeId, value])
+  @@index([attributeId, valueNumber])
+  @@index([optionId])
   @@map("product_specs")
 }
 
@@ -598,15 +578,15 @@ model Order {
 }
 
 model OrderItem {
-  id              String  @id @default(uuid())
-  orderId         String
-  productId       String
-  name            String
-  categoryId      Int     @map("category_id")
-  price           Float
-  quantity        Int
-  image           String?
-  sku             String?
+  id         String  @id @default(uuid())
+  orderId    String
+  productId  String
+  name       String
+  categoryId Int     @map("category_id")
+  price      Float
+  quantity   Int
+  image      String?
+  sku        String?
 
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -679,7 +659,7 @@ model BuildGuide {
   updatedAt   DateTime @updatedAt
 
   items    BuildGuideItem[]
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([categoryId])

@@ -8,6 +8,7 @@ const categoryPayloadSchema = z.object({
   label: z.string().min(1).transform((value) => value.trim()),
   shortLabel: z.string().trim().optional().nullable(),
   description: z.string().trim().optional().nullable(),
+  image: z.string().trim().optional().nullable(),
   icon: z.string().trim().optional().nullable(),
   displayOrder: z.number().int().min(0).default(0),
   featuredOrder: z.number().int().min(0).optional().nullable(),
@@ -34,8 +35,21 @@ export async function POST(req: NextRequest) {
   try {
     const payload = categoryPayloadSchema.parse(await req.json());
 
-    const category = await prisma.categoryDefinition.create({
-      data: payload,
+    const slug = payload.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const category = await prisma.category.create({
+      data: {
+        code: payload.code,
+        name: payload.label,
+        slug,
+        shortLabel: payload.shortLabel,
+        description: payload.description,
+        image: payload.image,
+        icon: payload.icon,
+        displayOrder: payload.displayOrder,
+        featuredOrder: payload.featuredOrder,
+        isActive: payload.isActive,
+        showInFeatured: payload.showInFeatured,
+      },
       include: {
         buildSequence: {
           select: {
@@ -47,6 +61,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ...category,
+      label: category.name,
       stepOrder: category.buildSequence?.stepOrder ?? null,
       isInBuildSequence: Boolean(category.buildSequence),
     });
@@ -65,9 +80,22 @@ export async function PATCH(req: NextRequest) {
     const payload = categoryUpdateSchema.parse(await req.json());
     const { id, ...data } = payload;
 
-    const category = await prisma.categoryDefinition.update({
-      where: { id },
-      data,
+    const slug = data.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const category = await prisma.category.update({
+      where: { id: Number(id) },
+      data: {
+        code: data.code,
+        name: data.label,
+        slug,
+        shortLabel: data.shortLabel,
+        description: data.description,
+        image: data.image,
+        icon: data.icon,
+        displayOrder: data.displayOrder,
+        featuredOrder: data.featuredOrder,
+        isActive: data.isActive,
+        showInFeatured: data.showInFeatured,
+      },
       include: {
         buildSequence: {
           select: {
@@ -79,6 +107,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({
       ...category,
+      label: category.name,
       stepOrder: category.buildSequence?.stepOrder ?? null,
       isInBuildSequence: Boolean(category.buildSequence),
     });

@@ -2,7 +2,7 @@
 
 import React, { useDeferredValue, useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec, Brand, CategorySchema, CategoryDefinition } from '@/types';
+import { Category, Product, ProductSpecsFlat, specsToFlat, flatToSpecs, ProductSpec, Brand, CategoryAttributesConfig, CategoryDefinition } from '@/types';
 import {
     Edit,
     Plus,
@@ -358,7 +358,7 @@ const ProductManager = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
-    const [schemas, setSchemas] = useState<CategorySchema[]>([]);
+    const [attributeConfigs, setAttributeConfigs] = useState<CategoryAttributesConfig[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Fetch products
@@ -379,8 +379,10 @@ const ProductManager = () => {
             const data = await res.json();
             console.log("Categories Response ", data)
             setCategories(data);
+            return data as Category[];
         } catch (err) {
             console.error('Failed to fetch categories:', err);
+            return [] as Category[];
         }
     }, []);
 
@@ -394,22 +396,29 @@ const ProductManager = () => {
         }
     }, []);
 
-    // Fetch schemas
-    const fetchSchemas = useCallback(async () => {
+    // Fetch category attributes
+    const fetchAttributeConfigs = useCallback(async (categoryList: Category[]) => {
         try {
-            const res = await fetch('/api/categories/schemas');
-            setSchemas(await res.json());
+            const results = await Promise.all(
+                categoryList.map(async (category) => {
+                    const res = await fetch(`/api/categories/${category.code}/attributes`);
+                    if (!res.ok) return null;
+                    return res.json();
+                })
+            );
+            setAttributeConfigs(results.filter(Boolean));
         } catch (err) {
-            console.error('Failed to fetch schemas:', err);
+            console.error('Failed to fetch category attributes:', err);
         }
     }, []);
 
     // Sync data
     const syncData = useCallback(async () => {
         setIsLoading(true);
-        await Promise.all([fetchProducts(), fetchCategories(), fetchBrands(), fetchSchemas()]);
+        const [_, categoryList] = await Promise.all([fetchProducts(), fetchCategories(), fetchBrands()]);
+        await fetchAttributeConfigs(categoryList);
         setIsLoading(false);
-    }, [fetchProducts, fetchCategories, fetchBrands, fetchSchemas]);
+    }, [fetchProducts, fetchCategories, fetchBrands, fetchAttributeConfigs]);
 
     // Add product
     const addProduct = useCallback(async (product: Partial<Product>, initialStock: number, costPrice: number) => {
@@ -539,15 +548,17 @@ const ProductManager = () => {
     const [currentProduct, setCurrentProduct] = useState<ProductFormState>(EMPTY_FORM);
     const [newProductCost, setNewProductCost] = useState(0);
 
-    const currentSchema = useMemo(() => {
-        const schema = schemas.find(s => matchesCategorySelection(currentProduct.category, (s as any).categoryDefinition ?? { code: (s as any).category, slug: (s as any).category }));
-        if (!schema) return [];
-        return schema.attributes.filter(attr => {
+    const currentAttributes = useMemo(() => {
+        const attributeConfig = attributeConfigs.find((config) =>
+            matchesCategorySelection(currentProduct.category, config.categoryDefinition ?? { code: config.categoryCode, slug: config.categoryCode })
+        );
+        if (!attributeConfig) return [];
+        return attributeConfig.attributes.filter(attr => {
             if (!attr.dependencyKey) return true;
             const depVal = currentProduct.specs?.[attr.key === 'socket' ? 'brand' : attr.dependencyKey];
             return Array.isArray(depVal) ? depVal.includes(attr.dependencyValue || '') : depVal === attr.dependencyValue;
         });
-    }, [currentProduct.category, currentProduct.specs, schemas]);
+    }, [attributeConfigs, currentProduct.category, currentProduct.specs]);
 
     const availableBrands = useMemo(() =>
         brands.filter(b => b.categories.some(c => matchesCategorySelection(currentProduct.category, c))),
@@ -638,9 +649,11 @@ const ProductManager = () => {
     const handleSpecChange = useCallback((key: string, value: string | number | string[]) => {
         setCurrentProduct(prev => {
             let newSpecs = { ...prev.specs, [key]: value };
-                const schema = schemas.find(s => matchesCategorySelection(prev.category, (s as any).categoryDefinition ?? { code: (s as any).category, slug: (s as any).category }));
-            if (schema) {
-                schema.attributes.forEach(attr => {
+                const attributeConfig = attributeConfigs.find((config) =>
+                    matchesCategorySelection(prev.category, config.categoryDefinition ?? { code: config.categoryCode, slug: config.categoryCode })
+                );
+            if (attributeConfig) {
+                attributeConfig.attributes.forEach(attr => {
                     const depKey = attr.key === 'socket' ? 'brand' : attr.dependencyKey;
                     if (depKey === key) {
                         const isSatisfied = Array.isArray(value) ? value.includes(attr.dependencyValue || '') : value === attr.dependencyValue;
@@ -650,7 +663,7 @@ const ProductManager = () => {
             }
             return { ...prev, specs: newSpecs };
         });
-    }, [schemas]);
+    }, [attributeConfigs]);
 
     const handleMultiSelectToggle = useCallback((key: string, option: string) => {
         setCurrentProduct(prev => {
@@ -682,11 +695,11 @@ const ProductManager = () => {
     const handleClearFilters = useCallback(() => router.push(pathname), [router, pathname]);
 
     const activeSchemaSpecs = useMemo(() =>
-        currentSchema.filter(attr => attr.required || currentProduct.specs?.[attr.key] !== undefined),
-        [currentSchema, currentProduct.specs]
+        currentAttributes.filter(attr => attr.required || currentProduct.specs?.[attr.key] !== undefined),
+        [currentAttributes, currentProduct.specs]
     );
 
-    const schemaKeys = useMemo(() => currentSchema.map(attr => attr.key), [currentSchema]);
+    const schemaKeys = useMemo(() => currentAttributes.map(attr => attr.key), [currentAttributes]);
 
     const customSpecs = useMemo(() =>
         Object.entries(currentProduct.specs || {}).filter(([key]) => !schemaKeys.includes(key) && key !== 'brand'),

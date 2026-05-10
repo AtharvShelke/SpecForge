@@ -169,7 +169,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
 
     const inCart        = useMemo(() => cart.find((c: any) => c.id === product.id), [cart, product.id]);
     const statusInfo    = STATUS_CONFIG[status] ?? STATUS_CONFIG.IN_STOCK;
-    const highlights    = CATEGORY_HIGHLIGHTS[typeof product.category === 'string' ? product.category : product.category?.slug] ?? [];
+    const highlights    = CATEGORY_HIGHLIGHTS[typeof product.category === 'string' ? product.category : product.category?.code ?? product.category?.slug] ?? [];
 
     const report = useMemo(() => {
         const hypotheticalCart = [...cart, { ...product, quantity: 1 } as any];
@@ -203,7 +203,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
                             <ChevronRight size={10} className="shrink-0" />
                             <Link href="/products" className="hover:text-zinc-700 transition-colors shrink-0">Products</Link>
                             <ChevronRight size={10} className="shrink-0" />
-                            <Link href={`/products?category=${typeof product.category === 'string' ? product.category : product.category?.slug}`} className="hover:text-zinc-700 transition-colors capitalize shrink-0">
+                            <Link href={`/products?category=${typeof product.category === 'string' ? product.category : product.category?.code ?? product.category?.slug}`} className="hover:text-zinc-700 transition-colors capitalize shrink-0">
                                 {(typeof product.category === 'string' ? product.category : product.category?.name)?.toLowerCase() || 'Uncategorized'}
                             </Link>
                             <ChevronRight size={10} className="shrink-0" />

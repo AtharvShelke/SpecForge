@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getBuildSequenceItems } from '@/lib/services/categoryService';
 
 const reorderSchema = z.object({
-  categoryIds: z.array(z.string().min(1)),
+  categoryIds: z.array(z.number().int().positive()),
 });
 
 export async function GET() {
@@ -75,7 +75,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.buildSequence.delete({
-      where: { categoryId },
+      where: { categoryId: Number(categoryId) },
     });
 
     const remaining = await prisma.buildSequence.findMany({

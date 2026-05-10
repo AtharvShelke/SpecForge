@@ -31,7 +31,7 @@ const COMPARE_KEY = 'specforge_compare';
 
 function getCategoryKey(product: Product) {
     if (typeof product.category === 'string') return product.category;
-    return product.category?.slug ?? product.category?.name ?? '';
+    return product.category?.code ?? product.category?.slug ?? product.category?.name ?? '';
 }
 
 // Reads from localStorage safely — returns null on SSR or parse failure

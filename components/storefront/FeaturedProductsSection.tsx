@@ -141,11 +141,11 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
   const { categories, getLabel } = useCategories()
   const categoryOrder = categories
     .filter((category) => category.showInFeatured)
-    .sort((a, b) => (a.featuredOrder ?? a.displayOrder) - (b.featuredOrder ?? b.displayOrder))
+    .sort((a, b) => (a.featuredOrder ?? a.displayOrder ?? 0) - (b.featuredOrder ?? b.displayOrder ?? 0))
     .map((category) => category.code)
 
   const categoryMap = categoryOrder.reduce<Record<string, Product[]>>((acc, cat) => {
-    const items = products.filter((product) => (typeof product.category === 'string' ? product.category : product.category?.slug) === cat)
+    const items = products.filter((product) => (typeof product.category === 'string' ? product.category : product.category?.code) === cat)
     if (items.length > 0) acc[cat] = items
     return acc
   }, {})

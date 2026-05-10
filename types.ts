@@ -4,39 +4,29 @@
 
 export interface Category {
   id: number;
-  shortLabel?: string;
-  label?: string;
-  code?: string;
+  code: string;
   name: string;
   slug: string;
+  shortLabel?: string | null;
+  label?: string;
   description?: string | null;
   image?: string | null;
+  icon?: string | null;
+  displayOrder?: number;
+  featuredOrder?: number | null;
+  stepOrder?: number | null;
+  isInBuildSequence?: boolean;
+  showInFeatured?: boolean;
   isActive: boolean;
-  categoryDefinitionId?: string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
 
-export interface CategoryDefinition {
-  id?: string;
-  code: string;
-  label: string;
-  shortLabel?: string | null;
-  description?: string | null;
-  icon?: string | null;
-  displayOrder: number;
-  featuredOrder?: number | null;
-  stepOrder?: number | null;
-  isInBuildSequence?: boolean;
-  isActive: boolean;
-  showInFeatured: boolean;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-}
+export type CategoryDefinition = Category;
 
 export interface BuildSequenceItem {
   id?: string;
-  categoryId: string;
+  categoryId: number;
   stepOrder: number;
   category: CategoryDefinition;
   createdAt?: string | Date;
@@ -96,8 +86,13 @@ export type PaymentStatusType = 'INITIATED' | 'PENDING' | 'COMPLETED' | 'FAILED'
 export interface ProductSpec {
   id: string;
   productId: string;
+  attributeId?: string;
+  optionId?: string | null;
   key: string;
   value: string;
+  valueNumber?: number | null;
+  valueBoolean?: boolean | null;
+  isHighlighted?: boolean;
 }
 
 export interface Tag {
@@ -217,7 +212,7 @@ export interface CategoryNode {
   id?: string;       // DB has id, but tree nodes in frontend may not always have it
   label: string;
   children?: CategoryNode[];
-  category?: Category;
+  category?: Category | string | null;
   brand?: string;
   query?: string;
   parentId?: string;
@@ -229,24 +224,33 @@ export interface CategoryNode {
 // CATALOG — Category Schema (attribute definitions)
 // ──────────────────────────────────────────────────────
 
-export interface AttributeDefinition {
+export type AttributeInputType = 'text' | 'number' | 'select' | 'multi-select' | 'boolean';
+
+export interface CategoryAttributeDefinition {
   id?: string;
   key: string;
   label: string;
-  type: 'text' | 'number' | 'select' | 'multi-select' | 'boolean';
-  options?: string[];
+  type: AttributeInputType;
+  options: string[];
   required: boolean;
   unit?: string;
   sortOrder?: number;
-  categorySchemaId?: string;
+  categoryId?: number;
+  categoryCode?: string;
   dependencyKey?: string;
   dependencyValue?: string;
+  isFilterable: boolean;
+  isComparable: boolean;
+  filterType?: FilterType | null;
+  helpText?: string | null;
 }
 
-export interface CategorySchema {
+export interface CategoryAttributesConfig {
   id?: string;
-  category: Category;
-  attributes: AttributeDefinition[];
+  categoryCode: string;
+  category: Category | string;
+  categoryDefinition?: Category;
+  attributes: CategoryAttributeDefinition[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -255,32 +259,6 @@ export interface CategorySchema {
 // CATALOG — Filter Config
 // ──────────────────────────────────────────────────────
 
-export interface FilterDefinition {
-  id?: string;
-  key: string;
-  label: string;
-  type: FilterType;
-  options?: string[];
-  min?: number;
-  max?: number;
-  dependencyKey?: string;
-  dependencyValue?: string;
-  sortOrder?: number;
-  categoryFilterConfigId?: string;
-  // Frontend convenience accessor
-  dependency?: {
-    key: string;
-    value: string;
-  };
-}
-
-export interface CategoryFilterConfig {
-  id?: string;
-  category: Category;
-  filters: FilterDefinition[];
-  createdAt?: string;
-  updatedAt?: string;
-}
 
 // ──────────────────────────────────────────────────────
 // INVENTORY

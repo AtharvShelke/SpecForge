@@ -132,12 +132,17 @@ exports.Prisma.UserScalarFieldEnum = {
 
 exports.Prisma.CategoryScalarFieldEnum = {
   id: 'id',
+  code: 'code',
   name: 'name',
   slug: 'slug',
+  shortLabel: 'shortLabel',
   description: 'description',
   image: 'image',
+  icon: 'icon',
+  displayOrder: 'displayOrder',
+  featuredOrder: 'featuredOrder',
+  showInFeatured: 'showInFeatured',
   isActive: 'isActive',
-  categoryDefinitionId: 'categoryDefinitionId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -166,21 +171,6 @@ exports.Prisma.BrandScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.CategoryDefinitionScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  label: 'label',
-  shortLabel: 'shortLabel',
-  description: 'description',
-  icon: 'icon',
-  displayOrder: 'displayOrder',
-  featuredOrder: 'featuredOrder',
-  isActive: 'isActive',
-  showInFeatured: 'showInFeatured',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.BuildSequenceScalarFieldEnum = {
   id: 'id',
   categoryId: 'categoryId',
@@ -202,77 +192,66 @@ exports.Prisma.CategoryRelationshipScalarFieldEnum = {
 exports.Prisma.CategoryHierarchyScalarFieldEnum = {
   id: 'id',
   label: 'label',
-  categoryDefinitionId: 'categoryDefinitionId',
+  categoryId: 'categoryId',
   query: 'query',
   brand: 'brand',
   parentId: 'parentId',
   sortOrder: 'sortOrder'
 };
 
-exports.Prisma.CategorySchemaScalarFieldEnum = {
+exports.Prisma.CategoryAttributeScalarFieldEnum = {
   id: 'id',
-  categoryDefinitionId: 'categoryDefinitionId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.AttributeDefinitionScalarFieldEnum = {
-  id: 'id',
+  categoryId: 'categoryId',
+  subcategoryId: 'subcategoryId',
   key: 'key',
   label: 'label',
   type: 'type',
-  required: 'required',
-  options: 'options',
+  isRequired: 'isRequired',
+  isFilterable: 'isFilterable',
+  isComparable: 'isComparable',
+  filterType: 'filterType',
   unit: 'unit',
-  categorySchemaId: 'categorySchemaId',
-  dependencyKey: 'dependencyKey',
-  dependencyValue: 'dependencyValue',
-  sortOrder: 'sortOrder'
-};
-
-exports.Prisma.CategoryFilterConfigScalarFieldEnum = {
-  id: 'id',
-  categoryDefinitionId: 'categoryDefinitionId',
+  helpText: 'helpText',
+  dependencyAttributeId: 'dependencyAttributeId',
+  dependencyOptionId: 'dependencyOptionId',
+  sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.FilterDefinitionScalarFieldEnum = {
+exports.Prisma.AttributeOptionScalarFieldEnum = {
   id: 'id',
-  key: 'key',
-  label: 'label',
-  type: 'type',
-  options: 'options',
-  min: 'min',
-  max: 'max',
-  dependencyKey: 'dependencyKey',
-  dependencyValue: 'dependencyValue',
-  sortOrder: 'sortOrder',
-  categoryFilterConfigId: 'categoryFilterConfigId'
-};
-
-exports.Prisma.FilterValueScalarFieldEnum = {
-  id: 'id',
-  filterDefinitionId: 'filterDefinitionId',
+  attributeId: 'attributeId',
   value: 'value',
   slug: 'slug',
-  displayOrder: 'displayOrder',
+  sortOrder: 'sortOrder',
   metadata: 'metadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.FilterDependencyScalarFieldEnum = {
+exports.Prisma.CompatibilityRuleScalarFieldEnum = {
   id: 'id',
-  parentFilterValueId: 'parentFilterValueId',
-  childFilterId: 'childFilterId',
-  createdAt: 'createdAt'
+  sourceCategoryId: 'sourceCategoryId',
+  targetCategoryId: 'targetCategoryId',
+  name: 'name',
+  message: 'message',
+  severity: 'severity',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
-exports.Prisma.ProductFilterValueScalarFieldEnum = {
-  productId: 'productId',
-  filterValueId: 'filterValueId',
-  createdAt: 'createdAt'
+exports.Prisma.CompatibilityRuleClauseScalarFieldEnum = {
+  id: 'id',
+  ruleId: 'ruleId',
+  sourceAttributeId: 'sourceAttributeId',
+  targetAttributeId: 'targetAttributeId',
+  operator: 'operator',
+  sourceValue: 'sourceValue',
+  targetValue: 'targetValue',
+  sortOrder: 'sortOrder'
 };
 
 exports.Prisma.TagScalarFieldEnum = {
@@ -312,8 +291,11 @@ exports.Prisma.ProductScalarFieldEnum = {
 exports.Prisma.ProductSpecScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
-  filterValueId: 'filterValueId',
+  attributeId: 'attributeId',
+  optionId: 'optionId',
   value: 'value',
+  valueNumber: 'valueNumber',
+  valueBoolean: 'valueBoolean',
   isHighlighted: 'isHighlighted'
 };
 
@@ -616,12 +598,26 @@ exports.Role = exports.$Enums.Role = {
   USER: 'USER'
 };
 
+exports.AttributeInputType = exports.$Enums.AttributeInputType = {
+  text: 'text',
+  number: 'number',
+  boolean: 'boolean',
+  select: 'select',
+  multi_select: 'multi_select'
+};
+
 exports.FilterType = exports.$Enums.FilterType = {
   checkbox: 'checkbox',
   range: 'range',
   boolean: 'boolean',
   search: 'search',
   dropdown: 'dropdown'
+};
+
+exports.CompatibilityLevel = exports.$Enums.CompatibilityLevel = {
+  COMPATIBLE: 'COMPATIBLE',
+  WARNING: 'WARNING',
+  INCOMPATIBLE: 'INCOMPATIBLE'
 };
 
 exports.ProductStatus = exports.$Enums.ProductStatus = {
@@ -701,17 +697,13 @@ exports.Prisma.ModelName = {
   Subcategory: 'Subcategory',
   BrandCategory: 'BrandCategory',
   Brand: 'Brand',
-  CategoryDefinition: 'CategoryDefinition',
   BuildSequence: 'BuildSequence',
   CategoryRelationship: 'CategoryRelationship',
   CategoryHierarchy: 'CategoryHierarchy',
-  CategorySchema: 'CategorySchema',
-  AttributeDefinition: 'AttributeDefinition',
-  CategoryFilterConfig: 'CategoryFilterConfig',
-  FilterDefinition: 'FilterDefinition',
-  FilterValue: 'FilterValue',
-  FilterDependency: 'FilterDependency',
-  ProductFilterValue: 'ProductFilterValue',
+  CategoryAttribute: 'CategoryAttribute',
+  AttributeOption: 'AttributeOption',
+  CompatibilityRule: 'CompatibilityRule',
+  CompatibilityRuleClause: 'CompatibilityRuleClause',
   Tag: 'Tag',
   ProductMedia: 'ProductMedia',
   Product: 'Product',

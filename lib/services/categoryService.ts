@@ -1,12 +1,14 @@
 import { prisma } from '@/lib/prisma';
 import { CategoryDefinition, BuildSequenceItem } from '@/types';
 
-const categoryDefinitionSelect = {
+const categorySelect = {
   id: true,
   code: true,
-  label: true,
+  name: true,
+  slug: true,
   shortLabel: true,
   description: true,
+  image: true,
   icon: true,
   displayOrder: true,
   featuredOrder: true,
@@ -18,11 +20,13 @@ const categoryDefinitionSelect = {
 
 function toCategoryDefinition(
   category: {
-    id: string;
+    id: number;
     code: string;
-    label: string;
+    name: string;
+    slug: string;
     shortLabel: string | null;
     description: string | null;
+    image: string | null;
     icon: string | null;
     displayOrder: number;
     featuredOrder: number | null;
@@ -35,23 +39,24 @@ function toCategoryDefinition(
 ): CategoryDefinition {
   return {
     ...category,
+    label: category.name,
     stepOrder: stepOrder ?? null,
     isInBuildSequence: stepOrder !== undefined && stepOrder !== null,
   };
 }
 
 export async function getCategoryDefinitions(includeInactive = false): Promise<CategoryDefinition[]> {
-  const categories = await prisma.categoryDefinition.findMany({
+  const categories = await prisma.category.findMany({
     where: includeInactive ? undefined : { isActive: true },
     select: {
-      ...categoryDefinitionSelect,
+      ...categorySelect,
       buildSequence: {
         select: {
           stepOrder: true,
         },
       },
     },
-    orderBy: [{ displayOrder: 'asc' }, { label: 'asc' }],
+    orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
   });
 
   return categories
@@ -62,18 +67,18 @@ export async function getCategoryDefinitions(includeInactive = false): Promise<C
       }
       if (left.stepOrder != null) return -1;
       if (right.stepOrder != null) return 1;
-      if (left.displayOrder !== right.displayOrder) {
-        return left.displayOrder - right.displayOrder;
+      if ((left.displayOrder ?? 0) !== (right.displayOrder ?? 0)) {
+        return (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
       }
-      return left.label.localeCompare(right.label);
+      return left.name.localeCompare(right.name);
     });
 }
 
 export async function getCategoryDefinitionByCode(code: string) {
-  return prisma.categoryDefinition.findUnique({
+  return prisma.category.findUnique({
     where: { code },
     select: {
-      ...categoryDefinitionSelect,
+      ...categorySelect,
       buildSequence: {
         select: {
           id: true,
@@ -90,7 +95,7 @@ export async function getBuildSequence(): Promise<CategoryDefinition[]> {
     select: {
       stepOrder: true,
       category: {
-        select: categoryDefinitionSelect,
+        select: categorySelect,
       },
     },
   });
@@ -108,7 +113,7 @@ export async function getBuildSequenceItems(): Promise<BuildSequenceItem[]> {
       createdAt: true,
       updatedAt: true,
       category: {
-        select: categoryDefinitionSelect,
+        select: categorySelect,
       },
     },
   });

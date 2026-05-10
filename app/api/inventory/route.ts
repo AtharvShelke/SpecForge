@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
                 category: {
                     OR: [
                         { slug: category },
-                        { categoryDefinition: { code: category } }
+                        { code: category }
                     ]
                 }
             };

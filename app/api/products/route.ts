@@ -37,54 +37,27 @@ function slugify(value: string) {
 }
 
 async function loadCategoryMetadata() {
-    const [definitions, categories] = await Promise.all([
-        prisma.categoryDefinition.findMany({
-            where: { isActive: true },
-            select: { code: true, label: true, shortLabel: true },
-        }),
-        prisma.category.findMany({
-            select: { id: true, name: true, slug: true },
-        }),
-    ]);
+    const categories = await prisma.category.findMany({
+        where: { isActive: true },
+        select: { id: true, code: true, name: true, slug: true, shortLabel: true },
+    });
 
     const codeByCategoryId = new Map<number, string>();
     const categoryIdsByKey = new Map<string, number[]>();
 
     for (const category of categories) {
         const categoryKeys = new Set([
+            normalizeIdentifier(category.code),
             normalizeIdentifier(category.name),
             normalizeIdentifier(category.slug),
+            normalizeIdentifier(category.shortLabel),
         ]);
 
-        const definition = definitions.find((item) => {
-            const definitionKeys = [
-                normalizeIdentifier(item.label),
-                normalizeIdentifier(item.shortLabel),
-                normalizeIdentifier(item.code),
-                normalizeIdentifier(slugify(item.label)),
-            ].filter(Boolean);
+        codeByCategoryId.set(category.id, category.code);
 
-            return definitionKeys.some((key) => categoryKeys.has(key));
-        });
-
-        if (definition) {
-            codeByCategoryId.set(category.id, definition.code);
-
-            for (const key of [
-                normalizeIdentifier(definition.code),
-                normalizeIdentifier(definition.label),
-                normalizeIdentifier(definition.shortLabel),
-                normalizeIdentifier(category.name),
-                normalizeIdentifier(category.slug),
-            ]) {
-                if (!key) continue;
-                categoryIdsByKey.set(key, [...(categoryIdsByKey.get(key) ?? []), category.id]);
-            }
-        } else {
-            for (const key of [normalizeIdentifier(category.name), normalizeIdentifier(category.slug)]) {
-                if (!key) continue;
-                categoryIdsByKey.set(key, [...(categoryIdsByKey.get(key) ?? []), category.id]);
-            }
+        for (const key of [...categoryKeys, normalizeIdentifier(slugify(category.name))]) {
+            if (!key) continue;
+            categoryIdsByKey.set(key, [...(categoryIdsByKey.get(key) ?? []), category.id]);
         }
     }
 
@@ -107,8 +80,10 @@ const BASE_PRODUCT_INCLUDE = {
     category: {
         select: {
             id: true,
+            code: true,
             name: true,
             slug: true,
+            shortLabel: true,
         },
     },
     brand: {
@@ -150,17 +125,15 @@ const FULL_PRODUCT_INCLUDE = {
         select: {
             id: true,
             productId: true,
+            attributeId: true,
+            optionId: true,
             value: true,
+            valueNumber: true,
+            valueBoolean: true,
             isHighlighted: true,
-            filterValue: {
+            attribute: {
                 select: {
-                    id: true,
-                    value: true,
-                    filterDefinition: {
-                        select: {
-                            key: true,
-                        },
-                    },
+                    key: true,
                 },
             },
         },
@@ -191,8 +164,12 @@ function mapProduct(product: any, codeByCategoryId: Map<number, string>) {
         specs: (product.specs ?? []).map((spec: any) => ({
             id: spec.id,
             productId: spec.productId,
-            key: spec.filterValue?.filterDefinition?.key ?? "",
+            attributeId: spec.attributeId,
+            optionId: spec.optionId,
+            key: spec.attribute?.key ?? "",
             value: spec.value,
+            valueNumber: spec.valueNumber ?? undefined,
+            valueBoolean: spec.valueBoolean ?? undefined,
             isHighlighted: spec.isHighlighted,
         })),
         inventoryItems: (product.inventoryItems ?? []).map((item: any) => ({
@@ -282,10 +259,23 @@ function buildWhereClause(
                 and.push({
                     specs: {
                         some: {
-                            filterValue: {
-                                filterDefinition: {
-                                    key: key.slice(8),
-                                },
+                            attribute: {
+                                key: key.slice(8),
+                            },
+                            value: { in: values },
+                        },
+                    },
+                });
+            }
+        } else if (key.startsWith("f_")) {
+            const values = searchParams.getAll(key);
+            const attributeKey = key.slice(2);
+            if (values.length && attributeKey) {
+                and.push({
+                    specs: {
+                        some: {
+                            attribute: {
+                                key: attributeKey,
                             },
                             value: { in: values },
                         },
@@ -303,7 +293,7 @@ function buildWhereClause(
 }
 
 async function resolveFilterOptions(where: Record<string, unknown>, categoryCode: string | null) {
-    const [brandResults, specResults, filterConfig] = await Promise.all([
+    const [brandResults, specResults, category] = await Promise.all([
         prisma.product.findMany({
             where,
             select: { brand: { select: { name: true } } },
@@ -313,35 +303,30 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
             where: { product: where },
             select: {
                 value: true,
-                filterValue: {
+                valueNumber: true,
+                attribute: {
                     select: {
                         id: true,
-                        slug: true,
-                        value: true,
-                        filterDefinition: {
-                            select: {
-                                id: true,
-                                key: true,
-                                label: true,
-                                type: true,
-                                options: true,
-                                min: true,
-                                max: true,
-                            },
-                        },
+                        key: true,
+                        label: true,
+                        type: true,
+                        filterType: true,
+                        unit: true,
                     },
                 },
             },
         }),
         categoryCode
-            ? prisma.categoryFilterConfig.findFirst({
-                where: {
-                    categoryDefinition: {
-                        code: categoryCode,
-                    },
-                },
+            ? prisma.category.findFirst({
+                where: { code: categoryCode },
                 include: {
-                    filters: {
+                    attributes: {
+                        where: { isFilterable: true },
+                        include: {
+                            dependencyAttribute: { select: { key: true } },
+                            dependencyOption: { select: { value: true } },
+                            options: { select: { value: true, slug: true }, orderBy: { sortOrder: 'asc' } },
+                        },
                         orderBy: { sortOrder: 'asc' },
                     },
                 },
@@ -353,38 +338,32 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
     const specMetadata: Record<string, any> = {};
     
     for (const spec of specResults) {
-        const key = spec.filterValue?.filterDefinition?.key;
+        const key = spec.attribute?.key;
         if (!key) continue;
         (specs[key] ??= new Set()).add(spec.value);
         
         // Store metadata for each spec key
         if (!specMetadata[key]) {
             specMetadata[key] = {
-                ...spec.filterValue.filterDefinition,
+                ...spec.attribute,
                 availableValues: [],
             };
         }
     }
 
-    // Populate available values from filter config
-    if (filterConfig) {
-        for (const filter of filterConfig.filters) {
-            if (filter.type === 'dropdown' || filter.type === 'checkbox') {
-                const values = await prisma.filterValue.findMany({
-                    where: {
-                        filterDefinitionId: filter.id,
-                    },
-                    select: {
-                        value: true,
-                        slug: true,
-                    },
-                    orderBy: { displayOrder: 'asc' },
-                });
-                
-                if (specMetadata[filter.key]) {
-                    specMetadata[filter.key].availableValues = values;
-                    specMetadata[filter.key].config = filter;
-                }
+    if (category) {
+        for (const attribute of category.attributes) {
+            if (specMetadata[attribute.key]) {
+                specMetadata[attribute.key].availableValues = attribute.options;
+                specMetadata[attribute.key].config = {
+                    id: attribute.id,
+                    key: attribute.key,
+                    label: attribute.label,
+                    type: attribute.filterType ?? (attribute.type === 'number' ? 'range' : attribute.type === 'boolean' ? 'boolean' : 'dropdown'),
+                    sortOrder: attribute.sortOrder,
+                    dependencyKey: attribute.dependencyAttribute?.key ?? null,
+                    dependencyValue: attribute.dependencyOption?.value ?? null,
+                };
             }
         }
     }
@@ -395,13 +374,6 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
             Object.entries(specs).map(([key, values]) => [key, [...values].sort()])
         ),
         specMetadata,
-        filterConfig: filterConfig
-            ? {
-                id: filterConfig.id,
-                categoryCode,
-                filters: filterConfig.filters,
-            }
-            : null,
     };
 }
 
@@ -546,89 +518,36 @@ export async function POST(req: NextRequest) {
                 });
             }
 
-            // Validate specs against category schema
-            const categoryDef = await tx.categoryDefinition.findFirst({
-                where: {
-                    categories: {
-                        some: { id: categoryId },
-                    },
-                },
+            const categoryAttributes = await tx.categoryAttribute.findMany({
+                where: { categoryId },
                 include: {
-                    categorySchema: {
-                        include: {
-                            attributes: true,
-                        },
-                    },
+                    options: true,
                 },
             });
 
-            if (categoryDef?.categorySchema) {
-                const schemaAttrs = new Map(
-                    categoryDef.categorySchema.attributes.map((attr) => [attr.key, attr])
-                );
-
-                for (const spec of data.specs) {
-                    const attrDef = schemaAttrs.get(spec.key);
-                    if (!attrDef) {
-                        throw new Error(`Unknown specification key for category: ${spec.key}`);
-                    }
-
-                    // Validate against options if provided
-                    if (attrDef.options && attrDef.options.length > 0) {
-                        if (!attrDef.options.includes(spec.value)) {
-                            throw new Error(
-                                `Invalid value for ${spec.key}. Allowed values: ${attrDef.options.join(', ')}`
-                            );
-                        }
-                    }
-                }
-            }
+            const schemaAttrs = new Map(categoryAttributes.map((attr) => [attr.key, attr]));
 
             for (const spec of data.specs) {
-                const filterDefinition = await tx.filterDefinition.findFirst({
-                    where: { key: spec.key },
-                    select: { id: true },
-                });
-
-                if (!filterDefinition) {
-                    throw new Error(`Unknown specification key: ${spec.key}`);
+                const attrDef = schemaAttrs.get(spec.key);
+                if (!attrDef) {
+                    throw new Error(`Unknown specification key for category: ${spec.key}`);
                 }
 
-                const filterValue = await tx.filterValue.upsert({
-                    where: {
-                        filterDefinitionId_slug: {
-                            filterDefinitionId: filterDefinition.id,
-                            slug: slugify(spec.value),
-                        },
-                    },
-                    update: { value: spec.value },
-                    create: {
-                        filterDefinitionId: filterDefinition.id,
-                        value: spec.value,
-                        slug: slugify(spec.value),
-                    },
-                    select: { id: true },
-                });
+                const normalizedValue = spec.value.trim();
+                const matchedOption = attrDef.options.find((option) => option.value === normalizedValue) ?? null;
+
+                if ((attrDef.type === 'select' || attrDef.type === 'multi_select') && !matchedOption) {
+                    throw new Error(`Invalid value for ${spec.key}. Admin must define this option before assigning it to products.`);
+                }
 
                 await tx.productSpec.create({
                     data: {
                         productId: created.id,
-                        filterValueId: filterValue.id,
-                        value: spec.value,
-                    },
-                });
-
-                await tx.productFilterValue.upsert({
-                    where: {
-                        productId_filterValueId: {
-                            productId: created.id,
-                            filterValueId: filterValue.id,
-                        },
-                    },
-                    update: {},
-                    create: {
-                        productId: created.id,
-                        filterValueId: filterValue.id,
+                        attributeId: attrDef.id,
+                        optionId: matchedOption?.id ?? null,
+                        value: normalizedValue,
+                        valueNumber: attrDef.type === 'number' ? Number(normalizedValue) : null,
+                        valueBoolean: attrDef.type === 'boolean' ? normalizedValue.toLowerCase() === 'true' : null,
                     },
                 });
             }

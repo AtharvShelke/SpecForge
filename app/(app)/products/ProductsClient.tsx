@@ -25,6 +25,28 @@ const DEFAULT_MAX_PRICE = 500000;
 const ITEMS_PER_PAGE = 12;
 const ALL_PRODUCTS_TAB: CategoryNode = { label: 'All' };
 
+function getNodeCategoryCode(node?: CategoryNode | null) {
+    if (!node?.category) return '';
+    return typeof node.category === 'string'
+        ? node.category
+        : node.category.code ?? node.category.slug ?? '';
+}
+
+function getSubcategorySlug(node?: CategoryNode | null, parentTab?: CategoryNode | null) {
+    if (!node?.label || !parentTab?.category) return '';
+    const categoryCode = getNodeCategoryCode(parentTab);
+    if (!categoryCode) return '';
+    // Convert to slug format: categorycode-subcategoryname (lowercase, hyphens)
+    return `${categoryCode.toLowerCase()}-${node.label.toLowerCase().replace(/\s+/g, '-')}`;
+}
+
+function getProductCategoryCode(product: Product | { category?: Category | string | null }) {
+    if (!product?.category) return '';
+    return typeof product.category === 'string'
+        ? product.category
+        : product.category.code ?? product.category.slug ?? '';
+}
+
 // Style string hoisted — never recreated on re-render
 // @import removed from runtime <style>; move the two <link> tags to layout.tsx:
 //   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -235,12 +257,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const initialTab = useMemo(() => {
         if (initialQueryParam) return null;
         if (initialCategoryParam && categories.length > 0) {
-            const found = categories.find(
-                n =>
-                    (typeof n.category === 'string'
-                        ? n.category
-                        : n.category?.slug) === initialCategoryParam
-            );
+            const found = categories.find(n => getNodeCategoryCode(n) === initialCategoryParam);
             if (found) return found;
         }
         return categories.length > 0 ? ALL_PRODUCTS_TAB : null;
@@ -322,7 +339,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             if (q) { handleTabChange(null); return; }
             if (initialCategoryParam) {
                 const found = categories.find(n => 
-                    (typeof n.category === 'string' ? n.category : n.category?.slug) === initialCategoryParam ||
+                    getNodeCategoryCode(n) === initialCategoryParam ||
                     n.label === initialCategoryParam
                 );
                 if (found) { handleTabChange(found); return; }
@@ -367,10 +384,8 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     useEffect(() => {
         const params = new URLSearchParams();
         if (activeTab) {
-            const catSlug = typeof activeTab.category === 'string' 
-                ? activeTab.category 
-                : activeTab.category?.slug;
-            params.set('category', catSlug || activeTab.label);
+            const categoryCode = getNodeCategoryCode(activeTab);
+            params.set('category', categoryCode || activeTab.label);
         }
         if (selectedNode) params.set('sub', selectedNode.label);
         if (isBuildMode) params.set('mode', 'build');
@@ -407,9 +422,9 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         const cartAdded = cart.length > prevCartLength.current;
         const modeToggled = isBuildMode && !prevBuildMode.current;
         if (cartAdded || modeToggled) {
-            const nextMissingCat = buildSequenceCodes.find(cat => !cart.some(item => (typeof item.category === 'string' ? item.category : item.category?.slug) === cat));
+            const nextMissingCat = buildSequenceCodes.find(cat => !cart.some(item => getProductCategoryCode(item) === cat));
             if (nextMissingCat) {
-                const nextNode = categories.find(node => (typeof node.category === 'string' ? node.category : node.category?.slug) === nextMissingCat);
+                const nextNode = categories.find(node => getNodeCategoryCode(node) === nextMissingCat);
                 if (nextNode) { handleTabChange(nextNode); }
             }
         }
@@ -419,7 +434,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
     // ── Handlers (stable references with useCallback) ─────────────────────────
     const handleBuildCategorySelect = useCallback((category: Category) => {
-        const node = categories.find(n => (typeof n.category === 'string' ? n.category : n.category?.slug) === category.slug);
+        const node = categories.find(n => getNodeCategoryCode(n) === category.code);
         if (node) handleTabChange(node);
     }, [categories, handleTabChange]);
 
@@ -467,19 +482,19 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const buildModeParams = useMemo(() => {
         if (!isBuildMode) return {};
         
-        const cpu = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'processor');
-        const mobo = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'motherboard');
+        const cpu = cart.find(i => getProductCategoryCode(i) === 'PROCESSOR');
+        const mobo = cart.find(i => getProductCategoryCode(i) === 'MOTHERBOARD');
         const activeCat = activeTab?.category;
-        const activeCatSlug = typeof activeCat === 'string' ? activeCat : activeCat?.slug;
+        const activeCatCode = typeof activeCat === 'string' ? activeCat : activeCat?.code ?? activeCat?.slug;
         const cpuSpecs = cpu ? specsToFlat(cpu.specs) : null;
         const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
         
         const params: Record<string, string> = {};
-        if (activeCatSlug === 'motherboard' && cpuSpecs?.socket) params['f_specs.socket'] = cpuSpecs.socket as string;
-        if (activeCatSlug === 'processor' && moboSpecs?.socket) params['f_specs.socket'] = moboSpecs.socket as string;
-        if (activeCatSlug === 'ram' && (cpuSpecs || moboSpecs)) {
+        if (activeCatCode === 'MOTHERBOARD' && cpuSpecs?.socket) params['f_socket'] = cpuSpecs.socket as string;
+        if (activeCatCode === 'PROCESSOR' && moboSpecs?.socket) params['f_socket'] = moboSpecs.socket as string;
+        if (activeCatCode === 'RAM' && (cpuSpecs || moboSpecs)) {
             const type = moboSpecs?.ramType ?? cpuSpecs?.ramType;
-            if (type) params['f_specs.ramType'] = type as string;
+            if (type) params['f_ramType'] = type as string;
         }
         
         return params;
@@ -498,12 +513,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                 console.log("FETCHING - activeTab:", activeTab?.label, "activeTab.category:", activeTab?.category);
                
                 if (activeTab?.category) {
-                    params.set(
-                        'category',
-                        typeof activeTab.category === 'string'
-                            ? activeTab.category
-                            : activeTab.category.slug
-                    );
+                    params.set('category', getNodeCategoryCode(activeTab));
                 }
                 if (selectedNode?.brand) params.set('nodeBrand', selectedNode.brand);
                 if (selectedNode?.query) params.set('nodeQuery', selectedNode.query);
@@ -726,12 +736,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                     selectedNode={selectedNode}
                                     priceRange={priceRange}
                                     onPriceChange={handlePriceChange}
-                                    activeCategory={activeTab.category?.slug}
-                                    onBuildStepChange={(categorySlug) => {
-                                        const category = categories.find(n =>
-                                            (typeof n.category === 'string' ? n.category : n.category?.slug) === categorySlug
-                                        )?.category;
-                                        if (category) handleBuildCategorySelect(category);
+                                    activeCategory={getNodeCategoryCode(activeTab)}
+                                    activeSubcategory={getSubcategorySlug(selectedNode, activeTab)}
+                                    onBuildStepChange={(categoryCode) => {
+                                        const category = categories.find(n => getNodeCategoryCode(n) === categoryCode)?.category;
+                                        if (category && typeof category !== 'string') handleBuildCategorySelect(category);
                                     }}
                                     currentProducts={categoryBaseProducts}
                                     dynamicFilters={availableFilters}
@@ -756,12 +765,11 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         onCloseMobile={() => setIsMobileFiltersOpen(false)}
                                         priceRange={priceRange}
                                         onPriceChange={handlePriceChange}
-                                        activeCategory={activeTab.category?.slug}
-                                        onBuildStepChange={(categorySlug) => {
-                                            const category = categories.find(n =>
-                                                (typeof n.category === 'string' ? n.category : n.category?.slug) === categorySlug
-                                            )?.category;
-                                            if (category) handleBuildCategorySelect(category);
+                                        activeCategory={getNodeCategoryCode(activeTab)}
+                                        activeSubcategory={getSubcategorySlug(selectedNode, activeTab)}
+                                        onBuildStepChange={(categoryCode) => {
+                                            const category = categories.find(n => getNodeCategoryCode(n) === categoryCode)?.category;
+                                            if (category && typeof category !== 'string') handleBuildCategorySelect(category);
                                         }}
                                         currentProducts={categoryBaseProducts}
                                         dynamicFilters={availableFilters}
@@ -912,12 +920,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                         </main>
 
                         <BuildProgressSidebar
-                            activeCategory={activeTab?.category?.slug}
-                            onStepClick={(categorySlug) => {
-                                const category = categories.find(n =>
-                                    (typeof n.category === 'string' ? n.category : n.category?.slug) === categorySlug
-                                )?.category;
-                                if (category) handleBuildCategorySelect(category);
+                            activeCategory={getNodeCategoryCode(activeTab)}
+                            onStepClick={(categoryCode) => {
+                                const category = categories.find(n => getNodeCategoryCode(n) === categoryCode)?.category;
+                                if (category && typeof category !== 'string') handleBuildCategorySelect(category);
                             }}
                         />
                     </div>

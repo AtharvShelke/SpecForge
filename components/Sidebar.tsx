@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { ChevronDown, ChevronRight, X, Wrench, Check, Filter, SlidersHorizontal, Search } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { Product, FilterDefinition, CategoryFilterConfig, CategoryNode } from '../types';
+import { Product, CategoryAttributeDefinition, CategoryAttributesConfig, CategoryNode } from '../types';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 interface SidebarProps {
@@ -14,6 +14,7 @@ interface SidebarProps {
   priceRange: { min: number; max: number };
   onPriceChange: (min: number, max: number) => void;
   activeCategory?: string;
+  activeSubcategory?: string;
   onBuildStepChange?: (category: string) => void;
   currentProducts: Product[];
   dynamicFilters?: { brands: string[], specs: Record<string, string[]> } | null;
@@ -26,7 +27,7 @@ interface SidebarProps {
 
 // ─── FilterGroup ─────────────────────────────────────────────────────────────
 const FilterGroup: React.FC<{
-  filter: FilterDefinition;
+  filter: CategoryAttributeDefinition;
   products: Product[];
   dynamicOptions?: string[];
   selectedValues: string[];
@@ -36,13 +37,15 @@ const FilterGroup: React.FC<{
   const [showAll, setShowAll] = useState(false);
 
   const getProductValue = (p: Product, key: string): string | undefined => {
-    if (key === 'stock_status') return p.status === 'IN_STOCK' ? 'In Stock' : 'Out of Stock';
+    if (key === 'stock_status') return p.stockStatus === 'IN_STOCK' ? 'In Stock' : 'Out of Stock';
+    if (key === 'brand') return p.brand?.name;
     if (key.startsWith('specs.')) {
       const specKey = key.split('.')[1];
       const spec = p.specs.find(s => s.key === specKey);
       return spec?.value;
     }
-    return undefined;
+    const spec = p.specs.find(s => s.key === key);
+    return spec?.value;
   };
 
   const options = useMemo(() => {
@@ -54,13 +57,14 @@ const FilterGroup: React.FC<{
       const val = getProductValue(p, filter.key);
       if (val) counts.set(val, (counts.get(val) || 0) + 1);
     });
-    const baseOptions = filter.options || Array.from(counts.keys()).sort();
+    const hasStaticOptions = Array.isArray(filter.options) && filter.options.length > 0;
+    const baseOptions = hasStaticOptions ? filter.options : Array.from(counts.keys()).sort();
     return baseOptions
       .map(opt => ({ value: opt, count: counts.get(opt) || 0 }))
       // BUG FIX: was `|| filter.options` which is always truthy (array).
       // Should be `|| !filter.options` — only show zero-count rows when
       // options are dynamically derived (no static list provided).
-      .filter(o => o.count > 0 || !filter.options);
+      .filter(o => o.count > 0 || !hasStaticOptions);
   }, [products, filter, dynamicOptions]);
 
   const visibleOptions = showAll ? options : options.slice(0, 5);
@@ -155,6 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   priceRange,
   onPriceChange,
   activeCategory,
+  activeSubcategory,
   onBuildStepChange,
   currentProducts,
   dynamicFilters,
@@ -169,20 +174,24 @@ const Sidebar: React.FC<SidebarProps> = ({
   const router = useRouter();
   const isBuildMode = searchParams.get('mode') === 'build';
 
-  const [filterConfigs, setFilterConfigs] = useState<CategoryFilterConfig[]>([]);
+  const [attributeConfig, setAttributeConfig] = useState<CategoryAttributesConfig | null>(null);
 
   // Fetch filter configs
   useEffect(() => {
     if (!activeCategory) {
-      setFilterConfigs([]);
+      setAttributeConfig(null);
       return;
     }
 
-    fetch(`/api/categories/filters?category=${activeCategory}`)
+    const url = activeSubcategory 
+      ? `/api/categories/${activeCategory}/attributes?subcategory=${encodeURIComponent(activeSubcategory)}`
+      : `/api/categories/${activeCategory}/attributes`;
+
+    fetch(url)
       .then(res => res.json())
-      .then(setFilterConfigs)
-      .catch(err => console.error('Failed to fetch filter configs:', err));
-  }, [activeCategory]);
+      .then(setAttributeConfig)
+      .catch(err => console.error('Failed to fetch category attributes:', err));
+  }, [activeCategory, activeSubcategory]);
 
   const toggleBuildMode = useCallback(() => {
     if (isBuildMode) {
@@ -195,24 +204,41 @@ const Sidebar: React.FC<SidebarProps> = ({
   const categoryFilters = useMemo(() => {
     if (!activeCategory) {
       return [
-        { label: 'Brand', key: 'brand', type: 'checkbox' },
-        { label: 'Availability', key: 'stock_status', type: 'checkbox', options: ['In Stock', 'Out of Stock'] }
-      ] as FilterDefinition[];
+        {
+          label: 'Brand',
+          key: 'brand',
+          type: 'select',
+          options: [],
+          required: false,
+          isFilterable: true,
+          isComparable: false,
+          filterType: 'checkbox' as const,
+        },
+        {
+          label: 'Availability',
+          key: 'stock_status',
+          type: 'select',
+          options: ['In Stock', 'Out of Stock'],
+          required: false,
+          isFilterable: true,
+          isComparable: false,
+          filterType: 'checkbox' as const,
+        }
+      ] as CategoryAttributeDefinition[];
     }
-    return filterConfigs.find((c: CategoryFilterConfig) => (typeof c.category === 'string' ? c.category : c.category?.slug) === activeCategory)?.filters || [];
-  }, [activeCategory, filterConfigs]);
+    return (attributeConfig?.attributes || []).filter((attribute) => attribute.isFilterable);
+  }, [activeCategory, attributeConfig]);
 
   const visibleFilters = useMemo(() => {
-    return categoryFilters.filter((filter: FilterDefinition) => {
-      // Support both formats: dependency object (frontend) and dependencyKey/dependencyValue (DB)
-      const depKey = filter.dependency?.key || filter.dependencyKey;
-      const depValue = filter.dependency?.value || filter.dependencyValue;
+    return categoryFilters.filter((filter: CategoryAttributeDefinition) => {
+      const depKey = filter.dependencyKey;
+      const depValue = filter.dependencyValue;
       if (!depKey || !depValue) return true;
       const parentSelection = selectedFilters[depKey] || [];
       if (parentSelection.length === 0) return true;
       return parentSelection.includes(depValue);
     });
-  }, [categoryFilters, selectedFilters, dynamicFilters]);
+  }, [categoryFilters, selectedFilters]);
 
   const activeFilterCount = useMemo(() => {
     return Object.values(selectedFilters).reduce((acc, vals) => acc + vals.length, 0);
@@ -384,11 +410,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Dynamic category filters (checkbox, dropdown, etc.) */}
           {visibleFilters
-            .filter((f: FilterDefinition) => f.type !== 'search')
-            .map((filter: FilterDefinition) => {
-              // For filters with duplicate keys (e.g. AMD vs Intel family),
-              // use key + dependency value as the unique key
-              const depValue = filter.dependency?.value || filter.dependencyValue || '';
+            .filter((f: CategoryAttributeDefinition) => f.filterType !== 'search')
+            .map((filter: CategoryAttributeDefinition) => {
+              const depValue = filter.dependencyValue || '';
               const uniqueKey = depValue ? `${filter.key}__${depValue}` : filter.key;
               const dynamicOpts = filter.key === 'brand' ? dynamicFilters?.brands :
                 filter.key.startsWith('specs.') ? dynamicFilters?.specs?.[filter.key.split('.')[1]] : dynamicFilters?.specs?.[filter.key];

@@ -28,7 +28,7 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
 
     const buildSteps = useMemo(() => {
         return buildSequenceCodes.map((cat, index) => {
-            const item = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === cat);
+            const item = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.code ?? i.category?.slug) === cat);
             return {
                 category: cat,
                 label: getLabel(cat),

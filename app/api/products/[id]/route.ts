@@ -19,42 +19,42 @@ const updateProductSchema = z.object({
     specs: z.array(specSchema).optional(),
 });
 
+function mapProduct(product: any) {
+    return {
+        ...product,
+        specs: (product.specs ?? []).map((spec: any) => ({
+            id: spec.id,
+            productId: spec.productId,
+            attributeId: spec.attributeId,
+            optionId: spec.optionId,
+            key: spec.attribute?.key ?? "",
+            value: spec.value,
+            valueNumber: spec.valueNumber ?? undefined,
+            valueBoolean: spec.valueBoolean ?? undefined,
+            isHighlighted: spec.isHighlighted,
+        })),
+    };
+}
+
 function normalizeIdentifier(value: string | null | undefined) {
     return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
 async function resolveCategoryId(input: string) {
-    const [definitions, categories] = await Promise.all([
-        prisma.categoryDefinition.findMany({
-            where: { isActive: true },
-            select: { code: true, label: true, shortLabel: true },
-        }),
-        prisma.category.findMany({
-            select: { id: true, name: true, slug: true },
-        }),
-    ]);
+    const categories = await prisma.category.findMany({
+        where: { isActive: true },
+        select: { id: true, code: true, name: true, slug: true, shortLabel: true },
+    });
 
     const requested = normalizeIdentifier(input);
     for (const category of categories) {
         const categoryKeys = new Set([
+            normalizeIdentifier(category.code),
             normalizeIdentifier(category.name),
             normalizeIdentifier(category.slug),
+            normalizeIdentifier(category.shortLabel),
         ]);
-
-        const definition = definitions.find((item) =>
-            [
-                normalizeIdentifier(item.code),
-                normalizeIdentifier(item.label),
-                normalizeIdentifier(item.shortLabel),
-            ].some((key) => categoryKeys.has(key))
-        );
-
-        if (
-            categoryKeys.has(requested) ||
-            normalizeIdentifier(definition?.code) === requested ||
-            normalizeIdentifier(definition?.label) === requested ||
-            normalizeIdentifier(definition?.shortLabel) === requested
-        ) {
+        if (categoryKeys.has(requested)) {
             return category.id;
         }
     }
@@ -72,7 +72,13 @@ export async function GET(
         const product = await prisma.product.findUnique({
             where: { id },
             include: {
-                specs: true,
+                specs: {
+                    include: {
+                        attribute: {
+                            select: { key: true },
+                        },
+                    },
+                },
                 brand: true,
                 inventoryItems: true,
                 media: true
@@ -83,7 +89,7 @@ export async function GET(
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
-        return NextResponse.json(product);
+        return NextResponse.json(mapProduct(product));
     } catch (error) {
         console.error("GET /api/products/[id] error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -109,9 +115,6 @@ export async function PUT(
             // Update specs: delete old, create new
             if (data.specs) {
                 await tx.productSpec.deleteMany({ where: { productId: id } });
-                // NOTE: ProductSpec requires filterValueId, but we don't have filter values in this context
-                // This would need to be refactored to work with the filter system
-                console.warn('Product specs update not fully implemented - requires filterValueId mapping');
             }
 
             const { specs: _, price, stock, images, brandId, category, ...productData } = data;
@@ -134,8 +137,51 @@ export async function PUT(
             const p = await tx.product.update({
                 where: { id },
                 data: updateData,
-                include: { specs: true, brand: true, inventoryItems: true, media: true },
+                include: {
+                    specs: {
+                        include: {
+                            attribute: {
+                                select: { key: true },
+                            },
+                        },
+                    },
+                    brand: true,
+                    inventoryItems: true,
+                    media: true,
+                },
             });
+
+            if (data.specs) {
+                const targetCategoryId = updateData.categoryId ?? existing.categoryId;
+                const categoryAttributes = await tx.categoryAttribute.findMany({
+                    where: { categoryId: targetCategoryId },
+                    include: { options: true },
+                });
+                const attributeMap = new Map(categoryAttributes.map((attribute) => [attribute.key, attribute]));
+
+                for (const spec of data.specs) {
+                    const attribute = attributeMap.get(spec.key);
+                    if (!attribute) {
+                        throw new Error(`Unknown specification key for category: ${spec.key}`);
+                    }
+
+                    const matchedOption = attribute.options.find((option) => option.value === spec.value) ?? null;
+                    if ((attribute.type === 'select' || attribute.type === 'multi_select') && !matchedOption) {
+                        throw new Error(`Invalid value for ${spec.key}. Admin must define this option first.`);
+                    }
+
+                    await tx.productSpec.create({
+                        data: {
+                            productId: id,
+                            attributeId: attribute.id,
+                            optionId: matchedOption?.id ?? null,
+                            value: spec.value,
+                            valueNumber: attribute.type === 'number' ? Number(spec.value) : null,
+                            valueBoolean: attribute.type === 'boolean' ? spec.value.toLowerCase() === 'true' : null,
+                        },
+                    });
+                }
+            }
 
             // If stock passed, update inventory
             if (stock !== undefined) {
@@ -175,7 +221,23 @@ export async function PUT(
             return p;
         });
 
-        return NextResponse.json(product);
+        const refreshed = await prisma.product.findUnique({
+            where: { id },
+            include: {
+                specs: {
+                    include: {
+                        attribute: {
+                            select: { key: true },
+                        },
+                    },
+                },
+                brand: true,
+                inventoryItems: true,
+                media: true,
+            },
+        });
+
+        return NextResponse.json(refreshed ? mapProduct(refreshed) : null);
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 });
