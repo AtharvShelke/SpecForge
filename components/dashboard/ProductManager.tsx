@@ -76,12 +76,41 @@ const FieldLabel = memo(({ children, required }: { children: React.ReactNode; re
 FieldLabel.displayName = 'FieldLabel';
 
 // Compute stock once outside render — avoids repeated reduce in render
-function getVariantStock(variant: any): number {
-    return variant?.warehouseInventories?.reduce((a: number, inv: any) => a + inv.quantity, 0) || 0;
+function normalizeCategoryKey(value?: string | null) {
+    return (value ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
 
-const StockPill = memo(({ product, variant }: { product: Product; variant: any }) => {
-    const totalStock = getVariantStock(variant);
+function matchesCategorySelection(
+    selectedCategory: string,
+    categoryLike?: { code?: string | null; slug?: string | null; name?: string | null; label?: string | null; shortLabel?: string | null } | null
+) {
+    const selected = normalizeCategoryKey(selectedCategory);
+    if (!selected) return false;
+
+    return [
+        categoryLike?.code,
+        categoryLike?.slug,
+        categoryLike?.name,
+        categoryLike?.label,
+        categoryLike?.shortLabel,
+    ].some((value) => normalizeCategoryKey(value) === selected);
+}
+
+function getProductCategoryKey(product: any): string {
+    if (typeof product?.category === 'string') return normalizeCategoryKey(product.category);
+    return normalizeCategoryKey(product?.category?.code ?? product?.category?.slug ?? product?.category?.name);
+}
+
+function getProductStock(product: any): number {
+    if (typeof product?.stock === 'number') return product.stock;
+    if (Array.isArray(product?.inventoryItems)) {
+        return product.inventoryItems.reduce((a: number, inv: any) => a + Math.max(0, (inv.quantity ?? 0) - (inv.reserved ?? 0)), 0);
+    }
+    return 0;
+}
+
+const StockPill = memo(({ product }: { product: Product;}) => {
+    const totalStock = getProductStock(product);
     if (totalStock <= 0) return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-rose-50 text-rose-600 ring-1 ring-rose-200 whitespace-nowrap">
             <span className="w-1 h-1 rounded-full bg-current opacity-60" />Out of Stock
@@ -144,11 +173,9 @@ const DesktopProductRow = memo(({ product, onEdit, onDelete }: {
     onEdit: (p: Product) => void;
     onDelete: (id: string) => void;
 }) => {
-    const firstVar = product.variants?.[0];
     const brand = product.brand?.name || product.specs?.find((s: any) => s.key === 'brand')?.value || 'Generic';
-    const variantCount = product.variants?.length || 0;
-    const totalStock = getVariantStock(firstVar);
-    const price = (firstVar?.price || 0).toLocaleString('en-IN');
+    const totalStock = getProductStock(product);
+    const price = (product.price || 0).toLocaleString('en-IN');
 
     const handleEdit = useCallback(() => onEdit(product), [onEdit, product]);
     const handleDelete = useCallback(() => onDelete(product.id), [onDelete, product.id]);
@@ -170,7 +197,7 @@ const DesktopProductRow = memo(({ product, onEdit, onDelete }: {
                         <p className="text-xs font-semibold text-stone-800 truncate tracking-tight leading-tight" title={product.name}>
                             {product.name}
                         </p>
-                        <p className="text-[10px] font-mono text-stone-400 mt-0.5">{firstVar?.sku || 'NO-SKU'}</p>
+                        <p className="text-[10px] font-mono text-stone-400 mt-0.5">{product.sku || 'NO-SKU'}</p>
                     </div>
                 </div>
             </td>
@@ -183,8 +210,8 @@ const DesktopProductRow = memo(({ product, onEdit, onDelete }: {
                 {brand}
             </td>
             <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap">
-                <span className="text-xs font-mono font-semibold text-stone-500 tabular-nums">
-                    {variantCount} var{variantCount !== 1 ? 's' : ''}
+                <span className="text-xs font-mono font-semibold text-stone-500 tabular-nums uppercase">
+                    {product.sku || '—'}
                 </span>
             </td>
             <td className="px-3 py-3 whitespace-nowrap text-right">
@@ -192,7 +219,7 @@ const DesktopProductRow = memo(({ product, onEdit, onDelete }: {
             </td>
             <td className="px-3 py-3 whitespace-nowrap text-right">
                 <div className="flex flex-col items-end gap-0.5">
-                    <StockPill product={product} variant={firstVar} />
+                    <StockPill product={product}  />
                     <span className="text-[10px] font-mono text-stone-400 tabular-nums">{totalStock} units</span>
                 </div>
             </td>
@@ -240,9 +267,8 @@ const MobileProductCard = memo(({ product, onEdit, onDelete }: {
     onEdit: (p: Product) => void;
     onDelete: (id: string) => void;
 }) => {
-    const firstVar = product.variants?.[0];
-    const totalStock = getVariantStock(firstVar);
-    const price = (firstVar?.price || 0).toLocaleString('en-IN');
+    const totalStock = getProductStock(product);
+    const price = (product.price || 0).toLocaleString('en-IN');
 
     const handleEdit = useCallback(() => onEdit(product), [onEdit, product]);
     const handleDelete = useCallback(() => onDelete(product.id), [onDelete, product.id]);
@@ -264,7 +290,7 @@ const MobileProductCard = memo(({ product, onEdit, onDelete }: {
                     <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full">
                         {product.category?.name || 'Uncategorized'}
                     </span>
-                    <StockPill product={product} variant={firstVar} />
+                    <StockPill product={product} />
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs font-bold text-stone-900 font-mono tabular-nums">₹{price}</span>
@@ -514,7 +540,7 @@ const ProductManager = () => {
     const [newProductCost, setNewProductCost] = useState(0);
 
     const currentSchema = useMemo(() => {
-        const schema = schemas.find(s => s.category?.slug === currentProduct.category);
+        const schema = schemas.find(s => matchesCategorySelection(currentProduct.category, (s as any).categoryDefinition ?? { code: (s as any).category, slug: (s as any).category }));
         if (!schema) return [];
         return schema.attributes.filter(attr => {
             if (!attr.dependencyKey) return true;
@@ -524,7 +550,7 @@ const ProductManager = () => {
     }, [currentProduct.category, currentProduct.specs, schemas]);
 
     const availableBrands = useMemo(() =>
-        brands.filter(b => b.categories.some(c => c.slug === currentProduct.category)),
+        brands.filter(b => b.categories.some(c => matchesCategorySelection(currentProduct.category, c))),
         [currentProduct.category, brands]
     );
 
@@ -551,7 +577,7 @@ const ProductManager = () => {
         if (!currentProduct.specs?.brand) { alert('Brand is required'); return; }
         
         const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
-        const selectedCategory = categories.find(c => c.slug === currentProduct.category);
+        const selectedCategory = currentProduct.category;
         
         if (currentProduct.id && products.find(p => p.id === currentProduct.id)) {
             await updateProduct({ 
@@ -590,7 +616,7 @@ const ProductManager = () => {
         const productFormState: ProductFormState = {
             ...product,
             specs: specsToFlat(product.specs),
-            category: product.category?.slug || '',
+            category: getProductCategoryKey(product),
             images: product.media?.map(m => m.url) || []
         };
         setCurrentProduct(productFormState);
@@ -612,7 +638,7 @@ const ProductManager = () => {
     const handleSpecChange = useCallback((key: string, value: string | number | string[]) => {
         setCurrentProduct(prev => {
             let newSpecs = { ...prev.specs, [key]: value };
-            const schema = schemas.find(s => s.category?.slug === prev.category);
+                const schema = schemas.find(s => matchesCategorySelection(prev.category, (s as any).categoryDefinition ?? { code: (s as any).category, slug: (s as any).category }));
             if (schema) {
                 schema.attributes.forEach(attr => {
                     const depKey = attr.key === 'socket' ? 'brand' : attr.dependencyKey;
@@ -678,13 +704,12 @@ const ProductManager = () => {
         const prices: number[] = [];
 
         for (const p of products) {
-            const firstVar = p.variants?.[0];
-            const price = firstVar?.price || 0;
+            const price = p?.price || 0;
             totalVal += price;
             if (price > 0) prices.push(price);
 
-            const stock = firstVar?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
-            if (!firstVar || stock <= 0) outOfStock++;
+            const stock = getProductStock(p);
+            if (!p || stock <= 0) outOfStock++;
 
             const catName = p.category?.name || 'Other';
             catSet.add(catName);
@@ -811,7 +836,7 @@ const ProductManager = () => {
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white border-stone-200 shadow-xl rounded-xl">
                                                     {categories.map((cat) => (
-                                                        <SelectItem key={cat.id} value={cat.code} className="text-xs py-2 focus:bg-stone-50">{cat.shortLabel || cat.label}</SelectItem>
+                                                        <SelectItem key={cat.id} value={cat.code || cat.slug} className="text-xs py-2 focus:bg-stone-50">{cat.shortLabel || cat.label}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -1269,7 +1294,7 @@ const ProductManager = () => {
                                 <SelectContent className="bg-white border-stone-200 shadow-md">
                                     <SelectItem value="all" className="text-xs focus:bg-stone-50">All Categories</SelectItem>
                                     {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.code} className="text-xs focus:bg-stone-50">{cat.shortLabel || cat.label}</SelectItem>
+                                        <SelectItem key={cat.id} value={cat.code || cat.slug} className="text-xs focus:bg-stone-50">{cat.shortLabel || cat.label}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -1313,7 +1338,7 @@ const ProductManager = () => {
                                 <th className="px-4 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</th>
                                 <th className="px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Category</th>
                                 <th className="hidden md:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Brand</th>
-                                <th className="hidden lg:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">Variants</th>
+                                <th className="hidden lg:table-cell px-3 py-2.5 text-left text-[10px] font-bold text-stone-400 uppercase tracking-widest">SKU</th>
                                 <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Price</th>
                                 <th className="px-3 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Stock</th>
                                 <th className="px-4 py-2.5 text-right text-[10px] font-bold text-stone-400 uppercase tracking-widest">Actions</th>

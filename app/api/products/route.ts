@@ -119,29 +119,16 @@ const BASE_PRODUCT_INCLUDE = {
             updatedAt: true,
         },
     },
-    variants: {
+    inventoryItems: {
         select: {
             id: true,
             productId: true,
-            sku: true,
-            price: true,
-            compareAtPrice: true,
-            attributes: true,
-            status: true,
-            createdAt: true,
-            updatedAt: true,
-            inventoryItems: {
-                select: {
-                    id: true,
-                    variantId: true,
-                    quantity: true,
-                    reserved: true,
-                    reorderLevel: true,
-                    costPrice: true,
-                    location: true,
-                    lastUpdated: true,
-                },
-            },
+            quantity: true,
+            reserved: true,
+            reorderLevel: true,
+            costPrice: true,
+            location: true,
+            lastUpdated: true,
         },
     },
     media: {
@@ -196,6 +183,11 @@ function mapProduct(product: any, codeByCategoryId: Map<number, string>) {
         brand: product.brand ?? undefined,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
+        // Moved from ProductVariant
+        sku: product.sku,
+        price: product.price,
+        compareAtPrice: product.compareAtPrice ?? undefined,
+        stockStatus: product.stockStatus,
         specs: (product.specs ?? []).map((spec: any) => ({
             id: spec.id,
             productId: spec.productId,
@@ -203,26 +195,15 @@ function mapProduct(product: any, codeByCategoryId: Map<number, string>) {
             value: spec.value,
             isHighlighted: spec.isHighlighted,
         })),
-        variants: product.variants.map((variant: any) => ({
-            id: variant.id,
-            productId: variant.productId,
-            sku: variant.sku,
-            price: variant.price,
-            compareAtPrice: variant.compareAtPrice ?? undefined,
-            attributes: variant.attributes ?? undefined,
-            status: variant.status,
-            createdAt: variant.createdAt,
-            updatedAt: variant.updatedAt,
-            warehouseInventories: variant.inventoryItems.map((item: any) => ({
-                id: item.id,
-                variantId: item.variantId,
-                quantity: item.quantity,
-                reserved: item.reserved,
-                reorderLevel: item.reorderLevel,
-                costPrice: item.costPrice,
-                location: item.location,
-                lastUpdated: item.lastUpdated,
-            })),
+        inventoryItems: (product.inventoryItems ?? []).map((item: any) => ({
+            id: item.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            reserved: item.reserved,
+            reorderLevel: item.reorderLevel,
+            costPrice: item.costPrice,
+            location: item.location,
+            lastUpdated: item.lastUpdated,
         })),
         media: product.media,
         tags: product.tags ?? [],
@@ -234,7 +215,7 @@ function buildTextOR(term: string) {
         OR: [
             { name: { contains: term, mode: "insensitive" as const } },
             { specs: { some: { value: { contains: term, mode: "insensitive" as const } } } },
-            { variants: { some: { sku: { contains: term, mode: "insensitive" as const } } } },
+            { sku: { contains: term, mode: "insensitive" as const } },
             { description: { contains: term, mode: "insensitive" as const } },
         ],
     };
@@ -266,16 +247,10 @@ function buildWhereClause(
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
-        and.push({
-            variants: {
-                some: {
-                    price: {
-                        ...(minPrice !== undefined ? { gte: minPrice } : {}),
-                        ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
-                    },
-                },
-            },
-        });
+        where.price = {
+            ...(minPrice !== undefined ? { gte: minPrice } : {}),
+            ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+        };
     }
 
     if (globalSearch) and.push(buildTextOR(globalSearch.toLowerCase()));
@@ -292,9 +267,9 @@ function buildWhereClause(
             const outOfStock = values.includes("Out of Stock");
 
             if (inStock && !outOfStock) {
-                and.push({ variants: { some: { inventoryItems: { some: { quantity: { gt: 0 } } } } } });
+                where.stockStatus = "IN_STOCK";
             } else if (!inStock && outOfStock) {
-                and.push({ variants: { none: { inventoryItems: { some: { quantity: { gt: 0 } } } } } });
+                where.stockStatus = "OUT_OF_STOCK";
             }
         } else if (key === "f_brand") {
             const values = searchParams.getAll(key);
@@ -438,38 +413,19 @@ async function fetchPriceSorted(
     fields: string | null,
     codeByCategoryId: Map<number, string>
 ) {
-    const lightweight = await prisma.product.findMany({
-        where,
-        select: {
-            id: true,
-            variants: {
-                select: { price: true },
-                orderBy: { price: "asc" as const },
-                take: 1,
-            },
-        },
-    });
-
-    lightweight.sort((a, b) => {
-        const diff = (a.variants[0]?.price ?? 0) - (b.variants[0]?.price ?? 0);
-        return sort === "price-asc" ? diff : -diff;
-    });
-
-    const paginatedIds = lightweight
-        .slice((page - 1) * limit, page * limit)
-        .map((product) => product.id);
-
     const products = await prisma.product.findMany({
-        where: { id: { in: paginatedIds } },
+        where,
+        orderBy: { price: sort === "price-asc" ? "asc" as const : "desc" as const },
         include: fields === "minimal" ? BASE_PRODUCT_INCLUDE : FULL_PRODUCT_INCLUDE,
+        skip: (page - 1) * limit,
+        take: limit,
     });
 
-    const order = new Map(paginatedIds.map((id, index) => [id, index]));
+    const total = await prisma.product.count({ where });
+
     return {
-        products: products
-            .map((product) => mapProduct(product, codeByCategoryId))
-            .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)),
-        total: lightweight.length,
+        products: products.map((product) => mapProduct(product, codeByCategoryId)),
+        total,
     };
 }
 
@@ -538,7 +494,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid category" }, { status: 400 });
         }
 
-        const existing = await prisma.productVariant.findUnique({
+        const existing = await prisma.product.findUnique({
             where: { sku: data.sku },
             select: { id: true },
         });
@@ -552,6 +508,9 @@ export async function POST(req: NextRequest) {
                 data: {
                     slug: data.sku,
                     name: data.name,
+                    sku: data.sku,
+                    price: data.price,
+                    stockStatus: data.stock > 0 ? "IN_STOCK" : "OUT_OF_STOCK",
                     description: data.description ?? null,
                     categoryId,
                     brandId: data.brandId ?? null,
@@ -561,40 +520,30 @@ export async function POST(req: NextRequest) {
                             sortOrder: index,
                         })),
                     },
-                    variants: {
-                        create: [{
-                            sku: data.sku,
-                            price: data.price,
-                            status: "IN_STOCK",
-                        }],
-                    },
                 },
                 include: FULL_PRODUCT_INCLUDE,
             });
 
-            const variantId = created.variants[0]?.id;
-            if (variantId) {
-                await tx.inventoryItem.create({
+            await tx.inventoryItem.create({
+                data: {
+                    productId: created.id,
+                    quantity: data.stock,
+                    reserved: 0,
+                    reorderLevel: data.reorderLevel,
+                    costPrice: data.costPrice,
+                    location: data.location,
+                },
+            });
+
+            if (data.stock > 0) {
+                await tx.stockMovement.create({
                     data: {
-                        variantId,
+                        productId: created.id,
+                        type: "INWARD",
                         quantity: data.stock,
-                        reserved: 0,
-                        reorderLevel: data.reorderLevel,
-                        costPrice: data.costPrice,
-                        location: data.location,
+                        note: "Initial stock entry",
                     },
                 });
-
-                if (data.stock > 0) {
-                    await tx.stockMovement.create({
-                        data: {
-                            variantId,
-                            type: "INWARD",
-                            quantity: data.stock,
-                            note: "Initial stock entry",
-                        },
-                    });
-                }
             }
 
             // Validate specs against category schema

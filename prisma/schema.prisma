@@ -409,6 +409,12 @@ model Product {
   deletedAt       DateTime?
   version         Int           @default(1)
 
+  // Moved from ProductVariant
+  sku            String?   @unique
+  price          Float?
+  compareAtPrice Float?
+  stockStatus    String    @default("IN_STOCK") @map("stock_status")
+
   brandId String?
   brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
 
@@ -418,10 +424,13 @@ model Product {
   category     Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   subcategory  Subcategory?         @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
   specs        ProductSpec[]
-  variants     ProductVariant[]
   media        ProductMedia[]
   tags         Tag[]
   filterValues ProductFilterValue[]
+  orderItems      OrderItem[]
+  buildGuideItems BuildGuideItem[]
+  inventoryItems  InventoryItem[]
+  stockMovements  StockMovement[]
 
   @@index([status])
   @@index([brandId])
@@ -432,32 +441,7 @@ model Product {
   @@index([status, name])
 }
 
-model ProductVariant {
-  id             String    @id @default(uuid())
-  productId      String
-  sku            String    @unique
-  price          Float
-  compareAtPrice Float?
-  attributes     Json?
-  status         String    @default("IN_STOCK")
-  deletedAt      DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product         Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderItems      OrderItem[]
-  buildGuideItems BuildGuideItem[]
-  inventoryItems  InventoryItem[]
-
-  @@index([productId])
-  @@index([sku])
-  @@index([price])
-  @@index([status])
-  @@index([productId, status])
-  @@index([productId, price, status])
-  @@index([sku, status])
-}
 
 model ProductSpec {
   id            String  @id @default(uuid())
@@ -510,7 +494,7 @@ model SearchSuggestion {
 
 model InventoryItem {
   id           String    @id @default(uuid())
-  variantId    String
+  productId    String
   partNumber   String?
   serialNumber String?
   quantity     Int       @default(0)
@@ -520,11 +504,11 @@ model InventoryItem {
   location     String    @default("")
   lastUpdated  DateTime?
 
-  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([quantity])
-  @@index([variantId])
-  @@index([variantId, location])
+  @@index([productId])
+  @@index([productId, location])
   @@index([location, quantity])
   @@index([lastUpdated])
 }
@@ -616,21 +600,20 @@ model Order {
 model OrderItem {
   id              String  @id @default(uuid())
   orderId         String
-  variantId       String
+  productId       String
   name            String
   categoryId      Int     @map("category_id")
   price           Float
   quantity        Int
   image           String?
   sku             String?
-  variantSnapshot Json?
 
-  order    Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variant  ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
-  category Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
-  @@index([variantId])
+  @@index([productId])
   @@index([categoryId, orderId])
 }
 
@@ -668,16 +651,17 @@ model ShipmentTracking {
 model StockMovement {
   id        String            @id @default(uuid())
   orderId   String?
-  variantId String
+  productId String
   type      StockMovementType
   quantity  Int
   note      String?
   createdAt DateTime          @default(now())
 
-  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
-  @@index([variantId])
+  @@index([productId])
   @@index([type])
 }
 
@@ -704,13 +688,13 @@ model BuildGuide {
 model BuildGuideItem {
   id           String @id @default(uuid())
   buildGuideId String
-  variantId    String
+  productId    String
   quantity     Int    @default(1)
 
-  buildGuide BuildGuide     @relation(fields: [buildGuideId], references: [id], onDelete: Cascade)
-  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  buildGuide BuildGuide @relation(fields: [buildGuideId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  @@unique([buildGuideId, variantId])
+  @@unique([buildGuideId, productId])
   @@index([buildGuideId])
 }
 

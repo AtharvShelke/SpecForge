@@ -426,8 +426,8 @@ const ProcurementManager = () => {
                                         {selectedPo?.items.map((item, idx) => (
                                             <tr key={idx} className="hover:bg-white transition-colors">
                                                 <td className="p-4">
-                                                    <div className="font-medium text-zinc-900 text-xs">{item.variant?.product?.name || 'Unknown'}</div>
-                                                    <div className="text-[11px] font-mono text-zinc-400 mt-0.5">{item.variantId.substring(0, 12).toUpperCase()}</div>
+                                                    <div className="font-medium text-zinc-900 text-xs">{item.product?.name || 'Unknown'}</div>
+                                                    <div className="text-[11px] font-mono text-zinc-400 mt-0.5">{item.productId.substring(0, 12).toUpperCase()}</div>
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <span className="font-medium text-zinc-700 text-xs tabular-nums">${item.unitCost.toFixed(2)}</span>
@@ -589,7 +589,7 @@ const CreatePoModal = ({ isOpen, onClose, onSubmit, suppliers, warehouses, produ
     const [items, setItems] = useState<any[]>([]);
 
     const handleAddItem = () => {
-        setItems([...items, { variantId: '', quantityOrdered: 1, unitCost: 0 }]);
+        setItems([...items, { productId: '', quantityOrdered: 1, unitCost: 0 }]);
     };
 
     const handleRemoveItem = (index: number) => {
@@ -609,21 +609,19 @@ const CreatePoModal = ({ isOpen, onClose, onSubmit, suppliers, warehouses, produ
             warehouseId,
             expectedDelivery: expectedDelivery || null,
             items: items.map(item => ({
-                variantId: item.variantId,
+                productId: item.productId,
                 quantityOrdered: parseInt(item.quantityOrdered as any),
                 unitCost: parseFloat(item.unitCost as any)
             }))
         });
     };
 
-    const allVariants = useMemo(() => {
-        return products?.flatMap((p: any) =>
-            p.variants.map((v: any) => ({
-                id: v.id,
-                label: `${p.name} - ${v.sku}`,
-                price: v.price
-            }))
-        ) || [];
+    const allProducts = useMemo(() => {
+        return products?.map((p: any) => ({
+            id: p.id,
+            label: `${p.name} - ${p.sku}`,
+            price: p.price
+        })) || [];
     }, [products]);
 
     return (
@@ -713,12 +711,12 @@ const CreatePoModal = ({ isOpen, onClose, onSubmit, suppliers, warehouses, produ
                                                 <select
                                                     required
                                                     className="w-full h-10 rounded-lg border border-zinc-200 bg-white px-3 py-0 text-xs font-bold uppercase tracking-tight focus:ring-1 focus:ring-zinc-900 transition-all"
-                                                    value={item.variantId}
-                                                    onChange={(e) => handleUpdateItem(idx, 'variantId', e.target.value)}
+                                                    value={item.productId}
+                                                    onChange={(e) => handleUpdateItem(idx, 'productId', e.target.value)}
                                                 >
                                                     <option value="">SELECT ASSET</option>
-                                                    {allVariants.map((v: any) => (
-                                                        <option key={v.id} value={v.id}>{v.label}</option>
+                                                    {allProducts.map((p: any) => (
+                                                        <option key={p.id} value={p.id}>{p.label}</option>
                                                     ))}
                                                 </select>
                                             </div>

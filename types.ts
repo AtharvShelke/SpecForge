@@ -4,9 +4,9 @@
 
 export interface Category {
   id: number;
-  shortLabel:string;
-  label:string;
-  code:string;
+  shortLabel?: string;
+  label?: string;
+  code?: string;
   name: string;
   slug: string;
   description?: string | null;
@@ -79,7 +79,7 @@ export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP';
 
 export type FilterType = 'checkbox' | 'range' | 'boolean' | 'search' | 'dropdown';
 
-export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED' | 'IN_STOCK' | 'OUT_OF_STOCK';
 
 export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'WAREHOUSE_STAFF' | 'FINANCE' | 'USER';
 
@@ -113,20 +113,7 @@ export interface ProductMedia {
   sortOrder: number;
 }
 
-export interface ProductVariant {
-  id: string;
-  productId: string;
-  sku: string;
-  price: number;
-  compareAtPrice?: number;
-  attributes?: Record<string, string>;
-  status: string;
-  deletedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  product?: Product; // parent relation
-  inventoryItems?: InventoryItem[];
-}
+
 
 export interface Product {
   id: string;
@@ -140,6 +127,12 @@ export interface Product {
   deletedAt?: string;
   version: number;
 
+  // Moved from ProductVariant
+  sku?: string;
+  price?: number;
+  compareAtPrice?: number;
+  stockStatus?: string;
+
   brandId?: string;
   brand?: Brand;
 
@@ -147,7 +140,6 @@ export interface Product {
   updatedAt: string;
 
   specs: ProductSpec[];
-  variants: ProductVariant[];
   media: ProductMedia[];
   tags: Tag[];
 
@@ -203,7 +195,6 @@ export function flatToSpecs(flat: ProductSpecsFlat): Partial<ProductSpec>[] {
 
 export interface CartItem extends Product {
   quantity: number;
-  selectedVariant: ProductVariant;
 }
 
 // ──────────────────────────────────────────────────────
@@ -307,7 +298,7 @@ export interface Warehouse {
 
 export interface InventoryItem {
   id: string;
-  variantId: string;
+  productId: string;
   partNumber?: string;
   serialNumber?: string;
   quantity: number;
@@ -317,13 +308,13 @@ export interface InventoryItem {
   location: string;
   lastUpdated?: string;
 
-  variant?: ProductVariant;
+  product?: Product;
 }
 
 export interface StockMovement {
   id: string;
   orderId?: string;
-  variantId: string;
+  productId: string;
   type: StockMovementType;
   quantity: number;
   note?: string;
@@ -350,11 +341,11 @@ export interface Supplier {
 export interface PurchaseOrderItem {
   id: string;
   purchaseOrderId: string;
-  variantId: string;
+  productId: string;
   quantityOrdered: number;
   quantityReceived: number;
   unitCost: number;
-  variant?: ProductVariant;
+  product?: Product;
 }
 
 export type PurchaseOrderStatus = "PENDING" | "PARTIAL" | "COMPLETED" | "CANCELLED";
@@ -398,14 +389,13 @@ export interface Customer {
 export interface OrderItem {
   id: string;
   orderId: string;
-  variantId: string;
+  productId: string;
   name: string;
   category: Category;
   price: number;
   quantity: number;
   image?: string;
   sku?: string;
-  variantSnapshot?: Record<string, any>;
 }
 
 export interface OrderLog {
@@ -462,9 +452,9 @@ export interface Order {
 export interface BuildGuideItem {
   id: string;
   buildGuideId: string;
-  variantId: string;
+  productId: string;
   quantity: number;
-  variant?: ProductVariant;
+  product?: Product;
 }
 
 export interface BuildGuide {

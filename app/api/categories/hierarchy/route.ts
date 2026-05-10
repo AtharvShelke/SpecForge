@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
+// ─── Types ─────────────────────────────────────────────────────────────
+
+interface CategoryHierarchyRecord {
+  id: string;
+  label: string;
+  query: string | null;
+  brand: string | null;
+  parentId: string | null;
+  sortOrder: number;
+  categoryDefinition: {
+    id: string;
+    code: string;
+    label: string;
+    shortLabel: string | null;
+  } | null;
+}
+
+interface CategoryTreeNode extends CategoryHierarchyRecord {
+  category: string | null;
+  categoryDefinitionId: string | null;
+  children: CategoryTreeNode[];
+}
+
+interface FlatCategoryNode {
+  id: string;
+  label: string;
+  categoryDefinitionId: string | null;
+  query: string | null;
+  brand: string | null;
+  parentId: string | null;
+  sortOrder: number;
+}
+
+// ─── Database Query Configuration ─────────────────────────────────────
+
 const HIERARCHY_SELECT = {
   id: true,
   label: true,
@@ -19,28 +54,9 @@ const HIERARCHY_SELECT = {
   },
 } as const;
 
-type HierarchyRecord = {
-  id: string;
-  label: string;
-  query: string | null;
-  brand: string | null;
-  parentId: string | null;
-  sortOrder: number;
-  categoryDefinition: {
-    id: string;
-    code: string;
-    label: string;
-    shortLabel: string | null;
-  } | null;
-};
+// ─── Validation Schemas ──────────────────────────────────────────────────
 
-type TreeNode = HierarchyRecord & {
-  category: string | null;
-  categoryDefinitionId: string | null;
-  children: TreeNode[];
-};
-
-const nodeSchema: z.ZodType<{
+const CategoryNodeSchema: z.ZodType<{
   label: string;
   category?: string;
   query?: string;
@@ -49,53 +65,48 @@ const nodeSchema: z.ZodType<{
   children?: Array<any>;
 }> = z.lazy(() =>
   z.object({
-    label: z.string().min(1),
-    category: z.string().min(1).optional(),
+    label: z.string().min(1, 'Label is required'),
+    category: z.string().min(1, 'Category code must be valid').optional(),
     query: z.string().optional(),
     brand: z.string().optional(),
-    sortOrder: z.number().int().default(0),
-    children: z.array(nodeSchema).default([]),
+    sortOrder: z.number().int().min(0).default(0),
+    children: z.array(CategoryNodeSchema).default([]),
   })
 );
 
-const hierarchySchema = z.array(nodeSchema);
+const CategoryHierarchySchema = z.array(CategoryNodeSchema).min(0, 'Hierarchy must be an array');
 
-function buildTree(records: HierarchyRecord[]): TreeNode[] {
-  const map = new Map<string, TreeNode>();
-  const roots: TreeNode[] = [];
+// ─── Tree Building Functions ─────────────────────────────────────────────
 
+function buildCategoryTree(records: CategoryHierarchyRecord[]): CategoryTreeNode[] {
+  const nodeMap = new Map<string, CategoryTreeNode>();
+  const rootNodes: CategoryTreeNode[] = [];
+
+  // Create all nodes first
   for (const record of records) {
-    map.set(record.id, {
+    const treeNode: CategoryTreeNode = {
       ...record,
       category: record.categoryDefinition?.code ?? null,
       categoryDefinitionId: record.categoryDefinition?.id ?? null,
       children: [],
-    });
+    };
+    nodeMap.set(record.id, treeNode);
   }
 
+  // Build the tree structure
   for (const record of records) {
-    const node = map.get(record.id)!;
-    if (record.parentId && map.has(record.parentId)) {
-      map.get(record.parentId)!.children.push(node);
+    const node = nodeMap.get(record.id)!;
+    if (record.parentId && nodeMap.has(record.parentId)) {
+      nodeMap.get(record.parentId)!.children.push(node);
     } else {
-      roots.push(node);
+      rootNodes.push(node);
     }
   }
 
-  return roots;
+  return rootNodes;
 }
 
-type FlatNode = {
-  id: string;
-  label: string;
-  categoryDefinitionId: string | null;
-  query: string | null;
-  brand: string | null;
-  parentId: string | null;
-  sortOrder: number;
-};
-
-function flattenTree(
+function flattenCategoryTree(
   nodes: Array<{
     label: string;
     category?: string;
@@ -104,17 +115,24 @@ function flattenTree(
     sortOrder?: number;
     children?: Array<any>;
   }>,
-  categoryIdByCode: Map<string, string>,
+  categoryDefinitionMap: Map<string, string>,
   parentId: string | null
-): FlatNode[] {
-  const flat: FlatNode[] = [];
+): FlatCategoryNode[] {
+  const flatNodes: FlatCategoryNode[] = [];
 
   nodes.forEach((node, index) => {
-    const id = crypto.randomUUID();
-    const categoryDefinitionId = node.category ? categoryIdByCode.get(node.category) ?? null : null;
+    const nodeId = crypto.randomUUID();
+    const categoryDefinitionId = node.category 
+      ? categoryDefinitionMap.get(node.category) ?? null 
+      : null;
 
-    flat.push({
-      id,
+    // Validate that category exists if provided
+    if (node.category && !categoryDefinitionId) {
+      throw new Error(`Category definition not found for code: ${node.category}`);
+    }
+
+    flatNodes.push({
+      id: nodeId,
       label: node.label,
       categoryDefinitionId,
       query: node.query ?? null,
@@ -123,13 +141,17 @@ function flattenTree(
       sortOrder: node.sortOrder ?? index,
     });
 
+    // Recursively process children
     if (node.children && node.children.length > 0) {
-      flat.push(...flattenTree(node.children, categoryIdByCode, id));
+      const childNodes = flattenCategoryTree(node.children, categoryDefinitionMap, nodeId);
+      flatNodes.push(...childNodes);
     }
   });
 
-  return flat;
+  return flatNodes;
 }
+
+// ─── API Endpoints ───────────────────────────────────────────────────────
 
 export async function GET() {
   try {
@@ -138,53 +160,98 @@ export async function GET() {
       orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
     });
 
-    return NextResponse.json(buildTree(records), {
+    const tree = buildCategoryTree(records);
+
+    return NextResponse.json(tree, {
       headers: {
         'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30',
+        'Content-Type': 'application/json',
       },
     });
   } catch (error) {
-    console.error('GET /api/categories/hierarchy error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('GET /api/categories/hierarchy error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return NextResponse.json(
+      { error: 'Failed to fetch category hierarchy' }, 
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    const tree = hierarchySchema.parse(await req.json());
+    const body = await req.json();
+    const tree = CategoryHierarchySchema.parse(body);
 
+    // Fetch all category definitions for validation
     const categoryDefinitions = await prisma.categoryDefinition.findMany({
       select: {
         id: true,
         code: true,
+        isActive: true,
       },
     });
 
-    const categoryIdByCode = new Map(categoryDefinitions.map((category) => [category.code, category.id]));
-    const flat = flattenTree(tree, categoryIdByCode, null);
+    // Create map for efficient lookup
+    const categoryDefinitionMap = new Map(
+      categoryDefinitions
+        .filter(cat => cat.isActive) // Only use active categories
+        .map((category) => [category.code, category.id])
+    );
 
+    // Flatten the tree and validate
+    const flatNodes = flattenCategoryTree(tree, categoryDefinitionMap, null);
+
+    // Use transaction for data integrity
     await prisma.$transaction(async (tx) => {
+      // Delete existing hierarchy
       await tx.categoryHierarchy.deleteMany();
 
-      if (flat.length > 0) {
+      // Insert new hierarchy if not empty
+      if (flatNodes.length > 0) {
         await tx.categoryHierarchy.createMany({
-          data: flat,
+          data: flatNodes,
         });
       }
     });
 
-    const records = await prisma.categoryHierarchy.findMany({
+    // Return the updated tree
+    const updatedRecords = await prisma.categoryHierarchy.findMany({
       select: HIERARCHY_SELECT,
       orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
     });
 
-    return NextResponse.json(buildTree(records));
+    const updatedTree = buildCategoryTree(updatedRecords);
+
+    return NextResponse.json({
+      success: true,
+      data: updatedTree,
+      message: `Updated hierarchy with ${flatNodes.length} nodes`,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
+      return NextResponse.json(
+        { 
+          error: 'Validation failed', 
+          details: error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          })),
+        }, 
+        { status: 400 }
+      );
     }
 
-    console.error('PUT /api/categories/hierarchy error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('PUT /api/categories/hierarchy error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    return NextResponse.json(
+      { error: 'Failed to update category hierarchy' },
+      { status: 500 }
+    );
   }
 }

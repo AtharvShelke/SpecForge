@@ -13,16 +13,16 @@ import { PrismaClient } from "@/generated/prisma/client";
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 export interface InventoryReserveItem {
-    variantId: string;
+    productId: string;
     quantity: number;
 }
 
 export class InsufficientStockError extends Error {
-    public variantId: string;
-    constructor(variantId: string) {
-        super(`Insufficient stock for variant ${variantId}`);
+    public productId: string;
+    constructor(productId: string) {
+        super(`Insufficient stock for product ${productId}`);
         this.name = 'InsufficientStockError';
-        this.variantId = variantId;
+        this.productId = productId;
     }
 }
 
@@ -39,11 +39,11 @@ export async function reserveInventory(
     for (const item of items) {
         // Find best warehouse with sufficient stock
         const inv = await tx.inventoryItem.findFirst({
-            where: { variantId: item.variantId, quantity: { gte: item.quantity } },
+            where: { productId: item.productId, quantity: { gte: item.quantity } },
             orderBy: { quantity: 'desc' },
         });
 
-        if (!inv) throw new InsufficientStockError(item.variantId);
+        if (!inv) throw new InsufficientStockError(item.productId);
 
         // Optimistic concurrency: re-check quantity in WHERE clause
         const updated = await tx.inventoryItem.updateMany({
@@ -55,13 +55,13 @@ export async function reserveInventory(
             },
         });
 
-        if (updated.count === 0) throw new InsufficientStockError(item.variantId);
+        if (updated.count === 0) throw new InsufficientStockError(item.productId);
 
         // Log stock movement with order reference
         await tx.stockMovement.create({
             data: {
                 orderId,
-                variantId: inv.variantId,
+                productId: inv.productId,
                 type: 'RESERVE',
                 quantity: item.quantity,
                 note: `Order ${orderId} placed — stock reserved`,
@@ -70,14 +70,14 @@ export async function reserveInventory(
 
         // Trigger OUT_OF_STOCK status if total available quantity hits 0 across all warehouses
         const allInv = await tx.inventoryItem.aggregate({
-            where: { variantId: item.variantId },
+            where: { productId: item.productId },
             _sum: { quantity: true }
         });
 
         if ((allInv._sum.quantity || 0) <= 0) {
-            await tx.productVariant.update({
-                where: { id: item.variantId },
-                data: { status: 'OUT_OF_STOCK' }
+            await tx.product.update({
+                where: { id: item.productId },
+                data: { stockStatus: 'OUT_OF_STOCK' }
             });
         }
     }
@@ -95,7 +95,7 @@ export async function confirmInventory(
 ): Promise<void> {
     for (const item of items) {
         const inv = await tx.inventoryItem.findFirst({
-            where: { variantId: item.variantId },
+            where: { productId: item.productId },
         });
         if (!inv) continue;
 
@@ -110,7 +110,7 @@ export async function confirmInventory(
         await tx.stockMovement.create({
             data: {
                 orderId,
-                variantId: inv.variantId,
+                productId: inv.productId,
                 type: 'SALE',
                 quantity: item.quantity,
                 note: `Order ${orderId} shipped — reserved stock confirmed`,
@@ -133,7 +133,7 @@ export async function restoreInventory(
 ): Promise<void> {
     for (const item of items) {
         const inv = await tx.inventoryItem.findFirst({
-            where: { variantId: item.variantId },
+            where: { productId: item.productId },
         });
         if (!inv) continue;
 
@@ -163,23 +163,23 @@ export async function restoreInventory(
         await tx.stockMovement.create({
             data: {
                 orderId,
-                variantId: inv.variantId,
+                productId: inv.productId,
                 type: 'RETURN',
                 quantity: item.quantity,
                 note: reason,
             },
         });
 
-        // If returned item makes stock > 0, make sure status is ACTIVE
-        const variant = await tx.productVariant.findUnique({
-            where: { id: item.variantId },
-            select: { status: true }
+        // If returned item makes stock > 0, make sure status is IN_STOCK
+        const product = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { stockStatus: true }
         });
 
-        if (variant?.status === 'OUT_OF_STOCK' && newQuantity > 0) {
-            await tx.productVariant.update({
-                where: { id: item.variantId },
-                data: { status: 'ACTIVE' }
+        if (product?.stockStatus === 'OUT_OF_STOCK' && newQuantity > 0) {
+            await tx.product.update({
+                where: { id: item.productId },
+                data: { stockStatus: 'IN_STOCK' }
             });
         }
     }

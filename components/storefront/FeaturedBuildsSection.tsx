@@ -60,7 +60,7 @@ const BuildCardCinematic = memo(function BuildCardCinematic({
     const bgImage = BUILD_BGS[index % BUILD_BGS.length]
 
     const getComponent = useCallback(
-        (cat: string) => build.items.find((i: any) => i.variant.product.category === cat),
+        (cat: string) => build.items.find((i: any) => i.product?.category?.name === cat),
         [build.items]
     )
 
@@ -129,7 +129,7 @@ const BuildCardCinematic = memo(function BuildCardCinematic({
                                 <div key={cat} className="flex items-center gap-2">
                                     <Icon size={14} className="text-zinc-500 group-hover:text-indigo-400 transition-colors" />
                                     <p className="text-[11px] sm:text-xs font-medium text-zinc-300 truncate">
-                                        {comp.variant.product.name}
+                                        {comp.product?.name}
                                     </p>
                                 </div>
                             )

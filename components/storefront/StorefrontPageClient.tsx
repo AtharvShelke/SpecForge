@@ -47,7 +47,7 @@ export default function StorefrontPageClient({
     const counts: Record<string, number> = {}
     for (const product of products) {
       if (product.status === 'ACTIVE') {
-        counts[product.category] = (counts[product.category] ?? 0) + 1
+        counts[product.category.name] = (counts[product.category.name] ?? 0) + 1
       }
     }
     return counts

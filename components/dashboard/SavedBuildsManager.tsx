@@ -282,11 +282,11 @@ const BuildRow = memo(({ build, isExpanded, onToggle, onEdit, onDelete }: BuildR
                                                 ×{item.quantity}
                                             </span>
                                             <p className="text-xs font-semibold text-stone-700 truncate">
-                                                {item.variant?.product?.name || 'Unknown Item'}
+                                                {item.product?.name || 'Unknown Item'}
                                             </p>
                                         </div>
                                         <span className="text-xs font-bold font-mono text-stone-600 shrink-0 tabular-nums">
-                                            ₹{Number(item.variant?.price || 0).toLocaleString('en-IN')}
+                                            ₹{Number(item.product?.price || 0).toLocaleString('en-IN')}
                                         </span>
                                     </div>
                                 ))}

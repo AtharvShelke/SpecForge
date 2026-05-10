@@ -29,6 +29,11 @@ interface ShopContextType {
 const CART_KEY = 'specforge_cart';
 const COMPARE_KEY = 'specforge_compare';
 
+function getCategoryKey(product: Product) {
+    if (typeof product.category === 'string') return product.category;
+    return product.category?.slug ?? product.category?.name ?? '';
+}
+
 // Reads from localStorage safely — returns null on SSR or parse failure
 function readStorage<T>(key: string): T | null {
     try {
@@ -76,7 +81,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addToCart = useCallback((product: Product) => {
         setCart(prev => {
             const existing = prev.find(item => item.id === product.id);
-            const isOut = product.variants?.[0]?.status === 'OUT_OF_STOCK';
+            const isOut = product.stockStatus === 'OUT_OF_STOCK';
 
             if (isOut) {
                 // Fire toast outside the setState callback to avoid state update during render
@@ -96,7 +101,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             queueMicrotask(() => toast({ title: 'Added to cart', description: `${product.name} added successfully.` }));
-            return [...prev, { ...product, quantity: 1, selectedVariant: product.variants?.[0] ?? ({} as any) }];
+            return [...prev, { ...product, quantity: 1 }];
         });
     }, [toast]);
 
@@ -107,7 +112,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const updateQuantity = useCallback((productId: string, quantity: number) => {
         setCart(prev => prev.map(item => {
             if (item.id !== productId) return item;
-            if (item.selectedVariant?.status === 'OUT_OF_STOCK') {
+            if (item.stockStatus === 'OUT_OF_STOCK') {
                 queueMicrotask(() => toast({ title: 'Insufficient stock', variant: 'destructive' }));
                 return item;
             }
@@ -120,7 +125,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const loadCart = useCallback((items: CartItem[]) => setCart(items), []);
 
     const cartTotal = useMemo(
-        () => cart.reduce((sum, item) => sum + ((item.selectedVariant?.price ?? 0) * item.quantity), 0),
+        () => cart.reduce((sum, item) => sum + ((item.price ?? 0) * item.quantity), 0),
         [cart]
     );
 
@@ -134,7 +139,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 queueMicrotask(() => toast({ title: 'Compare limit reached', description: 'You can compare up to 4 items max.', variant: 'destructive' }));
                 return prev;
             }
-            if (prev.length > 0 && prev[0].category !== product.category) {
+            if (prev.length > 0 && getCategoryKey(prev[0]) !== getCategoryKey(product)) {
                 queueMicrotask(() => toast({ title: 'Different category', description: 'You can only compare items from the same category.', variant: 'destructive' }));
                 return prev;
             }

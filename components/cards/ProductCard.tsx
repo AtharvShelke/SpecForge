@@ -9,8 +9,8 @@ interface Props {
 }
 
 export default function ProductCard({ product, rating, onAddToCart }: Props) {
-    const price = product.variants?.[0]?.price || 0
-    const compareAt = product.variants?.[0]?.compareAtPrice
+    const price = product.price || 0
+    const compareAt = product.compareAtPrice
     const image = product.media?.[0]?.url
     const brand = product.brand?.name
     const hasDiscount = compareAt && compareAt > price

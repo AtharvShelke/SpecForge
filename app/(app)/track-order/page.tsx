@@ -412,7 +412,7 @@ export default function TrackOrderPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-zinc-950 text-base truncate">{item.name}</p>
-                                            <p className="text-sm font-semibold text-zinc-500 mt-1 uppercase tracking-wider">{item.category} · Qty {item.quantity}</p>
+                                            <p className="text-sm font-semibold text-zinc-500 mt-1 uppercase tracking-wider">{(item.category as any)?.name || (item.category as any)} · Qty {item.quantity}</p>
                                         </div>
                                         <div className="text-right flex-shrink-0">
                                             <p className="font-black text-zinc-950 text-lg">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>

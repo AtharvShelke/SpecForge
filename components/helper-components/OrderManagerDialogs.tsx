@@ -100,30 +100,30 @@ export const ConfirmStatusDialog = ({
                                 </div>
                                 <div className="divide-y divide-slate-100">
                                     {(() => {
-                                        // Group by variantId first, then populate lookup map with both ID and SKU
-                                        const variantTotals = new Map<string, { quantity: number; reserved: number; sku?: string }>();
+                                        // Group by productId first, then populate lookup map with both ID and SKU
+                                        const productTotals = new Map<string, { quantity: number; reserved: number; sku?: string }>();
                                         inventoryArray.forEach(i => {
-                                            const existing = variantTotals.get(i.variantId);
+                                            const existing = productTotals.get(i.productId);
                                             if (existing) {
                                                 existing.quantity += i.quantity;
                                                 existing.reserved += (i.reserved || 0);
                                             } else {
-                                                variantTotals.set(i.variantId, {
+                                                productTotals.set(i.productId, {
                                                     quantity: i.quantity,
                                                     reserved: i.reserved || 0,
-                                                    sku: i.variant?.sku
+                                                    sku: i.product?.sku
                                                 });
                                             }
                                         });
 
                                         const lookupMap = new Map<string, { quantity: number; reserved: number }>();
-                                        variantTotals.forEach((data, vid) => {
-                                            lookupMap.set(vid, data);
+                                        productTotals.forEach((data, pid) => {
+                                            lookupMap.set(pid, data);
                                             if (data.sku) lookupMap.set(data.sku, data);
                                         });
 
                                         return selectedOrder.items.map(item => {
-                                            const inv = lookupMap.get(item.variantId) || (item.sku ? lookupMap.get(item.sku) : undefined);
+                                            const inv = lookupMap.get(item.productId) || (item.sku ? lookupMap.get(item.sku) : undefined);
                                             const current = inv?.quantity ?? 0;
                                             // ... rest of logic
                                             let after = current;

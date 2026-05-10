@@ -102,6 +102,14 @@ const PanelHeader = memo(({ icon, children, right, onClick }: {
 ));
 PanelHeader.displayName = 'PanelHeader';
 
+function getProductStock(product: any): number {
+  if (typeof product?.stock === 'number') return product.stock;
+  if (Array.isArray(product?.inventoryItems)) {
+    return product.inventoryItems.reduce((a: number, inv: any) => a + Math.max(0, (inv.quantity || 0) - (inv.reserved || 0)), 0);
+  }
+  return 0;
+}
+
 // ─────────────────────────────────────────────────────────────
 // STATUS PILL — memoized + precomputed class map
 // ─────────────────────────────────────────────────────────────
@@ -331,18 +339,12 @@ const Overview = () => {
   }, [orders]);
 
   const lowStockProducts = useMemo(() =>
-    products.filter(p => {
-      const stock = p.variants?.[0]?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
-      return stock <= 5;
-    }),
+    products.filter(p => getProductStock(p) <= 5),
     [products]
   );
 
   const outOfStockProducts = useMemo(() =>
-    products.filter(p => {
-      const stock = p.variants?.[0]?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
-      return stock <= 0;
-    }),
+    products.filter(p => getProductStock(p) <= 0),
     [products]
   );
 
@@ -757,12 +759,12 @@ const Overview = () => {
 
               {/* Top alerts */}
               {lowStockProducts.slice(0, 3).map(product => {
-                const stock = product.variants?.[0]?.inventoryItems?.reduce((a: number, inv: any) => a + (inv.quantity || 0), 0) ?? 0;
+                const stock = getProductStock(product);
                 return (
                   <div key={product.id} className="flex items-center justify-between gap-2 px-2 py-2 bg-amber-50/60 border border-amber-100 rounded-lg">
                     <div className="min-w-0">
                       <p className="text-[11px] sm:text-xs font-semibold text-stone-700 truncate">{product.name}</p>
-                      <p className="text-[9px] sm:text-[10px] font-mono text-stone-400">{product.variants?.[0]?.sku || '—'}</p>
+                      <p className="text-[9px] sm:text-[10px] font-mono text-stone-400">{product.sku || '—'}</p>
                     </div>
                     <span className={cn(
                       'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ring-1',

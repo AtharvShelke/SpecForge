@@ -8,22 +8,18 @@ import { notFound } from 'next/navigation';
 // reducing bytes transferred from the DB on every request.
 
 const PRODUCT_SELECT = {
-    id:          true,
-    name:        true,
-    description: true,
-    category:    true,
-    status:      true,
-    media:       { select: { url: true } },
-    brand:       { select: { id: true, name: true } },
-    specs:       true,
-    variants: {
-        select: {
-            price:        true,
-            compareAtPrice: true,
-            status:       true,
-            sku:          true,
-        },
-    },
+    id:             true,
+    name:           true,
+    description:    true,
+    category:       true,
+    status:         true,
+    stockStatus:    true,
+    sku:            true,
+    price:          true,
+    compareAtPrice: true,
+    media:          { select: { url: true } },
+    brand:          { select: { id: true, name: true } },
+    specs:          true,
 } as const;
 
 // ── generateMetadata ──────────────────────────────────────────────────────────
@@ -89,19 +85,18 @@ export default async function ProductPage({
     if (!product) notFound();
 
     // ── JSON-LD (built once server-side, never re-computed on client) ──────────
-    const firstVariant = product.variants?.[0];
     const jsonLd = {
         '@context':   'https://schema.org',
         '@type':      'Product',
         name:         product.name,
         image:        product.media?.[0]?.url ?? '',
         description:  product.description ?? product.name,
-        sku:          firstVariant?.sku ?? '',
+        sku:          product.sku ?? '',
         offers: {
             '@type':        'Offer',
             priceCurrency:  'INR',
-            price:          firstVariant?.price ?? 0,
-            availability:   firstVariant?.status === 'OUT_OF_STOCK'
+            price:          product.price ?? 0,
+            availability:   product.stockStatus === 'OUT_OF_STOCK'
                                 ? 'https://schema.org/OutOfStock'
                                 : 'https://schema.org/InStock',
             itemCondition:  'https://schema.org/NewCondition',

@@ -262,14 +262,14 @@ const RULES: CompatibilityRule[] = [
 export const validateBuild = (items: CartItem[]): CompatibilityReport => {
   const context: ValidationContext = {
     items,
-    cpu: items.find(i => i.category === 'PROCESSOR'),
-    mobo: items.find(i => i.category === 'MOTHERBOARD'),
-    ramList: items.filter(i => i.category === 'RAM'),
-    gpuList: items.filter(i => i.category === 'GPU'),
-    storageList: items.filter(i => i.category === 'STORAGE'),
-    psu: items.find(i => i.category === 'PSU'),
-    cabinet: items.find(i => i.category === 'CABINET'),
-    cooler: items.find(i => i.category === 'COOLER'),
+    cpu: items.find(i => i.category?.name.toUpperCase() === 'PROCESSOR' || i.category?.name.toUpperCase() === 'CPU'),
+    mobo: items.find(i => i.category?.name.toUpperCase() === 'MOTHERBOARD'),
+    ramList: items.filter(i => i.category?.name.toUpperCase() === 'RAM'),
+    gpuList: items.filter(i => i.category?.name.toUpperCase() === 'GPU'),
+    storageList: items.filter(i => i.category?.name.toUpperCase() === 'STORAGE'),
+    psu: items.find(i => i.category?.name.toUpperCase() === 'PSU'),
+    cabinet: items.find(i => i.category?.name.toUpperCase() === 'CABINET'),
+    cooler: items.find(i => i.category?.name.toUpperCase() === 'COOLER'),
 
     cpuSpecs: {},
     moboSpecs: {},

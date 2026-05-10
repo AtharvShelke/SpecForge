@@ -313,30 +313,30 @@ const OrderManager = () => {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
-  // Aggregate inventory by variantId across all warehouses
+  // Aggregate inventory by productId across all warehouses
   const aggregatedInventory = useMemo(() => {
-    const variantTotals = new Map<string, { quantity: number; reserved: number; reorderLevel: number; sku?: string }>();
+    const productTotals = new Map<string, { quantity: number; reserved: number; reorderLevel: number; sku?: string }>();
     const arr = Array.isArray(inventory) ? inventory : [];
 
     for (const item of arr) {
-      const existing = variantTotals.get(item.variantId);
+      const existing = productTotals.get(item.productId);
       if (existing) {
         existing.quantity += item.quantity;
         existing.reserved += (item.reserved || 0);
         existing.reorderLevel = Math.max(existing.reorderLevel, item.reorderLevel || 0);
       } else {
-        variantTotals.set(item.variantId, {
+        productTotals.set(item.productId, {
           quantity: item.quantity,
           reserved: item.reserved || 0,
           reorderLevel: item.reorderLevel || 0,
-          sku: item.variant?.sku,
+          sku: item.product?.sku,
         });
       }
     }
 
     const lookupMap = new Map<string, { quantity: number; reserved: number; reorderLevel: number }>();
-    variantTotals.forEach((data, vid) => {
-      lookupMap.set(vid, data);
+    productTotals.forEach((data, pid) => {
+      lookupMap.set(pid, data);
       if (data.sku) lookupMap.set(data.sku, data);
     });
     return lookupMap;
@@ -789,7 +789,7 @@ const OrderManager = () => {
                           </thead>
                           <tbody className="divide-y divide-stone-50">
                             {selectedOrder.items.map(item => {
-                              const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
+                              const inv = aggregatedInventory.get(item.productId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
                               const isLow = inv && inv.quantity <= inv.reorderLevel;
                               return (
                                 <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
@@ -911,7 +911,7 @@ const OrderManager = () => {
                   <CollapsibleSection icon={<Warehouse size={12} />} title="Inventory">
                     <div className="px-4 py-3 space-y-2.5">
                       {selectedOrder.items.map(item => {
-                        const inv = aggregatedInventory.get(item.variantId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
+                        const inv = aggregatedInventory.get(item.productId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
                         const available = inv?.quantity ?? 0;
                         const reserved = inv?.reserved ?? 0;
                         const isLow = available <= (inv?.reorderLevel ?? 5);

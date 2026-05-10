@@ -89,8 +89,8 @@ export async function PATCH(
             if (versionCheck.count === 0) throw new Error("CONCURRENT_MODIFICATION");
 
             const inventoryItems = existing.items
-                .filter(i => !!i.variantId)
-                .map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+                .filter(i => !!i.productId)
+                .map(i => ({ productId: i.productId, quantity: i.quantity }));
 
             // Handle inventory based on transition
             if (newStatus === "SHIPPED") {
@@ -202,8 +202,8 @@ export async function DELETE(
             if (existing.status !== "CANCELLED") {
                 const oldStatus = existing.status;
                 const inventoryItems = existing.items
-                    .filter(i => !!i.variantId)
-                    .map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+                    .filter(i => !!i.productId)
+                    .map(i => ({ productId: i.productId, quantity: i.quantity }));
 
                 const isPreShip = ["PENDING", "PAID", "PROCESSING"].includes(oldStatus);
 
@@ -215,8 +215,6 @@ export async function DELETE(
             }
 
             // 2. Delete the order (relations will cascade delete if configured in prisma schema)
-            // Note: items, logs, shipments, payments will cascade delete.
-            // Invoices and stockMovements will keep a null orderId (onDelete: SetNull).
             await tx.order.delete({
                 where: { id },
             });

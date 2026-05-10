@@ -372,8 +372,8 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
     if (!q) return products.slice(0, 20);
     return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
-      (p.variants?.[0]?.sku || '').toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q)
+      (p.sku || '').toLowerCase().includes(q) ||
+      p.category.name.toLowerCase().includes(q)
     ).slice(0, 20);
   }, [products, productSearch]);
 
@@ -397,9 +397,9 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
         id: uid('li'),
         productId: p.id,
         name: p.name,
-        description: p.category,
+        description: p.category?.label,
         quantity: 1,
-        unitPrice: p.variants?.[0]?.price || 0,
+        unitPrice: p.price || 0,
         taxRatePct: 18,
         image: p.media?.[0]?.url || '/placeholder.png',
       };
@@ -554,10 +554,10 @@ const PosCounter: React.FC<PosCounterProps> = ({ products, customers, onComplete
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-zinc-900 truncate group-hover:text-zinc-600 transition-colors">{p.name}</p>
-                          <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{p.variants?.[0]?.sku || 'NO-SKU'}</p>
+                          <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{p.sku || 'NO-SKU'}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-xs font-semibold text-zinc-900">{fmtINR(p.variants?.[0]?.price || 0)}</p>
+                          <p className="text-xs font-semibold text-zinc-900">{fmtINR(p.price || 0)}</p>
                           {(p.stock || 0) <= 5 && <Badge variant="outline" className="text-[10px] font-medium bg-red-50 text-red-600 border-red-100 mt-1 h-4 px-1.5 rounded">Low Stock</Badge>}
                         </div>
                       </button>
@@ -1243,7 +1243,7 @@ const BillingInvoices: React.FC = () => {
   const enrichedProducts = useMemo<(Product & { stock: number })[]>(() => {
     const inventoryArr = Array.isArray(inventory) ? inventory : [];
     return products.map(p => {
-      const inv = inventoryArr.find((i: any) => p.variants?.some((v: any) => v?.id === i?.variantId));
+      const inv = inventoryArr.find((i: any) => p.id === i?.productId);
       return { ...p, stock: inv?.quantity ?? 0 };
     });
   }, [products, inventory]);

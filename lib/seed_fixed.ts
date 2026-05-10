@@ -501,13 +501,21 @@ async function main() {
       const categoryId = categoryMap[item.category];
       const brandId    = brandMap[item.brand];
 
-      // FIXED: Use proper product creation without nested creates to avoid issues
+      // FIXED: Use proper product creation with variant fields directly on product
       const createdProduct = await prisma.product.upsert({
-        where:  { slug: slugify(item.name) },
-        update: {},
+        where:  { sku: item.sku },
+        update: {
+          price: item.price,
+          compareAtPrice: item.price + 5000,
+          stockStatus: "IN_STOCK",
+        },
         create: {
           slug:            slugify(item.name),
           name:            item.name,
+          sku:             item.sku,
+          price:           item.price,
+          compareAtPrice:  item.price + 5000,
+          stockStatus:     "IN_STOCK",
           metaTitle:       item.name,
           metaDescription: item.name,
           description:     item.name,
@@ -517,21 +525,7 @@ async function main() {
         },
       });
 
-      // FIXED: Create variant separately for better idempotency
-      const variant = await prisma.productVariant.upsert({
-        where: { sku: item.sku },
-        update: {},
-        create: {
-          productId:      createdProduct.id,
-          sku:            item.sku,
-          price:          item.price,
-          compareAtPrice: item.price + 5000,
-          status:         "IN_STOCK",
-        },
-      });
-
       // FIXED: Create media separately for better idempotency
-      // Use findFirst + create since there's no unique constraint on productId+sortOrder
       const existingMedia = await prisma.productMedia.findFirst({
         where: {
           productId: createdProduct.id,
@@ -550,15 +544,15 @@ async function main() {
         });
       }
 
-      // FIXED: InventoryItem — use findFirst + create since variantId is not unique
+      // FIXED: InventoryItem — link directly to product
       const existingInventory = await prisma.inventoryItem.findFirst({
-        where: { variantId: variant.id },
+        where: { productId: createdProduct.id },
       });
       
       if (!existingInventory) {
         await prisma.inventoryItem.create({
           data: {
-            variantId:    variant.id,
+            productId:    createdProduct.id,
             quantity:     25,
             reserved:     0,
             reorderLevel: 5,
@@ -665,11 +659,9 @@ async function main() {
     }
 
     // ── ORDER ─────────────────────────────────────
-    const firstVariant = await prisma.productVariant.findFirst({
-      include: { product: true },
-    });
+    const firstProduct = await prisma.product.findFirst();
 
-    if (firstVariant) {
+    if (firstProduct) {
       const existingOrder = await prisma.order.findUnique({
         where: { id: "ORD-1001" },
       });
@@ -692,13 +684,12 @@ async function main() {
 
             items: {
               create: {
-                variantId:  firstVariant.id,
-                // categoryId comes from the variant's product
-                categoryId: firstVariant.product.categoryId,
-                name:       firstVariant.product.name,
+                productId:  firstProduct.id,
+                categoryId: firstProduct.categoryId,
+                name:       firstProduct.name,
                 price:      36000,
                 quantity:   1,
-                sku:        firstVariant.sku,
+                sku:        firstProduct.sku,
               },
             },
           },
@@ -715,7 +706,7 @@ async function main() {
         await prisma.stockMovement.create({
           data: {
             orderId:   order.id,
-            variantId: firstVariant.id,
+            productId: firstProduct.id,
             type:      StockMovementType.SALE,
             quantity:  -1,
             note:      "Product sold",
@@ -750,7 +741,7 @@ async function main() {
             dueDate:     new Date(),
             lineItems: {
               create: {
-                name:       firstVariant.product.name,
+                name:       firstProduct.name,
                 quantity:   1,
                 unitPrice:  36000,
                 taxRatePct: 18,

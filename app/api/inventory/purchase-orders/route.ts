@@ -6,7 +6,7 @@ import { z } from "zod";
 // This functionality is disabled until proper models are implemented
 
 const createPoItemSchema = z.object({
-    variantId: z.string().uuid(),
+    productId: z.string().uuid(),
     quantityOrdered: z.number().int().positive(),
     unitCost: z.number().positive(),
 });

@@ -20,18 +20,18 @@ export async function GET(
 ) {
     try {
         const { id: sku } = await params;
-        // First find the variant by SKU
-        const variant = await prisma.productVariant.findUnique({
+        // First find the product by SKU
+        const product = await prisma.product.findUnique({
             where: { sku },
             select: { id: true }
         });
         
-        if (!variant) {
-            return NextResponse.json({ error: "Variant not found" }, { status: 404 });
+        if (!product) {
+            return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
         const movements = await prisma.stockMovement.findMany({
-            where: { variantId: variant.id },
+            where: { productId: product.id },
             orderBy: { createdAt: "desc" },
             take: 100,
         });
@@ -55,7 +55,7 @@ export async function POST(
 
         const result = await prisma.$transaction(async (tx) => {
             const inv = await tx.inventoryItem.findFirst({
-                where: { variant: { sku } }
+                where: { product: { sku } }
             });
             if (!inv) throw new Error("NOT_FOUND");
 
@@ -94,14 +94,14 @@ export async function POST(
             });
 
             // Sync product stock
-            await tx.productVariant.update({
-                where: { id: inv.variantId },
-                data: { status: newQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK" },
+            await tx.product.update({
+                where: { id: inv.productId },
+                data: { stockStatus: newQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK" },
             });
 
             const movement = await tx.stockMovement.create({
                 data: {
-                    variantId: inv.variantId,
+                    productId: inv.productId,
                     type: data.type,
                     quantity: data.quantity,
                     note: data.reason,

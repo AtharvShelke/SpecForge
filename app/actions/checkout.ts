@@ -8,7 +8,6 @@ import { sendMail } from "@/lib/services/mail";
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
-    variantId: z.string().min(1),
     quantity: z.number().int().positive(),
 });
 
@@ -38,7 +37,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             const productIds = data.items.map(i => i.productId);
             const products = await tx.product.findMany({
                 where: { id: { in: productIds } },
-                include: { variants: { include: { inventoryItems: true } }, media: true }
+                include: { inventoryItems: true, media: true }
             });
 
             // Fast lookup map
@@ -56,30 +55,26 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     throw new Error(`Product not found: ${item.productId}`);
                 }
 
-                const variant = product.variants?.[0]; // Defaulting to first variant mapped
-                if (!variant) throw new Error(`Product variant missing for ${product.name}`);
-
                 // For now grab the first inventory item
-                const inv = variant.inventoryItems[0];
+                const inv = product.inventoryItems[0];
                 if (!inv || inv.quantity < item.quantity) {
                     throw new Error(`Insufficient stock for product ${product.name}`);
                 }
 
+                const price = product.price || 0;
+
                 // Push for GST calculation
-                calculationItems.push({ price: variant.price, quantity: item.quantity });
+                calculationItems.push({ price: price, quantity: item.quantity });
 
                 // Prepare item insertion
                 orderItemsData.push({
-                    variantId: variant.id,
+                    productId: product.id,
                     name: product.name,
                     categoryId: product.categoryId,
-                    price: variant.price,
+                    price: price,
                     quantity: item.quantity,
                     image: product.media?.[0]?.url || '',
-                    sku: variant.sku,
-                    variant: {
-                        connect: { id: variant.id }
-                    }
+                    sku: product.sku,
                 });
 
                 // Prepare stock reduction
@@ -90,7 +85,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                 });
 
                 stockMovements.push({
-                    variantId: variant.id,
+                    productId: product.id,
                     type: "RESERVE" as const,
                     quantity: item.quantity,
                     note: `Order checkout`,
@@ -146,12 +141,11 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                 });
             }
 
-            // 5. Batch insert stock movements (raw to avoid multiple queries if Prisma allowed createMany on relations, but we can do it via model)
+            // 5. Batch insert stock movements
             if (stockMovements.length > 0) {
                 await tx.stockMovement.createMany({
                     data: stockMovements.map(sm => ({
-                        reason: `${sm.note} ${orderId}`,
-                        variantId: sm.variantId,
+                        productId: sm.productId,
                         type: sm.type as "RESERVE",
                         quantity: sm.quantity,
                         note: sm.note

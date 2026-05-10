@@ -202,9 +202,9 @@ const ProductCard: React.FC<{
     onRemove: () => void;
     index: number;
 }> = memo(({ product, isInCart, compatibility, compatMessage, onAdd, onRemove, index }) => {
-    const price = product.variants?.[0]?.price || 0;
-    const compareAt = product.variants?.[0]?.compareAtPrice;
-    const status = product.variants?.[0]?.status;
+    const price = product.price || 0;
+    const compareAt = product.compareAtPrice;
+    const status = product.stockStatus;
 
     const isOos = status === 'OUT_OF_STOCK';
     const isLowStock = status === 'LOW_STOCK';
@@ -395,7 +395,7 @@ const BuildSummaryPanel: React.FC<{
 }> = memo(({ cart, coreCategories, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
     const report = useMemo(() => validateBuild(cart), [cart]);
     const totalPrice = useMemo(
-        () => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0),
+        () => cart.reduce((s, i) => s + (i.price || 0) * i.quantity, 0),
         [cart],
     );
     // Single pass instead of two separate calls
@@ -500,7 +500,7 @@ const BuildSummaryPanel: React.FC<{
                             {item ? (
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
                                     <span className="text-[11px] font-bold text-zinc-700 tabular-nums">
-                                        ₹{((item.selectedVariant?.price || 0) * item.quantity).toLocaleString('en-IN')}
+                                        ₹{((item.price || 0) * item.quantity).toLocaleString('en-IN')}
                                     </span>
                                     <button
                                         type="button"
@@ -696,7 +696,6 @@ function PCBuilderPageContent() {
                     total: cartTotal,
                     items: cart.map(i => ({
                         productId: i.id,
-                        variantId: i.selectedVariant?.id ?? i.variants?.[0]?.id ?? '',
                         quantity: i.quantity,
                     })),
                 }),
@@ -722,7 +721,7 @@ function PCBuilderPageContent() {
         if (cart.length === 0) return '';
         try {
             const minimalCart = cart.map(item => [
-                item.selectedVariant?.id ?? item.variants?.[0]?.id,
+                item.id,
                 item.quantity,
             ]);
             const encoded = btoa(encodeURIComponent(JSON.stringify(minimalCart)))
@@ -830,7 +829,7 @@ function PCBuilderPageContent() {
         setTimeout(() => {
             setActiveStep(prev => {
                 const next = coreCategories.find(
-                    cat => cat.name !== product.category.name && !cart.some(i => i.category.name === cat.name)
+                    cat => cat.name !== product.category.name && !cart.some(i => i.category?.name === cat.name)
                 );
                 return next ?? prev;
             });
@@ -860,8 +859,8 @@ function PCBuilderPageContent() {
         if (cached) return cached;
 
         const hypo: CartItem[] = [
-            ...cart.filter(i => i.category !== product.category),
-            { ...product, quantity: 1, selectedVariant: product.variants?.[0] || {} as any },
+            ...cart.filter(i => i.category?.name !== product.category?.name),
+            { ...product, quantity: 1 },
         ];
         const rep = validateBuild(hypo);
         const rel = rep.issues.filter(iss => iss.componentIds.includes(product.id));
@@ -901,12 +900,12 @@ function PCBuilderPageContent() {
 
     // Derived values — single source of truth
     const totalPrice = useMemo(
-        () => cart.reduce((s, i) => s + (i.selectedVariant?.price || 0) * i.quantity, 0),
+        () => cart.reduce((s, i) => s + (i.price || 0) * i.quantity, 0),
         [cart],
     );
     const compatReport = useMemo(() => validateBuild(cart), [cart]);
     const completedCount = useMemo(
-        () => coreCategories.filter(cat => cart.some(i => i.category === cat)).length,
+        () => coreCategories.filter(cat => cart.some(i => i.category?.name === cat.name)).length,
         [cart],
     );
     const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
@@ -1015,7 +1014,7 @@ function PCBuilderPageContent() {
                         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide px-3 sm:px-4 py-2.5">
                             {coreCategories.map(cat => {
                                 const isActive = activeStep === cat;
-                                const isDone = cart.some(i => i.category === cat);
+                                const isDone = cart.some(i => i.category?.name === cat.name);
                                 return (
                                     <button
                                         key={cat?.id}

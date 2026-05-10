@@ -22,7 +22,7 @@ import { useBuildSequence } from '@/hooks/useBuildSequence';
 // ── Constants (module scope — never recreated) ────────────────────────────────
 
 const DEFAULT_MAX_PRICE = 500000;
-const ITEMS_PER_PAGE    = 12;
+const ITEMS_PER_PAGE = 12;
 const ALL_PRODUCTS_TAB: CategoryNode = { label: 'All' };
 
 // Style string hoisted — never recreated on re-render
@@ -87,21 +87,21 @@ const SkeletonList = memo(function SkeletonList() {
 });
 
 // Pre-built skeleton arrays — avoids Array.from({ length: 8 }) on every render
-const SKELETON_KEYS = [0,1,2,3,4,5,6,7] as const;
+const SKELETON_KEYS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
 // ── ProductCard ───────────────────────────────────────────────────────────────
 
 const ProductCard = memo(function ProductCard({ product, inCart, cartQuantity, isIncompatible, isWarning, addToCart, onRemove, onUpdateQty, handleCompareToggle, compareItems, viewMode, index }: any) {
-    const price       = product.variants?.[0]?.price ?? 0;
-    const compareAt   = product.variants?.[0]?.compareAtPrice;
-    const status      = product.variants?.[0]?.status;
+    const price = product.price ?? 0;
+    const compareAt = product.compareAtPrice;
+    const status = product.stockStatus;
     const isOutOfStock = status === 'OUT_OF_STOCK';
-    const image       = product.media?.[0]?.url;
-    const flatSpecs   = useMemo(() => specsToFlat(product.specs), [product.specs]);
-    const specKeys    = useMemo(() => Object.keys(flatSpecs).slice(0, 2), [flatSpecs]);
-    const isCompared  = useMemo(() => !!compareItems.find((i: any) => i.id === product.id), [compareItems, product.id]);
-    const discount    = compareAt && compareAt > price ? Math.round((1 - price / compareAt) * 100) : null;
-    const compatDot   = isIncompatible ? 'bg-red-500' : isWarning ? 'bg-amber-400' : 'bg-emerald-500';
+    const image = product.media?.[0]?.url;
+    const flatSpecs = useMemo(() => specsToFlat(product.specs), [product.specs]);
+    const specKeys = useMemo(() => Object.keys(flatSpecs).slice(0, 2), [flatSpecs]);
+    const isCompared = useMemo(() => !!compareItems.find((i: any) => i.id === product.id), [compareItems, product.id]);
+    const discount = compareAt && compareAt > price ? Math.round((1 - price / compareAt) * 100) : null;
+    const compatDot = isIncompatible ? 'bg-red-500' : isWarning ? 'bg-amber-400' : 'bg-emerald-500';
 
     const handleDecrement = useCallback(() => {
         cartQuantity <= 1 ? onRemove(product.id) : onUpdateQty(product.id, cartQuantity - 1);
@@ -196,9 +196,9 @@ const ProductCard = memo(function ProductCard({ product, inCart, cartQuantity, i
 
 const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const { addToCart, removeFromCart, updateQuantity, cart, compareItems, addToCompare, removeFromCompare } = useShop();
-    const searchParams   = useSearchParams();
-    const pathname       = usePathname();
-    const router         = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
     const { buildSequence } = useBuildSequence();
     const buildSequenceCodes = useMemo(
         () => buildSequence.map((item) => item.category.code),
@@ -207,12 +207,15 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
     const [categories, setCategories] = useState<CategoryNode[]>([]);
 
+    const fetchCategories = async () => {
+        const res = await fetch("/api/categories/hierarchy")
+        const data = await res.json()
+        console.log("Categories Fetched: ", data)
+        setCategories(data)
+    }
     // Fetch categories
     useEffect(() => {
-        fetch('/api/categories/hierarchy')
-            .then(res => res.json())
-            .then(setCategories)
-            .catch(err => console.error('Failed to fetch categories:', err));
+        fetchCategories();
     }, []);
 
     const isBuildMode = searchParams.get('mode') === 'build';
@@ -226,25 +229,30 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     }, [isBuildMode, router, pathname]);
 
     const initialCategoryParam = searchParams.get('category');
-    const initialQueryParam    = searchParams.get('q');
-    const initialModeParam     = searchParams.get('mode');
+    const initialQueryParam = searchParams.get('q');
+    const initialModeParam = searchParams.get('mode');
 
     const initialTab = useMemo(() => {
         if (initialQueryParam) return null;
         if (initialCategoryParam && categories.length > 0) {
-            const found = categories.find(n => n.label === initialCategoryParam || (typeof n.category === 'string' ? n.category : n.category?.slug) === initialCategoryParam);
+            const found = categories.find(
+                n =>
+                    (typeof n.category === 'string'
+                        ? n.category
+                        : n.category?.slug) === initialCategoryParam
+            );
             if (found) return found;
         }
         return categories.length > 0 ? ALL_PRODUCTS_TAB : null;
     }, [initialCategoryParam, categories, initialQueryParam]);
 
-    const [searchTerm,          setSearchTerm]          = useState(searchParams.get('q') ?? '');
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
-    const [activeTab,           setActiveTab]           = useState<CategoryNode | null>(initialTab);
-    const [selectedNode,        setSelectedNode]        = useState<CategoryNode | null>(null);
+    const [activeTab, setActiveTab] = useState<CategoryNode | null>(initialTab);
+    const [selectedNode, setSelectedNode] = useState<CategoryNode | null>(null);
     const [expandedSubcategory, setExpandedSubcategory] = useState<string | null>(null);
-    const [sidebarSearchTerm,   setSidebarSearchTerm]   = useState('');
-    const [selectedFilters,     setSelectedFilters]     = useState<Record<string, string[]>>(() => {
+    const [sidebarSearchTerm, setSidebarSearchTerm] = useState('');
+    const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(() => {
         const filters: Record<string, string[]> = {};
         searchParams.forEach((value, key) => {
             if (key.startsWith('f_')) {
@@ -255,15 +263,15 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         });
         return filters;
     });
-    const [priceRange,          setPriceRange]          = useState({ min: Number(searchParams.get('minPrice')) || 0, max: Number(searchParams.get('maxPrice')) || DEFAULT_MAX_PRICE });
+    const [priceRange, setPriceRange] = useState({ min: Number(searchParams.get('minPrice')) || 0, max: Number(searchParams.get('maxPrice')) || DEFAULT_MAX_PRICE });
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-    const [currentPage,         setCurrentPage]         = useState(Number(searchParams.get('page')) || 1);
-    const [isLoadingProducts,   setIsLoadingProducts]   = useState(true);
-    const [fetchedProducts,     setFetchedProducts]     = useState<Product[]>(initialData?.products ?? []);
-    const [totalCount,          setTotalCount]          = useState(initialData?.total ?? 0);
-    const [availableFilters,    setAvailableFilters]    = useState<{ brands: string[], specs: Record<string, string[]> } | null>(initialData?.filterOptions ?? null);
-    const [sortOption,          setSortOption]          = useState(searchParams.get('sort') ?? 'price-asc');
-    const [viewMode,            setViewMode]            = useState(searchParams.get('view') ?? 'grid');
+    const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [fetchedProducts, setFetchedProducts] = useState<Product[]>(initialData?.products ?? []);
+    const [totalCount, setTotalCount] = useState(initialData?.total ?? 0);
+    const [availableFilters, setAvailableFilters] = useState<{ brands: string[], specs: Record<string, string[]> } | null>(initialData?.filterOptions ?? null);
+    const [sortOption, setSortOption] = useState(searchParams.get('sort') ?? 'price-asc');
+    const [viewMode, setViewMode] = useState(searchParams.get('view') ?? 'grid');
 
     // ── Debounce search ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -271,9 +279,22 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
+    // ── Consolidated Tab/Category Change ──────────────────────────────────────
+    const handleTabChange = useCallback((node: CategoryNode | null) => {
+        setActiveTab(node);
+        setSelectedNode(null);
+        setSelectedFilters({});
+        setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
+        setCurrentPage(1);
+        setSidebarSearchTerm('');
+        setExpandedSubcategory(null);
+        // Reset fetch dedup so the new category always triggers a fresh fetch
+        prevParamsRef.current = '';
+    }, []);
+
     // ── Category nav scroll buttons ───────────────────────────────────────────
     const categoryNavRef = useRef<HTMLDivElement | null>(null);
-    const [canScrollLeft,  setCanScrollLeft]  = useState(false);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
 
     const updateScrollButtons = useCallback(() => {
@@ -298,41 +319,28 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         if (categories.length > 0 && !hasInitializedCategories.current) {
             hasInitializedCategories.current = true;
             const q = searchParams.get('q');
-            if (q) { setActiveTab(null); return; }
+            if (q) { handleTabChange(null); return; }
             if (initialCategoryParam) {
-                const found = categories.find(n => n.label === initialCategoryParam || (typeof n.category === 'string' ? n.category : n.category?.slug) === initialCategoryParam);
-                if (found) { setActiveTab(found); return; }
+                const found = categories.find(n => 
+                    (typeof n.category === 'string' ? n.category : n.category?.slug) === initialCategoryParam ||
+                    n.label === initialCategoryParam
+                );
+                if (found) { handleTabChange(found); return; }
             }
-            setActiveTab(ALL_PRODUCTS_TAB);
+            handleTabChange(ALL_PRODUCTS_TAB);
         }
-    }, [categories, initialCategoryParam, searchParams]);
+    }, [categories, initialCategoryParam, searchParams, handleTabChange]);
 
     useEffect(() => {
         if (!activeTab && categories.length > 0 && !searchTerm && hasInitializedCategories.current) {
-            setActiveTab(ALL_PRODUCTS_TAB);
+            handleTabChange(ALL_PRODUCTS_TAB);
         }
-    }, [activeTab, categories, searchTerm]);
+    }, [activeTab, categories, searchTerm, handleTabChange]);
 
     useEffect(() => {
         if (initialModeParam === 'build' && !isBuildMode) toggleBuildMode();
     }, []); // intentionally empty — run once on mount
 
-    // ── Reset filters on tab change ───────────────────────────────────────────
-    const prevActiveTab = useRef<Category | undefined>(undefined);
-
-    useEffect(() => {
-        if (!activeTab) return;
-        if (prevActiveTab.current === undefined) { prevActiveTab.current = activeTab.category; return; }
-        if (prevActiveTab.current !== activeTab.category) {
-            prevActiveTab.current = activeTab.category;
-            setSelectedNode(null);
-            setSelectedFilters({});
-            setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
-            setCurrentPage(1);
-            // Reset fetch dedup so the new category always triggers a fresh fetch
-            prevParamsRef.current = '';
-        }
-    }, [activeTab]);
 
     // ── Hydrate selectedNode from URL ─────────────────────────────────────────
     const hasHydratedNode = useRef(false);
@@ -358,19 +366,24 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
     useEffect(() => {
         const params = new URLSearchParams();
-        if (activeTab)             params.set('category',  activeTab.label);
-        if (selectedNode)          params.set('sub',       selectedNode.label);
-        if (isBuildMode)           params.set('mode',      'build');
-        if (debouncedSearchTerm)   params.set('q',         debouncedSearchTerm);
-        if (sidebarSearchTerm)     params.set('sq',        sidebarSearchTerm);
-        if (priceRange.min > 0)    params.set('minPrice',  priceRange.min.toString());
+        if (activeTab) {
+            const catSlug = typeof activeTab.category === 'string' 
+                ? activeTab.category 
+                : activeTab.category?.slug;
+            params.set('category', catSlug || activeTab.label);
+        }
+        if (selectedNode) params.set('sub', selectedNode.label);
+        if (isBuildMode) params.set('mode', 'build');
+        if (debouncedSearchTerm) params.set('q', debouncedSearchTerm);
+        if (sidebarSearchTerm) params.set('sq', sidebarSearchTerm);
+        if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
         if (priceRange.max < DEFAULT_MAX_PRICE) params.set('maxPrice', priceRange.max.toString());
         for (const key of Object.keys(selectedFilters).sort()) {
             for (const v of [...selectedFilters[key]].sort()) params.append(`f_${key}`, v);
         }
-        if (currentPage > 1)        params.set('page', currentPage.toString());
+        if (currentPage > 1) params.set('page', currentPage.toString());
         if (sortOption !== 'price-asc') params.set('sort', sortOption);
-        if (viewMode !== 'grid')    params.set('view', viewMode);
+        if (viewMode !== 'grid') params.set('view', viewMode);
         params.sort();
 
         const newUrlStr = params.toString();
@@ -387,28 +400,28 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
     // ── Build mode auto-advance ───────────────────────────────────────────────
     const prevCartLength = useRef(cart.length);
-    const prevBuildMode  = useRef(isBuildMode);
+    const prevBuildMode = useRef(isBuildMode);
 
     useEffect(() => {
         if (!isBuildMode) { prevBuildMode.current = false; return; }
-        const cartAdded   = cart.length > prevCartLength.current;
+        const cartAdded = cart.length > prevCartLength.current;
         const modeToggled = isBuildMode && !prevBuildMode.current;
         if (cartAdded || modeToggled) {
             const nextMissingCat = buildSequenceCodes.find(cat => !cart.some(item => (typeof item.category === 'string' ? item.category : item.category?.slug) === cat));
             if (nextMissingCat) {
                 const nextNode = categories.find(node => (typeof node.category === 'string' ? node.category : node.category?.slug) === nextMissingCat);
-                if (nextNode) { setActiveTab(nextNode); setSelectedFilters({}); }
+                if (nextNode) { handleTabChange(nextNode); }
             }
         }
         prevCartLength.current = cart.length;
-        prevBuildMode.current  = isBuildMode;
+        prevBuildMode.current = isBuildMode;
     }, [buildSequenceCodes, cart, isBuildMode, categories]);
 
     // ── Handlers (stable references with useCallback) ─────────────────────────
     const handleBuildCategorySelect = useCallback((category: Category) => {
         const node = categories.find(n => (typeof n.category === 'string' ? n.category : n.category?.slug) === category.slug);
-        if (node) setActiveTab(node);
-    }, [categories]);
+        if (node) handleTabChange(node);
+    }, [categories, handleTabChange]);
 
     const handleFilterChange = useCallback((key: string, value: string) => {
         setSelectedFilters(prev => {
@@ -450,7 +463,30 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
         return '';
     })());
 
+    // Separate effect for build mode compatibility parameters
+    const buildModeParams = useMemo(() => {
+        if (!isBuildMode) return {};
+        
+        const cpu = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'processor');
+        const mobo = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'motherboard');
+        const activeCat = activeTab?.category;
+        const activeCatSlug = typeof activeCat === 'string' ? activeCat : activeCat?.slug;
+        const cpuSpecs = cpu ? specsToFlat(cpu.specs) : null;
+        const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
+        
+        const params: Record<string, string> = {};
+        if (activeCatSlug === 'motherboard' && cpuSpecs?.socket) params['f_specs.socket'] = cpuSpecs.socket as string;
+        if (activeCatSlug === 'processor' && moboSpecs?.socket) params['f_specs.socket'] = moboSpecs.socket as string;
+        if (activeCatSlug === 'ram' && (cpuSpecs || moboSpecs)) {
+            const type = moboSpecs?.ramType ?? cpuSpecs?.ramType;
+            if (type) params['f_specs.ramType'] = type as string;
+        }
+        
+        return params;
+    }, [isBuildMode, cart, activeTab]);
+
     useEffect(() => {
+        // Always fetch if there's an active tab or search term
         if (!activeTab && !debouncedSearchTerm) return;
 
         const controller = new AbortController();
@@ -459,27 +495,26 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             setIsLoadingProducts(true);
             try {
                 const params = new URLSearchParams();
-                if (activeTab?.category) params.set('category', typeof activeTab.category === 'string' ? activeTab.category : activeTab.category.slug);
+                console.log("FETCHING - activeTab:", activeTab?.label, "activeTab.category:", activeTab?.category);
+               
+                if (activeTab?.category) {
+                    params.set(
+                        'category',
+                        typeof activeTab.category === 'string'
+                            ? activeTab.category
+                            : activeTab.category.slug
+                    );
+                }
                 if (selectedNode?.brand) params.set('nodeBrand', selectedNode.brand);
                 if (selectedNode?.query) params.set('nodeQuery', selectedNode.query);
 
-                if (isBuildMode) {
-                    const cpu      = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'processor');
-                    const mobo     = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.slug) === 'motherboard');
-                    const activeCat = activeTab?.category;
-                    const activeCatSlug = typeof activeCat === 'string' ? activeCat : activeCat?.slug;
-                    const cpuSpecs  = cpu  ? specsToFlat(cpu.specs)  : null;
-                    const moboSpecs = mobo ? specsToFlat(mobo.specs) : null;
-                    if (activeCatSlug === 'motherboard' && cpuSpecs?.socket)  params.set('f_specs.socket', cpuSpecs.socket as string);
-                    if (activeCatSlug === 'processor'   && moboSpecs?.socket) params.set('f_specs.socket', moboSpecs.socket as string);
-                    if (activeCatSlug === 'ram' && (cpuSpecs || moboSpecs)) {
-                        const type = moboSpecs?.ramType ?? cpuSpecs?.ramType;
-                        if (type) params.set('f_specs.ramType', type as string);
-                    }
-                }
+                // Add build mode compatibility parameters
+                Object.entries(buildModeParams).forEach(([key, value]) => {
+                    params.set(key, value);
+                });
 
-                if (debouncedSearchTerm) params.set('q',  debouncedSearchTerm);
-                if (sidebarSearchTerm)   params.set('sq', sidebarSearchTerm);
+                if (debouncedSearchTerm) params.set('q', debouncedSearchTerm);
+                if (sidebarSearchTerm) params.set('sq', sidebarSearchTerm);
 
                 for (const key of Object.keys(selectedFilters).sort()) {
                     for (const v of [...selectedFilters[key]].sort()) {
@@ -487,21 +522,28 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                     }
                 }
 
-                if (priceRange.min > 0)              params.set('minPrice', priceRange.min.toString());
+                if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
                 if (priceRange.max < DEFAULT_MAX_PRICE) params.set('maxPrice', priceRange.max.toString());
-                if (sortOption !== 'popularity')      params.set('sort', sortOption);
-                params.set('page',  currentPage.toString());
+                if (sortOption !== 'popularity') params.set('sort', sortOption);
+                params.set('page', currentPage.toString());
                 params.set('limit', ITEMS_PER_PAGE.toString());
                 params.sort();
 
                 const queryString = params.toString();
-                if (prevParamsRef.current === queryString) { setIsLoadingProducts(false); return; }
-                prevParamsRef.current = queryString;
-
-                const res  = await fetch(`/api/products?${queryString}&getFilters=true`, { signal: controller.signal });
+                if (prevParamsRef.current === queryString) { 
+                    setIsLoadingProducts(false); 
+                    return; 
+                }
+                
+                const res = await fetch(`/api/products?${queryString}&getFilters=true`, { signal: controller.signal });
                 const data = await res.json();
-
+                
+                // Only update the ref if the fetch was successful and not aborted
+                prevParamsRef.current = queryString;
+                console.log("FETCHED_PRODUCTS", data)
+                console.log("Number of products received:", data.products?.length);
                 if (data.products) {
+                    console.log("Setting fetchedProducts state with", data.products.length, "products");
                     setFetchedProducts(data.products);
                     setTotalCount(data.total ?? 0);
                     if (data.filterOptions) setAvailableFilters(data.filterOptions);
@@ -515,15 +557,20 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
         fetchProducts();
         return () => controller.abort();
-    }, [activeTab, selectedNode, isBuildMode, cart, debouncedSearchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption, currentPage]);
+    }, [activeTab, selectedNode, debouncedSearchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption, currentPage, buildModeParams]);
 
     useEffect(() => { setCurrentPage(1); }, [activeTab, selectedNode, debouncedSearchTerm, sidebarSearchTerm, selectedFilters, priceRange, sortOption]);
+
+    // Log when fetchedProducts changes
+    useEffect(() => {
+        console.log("fetchedProducts state changed, length:", fetchedProducts.length);
+    }, [fetchedProducts]);
 
     // ── Derived values ────────────────────────────────────────────────────────
     const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
     const checkCompatibility = useCallback((product: Product) => {
-        const hypotheticalCart = [...cart, { ...product, quantity: 1, selectedVariant: product.variants?.[0] ?? {} as any }];
+        const hypotheticalCart = [...cart, { ...product, quantity: 1 }];
         return validateBuild(hypotheticalCart);
     }, [cart]);
 
@@ -595,7 +642,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                     return (
                                         <button
                                             key={node.label}
-                                            onClick={() => { setActiveTab(node); setSelectedNode(null); setExpandedSubcategory(null); }}
+                                            onClick={() => handleTabChange(node)}
                                             className={`whitespace-nowrap px-4 h-8 text-[13px] font-semibold tracking-[-0.01em] rounded-full border transition-all duration-200 shrink-0 ${isActive ? 'bg-zinc-900 text-white border-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]' : 'bg-transparent border-transparent text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 hover:border-zinc-200'}`}
                                         >
                                             {node.label}
@@ -618,7 +665,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                     {/* Only direct children of the active tab — not grandchildren */}
                                     {activeTab.children.map((child) => {
                                         const isSelected = selectedNode?.label === child.label;
-                                        const hasNested  = !!child.children?.length;
+                                        const hasNested = !!child.children?.length;
                                         const isExpanded = expandedSubcategory === child.label;
                                         return (
                                             <div key={child.label} className="relative mt-2 shrink-0">
@@ -679,8 +726,13 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                     selectedNode={selectedNode}
                                     priceRange={priceRange}
                                     onPriceChange={handlePriceChange}
-                                    activeCategory={activeTab.category}
-                                    onBuildStepChange={handleBuildCategorySelect}
+                                    activeCategory={activeTab.category?.slug}
+                                    onBuildStepChange={(categorySlug) => {
+                                        const category = categories.find(n =>
+                                            (typeof n.category === 'string' ? n.category : n.category?.slug) === categorySlug
+                                        )?.category;
+                                        if (category) handleBuildCategorySelect(category);
+                                    }}
                                     currentProducts={categoryBaseProducts}
                                     dynamicFilters={availableFilters}
                                     selectedFilters={selectedFilters}
@@ -704,8 +756,13 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         onCloseMobile={() => setIsMobileFiltersOpen(false)}
                                         priceRange={priceRange}
                                         onPriceChange={handlePriceChange}
-                                        activeCategory={activeTab.category}
-                                        onBuildStepChange={handleBuildCategorySelect}
+                                        activeCategory={activeTab.category?.slug}
+                                        onBuildStepChange={(categorySlug) => {
+                                            const category = categories.find(n =>
+                                                (typeof n.category === 'string' ? n.category : n.category?.slug) === categorySlug
+                                            )?.category;
+                                            if (category) handleBuildCategorySelect(category);
+                                        }}
                                         currentProducts={categoryBaseProducts}
                                         dynamicFilters={availableFilters}
                                         selectedFilters={selectedFilters}
@@ -801,10 +858,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                 {!isLoadingProducts && fetchedProducts.length > 0 && (
                                     <div className={`grid gap-2 sm:gap-3 ${viewMode === 'list' ? 'grid-cols-1' : isBuildMode ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'}`}>
                                         {fetchedProducts.map((product, index) => {
-                                            const compatReport   = checkCompatibility(product);
+                                            const compatReport = checkCompatibility(product);
                                             const isIncompatible = compatReport.status === CompatibilityLevel.INCOMPATIBLE;
-                                            const isWarning      = compatReport.status === CompatibilityLevel.WARNING;
-                                            const inCart         = cart.find(c => c.id === product.id);
+                                            const isWarning = compatReport.status === CompatibilityLevel.WARNING;
+                                            const inCart = cart.find(c => c.id === product.id);
                                             return (
                                                 <ProductCard
                                                     key={product.id}
@@ -854,7 +911,15 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                             </div>
                         </main>
 
-                        <BuildProgressSidebar activeCategory={activeTab?.category} onStepClick={handleBuildCategorySelect} />
+                        <BuildProgressSidebar
+                            activeCategory={activeTab?.category?.slug}
+                            onStepClick={(categorySlug) => {
+                                const category = categories.find(n =>
+                                    (typeof n.category === 'string' ? n.category : n.category?.slug) === categorySlug
+                                )?.category;
+                                if (category) handleBuildCategorySelect(category);
+                            }}
+                        />
                     </div>
                 </div>
 

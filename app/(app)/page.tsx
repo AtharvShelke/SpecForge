@@ -120,19 +120,7 @@ export default async function StorefrontPage() {
             slug: true,
           },
         },
-        variants: {
-          select: {
-            id: true,
-            productId: true,
-            sku: true,
-            price: true,
-            compareAtPrice: true,
-            attributes: true,
-            status: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
+        
         specs: {
           select: {
             id: true,
@@ -185,45 +173,7 @@ export default async function StorefrontPage() {
       orderBy: { createdAt: 'desc' },
       take: 4,
       include: {
-        items: {
-          include: {
-            variant: {
-              include: {
-                product: {
-                  include: {
-                    category: {
-                      select: {
-                        id: true,
-                        name: true,
-                        slug: true,
-                      },
-                    },
-                    media: { orderBy: { sortOrder: 'asc' } },
-                    brand: true,
-                    tags: true,
-                    specs: {
-                      select: {
-                        id: true,
-                        productId: true,
-                        value: true,
-                        filterValue: {
-                          select: {
-                            filterDefinition: {
-                              select: {
-                                key: true,
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                    variants: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+        items: true,
       },
     }),
     prisma.categoryDefinition.findMany({
@@ -247,14 +197,7 @@ export default async function StorefrontPage() {
     ...buildGuide,
     items: buildGuide.items.map((item) => ({
       ...item,
-      variant: {
-        ...item.variant,
-        product: {
-          ...item.variant.product,
-          category: resolveCategoryCode(item.variant.product.category, categoryDefinitions),
-          specs: item.variant.product.specs.map(mapSpec),
-        },
-      },
+      
     })),
   }))
 

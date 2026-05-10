@@ -256,7 +256,7 @@ const InvoiceDocument: React.FC<InvoiceDocProps> = ({ order }) => {
             <View style={[s.td, s.colDesc]}>
               <Text style={s.tdBold}>{item.name}</Text>
               {(item.category || item.sku) && (
-                <Text style={s.tdSku}>{item.category || item.sku}</Text>
+                <Text style={s.tdSku}>{item.category?.name || item.sku}</Text>
               )}
             </View>
             <Text style={[s.td, s.colQty]}>{item.quantity}</Text>

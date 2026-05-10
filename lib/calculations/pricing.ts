@@ -16,10 +16,11 @@ export function getGpuTier(price: number): GpuTier {
 }
 
 interface BuildItem {
-  variant: {
-    price: number;
-  };
+  price?: number | null;
   quantity: number;
+  product?: {
+    price?: number | null;
+  } | null;
 }
 
 /**
@@ -27,6 +28,7 @@ interface BuildItem {
  */
 export function calculateBuildPrice(items: BuildItem[]) {
   return items.reduce((total, item) => {
-    return total + item.variant.price * item.quantity;
+    const unitPrice = item.price ?? item.product?.price ?? 0;
+    return total + unitPrice * item.quantity;
   }, 0);
 }

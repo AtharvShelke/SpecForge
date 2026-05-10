@@ -20,7 +20,7 @@ export default function BuildCard({ build }: any) {
     const total = calculateBuildPrice(build.items)
 
     const getComponent = (cat: string) =>
-        build.items.find((i: any) => i.variant.product.category === cat)
+        build.items.find((i: any) => i.product?.category?.name === cat)
 
     const components = ['PROCESSOR', 'GPU', 'RAM', 'STORAGE']
 
@@ -56,7 +56,7 @@ export default function BuildCard({ build }: any) {
                                 <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium leading-none">
                                     {cat === 'PROCESSOR' ? 'CPU' : cat}
                                 </p>
-                                <p className="text-xs font-medium text-zinc-800 truncate">{comp?.variant.product.name || '—'}</p>
+                                <p className="text-xs font-medium text-zinc-800 truncate">{comp?.product?.name || '—'}</p>
                             </div>
                         </div>
                     )

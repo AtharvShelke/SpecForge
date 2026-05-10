@@ -86,7 +86,7 @@ export async function GET(
                         },
                     },
                 },
-                products: { select: { id: true, name: true, variants: { select: { sku: true } } } },
+                products: { select: { id: true, name: true } },
             },
         });
 

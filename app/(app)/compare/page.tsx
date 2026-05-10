@@ -39,7 +39,7 @@ export default function ComparePage() {
     }
 
     // Since validation prevents different categories, we can assume all items are of the same category
-    const categoryLabel = compareItems[0].category;
+    const categoryLabel = compareItems[0].category.label;
 
     return (
         <div className="min-h-screen bg-zinc-50 pt-8 pb-20">
@@ -86,15 +86,15 @@ export default function ComparePage() {
                                             {item.name}
                                         </h3>
                                         <div className="text-lg font-bold text-blue-600 mb-3">
-                                            ₹{(item.variants?.[0]?.price || 0).toLocaleString('en-IN')}
+                                            ₹{(item.price || 0).toLocaleString('en-IN')}
                                         </div>
                                         <button
                                             onClick={() => addToCart(item as any)}
-                                            disabled={item.variants?.[0]?.status !== 'IN_STOCK'}
-                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-colors ${item.variants?.[0]?.status !== 'IN_STOCK' ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                            disabled={item.status !== 'IN_STOCK'}
+                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-colors ${item.status !== 'IN_STOCK' ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                                         >
                                             <ShoppingCart size={16} />
-                                            {item.variants?.[0]?.status !== 'IN_STOCK' ? 'Out of Stock' : 'Add to Cart'}
+                                            {item?.status !== 'IN_STOCK' ? 'Out of Stock' : 'Add to Cart'}
                                         </button>
                                     </th>
                                 ))}

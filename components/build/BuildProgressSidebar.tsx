@@ -132,7 +132,7 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
                                                             {step.item.name}
                                                         </p>
                                                         <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">
-                                                            ₹{(step.item.variants?.[0]?.price || 0).toLocaleString('en-IN')}
+                                                            ₹{(step.item.price ?? 0).toLocaleString('en-IN')}
                                                         </p>
                                                     </div>
                                                 </div>

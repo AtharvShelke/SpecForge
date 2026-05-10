@@ -300,20 +300,11 @@ exports.Prisma.ProductScalarFieldEnum = {
   status: 'status',
   deletedAt: 'deletedAt',
   version: 'version',
-  brandId: 'brandId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.ProductVariantScalarFieldEnum = {
-  id: 'id',
-  productId: 'productId',
   sku: 'sku',
   price: 'price',
   compareAtPrice: 'compareAtPrice',
-  attributes: 'attributes',
-  status: 'status',
-  deletedAt: 'deletedAt',
+  stockStatus: 'stockStatus',
+  brandId: 'brandId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -347,7 +338,7 @@ exports.Prisma.SearchSuggestionScalarFieldEnum = {
 
 exports.Prisma.InventoryItemScalarFieldEnum = {
   id: 'id',
-  variantId: 'variantId',
+  productId: 'productId',
   partNumber: 'partNumber',
   serialNumber: 'serialNumber',
   quantity: 'quantity',
@@ -409,14 +400,13 @@ exports.Prisma.OrderScalarFieldEnum = {
 exports.Prisma.OrderItemScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
-  variantId: 'variantId',
+  productId: 'productId',
   name: 'name',
   categoryId: 'categoryId',
   price: 'price',
   quantity: 'quantity',
   image: 'image',
-  sku: 'sku',
-  variantSnapshot: 'variantSnapshot'
+  sku: 'sku'
 };
 
 exports.Prisma.OrderLogScalarFieldEnum = {
@@ -441,7 +431,7 @@ exports.Prisma.ShipmentTrackingScalarFieldEnum = {
 exports.Prisma.StockMovementScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
-  variantId: 'variantId',
+  productId: 'productId',
   type: 'type',
   quantity: 'quantity',
   note: 'note',
@@ -461,7 +451,7 @@ exports.Prisma.BuildGuideScalarFieldEnum = {
 exports.Prisma.BuildGuideItemScalarFieldEnum = {
   id: 'id',
   buildGuideId: 'buildGuideId',
-  variantId: 'variantId',
+  productId: 'productId',
   quantity: 'quantity'
 };
 
@@ -725,7 +715,6 @@ exports.Prisma.ModelName = {
   Tag: 'Tag',
   ProductMedia: 'ProductMedia',
   Product: 'Product',
-  ProductVariant: 'ProductVariant',
   ProductSpec: 'ProductSpec',
   CategoryProductCache: 'CategoryProductCache',
   SearchSuggestion: 'SearchSuggestion',

@@ -47,7 +47,7 @@ const GpuPremiumCard = memo(function GpuPremiumCard({
     addToCart: (p: Product) => void
     priority:  boolean
 }) {
-    const price = product.variants?.[0]?.price ?? 0
+    const price = product?.price ?? 0
     const image = product.media?.[0]?.url
     const brand = product.brand?.name
 
@@ -138,7 +138,7 @@ export default function GpuTierSection() {
     )
 
     const hasGpus = useMemo(
-        () => products.some(p => p.category === 'GPU'),
+        () => products.some(p => p.category.name === 'GPU'),
         [products]
     )
 

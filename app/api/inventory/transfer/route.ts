@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const transferSchema = z.object({
-    variantId: z.string().uuid(),
+    productId: z.string().uuid(),
     quantity: z.number().int().positive(),
     reason: z.string().optional(),
 });
@@ -14,11 +14,10 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const data = transferSchema.parse(body);
 
-        
         const result = await prisma.$transaction(async (tx) => {
             // 1. Verify inventory item & balance
             const inv = await tx.inventoryItem.findFirst({
-                where: { variantId: data.variantId },
+                where: { productId: data.productId },
             });
 
             if (!inv || inv.quantity < data.quantity) {
@@ -37,7 +36,7 @@ export async function POST(req: NextRequest) {
             // 3. Log movement
             await tx.stockMovement.create({
                 data: {
-                    variantId: data.variantId,
+                    productId: data.productId,
                     type: "OUTWARD",
                     quantity: data.quantity,
                     note: data.reason || "Inventory Transfer",
@@ -46,13 +45,13 @@ export async function POST(req: NextRequest) {
 
             // Recalculate global stock for safely turning out of stock
             const allInv = await tx.inventoryItem.aggregate({
-                where: { variantId: data.variantId },
+                where: { productId: data.productId },
                 _sum: { quantity: true }
             });
             if ((allInv._sum.quantity || 0) <= 0) {
-                await tx.productVariant.update({
-                    where: { id: data.variantId },
-                    data: { status: 'OUT_OF_STOCK' }
+                await tx.product.update({
+                    where: { id: data.productId },
+                    data: { stockStatus: 'OUT_OF_STOCK' }
                 });
             }
 

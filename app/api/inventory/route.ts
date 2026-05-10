@@ -19,22 +19,20 @@ export async function GET(req: NextRequest) {
         // 1. Text Search
         if (search && search.trim() !== "") {
             dbWhere.OR = [
-                { variant: { sku: { contains: search, mode: "insensitive" } } },
-                { variant: { product: { name: { contains: search, mode: "insensitive" } } } }
+                { product: { sku: { contains: search, mode: "insensitive" } } },
+                { product: { name: { contains: search, mode: "insensitive" } } }
             ];
         }
 
         // 2. Category Filter
         if (category && category !== "all") {
-            dbWhere.variant = {
-                ...(dbWhere.variant || {}),
-                product: {
-                    category: {
-                        OR: [
-                            { slug: category },
-                            { categoryDefinition: { code: category } }
-                        ]
-                    }
+            dbWhere.product = {
+                ...(dbWhere.product || {}),
+                category: {
+                    OR: [
+                        { slug: category },
+                        { categoryDefinition: { code: category } }
+                    ]
                 }
             };
         }
@@ -59,34 +57,29 @@ export async function GET(req: NextRequest) {
                 where: dbWhere,
                 select: {
                     id: true,
-                    variantId: true,
+                    productId: true,
                     quantity: true,
                     reserved: true,
                     reorderLevel: true,
                     costPrice: true,
                     location: true,
                     lastUpdated: true,
-                    variant: {
+                    product: {
                         select: {
                             id: true,
                             sku: true,
+                            name: true,
                             price: true,
-                            status: true,
-                            product: {
+                            stockStatus: true,
+                            category: {
                                 select: {
                                     id: true,
                                     name: true,
-                                    category: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                            slug: true,
-                                        }
-                                    },
-                                    brand: { select: { id: true, name: true } },
-                                    media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
-                                },
+                                    slug: true,
+                                }
                             },
+                            brand: { select: { id: true, name: true } },
+                            media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
                         },
                     },
                 },

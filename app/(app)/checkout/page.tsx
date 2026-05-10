@@ -70,7 +70,7 @@ const OrderSummary = memo(function OrderSummary({
                                 <p className="mt-1 text-sm text-gray-500">Qty: {product.quantity}</p>
                             </div>
                             <div className="flex-shrink-0 text-sm font-medium text-gray-900 mt-0.5">
-                                ₹{((product.selectedVariant?.price ?? 0) * product.quantity).toLocaleString('en-IN')}
+                                ₹{((product.price ?? 0) * product.quantity).toLocaleString('en-IN')}
                             </div>
                         </li>
                     ))}
@@ -167,7 +167,6 @@ export default function CheckoutPage() {
                 isPosOverride: isAdmin,
                 items: cart.map(item => ({
                     productId: item.id,
-                    variantId: item.selectedVariant?.id ?? '',
                     quantity:  item.quantity,
                 })),
             });
@@ -189,7 +188,7 @@ export default function CheckoutPage() {
     const financials = useMemo(
         () => calculateOrderFinancials(
             cart.map(item => ({
-                price:    item.selectedVariant?.price ?? 0,
+                price:    item.price ?? 0,
                 quantity: item.quantity,
             }))
         ),

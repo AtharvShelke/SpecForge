@@ -10,6 +10,7 @@ const specSchema = z.object({
 const updateProductSchema = z.object({
     name: z.string().min(1).optional(),
     categoryId: z.number().int().positive().optional(),
+    category: z.string().min(1).optional(),
     price: z.number().positive().optional(),
     stock: z.number().int().min(0).optional(),
     images: z.array(z.string().min(1)).optional(), // Support multiple images
@@ -17,6 +18,49 @@ const updateProductSchema = z.object({
     brandId: z.string().uuid().nullable().optional(),
     specs: z.array(specSchema).optional(),
 });
+
+function normalizeIdentifier(value: string | null | undefined) {
+    return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+async function resolveCategoryId(input: string) {
+    const [definitions, categories] = await Promise.all([
+        prisma.categoryDefinition.findMany({
+            where: { isActive: true },
+            select: { code: true, label: true, shortLabel: true },
+        }),
+        prisma.category.findMany({
+            select: { id: true, name: true, slug: true },
+        }),
+    ]);
+
+    const requested = normalizeIdentifier(input);
+    for (const category of categories) {
+        const categoryKeys = new Set([
+            normalizeIdentifier(category.name),
+            normalizeIdentifier(category.slug),
+        ]);
+
+        const definition = definitions.find((item) =>
+            [
+                normalizeIdentifier(item.code),
+                normalizeIdentifier(item.label),
+                normalizeIdentifier(item.shortLabel),
+            ].some((key) => categoryKeys.has(key))
+        );
+
+        if (
+            categoryKeys.has(requested) ||
+            normalizeIdentifier(definition?.code) === requested ||
+            normalizeIdentifier(definition?.label) === requested ||
+            normalizeIdentifier(definition?.shortLabel) === requested
+        ) {
+            return category.id;
+        }
+    }
+
+    return null;
+}
 
 // ── GET /api/products/[id] ──────────────────────────────
 export async function GET(
@@ -30,7 +74,7 @@ export async function GET(
             include: {
                 specs: true,
                 brand: true,
-                variants: { include: { inventoryItems: true } },
+                inventoryItems: true,
                 media: true
             },
         });
@@ -70,33 +114,48 @@ export async function PUT(
                 console.warn('Product specs update not fully implemented - requires filterValueId mapping');
             }
 
-            const { specs: _, price, stock, images, brandId, ...productData } = data;
+            const { specs: _, price, stock, images, brandId, category, ...productData } = data;
+            
+            // Prepare update data for product
+            const updateData: any = { ...productData };
+            if (price !== undefined) updateData.price = price;
+            if (brandId !== undefined) updateData.brandId = brandId;
+            if (category !== undefined) {
+                const categoryId = await resolveCategoryId(category);
+                if (!categoryId) {
+                    throw new Error(`Invalid category: ${category}`);
+                }
+                updateData.categoryId = categoryId;
+            }
+            if (stock !== undefined) {
+                updateData.stockStatus = stock > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
+            }
+
             const p = await tx.product.update({
                 where: { id },
-                data: productData,
-                include: { specs: true, brand: true, variants: true, media: true },
+                data: updateData,
+                include: { specs: true, brand: true, inventoryItems: true, media: true },
             });
 
-            // Map flat API updates to variant models if passed
-            if (price !== undefined || stock !== undefined) {
-                const variant = await tx.productVariant.findFirst({ where: { productId: id } });
-                if (variant) {
-                    await tx.productVariant.update({
-                        where: { id: variant.id },
+            // If stock passed, update inventory
+            if (stock !== undefined) {
+                const inv = await tx.inventoryItem.findFirst({ where: { productId: id } });
+                if (inv) {
+                    await tx.inventoryItem.update({
+                        where: { id: inv.id },
+                        data: { quantity: stock }
+                    });
+                } else {
+                    await tx.inventoryItem.create({
                         data: {
-                            ...(price !== undefined ? { price } : {})
+                            productId: id,
+                            quantity: stock,
+                            reserved: 0,
+                            reorderLevel: 5,
+                            costPrice: ((price ?? p.price ?? 0) as number) * 0.8,
+                            location: "WAREHOUSE-A",
                         }
                     });
-                    // If stock passed, update inventory
-                    if (stock !== undefined) {
-                        const inv = await tx.inventoryItem.findFirst({ where: { variantId: variant.id } });
-                        if (inv) {
-                            await tx.inventoryItem.update({
-                                where: { id: inv.id },
-                                data: { quantity: stock }
-                            });
-                        }
-                    }
                 }
             }
 

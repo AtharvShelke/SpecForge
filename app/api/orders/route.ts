@@ -15,7 +15,6 @@ const PaymentMethodEnum = z.enum(["CARD", "UPI", "BANK_TRANSFER", "CASH", "WALLE
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
-    variantId: z.string().min(1),
     name: z.string().min(1),
     categoryId: z.number().int().positive(),
     price: z.number().positive(),
@@ -92,7 +91,7 @@ export async function GET(req: NextRequest) {
                     paymentStatus: true,
                     createdAt: true,
                     items: {
-                        select: { id: true, variantId: true, name: true, categoryId: true, price: true, quantity: true, image: true, sku: true },
+                        select: { id: true, productId: true, name: true, categoryId: true, price: true, quantity: true, image: true, sku: true },
                     },
                     logs: {
                         select: { id: true, status: true, timestamp: true, note: true },
@@ -180,7 +179,7 @@ export async function POST(req: NextRequest) {
                     source: data.source,
                     items: {
                         create: data.items.map((item) => ({
-                            variantId: item.variantId,
+                            productId: item.productId,
                             name: item.name,
                             categoryId: item.categoryId,
                             price: item.price,
@@ -201,7 +200,7 @@ export async function POST(req: NextRequest) {
 
             // Reserve inventory using centralized service
             const inventoryItems = data.items.map(i => ({
-                variantId: i.variantId,
+                productId: i.productId,
                 quantity: i.quantity,
             }));
             await reserveInventory(tx, inventoryItems, data.id);

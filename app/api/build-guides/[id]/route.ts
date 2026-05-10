@@ -13,7 +13,7 @@ export async function GET(
             include: {
                 items: {
                     include: {
-                        variant: { include: { product: { include: { specs: true, brand: true, media: true } } } },
+                        product: { include: { specs: true, brand: true, media: true } },
                     },
                 },
             },
@@ -61,7 +61,7 @@ export async function PUT(
             await prisma.buildGuideItem.createMany({
                 data: body.items.map((i: any) => ({
                     buildGuideId: id,
-                    variantId: i.variantId || i.id, // handle both formats
+                    productId: i.productId || i.id, // handle both formats
                     quantity: i.quantity || 1,
                 }))
             });

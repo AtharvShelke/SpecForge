@@ -40,11 +40,11 @@ const MODAL_SHEET_TRANS   = { type: 'spring', damping: 25, stiffness: 300 } as c
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getCoverImage(build: BuildGuide): string | null {
-  const gpu = build.items.find(i => i.variant?.product?.category?.name.toUpperCase() === 'GPU');
-  if (gpu?.variant?.product) return gpu.variant.product.media?.[0]?.url ?? null;
-  const cpu = build.items.find(i => i.variant?.product?.category?.name.toUpperCase() === 'PROCESSOR');
-  if (cpu?.variant?.product) return cpu.variant.product.media?.[0]?.url ?? null;
-  return build.items[0]?.variant?.product?.media?.[0]?.url ?? null;
+  const gpu = build.items.find(i => i.product?.category?.name.toUpperCase() === 'GPU');
+  if (gpu?.product) return gpu.product.media?.[0]?.url ?? null;
+  const cpu = build.items.find(i => i.product?.category?.name.toUpperCase() === 'PROCESSOR');
+  if (cpu?.product) return cpu.product.media?.[0]?.url ?? null;
+  return build.items[0]?.product?.media?.[0]?.url ?? null;
 }
 
 function buildShareUrl(build: BuildGuide): string {
@@ -55,8 +55,8 @@ function buildShareUrl(build: BuildGuide): string {
 // BuildModal can share the same transformation without duplicating it.
 function buildToCartItems(build: BuildGuide): CartItem[] {
   return build.items
-    .map(i => i.variant?.product
-      ? ({ ...i.variant.product, quantity: i.quantity, selectedVariant: i.variant })
+    .map(i => i.product
+      ? ({ ...i.product, quantity: i.quantity })
       : null)
     .filter(Boolean) as CartItem[];
 }
@@ -90,7 +90,7 @@ const BuildModal = memo(function BuildModal({
   const [copied, setCopied] = useState(false);
 
   const totalPrice = useMemo(
-    () => build.items.reduce((sum, item) => sum + (item.variant?.price ?? 0) * item.quantity, 0),
+    () => build.items.reduce((sum, item) => sum + (item.product?.price ?? 0) * item.quantity, 0),
     [build.items]
   );
 
@@ -147,7 +147,7 @@ const BuildModal = memo(function BuildModal({
               <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-all">
                 <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center p-1 border border-zinc-100 shrink-0">
                   <img
-                    src={item.variant?.product?.media?.[0]?.url ?? '/placeholder.png'}
+                    src={item.product?.media?.[0]?.url ?? '/placeholder.png'}
                     alt=""
                     loading="lazy"
                     decoding="async"
@@ -155,13 +155,13 @@ const BuildModal = memo(function BuildModal({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-zinc-900 text-[13px] truncate">{item.variant?.product?.name}</p>
+                  <p className="font-bold text-zinc-900 text-[13px] truncate">{item.product?.name}</p>
                   <p className="text-[9px] font-bold text-zinc-400 uppercase">
-                    {item.variant?.product?.category?.name} {item.quantity > 1 && `×${item.quantity}`}
+                    {item.product?.category?.name} {item.quantity > 1 && `×${item.quantity}`}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-[13px] text-zinc-900">₹{(item.variant?.price ?? 0).toLocaleString('en-IN')}</p>
+                  <p className="font-bold text-[13px] text-zinc-900">₹{(item.product?.price ?? 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))}
@@ -255,7 +255,7 @@ const BuildCard = memo(function BuildCard({
 
             return (
               <div key={item.id} className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 bg-zinc-50 px-2 py-1 rounded-md">
-                <span className="truncate">{item.variant?.product?.name}</span>
+                <span className="truncate">{item.product?.name}</span>
               </div>
             );
           })}
@@ -269,7 +269,7 @@ const BuildCard = memo(function BuildCard({
             {build.items.slice(0, 3).map((item, idx) => (
               <div key={idx} className="w-6 h-6 rounded-full border-2 border-white bg-white shadow-sm overflow-hidden ring-1 ring-zinc-100">
                 <img
-                  src={item.variant?.product?.media?.[0]?.url ?? '/placeholder.png'}
+                  src={item.product?.media?.[0]?.url ?? '/placeholder.png'}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-contain"
@@ -351,16 +351,13 @@ function BuildsContent() {
 
       const newCart: CartItem[] = [];
       for (const item of build.items) {
-        const fullProduct = item.variant?.product;
-        if (fullProduct && item.variant) {
-          newCart.push({ ...fullProduct, quantity: item.quantity, selectedVariant: item.variant });
+        const fullProduct = item.product;
+        if (fullProduct) {
+          newCart.push({ ...fullProduct, quantity: item.quantity });
         } else {
-          const product = products.find(p => p.variants?.some(v => v.id === item.variantId));
+          const product = products.find(p => p.id === item.productId);
           if (product) {
-            const variant = product.variants?.find(v => v.id === item.variantId) ?? product.variants?.[0];
-            if (variant) {
-              newCart.push({ ...product, quantity: item.quantity, selectedVariant: variant });
-            }
+            newCart.push({ ...product, quantity: item.quantity });
           }
         }
       }

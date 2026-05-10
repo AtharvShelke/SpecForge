@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect, useCallback, memo } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { useToast } from '@/hooks/use-toast';
-import { CategoryNode, FilterDefinition, CategoryFilterConfig, AttributeDefinition, CategorySchema } from '@/types';
+import { CategoryNode, FilterDefinition, CategoryFilterConfig, AttributeDefinition, CategorySchema, Category } from '@/types';
 import {
     ChevronDown,
     ChevronRight,
@@ -41,7 +41,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Category } from '@/generated/prisma';
+// Removed conflicting Prisma Category import in favor of the one from @/types
 
 // ─────────────────────────────────────────────────────────────
 // SHARED PRIMITIVES
@@ -214,7 +214,7 @@ const NodeForm = memo(({
                     <SelectContent>
                         <SelectItem value="none" className="text-xs italic text-stone-400">No Mapping</SelectItem>
                         {dbCategories.map(c => (
-                            <SelectItem key={c.slug} value={c.slug} className="text-xs">{c.name}</SelectItem>
+                            <SelectItem key={c.slug || c.label} value={c.slug} className="text-xs">{c.label}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -996,7 +996,7 @@ const CategoryManager = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {dbCategories.map(c => (
-                                            <SelectItem key={c.slug} value={c.slug} className="text-xs">{c.name}</SelectItem>
+                                            <SelectItem key={c.slug || c.label} value={c.slug} className="text-xs">{c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -1072,7 +1072,7 @@ const CategoryManager = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {dbCategories.map(c => (
-                                            <SelectItem key={c.slug} value={c.slug} className="text-xs">{c.name}</SelectItem>
+                                            <SelectItem key={c.slug || c.label} value={c.slug} className="text-xs">{c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

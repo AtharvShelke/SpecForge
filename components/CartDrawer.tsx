@@ -35,7 +35,6 @@ const CartDrawer: React.FC = () => {
           total: cartTotal,
           items: cart.map(i => ({
             productId: i.id,
-            variantId: i.selectedVariant?.id ?? i.variants?.[0]?.id ?? '',
             quantity: i.quantity,
           })),
         }),
@@ -166,7 +165,7 @@ const CartDrawer: React.FC = () => {
                             {product.name}
                           </h3>
                           <p className="text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap">
-                            ₹{((product.selectedVariant?.price || 0) * product.quantity).toLocaleString('en-IN')}
+                            ₹{((product.price || 0) * product.quantity).toLocaleString('en-IN')}
                           </p>
                         </div>
                         <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mt-0.5">

@@ -11,7 +11,7 @@ import { getGpuTier, GpuTier } from './pricing';
  * Calculate product score based on media and price.
  */
 export function getProductScore(product: Product) {
-  const price = product.variants?.[0]?.price || 0;
+  const price = product.price || 0;
   const mediaScore = product.media?.length ? 10 : 0;
   const priceScore = price < 50000 ? 5 : 2;
 
@@ -23,8 +23,8 @@ export function getProductScore(product: Product) {
  */
 export function filterGpuTier(products: Product[], tier: GpuTier) {
   return products.filter(p => {
-    if (p.category !== 'GPU') return false;
-    const price = p.variants?.[0]?.price || 0;
+    if (p.category.name !== 'GPU') return false;
+    const price = p.price || 0;
     return getGpuTier(price) === tier;
   });
 }
@@ -38,7 +38,7 @@ export function getFeaturedProducts(products: Product[]) {
   const featuredProducts = categories
     .map(category => {
       return products
-        .filter(p => p.category === category)
+        .filter(p => p.category.name === category)
         .sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

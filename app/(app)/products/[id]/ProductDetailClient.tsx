@@ -159,11 +159,10 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
     const handleAddToCart = useCallback(() => addToCart(product as any), [addToCart, product]);
 
     // Derived values — all memoised so they don't recompute on tab/image changes
-    const firstVariant  = product.variants?.[0];
-    const price         = firstVariant?.price ?? 0;
-    const compareAtPrice = firstVariant?.compareAtPrice;
-    const status        = firstVariant?.status as string;
-    const sku           = firstVariant?.sku;
+    const price         = product.price ?? 0;
+    const compareAtPrice = product.compareAtPrice;
+    const status        = (product.stockStatus || 'IN_STOCK') as string;
+    const sku           = product.sku;
     const isOutOfStock  = status === 'OUT_OF_STOCK';
     const hasDiscount   = !!(compareAtPrice && compareAtPrice > price);
     const discountPct   = hasDiscount ? Math.round(((compareAtPrice! - price) / compareAtPrice!) * 100) : 0;
