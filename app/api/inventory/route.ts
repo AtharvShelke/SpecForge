@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true }, { status: 201 });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 });
+            return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
         }
         console.error("POST /api/inventory error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

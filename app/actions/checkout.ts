@@ -63,23 +63,16 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             }
 
             // 3. Create the order
+
+            // 3. Create the order
             const orderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
             const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
 
             const orderStatus = data.isPosOverride ? "PAID" : "PENDING";
 
-            const reservations = await reserveInventory(
-                tx,
-                data.items.map((item) => ({
-                    productId: item.productId,
-                    quantity: item.quantity,
-                })),
-                orderId,
-            );
-            const reservationMap = new Map(reservations.map((entry) => [entry.productId, entry]));
-
-            const newOrder = await tx.order.create({
+            // 3. Create the order shell first so foreign keys in StockMovement (created by reserveInventory) are valid
+            await tx.order.create({
                 data: {
                     id: orderId,
                     customerName: data.customerName,
@@ -97,6 +90,22 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     paymentMethod: data.isPosOverride ? "CASH" : (data.paymentMethod || "Razorpay Online"),
                     paymentTransactionId: data.isPosOverride ? `POS-${Date.now()}` : (data.paymentTransactionId || `MOCK-RPY-${Date.now()}`),
                     paymentStatus: data.isPosOverride ? "COMPLETED" : (data.paymentStatus || "SUCCESS"),
+                }
+            });
+
+            const reservations = await reserveInventory(
+                tx,
+                data.items.map((item) => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                })),
+                orderId,
+            );
+            const reservationMap = new Map(reservations.map((entry) => [entry.productId, entry]));
+
+            const newOrder = await tx.order.update({
+                where: { id: orderId },
+                data: {
                     items: {
                         create: data.items.map((item) => {
                             const product = productMap.get(item.productId)!;
@@ -131,7 +140,6 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
             return newOrder;
         }, {
-            // Prisma transaction options for longer timeout if many items
             maxWait: 5000,
             timeout: 10000
         });
@@ -140,7 +148,6 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         const invoiceLink = `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/${order.id}/invoice`;
         const trackingLink = `${process.env.NEXT_PUBLIC_BASE_URL}/track-order`;
 
-        console.log(`\n========================================`);
         console.log(`[MOCK NOTIFICATION] ORDER ${order.id}`);
         console.log(`========================================`);
         console.log(`✅ Sent WhatsApp Confirmation to: ${data.phone}`);
@@ -170,7 +177,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         console.error("Checkout action error:", error);
 
         if (error instanceof z.ZodError) {
-            return { success: false, error: "Invalid checkout data provided", details: error.issues };
+            return { success: false, error: error.issues[0].message, details: error.issues };
         }
 
         if (error.message?.includes("Insufficient stock") || error.message?.includes("not found")) {

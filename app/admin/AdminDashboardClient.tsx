@@ -11,7 +11,7 @@ const InventoryManager = lazy(() => import('@/components/dashboard/InventoryMana
 const CategoryManager = lazy(() => import('@/components/dashboard/CategoryManager'));
 const BrandManager = lazy(() => import('@/components/dashboard/BrandManager'));
 const SavedBuildsManager = lazy(() => import('@/components/dashboard/SavedBuildsManager'));
-const BillingInvoices = lazy(() => import('@/components/dashboard/BillingInvoices'));
+// const BillingInvoices = lazy(() => import('@/components/dashboard/BillingInvoices'));
 
 const AdminDashboardClient = memo(function AdminDashboardClient() {
   const searchParams = useSearchParams();
@@ -26,7 +26,7 @@ const AdminDashboardClient = memo(function AdminDashboardClient() {
       {activeTab === 'categories' && <CategoryManager />}
       {activeTab === 'brands' && <BrandManager />}
       {activeTab === 'saved-builds' && <SavedBuildsManager />}
-      {activeTab === 'billing' && <BillingInvoices />}
+      {/* {activeTab === 'billing' && <BillingInvoices />} */}
     </div>
   );
 });

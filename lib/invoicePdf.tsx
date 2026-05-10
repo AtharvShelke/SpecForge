@@ -164,12 +164,13 @@ const s = StyleSheet.create({
 });
 
 // ── Helpers ──────────────────────────────────────────
-const fmtINR = (n: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
+const fmtINR = (n: number) => {
+  const formatted = new Intl.NumberFormat('en-IN', {
+    style: 'decimal',
     maximumFractionDigits: 0,
   }).format(n);
+  return `Rs. ${formatted}`;
+};
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-IN', {
@@ -255,19 +256,22 @@ const InvoiceDocument: React.FC<InvoiceDocProps> = ({ order }) => {
           <View key={item.id} style={s.tableRow}>
             <View style={[s.td, s.colDesc]}>
               <Text style={s.tdBold}>{item.name}</Text>
-              {(item.category || item.sku) && (
-                <Text style={s.tdSku}>{item.category?.name || item.sku}</Text>
+              {item.sku && (
+                <Text style={s.tdSku}>SKU: {item.sku}</Text>
               )}
               {(item.assignedUnits ?? []).map((unit) => {
-                const label = [unit.partNumber, unit.serialNumber].filter(Boolean).join(' / ');
-                return label ? <Text key={unit.id} style={s.tdSku}>Unit: {label}</Text> : null;
+                const parts = [];
+                if (unit.partNumber) parts.push(`PN: ${unit.partNumber}`);
+                if (unit.serialNumber) parts.push(`SN: ${unit.serialNumber}`);
+                const label = parts.join(' | ');
+                return label ? <Text key={unit.id} style={s.tdSku}>{label}</Text> : null;
               })}
             </View>
             <Text style={[s.td, s.colQty]}>{item.quantity}</Text>
             <Text style={[s.td, s.colPrice]}>{fmtINR(item.price)}</Text>
             <Text style={[s.td, s.colTax, { color: C.accentLight }]}>18%</Text>
             <Text style={[s.td, s.colAmt, { fontFamily: 'Helvetica-Bold', color: C.heading }]}>
-              {fmtINR(item.quantity * item.price)}
+              {fmtINR(item.quantity * item.price * 1.18)}
             </Text>
           </View>
         ))}

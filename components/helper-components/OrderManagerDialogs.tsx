@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -12,8 +12,10 @@ import { StatusBadge } from './OrderManagerHelper';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle2, RefreshCw, Warehouse, FileText, Download, Printer, Trash2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, RefreshCw, Warehouse, FileText, Download, Printer, Trash2, AlertTriangle, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { AssignedInventoryUnit } from '@/types';
 
 interface ConfirmStatusDialogProps {
     confirmDialog: {
@@ -270,6 +272,111 @@ export const DeleteOrderDialog = ({
                             <Trash2 size={14} />
                         )}
                         {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+interface EditSerialPartDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    unit: AssignedInventoryUnit | null;
+    orderId: string;
+    itemId: string;
+    onSave: (unitId: string, serialNumber: string, partNumber: string) => Promise<void>;
+    isSaving: boolean;
+}
+
+export const EditSerialPartDialog = ({
+    open,
+    onOpenChange,
+    unit,
+    orderId,
+    itemId,
+    onSave,
+    isSaving
+}: EditSerialPartDialogProps) => {
+    const [serialNumber, setSerialNumber] = useState('');
+    const [partNumber, setPartNumber] = useState('');
+
+    // Reset form when dialog opens/closes or unit changes
+    React.useEffect(() => {
+        if (open && unit) {
+            setSerialNumber(unit.serialNumber || '');
+            setPartNumber(unit.partNumber || '');
+        } else if (!open) {
+            setSerialNumber('');
+            setPartNumber('');
+        }
+    }, [open, unit]);
+
+    const handleSave = async () => {
+        if (!unit) return;
+        await onSave(unit.id, serialNumber, partNumber);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={(val) => !isSaving && onOpenChange(val)}>
+            <DialogContent className="sm:max-w-md bg-white">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Edit2 size={16} className="text-blue-600" />
+                        Edit Serial & Part Numbers
+                    </DialogTitle>
+                    <DialogDescription className="text-sm">
+                        Update the serial and part numbers for this inventory unit.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4">
+                    <div>
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">
+                            Serial Number
+                        </label>
+                        <Input
+                            placeholder="Enter serial number"
+                            value={serialNumber}
+                            onChange={(e) => setSerialNumber(e.target.value)}
+                            className="text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">
+                            Part Number
+                        </label>
+                        <Input
+                            placeholder="Enter part number"
+                            value={partNumber}
+                            onChange={(e) => setPartNumber(e.target.value)}
+                            className="text-sm"
+                        />
+                    </div>
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-0">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onOpenChange(false)}
+                        disabled={isSaving}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? (
+                            <RefreshCw size={14} className="animate-spin" />
+                        ) : (
+                            <CheckCircle2 size={14} />
+                        )}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

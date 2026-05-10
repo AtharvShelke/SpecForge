@@ -1,31 +1,22 @@
 'use client'
 
 import Link from 'next/link'
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { CategoryNode } from '@/types'
-import { useCategories } from '@/hooks/useCategories'
 
 // ── Constants (outside component — never recreated) ───────────────────────────
 
-const CATEGORY_IMAGES: Record<string, string> = {
-    processor:   '/images/category_section/proc.avif',
-    gpu:         '/images/category_section/gpu.avif',
-    motherboard: '/images/category_section/mobo.avif',
-    ram:         '/images/category_section/ram.webp',
-    storage:     '/images/category_section/drive.avif',
-    cabinet:     '/images/category_section/cab.avif',
-    monitor:     '/images/category_section/mon.webp',
-}
+const FALLBACK_IMAGES = [
+    'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?q=80&w=1200&auto=format&fit=crop', // Liquid cooling / RGB
+    'https://images.unsplash.com/photo-1591488320449-011701bb6704?q=80&w=1200&auto=format&fit=crop', // Clean processor/mobo setup
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop', // Tech abstract / circuit
+    'https://images.unsplash.com/photo-1603481586273-2f908a50c263?q=80&w=1200&auto=format&fit=crop', // Clean gaming setup
+]
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=2000&auto=format&fit=crop'
-
-// Fixed 6-item order — no mobile/desktop branching needed at this level
-// MONITOR simply becomes a 7th card shown via CSS on mobile only (col-span-6 hidden md:hidden)
-const ALLOWED = ['gpu', 'processor', 'motherboard', 'ram', 'storage', 'cabinet', 'monitor'] as const
-
+const getFallbackImage = (index: number) => FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]
 // Animation variants (defined once, outside component)
 const cardVariants = {
     hidden:  { opacity: 0, scale: 0.95 },
@@ -37,28 +28,27 @@ const headerVariants = {
     visible: { opacity: 1, y: 0  },
 }
 
-// Grid span map — index → tailwind classes
-const GRID_STYLES: Record<number, string> = {
-    0: 'col-span-12 md:col-span-8 md:row-span-2',   // featured
-    1: 'col-span-12 md:col-span-4',
-    2: 'col-span-12 md:col-span-4',
-    3: 'col-span-6  md:col-span-4',
-    4: 'col-span-6  md:col-span-4',
-    5: 'col-span-6  md:col-span-4',
-    6: 'col-span-6  md:hidden',                      // mobile-only 7th card
+const getGridStyle = (index: number) => {
+    const styles = [
+        'col-span-12 md:col-span-6 md:row-span-2',   // Large featured on left
+        'col-span-12 md:col-span-6 md:row-span-1',   // Wide horizontal on right top
+        'col-span-6  md:col-span-3 md:row-span-1',   // Small square on right bottom left
+        'col-span-6  md:col-span-3 md:row-span-1',   // Small square on right bottom right
+    ]
+    return styles[index] || 'col-span-6 md:col-span-3'
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 interface CardProps {
-    cat:      { category: string; label: string }
+    cat:      { category: string; label: string; image?: string | null }
     index:    number
     count?:   number
     priority: boolean
 }
 
 const CategoryCard = memo(function CategoryCard({ cat, index, count, priority }: CardProps) {
-    const bgImage = CATEGORY_IMAGES[cat.category] ?? FALLBACK_IMAGE
+   
 
     return (
         <motion.div
@@ -68,7 +58,7 @@ const CategoryCard = memo(function CategoryCard({ cat, index, count, priority }:
             viewport={{ once: true, margin: '-100px' }}
             transition={{ delay: index * 0.08, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className={`
-                ${GRID_STYLES[index] ?? 'col-span-6 md:col-span-4'}
+                ${getGridStyle(index)}
                 group relative overflow-hidden
                 rounded-xl sm:rounded-2xl md:rounded-3xl
                 bg-zinc-100 flex flex-col justify-end
@@ -81,7 +71,7 @@ const CategoryCard = memo(function CategoryCard({ cat, index, count, priority }:
 
             {/* Background image */}
             <img
-                src={bgImage}
+                src={cat.image || getFallbackImage(index)}
                 alt={cat.label}
                 width={800}
                 height={600}
@@ -116,36 +106,35 @@ const CategoryCard = memo(function CategoryCard({ cat, index, count, priority }:
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
-    categories:     CategoryNode[]
+    categories?:    CategoryNode[]
     productCounts?: Record<string, number>
 }
 
-export default function CategorySection({ categories, productCounts }: Props) {
-    const { categories: categoryDefinitions, getLabel } = useCategories()
-    const fallbackCats = categoryDefinitions
-        .filter((category) => ALLOWED.includes(category.code as typeof ALLOWED[number]))
-        .map((category) => ({
-            category: category.code.toLowerCase(),
-            label: category.label || getLabel(category.code),
-            children: [] as CategoryNode[],
-        }))
+export default function CategorySection({ productCounts }: Props) {
+    const [categories, setCategories] = useState<any[]>([])
+
+    const fetchCategories = async () => {
+        try {
+            const res = await fetch("/api/categories")
+            const data = await res.json()
+            console.log("Categories Fetched: ", data)
+            setCategories(data)
+        } catch (error) {
+            console.error("Failed to fetch categories:", error)
+        }
+    }
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
 
     const cats = useMemo(() => {
-        const source: { category: string; label: string }[] = categories?.length
-            ? (categories as CategoryNode[]).filter(c => {
-                const catSlug = typeof c.category === 'string' ? c.category : c.category?.slug;
-                return catSlug && ALLOWED.includes(catSlug as typeof ALLOWED[number]);
-              }).map(c => ({
-                category: typeof c.category === 'string' ? c.category : c.category?.slug || '',
-                label: c.label,
-              }))
-            : fallbackCats
-
-        // Return in ALLOWED order so layout is deterministic
-        return ALLOWED
-            .map(key => source.find(c => c.category === key))
-            .filter((c): c is { category: string; label: string } => !!c)
-    }, [categories, fallbackCats])
+        return categories.slice(0, 4).map(c => ({
+            category: (c.code || c.category?.code || c.slug || '').toLowerCase(),
+            label: c.label || c.name || '',
+            image: c.image || null,
+        }))
+    }, [categories])
 
     return (
         <section className="py-10 sm:py-20 md:py-24 bg-white overflow-hidden" id="categories">

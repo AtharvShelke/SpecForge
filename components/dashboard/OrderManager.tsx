@@ -23,6 +23,7 @@ import {
   Mail,
   CreditCard,
   AlertCircle,
+  Edit2,
 } from 'lucide-react';
 import {
   Select,
@@ -51,7 +52,7 @@ import { cn } from '@/lib/utils';
 import { NEXT_STATUS_BUTTON, STATUS_CONFIG, STATUS_FLOW } from '@/data/constants';
 import { generateInvoiceHTML } from '@/lib/invoice';
 import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
-import { ConfirmStatusDialog, DeleteOrderDialog } from '../helper-components/OrderManagerDialogs';
+import { ConfirmStatusDialog, DeleteOrderDialog, EditSerialPartDialog } from '../helper-components/OrderManagerDialogs';
 
 /* ─────────────────────────────────────────────────────────────
    MODULE-LEVEL CONSTANTS — never reallocated on render
@@ -361,6 +362,15 @@ const OrderManager = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  // Serial/Part number edit dialog state
+  const [editSerialDialog, setEditSerialDialog] = useState<{
+    open: boolean;
+    unit: any;
+    orderId: string;
+    itemId: string;
+  }>({ open: false, unit: null, orderId: '', itemId: '' });
+  const [isSavingSerial, setIsSavingSerial] = useState(false);
+
   const sortedOrders = useMemo(
     () => [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [orders],
@@ -460,6 +470,32 @@ const OrderManager = () => {
     a.href = url; a.download = `Invoice-${selectedOrder.id}.html`; a.click();
     URL.revokeObjectURL(url);
   }, [selectedOrder]);
+
+  // Update serial/part number for a unit
+  const updateSerialPartNumber = useCallback(async (unitId: string, serialNumber: string, partNumber: string) => {
+    if (!selectedOrder) return;
+    setIsSavingSerial(true);
+    try {
+      const res = await fetch(`/api/orders/${selectedOrder.id}/items/${editSerialDialog.itemId}/units/${unitId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serialNumber, partNumber }),
+      });
+      if (res.ok) {
+        toast({ title: 'Serial/Part numbers updated' });
+        // Refresh both orders and inventory to ensure consistency
+        await Promise.all([fetchOrders(), fetchInventory()]);
+      } else {
+        const data = await res.json();
+        toast({ title: 'Update Failed', description: data.error || 'Could not update serial/part numbers', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error('Failed to update serial/part numbers:', err);
+      toast({ title: 'Update Failed', description: 'An error occurred while updating', variant: 'destructive' });
+    } finally {
+      setIsSavingSerial(false);
+    }
+  }, [selectedOrder, editSerialDialog.itemId, fetchOrders, fetchInventory, toast]);
 
   const handleRowClick = useCallback((id: string) => {
     setSelectedId(id);
@@ -809,9 +845,23 @@ const OrderManager = () => {
                                         {(item.assignedUnits?.length ?? 0) > 0 && (
                                           <div className="mt-1 space-y-0.5">
                                             {item.assignedUnits?.map((unit) => (
-                                              <p key={unit.id} className="text-[10px] text-stone-500 font-mono">
-                                                {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
-                                              </p>
+                                              <div key={unit.id} className="flex items-center gap-1.5 group">
+                                                <p className="text-[10px] text-stone-500 font-mono">
+                                                  {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
+                                                </p>
+                                                <button
+                                                  onClick={() => setEditSerialDialog({
+                                                    open: true,
+                                                    unit,
+                                                    orderId: selectedOrder.id,
+                                                    itemId: item.id,
+                                                  })}
+                                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-stone-100 rounded"
+                                                  title="Edit serial/part numbers"
+                                                >
+                                                  <Edit2 size={10} className="text-stone-400 hover:text-indigo-600" />
+                                                </button>
+                                              </div>
                                             ))}
                                           </div>
                                         )}
@@ -859,9 +909,23 @@ const OrderManager = () => {
                               {(item.assignedUnits?.length ?? 0) > 0 && (
                                 <div className="mt-1 space-y-0.5">
                                   {item.assignedUnits?.map((unit) => (
-                                    <p key={unit.id} className="text-[10px] text-stone-500 font-mono truncate">
-                                      {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
-                                    </p>
+                                    <div key={unit.id} className="flex items-center gap-1.5 group">
+                                      <p className="text-[10px] text-stone-500 font-mono truncate">
+                                        {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
+                                      </p>
+                                      <button
+                                        onClick={() => setEditSerialDialog({
+                                          open: true,
+                                          unit,
+                                          orderId: selectedOrder.id,
+                                          itemId: item.id,
+                                        })}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-stone-100 rounded flex-shrink-0"
+                                        title="Edit serial/part numbers"
+                                      >
+                                        <Edit2 size={10} className="text-stone-400 hover:text-indigo-600" />
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               )}
@@ -1036,6 +1100,16 @@ const OrderManager = () => {
           isDeleting={isDeleting}
         />
       )}
+
+      <EditSerialPartDialog
+        open={editSerialDialog.open}
+        onOpenChange={(open) => setEditSerialDialog(d => ({ ...d, open }))}
+        unit={editSerialDialog.unit}
+        orderId={editSerialDialog.orderId}
+        itemId={editSerialDialog.itemId}
+        onSave={updateSerialPartNumber}
+        isSaving={isSavingSerial}
+      />
     </TooltipProvider>
   );
 };

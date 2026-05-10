@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import {
     Toast,
     ToastClose,
@@ -21,7 +22,22 @@ export function Toaster() {
                         <div className="grid gap-1">
                             {title && <ToastTitle>{title}</ToastTitle>}
                             {description && (
-                                <ToastDescription>{description}</ToastDescription>
+                                <ToastDescription>
+                                    {(() => {
+                                        if (typeof description === "string" || React.isValidElement(description)) {
+                                            return description
+                                        }
+                                        if (Array.isArray(description)) {
+                                            return description
+                                                .map((d: any) => (typeof d === "string" ? d : d.message || JSON.stringify(d)))
+                                                .join(", ")
+                                        }
+                                        if (typeof description === "object" && description !== null) {
+                                            return (description as any).message || JSON.stringify(description)
+                                        }
+                                        return String(description)
+                                    })()}
+                                </ToastDescription>
                             )}
                         </div>
                         {action}

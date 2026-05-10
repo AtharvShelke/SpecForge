@@ -253,12 +253,12 @@ const InventoryManager = () => {
     const [addUnitsModal, setAddUnitsModal] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState('');
     const [numberOfUnits, setNumberOfUnits] = useState(1);
-    const [unitsToAdd, setUnitsToAdd] = useState<{partNumber: string; serialNumber: string; costPrice: string; location: string}[]>([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+    const [unitsToAdd, setUnitsToAdd] = useState<{partNumber: string; serialNumber: string; costPrice: string}[]>([{ partNumber: '', serialNumber: '', costPrice: '' }]);
 
     const [editUnitsModal, setEditUnitsModal] = useState<{
         isOpen: boolean; productId: string; productName: string; sku: string;
     } | null>(null);
-    const [existingUnits, setExistingUnits] = useState<{id: string; partNumber: string; serialNumber: string; costPrice: number; location: string}[]>([]);
+    const [existingUnits, setExistingUnits] = useState<{id: string; partNumber: string; serialNumber: string; costPrice: number}[]>([]);
     const [isLoadingUnits, setIsLoadingUnits] = useState(false);
 
  
@@ -387,7 +387,6 @@ const InventoryManager = () => {
                 partNumber: unit.partNumber.trim(),
                 serialNumber: unit.serialNumber.trim(),
                 costPrice: unit.costPrice ? Number(unit.costPrice) : undefined,
-                location: unit.location ? unit.location.trim() : undefined,
             }));
 
         if (!selectedProductId || units.length === 0) {
@@ -415,7 +414,7 @@ const InventoryManager = () => {
         setAddUnitsModal(false);
         setSelectedProductId('');
         setNumberOfUnits(1);
-        setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+        setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '' }]);
         await syncData();
     }, [selectedProductId, syncData, toast, unitsToAdd]);
 
@@ -431,7 +430,6 @@ const InventoryManager = () => {
                     partNumber: item.partNumber || '',
                     serialNumber: item.serialNumber || '',
                     costPrice: item.costPrice || 0,
-                    location: item.location || '',
                 }));
                 setExistingUnits(units);
             }
@@ -451,7 +449,6 @@ const InventoryManager = () => {
             partNumber: unit.partNumber.trim(),
             serialNumber: unit.serialNumber.trim(),
             costPrice: unit.costPrice,
-            location: unit.location.trim(),
         }));
 
         const res = await fetch('/api/inventory/update', {
@@ -1178,7 +1175,7 @@ const InventoryManager = () => {
                 if (!open) {
                     setSelectedProductId('');
                     setNumberOfUnits(1);
-                    setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+                    setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '' }]);
                 }
             }}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 shadow-xl rounded-xl">
@@ -1218,7 +1215,7 @@ const InventoryManager = () => {
                                         setUnitsToAdd(prev => {
                                             if (prev.length === val) return prev;
                                             if (prev.length < val) {
-                                                return [...prev, ...Array.from({ length: val - prev.length }).map(() => ({ partNumber: '', serialNumber: '', costPrice: '', location: '' }))];
+                                                return [...prev, ...Array.from({ length: val - prev.length }).map(() => ({ partNumber: '', serialNumber: '', costPrice: '' }))];
                                             }
                                             return prev.slice(0, val);
                                         });
@@ -1227,55 +1224,55 @@ const InventoryManager = () => {
                                 />
                             </div>
                         </div>
-                        
+
                         <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
                             {unitsToAdd.map((unit, idx) => (
-                                <div key={idx} className="flex gap-2 items-start bg-stone-50 p-2 rounded-lg border border-stone-100">
-                                    <div className="flex items-center justify-center h-9 w-6 shrink-0">
+                                <div key={idx} className="flex flex-col gap-2 bg-stone-50 p-3 rounded-lg border border-stone-100">
+                                    <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-bold text-stone-400">{idx + 1}.</span>
+                                        <span className="text-[11px] font-semibold text-stone-700">Unit #{idx + 1}</span>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
-                                        <Input
-                                            placeholder="Part Number"
-                                            value={unit.partNumber}
-                                            onChange={(e) => {
-                                                const newUnits = [...unitsToAdd];
-                                                newUnits[idx].partNumber = e.target.value;
-                                                setUnitsToAdd(newUnits);
-                                            }}
-                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                        />
-                                        <Input
-                                            placeholder="Serial Number"
-                                            value={unit.serialNumber}
-                                            onChange={(e) => {
-                                                const newUnits = [...unitsToAdd];
-                                                newUnits[idx].serialNumber = e.target.value;
-                                                setUnitsToAdd(newUnits);
-                                            }}
-                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                        />
-                                        <Input
-                                            placeholder="Cost Price"
-                                            type="number"
-                                            value={unit.costPrice}
-                                            onChange={(e) => {
-                                                const newUnits = [...unitsToAdd];
-                                                newUnits[idx].costPrice = e.target.value;
-                                                setUnitsToAdd(newUnits);
-                                            }}
-                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                        />
-                                        <Input
-                                            placeholder="Location (e.g. WH-01)"
-                                            value={unit.location}
-                                            onChange={(e) => {
-                                                const newUnits = [...unitsToAdd];
-                                                newUnits[idx].location = e.target.value;
-                                                setUnitsToAdd(newUnits);
-                                            }}
-                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                        />
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wide mb-1 block">Part Number</label>
+                                            <Input
+                                                placeholder="Enter part number"
+                                                value={unit.partNumber}
+                                                onChange={(e) => {
+                                                    const newUnits = [...unitsToAdd];
+                                                    newUnits[idx].partNumber = e.target.value;
+                                                    setUnitsToAdd(newUnits);
+                                                }}
+                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wide mb-1 block">Serial Number</label>
+                                            <Input
+                                                placeholder="Enter serial number"
+                                                value={unit.serialNumber}
+                                                onChange={(e) => {
+                                                    const newUnits = [...unitsToAdd];
+                                                    newUnits[idx].serialNumber = e.target.value;
+                                                    setUnitsToAdd(newUnits);
+                                                }}
+                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wide mb-1 block">Cost Price</label>
+                                            <Input
+                                                placeholder="Enter cost price"
+                                                type="number"
+                                                value={unit.costPrice}
+                                                onChange={(e) => {
+                                                    const newUnits = [...unitsToAdd];
+                                                    newUnits[idx].costPrice = e.target.value;
+                                                    setUnitsToAdd(newUnits);
+                                                }}
+                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -1287,7 +1284,7 @@ const InventoryManager = () => {
                                 setAddUnitsModal(false);
                                 setSelectedProductId('');
                                 setNumberOfUnits(1);
-                                setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+                                setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '' }]);
                             }}
                             className="flex-1 h-10 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors"
                         >
@@ -1325,52 +1322,52 @@ const InventoryManager = () => {
                         ) : (
                             <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
                                 {existingUnits.map((unit, idx) => (
-                                    <div key={unit.id} className="flex gap-2 items-start bg-stone-50 p-2 rounded-lg border border-stone-100">
-                                        <div className="flex items-center justify-center h-9 w-6 shrink-0">
+                                    <div key={unit.id} className="flex flex-col gap-2 bg-stone-50 p-3 rounded-lg border border-stone-100">
+                                        <div className="flex items-center gap-2">
                                             <span className="text-[10px] font-bold text-stone-400">{idx + 1}.</span>
+                                            <span className="text-[11px] font-semibold text-stone-700">Unit #{idx + 1}</span>
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
-                                            <Input
-                                                placeholder="Part Number"
-                                                value={unit.partNumber}
-                                                onChange={(e) => {
-                                                    const newUnits = [...existingUnits];
-                                                    newUnits[idx].partNumber = e.target.value;
-                                                    setExistingUnits(newUnits);
-                                                }}
-                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                            />
-                                            <Input
-                                                placeholder="Serial Number"
-                                                value={unit.serialNumber}
-                                                onChange={(e) => {
-                                                    const newUnits = [...existingUnits];
-                                                    newUnits[idx].serialNumber = e.target.value;
-                                                    setExistingUnits(newUnits);
-                                                }}
-                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                            />
-                                            <Input
-                                                placeholder="Cost Price"
-                                                type="number"
-                                                value={unit.costPrice}
-                                                onChange={(e) => {
-                                                    const newUnits = [...existingUnits];
-                                                    newUnits[idx].costPrice = Number(e.target.value);
-                                                    setExistingUnits(newUnits);
-                                                }}
-                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                            />
-                                            <Input
-                                                placeholder="Location"
-                                                value={unit.location}
-                                                onChange={(e) => {
-                                                    const newUnits = [...existingUnits];
-                                                    newUnits[idx].location = e.target.value;
-                                                    setExistingUnits(newUnits);
-                                                }}
-                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
-                                            />
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wide mb-1 block">Part Number</label>
+                                                <Input
+                                                    placeholder="Enter part number"
+                                                    value={unit.partNumber}
+                                                    onChange={(e) => {
+                                                        const newUnits = [...existingUnits];
+                                                        newUnits[idx].partNumber = e.target.value;
+                                                        setExistingUnits(newUnits);
+                                                    }}
+                                                    className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wide mb-1 block">Serial Number</label>
+                                                <Input
+                                                    placeholder="Enter serial number"
+                                                    value={unit.serialNumber}
+                                                    onChange={(e) => {
+                                                        const newUnits = [...existingUnits];
+                                                        newUnits[idx].serialNumber = e.target.value;
+                                                        setExistingUnits(newUnits);
+                                                    }}
+                                                    className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wide mb-1 block">Cost Price</label>
+                                                <Input
+                                                    placeholder="Enter cost price"
+                                                    type="number"
+                                                    value={unit.costPrice}
+                                                    onChange={(e) => {
+                                                        const newUnits = [...existingUnits];
+                                                        newUnits[idx].costPrice = Number(e.target.value);
+                                                        setExistingUnits(newUnits);
+                                                    }}
+                                                    className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

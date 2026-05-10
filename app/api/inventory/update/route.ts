@@ -7,7 +7,6 @@ const updateUnitSchema = z.object({
     partNumber: z.string().min(1),
     serialNumber: z.string().min(1),
     costPrice: z.number().min(0),
-    location: z.string(),
 });
 
 const updateInventorySchema = z.object({
@@ -27,7 +26,6 @@ export async function PATCH(req: NextRequest) {
                         partNumber: unit.partNumber,
                         serialNumber: unit.serialNumber,
                         costPrice: unit.costPrice,
-                        location: unit.location,
                         lastUpdated: new Date(),
                     },
                 });
@@ -37,7 +35,7 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: true });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 });
+            return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
         }
         console.error("PATCH /api/inventory/update error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
