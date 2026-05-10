@@ -230,7 +230,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     const [categories, setCategories] = useState<CategoryNode[]>([]);
 
     const fetchCategories = async () => {
-        const res = await fetch("/api/categories/hierarchy")
+        const res = await fetch("/api/categories")
         const data = await res.json()
         console.log("Categories Fetched: ", data)
         setCategories(data)
@@ -260,7 +260,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             const found = categories.find(n => getNodeCategoryCode(n) === initialCategoryParam);
             if (found) return found;
         }
-        return categories.length > 0 ? ALL_PRODUCTS_TAB : null;
+        // Default to the first category child (not the root "PC Components" node)
+        // Find the first node that has a category property
+        const firstCategoryWithCategory = categories.find(n => n.category && getNodeCategoryCode(n));
+        return firstCategoryWithCategory || ALL_PRODUCTS_TAB;
     }, [initialCategoryParam, categories, initialQueryParam]);
 
     const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '');
@@ -299,6 +302,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
     // ── Consolidated Tab/Category Change ──────────────────────────────────────
     const handleTabChange = useCallback((node: CategoryNode | null) => {
         setActiveTab(node);
+        console.log("ACTIVE TAB NODE: ", node)
         setSelectedNode(null);
         setSelectedFilters({});
         setPriceRange({ min: 0, max: DEFAULT_MAX_PRICE });
@@ -510,13 +514,19 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
             setIsLoadingProducts(true);
             try {
                 const params = new URLSearchParams();
-                console.log("FETCHING - activeTab:", activeTab?.label, "activeTab.category:", activeTab?.category);
+                // console.log("FETCHING - activeTab:", activeTab?.label, "activeTab.category:", activeTab?.category);
                
                 if (activeTab?.category) {
                     params.set('category', getNodeCategoryCode(activeTab));
                 }
-                if (selectedNode?.brand) params.set('nodeBrand', selectedNode.brand);
-                if (selectedNode?.query) params.set('nodeQuery', selectedNode.query);
+                
+                if (selectedNode) {
+                    if (selectedNode.slug) params.set('subcategory', selectedNode.slug);
+                    else if (selectedNode.id) params.set('subcategory', selectedNode.id);
+                    
+                    if (selectedNode.brand) params.set('nodeBrand', selectedNode.brand);
+                    if (selectedNode.query) params.set('nodeQuery', selectedNode.query);
+                }
 
                 // Add build mode compatibility parameters
                 Object.entries(buildModeParams).forEach(([key, value]) => {
@@ -550,10 +560,10 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                 
                 // Only update the ref if the fetch was successful and not aborted
                 prevParamsRef.current = queryString;
-                console.log("FETCHED_PRODUCTS", data)
-                console.log("Number of products received:", data.products?.length);
+                // console.log("FETCHED_PRODUCTS", data)
+                // console.log("Number of products received:", data.products?.length);
                 if (data.products) {
-                    console.log("Setting fetchedProducts state with", data.products.length, "products");
+                    // console.log("Setting fetchedProducts state with", data.products.length, "products");
                     setFetchedProducts(data.products);
                     setTotalCount(data.total ?? 0);
                     if (data.filterOptions) setAvailableFilters(data.filterOptions);
@@ -573,7 +583,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
 
     // Log when fetchedProducts changes
     useEffect(() => {
-        console.log("fetchedProducts state changed, length:", fetchedProducts.length);
+        // console.log("fetchedProducts state changed, length:", fetchedProducts.length);
     }, [fetchedProducts]);
 
     // ── Derived values ────────────────────────────────────────────────────────
@@ -742,7 +752,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                         const category = categories.find(n => getNodeCategoryCode(n) === categoryCode)?.category;
                                         if (category && typeof category !== 'string') handleBuildCategorySelect(category);
                                     }}
-                                    currentProducts={categoryBaseProducts}
+                                    currentProducts={fetchedProducts}
                                     dynamicFilters={availableFilters}
                                     selectedFilters={selectedFilters}
                                     onFilterChange={handleFilterChange}
@@ -771,7 +781,7 @@ const ProductsContent: React.FC<{ initialData?: any }> = ({ initialData }) => {
                                             const category = categories.find(n => getNodeCategoryCode(n) === categoryCode)?.category;
                                             if (category && typeof category !== 'string') handleBuildCategorySelect(category);
                                         }}
-                                        currentProducts={categoryBaseProducts}
+                                        currentProducts={fetchedProducts}
                                         dynamicFilters={availableFilters}
                                         selectedFilters={selectedFilters}
                                         onFilterChange={handleFilterChange}

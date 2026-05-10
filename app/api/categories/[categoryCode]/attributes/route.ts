@@ -65,13 +65,18 @@ function mapAttributes(category: {
     },
     createdAt: category.createdAt,
     updatedAt: category.updatedAt,
-    attributes: category.attributes.map((attribute) => ({
+    attributes: Array.from(
+      category.attributes.reduce((map, attr) => {
+        if (!map.has(attr.key)) map.set(attr.key, attr);
+        return map;
+      }, new Map<string, any>()).values()
+    ).map((attribute) => ({
       id: attribute.id,
       key: attribute.key,
       label: attribute.label,
       type: attribute.type === 'multi_select' ? 'multi-select' : attribute.type,
       required: attribute.isRequired,
-      options: attribute.options.map((option) => option.value),
+      options: attribute.options.map((option: { value: string }) => option.value),
       unit: attribute.unit ?? undefined,
       sortOrder: attribute.sortOrder,
       categoryId: category.id,
@@ -87,13 +92,19 @@ function mapAttributes(category: {
 }
 
 async function loadCategory(code: string, subcategorySlug?: string | null) {
-  const category = await prisma.category.findUnique({
-    where: { code },
+  const category = await prisma.category.findFirst({
+    where: {
+      OR: [
+        { code: code },
+        { slug: code.toLowerCase() },
+        { name: { equals: code, mode: 'insensitive' } },
+      ],
+    },
     include: {
       attributes: {
-        where: {
+        where: subcategorySlug ? {
           subcategoryId: null,
-        },
+        } : {}, // If no subcategory selected, get all attributes for this category
         include: {
           dependencyAttribute: { select: { key: true } },
           dependencyOption: { select: { value: true } },
@@ -131,9 +142,9 @@ async function loadCategory(code: string, subcategorySlug?: string | null) {
     if (subcategory && subcategory.attributes.length > 0) {
       // Merge category-level and subcategory-level attributes
       // Subcategory attributes override category-level attributes with the same key
-      const categoryAttrKeys = new Set(category.attributes.map(a => a.key));
+      const subcategoryAttrKeys = new Set(subcategory.attributes.map(a => a.key));
       const mergedAttributes = [
-        ...category.attributes.filter((a: any) => !categoryAttrKeys.has(a.key)),
+        ...category.attributes.filter((a: any) => !subcategoryAttrKeys.has(a.key)),
         ...subcategory.attributes,
       ];
       

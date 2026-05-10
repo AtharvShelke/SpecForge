@@ -209,6 +209,7 @@ function buildWhereClause(
     const sidebarSearch = searchParams.get("sq");
     const nodeQuery = searchParams.get("nodeQuery");
     const nodeBrand = searchParams.get("nodeBrand");
+    const subcategoryParam = searchParams.get("subcategory");
 
     const where: Record<string, unknown> = {};
     const and: object[] = [];
@@ -217,6 +218,13 @@ function buildWhereClause(
         where.categoryId = categoryIdsForFilter.length === 1
             ? categoryIdsForFilter[0]
             : { in: categoryIdsForFilter };
+    }
+
+    if (subcategoryParam) {
+        const isId = /^\d+$/.test(subcategoryParam);
+        where.subcategoryId = isId ? Number(subcategoryParam) : {
+            slug: subcategoryParam
+        };
     }
 
     if (brandId) {
@@ -292,7 +300,7 @@ function buildWhereClause(
     return where;
 }
 
-async function resolveFilterOptions(where: Record<string, unknown>, categoryCode: string | null) {
+async function resolveFilterOptions(where: Record<string, unknown>, categoryCode: string | null, subcategoryCode: string | null) {
     const [brandResults, specResults, category] = await Promise.all([
         prisma.product.findMany({
             where,
@@ -318,7 +326,13 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
         }),
         categoryCode
             ? prisma.category.findFirst({
-                where: { code: categoryCode },
+                where: {
+                    OR: [
+                        { code: categoryCode },
+                        { slug: categoryCode },
+                        { name: { equals: categoryCode, mode: 'insensitive' } }
+                    ]
+                },
                 include: {
                     attributes: {
                         where: { isFilterable: true },
@@ -329,6 +343,25 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
                         },
                         orderBy: { sortOrder: 'asc' },
                     },
+                    subcategories: subcategoryCode ? {
+                        where: {
+                            OR: [
+                                { slug: subcategoryCode },
+                                { name: { equals: subcategoryCode, mode: 'insensitive' } }
+                            ]
+                        },
+                        include: {
+                            attributes: {
+                                where: { isFilterable: true },
+                                include: {
+                                    dependencyAttribute: { select: { key: true } },
+                                    dependencyOption: { select: { value: true } },
+                                    options: { select: { value: true, slug: true }, orderBy: { sortOrder: 'asc' } },
+                                },
+                                orderBy: { sortOrder: 'asc' },
+                            }
+                        }
+                    } : false
                 },
             })
             : null,
@@ -352,7 +385,19 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
     }
 
     if (category) {
-        for (const attribute of category.attributes) {
+        const cat = category as any;
+        let attributes = cat.attributes;
+        const subcategory = cat.subcategories?.[0];
+        
+        if (subcategory && subcategory.attributes && subcategory.attributes.length > 0) {
+            const subAttrKeys = new Set(subcategory.attributes.map((a: any) => a.key));
+            attributes = [
+                ...cat.attributes.filter((a: any) => !subAttrKeys.has(a.key)),
+                ...subcategory.attributes
+            ];
+        }
+
+        for (const attribute of attributes) {
             if (specMetadata[attribute.key]) {
                 specMetadata[attribute.key].availableValues = attribute.options;
                 specMetadata[attribute.key].config = {
@@ -408,12 +453,13 @@ export async function getProductsData(searchParams: URLSearchParams) {
         const limit = Math.min(toInt(searchParams.get("limit"), 50), 5000);
         const fields = searchParams.get("fields");
         const categoryParam = searchParams.get("category");
+        const subcategoryParam = searchParams.get("subcategory");
 
         const { codeByCategoryId, resolveCategoryIds } = await loadCategoryMetadata();
         const categoryIdsForFilter = categoryParam ? resolveCategoryIds([categoryParam]) : [];
         const where = buildWhereClause(searchParams, categoryIdsForFilter);
         const filterOptionsPromise = searchParams.get("getFilters") === "true"
-            ? resolveFilterOptions(where, categoryParam)
+            ? resolveFilterOptions(where, categoryParam, subcategoryParam)
             : Promise.resolve(undefined);
 
         let products: any[] = [];

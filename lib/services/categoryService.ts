@@ -19,30 +19,35 @@ const categorySelect = {
 } as const;
 
 function toCategoryDefinition(
-  category: {
-    id: number;
-    code: string;
-    name: string;
-    slug: string;
-    shortLabel: string | null;
-    description: string | null;
-    image: string | null;
-    icon: string | null;
-    displayOrder: number;
-    featuredOrder: number | null;
-    isActive: boolean;
-    showInFeatured: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  },
-  stepOrder?: number | null
+  category: any,
+  stepOrder: number | null
 ): CategoryDefinition {
-  return {
+  const node: any = {
     ...category,
+    id: category.id.toString(),
     label: category.name,
     stepOrder: stepOrder ?? null,
     isInBuildSequence: stepOrder !== undefined && stepOrder !== null,
+    category: {
+      id: category.id,
+      code: category.code,
+      name: category.name,
+      slug: category.slug,
+      shortLabel: category.shortLabel
+    }
   };
+
+  if (category.subcategories) {
+    node.children = category.subcategories.map((sub: any) => ({
+      id: sub.id.toString(),
+      label: sub.name,
+      category: node.category, // Pass parent category info
+      slug: sub.slug,
+      // Map subcategory to look like a node
+    }));
+  }
+
+  return node;
 }
 
 export async function getCategoryDefinitions(includeInactive = false): Promise<CategoryDefinition[]> {
@@ -54,7 +59,35 @@ export async function getCategoryDefinitions(includeInactive = false): Promise<C
         select: {
           stepOrder: true,
         },
+
       },
+      products:true,
+      attributes: {
+        include: {
+          options: true,
+          dependencyAttribute: true,
+          dependentAttributes: true,
+          dependencyOption: true,
+        },
+      },
+      subcategories: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          image: true,
+          description: true,
+          attributes: {
+            include: {
+              options: true,
+              dependencyAttribute: true,
+              dependentAttributes: true,
+              dependencyOption: true,
+            },
+          },
+        },
+      },
+      brandCategories: true,
     },
     orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
   });

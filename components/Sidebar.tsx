@@ -64,7 +64,7 @@ const FilterGroup: React.FC<{
       // BUG FIX: was `|| filter.options` which is always truthy (array).
       // Should be `|| !filter.options` — only show zero-count rows when
       // options are dynamically derived (no static list provided).
-      .filter(o => o.count > 0 || !hasStaticOptions);
+      .filter(o => o.count > 0 || hasStaticOptions);
   }, [products, filter, dynamicOptions]);
 
   const visibleOptions = showAll ? options : options.slice(0, 5);
@@ -180,6 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     if (!activeCategory) {
       setAttributeConfig(null);
+      console.log("CATEGORY NOT FOUND!")
       return;
     }
 

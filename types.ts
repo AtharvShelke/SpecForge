@@ -24,6 +24,20 @@ export interface Category {
 
 export type CategoryDefinition = Category;
 
+export interface Subcategory {
+  id: number;
+  categoryId: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  isActive: boolean;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  category: Category;
+  products: Product[];
+}
+
 export interface BuildSequenceItem {
   id?: string;
   categoryId: number;
@@ -211,6 +225,7 @@ export interface Brand {
 export interface CategoryNode {
   id?: string;       // DB has id, but tree nodes in frontend may not always have it
   label: string;
+  slug?: string;
   children?: CategoryNode[];
   category?: Category | string | null;
   brand?: string;
