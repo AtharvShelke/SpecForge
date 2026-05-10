@@ -91,7 +91,24 @@ export async function GET(req: NextRequest) {
                     paymentStatus: true,
                     createdAt: true,
                     items: {
-                        select: { id: true, productId: true, name: true, categoryId: true, price: true, quantity: true, image: true, sku: true },
+                        select: {
+                            id: true,
+                            productId: true,
+                            name: true,
+                            categoryId: true,
+                            price: true,
+                            quantity: true,
+                            image: true,
+                            sku: true,
+                            assignedUnits: {
+                                select: {
+                                    id: true,
+                                    inventoryItemId: true,
+                                    serialNumber: true,
+                                    partNumber: true,
+                                },
+                            },
+                        },
                     },
                     logs: {
                         select: { id: true, status: true, timestamp: true, note: true },
@@ -153,6 +170,12 @@ export async function POST(req: NextRequest) {
             }
 
             // Create the order
+            const reservations = await reserveInventory(tx, data.items.map(i => ({
+                productId: i.productId,
+                quantity: i.quantity,
+            })), data.id);
+            const reservationMap = new Map(reservations.map((entry) => [entry.productId, entry]));
+
             const o = await tx.order.create({
                 data: {
                     id: data.id,
@@ -186,6 +209,13 @@ export async function POST(req: NextRequest) {
                             quantity: item.quantity,
                             image: item.image,
                             sku: item.sku,
+                            assignedUnits: {
+                                create: (reservationMap.get(item.productId)?.units ?? []).map((unit) => ({
+                                    inventoryItemId: unit.inventoryItemId,
+                                    serialNumber: unit.serialNumber,
+                                    partNumber: unit.partNumber,
+                                })),
+                            },
                         })),
                     },
                     logs: {
@@ -195,15 +225,11 @@ export async function POST(req: NextRequest) {
                         },
                     },
                 },
-                include: { items: true, logs: true },
+                include: {
+                    items: { include: { assignedUnits: true } },
+                    logs: true,
+                },
             });
-
-            // Reserve inventory using centralized service
-            const inventoryItems = data.items.map(i => ({
-                productId: i.productId,
-                quantity: i.quantity,
-            }));
-            await reserveInventory(tx, inventoryItems, data.id);
 
             // For POS/CASH orders, create payment transaction and auto-mark as PAID
             if (data.channel === "POS" && data.paymentMethod) {

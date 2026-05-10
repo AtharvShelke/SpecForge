@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createInventoryUnits } from "@/lib/services/inventory";
 
 const specSchema = z.object({
     key: z.string().min(1),
     value: z.string().min(1),
+});
+
+const inventoryUnitSchema = z.object({
+    partNumber: z.string().min(1),
+    serialNumber: z.string().min(1),
+    costPrice: z.number().min(0).optional(),
+    location: z.string().optional(),
+    reorderLevel: z.number().int().min(0).optional(),
 });
 
 const updateProductSchema = z.object({
@@ -17,6 +26,7 @@ const updateProductSchema = z.object({
     description: z.string().nullable().optional(),
     brandId: z.string().uuid().nullable().optional(),
     specs: z.array(specSchema).optional(),
+    inventoryUnits: z.array(inventoryUnitSchema).optional(),
 });
 
 function mapProduct(product: any) {
@@ -117,7 +127,7 @@ export async function PUT(
                 await tx.productSpec.deleteMany({ where: { productId: id } });
             }
 
-            const { specs: _, price, stock, images, brandId, category, ...productData } = data;
+            const { specs: _, price, stock, images, brandId, category, inventoryUnits, ...productData } = data;
             
             // Prepare update data for product
             const updateData: any = { ...productData };
@@ -183,26 +193,34 @@ export async function PUT(
                 }
             }
 
-            // If stock passed, update inventory
-            if (stock !== undefined) {
-                const inv = await tx.inventoryItem.findFirst({ where: { productId: id } });
-                if (inv) {
-                    await tx.inventoryItem.update({
-                        where: { id: inv.id },
-                        data: { quantity: stock }
-                    });
-                } else {
-                    await tx.inventoryItem.create({
-                        data: {
-                            productId: id,
-                            quantity: stock,
-                            reserved: 0,
-                            reorderLevel: 5,
-                            costPrice: ((price ?? p.price ?? 0) as number) * 0.8,
-                            location: "WAREHOUSE-A",
-                        }
-                    });
-                }
+            if (inventoryUnits) {
+                const activeLinkedUnits = await tx.orderItemUnit.findMany({
+                    where: {
+                        inventoryItem: { productId: id },
+                    },
+                    select: { inventoryItemId: true },
+                });
+                const linkedUnitIds = new Set(activeLinkedUnits.map((item) => item.inventoryItemId));
+
+                await tx.inventoryItem.deleteMany({
+                    where: {
+                        productId: id,
+                        id: { notIn: [...linkedUnitIds] },
+                    },
+                });
+
+                await createInventoryUnits(
+                    tx,
+                    id,
+                    inventoryUnits.map((unit) => ({
+                        partNumber: unit.partNumber,
+                        serialNumber: unit.serialNumber,
+                        costPrice: unit.costPrice ?? ((price ?? p.price ?? 0) as number) * 0.8,
+                        location: unit.location ?? "WAREHOUSE-A",
+                        reorderLevel: unit.reorderLevel ?? 5,
+                    })),
+                    "Inventory units refreshed",
+                );
             }
 
             if (images !== undefined) {

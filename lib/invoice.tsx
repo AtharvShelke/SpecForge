@@ -23,11 +23,18 @@ export const generateInvoiceHTML = (order: Order): string => {
 
   const itemRows = order.items.map(item => {
     const lineTotal = item.quantity * item.price;
+    const unitLines = (item.assignedUnits ?? [])
+      .map((unit) => [unit.partNumber, unit.serialNumber].filter(Boolean).join(' / '))
+      .filter(Boolean)
+      .map((text) => `<div style="margin-top:2px;color:#64748b">Unit: ${text}</div>`)
+      .join('');
+
     return `
       <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">
           <strong style="color:#1e293b">${item.name}</strong>
           <br/><small style="color:#94a3b8">${item.category || item.sku || ''}</small>
+          ${unitLines}
         </td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center">${item.quantity}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right">${fmtINR(item.price)}</td>

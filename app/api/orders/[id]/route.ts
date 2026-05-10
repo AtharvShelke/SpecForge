@@ -32,7 +32,7 @@ export async function GET(
         const order = await prisma.order.findUnique({
             where: { id },
             include: {
-                items: true,
+                items: { include: { assignedUnits: true } },
                 logs: { orderBy: { timestamp: "asc" } },
                 invoices: { include: { lineItems: true } },
                 payments: { orderBy: { createdAt: "desc" } },
@@ -65,7 +65,7 @@ export async function PATCH(
         const order = await prisma.$transaction(async (tx) => {
             const existing = await tx.order.findUnique({
                 where: { id },
-                include: { items: true },
+                include: { items: { include: { assignedUnits: true } } },
             });
             if (!existing) throw new Error("NOT_FOUND");
 
@@ -88,22 +88,25 @@ export async function PATCH(
             });
             if (versionCheck.count === 0) throw new Error("CONCURRENT_MODIFICATION");
 
-            const inventoryItems = existing.items
-                .filter(i => !!i.productId)
-                .map(i => ({ productId: i.productId, quantity: i.quantity }));
+            const assignedUnits = existing.items.flatMap((item) =>
+                item.assignedUnits.map((unit) => ({
+                    inventoryItemId: unit.inventoryItemId,
+                    productId: item.productId,
+                }))
+            );
 
             // Handle inventory based on transition
             if (newStatus === "SHIPPED") {
-                await confirmInventory(tx, inventoryItems, id);
+                await confirmInventory(tx, assignedUnits, id);
             } else if (newStatus === "CANCELLED") {
                 const isPreShip = ["PENDING", "PAID", "PROCESSING"].includes(oldStatus);
                 await restoreInventory(
-                    tx, inventoryItems, id, isPreShip,
+                    tx, assignedUnits, id, isPreShip,
                     `Order ${id} cancelled from ${oldStatus}`
                 );
             } else if (newStatus === "RETURNED") {
                 await restoreInventory(
-                    tx, inventoryItems, id, false,
+                    tx, assignedUnits, id, false,
                     `Order ${id} returned`
                 );
             }
@@ -131,7 +134,7 @@ export async function PATCH(
                     },
                 },
                 include: {
-                    items: true,
+                    items: { include: { assignedUnits: true } },
                     logs: { orderBy: { timestamp: "asc" } },
                     payments: { orderBy: { createdAt: "desc" } },
                 },
@@ -193,7 +196,7 @@ export async function DELETE(
         await prisma.$transaction(async (tx) => {
             const existing = await tx.order.findUnique({
                 where: { id },
-                include: { items: true },
+                include: { items: { include: { assignedUnits: true } } },
             });
 
             if (!existing) throw new Error("NOT_FOUND");
@@ -201,15 +204,18 @@ export async function DELETE(
             // 1. If not already cancelled, cancel it first to restore inventory
             if (existing.status !== "CANCELLED") {
                 const oldStatus = existing.status;
-                const inventoryItems = existing.items
-                    .filter(i => !!i.productId)
-                    .map(i => ({ productId: i.productId, quantity: i.quantity }));
+                const assignedUnits = existing.items.flatMap((item) =>
+                    item.assignedUnits.map((unit) => ({
+                        inventoryItemId: unit.inventoryItemId,
+                        productId: item.productId,
+                    }))
+                );
 
                 const isPreShip = ["PENDING", "PAID", "PROCESSING"].includes(oldStatus);
 
                 // Restore inventory if it was reserved/outwarded
                 await restoreInventory(
-                    tx, inventoryItems, id, isPreShip,
+                    tx, assignedUnits, id, isPreShip,
                     `Order ${id} cancelled during deletion from ${oldStatus}`
                 );
             }

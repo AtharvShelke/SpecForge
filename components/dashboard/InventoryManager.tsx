@@ -28,7 +28,7 @@ import {
     SlidersHorizontal,
 } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { InventoryItem, Category } from '@/types';
+import { InventoryItem, Category, Product } from '@/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import {
@@ -162,6 +162,7 @@ const InventoryManager = () => {
     
     const [isLoading, setIsLoading] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
 
     const refreshCategories = useCallback(async () => {
         try {
@@ -173,6 +174,18 @@ const InventoryManager = () => {
             }
         } catch (err) {
             console.error("Failed to fetch categories:", err);
+        }
+    }, []);
+
+    const refreshProducts = useCallback(async () => {
+        try {
+            const res = await fetch('/api/products?fields=minimal&limit=5000');
+            if (res.ok) {
+                const data = await res.json();
+                setProducts(data.products ?? []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch products:", err);
         }
     }, []);
 
@@ -202,9 +215,9 @@ const InventoryManager = () => {
     // Sync data
     const syncData = useCallback(async () => {
         setIsLoading(true);
-        await Promise.all([refreshInventory(), refreshStockMovements(), refreshCategories()]);
+        await Promise.all([refreshInventory(), refreshStockMovements(), refreshCategories(), refreshProducts()]);
         setIsLoading(false);
-    }, [refreshInventory, refreshStockMovements, refreshCategories]);
+    }, [refreshInventory, refreshStockMovements, refreshCategories, refreshProducts]);
 
     // Adjust stock
     const adjustStock = useCallback(async (
@@ -229,20 +242,28 @@ const InventoryManager = () => {
 
     // Initial data fetch
     useEffect(() => {
-        Promise.all([refreshInventory(), refreshStockMovements(), refreshCategories()]);
-    }, [refreshInventory, refreshStockMovements, refreshCategories]);
+        Promise.all([refreshInventory(), refreshStockMovements(), refreshCategories(), refreshProducts()]);
+    }, [refreshInventory, refreshStockMovements, refreshCategories, refreshProducts]);
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
         isOpen: boolean; id: string; sku: string; productId: string; currentQty: number;
     } | null>(null);
 
-    const [transferModal, setTransferModal] = useState<{
-        isOpen: boolean; id: string; sku: string; productId: string; currentQty: number;
+    
+    const [addUnitsModal, setAddUnitsModal] = useState(false);
+    const [selectedProductId, setSelectedProductId] = useState('');
+    const [numberOfUnits, setNumberOfUnits] = useState(1);
+    const [unitsToAdd, setUnitsToAdd] = useState<{partNumber: string; serialNumber: string; costPrice: string; location: string}[]>([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+
+    const [editUnitsModal, setEditUnitsModal] = useState<{
+        isOpen: boolean; productId: string; productName: string; sku: string;
     } | null>(null);
+    const [existingUnits, setExistingUnits] = useState<{id: string; partNumber: string; serialNumber: string; costPrice: number; location: string}[]>([]);
+    const [isLoadingUnits, setIsLoadingUnits] = useState(false);
 
  
     const [adjType, setAdjType] = useState<StockMovementType>('INWARD');
-    const [adjQty, setAdjQty] = useState(0);
+    const [adjQty, setAdjQty] = useState(1);
     const [adjReason, setAdjReason] = useState('');
 
     const [auditLogModal, setAuditLogModal] = useState(false);
@@ -344,7 +365,7 @@ const InventoryManager = () => {
         e.preventDefault();
         if (adjustmentModal && adjQty > 0) {
             adjustStock(adjustmentModal.id, adjQty, adjType, adjReason);
-            setAdjustmentModal(null); setAdjQty(0); setAdjReason(''); setAdjType('INWARD');
+            setAdjustmentModal(null); setAdjQty(1); setAdjReason(''); setAdjType('INWARD');
             setRefreshTrigger(prev => !prev);
         }
     }, [adjustmentModal, adjQty, adjType, adjReason, adjustStock]);
@@ -358,6 +379,98 @@ const InventoryManager = () => {
         await refreshInventory();
         setRefreshTrigger(prev => !prev);
     }, [refreshInventory]);
+
+    const handleCreateUnits = useCallback(async () => {
+        const units = unitsToAdd
+            .filter((unit) => unit.partNumber && unit.serialNumber)
+            .map((unit) => ({
+                partNumber: unit.partNumber.trim(),
+                serialNumber: unit.serialNumber.trim(),
+                costPrice: unit.costPrice ? Number(unit.costPrice) : undefined,
+                location: unit.location ? unit.location.trim() : undefined,
+            }));
+
+        if (!selectedProductId || units.length === 0) {
+            toast({ title: 'Add at least one valid unit entry (requires Part Number and Serial Number)', variant: 'destructive' });
+            return;
+        }
+
+        const res = await fetch('/api/inventory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                productId: selectedProductId,
+                units,
+                note: 'Inventory units added from dashboard',
+            }),
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            toast({ title: 'Failed to add units', description: data.error || 'Please review the unit register.', variant: 'destructive' });
+            return;
+        }
+
+        toast({ title: 'Inventory units added' });
+        setAddUnitsModal(false);
+        setSelectedProductId('');
+        setNumberOfUnits(1);
+        setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+        await syncData();
+    }, [selectedProductId, syncData, toast, unitsToAdd]);
+
+    const handleOpenEditUnits = useCallback(async (productId: string, productName: string, sku: string) => {
+        setIsLoadingUnits(true);
+        setEditUnitsModal({ isOpen: true, productId, productName, sku });
+        try {
+            const res = await fetch(`/api/inventory?productId=${productId}&limit=1000`);
+            if (res.ok) {
+                const data = await res.json();
+                const units = (data.items || []).map((item: any) => ({
+                    id: item.id,
+                    partNumber: item.partNumber || '',
+                    serialNumber: item.serialNumber || '',
+                    costPrice: item.costPrice || 0,
+                    location: item.location || '',
+                }));
+                setExistingUnits(units);
+            }
+        } catch (err) {
+            console.error('Failed to fetch units:', err);
+            toast({ title: 'Failed to load units', variant: 'destructive' });
+        } finally {
+            setIsLoadingUnits(false);
+        }
+    }, [toast]);
+
+    const handleUpdateUnits = useCallback(async () => {
+        if (!editUnitsModal) return;
+
+        const updates = existingUnits.map(unit => ({
+            id: unit.id,
+            partNumber: unit.partNumber.trim(),
+            serialNumber: unit.serialNumber.trim(),
+            costPrice: unit.costPrice,
+            location: unit.location.trim(),
+        }));
+
+        const res = await fetch('/api/inventory/update', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ units: updates }),
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            toast({ title: 'Failed to update units', description: data.error || 'Please try again.', variant: 'destructive' });
+            return;
+        }
+
+        toast({ title: 'Units updated successfully' });
+        setEditUnitsModal(null);
+        setExistingUnits([]);
+        await syncData();
+    }, [editUnitsModal, existingUnits, syncData, toast]);
 
     // Pagination handlers — stable references prevent button re-renders
     const handlePrevPage = useCallback(() => {
@@ -437,7 +550,7 @@ const InventoryManager = () => {
             value: totalStockValue > 999999
                 ? `₹${(totalStockValue / 100000).toFixed(1)}L`
                 : `₹${totalStockValue.toLocaleString('en-IN')}`,
-            sub: `${Array.isArray(inventory) ? inventory.length : 0} SKUs`,
+            sub: `${Array.isArray(inventory) ? inventory.length : 0} units`,
             icon: <DollarSign size={12} />,
             accent: 'border-l-indigo-400',
             alert: false,
@@ -496,11 +609,18 @@ const InventoryManager = () => {
                     <div className="min-w-0">
                         <h2 className="text-sm font-bold text-stone-900 tracking-tight">Inventory</h2>
                         <p className="text-[11px] text-stone-400 font-mono hidden sm:block">
-                            {Array.isArray(inventory) ? inventory.length : 0} SKUs · Live
+                            {Array.isArray(inventory) ? inventory.length : 0} units · Live
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setAddUnitsModal(true)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors"
+                    >
+                        <Package size={12} />
+                        <span className="hidden sm:inline">Add Units</span>
+                    </button>
                     <button
                         onClick={openAuditLog}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors"
@@ -762,6 +882,9 @@ const InventoryManager = () => {
                                                     <span className="text-[10px] text-stone-400 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded font-medium">
                                                         {product?.category?.name || 'Standard'}
                                                     </span>
+                                                    <p className="mt-1 text-[10px] font-mono text-stone-400">
+                                                        {item.partNumber || 'No part'} · {item.serialNumber || 'No serial'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>
@@ -794,16 +917,15 @@ const InventoryManager = () => {
                                             <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 text-[11px] font-semibold transition-colors"
-                                                    onClick={() => setTransferModal({
-                                                        isOpen: true,
-                                                        id: item.id,
-                                                        sku: product?.sku || item.productId,
-                                                        productId: item.productId,
-                                                        currentQty: item.quantity,
-                                                    })}
+                                                    onClick={() => handleOpenEditUnits(
+                                                        item.productId,
+                                                        product?.name || 'Unknown',
+                                                        product?.sku || 'N/A'
+                                                    )}
                                                 >
-                                                    <MoveHorizontal size={11} /> Transfer
+                                                    <Tag size={11} /> Edit Units
                                                 </button>
+                                                
                                                 <button
                                                     className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition-colors"
                                                     onClick={() => setAdjustmentModal({
@@ -858,6 +980,9 @@ const InventoryManager = () => {
                                             <span className="text-[10px] font-mono font-bold text-stone-400">{product?.sku || 'N/A'}</span>
                                             <StockBadge qty={item.quantity} reorderLevel={item.reorderLevel} />
                                         </div>
+                                        <p className="mt-1 text-[10px] font-mono text-stone-400 truncate">
+                                            {item.partNumber || 'No part'} · {item.serialNumber || 'No serial'}
+                                        </p>
                                     </div>
                                     <div className="text-right flex-shrink-0">
                                         <span className={cn(
@@ -870,18 +995,7 @@ const InventoryManager = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 mt-2.5">
-                                    <button
-                                        className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white text-stone-600 border border-stone-200 text-xs font-semibold transition-colors active:bg-stone-50"
-                                        onClick={() => setTransferModal({
-                                            isOpen: true,
-                                            id: item.id,
-                                            sku: product?.sku || item.productId,
-                                            productId: item.productId,
-                                            currentQty: item.quantity,
-                                        })}
-                                    >
-                                        <MoveHorizontal size={12} /> Transfer
-                                    </button>
+                                   
                                     <button
                                         className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold transition-colors active:bg-indigo-700"
                                         onClick={() => setAdjustmentModal({
@@ -1031,8 +1145,7 @@ const InventoryManager = () => {
                                 <Input
                                     type="number"
                                     className="h-9 text-sm font-bold border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                    value={adjQty}
-                                    onChange={e => setAdjQty(Number(e.target.value))}
+                                    value={adjQty} disabled onChange={e => setAdjQty(Number(e.target.value))}
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -1060,6 +1173,231 @@ const InventoryManager = () => {
             </Dialog>
 
             
+            <Dialog open={addUnitsModal} onOpenChange={(open) => {
+                setAddUnitsModal(open);
+                if (!open) {
+                    setSelectedProductId('');
+                    setNumberOfUnits(1);
+                    setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+                }
+            }}>
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 shadow-xl rounded-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-sm font-bold text-stone-900 tracking-tight">Add Inventory Units</DialogTitle>
+                        <DialogDescription className="text-xs text-stone-400">
+                            Specify the amount of units and provide details for each physical unit.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="flex gap-4">
+                            <div className="space-y-1.5 flex-1">
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Product</label>
+                                <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                                    <SelectTrigger className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none">
+                                        <SelectValue placeholder="Select product" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border-stone-200 shadow-md">
+                                        {products.map((product) => (
+                                            <SelectItem key={product.id} value={product.id} className="text-xs focus:bg-stone-50">
+                                                {product.name} ({product.sku || 'NO-SKU'})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5 w-32">
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Amount of Units</label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    max={100}
+                                    value={numberOfUnits}
+                                    onChange={(e) => {
+                                        const val = Math.max(1, parseInt(e.target.value) || 1);
+                                        setNumberOfUnits(val);
+                                        setUnitsToAdd(prev => {
+                                            if (prev.length === val) return prev;
+                                            if (prev.length < val) {
+                                                return [...prev, ...Array.from({ length: val - prev.length }).map(() => ({ partNumber: '', serialNumber: '', costPrice: '', location: '' }))];
+                                            }
+                                            return prev.slice(0, val);
+                                        });
+                                    }}
+                                    className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
+                            {unitsToAdd.map((unit, idx) => (
+                                <div key={idx} className="flex gap-2 items-start bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                    <div className="flex items-center justify-center h-9 w-6 shrink-0">
+                                        <span className="text-[10px] font-bold text-stone-400">{idx + 1}.</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
+                                        <Input
+                                            placeholder="Part Number"
+                                            value={unit.partNumber}
+                                            onChange={(e) => {
+                                                const newUnits = [...unitsToAdd];
+                                                newUnits[idx].partNumber = e.target.value;
+                                                setUnitsToAdd(newUnits);
+                                            }}
+                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                        />
+                                        <Input
+                                            placeholder="Serial Number"
+                                            value={unit.serialNumber}
+                                            onChange={(e) => {
+                                                const newUnits = [...unitsToAdd];
+                                                newUnits[idx].serialNumber = e.target.value;
+                                                setUnitsToAdd(newUnits);
+                                            }}
+                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                        />
+                                        <Input
+                                            placeholder="Cost Price"
+                                            type="number"
+                                            value={unit.costPrice}
+                                            onChange={(e) => {
+                                                const newUnits = [...unitsToAdd];
+                                                newUnits[idx].costPrice = e.target.value;
+                                                setUnitsToAdd(newUnits);
+                                            }}
+                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                        />
+                                        <Input
+                                            placeholder="Location (e.g. WH-01)"
+                                            value={unit.location}
+                                            onChange={(e) => {
+                                                const newUnits = [...unitsToAdd];
+                                                newUnits[idx].location = e.target.value;
+                                                setUnitsToAdd(newUnits);
+                                            }}
+                                            className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2 pt-1 flex-row">
+                        <button
+                            onClick={() => {
+                                setAddUnitsModal(false);
+                                setSelectedProductId('');
+                                setNumberOfUnits(1);
+                                setUnitsToAdd([{ partNumber: '', serialNumber: '', costPrice: '', location: '' }]);
+                            }}
+                            className="flex-1 h-10 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleCreateUnits}
+                            className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
+                        >
+                            Save Units
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ─── EDIT UNITS DIALOG ─── */}
+            <Dialog open={editUnitsModal?.isOpen || false} onOpenChange={(open) => {
+                if (!open) {
+                    setEditUnitsModal(null);
+                    setExistingUnits([]);
+                }
+            }}>
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 shadow-xl rounded-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-sm font-bold text-stone-900 tracking-tight">Edit Inventory Units</DialogTitle>
+                        <DialogDescription className="text-xs text-stone-400">
+                            {editUnitsModal?.productName} ({editUnitsModal?.sku}) · {existingUnits.length} units
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        {isLoadingUnits ? (
+                            <div className="text-center text-xs text-stone-400 py-8">Loading units…</div>
+                        ) : existingUnits.length === 0 ? (
+                            <div className="text-center text-xs text-stone-400 py-8">No units found for this product</div>
+                        ) : (
+                            <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
+                                {existingUnits.map((unit, idx) => (
+                                    <div key={unit.id} className="flex gap-2 items-start bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                        <div className="flex items-center justify-center h-9 w-6 shrink-0">
+                                            <span className="text-[10px] font-bold text-stone-400">{idx + 1}.</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
+                                            <Input
+                                                placeholder="Part Number"
+                                                value={unit.partNumber}
+                                                onChange={(e) => {
+                                                    const newUnits = [...existingUnits];
+                                                    newUnits[idx].partNumber = e.target.value;
+                                                    setExistingUnits(newUnits);
+                                                }}
+                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                            />
+                                            <Input
+                                                placeholder="Serial Number"
+                                                value={unit.serialNumber}
+                                                onChange={(e) => {
+                                                    const newUnits = [...existingUnits];
+                                                    newUnits[idx].serialNumber = e.target.value;
+                                                    setExistingUnits(newUnits);
+                                                }}
+                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                            />
+                                            <Input
+                                                placeholder="Cost Price"
+                                                type="number"
+                                                value={unit.costPrice}
+                                                onChange={(e) => {
+                                                    const newUnits = [...existingUnits];
+                                                    newUnits[idx].costPrice = Number(e.target.value);
+                                                    setExistingUnits(newUnits);
+                                                }}
+                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                            />
+                                            <Input
+                                                placeholder="Location"
+                                                value={unit.location}
+                                                onChange={(e) => {
+                                                    const newUnits = [...existingUnits];
+                                                    newUnits[idx].location = e.target.value;
+                                                    setExistingUnits(newUnits);
+                                                }}
+                                                className="h-9 text-xs border-stone-200 bg-white focus:ring-indigo-400 rounded-lg shadow-none"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter className="gap-2 pt-1 flex-row">
+                        <button
+                            onClick={() => {
+                                setEditUnitsModal(null);
+                                setExistingUnits([]);
+                            }}
+                            className="flex-1 h-10 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleUpdateUnits}
+                            disabled={isLoadingUnits || existingUnits.length === 0}
+                            className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            Save Changes
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* ─── AUDIT LOG DIALOG ─── */}
             <Dialog open={auditLogModal} onOpenChange={setAuditLogModal}>
                 <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl bg-white border-stone-200 shadow-xl rounded-xl">

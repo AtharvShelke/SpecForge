@@ -806,6 +806,15 @@ const OrderManager = () => {
                                       <div className="min-w-0">
                                         <p className="font-semibold text-stone-800 text-xs leading-tight line-clamp-1 tracking-tight">{item.name}</p>
                                         <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                                        {(item.assignedUnits?.length ?? 0) > 0 && (
+                                          <div className="mt-1 space-y-0.5">
+                                            {item.assignedUnits?.map((unit) => (
+                                              <p key={unit.id} className="text-[10px] text-stone-500 font-mono">
+                                                {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
+                                              </p>
+                                            ))}
+                                          </div>
+                                        )}
                                         {isLow && (
                                           <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 mt-0.5">
                                             <AlertTriangle size={9} /> Low: {inv.quantity} left
@@ -847,6 +856,15 @@ const OrderManager = () => {
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-stone-800 text-xs tracking-tight leading-tight">{item.name}</p>
                               <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                              {(item.assignedUnits?.length ?? 0) > 0 && (
+                                <div className="mt-1 space-y-0.5">
+                                  {item.assignedUnits?.map((unit) => (
+                                    <p key={unit.id} className="text-[10px] text-stone-500 font-mono truncate">
+                                      {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
                               <div className="flex items-center justify-between mt-1.5">
                                 <span className="text-xs text-stone-400">×<strong className="text-stone-700">{item.quantity}</strong> · ₹{item.price.toLocaleString('en-IN')}</span>
                                 <span className="font-bold text-stone-900 text-sm font-mono">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
@@ -920,6 +938,11 @@ const OrderManager = () => {
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-stone-700 truncate tracking-tight">{item.name}</p>
                               <p className="text-[10px] text-stone-400 font-mono">{item.sku}</p>
+                              {(item.assignedUnits?.length ?? 0) > 0 && (
+                                <p className="text-[10px] text-stone-500 font-mono mt-0.5 truncate">
+                                  {(item.assignedUnits || []).map((unit) => `${unit.partNumber || 'No part'} · ${unit.serialNumber || 'No serial'}`).join(' | ')}
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               <Tooltip>

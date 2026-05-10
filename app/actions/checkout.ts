@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateOrderFinancials } from '@/lib/tax-engine';
 import { sendMail } from "@/lib/services/mail";
+import { reserveInventory } from "@/lib/services/inventory";
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
@@ -43,10 +44,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             // Fast lookup map
             const productMap = new Map(products.map(p => [p.id, p]));
 
-            // 2. Validate stock and prepare items
-            const orderItemsData = [];
-            const inventoryUpdates = [];
-            const stockMovements = [];
+            // 2. Validate stock and prepare item pricing
             const calculationItems: { price: number; quantity: number }[] = [];
 
             for (const item of data.items) {
@@ -55,41 +53,13 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     throw new Error(`Product not found: ${item.productId}`);
                 }
 
-                // For now grab the first inventory item
-                const inv = product.inventoryItems[0];
-                if (!inv || inv.quantity < item.quantity) {
+                const availableUnits = product.inventoryItems.filter((inv) => inv.quantity > 0 && inv.reserved === 0);
+                if (availableUnits.length < item.quantity) {
                     throw new Error(`Insufficient stock for product ${product.name}`);
                 }
 
                 const price = product.price || 0;
-
-                // Push for GST calculation
                 calculationItems.push({ price: price, quantity: item.quantity });
-
-                // Prepare item insertion
-                orderItemsData.push({
-                    productId: product.id,
-                    name: product.name,
-                    categoryId: product.categoryId,
-                    price: price,
-                    quantity: item.quantity,
-                    image: product.media?.[0]?.url || '',
-                    sku: product.sku,
-                });
-
-                // Prepare stock reduction
-                inventoryUpdates.push({
-                    id: inv.id,
-                    quantity: inv.quantity - item.quantity,
-                    reserved: inv.reserved + item.quantity
-                });
-
-                stockMovements.push({
-                    productId: product.id,
-                    type: "RESERVE" as const,
-                    quantity: item.quantity,
-                    note: `Order checkout`,
-                });
             }
 
             // 3. Create the order
@@ -98,6 +68,16 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             const { subtotal, gstAmount, total } = calculateOrderFinancials(calculationItems);
 
             const orderStatus = data.isPosOverride ? "PAID" : "PENDING";
+
+            const reservations = await reserveInventory(
+                tx,
+                data.items.map((item) => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                })),
+                orderId,
+            );
+            const reservationMap = new Map(reservations.map((entry) => [entry.productId, entry]));
 
             const newOrder = await tx.order.create({
                 data: {
@@ -118,7 +98,27 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     paymentTransactionId: data.isPosOverride ? `POS-${Date.now()}` : (data.paymentTransactionId || `MOCK-RPY-${Date.now()}`),
                     paymentStatus: data.isPosOverride ? "COMPLETED" : (data.paymentStatus || "SUCCESS"),
                     items: {
-                        create: orderItemsData,
+                        create: data.items.map((item) => {
+                            const product = productMap.get(item.productId)!;
+                            const reservation = reservationMap.get(item.productId);
+
+                            return {
+                                productId: product.id,
+                                name: product.name,
+                                categoryId: product.categoryId,
+                                price: product.price || 0,
+                                quantity: item.quantity,
+                                image: product.media?.[0]?.url || '',
+                                sku: product.sku,
+                                assignedUnits: {
+                                    create: (reservation?.units ?? []).map((unit) => ({
+                                        inventoryItemId: unit.inventoryItemId,
+                                        serialNumber: unit.serialNumber,
+                                        partNumber: unit.partNumber,
+                                    })),
+                                },
+                            };
+                        }),
                     },
                     logs: {
                         create: {
@@ -128,30 +128,6 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
                     },
                 }
             });
-
-            // 4. Batch update inventory
-            for (const update of inventoryUpdates) {
-                await tx.inventoryItem.update({
-                    where: { id: update.id },
-                    data: {
-                        quantity: update.quantity,
-                        reserved: update.reserved,
-                        lastUpdated: new Date()
-                    }
-                });
-            }
-
-            // 5. Batch insert stock movements
-            if (stockMovements.length > 0) {
-                await tx.stockMovement.createMany({
-                    data: stockMovements.map(sm => ({
-                        productId: sm.productId,
-                        type: sm.type as "RESERVE",
-                        quantity: sm.quantity,
-                        note: sm.note
-                    }))
-                });
-            }
 
             return newOrder;
         }, {

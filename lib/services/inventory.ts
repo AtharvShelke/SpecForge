@@ -1,20 +1,36 @@
 /**
- * Centralized Inventory Service
+ * Unit-level inventory service.
  *
- * Channel-agnostic inventory reservation, confirmation, and restoration.
- * All sales channels funnel through these functions — no inventory logic
- * should live in API routes directly.
+ * Each inventory row represents one physical unit. Availability is derived from:
+ * - available: quantity = 1, reserved = 0
+ * - reserved:  quantity = 0, reserved = 1
+ * - sold:      quantity = 0, reserved = 0
  */
 
 import { PrismaClient } from "@/generated/prisma/client";
-
-
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 export interface InventoryReserveItem {
     productId: string;
     quantity: number;
+}
+
+export interface AssignedInventoryUnit {
+    inventoryItemId: string;
+    serialNumber: string | null;
+    partNumber: string | null;
+}
+
+export interface ReservedInventoryItem {
+    productId: string;
+    quantity: number;
+    units: AssignedInventoryUnit[];
+}
+
+export interface OrderUnitReference {
+    inventoryItemId: string;
+    productId: string;
 }
 
 export class InsufficientStockError extends Error {
@@ -26,83 +42,104 @@ export class InsufficientStockError extends Error {
     }
 }
 
-/**
- * Reserve inventory for an order (deducts available, increments reserved).
- * Must be called within a Prisma transaction.
- */
+async function refreshProductStockStatus(tx: PrismaTx, productId: string) {
+    const aggregate = await tx.inventoryItem.aggregate({
+        where: { productId, quantity: { gt: 0 } },
+        _count: { id: true },
+    });
+
+    await tx.product.update({
+        where: { id: productId },
+        data: { stockStatus: (aggregate._count.id ?? 0) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK' },
+    });
+}
+
 export async function reserveInventory(
     tx: PrismaTx,
     items: InventoryReserveItem[],
     orderId: string,
-    performedBy: string = 'System'
-): Promise<void> {
+): Promise<ReservedInventoryItem[]> {
+    const reservations: ReservedInventoryItem[] = [];
+
     for (const item of items) {
-        // Find best warehouse with sufficient stock
-        const inv = await tx.inventoryItem.findFirst({
-            where: { productId: item.productId, quantity: { gte: item.quantity } },
-            orderBy: { quantity: 'desc' },
-        });
-
-        if (!inv) throw new InsufficientStockError(item.productId);
-
-        // Optimistic concurrency: re-check quantity in WHERE clause
-        const updated = await tx.inventoryItem.updateMany({
-            where: { id: inv.id, quantity: { gte: item.quantity } },
-            data: {
-                quantity: { decrement: item.quantity },
-                reserved: { increment: item.quantity },
-                lastUpdated: new Date(),
+        const units = await tx.inventoryItem.findMany({
+            where: {
+                productId: item.productId,
+                quantity: { gt: 0 },
+                reserved: 0,
             },
+            orderBy: [
+                { lastUpdated: 'asc' },
+                { id: 'asc' },
+            ],
+            take: item.quantity,
         });
 
-        if (updated.count === 0) throw new InsufficientStockError(item.productId);
+        if (units.length < item.quantity) {
+            throw new InsufficientStockError(item.productId);
+        }
 
-        // Log stock movement with order reference
-        await tx.stockMovement.create({
-            data: {
-                orderId,
-                productId: inv.productId,
-                type: 'RESERVE',
-                quantity: item.quantity,
-                note: `Order ${orderId} placed — stock reserved`,
-            },
-        });
+        for (const unit of units) {
+            const updated = await tx.inventoryItem.updateMany({
+                where: {
+                    id: unit.id,
+                    productId: item.productId,
+                    quantity: { gt: 0 },
+                    reserved: 0,
+                },
+                data: {
+                    quantity: 0,
+                    reserved: 1,
+                    lastUpdated: new Date(),
+                },
+            });
 
-        // Trigger OUT_OF_STOCK status if total available quantity hits 0 across all warehouses
-        const allInv = await tx.inventoryItem.aggregate({
-            where: { productId: item.productId },
-            _sum: { quantity: true }
-        });
+            if (updated.count === 0) {
+                throw new InsufficientStockError(item.productId);
+            }
 
-        if ((allInv._sum.quantity || 0) <= 0) {
-            await tx.product.update({
-                where: { id: item.productId },
-                data: { stockStatus: 'OUT_OF_STOCK' }
+            await tx.stockMovement.create({
+                data: {
+                    orderId,
+                    productId: item.productId,
+                    inventoryItemId: unit.id,
+                    type: 'RESERVE',
+                    quantity: 1,
+                    note: `Order ${orderId} reserved unit${unit.serialNumber ? ` ${unit.serialNumber}` : ''}`,
+                },
             });
         }
+
+        await refreshProductStockStatus(tx, item.productId);
+
+        reservations.push({
+            productId: item.productId,
+            quantity: units.length,
+            units: units.map((unit) => ({
+                inventoryItemId: unit.id,
+                serialNumber: unit.serialNumber,
+                partNumber: unit.partNumber,
+            })),
+        });
     }
+
+    return reservations;
 }
 
-/**
- * Confirm reserved inventory (deducts reserved count on shipment).
- * Called when order transitions to SHIPPED.
- */
 export async function confirmInventory(
     tx: PrismaTx,
-    items: InventoryReserveItem[],
+    units: OrderUnitReference[],
     orderId: string,
-    performedBy: string = 'System'
 ): Promise<void> {
-    for (const item of items) {
-        const inv = await tx.inventoryItem.findFirst({
-            where: { productId: item.productId },
-        });
-        if (!inv) continue;
-
-        await tx.inventoryItem.update({
-            where: { id: inv.id },
+    for (const unit of units) {
+        await tx.inventoryItem.updateMany({
+            where: {
+                id: unit.inventoryItemId,
+                productId: unit.productId,
+                reserved: { gt: 0 },
+            },
             data: {
-                reserved: { decrement: item.quantity },
+                reserved: 0,
                 lastUpdated: new Date(),
             },
         });
@@ -110,51 +147,41 @@ export async function confirmInventory(
         await tx.stockMovement.create({
             data: {
                 orderId,
-                productId: inv.productId,
+                productId: unit.productId,
+                inventoryItemId: unit.inventoryItemId,
                 type: 'SALE',
-                quantity: item.quantity,
-                note: `Order ${orderId} shipped — reserved stock confirmed`,
+                quantity: 1,
+                note: `Order ${orderId} shipped`,
             },
         });
+
+        await refreshProductStockStatus(tx, unit.productId);
     }
 }
 
-/**
- * Restore inventory when an order is cancelled or returned.
- * Handles both pre-ship (reserved → available) and post-ship (add back to available).
- */
 export async function restoreInventory(
     tx: PrismaTx,
-    items: InventoryReserveItem[],
+    units: OrderUnitReference[],
     orderId: string,
     isPreShip: boolean,
     reason: string,
-    performedBy: string = 'System'
 ): Promise<void> {
-    for (const item of items) {
-        const inv = await tx.inventoryItem.findFirst({
-            where: { productId: item.productId },
-        });
-        if (!inv) continue;
-
-        const newQuantity = inv.quantity + item.quantity;
-
+    for (const unit of units) {
         if (isPreShip) {
-            // Pre-ship cancellation: move from reserved back to available
             await tx.inventoryItem.update({
-                where: { id: inv.id },
+                where: { id: unit.inventoryItemId },
                 data: {
-                    quantity: { increment: item.quantity },
-                    reserved: { decrement: item.quantity },
+                    quantity: 1,
+                    reserved: 0,
                     lastUpdated: new Date(),
                 },
             });
         } else {
-            // Post-ship return: add back to available (no reserved to decrement)
             await tx.inventoryItem.update({
-                where: { id: inv.id },
+                where: { id: unit.inventoryItemId },
                 data: {
-                    quantity: { increment: item.quantity },
+                    quantity: 1,
+                    reserved: 0,
                     lastUpdated: new Date(),
                 },
             });
@@ -163,24 +190,57 @@ export async function restoreInventory(
         await tx.stockMovement.create({
             data: {
                 orderId,
-                productId: inv.productId,
+                productId: unit.productId,
+                inventoryItemId: unit.inventoryItemId,
                 type: 'RETURN',
-                quantity: item.quantity,
+                quantity: 1,
                 note: reason,
             },
         });
 
-        // If returned item makes stock > 0, make sure status is IN_STOCK
-        const product = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: { stockStatus: true }
+        await refreshProductStockStatus(tx, unit.productId);
+    }
+}
+
+export async function createInventoryUnits(
+    tx: PrismaTx,
+    productId: string,
+    units: Array<{
+        partNumber: string;
+        serialNumber: string;
+        costPrice?: number;
+        location?: string;
+        reorderLevel?: number;
+    }>,
+    note: string,
+) {
+    if (units.length === 0) return;
+
+    for (const unit of units) {
+        const created = await tx.inventoryItem.create({
+            data: {
+                productId,
+                partNumber: unit.partNumber,
+                serialNumber: unit.serialNumber,
+                quantity: 1,
+                reserved: 0,
+                costPrice: unit.costPrice ?? 0,
+                location: unit.location ?? '',
+                reorderLevel: unit.reorderLevel ?? 5,
+                lastUpdated: new Date(),
+            },
         });
 
-        if (product?.stockStatus === 'OUT_OF_STOCK' && newQuantity > 0) {
-            await tx.product.update({
-                where: { id: item.productId },
-                data: { stockStatus: 'IN_STOCK' }
-            });
-        }
+        await tx.stockMovement.create({
+            data: {
+                productId,
+                inventoryItemId: created.id,
+                type: 'INWARD',
+                quantity: 1,
+                note: `${note} (${unit.serialNumber})`,
+            },
+        });
     }
+
+    await refreshProductStockStatus(tx, productId);
 }

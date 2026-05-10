@@ -151,6 +151,7 @@ export interface Product {
   specs: ProductSpec[];
   media: ProductMedia[];
   tags: Tag[];
+  inventoryItems?: InventoryItem[];
 
   // Frontend-only
   imageFile?: File;
@@ -304,10 +305,18 @@ export interface InventoryItem {
   product?: Product;
 }
 
+export interface AssignedInventoryUnit {
+  id: string;
+  inventoryItemId: string;
+  serialNumber?: string | null;
+  partNumber?: string | null;
+}
+
 export interface StockMovement {
   id: string;
   orderId?: string;
   productId: string;
+  inventoryItemId?: string;
   type: StockMovementType;
   quantity: number;
   note?: string;
@@ -315,6 +324,8 @@ export interface StockMovement {
   // Added for frontend compatibility/lookup
   sku?: string;
   date?: string;
+  serialNumber?: string;
+  partNumber?: string;
 }
 
 // ──────────────────────────────────────────────────────
@@ -389,6 +400,7 @@ export interface OrderItem {
   quantity: number;
   image?: string;
   sku?: string;
+  assignedUnits?: AssignedInventoryUnit[];
 }
 
 export interface OrderLog {

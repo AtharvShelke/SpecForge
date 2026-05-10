@@ -136,6 +136,15 @@ const Orders: React.FC = () => {
                                                     <p className="text-sm text-gray-500">
                                                         Qty: {item.quantity}
                                                     </p>
+                                                    {(item.assignedUnits?.length ?? 0) > 0 && (
+                                                        <div className="mt-1 space-y-0.5">
+                                                            {item.assignedUnits.map((unit: any) => (
+                                                                <p key={unit.id} className="text-xs text-gray-500 font-mono">
+                                                                    {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
+                                                                </p>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <p className="font-medium">
                                                     ₹{(item.price * item.quantity).toLocaleString()}

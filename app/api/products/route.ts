@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createInventoryUnits } from "@/lib/services/inventory";
 
 const specSchema = z.object({
     key: z.string().min(1),
     value: z.string().min(1),
+});
+
+const inventoryUnitSchema = z.object({
+    partNumber: z.string().min(1),
+    serialNumber: z.string().min(1),
+    costPrice: z.number().min(0).optional(),
+    location: z.string().optional(),
+    reorderLevel: z.number().int().min(0).optional(),
 });
 
 const createProductSchema = z.object({
@@ -20,6 +29,7 @@ const createProductSchema = z.object({
     costPrice: z.number().min(0).default(0),
     reorderLevel: z.number().int().min(0).default(5),
     location: z.string().default(""),
+    inventoryUnits: z.array(inventoryUnitSchema).default([]),
 });
 
 const toInt = (value: string | null, fallback: number) => value ? (parseInt(value, 10) || fallback) : fallback;
@@ -98,6 +108,8 @@ const BASE_PRODUCT_INCLUDE = {
         select: {
             id: true,
             productId: true,
+            partNumber: true,
+            serialNumber: true,
             quantity: true,
             reserved: true,
             reorderLevel: true,
@@ -177,6 +189,8 @@ function mapProduct(product: any, codeByCategoryId: Map<number, string>) {
             productId: item.productId,
             quantity: item.quantity,
             reserved: item.reserved,
+            partNumber: item.partNumber,
+            serialNumber: item.serialNumber,
             reorderLevel: item.reorderLevel,
             costPrice: item.costPrice,
             location: item.location,
@@ -521,6 +535,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "SKU already exists" }, { status: 409 });
         }
 
+        if (data.stock > 0 && data.inventoryUnits.length !== data.stock) {
+            return NextResponse.json(
+                { error: "Initial stock must match the number of unit records provided." },
+                { status: 400 }
+            );
+        }
+
         const product = await prisma.$transaction(async (tx) => {
             const created = await tx.product.create({
                 data: {
@@ -528,7 +549,7 @@ export async function POST(req: NextRequest) {
                     name: data.name,
                     sku: data.sku,
                     price: data.price,
-                    stockStatus: data.stock > 0 ? "IN_STOCK" : "OUT_OF_STOCK",
+                    stockStatus: data.inventoryUnits.length > 0 ? "IN_STOCK" : "OUT_OF_STOCK",
                     description: data.description ?? null,
                     categoryId,
                     brandId: data.brandId ?? null,
@@ -542,27 +563,18 @@ export async function POST(req: NextRequest) {
                 include: FULL_PRODUCT_INCLUDE,
             });
 
-            await tx.inventoryItem.create({
-                data: {
-                    productId: created.id,
-                    quantity: data.stock,
-                    reserved: 0,
-                    reorderLevel: data.reorderLevel,
-                    costPrice: data.costPrice,
-                    location: data.location,
-                },
-            });
-
-            if (data.stock > 0) {
-                await tx.stockMovement.create({
-                    data: {
-                        productId: created.id,
-                        type: "INWARD",
-                        quantity: data.stock,
-                        note: "Initial stock entry",
-                    },
-                });
-            }
+            await createInventoryUnits(
+                tx,
+                created.id,
+                data.inventoryUnits.map((unit) => ({
+                    partNumber: unit.partNumber,
+                    serialNumber: unit.serialNumber,
+                    costPrice: unit.costPrice ?? data.costPrice,
+                    location: unit.location ?? data.location,
+                    reorderLevel: unit.reorderLevel ?? data.reorderLevel,
+                })),
+                "Initial stock entry",
+            );
 
             const categoryAttributes = await tx.categoryAttribute.findMany({
                 where: { categoryId },

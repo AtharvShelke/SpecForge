@@ -76,7 +76,7 @@ export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
     // Load order with items
     const order = await tx.order.findUniqueOrThrow({
         where: { id: orderId },
-        include: { items: true },
+        include: { items: { include: { assignedUnits: true } } },
     });
 
     // Find or create customer record
@@ -120,7 +120,13 @@ export async function generateOrderInvoice(tx: PrismaTx, orderId: string) {
     // Build line items
     const lineItems = order.items.map((item, idx) => ({
         name: item.name,
-        description: item.sku ? `SKU: ${item.sku}` : undefined,
+        description: [
+            item.sku ? `SKU: ${item.sku}` : null,
+            ...(item.assignedUnits ?? []).map((unit) => {
+                const details = [unit.partNumber, unit.serialNumber].filter(Boolean).join(" / ");
+                return details ? `Unit: ${details}` : null;
+            }),
+        ].filter(Boolean).join('\n') || undefined,
         quantity: item.quantity,
         unitPrice: item.price,
         taxRatePct: taxResult.lineResults[idx].taxRatePct,

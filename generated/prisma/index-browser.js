@@ -391,6 +391,15 @@ exports.Prisma.OrderItemScalarFieldEnum = {
   sku: 'sku'
 };
 
+exports.Prisma.OrderItemUnitScalarFieldEnum = {
+  id: 'id',
+  orderItemId: 'orderItemId',
+  inventoryItemId: 'inventoryItemId',
+  serialNumber: 'serialNumber',
+  partNumber: 'partNumber',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.OrderLogScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
@@ -414,6 +423,7 @@ exports.Prisma.StockMovementScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
   productId: 'productId',
+  inventoryItemId: 'inventoryItemId',
   type: 'type',
   quantity: 'quantity',
   note: 'note',
@@ -714,6 +724,7 @@ exports.Prisma.ModelName = {
   Customer: 'Customer',
   Order: 'Order',
   OrderItem: 'OrderItem',
+  OrderItemUnit: 'OrderItemUnit',
   OrderLog: 'OrderLog',
   ShipmentTracking: 'ShipmentTracking',
   StockMovement: 'StockMovement',

@@ -1,9 +1,10 @@
 import "dotenv/config";
+import crypto from "crypto";
 import {
   CompatibilityLevel,
   Role,
   ProductStatus,
-} from "@/generated/prisma/client";
+} from "../generated/prisma/client";
 import { prisma } from "./prisma";
 
 function slugify(value: string): string {
@@ -64,11 +65,14 @@ const CATEGORIES: SeedCategory[] = [
     subcategories: ["AMD", "Intel"],
     attributes: [
       { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["AMD", "Intel"] },
-      { key: "family", label: "Family", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["Ryzen 5", "Ryzen 7", "Core i5", "Core i7"], dependencyKey: "manufacturer", dependencyValue: "AMD" },
-      { key: "socket", label: "Socket", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["AM5", "LGA1700"] },
+      { key: "family", label: "Family", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["Ryzen 5", "Ryzen 7", "Ryzen 9", "Core i5", "Core i7", "Core i9"] },
+      { key: "socket", label: "Socket", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["AM4", "AM5", "LGA1200", "LGA1700"] },
       { key: "cores", label: "Cores", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 4, unit: "cores" },
-      { key: "tdp", label: "TDP", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 5, unit: "W" },
-      { key: "integratedGraphics", label: "Integrated Graphics", type: "boolean", required: false, isFilterable: true, filterType: "boolean", sortOrder: 6 },
+      { key: "threads", label: "Threads", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 5, unit: "threads" },
+      { key: "baseClock", label: "Base Clock", type: "number", required: false, isFilterable: true, filterType: "range", sortOrder: 6, unit: "GHz" },
+      { key: "boostClock", label: "Boost Clock", type: "number", required: false, isFilterable: true, filterType: "range", sortOrder: 7, unit: "GHz" },
+      { key: "tdp", label: "TDP", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 8, unit: "W" },
+      { key: "integratedGraphics", label: "Integrated Graphics", type: "boolean", required: false, isFilterable: true, filterType: "boolean", sortOrder: 9 },
     ],
   },
   {
@@ -80,13 +84,15 @@ const CATEGORIES: SeedCategory[] = [
     featuredOrder: 2,
     showInFeatured: true,
     description: "Motherboards aligned to CPU socket and platform.",
-    subcategories: ["AM5", "LGA1700"],
+    subcategories: ["AM4", "AM5", "LGA1200", "LGA1700"],
     attributes: [
-      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["ASUS", "MSI", "Gigabyte"] },
-      { key: "socket", label: "Socket", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["AM5", "LGA1700"] },
-      { key: "chipset", label: "Chipset", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["B650", "X670", "B760", "Z790"] },
-      { key: "ramType", label: "RAM Type", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 4, options: ["DDR5"] },
-      { key: "formFactor", label: "Form Factor", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 5, options: ["ATX", "Micro-ATX"] },
+      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["ASUS", "MSI", "Gigabyte", "ASRock"] },
+      { key: "socket", label: "Socket", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["AM4", "AM5", "LGA1200", "LGA1700"] },
+      { key: "chipset", label: "Chipset", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["B550", "X570", "B650", "X670", "B660", "Z690", "B760", "Z790"] },
+      { key: "ramType", label: "RAM Type", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 4, options: ["DDR4", "DDR5"] },
+      { key: "ramSlots", label: "RAM Slots", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 5 },
+      { key: "formFactor", label: "Form Factor", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 6, options: ["ATX", "Micro-ATX", "Mini-ITX"] },
+      { key: "wifi", label: "WiFi Included", type: "boolean", required: false, isFilterable: true, filterType: "boolean", sortOrder: 7 },
     ],
   },
   {
@@ -98,13 +104,14 @@ const CATEGORIES: SeedCategory[] = [
     featuredOrder: 3,
     showInFeatured: true,
     description: "Memory kits grouped by generation and speed.",
-    subcategories: ["DDR5"],
+    subcategories: ["DDR4", "DDR5"],
     attributes: [
-      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["Corsair", "G.Skill", "Kingston"] },
-      { key: "ramType", label: "RAM Type", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["DDR5"] },
-      { key: "capacity", label: "Capacity", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["16GB", "32GB"] },
+      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["Corsair", "G.Skill", "Kingston", "Teamgroup", "Crucial"] },
+      { key: "ramType", label: "RAM Type", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["DDR4", "DDR5"] },
+      { key: "capacity", label: "Capacity", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["8GB", "16GB", "32GB", "64GB"] },
       { key: "speed", label: "Speed", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 4, unit: "MHz" },
-      { key: "modules", label: "Modules", type: "number", required: true, isFilterable: false, sortOrder: 5, unit: "sticks" },
+      { key: "modules", label: "Modules", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 5, unit: "sticks" },
+      { key: "color", label: "Color", type: "select", required: false, isFilterable: true, filterType: "dropdown", sortOrder: 6, options: ["Black", "White", "RGB"] },
     ],
   },
   {
@@ -116,13 +123,14 @@ const CATEGORIES: SeedCategory[] = [
     featuredOrder: 4,
     showInFeatured: true,
     description: "Discrete GPUs for gaming and workstation builds.",
-    subcategories: ["NVIDIA", "AMD Radeon"],
+    subcategories: ["NVIDIA", "AMD Radeon", "Intel Arc"],
     attributes: [
-      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["NVIDIA", "AMD"] },
-      { key: "series", label: "Series", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["RTX 4070", "RTX 4080", "RX 7800 XT"] },
-      { key: "vram", label: "VRAM", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["12GB", "16GB"] },
+      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["ASUS", "MSI", "Gigabyte", "ZOTAC", "Sapphire", "EVGA"] },
+      { key: "series", label: "Series", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["RTX 3060", "RTX 4060", "RTX 4070", "RTX 4080", "RTX 4090", "RX 6700 XT", "RX 7800 XT", "RX 7900 XTX"] },
+      { key: "vram", label: "VRAM", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["8GB", "12GB", "16GB", "24GB"] },
       { key: "length", label: "Length", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 4, unit: "mm" },
       { key: "tdp", label: "TDP", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 5, unit: "W" },
+      { key: "minPSU", label: "Min PSU Wattage", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 6, unit: "W" },
     ],
   },
   {
@@ -132,17 +140,68 @@ const CATEGORIES: SeedCategory[] = [
     icon: "hard-drive",
     displayOrder: 5,
     description: "NVMe and SATA storage options.",
-    subcategories: ["NVMe SSD", "SATA SSD"],
+    subcategories: ["NVMe SSD", "SATA SSD", "HDD"],
     attributes: [
-      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["Samsung", "Western Digital", "Crucial"] },
-      { key: "type", label: "Type", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["NVMe SSD", "SATA SSD"] },
-      { key: "capacity", label: "Capacity", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["1TB", "2TB"] },
-      { key: "readSpeed", label: "Read Speed", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 4, unit: "MB/s" },
+      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["Samsung", "Western Digital", "Crucial", "Seagate", "Kingston"] },
+      { key: "type", label: "Type", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["NVMe SSD", "SATA SSD", "HDD"] },
+      { key: "capacity", label: "Capacity", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["500GB", "1TB", "2TB", "4TB"] },
+      { key: "interface", label: "Interface", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 4, options: ["PCIe 3.0 x4", "PCIe 4.0 x4", "PCIe 5.0 x4", "SATA III"] },
+      { key: "readSpeed", label: "Read Speed", type: "number", required: false, isFilterable: true, filterType: "range", sortOrder: 5, unit: "MB/s" },
+    ],
+  },
+  {
+    code: "PSU",
+    name: "Power Supplies",
+    shortLabel: "PSU",
+    icon: "zap",
+    displayOrder: 6,
+    description: "Reliable power delivery for your build.",
+    subcategories: ["80+ Bronze", "80+ Gold", "80+ Platinum"],
+    attributes: [
+      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["Corsair", "EVGA", "Seasonic", "Cooler Master", "Thermaltake"] },
+      { key: "wattage", label: "Wattage", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 2, unit: "W" },
+      { key: "efficiency", label: "Efficiency Rating", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 3, options: ["80+ White", "80+ Bronze", "80+ Gold", "80+ Platinum", "80+ Titanium"] },
+      { key: "modularity", label: "Modularity", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 4, options: ["Non-Modular", "Semi-Modular", "Full-Modular"] },
+      { key: "formFactor", label: "Form Factor", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 5, options: ["ATX", "SFX"] },
+    ],
+  },
+  {
+    code: "CASE",
+    name: "Cases",
+    shortLabel: "Case",
+    icon: "box",
+    displayOrder: 7,
+    description: "The chassis for your components.",
+    subcategories: ["Mid Tower", "Full Tower", "Mini ITX Case"],
+    attributes: [
+      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["NZXT", "Fractal Design", "Corsair", "Lian Li", "Phanteks", "Cooler Master"] },
+      { key: "formFactor", label: "Form Factor", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["Mid Tower", "Full Tower", "Mini ITX Tower", "Micro ATX Tower"] },
+      { key: "moboSupport", label: "Motherboard Support", type: "multi_select", required: true, isFilterable: true, filterType: "checkbox", sortOrder: 3, options: ["ATX", "Micro-ATX", "Mini-ITX", "E-ATX"] },
+      { key: "maxGpuLength", label: "Max GPU Length", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 4, unit: "mm" },
+      { key: "maxCpuCoolerHeight", label: "Max CPU Cooler Height", type: "number", required: true, isFilterable: true, filterType: "range", sortOrder: 5, unit: "mm" },
+      { key: "color", label: "Color", type: "select", required: false, isFilterable: true, filterType: "dropdown", sortOrder: 6, options: ["Black", "White", "Grey"] },
+    ],
+  },
+  {
+    code: "COOLER",
+    name: "CPU Coolers",
+    shortLabel: "Cooler",
+    icon: "wind",
+    displayOrder: 8,
+    description: "Air and liquid cooling solutions.",
+    subcategories: ["Air Cooler", "Liquid Cooler (AIO)"],
+    attributes: [
+      { key: "manufacturer", label: "Manufacturer", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 1, options: ["Noctua", "be quiet!", "Cooler Master", "NZXT", "Corsair", "Arctic"] },
+      { key: "type", label: "Cooler Type", type: "select", required: true, isFilterable: true, filterType: "dropdown", sortOrder: 2, options: ["Air Cooler", "Liquid Cooler (AIO)"] },
+      { key: "socketSupport", label: "Socket Support", type: "multi_select", required: true, isFilterable: true, filterType: "checkbox", sortOrder: 3, options: ["AM4", "AM5", "LGA1200", "LGA1700"] },
+      { key: "height", label: "Height (Air Only)", type: "number", required: false, isFilterable: true, filterType: "range", sortOrder: 4, unit: "mm" },
+      { key: "radiatorSize", label: "Radiator Size (AIO Only)", type: "select", required: false, isFilterable: true, filterType: "dropdown", sortOrder: 5, options: ["120mm", "240mm", "280mm", "360mm"] },
     ],
   },
 ];
 
 const PRODUCTS: SeedProduct[] = [
+  // PROCESSORS
   {
     sku: "CPU-AMD-7600",
     name: "AMD Ryzen 5 7600",
@@ -150,10 +209,22 @@ const PRODUCTS: SeedProduct[] = [
     subcategory: "AMD",
     brand: "AMD",
     price: 18999,
-    stock: 12,
-    description: "6-core AM5 processor for mainstream gaming builds.",
+    stock: 15,
+    description: "6-core, 12-thread desktop processor for the AM5 platform. Includes AMD Wraith Stealth cooler.",
     image: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1200&q=80",
-    specs: { manufacturer: "AMD", family: "Ryzen 5", socket: "AM5", cores: "6", tdp: "65", integratedGraphics: "true" },
+    specs: { manufacturer: "AMD", family: "Ryzen 5", socket: "AM5", cores: "6", threads: "12", baseClock: "3.8", boostClock: "5.1", tdp: "65", integratedGraphics: "true" },
+  },
+  {
+    sku: "CPU-AMD-7800X3D",
+    name: "AMD Ryzen 7 7800X3D",
+    categoryCode: "PROCESSOR",
+    subcategory: "AMD",
+    brand: "AMD",
+    price: 38999,
+    stock: 5,
+    description: "The ultimate gaming processor with AMD 3D V-Cache technology.",
+    image: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "AMD", family: "Ryzen 7", socket: "AM5", cores: "8", threads: "16", baseClock: "4.2", boostClock: "5.0", tdp: "120", integratedGraphics: "true" },
   },
   {
     sku: "CPU-INTEL-13600K",
@@ -161,92 +232,269 @@ const PRODUCTS: SeedProduct[] = [
     categoryCode: "PROCESSOR",
     subcategory: "Intel",
     brand: "Intel",
-    price: 27999,
-    stock: 8,
-    description: "Hybrid desktop processor for high-refresh gaming and productivity.",
+    price: 29999,
+    stock: 10,
+    description: "14-core (6P + 8E) desktop processor for high-performance gaming and productivity.",
     image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-    specs: { manufacturer: "Intel", family: "Core i5", socket: "LGA1700", cores: "14", tdp: "125", integratedGraphics: "true" },
+    specs: { manufacturer: "Intel", family: "Core i5", socket: "LGA1700", cores: "14", threads: "20", baseClock: "3.5", boostClock: "5.1", tdp: "125", integratedGraphics: "true" },
   },
   {
-    sku: "MOBO-ASUS-B650",
-    name: "ASUS TUF Gaming B650-Plus WiFi",
+    sku: "CPU-INTEL-14900K",
+    name: "Intel Core i9-14900K",
+    categoryCode: "PROCESSOR",
+    subcategory: "Intel",
+    brand: "Intel",
+    price: 54999,
+    stock: 4,
+    description: "The fastest desktop processor for enthusiasts, featuring 24 cores and up to 6.0 GHz boost.",
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "Intel", family: "Core i9", socket: "LGA1700", cores: "24", threads: "32", baseClock: "3.2", boostClock: "6.0", tdp: "125", integratedGraphics: "true" },
+  },
+
+  // MOTHERBOARDS
+  {
+    sku: "MOBO-ASUS-B650E",
+    name: "ASUS ROG Strix B650E-F Gaming WiFi",
     categoryCode: "MOTHERBOARD",
     subcategory: "AM5",
     brand: "ASUS",
-    price: 21999,
-    stock: 9,
-    description: "ATX AM5 motherboard with DDR5 support.",
+    price: 24999,
+    stock: 8,
+    description: "Premium B650E motherboard with PCIe 5.0 support and robust power delivery.",
     image: "https://images.unsplash.com/photo-1555617778-02518510b9fa?auto=format&fit=crop&w=1200&q=80",
-    specs: { manufacturer: "ASUS", socket: "AM5", chipset: "B650", ramType: "DDR5", formFactor: "ATX" },
+    specs: { manufacturer: "ASUS", socket: "AM5", chipset: "B650E", ramType: "DDR5", ramSlots: "4", formFactor: "ATX", wifi: "true" },
   },
   {
-    sku: "MOBO-MSI-B760M",
-    name: "MSI Pro B760M-A WiFi",
+    sku: "MOBO-MSI-Z790",
+    name: "MSI MAG Z790 Tomahawk WiFi",
     categoryCode: "MOTHERBOARD",
     subcategory: "LGA1700",
     brand: "MSI",
-    price: 16999,
-    stock: 11,
-    description: "Micro-ATX LGA1700 motherboard for Intel builds.",
+    price: 27999,
+    stock: 6,
+    description: "Solid Z790 board for Intel enthusiasts, featuring excellent VRM cooling.",
     image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=1200&q=80",
-    specs: { manufacturer: "MSI", socket: "LGA1700", chipset: "B760", ramType: "DDR5", formFactor: "Micro-ATX" },
+    specs: { manufacturer: "MSI", socket: "LGA1700", chipset: "Z790", ramType: "DDR5", ramSlots: "4", formFactor: "ATX", wifi: "true" },
   },
   {
-    sku: "RAM-CORSAIR-32-6000",
-    name: "Corsair Vengeance DDR5 32GB 6000MHz",
+    sku: "MOBO-GIGABYTE-B760M",
+    name: "Gigabyte B760M DS3H AX",
+    categoryCode: "MOTHERBOARD",
+    subcategory: "LGA1700",
+    brand: "Gigabyte",
+    price: 13999,
+    stock: 12,
+    description: "Budget-friendly B760 Micro-ATX motherboard with built-in WiFi.",
+    image: "https://images.unsplash.com/photo-1555617778-02518510b9fa?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "Gigabyte", socket: "LGA1700", chipset: "B760", ramType: "DDR5", ramSlots: "4", formFactor: "Micro-ATX", wifi: "true" },
+  },
+
+  // RAM
+  {
+    sku: "RAM-CORSAIR-VENG-32-6000",
+    name: "Corsair Vengeance 32GB (2x16GB) DDR5 6000MHz",
     categoryCode: "RAM",
     subcategory: "DDR5",
     brand: "Corsair",
     price: 10499,
-    stock: 20,
-    description: "32GB dual-channel DDR5 memory kit.",
+    stock: 25,
+    description: "High-performance DDR5 memory optimized for Intel and AMD systems.",
     image: "https://images.unsplash.com/photo-1562976540-1502c2145186?auto=format&fit=crop&w=1200&q=80",
-    specs: { manufacturer: "Corsair", ramType: "DDR5", capacity: "32GB", speed: "6000", modules: "2" },
+    specs: { manufacturer: "Corsair", ramType: "DDR5", capacity: "32GB", speed: "6000", modules: "2", color: "Black" },
   },
   {
-    sku: "GPU-NVIDIA-4070",
-    name: "Gigabyte GeForce RTX 4070 Windforce OC",
+    sku: "RAM-GSKILL-TRID-32-6400",
+    name: "G.Skill Trident Z5 RGB 32GB (2x16GB) DDR5 6400MHz",
+    categoryCode: "RAM",
+    subcategory: "DDR5",
+    brand: "G.Skill",
+    price: 12999,
+    stock: 15,
+    description: "Premium RGB DDR5 memory with aggressive styling and high speeds.",
+    image: "https://images.unsplash.com/photo-1562976540-1502c2145186?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "G.Skill", ramType: "DDR5", capacity: "32GB", speed: "6400", modules: "2", color: "RGB" },
+  },
+
+  // GPU
+  {
+    sku: "GPU-ASUS-RTX4070-DUAL",
+    name: "ASUS Dual GeForce RTX 4070 OC Edition",
     categoryCode: "GPU",
     subcategory: "NVIDIA",
-    brand: "Gigabyte",
-    price: 56999,
-    stock: 5,
-    description: "NVIDIA RTX 4070 with triple-fan cooling.",
+    brand: "ASUS",
+    price: 58999,
+    stock: 7,
+    description: "Compact dual-fan RTX 4070 with efficient cooling and great 1440p performance.",
     image: "https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=1200&q=80",
-    specs: { manufacturer: "NVIDIA", series: "RTX 4070", vram: "12GB", length: "261", tdp: "200" },
+    specs: { manufacturer: "ASUS", series: "RTX 4070", vram: "12GB", length: "267", tdp: "200", minPSU: "650" },
   },
   {
-    sku: "SSD-SAMSUNG-990PRO",
-    name: "Samsung 990 Pro 1TB NVMe SSD",
+    sku: "GPU-MSI-RTX4080-SUPRIM",
+    name: "MSI GeForce RTX 4080 Suprim X",
+    categoryCode: "GPU",
+    subcategory: "NVIDIA",
+    brand: "MSI",
+    price: 115999,
+    stock: 3,
+    description: "High-end RTX 4080 with premium brushed metal shroud and superior cooling.",
+    image: "https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "MSI", series: "RTX 4080", vram: "16GB", length: "336", tdp: "320", minPSU: "750" },
+  },
+  {
+    sku: "GPU-SAPPHIRE-RX7800XT-NITRO",
+    name: "Sapphire Nitro+ Radeon RX 7800 XT",
+    categoryCode: "GPU",
+    subcategory: "AMD Radeon",
+    brand: "Sapphire",
+    price: 52999,
+    stock: 10,
+    description: "AMD's value king for 1440p gaming with excellent thermal performance.",
+    image: "https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "Sapphire", series: "RX 7800 XT", vram: "16GB", length: "320", tdp: "263", minPSU: "700" },
+  },
+
+  // STORAGE
+  {
+    sku: "SSD-SAMSUNG-980PRO-1TB",
+    name: "Samsung 980 Pro 1TB NVMe SSD",
     categoryCode: "STORAGE",
     subcategory: "NVMe SSD",
     brand: "Samsung",
-    price: 10999,
-    stock: 14,
-    description: "High-performance PCIe NVMe SSD for premium systems.",
+    price: 8999,
+    stock: 30,
+    description: "PCIe 4.0 NVMe SSD with speeds up to 7,000 MB/s.",
     image: "https://images.unsplash.com/photo-1628557117038-f9db9f4f7058?auto=format&fit=crop&w=1200&q=80",
-    specs: { manufacturer: "Samsung", type: "NVMe SSD", capacity: "1TB", readSpeed: "7450" },
+    specs: { manufacturer: "Samsung", type: "NVMe SSD", capacity: "1TB", interface: "PCIe 4.0 x4", readSpeed: "7000" },
+  },
+  {
+    sku: "SSD-WD-BLACK-SN850X-2TB",
+    name: "WD Black SN850X 2TB NVMe SSD",
+    categoryCode: "STORAGE",
+    subcategory: "NVMe SSD",
+    brand: "Western Digital",
+    price: 15999,
+    stock: 20,
+    description: "Top-tier gaming SSD with optimized performance and game mode 2.0.",
+    image: "https://images.unsplash.com/photo-1628557117038-f9db9f4f7058?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "Western Digital", type: "NVMe SSD", capacity: "2TB", interface: "PCIe 4.0 x4", readSpeed: "7300" },
+  },
+
+  // PSU
+  {
+    sku: "PSU-CORSAIR-RM850X",
+    name: "Corsair RM850x (2021) 850W 80+ Gold",
+    categoryCode: "PSU",
+    subcategory: "80+ Gold",
+    brand: "Corsair",
+    price: 12499,
+    stock: 15,
+    description: "Fully modular, low-noise power supply with magnetic levitation fan.",
+    image: "https://images.unsplash.com/photo-1591489378430-ef2f4c626b35?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "Corsair", wattage: "850", efficiency: "80+ Gold", modularity: "Full-Modular", formFactor: "ATX" },
+  },
+  {
+    sku: "PSU-EVGA-600W-BR",
+    name: "EVGA 600 BR, 80+ Bronze 600W",
+    categoryCode: "PSU",
+    subcategory: "80+ Bronze",
+    brand: "EVGA",
+    price: 4999,
+    stock: 20,
+    description: "Budget-friendly 600W power supply for entry-level builds.",
+    image: "https://images.unsplash.com/photo-1591489378430-ef2f4c626b35?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "EVGA", wattage: "600", efficiency: "80+ Bronze", modularity: "Non-Modular", formFactor: "ATX" },
+  },
+
+  // CASE
+  {
+    sku: "CASE-NZXT-H5-FLOW",
+    name: "NZXT H5 Flow Compact ATX Mid-Tower",
+    categoryCode: "CASE",
+    subcategory: "Mid Tower",
+    brand: "NZXT",
+    price: 8499,
+    stock: 15,
+    description: "High-airflow case with perforated front panel and dedicated GPU cooling fan.",
+    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "NZXT", formFactor: "Mid Tower", moboSupport: "ATX, Micro-ATX, Mini-ITX", maxGpuLength: "365", maxCpuCoolerHeight: "165", color: "Black" },
+  },
+  {
+    sku: "CASE-LIAN-LI-O11D-EVO",
+    name: "Lian Li PC-O11 Dynamic EVO",
+    categoryCode: "CASE",
+    subcategory: "Mid Tower",
+    brand: "Lian Li",
+    price: 15999,
+    stock: 10,
+    description: "Iconic dual-chamber design with modularity and excellent water-cooling support.",
+    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "Lian Li", formFactor: "Mid Tower", moboSupport: "E-ATX, ATX, Micro-ATX, Mini-ITX", maxGpuLength: "426", maxCpuCoolerHeight: "167", color: "White" },
+  },
+
+  // COOLER
+  {
+    sku: "COOLER-NOCTUA-NH-D15",
+    name: "Noctua NH-D15 chromax.black",
+    categoryCode: "COOLER",
+    subcategory: "Air Cooler",
+    brand: "Noctua",
+    price: 9999,
+    stock: 12,
+    description: "The gold standard for air cooling, now in an all-black finish.",
+    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "Noctua", type: "Air Cooler", socketSupport: "AM4, AM5, LGA1200, LGA1700", height: "165" },
+  },
+  {
+    sku: "COOLER-NZXT-KRAKEN-360",
+    name: "NZXT Kraken 360 RGB",
+    categoryCode: "COOLER",
+    subcategory: "Liquid Cooler (AIO)",
+    brand: "NZXT",
+    price: 18999,
+    stock: 8,
+    description: "High-performance AIO with a customisable LCD display on the pump block.",
+    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=1200&q=80",
+    specs: { manufacturer: "NZXT", type: "Liquid Cooler (AIO)", socketSupport: "AM4, AM5, LGA1200, LGA1700", radiatorSize: "360mm" },
   },
 ];
 
 async function resetCatalog() {
-  await prisma.compatibilityRuleClause.deleteMany();
-  await prisma.compatibilityRule.deleteMany();
-  await prisma.productSpec.deleteMany();
-  await prisma.productMedia.deleteMany();
-  await prisma.inventoryItem.deleteMany();
-  await prisma.stockMovement.deleteMany();
-  await prisma.buildGuideItem.deleteMany();
-  await prisma.buildGuide.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.attributeOption.deleteMany();
-  await prisma.categoryAttribute.deleteMany();
-  await prisma.categoryHierarchy.deleteMany();
-  await prisma.buildSequence.deleteMany();
-  await prisma.brandCategory.deleteMany();
-  await prisma.subcategory.deleteMany();
-  await prisma.brand.deleteMany();
-  await prisma.category.deleteMany();
+  // Clear all data before seeding
+  await prisma.auditLog.deleteMany().catch(() => {});
+  await prisma.creditNoteLineItem.deleteMany().catch(() => {});
+  await prisma.creditNote.deleteMany().catch(() => {});
+  await prisma.paymentAttempt.deleteMany().catch(() => {});
+  await prisma.paymentTransaction.deleteMany().catch(() => {});
+  await prisma.invoiceAuditEvent.deleteMany().catch(() => {});
+  await prisma.invoiceLineItem.deleteMany().catch(() => {});
+  await prisma.invoice.deleteMany().catch(() => {});
+  await prisma.shipmentTracking.deleteMany().catch(() => {});
+  await prisma.orderLog.deleteMany().catch(() => {});
+  await prisma.orderItemUnit.deleteMany().catch(() => {});
+  await prisma.orderItem.deleteMany().catch(() => {});
+  await prisma.order.deleteMany().catch(() => {});
+  await prisma.customer.deleteMany().catch(() => {});
+  await prisma.billingProfile.deleteMany().catch(() => {});
+  await prisma.searchSuggestion.deleteMany().catch(() => {});
+  await prisma.categoryProductCache.deleteMany().catch(() => {});
+  await prisma.compatibilityRuleClause.deleteMany().catch(() => {});
+  await prisma.compatibilityRule.deleteMany().catch(() => {});
+  await prisma.productSpec.deleteMany().catch(() => {});
+  await prisma.productMedia.deleteMany().catch(() => {});
+  await prisma.inventoryItem.deleteMany().catch(() => {});
+  await prisma.stockMovement.deleteMany().catch(() => {});
+  await prisma.buildGuideItem.deleteMany().catch(() => {});
+  await prisma.buildGuide.deleteMany().catch(() => {});
+  await prisma.product.deleteMany().catch(() => {});
+  await prisma.tag.deleteMany().catch(() => {});
+  await prisma.attributeOption.deleteMany().catch(() => {});
+  await prisma.categoryAttribute.deleteMany().catch(() => {});
+  await prisma.categoryHierarchy.deleteMany().catch(() => {});
+  await prisma.buildSequence.deleteMany().catch(() => {});
+  await prisma.brandCategory.deleteMany().catch(() => {});
+  await prisma.subcategory.deleteMany().catch(() => {});
+  await prisma.brand.deleteMany().catch(() => {});
+  await prisma.category.deleteMany().catch(() => {});
 }
 
 async function upsertCoreRows() {
@@ -264,6 +512,26 @@ async function upsertCoreRows() {
       name: "Admin User",
       password: "hashed-password",
       role: Role.ADMIN,
+    },
+  });
+
+  await prisma.billingProfile.upsert({
+    where: { id: "default-billing-profile" },
+    update: {},
+    create: {
+      id: "default-billing-profile",
+      companyName: "SpecForge Technologies",
+      legalName: "SpecForge Technologies Pvt Ltd",
+      email: "billing@specforge.com",
+      phone: "+91-9876543210",
+      addressLine1: "123 Tech Park",
+      addressLine2: "Sector 5",
+      city: "Bangalore",
+      state: "Karnataka",
+      postalCode: "560001",
+      country: "India",
+      gstin: "29ABCDE1234F1Z5",
+      currency: "INR",
     },
   });
 }
@@ -340,82 +608,7 @@ async function seedCategories() {
     }
   }
 
-  // Add subcategory-specific attributes for PROCESSOR -> AMD
-  const processorAmdSubcategoryId = subcategoryMap.get("PROCESSOR:AMD");
-  if (processorAmdSubcategoryId) {
-    const amdSpecificAttr = await prisma.categoryAttribute.create({
-      data: {
-        categoryId: categoryMap.get("PROCESSOR")!,
-        subcategoryId: processorAmdSubcategoryId,
-        key: "amdSpecificFeature",
-        label: "AMD Specific Feature",
-        type: "select",
-        isRequired: false,
-        isFilterable: true,
-        isComparable: true,
-        filterType: "checkbox",
-        unit: null,
-        sortOrder: 10,
-      },
-    });
-
-    await prisma.attributeOption.create({
-      data: {
-        attributeId: amdSpecificAttr.id,
-        value: "Precision Boost",
-        slug: slugify("Precision Boost"),
-        sortOrder: 0,
-      },
-    });
-
-    await prisma.attributeOption.create({
-      data: {
-        attributeId: amdSpecificAttr.id,
-        value: "3D V-Cache",
-        slug: slugify("3D V-Cache"),
-        sortOrder: 1,
-      },
-    });
-  }
-
-  // Add subcategory-specific attributes for MOTHERBOARD -> AM5
-  const moboAm5SubcategoryId = subcategoryMap.get("MOTHERBOARD:AM5");
-  if (moboAm5SubcategoryId) {
-    const am5SpecificAttr = await prisma.categoryAttribute.create({
-      data: {
-        categoryId: categoryMap.get("MOTHERBOARD")!,
-        subcategoryId: moboAm5SubcategoryId,
-        key: "chipsetSpecific",
-        label: "Chipset Specific",
-        type: "select",
-        isRequired: false,
-        isFilterable: true,
-        isComparable: true,
-        filterType: "dropdown",
-        unit: null,
-        sortOrder: 10,
-      },
-    });
-
-    await prisma.attributeOption.create({
-      data: {
-        attributeId: am5SpecificAttr.id,
-        value: "B650E",
-        slug: slugify("B650E"),
-        sortOrder: 0,
-      },
-    });
-
-    await prisma.attributeOption.create({
-      data: {
-        attributeId: am5SpecificAttr.id,
-        value: "X670E",
-        slug: slugify("X670E"),
-        sortOrder: 1,
-      },
-    });
-  }
-
+  // Set up dependencies
   for (const category of CATEGORIES) {
     for (const attribute of category.attributes) {
       if (!attribute.dependencyKey || !attribute.dependencyValue) continue;
@@ -437,31 +630,46 @@ async function seedCategories() {
 }
 
 async function seedBrands(categoryMap: Map<string, number>) {
-  const brandCategoryMap: Record<string, string[]> = {
-    AMD: ["PROCESSOR"],
-    Intel: ["PROCESSOR"],
-    ASUS: ["MOTHERBOARD"],
-    MSI: ["MOTHERBOARD"],
-    Gigabyte: ["MOTHERBOARD", "GPU"],
-    Corsair: ["RAM"],
-    Samsung: ["STORAGE"],
-  };
+  const brands = [
+    { name: "AMD", categories: ["PROCESSOR"] },
+    { name: "Intel", categories: ["PROCESSOR"] },
+    { name: "ASUS", categories: ["MOTHERBOARD", "GPU"] },
+    { name: "MSI", categories: ["MOTHERBOARD", "GPU"] },
+    { name: "Gigabyte", categories: ["MOTHERBOARD", "GPU"] },
+    { name: "ASRock", categories: ["MOTHERBOARD"] },
+    { name: "Corsair", categories: ["RAM", "PSU", "CASE", "COOLER"] },
+    { name: "G.Skill", categories: ["RAM"] },
+    { name: "Kingston", categories: ["RAM", "STORAGE"] },
+    { name: "Samsung", categories: ["STORAGE"] },
+    { name: "Western Digital", categories: ["STORAGE"] },
+    { name: "ZOTAC", categories: ["GPU"] },
+    { name: "Sapphire", categories: ["GPU"] },
+    { name: "EVGA", categories: ["GPU", "PSU"] },
+    { name: "Seasonic", categories: ["PSU"] },
+    { name: "NZXT", categories: ["CASE", "COOLER"] },
+    { name: "Fractal Design", categories: ["CASE"] },
+    { name: "Lian Li", categories: ["CASE"] },
+    { name: "Noctua", categories: ["COOLER"] },
+    { name: "be quiet!", categories: ["COOLER", "PSU", "CASE"] },
+  ];
 
   const brandMap = new Map<string, string>();
 
-  for (const [brandName, categoryCodes] of Object.entries(brandCategoryMap)) {
+  for (const b of brands) {
     const brand = await prisma.brand.create({
       data: {
-        name: brandName,
+        name: b.name,
         brandCategories: {
-          create: categoryCodes.map((code) => ({
-            categoryId: categoryMap.get(code)!,
-          })),
+          create: b.categories
+            .filter(code => categoryMap.has(code))
+            .map((code) => ({
+              categoryId: categoryMap.get(code)!,
+            })),
         },
       },
     });
 
-    brandMap.set(brandName, brand.id);
+    brandMap.set(b.name, brand.id);
   }
 
   return brandMap;
@@ -515,7 +723,7 @@ async function seedProducts(
         quantity: product.stock,
         reserved: 0,
         reorderLevel: 3,
-        costPrice: Math.round(product.price * 0.82),
+        costPrice: Math.round(product.price * 0.8),
         location: "MAIN-WH",
       },
     });
@@ -549,7 +757,7 @@ async function seedProducts(
           value: rawValue,
           valueNumber: categoryAttribute.type === "number" ? Number(rawValue) : null,
           valueBoolean: categoryAttribute.type === "boolean" ? rawValue.toLowerCase() === "true" : null,
-          isHighlighted: key === "socket" || key === "chipset" || key === "ramType",
+          isHighlighted: ["socket", "chipset", "ramType", "formFactor", "wattage", "series"].includes(key),
         },
       });
     }
@@ -557,106 +765,167 @@ async function seedProducts(
 }
 
 async function seedBuildMetadata(categoryMap: Map<string, number>, attributeMap: Map<string, string>) {
-  const buildSequenceCodes = ["PROCESSOR", "MOTHERBOARD", "RAM", "GPU", "STORAGE"];
+  const buildSequenceCodes = ["PROCESSOR", "COOLER", "MOTHERBOARD", "RAM", "GPU", "STORAGE", "PSU", "CASE"];
 
   for (const [index, code] of buildSequenceCodes.entries()) {
-    await prisma.buildSequence.create({
-      data: {
-        categoryId: categoryMap.get(code)!,
-        stepOrder: index + 1,
-      },
-    });
+    if (categoryMap.has(code)) {
+      await prisma.buildSequence.create({
+        data: {
+          categoryId: categoryMap.get(code)!,
+          stepOrder: index + 1,
+        },
+      });
+    }
   }
 
   const hierarchyRootId = crypto.randomUUID();
-  await prisma.categoryHierarchy.createMany({
-    data: [
-      {
-        id: hierarchyRootId,
-        label: "PC Components",
-        categoryId: null,
-        query: null,
-        brand: null,
-        parentId: null,
-        sortOrder: 0,
-      },
-      ...CATEGORIES.map((category, index) => ({
+  await prisma.categoryHierarchy.create({
+    data: {
+      id: hierarchyRootId,
+      label: "PC Components",
+      sortOrder: 0,
+    }
+  });
+
+  for (const [index, category] of CATEGORIES.entries()) {
+    await prisma.categoryHierarchy.create({
+      data: {
         id: crypto.randomUUID(),
         label: category.name,
         categoryId: categoryMap.get(category.code)!,
         query: category.code,
-        brand: null,
         parentId: hierarchyRootId,
         sortOrder: index + 1,
-      })),
-    ],
-  });
-
-  await prisma.buildGuide.create({
-    data: {
-      title: "Balanced AM5 Gaming Build",
-      description: "Reference AMD build using AM5, DDR5, and a mainstream GPU.",
-      categoryId: categoryMap.get("PROCESSOR")!,
-      total: PRODUCTS
-        .filter((product) => ["CPU-AMD-7600", "MOBO-ASUS-B650", "RAM-CORSAIR-32-6000", "GPU-NVIDIA-4070", "SSD-SAMSUNG-990PRO"].includes(product.sku))
-        .reduce((sum, product) => sum + product.price, 0),
-      items: {
-        create: await Promise.all(
-          ["CPU-AMD-7600", "MOBO-ASUS-B650", "RAM-CORSAIR-32-6000", "GPU-NVIDIA-4070", "SSD-SAMSUNG-990PRO"].map(async (sku) => {
-            const product = await prisma.product.findUniqueOrThrow({
-              where: { sku },
-              select: { id: true },
-            });
-
-            return {
-              productId: product.id,
-              quantity: 1,
-            };
-          })
-        ),
       },
-    },
-  });
+    });
+  }
 
-  await prisma.compatibilityRule.create({
-    data: {
-      sourceCategoryId: categoryMap.get("PROCESSOR")!,
-      targetCategoryId: categoryMap.get("MOTHERBOARD")!,
+  // Basic Compatibility Rules
+  const rules = [
+    {
+      source: "PROCESSOR",
+      target: "MOTHERBOARD",
       name: "CPU socket must match motherboard socket",
-      message: "Processor socket and motherboard socket must match.",
-      severity: CompatibilityLevel.INCOMPATIBLE,
-      sortOrder: 1,
-      clauses: {
-        create: [
-          {
-            sourceAttributeId: attributeMap.get("PROCESSOR:socket")!,
-            targetAttributeId: attributeMap.get("MOTHERBOARD:socket")!,
-            operator: "EQUALS",
-            sortOrder: 1,
-          },
-        ],
-      },
+      sourceAttr: "socket",
+      targetAttr: "socket",
+      operator: "EQUALS",
     },
+    {
+      source: "MOTHERBOARD",
+      target: "RAM",
+      name: "RAM type must match motherboard support",
+      sourceAttr: "ramType",
+      targetAttr: "ramType",
+      operator: "EQUALS",
+    },
+    {
+      source: "COOLER",
+      target: "PROCESSOR",
+      name: "Cooler must support CPU socket",
+      sourceAttr: "socketSupport",
+      targetAttr: "socket",
+      operator: "CONTAINS",
+    }
+  ];
+
+  for (const r of rules) {
+    if (categoryMap.has(r.source) && categoryMap.has(r.target)) {
+      await prisma.compatibilityRule.create({
+        data: {
+          sourceCategoryId: categoryMap.get(r.source)!,
+          targetCategoryId: categoryMap.get(r.target)!,
+          name: r.name,
+          message: r.name,
+          severity: CompatibilityLevel.INCOMPATIBLE,
+          clauses: {
+            create: [
+              {
+                sourceAttributeId: attributeMap.get(`${r.source}:${r.sourceAttr}`)!,
+                targetAttributeId: attributeMap.get(`${r.target}:${r.targetAttr}`)!,
+                operator: r.operator,
+                sortOrder: 1,
+              },
+            ],
+          },
+        },
+      });
+    }
+  }
+
+  // Seed tags
+  await prisma.tag.createMany({
+    data: [
+      { name: "Gaming" },
+      { name: "Workstation" },
+      { name: "Budget" },
+      { name: "Premium" },
+      { name: "RGB" },
+      { name: "Silent" },
+    ],
+    skipDuplicates: true,
+  });
+}
+
+async function seedSearchAndCache(categoryMap: Map<string, number>) {
+  for (const [code, id] of categoryMap.entries()) {
+    const products = await prisma.product.findMany({
+      where: { categoryId: id },
+      select: { price: true },
+    });
+
+    if (products.length > 0) {
+      const prices = products.map(p => p.price).filter((p): p is number => p !== null);
+      await prisma.categoryProductCache.create({
+        data: {
+          categoryId: id,
+          productCount: products.length,
+          minPrice: prices.length > 0 ? Math.min(...prices) : null,
+          maxPrice: prices.length > 0 ? Math.max(...prices) : null,
+        },
+      });
+    }
+  }
+
+  await prisma.searchSuggestion.createMany({
+    data: [
+      { term: "Ryzen", frequency: 50 },
+      { term: "RTX 4070", frequency: 45 },
+      { term: "DDR5", frequency: 30 },
+      { term: "SSD", frequency: 25 },
+      { term: "Full Tower", frequency: 15 },
+    ],
   });
 }
 
 async function main() {
-  console.log("Seeding normalized catalog...");
-
-  await upsertCoreRows();
+  console.log("Starting seed...");
   await resetCatalog();
+  console.log("Catalog reset complete.");
+  
+  await upsertCoreRows();
+  console.log("Core rows upserted.");
 
   const { categoryMap, attributeMap, optionMap } = await seedCategories();
-  const brandMap = await seedBrands(categoryMap);
-  await seedProducts(categoryMap, attributeMap, optionMap, brandMap);
-  await seedBuildMetadata(categoryMap, attributeMap);
+  console.log("Categories seeded.");
 
-  console.log("Seed completed.");
+  const brandMap = await seedBrands(categoryMap);
+  console.log("Brands seeded.");
+
+  await seedProducts(categoryMap, attributeMap, optionMap, brandMap);
+  console.log("Products seeded.");
+
+  await seedBuildMetadata(categoryMap, attributeMap);
+  console.log("Build metadata and rules seeded.");
+
+  await seedSearchAndCache(categoryMap);
+  console.log("Search and cache seeded.");
+
+  console.log("Seeding finished successfully!");
 }
 
 main()
-  .catch((error) => {
-    console.error("Seed failed:", error);
+  .catch((e) => {
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {

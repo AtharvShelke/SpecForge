@@ -10,28 +10,28 @@ const createMovementSchema = z.object({
     type: StockMovementTypeEnum,
     quantity: z.number().int().positive(),
     reason: z.string().nullable().optional(),
-    performedBy: z.string().default("System"),
 });
 
-// ── GET /api/inventory/[id]/movements ───────────────────
+async function refreshProductStockStatus(productId: string, tx: Pick<typeof prisma, 'inventoryItem' | 'product'>) {
+    const count = await tx.inventoryItem.count({
+        where: { productId, quantity: { gt: 0 } },
+    });
+
+    await tx.product.update({
+        where: { id: productId },
+        data: { stockStatus: count > 0 ? "IN_STOCK" : "OUT_OF_STOCK" },
+    });
+}
+
 export async function GET(
-    req: NextRequest,
+    _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: sku } = await params;
-        // First find the product by SKU
-        const product = await prisma.product.findUnique({
-            where: { sku },
-            select: { id: true }
-        });
-        
-        if (!product) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
+        const { id } = await params;
 
         const movements = await prisma.stockMovement.findMany({
-            where: { productId: product.id },
+            where: { inventoryItemId: id },
             orderBy: { createdAt: "desc" },
             take: 100,
         });
@@ -43,81 +43,90 @@ export async function GET(
     }
 }
 
-// ── POST /api/inventory/[id]/movements ──────────────────
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: sku } = await params;
+        const { id } = await params;
         const body = await req.json();
         const data = createMovementSchema.parse(body);
 
-        const result = await prisma.$transaction(async (tx) => {
-            const inv = await tx.inventoryItem.findFirst({
-                where: { product: { sku } }
+        const movement = await prisma.$transaction(async (tx) => {
+            const inv = await tx.inventoryItem.findUnique({
+                where: { id },
             });
             if (!inv) throw new Error("NOT_FOUND");
 
-            let qtyDelta = 0;
-            let reservedDelta = 0;
+            if (data.quantity !== 1) {
+                throw new Error("UNIT_QUANTITY_ONLY");
+            }
+
+            let nextQuantity = inv.quantity;
+            let nextReserved = inv.reserved;
 
             switch (data.type) {
                 case "INWARD":
-                case "RETURN":
                 case "PURCHASE":
-                    qtyDelta = data.quantity;
+                case "RETURN":
+                    nextQuantity = 1;
+                    nextReserved = 0;
                     break;
                 case "OUTWARD":
                 case "ADJUSTMENT":
-                    qtyDelta = -data.quantity;
+                    nextQuantity = 0;
+                    nextReserved = 0;
                     break;
                 case "RESERVE":
-                    qtyDelta = -data.quantity;
-                    reservedDelta = data.quantity;
+                    if (inv.quantity <= 0 || inv.reserved > 0) throw new Error("UNIT_NOT_AVAILABLE");
+                    nextQuantity = 0;
+                    nextReserved = 1;
                     break;
                 case "SALE":
-                    reservedDelta = -data.quantity;
+                    if (inv.reserved <= 0) throw new Error("UNIT_NOT_RESERVED");
+                    nextQuantity = 0;
+                    nextReserved = 0;
                     break;
             }
 
-            const newQty = Math.max(0, inv.quantity + qtyDelta);
-            const newReserved = Math.max(0, inv.reserved + reservedDelta);
-
             await tx.inventoryItem.update({
-                where: { id: inv.id },
+                where: { id },
                 data: {
-                    quantity: newQty,
-                    reserved: newReserved,
+                    quantity: nextQuantity,
+                    reserved: nextReserved,
                     lastUpdated: new Date(),
                 },
             });
 
-            // Sync product stock
-            await tx.product.update({
-                where: { id: inv.productId },
-                data: { stockStatus: newQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK" },
-            });
+            await refreshProductStockStatus(inv.productId, tx);
 
-            const movement = await tx.stockMovement.create({
+            return tx.stockMovement.create({
                 data: {
                     productId: inv.productId,
+                    inventoryItemId: inv.id,
                     type: data.type,
-                    quantity: data.quantity,
+                    quantity: 1,
                     note: data.reason,
                 },
             });
-
-            return movement;
         });
 
-        return NextResponse.json(result, { status: 201 });
+        return NextResponse.json(movement, { status: 201 });
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 });
         }
         if (error?.message === "NOT_FOUND") {
             return NextResponse.json({ error: "Inventory item not found" }, { status: 404 });
+        }
+        if (error?.message === "UNIT_QUANTITY_ONLY") {
+            return NextResponse.json({ error: "Unit-tracked inventory can only be adjusted one unit at a time" }, { status: 400 });
+        }
+        if (error?.message === "UNIT_NOT_AVAILABLE") {
+            return NextResponse.json({ error: "This unit is not currently available" }, { status: 409 });
+        }
+        if (error?.message === "UNIT_NOT_RESERVED") {
+            return NextResponse.json({ error: "This unit is not currently reserved" }, { status: 409 });
         }
         console.error("POST /api/inventory/[id]/movements error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

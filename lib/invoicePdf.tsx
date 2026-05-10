@@ -258,6 +258,10 @@ const InvoiceDocument: React.FC<InvoiceDocProps> = ({ order }) => {
               {(item.category || item.sku) && (
                 <Text style={s.tdSku}>{item.category?.name || item.sku}</Text>
               )}
+              {(item.assignedUnits ?? []).map((unit) => {
+                const label = [unit.partNumber, unit.serialNumber].filter(Boolean).join(' / ');
+                return label ? <Text key={unit.id} style={s.tdSku}>Unit: {label}</Text> : null;
+              })}
             </View>
             <Text style={[s.td, s.colQty]}>{item.quantity}</Text>
             <Text style={[s.td, s.colPrice]}>{fmtINR(item.price)}</Text>

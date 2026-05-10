@@ -477,15 +477,19 @@ model InventoryItem {
   productId    String
   partNumber   String?
   serialNumber String?
-  quantity     Int       @default(0)
+  quantity     Int       @default(1)
   reserved     Int       @default(0)
   reorderLevel Int       @default(5)
   costPrice    Float     @default(0)
   location     String    @default("")
   lastUpdated  DateTime?
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItemUnits OrderItemUnit[]
+  stockMovements StockMovement[]
 
+  @@unique([productId, partNumber])
+  @@unique([productId, serialNumber])
   @@index([quantity])
   @@index([productId])
   @@index([productId, location])
@@ -588,13 +592,30 @@ model OrderItem {
   image      String?
   sku        String?
 
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  category      Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  assignedUnits OrderItemUnit[]
 
   @@index([orderId])
   @@index([productId])
   @@index([categoryId, orderId])
+}
+
+model OrderItemUnit {
+  id              String   @id @default(uuid())
+  orderItemId     String   @map("order_item_id")
+  inventoryItemId String   @map("inventory_item_id")
+  serialNumber    String?  @map("serial_number")
+  partNumber      String?  @map("part_number")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  orderItem     OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([orderItemId])
+  @@index([inventoryItemId])
+  @@map("order_item_units")
 }
 
 model OrderLog {
@@ -629,19 +650,22 @@ model ShipmentTracking {
 // ─────────────────────────────────────────────────
 
 model StockMovement {
-  id        String            @id @default(uuid())
-  orderId   String?
-  productId String
-  type      StockMovementType
-  quantity  Int
-  note      String?
-  createdAt DateTime          @default(now())
+  id              String            @id @default(uuid())
+  orderId         String?
+  productId       String
+  inventoryItemId String?           @map("inventory_item_id")
+  type            StockMovementType
+  quantity        Int
+  note            String?
+  createdAt       DateTime          @default(now())
 
-  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order         Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
+  @@index([inventoryItemId])
   @@index([type])
 }
 

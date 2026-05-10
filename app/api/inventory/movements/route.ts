@@ -12,10 +12,13 @@ export async function GET(req: NextRequest) {
             select: {
                 id: true,
                 productId: true,
+                inventoryItemId: true,
                 type: true,
                 quantity: true,
                 note: true,
                 createdAt: true,
+                product: { select: { sku: true, name: true } },
+                inventoryItem: { select: { serialNumber: true, partNumber: true } },
             },
             orderBy: { createdAt: "desc" },
             skip: (page - 1) * limit,
@@ -26,9 +29,14 @@ export async function GET(req: NextRequest) {
         const formattedMovements = movements.map((m) => ({
             id: m.id,
             productId: m.productId,
+            inventoryItemId: m.inventoryItemId,
             type: m.type,
             quantity: m.quantity,
+            note: m.note,
             reason: m.note,
+            sku: m.product?.sku || m.product?.name || m.productId,
+            serialNumber: m.inventoryItem?.serialNumber,
+            partNumber: m.inventoryItem?.partNumber,
             createdAt: m.createdAt.toISOString(),
             date: m.createdAt.toISOString(),
         }));

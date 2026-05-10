@@ -350,6 +350,23 @@ const EMPTY_FORM: ProductFormState = {
     specs: { brand: '' }, description: ''
 };
 
+function parseInventoryUnits(text: string, fallbackCostPrice: number) {
+    return text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+            const [partNumber, serialNumber, costPrice, location] = line.split(',').map((value) => value.trim());
+            return {
+                partNumber: partNumber || '',
+                serialNumber: serialNumber || '',
+                costPrice: costPrice ? Number(costPrice) : fallbackCostPrice,
+                location: location || '',
+            };
+        })
+        .filter((unit) => unit.partNumber && unit.serialNumber);
+}
+
 // ─────────────────────────────────────────────────────────────
 // MAIN
 // ─────────────────────────────────────────────────────────────
@@ -421,12 +438,12 @@ const ProductManager = () => {
     }, [fetchProducts, fetchCategories, fetchBrands, fetchAttributeConfigs]);
 
     // Add product
-    const addProduct = useCallback(async (product: Partial<Product>, initialStock: number, costPrice: number) => {
+    const addProduct = useCallback(async (product: Partial<Product>, inventoryUnits: Array<{ partNumber: string; serialNumber: string; costPrice?: number; location?: string }>, costPrice: number) => {
         try {
             const res = await fetch('/api/products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...product, stock: initialStock, costPrice }),
+                body: JSON.stringify({ ...product, stock: inventoryUnits.length, inventoryUnits, costPrice }),
             });
             if (res.ok) {
                 toast({ title: 'Product added' });
@@ -547,6 +564,7 @@ const ProductManager = () => {
 
     const [currentProduct, setCurrentProduct] = useState<ProductFormState>(EMPTY_FORM);
     const [newProductCost, setNewProductCost] = useState(0);
+    const [inventoryUnitText, setInventoryUnitText] = useState('');
 
     const currentAttributes = useMemo(() => {
         const attributeConfig = attributeConfigs.find((config) =>
@@ -586,6 +604,7 @@ const ProductManager = () => {
         e.preventDefault();
         if (!currentProduct.name?.trim()) { alert('Product name is required'); return; }
         if (!currentProduct.specs?.brand) { alert('Brand is required'); return; }
+        const inventoryUnits = parseInventoryUnits(inventoryUnitText, newProductCost);
         
         const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
         const selectedCategory = currentProduct.category;
@@ -596,7 +615,8 @@ const ProductManager = () => {
                 specs: apiSpecs, 
                 category: selectedCategory,
                 price: currentProduct.price, 
-                stock: currentProduct.stock, 
+                stock: inventoryUnits.length,
+                inventoryUnits,
                 images: currentProduct.images 
             } as any);
         } else {
@@ -606,17 +626,17 @@ const ProductManager = () => {
                 sku: generateSKU(currentProduct),
                 name: currentProduct.name || '',
                 price: currentProduct.price || 0,
-                stock: currentProduct.stock || 0,
+                stock: inventoryUnits.length,
                 category: selectedCategory,
                 images: currentProduct.images.length > 0 ? currentProduct.images : ['https://picsum.photos/300/300'],
                 description: currentProduct.description || '',
                 specs: apiSpecs
             };
-            await addProduct(newProduct as any, currentProduct.stock || 0, newProductCost);
+            await addProduct(newProduct as any, inventoryUnits, newProductCost);
         }
         setRefreshTrigger(p => !p);
         setIsEditing(false);
-    }, [currentProduct, products, addProduct, updateProduct, categories, generateSKU, newProductCost]);
+    }, [currentProduct, products, addProduct, updateProduct, categories, generateSKU, newProductCost, inventoryUnitText]);
 
     const handleDelete = useCallback(async (productId: string) => {
         await deleteProduct(productId);
@@ -631,12 +651,18 @@ const ProductManager = () => {
             images: product.media?.map(m => m.url) || []
         };
         setCurrentProduct(productFormState);
+        setInventoryUnitText(
+            (product.inventoryItems ?? [])
+                .map((unit: any) => [unit.partNumber, unit.serialNumber, unit.costPrice, unit.location].filter((value) => value !== undefined && value !== null && value !== '').join(', '))
+                .join('\n')
+        );
         setIsEditing(true);
     }, []);
 
     const resetForm = useCallback(() => {
         setCurrentProduct(EMPTY_FORM);
         setNewProductCost(0); setPreviewUrl(null); setNewSpecKey(''); setNewSpecValue('');
+        setInventoryUnitText('');
     }, []);
 
     const handleCancel = useCallback(() => { setIsEditing(false); resetForm(); }, [resetForm]);
@@ -1041,17 +1067,29 @@ const ProductManager = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <FieldLabel>Current Stock Units</FieldLabel>
+                                        <FieldLabel>Tracked Units</FieldLabel>
                                         <div className="relative mt-1">
                                             <Package size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                             <Input
                                                 type="number"
+                                                readOnly
                                                 className="h-11 md:h-10 pl-9 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm focus-visible:ring-indigo-400"
-                                                value={currentProduct.stock}
-                                                onChange={e => setCurrentProduct(prev => ({ ...prev, stock: Number(e.target.value) }))}
+                                                value={parseInventoryUnits(inventoryUnitText, newProductCost).length}
                                             />
                                         </div>
                                     </div>
+                                </div>
+                                <div>
+                                    <FieldLabel required>Unit Register</FieldLabel>
+                                    <Textarea
+                                        value={inventoryUnitText}
+                                        onChange={(e) => setInventoryUnitText(e.target.value)}
+                                        className="min-h-[140px] rounded-xl border-stone-200 bg-white shadow-sm focus-visible:ring-indigo-400 font-mono text-xs"
+                                        placeholder={`PART-001, SERIAL-001, ${newProductCost || 0}, Rack-A1\nPART-002, SERIAL-002, ${newProductCost || 0}, Rack-A1`}
+                                    />
+                                    <p className="mt-2 text-[10px] text-stone-400 leading-relaxed">
+                                        One unit per line: <span className="font-mono">part number, serial number, cost price, location</span>. Each line becomes one physical inventory unit.
+                                    </p>
                                 </div>
                                 {profitMargin !== null && (
                                     <div className="px-3 py-3 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between shadow-sm">

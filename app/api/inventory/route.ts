@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+import { createInventoryUnits } from "@/lib/services/inventory";
+
+const inventoryUnitSchema = z.object({
+    partNumber: z.string().min(1),
+    serialNumber: z.string().min(1),
+    costPrice: z.number().min(0).optional(),
+    location: z.string().optional(),
+    reorderLevel: z.number().int().min(0).optional(),
+});
+
+const createInventorySchema = z.object({
+    productId: z.string().min(1),
+    note: z.string().optional(),
+    units: z.array(inventoryUnitSchema).min(1),
+});
 
 // ── GET /api/inventory ──────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -20,7 +36,9 @@ export async function GET(req: NextRequest) {
         if (search && search.trim() !== "") {
             dbWhere.OR = [
                 { product: { sku: { contains: search, mode: "insensitive" } } },
-                { product: { name: { contains: search, mode: "insensitive" } } }
+                { product: { name: { contains: search, mode: "insensitive" } } },
+                { serialNumber: { contains: search, mode: "insensitive" } },
+                { partNumber: { contains: search, mode: "insensitive" } },
             ];
         }
 
@@ -58,6 +76,8 @@ export async function GET(req: NextRequest) {
                 select: {
                     id: true,
                     productId: true,
+                    partNumber: true,
+                    serialNumber: true,
                     quantity: true,
                     reserved: true,
                     reorderLevel: true,
@@ -83,7 +103,10 @@ export async function GET(req: NextRequest) {
                         },
                     },
                 },
-                orderBy: { lastUpdated: "desc" },
+                orderBy: [
+                    { lastUpdated: "desc" },
+                    { serialNumber: "asc" },
+                ],
                 skip,
                 take: limit,
             }),
@@ -92,6 +115,30 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ items, total, page, limit });
     } catch (error) {
         console.error("GET /api/inventory error:", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
+export async function POST(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const data = createInventorySchema.parse(body);
+
+        await prisma.$transaction(async (tx) => {
+            await createInventoryUnits(
+                tx,
+                data.productId,
+                data.units,
+                data.note || "Inventory units added",
+            );
+        });
+
+        return NextResponse.json({ success: true }, { status: 201 });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: error.issues }, { status: 400 });
+        }
+        console.error("POST /api/inventory error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }

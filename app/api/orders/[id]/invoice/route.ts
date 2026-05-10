@@ -11,7 +11,7 @@ export async function GET(
         const order = await prisma.order.findUnique({
             where: { id },
             include: {
-                items: true,
+                items: { include: { assignedUnits: true } },
                 logs: { orderBy: { timestamp: "asc" } },
                 invoices: { include: { lineItems: true } },
                 payments: { orderBy: { createdAt: "desc" } },
