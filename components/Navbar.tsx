@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/products", label: "Products", icon: Store },
   { href: "/builds/new", label: "Build PC", icon: Wrench },
-  { href: "/builds", label: "Saved", icon: Disc },
+  // { href: "/builds", label: "Saved", icon: Disc },
   { href: "/track-order", label: "Track", icon: MapPin },
 ];
 
