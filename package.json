@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "prisma db seed",
+    "db:migrate-rules": "tsx scripts/migrate-compatibility-rules.ts",
+    "db:cleanup-static-rules": "tsx scripts/cleanup-static-rules.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

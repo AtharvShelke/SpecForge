@@ -516,6 +516,24 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
+        
+        // Handle fetching products by IDs for share functionality
+        if (body.ids && Array.isArray(body.ids)) {
+            const { codeByCategoryId } = await loadCategoryMetadata();
+            
+            const products = await prisma.product.findMany({
+                where: {
+                    id: { in: body.ids },
+                    deletedAt: null,
+                },
+                include: FULL_PRODUCT_INCLUDE,
+            });
+            
+            return NextResponse.json({ 
+                products: products.map(product => mapProduct(product, codeByCategoryId))
+            });
+        }
+        
         const data = createProductSchema.parse(body);
 
         const { codeByCategoryId, resolveCategoryIds } = await loadCategoryMetadata();

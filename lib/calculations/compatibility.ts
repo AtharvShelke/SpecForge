@@ -88,18 +88,30 @@ const coolerSocketRule: CompatibilityRule = {
     const issues: CompatibilityIssue[] = [];
 
     if (ctx.cpu && ctx.cooler) {
-      const supportedSockets = ctx.coolerSpecs.socket;
+      const supportedSockets = ctx.coolerSpecs.socketSupport;
 
       if (supportedSockets && ctx.cpuSpecs.socket) {
-        const supportedArr = Array.isArray(supportedSockets) ? supportedSockets : [supportedSockets];
-        const hasSupport = supportedArr.some((s: string) => s.toLowerCase() === String(ctx.cpuSpecs.socket).toLowerCase());
+        // Handle both array and comma-separated string formats
+        let supportedArr: string[];
+        if (Array.isArray(supportedSockets)) {
+          supportedArr = supportedSockets;
+        } else if (typeof supportedSockets === 'string') {
+          // Split comma-separated string and trim whitespace
+          supportedArr = supportedSockets.split(',').map(s => s.trim());
+        } else {
+          supportedArr = [String(supportedSockets)];
+        }
+        
+        // Check if cooler has universal support
+        const isUniversal = supportedArr.some((s: string) => s.toLowerCase() === 'universal');
+        const hasSupport = isUniversal || supportedArr.some((s: string) => s.toLowerCase() === String(ctx.cpuSpecs.socket).toLowerCase());
 
         if (!hasSupport) {
           issues.push({
             level: CompatibilityLevel.INCOMPATIBLE,
             message: `CPU Cooler does not support this CPU socket.`,
             reason: `Cooler supports [${supportedArr.join(', ')}] but CPU uses ${ctx.cpuSpecs.socket}.`,
-            resolution: `Choose a cooler compatible with ${ctx.cpuSpecs.socket}.`,
+            resolution: `Choose a cooler compatible with ${ctx.cpuSpecs.socket} or a universal cooler.`,
             componentIds: [ctx.cooler.id, ctx.cpu.id]
           });
         }
@@ -146,14 +158,26 @@ const powerDrawRule: CompatibilityRule = {
           });
         }
       }
-    } else if (ctx.items.length > 2 && !ctx.psu) {
-      issues.push({
-        level: CompatibilityLevel.WARNING,
-        message: "Missing Power Supply.",
-        reason: "A PC build requires a Power Supply Unit (PSU) to function.",
-        resolution: "Please add a Power Supply to your build.",
-        componentIds: []
-      });
+    } else if (!ctx.psu) {
+      // Check if there are components that actually require power
+      const powerRequiringComponents = [
+        ctx.cpu,
+        ctx.mobo,
+        ...ctx.gpuList,
+        ...ctx.ramList,
+        ...ctx.storageList,
+        ctx.cooler
+      ].filter(Boolean);
+      
+      if (powerRequiringComponents.length > 0) {
+        issues.push({
+          level: CompatibilityLevel.WARNING,
+          message: "Missing Power Supply.",
+          reason: "A PC build requires a Power Supply Unit (PSU) to function.",
+          resolution: "Please add a Power Supply to your build.",
+          componentIds: []
+        });
+      }
     }
     return issues;
   }
@@ -278,10 +302,21 @@ const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): Comp
       
       for (const target of targetComponents) {
         const targetSpecs = specsToFlat(target.specs);
-        let ruleViolated = true; // For multi-clause rules, usually all clauses must be met? Or any?
-        // Let's assume ALL clauses must be met for the rule to be "satisfied".
-        // If ANY clause fails, the rule is violated.
         
+        // Clause-less rules always trigger when source and target categories are present
+        if (rule.clauses.length === 0) {
+          issues.push({
+            level: rule.severity,
+            message: rule.name,
+            reason: rule.message || `Rule triggered for ${rule.sourceCategory?.name} and ${rule.targetCategory?.name} combination.`,
+            resolution: `Check ${rule.sourceCategory?.name} and ${rule.targetCategory?.name} compatibility.`,
+            componentIds: [source.id, target.id]
+          });
+          continue;
+        }
+
+        // For rules with clauses, evaluate them
+        let ruleViolated = false; // Rule is violated if any clause fails
         const clauseIssues: string[] = [];
 
         for (const clause of rule.clauses) {
@@ -318,12 +353,10 @@ const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): Comp
             ruleViolated = true;
             clauseIssues.push(`${clause.sourceAttribute?.label} (${sVal}) does not match ${clause.targetAttribute?.label} (${tVal})`);
             break; // One clause failed, rule is violated
-          } else {
-            ruleViolated = false;
           }
         }
 
-        if (ruleViolated && rule.clauses.length > 0) {
+        if (ruleViolated) {
           issues.push({
             level: rule.severity,
             message: rule.name,
@@ -366,17 +399,38 @@ export const validateBuild = (items: CartItem[], dynamicRules: any[] = []): Comp
 
   const issues: CompatibilityIssue[] = [];
 
-  // Static Rules
-  for (const rule of RULES) {
-    const ruleIssues = rule.evaluate(context);
-    issues.push(...ruleIssues);
+  // Dynamic Rules First (Admin-controlled rules take precedence)
+  const dynamicIssues: CompatibilityIssue[] = [];
+  if (dynamicRules.length > 0) {
+    const evaluatedDynamicIssues = evaluateDynamicRules(context, dynamicRules);
+    issues.push(...evaluatedDynamicIssues);
+    dynamicIssues.push(...evaluatedDynamicIssues);
   }
 
-  // Dynamic Rules
-  if (dynamicRules.length > 0) {
-    const dynamicIssues = evaluateDynamicRules(context, dynamicRules);
-    issues.push(...dynamicIssues);
+  // Static Rules (only apply if no dynamic rule produced an issue for the same component pair)
+  const staticRuleIssues: CompatibilityIssue[] = [];
+  for (const rule of RULES) {
+    const ruleIssues = rule.evaluate(context);
+    
+    // For each static rule issue, check if there's a dynamic issue covering the same component pair
+    const filteredRuleIssues = ruleIssues.filter(staticIssue => {
+      const hasDynamicIssueForSamePair = dynamicIssues.some(dynamicIssue => {
+        // Check if the component pairs overlap (same components involved)
+        const staticComponentIds = new Set(staticIssue.componentIds);
+        const dynamicComponentIds = new Set(dynamicIssue.componentIds);
+        
+        // If there's any overlap in component IDs, the dynamic rule takes precedence
+        const hasOverlap = [...staticComponentIds].some(id => dynamicComponentIds.has(id));
+        return hasOverlap;
+      });
+      
+      // Only keep static issue if no dynamic issue covers the same component pair
+      return !hasDynamicIssueForSamePair;
+    });
+
+    staticRuleIssues.push(...filteredRuleIssues);
   }
+  issues.push(...staticRuleIssues);
 
   let status = CompatibilityLevel.COMPATIBLE;
   if (issues.some(i => i.level === CompatibilityLevel.INCOMPATIBLE)) {

@@ -51,6 +51,69 @@ const OPERATORS = [
   { value: 'MATCHES_REGEX', label: 'Matches Regex' },
 ];
 
+const RULE_TEMPLATES = [
+  {
+    name: 'Socket Compatibility',
+    description: 'CPU socket must match motherboard socket',
+    template: {
+      sourceCategory: 'PROCESSOR',
+      targetCategory: 'MOTHERBOARD',
+      sourceAttribute: 'socket',
+      targetAttribute: 'socket',
+      operator: 'EQUALS',
+      severity: 'INCOMPATIBLE',
+    }
+  },
+  {
+    name: 'Memory Compatibility',
+    description: 'RAM type must match motherboard support',
+    template: {
+      sourceCategory: 'MOTHERBOARD',
+      targetCategory: 'RAM',
+      sourceAttribute: 'ramType',
+      targetAttribute: 'ramType',
+      operator: 'EQUALS',
+      severity: 'INCOMPATIBLE',
+    }
+  },
+  {
+    name: 'Cooler Socket Support',
+    description: 'Cooler must support CPU socket',
+    template: {
+      sourceCategory: 'COOLER',
+      targetCategory: 'PROCESSOR',
+      sourceAttribute: 'socketSupport',
+      targetAttribute: 'socket',
+      operator: 'CONTAINS',
+      severity: 'INCOMPATIBLE',
+    }
+  },
+  {
+    name: 'Form Factor Compatibility',
+    description: 'Motherboard must fit in cabinet',
+    template: {
+      sourceCategory: 'CABINET',
+      targetCategory: 'MOTHERBOARD',
+      sourceAttribute: 'motherboardSupport',
+      targetAttribute: 'formFactor',
+      operator: 'CONTAINS',
+      severity: 'INCOMPATIBLE',
+    }
+  },
+  {
+    name: 'GPU Length Clearance',
+    description: 'GPU must fit in cabinet',
+    template: {
+      sourceCategory: 'CABINET',
+      targetCategory: 'GPU',
+      sourceAttribute: 'maxGpuLength',
+      targetAttribute: 'length',
+      operator: 'GREATER_THAN',
+      severity: 'INCOMPATIBLE',
+    }
+  },
+];
+
 const RuleManager = () => {
   const { toast } = useToast();
   const [rules, setRules] = useState<CompatibilityRule[]>([]);
@@ -59,6 +122,7 @@ const RuleManager = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingRule, setEditingRule] = useState<Partial<CompatibilityRule> | null>(null);
   const [attributesCache, setAttributesCache] = useState<Record<number, CategoryAttributeDefinition[]>>({});
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -119,6 +183,37 @@ const RuleManager = () => {
         sortOrder: 0
       });
     }
+  };
+
+  const handleTemplateSelect = async (template: any) => {
+    const sourceCat = categories.find(c => c.name === template.template.sourceCategory);
+    const targetCat = categories.find(c => c.name === template.template.targetCategory);
+    
+    if (!sourceCat || !targetCat) {
+      toast({ title: 'Template Error', description: 'Required categories not found', variant: 'destructive' });
+      return;
+    }
+
+    await Promise.all([
+      loadAttributes(sourceCat.id),
+      loadAttributes(targetCat.id)
+    ]);
+
+    setEditingRule({
+      name: template.name,
+      message: template.description,
+      severity: template.template.severity,
+      isActive: true,
+      sourceCategoryId: sourceCat.id,
+      targetCategoryId: targetCat.id,
+      clauses: [{
+        sourceAttributeId: '',
+        targetAttributeId: '',
+        operator: template.template.operator,
+        sortOrder: 1
+      }]
+    });
+    setShowTemplates(false);
   };
 
   const handleSave = async () => {
@@ -212,13 +307,22 @@ const RuleManager = () => {
           <h3 className="text-lg font-bold text-stone-900">Compatibility Rules</h3>
           <p className="text-xs text-stone-500">Define logic to prevent invalid component combinations.</p>
         </div>
-        <button
-          onClick={() => handleEdit(null)}
-          className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm"
-        >
-          <Plus size={16} />
-          Add Rule
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTemplates(true)}
+            className="inline-flex items-center gap-2 bg-stone-100 text-stone-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-stone-200 transition-colors"
+          >
+            <Settings size={16} />
+            Templates
+          </button>
+          <button
+            onClick={() => handleEdit(null)}
+            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <Plus size={16} />
+            Add Rule
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -493,6 +597,70 @@ const RuleManager = () => {
               >
                 {isSaving && <RefreshCw size={14} className="animate-spin" />}
                 Save Rule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template Selection Modal */}
+      {showTemplates && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-stone-100 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-stone-50 flex items-center justify-between bg-stone-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <Settings size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900">Rule Templates</h3>
+                  <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest">Quick Start Templates</p>
+                </div>
+              </div>
+              <button onClick={() => setShowTemplates(false)} className="text-stone-400 hover:text-stone-600 p-2">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {RULE_TEMPLATES.map((template, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleTemplateSelect(template)}
+                    className="text-left p-4 bg-stone-50 border border-stone-100 rounded-2xl hover:bg-indigo-50 hover:border-indigo-200 transition-all group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-200 transition-colors">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-stone-800 text-sm mb-1">{template.name}</h4>
+                        <p className="text-xs text-stone-500 leading-snug">{template.description}</p>
+                        <div className="mt-2 flex items-center gap-2 text-[10px]">
+                          <span className="text-stone-400">{template.template.sourceCategory} → {template.template.targetCategory}</span>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full uppercase tracking-tighter font-medium",
+                            template.template.severity === 'INCOMPATIBLE' ? "bg-red-50 text-red-600" :
+                            template.template.severity === 'WARNING' ? "bg-amber-50 text-amber-600" :
+                            "bg-emerald-50 text-emerald-600"
+                          )}>
+                            {template.template.severity}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-stone-100 flex items-center justify-end bg-stone-50/30">
+              <button 
+                onClick={() => setShowTemplates(false)}
+                className="px-6 py-2 rounded-xl text-sm font-bold text-stone-500 hover:bg-stone-100 transition-all"
+              >
+                Cancel
               </button>
             </div>
           </div>

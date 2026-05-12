@@ -516,7 +516,7 @@ const SKELETON_ITEMS = Array.from({ length: 12 }, (_, i) => i);
 function PCBuilderPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { cart, addToCart, removeFromCart, setCartOpen, cartTotal } = useShop();
+    const { cart, addToCart, removeFromCart, setCartOpen, cartTotal, clearCart, loadCart } = useShop();
     const { toast } = useToast();
 
     const isBuildMode = searchParams.get('mode') === 'build';
@@ -546,7 +546,7 @@ function PCBuilderPageContent() {
         return url.toString();
     }, [cart]);
 
-    const { buildSequence } = useBuildSequence();
+    const { buildSequence, loading: sequenceLoading, error: sequenceError, isUsingFallback, retry: retrySequence } = useBuildSequence();
     const coreCategories = useMemo(() => buildSequence.map(i => ({ ...i.category, name: i.category?.label || '' } as unknown as Category)), [buildSequence]);
     
     const [activeStep, setActiveStep] = useState<Category>(coreCategories[0]);
@@ -561,12 +561,91 @@ function PCBuilderPageContent() {
     const prevParams = useRef('');
 
     useEffect(() => {
-        fetch('/api/compatibility-rules').then(r => r.json()).then(d => setDynamicRules(Array.isArray(d) ? d : [])).catch(() => {});
+        fetch('/api/compatibility-rules/public').then(r => r.json()).then(d => setDynamicRules(Array.isArray(d) ? d : [])).catch(() => {});
     }, []);
 
     useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => { if (coreCategories.length && (!activeStep || !coreCategories.includes(activeStep))) setActiveStep(coreCategories[0]); }, [coreCategories, activeStep]);
     useEffect(() => { const t = setTimeout(() => setDebounced(searchTerm), 300); return () => clearTimeout(t); }, [searchTerm]);
+
+    // Restore cart from share parameter
+    useEffect(() => {
+        const shareParam = searchParams.get('share');
+        if (!shareParam) return;
+
+        try {
+            // Decode the share parameter
+            const decoded = shareParam.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonStr = decodeURIComponent(atob(decoded));
+            const sharedData = JSON.parse(jsonStr);
+            
+            // Validate the shared data format
+            if (!Array.isArray(sharedData)) return;
+            
+            // Fetch product details for each shared item
+            const restoreCart = async () => {
+                const productIds = sharedData.map(([id]: [string, number]) => id);
+                if (productIds.length === 0) return;
+                
+                try {
+                    const res = await fetch('/api/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: productIds })
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        const products = data.products || [];
+                        
+                        // Clear current cart and add shared items
+                        const sharedItems: CartItem[] = [];
+                        sharedData.forEach(([id, quantity]: [string, number]) => {
+                            const product = products.find((p: Product) => p.id === id);
+                            if (product) {
+                                sharedItems.push({
+                                    ...product,
+                                    quantity
+                                });
+                            }
+                        });
+                        
+                        // Update cart with shared items
+                        if (sharedItems.length > 0) {
+                            // Clear cart and load shared items
+                            clearCart();
+                            loadCart(sharedItems);
+                            
+                            toast({ 
+                                title: 'Build restored!', 
+                                description: `Loaded ${sharedItems.length} components from shared link` 
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error restoring shared build:', error);
+                    toast({ 
+                        title: 'Failed to restore build', 
+                        variant: 'destructive' 
+                    });
+                }
+            };
+            
+            restoreCart();
+            
+            // Clean up the URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('share');
+            window.history.replaceState({}, '', url.toString());
+            
+        } catch (error) {
+            console.error('Error parsing share parameter:', error);
+            toast({ 
+                title: 'Invalid share link', 
+                variant: 'destructive' 
+            });
+        }
+    }, [searchParams, clearCart, loadCart, toast]);
 
     const cartSpecsCache = useMemo(() => {
         const cpu = cart.find(i => i.category?.name.toUpperCase() === 'PROCESSOR');
@@ -601,8 +680,41 @@ function PCBuilderPageContent() {
                 prevParams.current = qs;
                 const res = await fetch(`/api/products?${qs}`);
                 if (cancelled) return;
+                if (!res.ok) {
+                    console.error('API Error:', res.status, res.statusText);
+                    console.error('Query string:', qs);
+                    return;
+                }
                 const data = await res.json();
-                if (!cancelled && data.products) setProducts(data.products);
+                let filteredProducts = data.products || [];
+                
+                // Client-side filtering for coolers based on CPU socket
+                if (activeStep.name.toUpperCase() === 'COOLER' && !showIncompat && cartSpecsCache.cpuSocket) {
+                    filteredProducts = filteredProducts.filter((product: Product) => {
+                        const socketSupport = specsToFlat(product.specs).socketSupport;
+                        if (!socketSupport) return true;
+                        
+                        // Handle both array and comma-separated string formats
+                        let supportedSockets: string[];
+                        if (Array.isArray(socketSupport)) {
+                            supportedSockets = socketSupport;
+                        } else if (typeof socketSupport === 'string') {
+                            supportedSockets = socketSupport.split(',').map(s => s.trim());
+                        } else {
+                            supportedSockets = [String(socketSupport)];
+                        }
+                        
+                        // Check if cooler has universal support or matches the CPU socket
+                        const isUniversal = supportedSockets.some(socket => socket.toLowerCase() === 'universal');
+                        const hasSupport = isUniversal || supportedSockets.some(socket => 
+                            socket.toLowerCase() === cartSpecsCache.cpuSocket.toLowerCase()
+                        );
+                        
+                        return hasSupport;
+                    });
+                }
+                
+                if (!cancelled) setProducts(filteredProducts);
             } finally { if (!cancelled) setIsLoading(false); }
         })();
         return () => { cancelled = true; };
@@ -672,6 +784,38 @@ function PCBuilderPageContent() {
                 </div>
             </header>
 
+            {/* Build Sequence Loading State */}
+            {sequenceLoading && (
+                <div className="mx-4 mt-3 mb-2 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
+                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-blue-800">Loading build sequence...</p>
+                        <p className="text-xs text-blue-600 mt-0.5">Setting up PC builder components</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Build Sequence Error Notification */}
+            {sequenceError && !sequenceLoading && (
+                <div className="mx-4 mt-3 mb-2 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
+                    <AlertTriangle size={16} className="text-amber-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-amber-800">Build sequence unavailable</p>
+                        <p className="text-xs text-amber-600 mt-0.5">
+                            {isUsingFallback ? 'Using default build order.' : 'Failed to load build sequence.'}
+                        </p>
+                    </div>
+                    {isUsingFallback && (
+                        <button 
+                            onClick={retrySequence}
+                            className="flex-shrink-0 px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
+                        >
+                            Retry
+                        </button>
+                    )}
+                </div>
+            )}
+
             <div className="pcb-layout flex-1 min-h-0">
                 <aside className="hidden xl:flex flex-col items-center py-4 px-2 border-r bg-white overflow-y-auto">
                     {coreCategories.map(cat => (
@@ -680,6 +824,16 @@ function PCBuilderPageContent() {
                 </aside>
 
                 <main className="flex flex-col overflow-hidden min-w-0">
+                    {sequenceLoading ? (
+                        <div className="flex-1 flex items-center justify-center">
+                            <div className="text-center">
+                                <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                                <p className="text-sm font-medium text-zinc-600">Loading PC Builder...</p>
+                                <p className="text-xs text-zinc-400 mt-1">Setting up build sequence</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
                     <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-white border-b z-20">
                         <div className="flex items-center justify-between mb-2.5">
                             <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none">{activeStep?.name}</h2>
@@ -722,6 +876,8 @@ function PCBuilderPageContent() {
                             </div>
                         )}
                     </div>
+                        </>
+                    )}
                 </main>
 
                 <aside className="hidden xl:flex flex-col overflow-hidden">

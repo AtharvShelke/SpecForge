@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
 const clauseSchema = z.object({
   sourceAttributeId: z.string().uuid(),
@@ -22,8 +23,11 @@ const ruleSchema = z.object({
   clauses: z.array(clauseSchema),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Verify admin authentication
+    await requireAdmin(req);
+    
     const rules = await prisma.compatibilityRule.findMany({
       include: {
         clauses: {
@@ -40,6 +44,9 @@ export async function GET() {
     });
     return NextResponse.json(rules);
   } catch (error) {
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Admin access required')) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error('GET /api/compatibility-rules error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -47,6 +54,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    // Verify admin authentication
+    await requireAdmin(req);
+    
     const payload = ruleSchema.parse(await req.json());
 
     const rule = await prisma.compatibilityRule.create({
@@ -76,6 +86,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(rule);
   } catch (error) {
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Admin access required')) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }

@@ -33,18 +33,18 @@ export function filterGpuTier(products: Product[], tier: GpuTier) {
  * Get featured products (latest from key categories).
  */
 export function getFeaturedProducts(products: Product[]) {
-  const categories = ['GPU', 'PROCESSOR', 'MOTHERBOARD'];
+  // Get the latest product from each category instead of hardcoded categories
+  const categoryMap = new Map<string, Product>();
+  
+  products.forEach(product => {
+    const categoryName = product.category.name;
+    if (!categoryMap.has(categoryName) || 
+        new Date(product.createdAt).getTime() > new Date(categoryMap.get(categoryName)!.createdAt).getTime()) {
+      categoryMap.set(categoryName, product);
+    }
+  });
 
-  const featuredProducts = categories
-    .map(category => {
-      return products
-        .filter(p => p.category.name === category)
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )[0];
-    })
-    .filter(Boolean);
-
-  return featuredProducts;
+  return Array.from(categoryMap.values())
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 3); // Return top 3 latest products
 }

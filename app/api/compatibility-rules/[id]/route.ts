@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
 const clauseSchema = z.object({
   id: z.string().uuid().optional(),
@@ -23,9 +24,11 @@ const ruleUpdateSchema = z.object({
   clauses: z.array(clauseSchema),
 });
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
-    const id = params.id;
+    // Verify admin authentication
+    await requireAdmin(req);
     const payload = ruleUpdateSchema.parse(await req.json());
 
     // Use transaction to update rule and its clauses
@@ -91,22 +94,31 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json(updatedRule);
   } catch (error) {
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Admin access required')) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    console.error(`PUT /api/compatibility-rules/${params.id} error:`, error);
+    console.error(`PUT /api/compatibility-rules/${id} error:`, error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
+    // Verify admin authentication
+    await requireAdmin(req);
     await prisma.compatibilityRule.delete({
-      where: { id: params.id },
+      where: { id },
     });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`DELETE /api/compatibility-rules/${params.id} error:`, error);
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Admin access required')) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error(`DELETE /api/compatibility-rules/${id} error:`, error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
