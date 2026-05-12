@@ -13,21 +13,21 @@ import { ourFileRouter } from "@/app/api/uploadthing/core";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | MD Computers",
-    default: "MD Computers - Best PC Components & Custom Builds",
+    template: "%s | SpecForge",
+    default: "SpecForge - Best PC Components & Custom Builds",
   },
-  description: "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with MD Computers.",
+  description: "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with SpecForge.",
   openGraph: {
     type: "website",
     locale: "en_IN",
     url: "https://mdcomputers.example.com",
-    title: "MD Computers - Best PC Components",
-    description: "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with MD Computers.",
-    siteName: "MD Computers"
+    title: "SpecForge - Best PC Components",
+    description: "Shop for the best PC components, processors, motherboards, graphics cards, RAM, and more at the best prices with SpecForge.",
+    siteName: "SpecForge"
   },
   twitter: {
     card: "summary_large_image",
-    title: "MD Computers",
+    title: "SpecForge",
     description: "Shop for the best PC components at the best prices.",
   }
 };

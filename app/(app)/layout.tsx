@@ -5,8 +5,8 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: {
-    default: "Premium PC Components & Custom Builds | MD Systems",
-    template: "%s | MD Systems",
+    default: "Premium PC Components & Custom Builds | SpecForge",
+    template: "%s | SpecForge",
   },
   description:
     "Shop the latest GPUs, CPUs, motherboards, RAM, and SSDs from top brands. Build your dream PC with our compatibility-checked custom builder or choose from expert-curated prebuilt systems.",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
       "Hand-picked gaming hardware with real-time compatibility checks. From budget builds to enthusiast powerhouses.",
     type: "website",
     locale: "en_IN",
-    siteName: "MD Systems",
+    siteName: "SpecForge",
   },
   robots: {
     index: true,

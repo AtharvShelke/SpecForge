@@ -392,178 +392,80 @@ const BuildSummaryPanel: React.FC<{
     onSave: () => void;
     onShare: () => void;
     onCheckout: () => void;
-}> = memo(({ cart, coreCategories, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout }) => {
-    const report = useMemo(() => validateBuild(cart), [cart]);
+    dynamicRules?: any[];
+}> = memo(({ cart, coreCategories, onRemove, onStepClick, activeStep, onSave, onShare, onCheckout, dynamicRules = [] }) => {
+    const report = useMemo(() => validateBuild(cart, dynamicRules), [cart, dynamicRules]);
     const totalPrice = useMemo(
         () => cart.reduce((s, i) => s + (i.price || 0) * i.quantity, 0),
         [cart],
     );
-    // Single pass instead of two separate calls
     const { wattage, psuCap } = useMemo(() => estimatePowerStats(cart), [cart]);
-    const wattPct = psuCap
-        ? Math.min((wattage / psuCap) * 100, 100)
-        : Math.min((wattage / 800) * 100, 100);
-    const completedCount = useMemo(
-        () => coreCategories.filter(cat => cart.some(i => i.category?.name === cat.name)).length,
-        [cart, coreCategories],
-    );
-    const progressPct = coreCategories.length > 0 ? (completedCount / coreCategories.length) * 100 : 0;
+    const progressPct = coreCategories.length > 0 ? (cart.length / coreCategories.length) * 100 : 0;
 
     return (
         <div className="flex flex-col h-full bg-white border-l border-zinc-100">
-            {/* Header */}
             <div className="px-4 pt-4 pb-3 border-b border-zinc-100 flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Build Summary</h3>
                     <div className="flex items-center gap-1">
-                        <button
-                            onClick={onSave}
-                            className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Save build"
-                        >
-                            <Save size={13} />
-                        </button>
-                        <button
-                            onClick={onShare}
-                            className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Share build"
-                        >
-                            <Share2 size={13} />
-                        </button>
+                        <button onClick={onSave} className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"><Save size={13} /></button>
+                        <button onClick={onShare} className="w-7 h-7 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"><Share2 size={13} /></button>
                     </div>
                 </div>
-
                 <div>
                     <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Estimated Total</p>
-                    <p className="text-2xl font-bold text-zinc-900 tracking-tight">
-                        <AnimatedPrice value={totalPrice} />
-                    </p>
+                    <p className="text-2xl font-bold text-zinc-900 tracking-tight"><AnimatedPrice value={totalPrice} /></p>
                 </div>
-
                 <div className="mt-3">
                     <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] text-zinc-400 font-medium">{completedCount}/{coreCategories.length} components</span>
+                        <span className="text-[10px] text-zinc-400 font-medium">{cart.length}/{coreCategories.length} components</span>
                         <span className="text-[10px] font-bold text-indigo-500">{Math.round(progressPct)}%</span>
                     </div>
                     <div className="h-1 bg-zinc-100 rounded-full overflow-hidden">
-                        <motion.div
-                            className="h-full bg-indigo-500 rounded-full"
-                            animate={{ width: `${progressPct}%` }}
-                            transition={MOTION_EASE_OUT}
-                        />
+                        <motion.div className="h-full bg-indigo-500 rounded-full" animate={{ width: `${progressPct}%` }} transition={MOTION_EASE_OUT} />
                     </div>
                 </div>
             </div>
 
-            {/* Component rows */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-0.5">
                 {coreCategories.map(cat => {
                     const item = cart.find(i => i.category?.name === cat.name);
                     const isActive = activeStep?.name === cat.name;
-                    
-
                     return (
-                        <div
-                            key={cat?.name}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => onStepClick(cat)}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onStepClick(cat); }}
-                            className={`group flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer transition-all outline-none select-none ${
-                                isActive
-                                    ? 'bg-indigo-50 border border-indigo-100'
-                                    : 'hover:bg-zinc-50 border border-transparent'
-                            }`}
-                        >
-                            <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                                item ? 'bg-indigo-100' : isActive ? 'bg-indigo-50' : 'bg-zinc-100'
-                            }`}>
-                                
-                                    <Check size={13} strokeWidth={2.5} className="text-indigo-600" />
-                                    
-                                
+                        <div key={cat?.name} onClick={() => onStepClick(cat)} className={`group flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer transition-all ${isActive ? 'bg-indigo-50 border border-indigo-100' : 'hover:bg-zinc-50 border border-transparent'}`}>
+                            <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${item ? 'bg-indigo-100' : isActive ? 'bg-indigo-50' : 'bg-zinc-100'}`}>
+                                {item ? <Check size={13} strokeWidth={2.5} className="text-indigo-600" /> : <Layers size={13} className="text-zinc-300" />}
                             </div>
-
                             <div className="flex-1 min-w-0">
-                                <p className={`text-[10px] font-bold uppercase tracking-wider ${
-                                    item ? 'text-zinc-900' : isActive ? 'text-indigo-600' : 'text-zinc-400'
-                                }`}>
-                                    {cat?.name}
-                                </p>
-                                <p className={`text-[11px] truncate leading-none mt-0.5 ${
-                                    item ? 'text-zinc-500' : 'text-zinc-300 italic'
-                                }`}>
-                                    {item ? item.name : 'Not selected'}
-                                </p>
+                                <p className={`text-[10px] font-bold uppercase tracking-wider ${item ? 'text-zinc-900' : isActive ? 'text-indigo-600' : 'text-zinc-400'}`}>{cat?.name}</p>
+                                <p className={`text-[11px] truncate leading-none mt-0.5 ${item ? 'text-zinc-500' : 'text-zinc-300 italic'}`}>{item ? item.name : 'Not selected'}</p>
                             </div>
-
                             {item ? (
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                                    <span className="text-[11px] font-bold text-zinc-700 tabular-nums">
-                                        ₹{((item.price || 0) * item.quantity).toLocaleString('en-IN')}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        aria-label={`Remove ${item.name}`}
-                                        onClick={e => { e.stopPropagation(); onRemove(item.id); }}
-                                        className="w-5 h-5 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
-                                    >
-                                        <X size={10} strokeWidth={2.5} />
-                                    </button>
+                                    <span className="text-[11px] font-bold text-zinc-700 tabular-nums">₹{((item.price || 0) * item.quantity).toLocaleString('en-IN')}</span>
+                                    <button onClick={e => { e.stopPropagation(); onRemove(item.id); }} className="w-5 h-5 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-red-500 hover:bg-red-50 transition-all"><X size={10} strokeWidth={2.5} /></button>
                                 </div>
-                            ) : (
-                                <ChevronRight
-                                    size={12}
-                                    className={`flex-shrink-0 transition-colors ${
-                                        isActive ? 'text-indigo-400' : 'text-zinc-200 group-hover:text-zinc-400'
-                                    }`}
-                                />
-                            )}
+                            ) : <ChevronRight size={12} className={`flex-shrink-0 transition-colors ${isActive ? 'text-indigo-400' : 'text-zinc-200 group-hover:text-zinc-400'}`} />}
                         </div>
                     );
                 })}
             </div>
 
-            {/* Compat issues */}
             <AnimatePresence>
                 {report.issues.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="px-4 py-3 space-y-1.5 flex-shrink-0 border-t border-zinc-100"
-                    >
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="px-4 py-3 space-y-1.5 border-t border-zinc-100">
                         {report.issues.slice(0, 2).map((issue, i) => (
-                            <div key={i} className={`flex items-start gap-2 px-2.5 py-1.5 rounded-xl text-[10px] leading-snug ${
-                                issue.level === CompatibilityLevel.INCOMPATIBLE
-                                    ? 'bg-red-50 text-red-700 border border-red-100'
-                                    : 'bg-amber-50 text-amber-700 border border-amber-100'
-                            }`}>
-                                {issue.level === CompatibilityLevel.INCOMPATIBLE
-                                    ? <AlertOctagon size={11} className="flex-shrink-0 mt-px" />
-                                    : <AlertTriangle size={11} className="flex-shrink-0 mt-px" />
-                                }
+                            <div key={i} className={`flex items-start gap-2 px-2.5 py-1.5 rounded-xl text-[10px] leading-snug ${issue.level === CompatibilityLevel.INCOMPATIBLE ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>
+                                {issue.level === CompatibilityLevel.INCOMPATIBLE ? <AlertOctagon size={11} className="mt-px" /> : <AlertTriangle size={11} className="mt-px" />}
                                 {issue.message}
                             </div>
                         ))}
-                        {report.issues.length > 2 && (
-                            <p className="text-[10px] text-zinc-400 pl-1">+{report.issues.length - 2} more issues</p>
-                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Checkout CTA */}
-            <div className="px-4 pb-4 pt-3 flex-shrink-0 border-t border-zinc-100">
-                <button
-                    type="button"
-                    onClick={onCheckout}
-                    disabled={cart.length === 0}
-                    className="w-full h-10 flex items-center justify-center gap-2 bg-zinc-900 text-white text-xs font-bold rounded-2xl hover:bg-indigo-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-                >
-                    <ShoppingCart size={14} />
-                    View Build ({cart.length})
-                </button>
+            <div className="px-4 pb-4 pt-3 border-t border-zinc-100">
+                <button onClick={onCheckout} disabled={cart.length === 0} className="w-full h-10 flex items-center justify-center gap-2 bg-zinc-900 text-white text-xs font-bold rounded-2xl hover:bg-indigo-600 transition-colors disabled:opacity-40 shadow-sm"><ShoppingCart size={14} />View Build ({cart.length})</button>
             </div>
         </div>
     );
@@ -577,48 +479,16 @@ const SaveDialog: React.FC<{
     onSave: (title: string) => void;
 }> = memo(({ isOpen, onClose, onSave }) => {
     const [title, setTitle] = useState('');
-
-    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && title.trim()) { onSave(title); onClose(); }
-    }, [title, onSave, onClose]);
-
-    const handleSave = useCallback(() => {
-        if (title.trim()) { onSave(title); onClose(); }
-    }, [title, onSave, onClose]);
-
+    const handleSave = useCallback(() => { if (title.trim()) { onSave(title); onClose(); } }, [title, onSave, onClose]);
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={onClose}>
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                transition={MOTION_SPRING}
-                onClick={e => e.stopPropagation()}
-                className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl border border-zinc-100"
-            >
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={MOTION_SPRING} onClick={e => e.stopPropagation()} className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl border border-zinc-100">
                 <h3 className="text-sm font-bold text-zinc-900 mb-1">Save Build</h3>
                 <p className="text-xs text-zinc-400 mb-4">Give your build a memorable name.</p>
-                <input
-                    autoFocus
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    placeholder="e.g. Gaming Beast 2025"
-                    className="w-full h-9 px-3 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition mb-3"
-                    onKeyDown={handleKeyDown}
-                />
+                <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Gaming Beast" className="w-full h-9 px-3 border border-zinc-200 rounded-xl text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition" />
                 <div className="flex gap-2">
-                    <button type="button" onClick={onClose}
-                        className="flex-1 h-9 text-sm font-medium border border-zinc-200 rounded-xl text-zinc-600 hover:bg-zinc-50 transition-colors">
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={!title.trim()}
-                        className="flex-1 h-9 text-sm font-bold rounded-xl bg-zinc-900 text-white hover:bg-indigo-600 transition-colors disabled:opacity-40"
-                    >
-                        Save Build
-                    </button>
+                    <button onClick={onClose} className="flex-1 h-9 text-sm font-medium border border-zinc-200 rounded-xl text-zinc-600 hover:bg-zinc-50 transition-colors">Cancel</button>
+                    <button onClick={handleSave} disabled={!title.trim()} className="flex-1 h-9 text-sm font-bold rounded-xl bg-zinc-900 text-white hover:bg-indigo-600 transition-colors disabled:opacity-40">Save Build</button>
                 </div>
             </motion.div>
         </div>
@@ -626,49 +496,23 @@ const SaveDialog: React.FC<{
 });
 SaveDialog.displayName = 'SaveDialog';
 
-/* ─────────────────────────────── Left Nav Item ──────────────────────────── */
+/* ─────────────────────────────── NavItem ──────────────────────────── */
 const NavItem: React.FC<{
     cat: Category; isActive: boolean; isCompleted: boolean; onClick: () => void;
 }> = memo(({ cat, isActive, isCompleted, onClick }) => {
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            title={cat?.name}
-            className={`relative group w-full flex flex-col items-center gap-1 py-2.5 transition-all ${
-                isActive ? 'nav-item-active' : ''
-            }`}
-        >
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
-                isActive
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                    : isCompleted
-                        ? 'bg-emerald-50 text-emerald-600 group-hover:bg-indigo-50 group-hover:text-indigo-600'
-                        : 'bg-zinc-50 text-zinc-400 group-hover:bg-zinc-100 group-hover:text-zinc-700'
-            }`}>
-                {isCompleted && !isActive
-                    ? <Check size={16} strokeWidth={2.5} />
-                    : null
-                }
+        <button type="button" onClick={onClick} title={cat?.name} className={`relative group w-full flex flex-col items-center gap-1 py-2.5 transition-all ${isActive ? 'nav-item-active' : ''}`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : isCompleted ? 'bg-emerald-50 text-emerald-600 group-hover:bg-indigo-50 group-hover:text-indigo-600' : 'bg-zinc-50 text-zinc-400 group-hover:bg-zinc-100 group-hover:text-zinc-700'}`}>
+                {isCompleted && !isActive ? <Check size={16} strokeWidth={2.5} /> : <Box size={16} />}
             </div>
-            <span className={`text-[9px] font-bold uppercase tracking-tight leading-none ${
-                isActive ? 'text-indigo-600' : isCompleted ? 'text-emerald-600' : 'text-zinc-400'
-            }`}>
-                {cat?.name.toUpperCase() || cat?.name}
-            </span>
+            <span className={`text-[9px] font-bold uppercase tracking-tight leading-none ${isActive ? 'text-indigo-600' : isCompleted ? 'text-emerald-600' : 'text-zinc-400'}`}>{cat?.name}</span>
         </button>
     );
 });
 NavItem.displayName = 'NavItem';
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SKELETON LIST — stable reference, never re-created
-═══════════════════════════════════════════════════════════════════════════ */
 const SKELETON_ITEMS = Array.from({ length: 12 }, (_, i) => i);
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MAIN PAGE
-═══════════════════════════════════════════════════════════════════════════ */
 function PCBuilderPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -676,73 +520,35 @@ function PCBuilderPageContent() {
     const { toast } = useToast();
 
     const isBuildMode = searchParams.get('mode') === 'build';
-
     const toggleBuildMode = useCallback(() => {
-        if (isBuildMode) {
-            router.push(window.location.pathname);
-        } else {
-            router.push(`${window.location.pathname}?mode=build`);
-        }
+        if (isBuildMode) router.push(window.location.pathname);
+        else router.push(`${window.location.pathname}?mode=build`);
     }, [isBuildMode, router]);
 
-    const saveCurrentBuild = useCallback(async (title: string, description = '') => {
+    const saveCurrentBuild = useCallback(async (title: string) => {
         if (cart.length === 0) return;
         try {
             const res = await fetch('/api/build-guides', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: title,
-                    total: cartTotal,
-                    items: cart.map(i => ({
-                        productId: i.id,
-                        quantity: i.quantity,
-                    })),
-                }),
+                body: JSON.stringify({ name: title, total: cartTotal, items: cart.map(i => ({ productId: i.id, quantity: i.quantity })) }),
             });
-
-            if (res.ok) {
-                toast({ title: 'Build Guide saved successfully' });
-            } else {
-                const errData = await res.json();
-                toast({
-                    title: 'Failed to save build guide',
-                    description: JSON.stringify(errData.error ?? errData),
-                    variant: 'destructive',
-                });
-            }
-        } catch (err) {
-            console.error('Failed to save build guide:', err);
-            toast({ title: 'Error', description: 'Network error while saving build guide', variant: 'destructive' });
-        }
+            if (res.ok) toast({ title: 'Build Guide saved!' });
+            else toast({ title: 'Failed to save', variant: 'destructive' });
+        } catch (err) { toast({ title: 'Error', variant: 'destructive' }); }
     }, [cart, cartTotal, toast]);
 
     const generateShareLink = useCallback((): string => {
         if (cart.length === 0) return '';
-        try {
-            const minimalCart = cart.map(item => [
-                item.id,
-                item.quantity,
-            ]);
-            const encoded = btoa(encodeURIComponent(JSON.stringify(minimalCart)))
-                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-            const url = new URL('/builds', window.location.origin);
-            url.searchParams.set('share', encoded);
-            return url.toString();
-        } catch (err) {
-            console.error('Error generating share link:', err);
-            return '';
-        }
+        const encoded = btoa(encodeURIComponent(JSON.stringify(cart.map(i => [i.id, i.quantity])))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const url = new URL('/builds', window.location.origin);
+        url.searchParams.set('share', encoded);
+        return url.toString();
     }, [cart]);
 
     const { buildSequence } = useBuildSequence();
-    const coreCategories = useMemo(
-        () => buildSequence.map((item) => ({
-            ...item?.category,
-            name: item?.category?.label || ''
-        } as unknown as Category)),
-        [buildSequence],
-    );
+    const coreCategories = useMemo(() => buildSequence.map(i => ({ ...i.category, name: i.category?.label || '' } as unknown as Category)), [buildSequence]);
+    
     const [activeStep, setActiveStep] = useState<Category>(coreCategories[0]);
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -751,25 +557,17 @@ function PCBuilderPageContent() {
     const [showIncompat, setShowIncompat] = useState(false);
     const [sortOption, setSortOption] = useState('popularity');
     const [saveOpen, setSaveOpen] = useState(false);
+    const [dynamicRules, setDynamicRules] = useState<any[]>([]);
     const prevParams = useRef('');
 
-    // Only run once on mount — stable empty dep array
+    useEffect(() => {
+        fetch('/api/compatibility-rules').then(r => r.json()).then(d => setDynamicRules(Array.isArray(d) ? d : [])).catch(() => {});
+    }, []);
+
     useEffect(() => { if (!isBuildMode) toggleBuildMode(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { if (coreCategories.length && (!activeStep || !coreCategories.includes(activeStep))) setActiveStep(coreCategories[0]); }, [coreCategories, activeStep]);
+    useEffect(() => { const t = setTimeout(() => setDebounced(searchTerm), 300); return () => clearTimeout(t); }, [searchTerm]);
 
-    useEffect(() => {
-        if (coreCategories.length === 0) return;
-        if (!activeStep || !coreCategories.includes(activeStep)) {
-            setActiveStep(coreCategories[0]);
-        }
-    }, [activeStep, coreCategories]);
-
-    // Debounce search
-    useEffect(() => {
-        const t = setTimeout(() => setDebounced(searchTerm), 300);
-        return () => clearTimeout(t);
-    }, [searchTerm]);
-
-    // Cache CPU/mobo specs from cart to avoid repeated specsToFlat calls inside fetch effect
     const cartSpecsCache = useMemo(() => {
         const cpu = cart.find(i => i.category?.name.toUpperCase() === 'PROCESSOR');
         const mobo = cart.find(i => i.category?.name.toUpperCase() === 'MOTHERBOARD');
@@ -783,476 +581,164 @@ function PCBuilderPageContent() {
 
     useEffect(() => {
         if (!activeStep) return;
-
         let cancelled = false;
         (async () => {
             setIsLoading(true);
             try {
                 const p = new URLSearchParams();
-                p.set('category', activeStep?.name.toUpperCase() ?? '');
+                p.set('category', activeStep.name.toUpperCase());
                 p.set('limit', '48');
-                p.set('page', '1');
                 if (debounced) p.set('q', debounced);
                 if (sortOption !== 'popularity') p.set('sort', sortOption);
-
                 if (!showIncompat) {
                     const { cpuSocket, moboSocket, moboRamType, cpuRamType } = cartSpecsCache;
-                    if (activeStep?.name.toUpperCase() === 'MOTHERBOARD' && cpuSocket) p.set('f_specs.socket', cpuSocket);
-                    if (activeStep?.name.toUpperCase() === 'PROCESSOR' && moboSocket) p.set('f_specs.socket', moboSocket);
-                    if (activeStep?.name.toUpperCase() === 'RAM') {
-                        const type = moboRamType || cpuRamType;
-                        if (type) p.set('f_specs.ramType', type);
-                    }
+                    if (activeStep.name.toUpperCase() === 'MOTHERBOARD' && cpuSocket) p.set('f_specs.socket', cpuSocket);
+                    if (activeStep.name.toUpperCase() === 'PROCESSOR' && moboSocket) p.set('f_specs.socket', moboSocket);
+                    if (activeStep.name.toUpperCase() === 'RAM') { const type = moboRamType || cpuRamType; if (type) p.set('f_specs.ramType', type); }
                 }
-
-                p.sort();
                 const qs = p.toString();
-                if (prevParams.current === qs && products.length > 0) { setIsLoading(false); return; }
+                if (prevParams.current === qs && products.length) { setIsLoading(false); return; }
                 prevParams.current = qs;
-
                 const res = await fetch(`/api/products?${qs}`);
                 if (cancelled) return;
                 const data = await res.json();
                 if (!cancelled && data.products) setProducts(data.products);
-            } catch (e) {
-                if (!cancelled) console.error(e);
-            } finally {
-                if (!cancelled) setIsLoading(false);
-            }
+            } finally { if (!cancelled) setIsLoading(false); }
         })();
         return () => { cancelled = true; };
     }, [activeStep, debounced, sortOption, cartSpecsCache, showIncompat]);
 
     const handleAdd = useCallback((product: Product) => {
         addToCart(product);
-        // Defer step advance to avoid blocking the current render
         setTimeout(() => {
             setActiveStep(prev => {
-                const next = coreCategories.find(
-                    cat => cat.name !== product.category.name && !cart.some(i => i.category?.name === cat.name)
-                );
+                const next = coreCategories.find(cat => cat.name !== product.category.name && !cart.some(i => i.category?.name === cat.name));
                 return next ?? prev;
             });
         }, 100);
-    }, [addToCart, cart]);
+    }, [addToCart, cart, coreCategories]);
 
     const handleRemove = useCallback((id: string) => removeFromCart(id), [removeFromCart]);
-
-    const handleStepClick = useCallback((cat: Category) => {
-        setActiveStep(cat);
-        setSearchTerm('');
-        prevParams.current = '';
-    }, []);
-
-    // Build compat map once per cart change, keyed by product id — avoids calling validateBuild per card
-    const cartCompatMap = useMemo<Map<string, { level: CompatibilityLevel; message: string }>>(() => {
-        return new Map(); // populated lazily per product in checkCompat
-    }, [cart]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const checkCompat = useCallback((product: Product): { level: CompatibilityLevel; message: string } => {
-        // Return early if already in cart
-        if (cart.some(i => i.id === product.id)) {
-            return { level: CompatibilityLevel.COMPATIBLE, message: '' };
-        }
-        // Check memo cache
-        const cached = cartCompatMap.get(product.id);
-        if (cached) return cached;
-
-        const hypo: CartItem[] = [
-            ...cart.filter(i => i.category?.name !== product.category?.name),
-            { ...product, quantity: 1 },
-        ];
-        const rep = validateBuild(hypo);
+    const handleStepClick = useCallback((cat: Category) => { setActiveStep(cat); setSearchTerm(''); prevParams.current = ''; }, []);
+    
+    const cartCompatMap = useMemo(() => new Map(), [cart]); // eslint-disable-line react-hooks/exhaustive-deps
+    const checkCompat = useCallback((product: Product) => {
+        if (cart.some(i => i.id === product.id)) return { level: CompatibilityLevel.COMPATIBLE, message: '' };
+        if (cartCompatMap.has(product.id)) return cartCompatMap.get(product.id);
+        const rep = validateBuild([...cart.filter(i => i.category?.name !== product.category?.name), { ...product, quantity: 1 }], dynamicRules);
         const rel = rep.issues.filter(iss => iss.componentIds.includes(product.id));
-        const result = {
-            level: rel.length > 0
-                ? rel.some(i => i.level === CompatibilityLevel.INCOMPATIBLE)
-                    ? CompatibilityLevel.INCOMPATIBLE
-                    : CompatibilityLevel.WARNING
-                : CompatibilityLevel.COMPATIBLE,
-            message: rel[0]?.message || '',
-        };
-        cartCompatMap.set(product.id, result);
-        return result;
-    }, [cart, cartCompatMap]);
+        const res = { level: rel.length ? (rel.some(i => i.level === CompatibilityLevel.INCOMPATIBLE) ? CompatibilityLevel.INCOMPATIBLE : CompatibilityLevel.WARNING) : CompatibilityLevel.COMPATIBLE, message: rel[0]?.message || '' };
+        cartCompatMap.set(product.id, res);
+        return res;
+    }, [cart, cartCompatMap, dynamicRules]);
 
-    const handleSave = useCallback((t: string) => saveCurrentBuild(t), [saveCurrentBuild]);
-
-    const handleShare = useCallback(async () => {
-        const link = generateShareLink();
-        if (!link) {
-            toast({ title: 'Nothing to share', description: 'Add components first.', variant: 'destructive' });
-            return;
-        }
-        try { await navigator.clipboard.writeText(link); }
-        catch {
-            const ta = document.createElement('textarea');
-            ta.value = link; document.body.appendChild(ta); ta.select();
-            document.execCommand('copy'); document.body.removeChild(ta);
-        }
-        toast({ title: 'Link copied!', description: 'Share this link to load your build.' });
-    }, [generateShareLink, toast]);
-
-    const handleOpenSave = useCallback(() => setSaveOpen(true), []);
-    const handleCloseSave = useCallback(() => setSaveOpen(false), []);
-    const handleToggleIncompat = useCallback(() => setShowIncompat(p => !p), []);
-    const handleCartOpen = useCallback(() => setCartOpen(true), [setCartOpen]);
-
-    // Derived values — single source of truth
-    const totalPrice = useMemo(
-        () => cart.reduce((s, i) => s + (i.price || 0) * i.quantity, 0),
-        [cart],
-    );
-    const compatReport = useMemo(() => validateBuild(cart), [cart]);
-    const completedCount = useMemo(
-        () => coreCategories.filter(cat => cart.some(i => i.category?.name === cat.name)).length,
-        [cart],
-    );
-    const wattageEst = useMemo(() => estimateWattage(cart), [cart]);
-
+    const compatReport = useMemo(() => validateBuild(cart, dynamicRules), [cart, dynamicRules]);
     const compatStatus = useMemo(() => {
-        if (compatReport.status === CompatibilityLevel.INCOMPATIBLE) {
-            return { text: `${compatReport.issues.length} incompatibility`, color: 'text-red-500', dot: 'bg-red-500' };
-        }
-        if (compatReport.issues.length > 0) {
-            return { text: `${compatReport.issues.length} warning${compatReport.issues.length > 1 ? 's' : ''}`, color: 'text-amber-500', dot: 'bg-amber-500' };
-        }
-        if (cart.length === 0) {
-            return { text: 'No components yet', color: 'text-zinc-400', dot: 'bg-zinc-300' };
-        }
+        if (compatReport.status === CompatibilityLevel.INCOMPATIBLE) return { text: `${compatReport.issues.length} incompatibility`, color: 'text-red-500', dot: 'bg-red-500' };
+        if (compatReport.issues.length > 0) return { text: `${compatReport.issues.length} warning(s)`, color: 'text-amber-500', dot: 'bg-amber-500' };
+        if (cart.length === 0) return { text: 'No components yet', color: 'text-zinc-400', dot: 'bg-zinc-300' };
         return { text: 'Compatible', color: 'text-emerald-600', dot: 'bg-emerald-500' };
     }, [compatReport, cart.length]);
 
-    // Stable callback refs for nav items
-    const navClickHandlers = useMemo(
-        () => Object.fromEntries(coreCategories.map(cat => [cat, () => handleStepClick(cat)])),
-        [coreCategories, handleStepClick],
-    );
+    const navClickHandlers = useMemo(() => Object.fromEntries(coreCategories.map(cat => [cat.name, () => handleStepClick(cat)])), [coreCategories, handleStepClick]);
 
     return (
-        <div
-            className="pcb-root flex flex-col bg-stone-50 overflow-hidden"
-            style={{ height: '100vh' }}
-        >
+        <div className="pcb-root flex flex-col bg-stone-50 overflow-hidden" style={{ height: '100vh' }}>
             <style>{PAGE_STYLES}</style>
-
-            {/* ── STICKY HEADER ──────────────────────────────────────────── */}
-            <header className="flex items-center justify-between whitespace-nowrap border-b border-zinc-100 bg-white px-4 sm:px-5 lg:px-8 h-14 z-50 flex-shrink-0 gap-3">
-                {/* Left */}
-                <div className="flex items-center gap-3 sm:gap-5 min-w-0">
-                    <button
-                        type="button"
-                        onClick={() => router.push('/builds')}
-                        className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-900 transition-colors group flex-shrink-0"
-                    >
-                        <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
-                        <span className="hidden sm:inline text-sm">Builds</span>
+            <header className="flex items-center justify-between border-b bg-white px-4 h-14 z-50 flex-shrink-0 gap-3">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => router.push('/builds')} className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-900 transition-colors">
+                        <ArrowLeft size={15} /> <span className="hidden sm:inline text-sm">Builds</span>
                     </button>
-
-                    <div className="h-5 w-px bg-zinc-100 hidden sm:block flex-shrink-0" />
-
-                    <div className="flex items-center gap-2 min-w-0">
-                        <Hammer size={16} className="text-indigo-500 flex-shrink-0" strokeWidth={2} />
-                        <h1 className="text-sm sm:text-base font-bold text-zinc-900 truncate">PC Builder</h1>
+                    <div className="h-5 w-px bg-zinc-100 hidden sm:block" />
+                    <div className="flex items-center gap-2">
+                        <Hammer size={16} className="text-indigo-500" />
+                        <h1 className="text-sm sm:text-base font-bold text-zinc-900">PC Builder</h1>
                     </div>
-
-                    <div className={`hidden md:flex items-center gap-1.5 text-xs font-semibold ${compatStatus.color} flex-shrink-0`}>
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${compatStatus.dot}`} />
+                    <div className={`hidden md:flex items-center gap-1.5 text-xs font-semibold ${compatStatus.color}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${compatStatus.dot}`} />
                         {compatStatus.text}
                     </div>
                 </div>
-
-                {/* Right */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <div className="flex items-center gap-3">
                     <div className="text-right hidden sm:block">
                         <p className="text-[9px] text-zinc-400 uppercase font-bold tracking-widest leading-none mb-0.5">Total</p>
-                        <p className="text-base font-bold text-zinc-900 leading-none tabular-nums">
-                            <AnimatedPrice value={totalPrice} />
-                        </p>
+                        <p className="text-base font-bold text-zinc-900 leading-none tabular-nums"><AnimatedPrice value={cartTotal} /></p>
                     </div>
-                    <div className="h-5 w-px bg-zinc-100 hidden sm:block" />
                     <div className="flex items-center gap-1.5">
-                        <button
-                            onClick={handleOpenSave}
-                            className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Save"
-                        >
-                            <Save size={14} />
-                        </button>
-                        <button
-                            onClick={handleShare}
-                            className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
-                            title="Share"
-                        >
-                            <Share2 size={14} />
-                        </button>
+                        <button onClick={() => setSaveOpen(true)} className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"><Save size={14} /></button>
+                        <button onClick={() => { const link = generateShareLink(); if (link) { navigator.clipboard.writeText(link); toast({ title: 'Link copied!' }); } }} className="w-8 h-8 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"><Share2 size={14} /></button>
                     </div>
                 </div>
             </header>
 
-            {/* ── 3-COL BODY ─────────────────────────────────────────────── */}
             <div className="pcb-layout flex-1 min-h-0">
-
-                {/* ── LEFT NAV (desktop only) ─────────────────────────────── */}
-                <aside className="hidden xl:flex flex-col items-center py-4 px-2 gap-0.5 border-r border-zinc-100 bg-white overflow-y-auto">
+                <aside className="hidden xl:flex flex-col items-center py-4 px-2 border-r bg-white overflow-y-auto">
                     {coreCategories.map(cat => (
-                        <NavItem
-                            key={cat?.id}
-                            cat={cat}
-                            isActive={activeStep?.name === cat.name}
-                            isCompleted={cart.some(i => i.category?.name === cat.name)}
-                            onClick={navClickHandlers[cat?.name]}
-                        />
+                        <NavItem key={cat.name} cat={cat} isActive={activeStep?.name === cat.name} isCompleted={cart.some(i => i.category?.name === cat.name)} onClick={navClickHandlers[cat.name]} />
                     ))}
                 </aside>
 
-                {/* ── MAIN CONTENT ─────────────────────────────────────────── */}
-                <main className="flex flex-col overflow-hidden bg-stone-50 min-w-0">
-
-                    {/* Mobile step strip */}
-                    <div className="xl:hidden border-b border-zinc-100 bg-white flex-shrink-0">
-                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide px-3 sm:px-4 py-2.5">
-                            {coreCategories.map(cat => {
-                                const isActive = activeStep === cat;
-                                const isDone = cart.some(i => i.category?.name === cat.name);
-                                return (
-                                    <button
-                                        key={cat?.id}
-                                        type="button"
-                                        onClick={navClickHandlers[cat?.name]}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full whitespace-nowrap flex-shrink-0 transition-all ${
-                                            isActive
-                                                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
-                                                : isDone
-                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                    : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 border border-zinc-100'
-                                        }`}
-                                    >
-                                        {isDone && !isActive
-                                            ? <Check size={10} strokeWidth={2.5} />
-                                            : null
-                                        }
-                                        {cat?.name}
-                                    </button>
-                                );
-                            })}
+                <main className="flex flex-col overflow-hidden min-w-0">
+                    <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-white border-b z-20">
+                        <div className="flex items-center justify-between mb-2.5">
+                            <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none">{activeStep?.name}</h2>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="relative flex-1 min-w-0 sm:flex-none sm:w-52">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                                <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder={`Search ${activeStep?.name}…`} className="w-full h-8 pl-9 pr-8 bg-zinc-50 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-100" />
+                            </div>
+                            <div className="flex items-center bg-zinc-50 border rounded-xl px-2.5 h-8 gap-1.5 flex-shrink-0">
+                                <SlidersHorizontal size={12} className="text-zinc-400" />
+                                <select value={sortOption} onChange={e => setSortOption(e.target.value)} className="bg-transparent text-xs text-zinc-700 focus:outline-none appearance-none cursor-pointer">
+                                    <option value="popularity">Popular</option>
+                                    <option value="price-asc">Price ↑</option>
+                                    <option value="price-desc">Price ↓</option>
+                                </select>
+                            </div>
+                            <button type="button" onClick={() => setShowIncompat(p => !p)} className={`flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-xl border transition-all ${showIncompat ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-zinc-50 border text-zinc-500'}`}>
+                                {showIncompat ? <Eye size={12} /> : <EyeOff size={12} />}
+                                <span className="hidden sm:inline">{showIncompat ? 'All parts' : 'Compatible only'}</span>
+                            </button>
                         </div>
                     </div>
 
-                    {/* Sub-header: category title + controls */}
-                    <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-white border-b border-zinc-100 z-20">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={activeStep?.id}
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 4 }}
-                                transition={MOTION_FAST}
-                            >
-                                <div className="flex items-start sm:items-center justify-between gap-3 mb-2.5 flex-wrap sm:flex-nowrap">
-                                    <div className="flex items-center gap-2">
-                                        <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight leading-none">
-                                            {activeStep?.name}
-                                        </h2>
-                                        {cart.some(i => i.category?.name === activeStep?.name) && (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex-shrink-0">
-                                                <Check size={9} strokeWidth={2.5} /> Selected
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-zinc-400 hidden sm:block text-right leading-snug max-w-xs">
-                                        {activeStep?.description || `Select your ${activeStep?.name}.`}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <div className="relative group flex-1 min-w-0 sm:flex-none sm:w-52">
-                                        <Search
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 group-focus-within:text-indigo-500 transition-colors"
-                                            strokeWidth={2}
-                                        />
-                                        <input
-                                            type="text"
-                                            value={searchTerm}
-                                            onChange={e => setSearchTerm(e.target.value)}
-                                            placeholder={`Search ${activeStep?.name}…`}
-                                            className="w-full h-8 pl-9 pr-8 bg-zinc-50 border border-zinc-200 rounded-xl text-xs placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
-                                        />
-                                        {searchTerm && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setSearchTerm('')}
-                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
-                                            >
-                                                <X size={13} />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 h-8 gap-1.5 flex-shrink-0">
-                                        <SlidersHorizontal size={12} className="text-zinc-400 flex-shrink-0" />
-                                        <select
-                                            value={sortOption}
-                                            onChange={e => setSortOption(e.target.value)}
-                                            className="bg-transparent text-xs text-zinc-700 focus:outline-none cursor-pointer appearance-none"
-                                        >
-                                            <option value="popularity">Popular</option>
-                                            <option value="price-asc">Price ↑</option>
-                                            <option value="price-desc">Price ↓</option>
-                                            <option value="newest">Newest</option>
-                                        </select>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleIncompat}
-                                        className={`flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-xl border transition-all flex-shrink-0 ${
-                                            showIncompat
-                                                ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                                                : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100'
-                                        }`}
-                                    >
-                                        {showIncompat ? <Eye size={12} /> : <EyeOff size={12} />}
-                                        <span className="hidden sm:inline">
-                                            {showIncompat ? 'All parts' : 'Compatible only'}
-                                        </span>
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
-
-                    {/* ── PRODUCT GRID ── */}
-                    <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 pb-20 xl:pb-4">
+                    <div className="flex-1 overflow-y-auto px-4 py-4 pb-20 xl:pb-4">
                         {isLoading ? (
-                            <div className="product-grid">
-                                {SKELETON_ITEMS.map(i => <SkeletonCard key={i} />)}
-                            </div>
+                            <div className="product-grid">{SKELETON_ITEMS.map(i => <SkeletonCard key={i} />)}</div>
                         ) : products.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24 text-center">
-                                <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center mb-4">
-                                    <Box size={22} className="text-zinc-300" />
-                                </div>
-                                <p className="text-sm font-bold text-zinc-700 mb-1">No products found</p>
-                                <p className="text-xs text-zinc-400 mb-5">
-                                    Try adjusting your search or showing incompatible parts
-                                </p>
-                                {!showIncompat && (
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleIncompat}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-zinc-200 rounded-xl text-zinc-600 hover:bg-zinc-50 transition-colors"
-                                    >
-                                        <Eye size={12} /> Show all parts
-                                    </button>
-                                )}
+                                <Box size={40} className="text-zinc-200 mb-4" />
+                                <p className="text-sm font-bold text-zinc-700">No products found</p>
                             </div>
                         ) : (
-                            // Removed motion.div layout + AnimatePresence from grid — was causing
-                            // full-grid layout recalculation on every product list update.
-                            // CSS card-enter animation handles entrance visuals without JS overhead.
                             <div className="product-grid">
                                 {products.map((product, index) => {
                                     const inCart = cart.some(i => i.id === product.id);
                                     const compat = checkCompat(product);
-                                    return (
-                                        <ProductCard
-                                            key={product.id}
-                                            product={product}
-                                            isInCart={inCart}
-                                            compatibility={compat.level}
-                                            compatMessage={compat.message}
-                                            onAdd={() => handleAdd(product)}
-                                            onRemove={() => handleRemove(product.id)}
-                                            index={index}
-                                        />
-                                    );
+                                    return <ProductCard key={product.id} product={product} isInCart={inCart} compatibility={compat.level} compatMessage={compat.message} onAdd={() => handleAdd(product)} onRemove={() => handleRemove(product.id)} index={index} />;
                                 })}
                             </div>
                         )}
                     </div>
-
-                    {/* Desktop status bar */}
-                    <div className="hidden lg:flex xl:hidden items-center justify-between h-12 px-5 border-t border-zinc-100 bg-white flex-shrink-0">
-                        <div className="flex items-center gap-4">
-                            <div className={`flex items-center gap-1.5 text-xs font-semibold ${compatStatus.color}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${compatStatus.dot}`} />
-                                {compatStatus.text}
-                            </div>
-                            <div className="h-4 w-px bg-zinc-100" />
-                            <span className="text-xs text-zinc-400 tabular-nums">{wattageEst}W est.</span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={handleCartOpen}
-                            disabled={cart.length === 0}
-                            className="flex items-center gap-1.5 px-4 py-1.5 bg-zinc-900 text-white text-xs font-bold rounded-xl hover:bg-indigo-600 transition-colors disabled:opacity-40"
-                        >
-                            <ShoppingCart size={12} /> View Build ({cart.length})
-                        </button>
-                    </div>
                 </main>
 
-                {/* ── RIGHT SIDEBAR ─────────────────────────────────────── */}
                 <aside className="hidden xl:flex flex-col overflow-hidden">
-                    <BuildSummaryPanel
-                        cart={cart}
-                        coreCategories={coreCategories}
-                        onRemove={handleRemove}
-                        onStepClick={handleStepClick}
-                        activeStep={activeStep}
-                        onSave={handleOpenSave}
-                        onShare={handleShare}
-                        onCheckout={handleCartOpen}
-                    />
+                    <BuildSummaryPanel cart={cart} coreCategories={coreCategories} onRemove={handleRemove} onStepClick={handleStepClick} activeStep={activeStep!} onSave={() => setSaveOpen(true)} onShare={() => {}} onCheckout={() => setCartOpen(true)} dynamicRules={dynamicRules} />
                 </aside>
             </div>
 
-            {/* ── MOBILE BOTTOM BAR ──────────────────────────────────────── */}
-            <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md  px-4 pt-3 mobile-bar flex items-center justify-between gap-3 mb-20 sm:mb-0">
-                <div className="min-w-0"> 
+            <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md px-4 pt-3 mobile-bar flex items-center justify-between gap-3 mb-20 sm:mb-0">
+                <div className="min-w-0">
                     <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest leading-none mb-0.5">Total</p>
-                    <p className="text-lg font-bold text-zinc-900 leading-none tabular-nums">
-                        <AnimatedPrice value={totalPrice} />
-                    </p>
+                    <p className="text-lg font-bold text-zinc-900 leading-none tabular-nums"><AnimatedPrice value={cartTotal} /></p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ">
-                    {compatReport.issues.length > 0 && (
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
-                            compatReport.status === CompatibilityLevel.INCOMPATIBLE
-                                ? 'bg-red-50 text-red-600 border-red-200'
-                                : 'bg-amber-50 text-amber-600 border-amber-200'
-                        }`}>
-                            {compatReport.issues.length} issue{compatReport.issues.length > 1 ? 's' : ''}
-                        </span>
-                    )}
-                    <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 px-2.5 py-1 rounded-full flex-shrink-0">
-                        {completedCount}/{coreCategories.length}
-                    </span>
-                    <button
-                        type="button"
-                        onClick={handleCartOpen}
-                        disabled={cart.length === 0}
-                        className="flex items-center gap-1.5 px-5 py-2.5 bg-zinc-900 text-white text-xs font-bold rounded-2xl hover:bg-indigo-600 transition-colors disabled:opacity-40 shadow-sm"
-                    >
-                        <ShoppingCart size={13} />
-                        <span>View Build</span>
-                        <span className="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                            {cart.length}
-                        </span>
-                    </button>
-                </div>
+                <button onClick={() => setCartOpen(true)} disabled={cart.length === 0} className="flex items-center gap-1.5 px-5 py-2.5 bg-zinc-900 text-white text-xs font-bold rounded-2xl disabled:opacity-40 shadow-sm"><ShoppingCart size={13} /> View Build</button>
             </div>
 
-            {/* Save dialog */}
             <AnimatePresence>
-                {saveOpen && (
-                    <SaveDialog
-                        isOpen={saveOpen}
-                        onClose={handleCloseSave}
-                        onSave={handleSave}
-                    />
-                )}
+                {saveOpen && <SaveDialog isOpen={saveOpen} onClose={() => setSaveOpen(false)} onSave={saveCurrentBuild} />}
             </AnimatePresence>
         </div>
     );

@@ -259,7 +259,87 @@ const RULES: CompatibilityRule[] = [
   psuFormFactorRule,
 ];
 
-export const validateBuild = (items: CartItem[]): CompatibilityReport => {
+const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): CompatibilityIssue[] => {
+  const issues: CompatibilityIssue[] = [];
+
+  for (const rule of dynamicRules) {
+    if (!rule.isActive) continue;
+
+    // Find source components
+    const sourceComponents = ctx.items.filter(i => i.category?.id === rule.sourceCategoryId);
+    if (sourceComponents.length === 0) continue;
+
+    // Find target components
+    const targetComponents = ctx.items.filter(i => i.category?.id === rule.targetCategoryId);
+    if (targetComponents.length === 0) continue;
+
+    for (const source of sourceComponents) {
+      const sourceSpecs = specsToFlat(source.specs);
+      
+      for (const target of targetComponents) {
+        const targetSpecs = specsToFlat(target.specs);
+        let ruleViolated = true; // For multi-clause rules, usually all clauses must be met? Or any?
+        // Let's assume ALL clauses must be met for the rule to be "satisfied".
+        // If ANY clause fails, the rule is violated.
+        
+        const clauseIssues: string[] = [];
+
+        for (const clause of rule.clauses) {
+          const sVal = sourceSpecs[clause.sourceAttribute?.key || ''];
+          const tVal = targetSpecs[clause.targetAttribute?.key || ''];
+          
+          let clauseMet = false;
+          switch (clause.operator) {
+            case 'EQUALS':
+              clauseMet = String(sVal) === String(tVal);
+              break;
+            case 'NOT_EQUALS':
+              clauseMet = String(sVal) !== String(tVal);
+              break;
+            case 'CONTAINS':
+              clauseMet = String(tVal).toLowerCase().includes(String(sVal).toLowerCase());
+              break;
+            case 'IN':
+              // Assume tVal is comma-separated or array
+              const vals = Array.isArray(tVal) ? tVal : String(tVal).split(',').map(v => v.trim());
+              clauseMet = vals.includes(String(sVal));
+              break;
+            case 'GREATER_THAN':
+              clauseMet = safeNumber(sVal)! > safeNumber(tVal)!;
+              break;
+            case 'LESS_THAN':
+              clauseMet = safeNumber(sVal)! < safeNumber(tVal)!;
+              break;
+            default:
+              clauseMet = true;
+          }
+
+          if (!clauseMet) {
+            ruleViolated = true;
+            clauseIssues.push(`${clause.sourceAttribute?.label} (${sVal}) does not match ${clause.targetAttribute?.label} (${tVal})`);
+            break; // One clause failed, rule is violated
+          } else {
+            ruleViolated = false;
+          }
+        }
+
+        if (ruleViolated && rule.clauses.length > 0) {
+          issues.push({
+            level: rule.severity,
+            message: rule.name,
+            reason: rule.message || clauseIssues.join(', '),
+            resolution: `Check ${rule.sourceCategory?.name} and ${rule.targetCategory?.name} compatibility.`,
+            componentIds: [source.id, target.id]
+          });
+        }
+      }
+    }
+  }
+
+  return issues;
+};
+
+export const validateBuild = (items: CartItem[], dynamicRules: any[] = []): CompatibilityReport => {
   const context: ValidationContext = {
     items,
     cpu: items.find(i => i.category?.name.toUpperCase() === 'PROCESSOR' || i.category?.name.toUpperCase() === 'CPU'),
@@ -286,9 +366,16 @@ export const validateBuild = (items: CartItem[]): CompatibilityReport => {
 
   const issues: CompatibilityIssue[] = [];
 
+  // Static Rules
   for (const rule of RULES) {
     const ruleIssues = rule.evaluate(context);
     issues.push(...ruleIssues);
+  }
+
+  // Dynamic Rules
+  if (dynamicRules.length > 0) {
+    const dynamicIssues = evaluateDynamicRules(context, dynamicRules);
+    issues.push(...dynamicIssues);
   }
 
   let status = CompatibilityLevel.COMPATIBLE;

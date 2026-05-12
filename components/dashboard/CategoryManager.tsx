@@ -176,26 +176,7 @@ const CategoryManager = () => {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black tracking-tight text-stone-900">Catalog Architecture</h1>
-              <button type="button" onClick={() => openHelp(activeTab === 'navigation' ? 'navigation' : 'attributes')} className="rounded-full p-1 text-stone-400 hover:bg-white hover:text-stone-700">
-                <HelpCircle size={15} />
-              </button>
-            </div>
-            <p className="max-w-3xl text-sm text-stone-600">
-              The admin now mirrors the catalog domain model directly: navigation is managed separately from category attributes, and filter behavior lives on each attribute as metadata.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-stone-600 shadow-sm">
-            <div className="font-semibold text-stone-900">Selected category</div>
-            <div>{selectedCategory ? `${selectedCategory.code} · ${selectedCategory.name}` : 'None selected'}</div>
-          </div>
-        </div>
-      </div>
-
+      
       <div className="flex flex-wrap gap-2">
         {TABS.map((tab) => (
           <button

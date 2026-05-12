@@ -10,6 +10,7 @@ const ProductManager = lazy(() => import('@/components/dashboard/ProductManager'
 const InventoryManager = lazy(() => import('@/components/dashboard/InventoryManager'));
 const CategoryManager = lazy(() => import('@/components/dashboard/CategoryManager'));
 const BrandManager = lazy(() => import('@/components/dashboard/BrandManager'));
+const BuilderConfigManager = lazy(() => import('@/components/dashboard/BuilderConfigManager'));
 // const SavedBuildsManager = lazy(() => import('@/components/dashboard/SavedBuildsManager'));
 
 const AdminDashboardClient = memo(function AdminDashboardClient() {
@@ -24,6 +25,7 @@ const AdminDashboardClient = memo(function AdminDashboardClient() {
       {activeTab === 'inventory' && <InventoryManager />}
       {activeTab === 'categories' && <CategoryManager />}
       {activeTab === 'brands' && <BrandManager />}
+      {activeTab === 'builder-config' && <BuilderConfigManager />}
       {/* {activeTab === 'saved-builds' && <SavedBuildsManager />} */}
     </div>
   );

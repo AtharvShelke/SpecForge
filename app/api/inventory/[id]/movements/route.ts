@@ -58,7 +58,10 @@ export async function POST(
             });
             if (!inv) throw new Error("NOT_FOUND");
 
-            if (data.quantity !== 1) {
+            const isUnitTracked = !!(inv.serialNumber || inv.partNumber);
+            const movementQty = isUnitTracked ? 1 : data.quantity;
+
+            if (isUnitTracked && data.quantity !== 1) {
                 throw new Error("UNIT_QUANTITY_ONLY");
             }
 
@@ -69,23 +72,42 @@ export async function POST(
                 case "INWARD":
                 case "PURCHASE":
                 case "RETURN":
-                    nextQuantity = 1;
-                    nextReserved = 0;
+                    if (isUnitTracked) {
+                        nextQuantity = 1;
+                        nextReserved = 0;
+                    } else {
+                        nextQuantity = inv.quantity + movementQty;
+                    }
                     break;
                 case "OUTWARD":
                 case "ADJUSTMENT":
-                    nextQuantity = 0;
-                    nextReserved = 0;
+                    if (isUnitTracked) {
+                        nextQuantity = 0;
+                        nextReserved = 0;
+                    } else {
+                        nextQuantity = Math.max(0, inv.quantity - movementQty);
+                    }
                     break;
                 case "RESERVE":
-                    if (inv.quantity <= 0 || inv.reserved > 0) throw new Error("UNIT_NOT_AVAILABLE");
-                    nextQuantity = 0;
-                    nextReserved = 1;
+                    if (isUnitTracked) {
+                        if (inv.quantity <= 0 || inv.reserved > 0) throw new Error("UNIT_NOT_AVAILABLE");
+                        nextQuantity = 0;
+                        nextReserved = 1;
+                    } else {
+                        if (inv.quantity < movementQty) throw new Error("INSUFFICIENT_STOCK");
+                        nextQuantity = inv.quantity - movementQty;
+                        nextReserved = inv.reserved + movementQty;
+                    }
                     break;
                 case "SALE":
-                    if (inv.reserved <= 0) throw new Error("UNIT_NOT_RESERVED");
-                    nextQuantity = 0;
-                    nextReserved = 0;
+                    if (isUnitTracked) {
+                        if (inv.reserved <= 0) throw new Error("UNIT_NOT_RESERVED");
+                        nextQuantity = 0;
+                        nextReserved = 0;
+                    } else {
+                        if (inv.reserved < movementQty) throw new Error("INSUFFICIENT_RESERVED");
+                        nextReserved = inv.reserved - movementQty;
+                    }
                     break;
             }
 
@@ -105,7 +127,7 @@ export async function POST(
                     productId: inv.productId,
                     inventoryItemId: inv.id,
                     type: data.type,
-                    quantity: 1,
+                    quantity: movementQty,
                     note: data.reason,
                 },
             });

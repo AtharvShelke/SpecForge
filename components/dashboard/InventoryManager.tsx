@@ -216,6 +216,7 @@ const InventoryManager = () => {
     const syncData = useCallback(async () => {
         setIsLoading(true);
         await Promise.all([refreshInventory(), refreshStockMovements(), refreshCategories(), refreshProducts()]);
+        setRefreshTrigger(prev => !prev);
         setIsLoading(false);
     }, [refreshInventory, refreshStockMovements, refreshCategories, refreshProducts]);
 
@@ -232,9 +233,20 @@ const InventoryManager = () => {
             if (res.ok) {
                 toast({ title: 'Stock adjusted' });
                 await Promise.all([refreshInventory(), refreshStockMovements()]);
+                return true;
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                toast({ 
+                    title: 'Adjustment failed', 
+                    description: errorData.error || 'The request was rejected by the server.', 
+                    variant: 'destructive' 
+                });
+                return false;
             }
         } catch (err) {
             console.error(err);
+            toast({ title: 'Network error', description: 'Could not connect to the server.', variant: 'destructive' });
+            return false;
         }
     }, [refreshInventory, refreshStockMovements, toast]);
 
@@ -246,7 +258,7 @@ const InventoryManager = () => {
     }, [refreshInventory, refreshStockMovements, refreshCategories, refreshProducts]);
 
     const [adjustmentModal, setAdjustmentModal] = useState<{
-        isOpen: boolean; id: string; sku: string; productId: string; currentQty: number;
+        isOpen: boolean; id: string; sku: string; productId: string; currentQty: number; isUnitTracked: boolean;
     } | null>(null);
 
     
@@ -361,12 +373,14 @@ const InventoryManager = () => {
         };
     }, [searchParams, refreshTrigger]);
 
-    const handleAdjustment = useCallback((e: FormEvent) => {
+    const handleAdjustment = useCallback(async (e: FormEvent) => {
         e.preventDefault();
         if (adjustmentModal && adjQty > 0) {
-            adjustStock(adjustmentModal.id, adjQty, adjType, adjReason);
-            setAdjustmentModal(null); setAdjQty(1); setAdjReason(''); setAdjType('INWARD');
-            setRefreshTrigger(prev => !prev);
+            const success = await adjustStock(adjustmentModal.id, adjQty, adjType, adjReason);
+            if (success) {
+                setAdjustmentModal(null); setAdjQty(1); setAdjReason(''); setAdjType('INWARD');
+                setRefreshTrigger(prev => !prev);
+            }
         }
     }, [adjustmentModal, adjQty, adjType, adjReason, adjustStock]);
 
@@ -931,6 +945,7 @@ const InventoryManager = () => {
                                                         sku: product?.sku || item.productId,
                                                         productId: item.productId,
                                                         currentQty: item.quantity,
+                                                        isUnitTracked: !!(item.serialNumber || item.partNumber),
                                                     })}
                                                 >
                                                     <RefreshCw size={11} /> Adjust
@@ -1001,6 +1016,7 @@ const InventoryManager = () => {
                                             sku: product?.sku || item.productId,
                                             productId: item.productId,
                                             currentQty: item.quantity,
+                                            isUnitTracked: !!(item.serialNumber || item.partNumber),
                                         })}
                                     >
                                         <RefreshCw size={12} /> Adjust
@@ -1139,11 +1155,25 @@ const InventoryManager = () => {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Quantity</label>
-                                <Input
-                                    type="number"
-                                    className="h-9 text-sm font-bold border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
-                                    value={adjQty} disabled onChange={e => setAdjQty(Number(e.target.value))}
-                                />
+                                {adjustmentModal.isUnitTracked ? (
+                                    <>
+                                        <Input
+                                            type="number"
+                                            readOnly
+                                            className="h-9 text-sm font-bold border-stone-200 bg-stone-50 text-stone-500 cursor-not-allowed rounded-lg shadow-none"
+                                            value={1}
+                                        />
+                                        <p className="text-[9px] text-stone-400 mt-1 italic">Unit-tracked items can only be adjusted 1 unit at a time.</p>
+                                    </>
+                                ) : (
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        className="h-9 text-sm font-bold border-stone-200 focus-visible:ring-indigo-400 rounded-lg shadow-none"
+                                        value={adjQty}
+                                        onChange={e => setAdjQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                    />
+                                )}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Reason</label>

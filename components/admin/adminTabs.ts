@@ -6,7 +6,7 @@ export const ADMIN_TAB_LABELS: Record<string, string> = {
     categories: 'Categories',
     brands: 'Brands',
     'saved-builds': 'Saved Builds',
-    
+    'builder-config': 'Builder Config',
 } as const;
 
 export const ADMIN_VALID_TABS = Object.keys(ADMIN_TAB_LABELS);

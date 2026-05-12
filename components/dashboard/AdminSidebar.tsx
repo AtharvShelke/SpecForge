@@ -32,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Categories',   icon: Tag,             key: 'categories',   group: 'secondary' },
     { label: 'Brands',       icon: Bookmark,        key: 'brands',       group: 'secondary' },
     { label: 'Saved Builds', icon: Layers,          key: 'saved-builds', group: 'secondary' },
+    { label: 'Builder Config', icon: LayoutDashboard, key: 'builder-config', group: 'secondary' },
 ];
 
 // Pre-split at module load — .filter() never runs inside the component
