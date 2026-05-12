@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, memo, Fragment } from 'react';
+import { useState, useCallback, useMemo, memo, Fragment } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { validateBuild } from '@/lib/calculations/compatibility';
 import {
@@ -200,45 +200,43 @@ const TimelineStep = memo(function TimelineStep({
 
 export default function TrackOrderPage() {
     const { addToCart, clearCart, setCartOpen } = useShop();
-    const [orders, setOrders] = useState<Order[]>([]);
-
-    const refreshOrders = useCallback(async (email?: string) => {
-        try {
-            const url = email ? `/api/orders?email=${encodeURIComponent(email)}` : '/api/orders';
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data.orders) setOrders(data.orders);
-        } catch (err) {
-            console.error('Failed to fetch orders:', err);
-        }
-    }, []);
-
-    useEffect(() => { refreshOrders(); }, [refreshOrders]);
 
     const [orderId,       setOrderId]       = useState('');
     const [contact,       setContact]       = useState('');
     const [searched,      setSearched]      = useState(false);
     const [foundOrder,    setFoundOrder]    = useState<Order | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [invoiceAccessToken, setInvoiceAccessToken] = useState('');
 
-    const handleSearch = useCallback((e: React.FormEvent) => {
+    const handleSearch = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
-        const trimId      = orderId.trim().toUpperCase();
-        const trimContact = contact.trim().toLowerCase();
-        const match = orders.find(o =>
-            o.id.toUpperCase() === trimId &&
-            (o.email.toLowerCase() === trimContact || (o as any).phone?.toLowerCase() === trimContact)
-        );
-        setFoundOrder(match ?? null);
-        setSearched(true);
-    }, [orderId, contact, orders]);
+        try {
+            const res = await fetch('/api/orders/lookup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: orderId.trim().toUpperCase(),
+                    contact: contact.trim(),
+                }),
+            });
+            const data = await res.json();
+            setFoundOrder(data.order ?? null);
+            setInvoiceAccessToken(data.invoiceAccessToken ?? '');
+            setSearched(true);
+        } catch (err) {
+            console.error('Failed to lookup order:', err);
+            setFoundOrder(null);
+            setInvoiceAccessToken('');
+            setSearched(true);
+        }
+    }, [orderId, contact]);
 
     const handleOrderIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setOrderId(e.target.value); setSearched(false);
+        setOrderId(e.target.value); setSearched(false); setInvoiceAccessToken('');
     }, []);
 
     const handleContactChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setContact(e.target.value); setSearched(false);
+        setContact(e.target.value); setSearched(false); setInvoiceAccessToken('');
     }, []);
 
     const handleReorder = useCallback(() => {
@@ -249,10 +247,10 @@ export default function TrackOrderPage() {
     }, [foundOrder, clearCart, addToCart, setCartOpen]);
 
     const handleDownloadInvoice = useCallback(async () => {
-        if (!foundOrder || isDownloading) return;
+        if (!foundOrder || !invoiceAccessToken || isDownloading) return;
         try {
             setIsDownloading(true);
-            const res = await fetch(`/api/orders/${foundOrder.id}/invoice/pdf`);
+            const res = await fetch(`/api/orders/${foundOrder.id}/invoice/pdf?accessToken=${encodeURIComponent(invoiceAccessToken)}`);
             if (!res.ok) throw new Error('Failed to download invoice');
             const blob = await res.blob();
             const url  = URL.createObjectURL(blob);
@@ -269,7 +267,7 @@ export default function TrackOrderPage() {
         } finally {
             setIsDownloading(false);
         }
-    }, [foundOrder, isDownloading]);
+    }, [foundOrder, invoiceAccessToken, isDownloading]);
 
     const currentStepIdx = useMemo(
         () => foundOrder ? statusIndex(foundOrder.status) : -1,

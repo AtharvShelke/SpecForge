@@ -546,7 +546,7 @@ function PCBuilderPageContent() {
         return url.toString();
     }, [cart]);
 
-    const { buildSequence, loading: sequenceLoading, error: sequenceError, isUsingFallback, retry: retrySequence } = useBuildSequence();
+    const { buildSequence, loading: sequenceLoading, error: sequenceError,  retry: retrySequence } = useBuildSequence();
     const coreCategories = useMemo(() => buildSequence.map(i => ({ ...i.category, name: i.category?.label || '' } as unknown as Category)), [buildSequence]);
     
     const [activeStep, setActiveStep] = useState<Category>(coreCategories[0]);
@@ -795,27 +795,7 @@ function PCBuilderPageContent() {
                 </div>
             )}
 
-            {/* Build Sequence Error Notification */}
-            {sequenceError && !sequenceLoading && (
-                <div className="mx-4 mt-3 mb-2 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
-                    <AlertTriangle size={16} className="text-amber-600 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-amber-800">Build sequence unavailable</p>
-                        <p className="text-xs text-amber-600 mt-0.5">
-                            {isUsingFallback ? 'Using default build order.' : 'Failed to load build sequence.'}
-                        </p>
-                    </div>
-                    {isUsingFallback && (
-                        <button 
-                            onClick={retrySequence}
-                            className="flex-shrink-0 px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
-                        >
-                            Retry
-                        </button>
-                    )}
-                </div>
-            )}
-
+           
             <div className="pcb-layout flex-1 min-h-0">
                 <aside className="hidden xl:flex flex-col items-center py-4 px-2 border-r bg-white overflow-y-auto">
                     {coreCategories.map(cat => (

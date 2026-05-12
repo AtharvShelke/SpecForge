@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
 import {
   isInvoiceImmutable,
   isValidInvoiceTransition,
 } from "@/lib/services/invoice";
+import { handleApiError, jsonError } from "@/lib/security/errors";
+import { buildAuditContext } from "@/lib/security/request";
+import { parseJsonBody } from "@/lib/security/validation";
 
 const InvoiceStatusEnum = z.enum([
   "DRAFT",
@@ -83,13 +87,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const user = await requireAdmin(req);
     const { id } = await params;
-    const body = await req.json();
-    const data = updateInvoiceSchema.parse(body);
+    const data = await parseJsonBody(req, updateInvoiceSchema);
+    const auditContext = buildAuditContext(req, user, { invoiceId: id });
 
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      return jsonError(404, "Invoice not found", "INVOICE_NOT_FOUND");
     }
 
     // IMMUTABILITY GUARD: If invoice is finalized, only allow status transitions
@@ -134,7 +139,7 @@ export async function PUT(
           data: {
             invoiceId: id,
             type: data.status!,
-            actor: "System",
+            actor: auditContext.actor,
             message: `Status changed from ${existing.status} to ${data.status}`,
           },
         });
@@ -144,9 +149,12 @@ export async function PUT(
             entityType: "Invoice",
             entityId: id,
             action: "status_changed",
-            actor: "System",
+            actor: auditContext.actor,
             before: { status: existing.status },
             after: { status: data.status },
+            metadata: auditContext.metadata,
+            ipAddress: auditContext.ipAddress,
+            userAgent: auditContext.userAgent,
           },
         });
 
@@ -205,7 +213,7 @@ export async function PUT(
         data: {
           invoiceId: id,
           type: statusChanged ? data.status! : "updated",
-          actor: "System",
+          actor: auditContext.actor,
           message: statusChanged
             ? `Status changed from ${existing.status} to ${data.status}`
             : "Invoice updated",
@@ -217,14 +225,7 @@ export async function PUT(
 
     return NextResponse.json(invoice);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
-    }
-    console.error("PUT /api/invoices/[id] error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error);
   }
 }
 

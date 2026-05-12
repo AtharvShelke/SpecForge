@@ -1,11 +1,14 @@
 'use server';
 
 import { OrderStatus } from "@/generated/prisma/client";
+import { getBaseUrl } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateOrderFinancials } from '@/lib/tax-engine';
 import { sendMail } from "@/lib/services/mail";
 import { reserveInventory } from "@/lib/services/inventory";
+import { createOrderInvoiceAccessToken } from "@/lib/security/documents";
+import { escapeHtml } from "@/lib/security/html";
 
 const orderItemSchema = z.object({
     productId: z.string().min(1),
@@ -144,26 +147,32 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
             timeout: 10000
         });
 
-        // MOCK EXTERNAL NOTIFICATIONS
-        const invoiceLink = `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/${order.id}/invoice`;
-        const trackingLink = `${process.env.NEXT_PUBLIC_BASE_URL}/track-order`;
+        const accessToken = await createOrderInvoiceAccessToken({
+            orderId: order.id,
+            email: data.email,
+        });
+        const baseUrl = getBaseUrl();
+        const invoiceLink = baseUrl
+            ? `${baseUrl}/api/orders/${order.id}/invoice/pdf?accessToken=${encodeURIComponent(accessToken)}`
+            : null;
+        const trackingLink = baseUrl ? `${baseUrl}/track-order` : null;
 
         console.log(`[MOCK NOTIFICATION] ORDER ${order.id}`);
         console.log(`========================================`);
         console.log(`✅ Sent WhatsApp Confirmation to: ${data.phone}`);
-        console.log(`Message: Thank you for ordering... here's your invoice (a downloadable pdf) ${invoiceLink}`);
-        console.log(`and here's the link for your order ${trackingLink}`);
+        console.log(`Message: Thank you for ordering... here's your invoice (a downloadable pdf) ${invoiceLink ?? "not configured"}`);
+        console.log(`and here's the link for your order ${trackingLink ?? "not configured"}`);
         console.log(`========================================\n`);
 
         try {
             await sendMail({
                 to: data.email,
                 subject: `Order Confirmation - ${order.id}`,
-                text: `thank you for ordering... here's your invoice (a downloadable pdf) ${invoiceLink} and here's the link for your order ${trackingLink}`,
+                text: `thank you for ordering... here's your invoice (a downloadable pdf) ${invoiceLink ?? "Contact support for invoice access"} and here's the link for your order ${trackingLink ?? "Track order unavailable"}`,
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                        <p>thank you for ordering... here's your invoice (a downloadable pdf) <a href="${invoiceLink}">${invoiceLink}</a></p>
-                        <p>and here's the link for your order <a href="${trackingLink}">${trackingLink}</a></p>
+                        ${invoiceLink ? `<p>thank you for ordering... here's your invoice (a downloadable pdf) <a href="${escapeHtml(invoiceLink)}">${escapeHtml(invoiceLink)}</a></p>` : ""}
+                        ${trackingLink ? `<p>and here's the link for your order <a href="${escapeHtml(trackingLink)}">${escapeHtml(trackingLink)}</a></p>` : ""}
                     </div>
                 `,
             });

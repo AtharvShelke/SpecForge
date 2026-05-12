@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
 import { createPaymentTransaction, reconcileOrderPayments } from "@/lib/services/payment";
+import { handleApiError, jsonError } from "@/lib/security/errors";
+import { buildAuditContext } from "@/lib/security/request";
+import { parseJsonBody } from "@/lib/security/validation";
 
 const PaymentMethodEnum = z.enum(["CARD", "UPI", "BANK_TRANSFER", "CASH", "WALLET"]);
 const PaymentStatusEnum = z.enum(["INITIATED", "PENDING", "COMPLETED", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED"]);
@@ -53,13 +57,16 @@ export async function GET(req: NextRequest) {
 // ── POST /api/payments ──────────────────────────────────
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const data = createPaymentSchema.parse(body);
+        const user = await requireAdmin(req);
+        const data = await parseJsonBody(req, createPaymentSchema);
+        const auditContext = buildAuditContext(req, user, {
+            orderId: data.orderId,
+        });
 
         // Verify order exists
         const order = await prisma.order.findUnique({ where: { id: data.orderId } });
         if (!order) {
-            return NextResponse.json({ error: "Order not found" }, { status: 404 });
+            return jsonError(404, "Order not found", "ORDER_NOT_FOUND");
         }
 
         const transaction = await prisma.$transaction(async (tx) => {
@@ -80,13 +87,16 @@ export async function POST(req: NextRequest) {
                     entityType: 'Payment',
                     entityId: txn.id,
                     action: 'created',
-                    actor: 'System',
+                    actor: auditContext.actor,
                     after: {
                         orderId: data.orderId,
                         amount: data.amount,
                         method: data.method,
                         status: data.status,
                     },
+                    metadata: auditContext.metadata,
+                    ipAddress: auditContext.ipAddress,
+                    userAgent: auditContext.userAgent,
                 },
             });
 
@@ -95,10 +105,6 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(transaction, { status: 201 });
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 });
-        }
-        console.error("POST /api/payments error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return handleApiError(error);
     }
 }

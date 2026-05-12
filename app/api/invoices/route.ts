@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
 import { calculateTax, type TaxLineInput } from "@/lib/tax-engine";
+import { handleApiError, jsonError } from "@/lib/security/errors";
+import { buildAuditContext } from "@/lib/security/request";
+import { parseJsonBody } from "@/lib/security/validation";
 
 const CurrencyEnum = z.enum(["INR", "USD", "EUR", "GBP"]);
 
@@ -87,13 +91,17 @@ export async function GET(req: NextRequest) {
 // Invoice number is generated server-side (sequential)
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const data = createInvoiceSchema.parse(body);
+        const user = await requireAdmin(req);
+        const data = await parseJsonBody(req, createInvoiceSchema);
+        const auditContext = buildAuditContext(req, user, {
+            orderId: data.orderId ?? null,
+            customerId: data.customerId,
+        });
 
         // Check customer exists
         const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
         if (!customer) {
-            return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+            return jsonError(404, "Customer not found", "CUSTOMER_NOT_FOUND");
         }
 
         const invoice = await prisma.$transaction(async (tx) => {
@@ -151,7 +159,7 @@ export async function POST(req: NextRequest) {
                     audit: {
                         create: {
                             type: "created",
-                            actor: "System",
+                            actor: auditContext.actor,
                             message: "Invoice created (manual)",
                         },
                     },
@@ -165,8 +173,11 @@ export async function POST(req: NextRequest) {
                     entityType: 'Invoice',
                     entityId: inv.id,
                     action: 'created',
-                    actor: 'System',
+                    actor: auditContext.actor,
                     after: { invoiceNumber, status: 'DRAFT', total: totalAfterDiscount },
+                    metadata: auditContext.metadata,
+                    ipAddress: auditContext.ipAddress,
+                    userAgent: auditContext.userAgent,
                 },
             });
 
@@ -175,10 +186,6 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(invoice, { status: 201 });
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 });
-        }
-        console.error("POST /api/invoices error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return handleApiError(error);
     }
 }

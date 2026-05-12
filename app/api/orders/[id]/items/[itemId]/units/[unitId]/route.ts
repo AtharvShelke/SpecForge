@@ -1,23 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { handleApiError, jsonError } from "@/lib/security/errors";
+import {
+  enforceRateLimit,
+  withRateLimitHeaders,
+} from "@/lib/security/rate-limit";
+import {
+  assertTrustedOrigin,
+  buildAuditContext,
+} from "@/lib/security/request";
+import { parseJsonBody } from "@/lib/security/validation";
 
 const updateUnitSchema = z.object({
   serialNumber: z.string().optional(),
   partNumber: z.string().optional(),
 });
 
-// ── PATCH /api/orders/[id]/items/[itemId]/units/[unitId] ──────────────────────────────
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string; unitId: string }> }
 ) {
   try {
+    const user = await requireAdmin(req);
+    assertTrustedOrigin(req);
+    const rateLimit = enforceRateLimit(req, "adminAction", user.id);
     const { id, itemId, unitId } = await params;
-    const body = await req.json();
-    const data = updateUnitSchema.parse(body);
+    const data = await parseJsonBody(req, updateUnitSchema);
+    const auditContext = buildAuditContext(req, user, {
+      orderId: id,
+      orderItemId: itemId,
+      unitId,
+    });
 
-    // Verify the unit belongs to the specified order and item
     const unit = await prisma.orderItemUnit.findFirst({
       where: {
         id: unitId,
@@ -33,11 +49,12 @@ export async function PATCH(
     });
 
     if (!unit) {
-      return NextResponse.json({ error: "Unit not found" }, { status: 404 });
+      return withRateLimitHeaders(
+        jsonError(404, "Unit not found", "UNIT_NOT_FOUND"),
+        rateLimit
+      );
     }
 
-    // Update the source InventoryItem (single source of truth)
-    // This will automatically reflect in all references including this OrderItemUnit
     const updatedInventoryItem = await prisma.inventoryItem.update({
       where: { id: unit.inventoryItemId },
       data: {
@@ -47,7 +64,6 @@ export async function PATCH(
       },
     });
 
-    // Also update the OrderItemUnit to keep it in sync for display purposes
     const updatedUnit = await prisma.orderItemUnit.update({
       where: { id: unitId },
       data: {
@@ -56,24 +72,31 @@ export async function PATCH(
       },
     });
 
-    // Log to audit
     await prisma.auditLog.create({
       data: {
-        entityType: 'InventoryItem',
+        entityType: "InventoryItem",
         entityId: unit.inventoryItemId,
-        action: 'updated',
-        actor: 'Admin',
-        before: { serialNumber: unit.inventoryItem?.serialNumber, partNumber: unit.inventoryItem?.partNumber },
-        after: { serialNumber: data.serialNumber, partNumber: data.partNumber },
+        action: "updated",
+        actor: auditContext.actor,
+        before: {
+          serialNumber: unit.inventoryItem?.serialNumber,
+          partNumber: unit.inventoryItem?.partNumber,
+        },
+        after: {
+          serialNumber: data.serialNumber,
+          partNumber: data.partNumber,
+        },
+        metadata: auditContext.metadata,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
       },
     });
 
-    return NextResponse.json({ inventoryItem: updatedInventoryItem, unit: updatedUnit });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
-    }
-    console.error("PATCH /api/orders/[id]/items/[itemId]/units/[unitId] error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return withRateLimitHeaders(
+      NextResponse.json({ inventoryItem: updatedInventoryItem, unit: updatedUnit }),
+      rateLimit
+    );
+  } catch (error) {
+    return handleApiError(error);
   }
 }

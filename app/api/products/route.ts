@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
 import { createInventoryUnits } from "@/lib/services/inventory";
+import { handleApiError, jsonError } from "@/lib/security/errors";
+import { enforceRateLimit, withRateLimitHeaders } from "@/lib/security/rate-limit";
+import { assertTrustedOrigin } from "@/lib/security/request";
 
 const specSchema = z.object({
     key: z.string().min(1),
@@ -30,6 +34,10 @@ const createProductSchema = z.object({
     reorderLevel: z.number().int().min(0).default(5),
     location: z.string().default(""),
     inventoryUnits: z.array(inventoryUnitSchema).default([]),
+});
+
+const productIdsSchema = z.object({
+    ids: z.array(z.string().min(1)).min(1).max(100),
 });
 
 const toInt = (value: string | null, fallback: number) => value ? (parseInt(value, 10) || fallback) : fallback;
@@ -518,12 +526,13 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         
         // Handle fetching products by IDs for share functionality
-        if (body.ids && Array.isArray(body.ids)) {
+        const idsPayload = productIdsSchema.safeParse(body);
+        if (idsPayload.success) {
             const { codeByCategoryId } = await loadCategoryMetadata();
             
             const products = await prisma.product.findMany({
                 where: {
-                    id: { in: body.ids },
+                    id: { in: idsPayload.data.ids },
                     deletedAt: null,
                 },
                 include: FULL_PRODUCT_INCLUDE,
@@ -533,6 +542,10 @@ export async function POST(req: NextRequest) {
                 products: products.map(product => mapProduct(product, codeByCategoryId))
             });
         }
+
+        const user = await requireAdmin(req);
+        assertTrustedOrigin(req);
+        const rateLimit = enforceRateLimit(req, "adminAction", user.id);
         
         const data = createProductSchema.parse(body);
 
@@ -541,7 +554,10 @@ export async function POST(req: NextRequest) {
         const categoryId = categoryIds[0];
 
         if (!categoryId) {
-            return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+            return withRateLimitHeaders(
+                jsonError(400, "Invalid category", "INVALID_CATEGORY"),
+                rateLimit
+            );
         }
 
         const existing = await prisma.product.findUnique({
@@ -550,13 +566,16 @@ export async function POST(req: NextRequest) {
         });
 
         if (existing) {
-            return NextResponse.json({ error: "SKU already exists" }, { status: 409 });
+            return withRateLimitHeaders(
+                jsonError(409, "SKU already exists", "SKU_EXISTS"),
+                rateLimit
+            );
         }
 
         if (data.stock > 0 && data.inventoryUnits.length !== data.stock) {
-            return NextResponse.json(
-                { error: "Initial stock must match the number of unit records provided." },
-                { status: 400 }
+            return withRateLimitHeaders(
+                jsonError(400, "Initial stock must match the number of unit records provided.", "INVALID_INITIAL_STOCK"),
+                rateLimit
             );
         }
 
@@ -634,13 +653,11 @@ export async function POST(req: NextRequest) {
             });
         });
 
-        return NextResponse.json(mapProduct(product, codeByCategoryId), { status: 201 });
+        return withRateLimitHeaders(
+            NextResponse.json(mapProduct(product, codeByCategoryId), { status: 201 }),
+            rateLimit
+        );
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 });
-        }
-
-        console.error("POST /api/products error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return handleApiError(error);
     }
 }

@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { signToken } from "@/lib/jwt";
 import { z } from "zod";
+import { getSessionCookieOptions } from "@/lib/auth";
+import { handleApiError, jsonError } from "@/lib/security/errors";
+import { enforceRateLimit, withRateLimitHeaders } from "@/lib/security/rate-limit";
+import { assertTrustedOrigin } from "@/lib/security/request";
+import { parseJsonBody } from "@/lib/security/validation";
 
 const registerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -12,8 +17,9 @@ const registerSchema = z.object({
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const validatedData = registerSchema.parse(body);
+        assertTrustedOrigin(req);
+        const rateLimit = enforceRateLimit(req, "register");
+        const validatedData = await parseJsonBody(req, registerSchema);
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
@@ -21,9 +27,9 @@ export async function POST(req: NextRequest) {
         });
 
         if (existingUser) {
-            return NextResponse.json(
-                { error: "User already exists" },
-                { status: 400 }
+            return withRateLimitHeaders(
+                jsonError(409, "User already exists", "USER_EXISTS"),
+                rateLimit
             );
         }
 
@@ -44,6 +50,7 @@ export async function POST(req: NextRequest) {
             userId: user.id,
             email: user.email,
             name: user.name,
+            role: user.role,
         });
 
         const response = NextResponse.json(
@@ -55,25 +62,10 @@ export async function POST(req: NextRequest) {
         );
 
         // Set cookie
-        response.cookies.set("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 2 * 60 * 60, // 2 hours
-            path: "/",
-        });
+        response.cookies.set("token", token, getSessionCookieOptions());
 
-        return response;
+        return withRateLimitHeaders(response, rateLimit);
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json(
-                { error: error.issues[0].message },
-                { status: 400 }
-            );
-        }
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+        return handleApiError(error);
     }
 }

@@ -1,18 +1,16 @@
 import nodemailer from "nodemailer";
+import { getMailConfig, isMailConfigured } from "@/lib/env";
 
-const SMTP_HOST = process.env.SMTP_HOST || "smtp.gmail.com";
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587", 10);
-const SMTP_USER = process.env.SMTP_USER || "atharvshelke964@gmail.com";
-const SMTP_PASS = process.env.SMTP_PASS || ""; // Note: You need to set this to your App Password in .env
-const SMTP_FROM = process.env.SMTP_FROM || `"MD Client" <atharvshelke964@gmail.com>`;
+const mailConfig = getMailConfig();
+const SMTP_PORT = Number(mailConfig.port || "0");
 
 const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
+    host: mailConfig.host || undefined,
     port: SMTP_PORT,
-    secure: SMTP_PORT === 465, // true for 465, false for other ports like 587
+    secure: SMTP_PORT === 465,
     auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
+        user: mailConfig.user || undefined,
+        pass: mailConfig.pass || undefined,
     },
 });
 
@@ -35,8 +33,12 @@ export interface SendMailOptions {
  */
 export const sendMail = async (options: SendMailOptions) => {
     try {
+        if (!isMailConfigured()) {
+            throw new Error("SMTP mail transport is not configured.");
+        }
+
         const info = await transporter.sendMail({
-            from: options.from || SMTP_FROM,
+            from: options.from || mailConfig.from || undefined,
             to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
             subject: options.subject,
             text: options.text,

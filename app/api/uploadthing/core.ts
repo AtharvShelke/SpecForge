@@ -1,9 +1,10 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
+import { authenticateRequest } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { assertTrustedOrigin } from "@/lib/security/request";
 
 const f = createUploadthing();
-
-const auth = (req: Request) => ({ id: "fakeId" }); // Fake auth function
 
 // FileRouter for your app, can contain multiple FileRoutes
 export const ourFileRouter = {
@@ -20,14 +21,24 @@ export const ourFileRouter = {
   })
     // Set permissions and file types for this FileRoute
     .middleware(async ({ req }) => {
-      // This code runs on your server before upload
-      const user = await auth(req);
+      try {
+        assertTrustedOrigin(req);
+        enforceRateLimit(req, "upload");
 
-      // If you throw, the user will not be able to upload
-      if (!user) throw new UploadThingError("Unauthorized");
+        const user = await authenticateRequest(req);
+        if (!user || user.role !== "ADMIN") {
+          throw new UploadThingError("Unauthorized");
+        }
 
-      // Whatever is returned here is accessible in onUploadComplete as `metadata`
-      return { userId: user.id };
+        return { userId: user.id };
+      } catch (error) {
+        if (error instanceof UploadThingError) {
+          throw error;
+        }
+        throw new UploadThingError(
+          error instanceof Error ? error.message : "Upload blocked"
+        );
+      }
     })
     .onUploadComplete(async ({ metadata, file }) => {
       // This code RUNS ON YOUR SERVER after upload
