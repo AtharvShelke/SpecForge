@@ -7,6 +7,7 @@ import {
   restoreInventory,
 } from "@/lib/services/inventory";
 import { generateOrderInvoice } from "@/lib/services/invoice";
+import { OrderStatusSchema } from "@/lib/contracts/validation";
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import {
   enforceRateLimit,
@@ -18,18 +19,8 @@ import {
 } from "@/lib/security/request";
 import { parseJsonBody } from "@/lib/security/validation";
 
-const OrderStatusEnum = z.enum([
-  "PENDING",
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-  "RETURNED",
-]);
-
 const updateOrderSchema = z.object({
-  status: OrderStatusEnum,
+  status: OrderStatusSchema,
   note: z.string().optional(),
 });
 

@@ -440,7 +440,7 @@ const RuleManager = () => {
                   <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">Severity</label>
                   <select 
                     value={editingRule.severity}
-                    onChange={e => setEditingRule({...editingRule, severity: e.target.value as any})}
+                    onChange={e => setEditingRule({...editingRule, severity: e.target.value as CompatibilityRule['severity']})}
                     className="w-full px-4 py-2.5 bg-stone-50 border border-stone-100 rounded-xl text-sm outline-none"
                   >
                     <option value="INCOMPATIBLE">Incompatible (Error)</option>

@@ -10,7 +10,7 @@ import {
     Hash, Mail, // Added new icons for the form
     type LucideIcon,
 } from 'lucide-react';
-import { Order, OrderStatus, CompatibilityLevel, CartItem } from '@/types';
+import { Order, OrderStatus, CompatibilityLevel, CartItem, orderItemToCartItem } from '@/types';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageTitle } from '@/components/layout/PageTitle';
 
@@ -32,7 +32,7 @@ const STATUS_ORDER: OrderStatus[] = [
     OrderStatus.DELIVERED,
 ];
 
-const CANCEL_STATUSES = new Set([OrderStatus.CANCELLED, OrderStatus.RETURNED]);
+const CANCEL_STATUSES = new Set<OrderStatus>([OrderStatus.CANCELLED, OrderStatus.RETURNED]);
 
 const COMPAT_CONFIG = {
     [CompatibilityLevel.INCOMPATIBLE]: {
@@ -50,6 +50,11 @@ const COMPAT_CONFIG = {
 } as const;
 
 const statusIndex = (s: OrderStatus) => STATUS_ORDER.indexOf(s);
+
+const getOrderItemCategoryLabel = (item: Order['items'][number]) => {
+    if (typeof item.category === 'string') return item.category;
+    return item.category?.name ?? `Category ${item.categoryId}`;
+};
 
 // ── CompatBadge ───────────────────────────────────────────────────────────────
 
@@ -239,12 +244,17 @@ export default function TrackOrderPage() {
         setContact(e.target.value); setSearched(false); setInvoiceAccessToken('');
     }, []);
 
+    const reorderItems = useMemo<CartItem[]>(
+        () => foundOrder?.items.map(orderItemToCartItem) ?? [],
+        [foundOrder]
+    );
+
     const handleReorder = useCallback(() => {
         if (!foundOrder) return;
         clearCart();
-        foundOrder.items.forEach(item => addToCart(item as any));
+        reorderItems.forEach((item) => addToCart(item));
         setCartOpen(true);
-    }, [foundOrder, clearCart, addToCart, setCartOpen]);
+    }, [foundOrder, clearCart, reorderItems, addToCart, setCartOpen]);
 
     const handleDownloadInvoice = useCallback(async () => {
         if (!foundOrder || !invoiceAccessToken || isDownloading) return;
@@ -446,7 +456,7 @@ export default function TrackOrderPage() {
                                         <li key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-zinc-50/50 transition-colors">
                                             <div className="w-20 h-20 bg-white rounded-2xl ring-1 ring-zinc-200 flex items-center justify-center flex-shrink-0 overflow-hidden relative group">
                                                 <img
-                                                    src={item.image}
+                                                    src={item.image ?? '/placeholder.png'}
                                                     alt={item.name}
                                                     loading="lazy"
                                                     decoding="async"
@@ -457,7 +467,7 @@ export default function TrackOrderPage() {
                                                 <p className="font-bold text-zinc-900 text-base line-clamp-2 sm:truncate">{item.name}</p>
                                                 <div className="flex items-center gap-2 mt-1.5">
                                                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100 px-2 py-0.5 rounded-md">
-                                                        {(item.category as any)?.name || (item.category as any)}
+                                                        {getOrderItemCategoryLabel(item)}
                                                     </span>
                                                     <span className="text-xs font-bold text-zinc-400">× {item.quantity}</span>
                                                 </div>
@@ -485,7 +495,7 @@ export default function TrackOrderPage() {
                                 </div>
 
                                 <div>
-                                    <CompatBadge items={foundOrder.items as any} />
+                                    <CompatBadge items={reorderItems} />
                                 </div>
                             </div>
                         </div>

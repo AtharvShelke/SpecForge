@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import {
+  AttributeInputTypeSchema,
+  FilterTypeSchema,
+} from '@/lib/contracts/validation';
+import { mapCategoryAttributesConfig } from '@/lib/contracts/server-mappers';
 
 const attributeSchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
-  type: z.enum(['text', 'number', 'select', 'multi-select', 'boolean']),
+  type: AttributeInputTypeSchema,
   required: z.boolean().default(false),
   options: z.array(z.string()).default([]),
   unit: z.string().optional().nullable(),
@@ -14,7 +19,7 @@ const attributeSchema = z.object({
   dependencyValue: z.string().optional(),
   isFilterable: z.boolean().default(true),
   isComparable: z.boolean().default(true),
-  filterType: z.enum(['checkbox', 'range', 'boolean', 'search', 'dropdown']).optional().nullable(),
+  filterType: FilterTypeSchema.optional().nullable(),
   helpText: z.string().optional().nullable(),
 });
 
@@ -24,71 +29,6 @@ const updateAttributesBody = z.object({
 
 function toSlug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
-
-function mapAttributes(category: {
-  id: number;
-  code: string;
-  name: string;
-  slug: string;
-  shortLabel: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  attributes: Array<{
-    id: string;
-    key: string;
-    label: string;
-    type: string;
-    isRequired: boolean;
-    unit: string | null;
-    sortOrder: number;
-    isFilterable: boolean;
-    isComparable: boolean;
-    filterType: string | null;
-    helpText: string | null;
-    dependencyAttribute: { key: string } | null;
-    dependencyOption: { value: string } | null;
-    options: Array<{ value: string }>;
-  }>;
-}) {
-  return {
-    id: `attributes-${category.id}`,
-    categoryCode: category.code,
-    category: category.code,
-    categoryDefinition: {
-      id: category.id,
-      code: category.code,
-      slug: category.slug,
-      label: category.name,
-      name: category.name,
-      shortLabel: category.shortLabel,
-    },
-    createdAt: category.createdAt,
-    updatedAt: category.updatedAt,
-    attributes: Array.from(
-      category.attributes.reduce((map, attr) => {
-        if (!map.has(attr.key)) map.set(attr.key, attr);
-        return map;
-      }, new Map<string, any>()).values()
-    ).map((attribute) => ({
-      id: attribute.id,
-      key: attribute.key,
-      label: attribute.label,
-      type: attribute.type === 'multi_select' ? 'multi-select' : attribute.type,
-      required: attribute.isRequired,
-      options: attribute.options.map((option: { value: string }) => option.value),
-      unit: attribute.unit ?? undefined,
-      sortOrder: attribute.sortOrder,
-      categoryId: category.id,
-      categoryCode: category.code,
-      dependencyKey: attribute.dependencyAttribute?.key ?? undefined,
-      dependencyValue: attribute.dependencyOption?.value ?? undefined,
-      isFilterable: attribute.isFilterable,
-      isComparable: attribute.isComparable,
-      filterType: attribute.filterType,
-      helpText: attribute.helpText,
-    })),
-  };
 }
 
 async function loadCategory(code: string, subcategorySlug?: string | null) {
@@ -142,16 +82,16 @@ async function loadCategory(code: string, subcategorySlug?: string | null) {
     if (subcategory && subcategory.attributes.length > 0) {
       // Merge category-level and subcategory-level attributes
       // Subcategory attributes override category-level attributes with the same key
-      const subcategoryAttrKeys = new Set(subcategory.attributes.map(a => a.key));
+      const subcategoryAttrKeys = new Set(subcategory.attributes.map((attribute) => attribute.key));
       const mergedAttributes = [
-        ...category.attributes.filter((a: any) => !subcategoryAttrKeys.has(a.key)),
+        ...category.attributes.filter((attribute) => !subcategoryAttrKeys.has(attribute.key)),
         ...subcategory.attributes,
       ];
       
       return {
         ...category,
         attributes: mergedAttributes,
-      } as any;
+      };
     }
   }
 
@@ -173,7 +113,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unknown category code' }, { status: 404 });
     }
 
-    return NextResponse.json(mapAttributes(result));
+    return NextResponse.json(mapCategoryAttributesConfig(result));
   } catch (error) {
     console.error('GET /api/categories/[categoryCode]/attributes error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -212,7 +152,7 @@ export async function PUT(
             categoryId: category.id,
             key: attribute.key,
             label: attribute.label,
-            type: attribute.type === 'multi-select' ? 'multi_select' : attribute.type,
+            type: attribute.type,
             isRequired: attribute.required,
             unit: attribute.unit ?? null,
             sortOrder: attribute.sortOrder,
@@ -255,7 +195,7 @@ export async function PUT(
     });
 
     const updated = await loadCategory(normalizedCode);
-    return NextResponse.json(updated ? mapAttributes(updated) : null);
+    return NextResponse.json(updated ? mapCategoryAttributesConfig(updated) : null);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

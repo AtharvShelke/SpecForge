@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { createInventoryUnits } from "@/lib/services/inventory";
+import {
+    fullProductInclude,
+    mapProduct,
+} from "@/lib/contracts/server-mappers";
 
 const specSchema = z.object({
     key: z.string().min(1),
@@ -28,23 +33,6 @@ const updateProductSchema = z.object({
     specs: z.array(specSchema).optional(),
     inventoryUnits: z.array(inventoryUnitSchema).optional(),
 });
-
-function mapProduct(product: any) {
-    return {
-        ...product,
-        specs: (product.specs ?? []).map((spec: any) => ({
-            id: spec.id,
-            productId: spec.productId,
-            attributeId: spec.attributeId,
-            optionId: spec.optionId,
-            key: spec.attribute?.key ?? "",
-            value: spec.value,
-            valueNumber: spec.valueNumber ?? undefined,
-            valueBoolean: spec.valueBoolean ?? undefined,
-            isHighlighted: spec.isHighlighted,
-        })),
-    };
-}
 
 function normalizeIdentifier(value: string | null | undefined) {
     return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -81,18 +69,7 @@ export async function GET(
         const { id } = await params;
         const product = await prisma.product.findUnique({
             where: { id },
-            include: {
-                specs: {
-                    include: {
-                        attribute: {
-                            select: { key: true },
-                        },
-                    },
-                },
-                brand: true,
-                inventoryItems: true,
-                media: true
-            },
+            include: fullProductInclude,
         });
 
         if (!product) {
@@ -130,7 +107,7 @@ export async function PUT(
             const { specs: _, price, stock, images, brandId, category, inventoryUnits, ...productData } = data;
             
             // Prepare update data for product
-            const updateData: any = { ...productData };
+            const updateData: Prisma.ProductUncheckedUpdateInput = { ...productData };
             if (price !== undefined) updateData.price = price;
             if (brandId !== undefined) updateData.brandId = brandId;
             if (category !== undefined) {
@@ -147,51 +124,67 @@ export async function PUT(
             const p = await tx.product.update({
                 where: { id },
                 data: updateData,
-                include: {
-                    specs: {
-                        include: {
-                            attribute: {
-                                select: { key: true },
-                            },
-                        },
-                    },
-                    brand: true,
-                    inventoryItems: true,
-                    media: true,
-                },
+                include: fullProductInclude,
             });
 
-            if (data.specs) {
-                const targetCategoryId = updateData.categoryId ?? existing.categoryId;
-                const categoryAttributes = await tx.categoryAttribute.findMany({
-                    where: { categoryId: targetCategoryId },
-                    include: { options: true },
-                });
-                const attributeMap = new Map(categoryAttributes.map((attribute) => [attribute.key, attribute]));
+           if (data.specs) {
+    const targetCategoryId =
+        typeof updateData.categoryId === "number"
+            ? updateData.categoryId
+            : existing.categoryId;
 
-                for (const spec of data.specs) {
-                    const attribute = attributeMap.get(spec.key);
-                    if (!attribute) {
-                        throw new Error(`Unknown specification key for category: ${spec.key}`);
-                    }
+    const categoryAttributes = await tx.categoryAttribute.findMany({
+        where: { categoryId: targetCategoryId },
+        include: { options: true },
+    });
 
-                    const matchedOption = attribute.options.find((option) => option.value === spec.value) ?? null;
-                    if ((attribute.type === 'select' || attribute.type === 'multi_select') && !matchedOption) {
-                        throw new Error(`Invalid value for ${spec.key}. Admin must define this option first.`);
-                    }
+    const attributeMap = new Map<
+        string,
+        (typeof categoryAttributes)[number]
+    >(categoryAttributes.map((attribute) => [attribute.key, attribute]));
 
-                    await tx.productSpec.create({
-                        data: {
-                            productId: id,
-                            attributeId: attribute.id,
-                            optionId: matchedOption?.id ?? null,
-                            value: spec.value,
-                            valueNumber: attribute.type === 'number' ? Number(spec.value) : null,
-                            valueBoolean: attribute.type === 'boolean' ? spec.value.toLowerCase() === 'true' : null,
-                        },
-                    });
-                }
-            }
+    for (const spec of data.specs) {
+        const attribute = attributeMap.get(spec.key);
+
+        if (!attribute) {
+            throw new Error(
+                `Unknown specification key for category: ${spec.key}`
+            );
+        }
+
+        const matchedOption =
+            attribute.options.find(
+                (option) => option.value === spec.value
+            ) ?? null;
+
+        if (
+            (attribute.type === "select" ||
+                attribute.type === "multi_select") &&
+            !matchedOption
+        ) {
+            throw new Error(
+                `Invalid value for ${spec.key}. Admin must define this option first.`
+            );
+        }
+
+        await tx.productSpec.create({
+            data: {
+                productId: id,
+                attributeId: attribute.id,
+                optionId: matchedOption?.id ?? null,
+                value: spec.value,
+                valueNumber:
+                    attribute.type === "number"
+                        ? Number(spec.value)
+                        : null,
+                valueBoolean:
+                    attribute.type === "boolean"
+                        ? spec.value.toLowerCase() === "true"
+                        : null,
+            },
+        });
+    }
+}
 
             if (inventoryUnits) {
                 const activeLinkedUnits = await tx.orderItemUnit.findMany({
@@ -241,18 +234,7 @@ export async function PUT(
 
         const refreshed = await prisma.product.findUnique({
             where: { id },
-            include: {
-                specs: {
-                    include: {
-                        attribute: {
-                            select: { key: true },
-                        },
-                    },
-                },
-                brand: true,
-                inventoryItems: true,
-                media: true,
-            },
+            include: fullProductInclude,
         });
 
         return NextResponse.json(refreshed ? mapProduct(refreshed) : null);
@@ -280,8 +262,13 @@ export async function DELETE(
         // Will fail if OrderItems or BuildGuideItems reference this product (onDelete: Restrict)
         await prisma.product.delete({ where: { id } });
         return NextResponse.json({ message: "Product deleted" });
-    } catch (error: any) {
-        if (error?.code === "P2003") {
+    } catch (error: unknown) {
+        if (
+            typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            error.code === "P2003"
+        ) {
             return NextResponse.json(
                 { error: "Cannot delete product: it is referenced by existing orders or build guides" },
                 { status: 409 }

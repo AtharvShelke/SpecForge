@@ -697,7 +697,7 @@ function PCBuilderPageContent() {
                         // Handle both array and comma-separated string formats
                         let supportedSockets: string[];
                         if (Array.isArray(socketSupport)) {
-                            supportedSockets = socketSupport;
+                            supportedSockets = socketSupport.map((value) => String(value).trim());
                         } else if (typeof socketSupport === 'string') {
                             supportedSockets = socketSupport.split(',').map(s => s.trim());
                         } else {
@@ -724,7 +724,7 @@ function PCBuilderPageContent() {
         addToCart(product);
         setTimeout(() => {
             setActiveStep(prev => {
-                const next = coreCategories.find(cat => cat.name !== product.category.name && !cart.some(i => i.category?.name === cat.name));
+                const next = coreCategories.find(cat => cat.name !== product.category?.name && !cart.some(i => i.category?.name === cat.name));
                 return next ?? prev;
             });
         }, 100);

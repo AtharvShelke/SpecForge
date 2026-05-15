@@ -212,7 +212,9 @@ const InvoiceDocument: React.FC<InvoiceDocProps> = ({ order }) => {
           <View>
             <Text style={s.invLabel}>Invoice</Text>
             <Text style={s.invNum}>{invoiceNumber}</Text>
-            <Text style={s.invDate}>{fmtDate(order.date)}</Text>
+            <Text style={s.invDate}>
+              {fmtDate(order.date.toString())}
+            </Text>
             <Text style={s.chip}>{order.status.toUpperCase()}</Text>
           </View>
         </View>

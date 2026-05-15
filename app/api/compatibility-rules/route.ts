@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { CompatibilityLevelSchema } from '@/lib/contracts/validation';
 
 const clauseSchema = z.object({
   sourceAttributeId: z.string().uuid(),
@@ -15,7 +16,7 @@ const clauseSchema = z.object({
 const ruleSchema = z.object({
   name: z.string().min(1),
   message: z.string().optional().nullable(),
-  severity: z.enum(['COMPATIBLE', 'WARNING', 'INCOMPATIBLE']),
+  severity: CompatibilityLevelSchema,
   sourceCategoryId: z.number().int(),
   targetCategoryId: z.number().int(),
   isActive: z.boolean().default(true),

@@ -29,6 +29,9 @@ export const generateInvoiceHTML = (order: Order): string => {
       maximumFractionDigits: 0,
     }).format(n);
 
+  const getItemCategoryLabel = (item: Order["items"][number]) =>
+    typeof item.category === "string" ? item.category : item.category?.name ?? "";
+
   const itemRows = order.items
     .map((item) => {
       const lineTotal = item.quantity * item.price;
@@ -47,7 +50,7 @@ export const generateInvoiceHTML = (order: Order): string => {
         <tr>
           <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">
             <strong style="color:#1e293b">${escapeHtml(item.name)}</strong>
-            <br/><small style="color:#94a3b8">${escapeHtml(item.category || item.sku || "")}</small>
+            <br/><small style="color:#94a3b8">${escapeHtml(getItemCategoryLabel(item) || item.sku || "")}</small>
             ${unitLines}
           </td>
           <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center">${escapeHtml(item.quantity)}</td>

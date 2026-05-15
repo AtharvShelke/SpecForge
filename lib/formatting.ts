@@ -53,7 +53,7 @@ export function formatDateTime(dateIso: string) {
  * Check if invoice is overdue.
  */
 export function isOverdue(dueDateIso: string, status: InvoiceStatus) {
-  if (status === 'paid' || status === 'cancelled' || status === 'refunded') return false;
+  if (status === 'PAID' || status === 'CANCELLED' || status === 'REFUNDED') return false;
   const due = new Date(dueDateIso).getTime();
   const now = Date.now();
   return now > due;
@@ -64,17 +64,17 @@ export function isOverdue(dueDateIso: string, status: InvoiceStatus) {
  */
 export function statusLabel(status: InvoiceStatus) {
   switch (status) {
-    case 'draft':
+    case 'DRAFT':
       return 'Draft';
-    case 'pending':
+    case 'PENDING':
       return 'Pending';
-    case 'paid':
+    case 'PAID':
       return 'Paid';
-    case 'overdue':
+    case 'OVERDUE':
       return 'Overdue';
-    case 'cancelled':
+    case 'CANCELLED':
       return 'Cancelled';
-    case 'refunded':
+    case 'REFUNDED':
       return 'Refunded';
     default:
       return status;
@@ -86,17 +86,17 @@ export function statusLabel(status: InvoiceStatus) {
  */
 export function statusBadgeClasses(status: InvoiceStatus) {
   switch (status) {
-    case 'paid':
+    case 'PAID':
       return 'bg-green-50 text-green-700 border-green-200';
-    case 'pending':
+    case 'PENDING':
       return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'draft':
+    case 'DRAFT':
       return 'bg-gray-50 text-gray-700 border-gray-200';
-    case 'overdue':
+    case 'OVERDUE':
       return 'bg-red-50 text-red-700 border-red-200';
-    case 'cancelled':
+    case 'CANCELLED':
       return 'bg-gray-100 text-gray-600 border-gray-200';
-    case 'refunded':
+    case 'REFUNDED':
       return 'bg-purple-50 text-purple-700 border-purple-200';
     default:
       return 'bg-gray-50 text-gray-700 border-gray-200';

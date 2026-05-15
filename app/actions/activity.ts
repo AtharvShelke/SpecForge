@@ -1,14 +1,19 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { OrderStatus } from '@/types'; // Or from generated prisma client
+import { OrderStatus } from '@/types';
 
 export async function getRecentActivity() {
     try {
         const orders = await prisma.order.findMany({
             where: {
                 status: {
-                    in: ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED']
+                    in: [
+                        OrderStatus.PAID,
+                        OrderStatus.PROCESSING,
+                        OrderStatus.SHIPPED,
+                        OrderStatus.DELIVERED,
+                    ],
                 }
             },
             orderBy: { date: 'desc' },

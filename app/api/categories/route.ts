@@ -17,7 +17,7 @@ const categoryPayloadSchema = z.object({
 });
 
 const categoryUpdateSchema = categoryPayloadSchema.extend({
-  id: z.string().min(1),
+  id: z.number().int().positive(),
 });
 
 export async function GET(req: NextRequest) {
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest) {
 
     const slug = data.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const category = await prisma.category.update({
-      where: { id: Number(id) },
+      where: { id },
       data: {
         code: data.code,
         name: data.label,
@@ -122,3 +122,4 @@ export async function PATCH(req: NextRequest) {
 }
 
 export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";

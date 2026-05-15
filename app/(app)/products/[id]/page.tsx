@@ -19,7 +19,19 @@ const PRODUCT_SELECT = {
     compareAtPrice: true,
     media:          { select: { url: true } },
     brand:          { select: { id: true, name: true } },
-    specs:          true,
+    specs:          {
+        select: {
+            id: true,
+            productId: true,
+            attributeId: true,
+            optionId: true,
+            value: true,
+            valueNumber: true,
+            valueBoolean: true,
+            isHighlighted: true,
+            attribute: { select: { key: true } },
+        },
+    },
 } as const;
 
 // ── generateMetadata ──────────────────────────────────────────────────────────
@@ -105,6 +117,20 @@ export default async function ProductPage({
 
     // Serialise once — avoids JSON.stringify running in the browser
     const jsonLdString = JSON.stringify(jsonLd);
+    const detailProduct = {
+        ...product,
+        specs: product.specs.map((spec) => ({
+            id: spec.id,
+            productId: spec.productId,
+            attributeId: spec.attributeId,
+            optionId: spec.optionId,
+            key: spec.attribute?.key ?? '',
+            value: spec.value,
+            valueNumber: spec.valueNumber,
+            valueBoolean: spec.valueBoolean,
+            isHighlighted: spec.isHighlighted,
+        })),
+    };
 
     return (
         <section>
@@ -112,7 +138,7 @@ export default async function ProductPage({
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: jsonLdString }}
             />
-            <ProductDetailClient product={product as any} />
+            <ProductDetailClient product={detailProduct} />
         </section>
     );
 }

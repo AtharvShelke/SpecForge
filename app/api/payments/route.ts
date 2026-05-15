@@ -3,23 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { createPaymentTransaction, reconcileOrderPayments } from "@/lib/services/payment";
+import {
+  CurrencySchema,
+  PaymentStatusSchema,
+  PaymentTransactionMethodSchema,
+} from "@/lib/contracts/validation";
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import { buildAuditContext } from "@/lib/security/request";
 import { parseJsonBody } from "@/lib/security/validation";
 
-const PaymentMethodEnum = z.enum(["CARD", "UPI", "BANK_TRANSFER", "CASH", "WALLET"]);
-const PaymentStatusEnum = z.enum(["INITIATED", "PENDING", "COMPLETED", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED"]);
-const CurrencyEnum = z.enum(["INR", "USD", "EUR", "GBP"]);
-
 const createPaymentSchema = z.object({
     orderId: z.string().min(1),
-    method: PaymentMethodEnum,
+    method: PaymentTransactionMethodSchema,
     amount: z.number().positive(),
-    currency: CurrencyEnum.default("INR"),
+    currency: CurrencySchema.default("INR"),
     gatewayTxnId: z.string().optional(),
     idempotencyKey: z.string().min(1),
-    status: PaymentStatusEnum.default("COMPLETED"),
-    metadata: z.record(z.string(), z.any()).optional(),
+    status: PaymentStatusSchema.default("COMPLETED"),
+    metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ── GET /api/payments?orderId=xxx ───────────────────────
@@ -72,12 +73,12 @@ export async function POST(req: NextRequest) {
         const transaction = await prisma.$transaction(async (tx) => {
             const txn = await createPaymentTransaction(tx, {
                 orderId: data.orderId,
-                method: data.method as any,
+                method: data.method,
                 amount: data.amount,
-                currency: data.currency as any,
+                currency: data.currency,
                 gatewayTxnId: data.gatewayTxnId,
                 idempotencyKey: data.idempotencyKey,
-                status: data.status as any,
+                status: data.status,
                 metadata: data.metadata,
             });
 

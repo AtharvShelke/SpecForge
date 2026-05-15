@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/adapter-pg": "^7.4.1",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.4.2",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -49,6 +49,7 @@
     "next": "16.1.6",
     "nodemailer": "^8.0.1",
     "pg": "^8.18.0",
+    "prisma-client": "^0.0.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",

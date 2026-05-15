@@ -103,7 +103,7 @@ export const ConfirmStatusDialog = ({
                                 <div className="divide-y divide-slate-100">
                                     {(() => {
                                         // Group by productId first, then populate lookup map with both ID and SKU
-                                        const productTotals = new Map<string, { quantity: number; reserved: number; sku?: string }>();
+                                        const productTotals = new Map<string, { quantity: number; reserved: number; sku?: string | null }>();
                                         inventoryArray.forEach(i => {
                                             const existing = productTotals.get(i.productId);
                                             if (existing) {

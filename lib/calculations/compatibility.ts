@@ -94,14 +94,14 @@ const coolerSocketRule: CompatibilityRule = {
         // Handle both array and comma-separated string formats
         let supportedArr: string[];
         if (Array.isArray(supportedSockets)) {
-          supportedArr = supportedSockets;
+          supportedArr = supportedSockets.map((value) => String(value).trim());
         } else if (typeof supportedSockets === 'string') {
           // Split comma-separated string and trim whitespace
           supportedArr = supportedSockets.split(',').map(s => s.trim());
         } else {
           supportedArr = [String(supportedSockets)];
         }
-        
+
         // Check if cooler has universal support
         const isUniversal = supportedArr.some((s: string) => s.toLowerCase() === 'universal');
         const hasSupport = isUniversal || supportedArr.some((s: string) => s.toLowerCase() === String(ctx.cpuSpecs.socket).toLowerCase());
@@ -168,7 +168,7 @@ const powerDrawRule: CompatibilityRule = {
         ...ctx.storageList,
         ctx.cooler
       ].filter(Boolean);
-      
+
       if (powerRequiringComponents.length > 0) {
         issues.push({
           level: CompatibilityLevel.WARNING,
@@ -299,10 +299,10 @@ const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): Comp
 
     for (const source of sourceComponents) {
       const sourceSpecs = specsToFlat(source.specs);
-      
+
       for (const target of targetComponents) {
         const targetSpecs = specsToFlat(target.specs);
-        
+
         // Clause-less rules always trigger when source and target categories are present
         if (rule.clauses.length === 0) {
           issues.push({
@@ -322,7 +322,7 @@ const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): Comp
         for (const clause of rule.clauses) {
           const sVal = sourceSpecs[clause.sourceAttribute?.key || ''];
           const tVal = targetSpecs[clause.targetAttribute?.key || ''];
-          
+
           let clauseMet = false;
           switch (clause.operator) {
             case 'EQUALS':
@@ -336,7 +336,9 @@ const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): Comp
               break;
             case 'IN':
               // Assume tVal is comma-separated or array
-              const vals = Array.isArray(tVal) ? tVal : String(tVal).split(',').map(v => v.trim());
+              const vals = Array.isArray(tVal)
+                ? tVal.map((value) => String(value).trim())
+                : String(tVal).split(',').map(v => v.trim());
               clauseMet = vals.includes(String(sVal));
               break;
             case 'GREATER_THAN':
@@ -411,19 +413,19 @@ export const validateBuild = (items: CartItem[], dynamicRules: any[] = []): Comp
   const staticRuleIssues: CompatibilityIssue[] = [];
   for (const rule of RULES) {
     const ruleIssues = rule.evaluate(context);
-    
+
     // For each static rule issue, check if there's a dynamic issue covering the same component pair
     const filteredRuleIssues = ruleIssues.filter(staticIssue => {
       const hasDynamicIssueForSamePair = dynamicIssues.some(dynamicIssue => {
         // Check if the component pairs overlap (same components involved)
         const staticComponentIds = new Set(staticIssue.componentIds);
         const dynamicComponentIds = new Set(dynamicIssue.componentIds);
-        
+
         // If there's any overlap in component IDs, the dynamic rule takes precedence
         const hasOverlap = [...staticComponentIds].some(id => dynamicComponentIds.has(id));
         return hasOverlap;
       });
-      
+
       // Only keep static issue if no dynamic issue covers the same component pair
       return !hasDynamicIssueForSamePair;
     });
@@ -432,7 +434,8 @@ export const validateBuild = (items: CartItem[], dynamicRules: any[] = []): Comp
   }
   issues.push(...staticRuleIssues);
 
-  let status = CompatibilityLevel.COMPATIBLE;
+  let status: CompatibilityLevel = CompatibilityLevel.COMPATIBLE;
+
   if (issues.some(i => i.level === CompatibilityLevel.INCOMPATIBLE)) {
     status = CompatibilityLevel.INCOMPATIBLE;
   } else if (issues.length > 0) {

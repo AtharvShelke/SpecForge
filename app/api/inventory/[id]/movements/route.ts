@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const StockMovementTypeEnum = z.enum([
-    "PURCHASE", "INWARD", "OUTWARD", "SALE", "RETURN", "ADJUSTMENT", "RESERVE",
-]);
+import { StockMovementTypeSchema } from "@/lib/contracts/validation";
 
 const createMovementSchema = z.object({
-    type: StockMovementTypeEnum,
+    type: StockMovementTypeSchema,
     quantity: z.number().int().positive(),
     reason: z.string().nullable().optional(),
 });

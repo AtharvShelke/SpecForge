@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
+import { InvoiceStatusSchema } from "@/lib/contracts/validation";
 import {
   isInvoiceImmutable,
   isValidInvoiceTransition,
@@ -9,16 +10,6 @@ import {
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import { buildAuditContext } from "@/lib/security/request";
 import { parseJsonBody } from "@/lib/security/validation";
-
-const InvoiceStatusEnum = z.enum([
-  "DRAFT",
-  "PENDING",
-  "PAID",
-  "OVERDUE",
-  "CANCELLED",
-  "REFUNDED",
-  "VOIDED",
-]);
 
 const lineItemSchema = z.object({
   name: z.string().min(1),
@@ -33,7 +24,7 @@ const updateInvoiceSchema = z.object({
   status: z
     .preprocess(
       (val) => (typeof val === "string" ? val.toUpperCase() : val),
-      InvoiceStatusEnum,
+      InvoiceStatusSchema,
     )
     .optional(),
   subtotal: z.number().min(0).optional(),

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
@@ -6,6 +7,14 @@ import { createInventoryUnits } from "@/lib/services/inventory";
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import { enforceRateLimit, withRateLimitHeaders } from "@/lib/security/rate-limit";
 import { assertTrustedOrigin } from "@/lib/security/request";
+import {
+    baseProductInclude,
+    buildProductsResponse,
+    fullProductInclude,
+    mapProduct,
+    type ProductBaseRow,
+    type ProductRow,
+} from "@/lib/contracts/server-mappers";
 
 const specSchema = z.object({
     key: z.string().min(1),
@@ -94,121 +103,6 @@ async function loadCategoryMetadata() {
     };
 }
 
-const BASE_PRODUCT_INCLUDE = {
-    category: {
-        select: {
-            id: true,
-            code: true,
-            name: true,
-            slug: true,
-            shortLabel: true,
-        },
-    },
-    brand: {
-        select: {
-            id: true,
-            name: true,
-            createdAt: true,
-            updatedAt: true,
-        },
-    },
-    inventoryItems: {
-        select: {
-            id: true,
-            productId: true,
-            partNumber: true,
-            serialNumber: true,
-            quantity: true,
-            reserved: true,
-            reorderLevel: true,
-            costPrice: true,
-            location: true,
-            lastUpdated: true,
-        },
-    },
-    media: {
-        select: {
-            id: true,
-            productId: true,
-            url: true,
-            altText: true,
-            sortOrder: true,
-        },
-        orderBy: { sortOrder: "asc" as const },
-    },
-} as const;
-
-const FULL_PRODUCT_INCLUDE = {
-    ...BASE_PRODUCT_INCLUDE,
-    tags: true,
-    specs: {
-        select: {
-            id: true,
-            productId: true,
-            attributeId: true,
-            optionId: true,
-            value: true,
-            valueNumber: true,
-            valueBoolean: true,
-            isHighlighted: true,
-            attribute: {
-                select: {
-                    key: true,
-                },
-            },
-        },
-    },
-} as const;
-
-function mapProduct(product: any, codeByCategoryId: Map<number, string>) {
-    return {
-        id: product.id,
-        slug: product.slug,
-        name: product.name,
-        metaTitle: product.metaTitle ?? undefined,
-        metaDescription: product.metaDescription ?? undefined,
-        category: product.category ?? undefined,
-        description: product.description ?? undefined,
-        status: product.status,
-        deletedAt: product.deletedAt ?? undefined,
-        version: product.version,
-        brandId: product.brandId ?? undefined,
-        brand: product.brand ?? undefined,
-        createdAt: product.createdAt,
-        updatedAt: product.updatedAt,
-        // Moved from ProductVariant
-        sku: product.sku,
-        price: product.price,
-        compareAtPrice: product.compareAtPrice ?? undefined,
-        stockStatus: product.stockStatus,
-        specs: (product.specs ?? []).map((spec: any) => ({
-            id: spec.id,
-            productId: spec.productId,
-            attributeId: spec.attributeId,
-            optionId: spec.optionId,
-            key: spec.attribute?.key ?? "",
-            value: spec.value,
-            valueNumber: spec.valueNumber ?? undefined,
-            valueBoolean: spec.valueBoolean ?? undefined,
-            isHighlighted: spec.isHighlighted,
-        })),
-        inventoryItems: (product.inventoryItems ?? []).map((item: any) => ({
-            id: item.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            reserved: item.reserved,
-            partNumber: item.partNumber,
-            serialNumber: item.serialNumber,
-            reorderLevel: item.reorderLevel,
-            costPrice: item.costPrice,
-            location: item.location,
-            lastUpdated: item.lastUpdated,
-        })),
-        media: product.media,
-        tags: product.tags ?? [],
-    };
-}
-
 function buildTextOR(term: string) {
     return {
         OR: [
@@ -233,8 +127,8 @@ function buildWhereClause(
     const nodeBrand = searchParams.get("nodeBrand");
     const subcategoryParam = searchParams.get("subcategory");
 
-    const where: Record<string, unknown> = {};
-    const and: object[] = [];
+    const where: Prisma.ProductWhereInput = {};
+    const and: Prisma.ProductWhereInput[] = [];
 
     if (!globalSearch && categoryIdsForFilter.length > 0) {
         where.categoryId = categoryIdsForFilter.length === 1
@@ -244,9 +138,15 @@ function buildWhereClause(
 
     if (subcategoryParam) {
         const isId = /^\d+$/.test(subcategoryParam);
-        where.subcategoryId = isId ? Number(subcategoryParam) : {
-            slug: subcategoryParam
-        };
+        if (isId) {
+            where.subcategoryId = Number(subcategoryParam);
+        } else {
+            where.subcategory = {
+                is: {
+                    slug: subcategoryParam,
+                },
+            };
+        }
     }
 
     if (brandId) {
@@ -322,7 +222,11 @@ function buildWhereClause(
     return where;
 }
 
-async function resolveFilterOptions(where: Record<string, unknown>, categoryCode: string | null, subcategoryCode: string | null) {
+async function resolveFilterOptions(
+    where: Prisma.ProductWhereInput,
+    categoryCode: string | null,
+    subcategoryCode: string | null
+) {
     const [brandResults, specResults, category] = await Promise.all([
         prisma.product.findMany({
             where,
@@ -390,7 +294,24 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
     ]);
 
     const specs: Record<string, Set<string>> = {};
-    const specMetadata: Record<string, any> = {};
+    const specMetadata: Record<string, {
+        id?: string;
+        key?: string;
+        label?: string;
+        type?: string;
+        filterType?: string | null;
+        unit?: string | null;
+        availableValues: Array<{ value: string; slug: string }>;
+        config?: {
+            id: string;
+            key: string;
+            label: string;
+            type: string;
+            sortOrder: number;
+            dependencyKey: string | null;
+            dependencyValue: string | null;
+        };
+    }> = {};
     
     for (const spec of specResults) {
         const key = spec.attribute?.key;
@@ -407,14 +328,18 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
     }
 
     if (category) {
-        const cat = category as any;
-        let attributes = cat.attributes;
-        const subcategory = cat.subcategories?.[0];
+        let attributes = category.attributes;
+        const subcategory = category.subcategories?.[0];
         
-        if (subcategory && subcategory.attributes && subcategory.attributes.length > 0) {
-            const subAttrKeys = new Set(subcategory.attributes.map((a: any) => a.key));
+        if (
+            subcategory &&
+            'attributes' in subcategory &&
+            Array.isArray(subcategory.attributes) &&
+            subcategory.attributes.length > 0
+        ) {
+            const subAttrKeys = new Set(subcategory.attributes.map((attribute) => attribute.key));
             attributes = [
-                ...cat.attributes.filter((a: any) => !subAttrKeys.has(a.key)),
+                ...category.attributes.filter((attribute) => !subAttrKeys.has(attribute.key)),
                 ...subcategory.attributes
             ];
         }
@@ -445,17 +370,16 @@ async function resolveFilterOptions(where: Record<string, unknown>, categoryCode
 }
 
 async function fetchPriceSorted(
-    where: Record<string, unknown>,
+    where: Prisma.ProductWhereInput,
     sort: string,
     page: number,
     limit: number,
     fields: string | null,
-    codeByCategoryId: Map<number, string>
 ) {
     const products = await prisma.product.findMany({
         where,
         orderBy: { price: sort === "price-asc" ? "asc" as const : "desc" as const },
-        include: fields === "minimal" ? BASE_PRODUCT_INCLUDE : FULL_PRODUCT_INCLUDE,
+        include: fields === "minimal" ? baseProductInclude : fullProductInclude,
         skip: (page - 1) * limit,
         take: limit,
     });
@@ -463,7 +387,7 @@ async function fetchPriceSorted(
     const total = await prisma.product.count({ where });
 
     return {
-        products: products.map((product) => mapProduct(product, codeByCategoryId)),
+        products,
         total,
     };
 }
@@ -477,18 +401,18 @@ export async function getProductsData(searchParams: URLSearchParams) {
         const categoryParam = searchParams.get("category");
         const subcategoryParam = searchParams.get("subcategory");
 
-        const { codeByCategoryId, resolveCategoryIds } = await loadCategoryMetadata();
+        const { resolveCategoryIds } = await loadCategoryMetadata();
         const categoryIdsForFilter = categoryParam ? resolveCategoryIds([categoryParam]) : [];
         const where = buildWhereClause(searchParams, categoryIdsForFilter);
         const filterOptionsPromise = searchParams.get("getFilters") === "true"
             ? resolveFilterOptions(where, categoryParam, subcategoryParam)
             : Promise.resolve(undefined);
 
-        let products: any[] = [];
+        let products: Array<ProductRow | ProductBaseRow> = [];
         let total = 0;
 
         if (sort === "price-asc" || sort === "price-desc") {
-            ({ products, total } = await fetchPriceSorted(where, sort, page, limit, fields, codeByCategoryId));
+            ({ products, total } = await fetchPriceSorted(where, sort, page, limit, fields));
         } else {
             const orderBy = sort === "name-desc"
                 ? { name: "desc" as const }
@@ -497,7 +421,7 @@ export async function getProductsData(searchParams: URLSearchParams) {
             const [rows, count] = await Promise.all([
                 prisma.product.findMany({
                     where,
-                    include: fields === "minimal" ? BASE_PRODUCT_INCLUDE : FULL_PRODUCT_INCLUDE,
+                    include: fields === "minimal" ? baseProductInclude : fullProductInclude,
                     orderBy,
                     skip: (page - 1) * limit,
                     take: limit,
@@ -505,12 +429,14 @@ export async function getProductsData(searchParams: URLSearchParams) {
                 prisma.product.count({ where }),
             ]);
 
-            products = rows.map((product) => mapProduct(product, codeByCategoryId));
+            products = rows;
             total = count;
         }
 
         const filterOptions = await filterOptionsPromise;
-        return NextResponse.json({ products, total, page, limit, filterOptions });
+        return NextResponse.json(
+            buildProductsResponse(products, total, page, limit, filterOptions)
+        );
     } catch (error) {
         console.error("getProductsData error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -528,18 +454,16 @@ export async function POST(req: NextRequest) {
         // Handle fetching products by IDs for share functionality
         const idsPayload = productIdsSchema.safeParse(body);
         if (idsPayload.success) {
-            const { codeByCategoryId } = await loadCategoryMetadata();
-            
             const products = await prisma.product.findMany({
                 where: {
                     id: { in: idsPayload.data.ids },
                     deletedAt: null,
                 },
-                include: FULL_PRODUCT_INCLUDE,
+                include: fullProductInclude,
             });
             
             return NextResponse.json({ 
-                products: products.map(product => mapProduct(product, codeByCategoryId))
+                products: products.map(mapProduct)
             });
         }
 
@@ -549,7 +473,7 @@ export async function POST(req: NextRequest) {
         
         const data = createProductSchema.parse(body);
 
-        const { codeByCategoryId, resolveCategoryIds } = await loadCategoryMetadata();
+        const { resolveCategoryIds } = await loadCategoryMetadata();
         const categoryIds = resolveCategoryIds([data.category]);
         const categoryId = categoryIds[0];
 
@@ -597,7 +521,7 @@ export async function POST(req: NextRequest) {
                         })),
                     },
                 },
-                include: FULL_PRODUCT_INCLUDE,
+                include: fullProductInclude,
             });
 
             await createInventoryUnits(
@@ -649,12 +573,12 @@ export async function POST(req: NextRequest) {
 
             return tx.product.findUniqueOrThrow({
                 where: { id: created.id },
-                include: FULL_PRODUCT_INCLUDE,
+                include: fullProductInclude,
             });
         });
 
         return withRateLimitHeaders(
-            NextResponse.json(mapProduct(product, codeByCategoryId), { status: 201 }),
+            NextResponse.json(mapProduct(product), { status: 201 }),
             rateLimit
         );
     } catch (error) {

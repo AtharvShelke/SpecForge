@@ -882,7 +882,7 @@ const InventoryManager = () => {
                                                     <img
                                                         className="h-full w-full object-contain"
                                                         src={product?.media?.[0]?.url || '/placeholder.png'}
-                                                        alt={product?.name || product?.sku}
+                                                        alt={product?.name || product?.sku || 'Product image'}
                                                         onError={handleImgError}
                                                     />
                                                 </div>
@@ -982,7 +982,7 @@ const InventoryManager = () => {
                                         <img
                                             className="h-full w-full object-contain"
                                             src={product?.media?.[0]?.url || '/placeholder.png'}
-                                            alt={product?.name || product?.sku}
+                                            alt={product?.name || product?.sku || 'Product image'}
                                             onError={handleImgError}
                                         />
                                     </div>

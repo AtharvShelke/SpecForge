@@ -23,8 +23,10 @@ export function getProductScore(product: Product) {
  */
 export function filterGpuTier(products: Product[], tier: GpuTier) {
   return products.filter(p => {
-    if (p.category.name !== 'GPU') return false;
+    if (p.category?.name !== 'GPU') return false;
+
     const price = p.price || 0;
+
     return getGpuTier(price) === tier;
   });
 }
@@ -33,18 +35,31 @@ export function filterGpuTier(products: Product[], tier: GpuTier) {
  * Get featured products (latest from key categories).
  */
 export function getFeaturedProducts(products: Product[]) {
-  // Get the latest product from each category instead of hardcoded categories
+  // Get the latest product from each category
   const categoryMap = new Map<string, Product>();
-  
+
   products.forEach(product => {
-    const categoryName = product.category.name;
-    if (!categoryMap.has(categoryName) || 
-        new Date(product.createdAt).getTime() > new Date(categoryMap.get(categoryName)!.createdAt).getTime()) {
+    const categoryName = product.category?.name;
+    const createdAt = product.createdAt;
+
+    if (!categoryName || !createdAt) return;
+
+    const existing = categoryMap.get(categoryName);
+
+    if (
+      !existing ||
+      new Date(createdAt).getTime() >
+        new Date(existing.createdAt ?? 0).getTime()
+    ) {
       categoryMap.set(categoryName, product);
     }
   });
 
   return Array.from(categoryMap.values())
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 3); // Return top 3 latest products
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt ?? 0).getTime() -
+        new Date(a.createdAt ?? 0).getTime()
+    )
+    .slice(0, 3);
 }

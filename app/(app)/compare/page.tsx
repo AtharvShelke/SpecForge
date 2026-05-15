@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useShop } from '@/context/ShopContext';
-import { specsToFlat, Product, Category } from '@/types';
+import { specsToFlat } from '@/types';
 import Link from 'next/link';
 import { ArrowLeft, XCircle, ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -39,7 +39,7 @@ export default function ComparePage() {
     }
 
     // Since validation prevents different categories, we can assume all items are of the same category
-    const categoryLabel = compareItems[0].category.label;
+    const categoryLabel = compareItems[0].category?.label;
 
     return (
         <div className="min-h-screen bg-zinc-50 pt-8 pb-20">
@@ -89,12 +89,12 @@ export default function ComparePage() {
                                             ₹{(item.price || 0).toLocaleString('en-IN')}
                                         </div>
                                         <button
-                                            onClick={() => addToCart(item as any)}
-                                            disabled={item.status !== 'IN_STOCK'}
-                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-colors ${item.status !== 'IN_STOCK' ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                            onClick={() => addToCart(item)}
+                                            disabled={item.stockStatus === 'OUT_OF_STOCK'}
+                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-colors ${item.stockStatus === 'OUT_OF_STOCK' ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                                         >
                                             <ShoppingCart size={16} />
-                                            {item?.status !== 'IN_STOCK' ? 'Out of Stock' : 'Add to Cart'}
+                                            {item.stockStatus === 'OUT_OF_STOCK' ? 'Out of Stock' : 'Add to Cart'}
                                         </button>
                                     </th>
                                 ))}

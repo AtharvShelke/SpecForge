@@ -330,7 +330,7 @@ const OrderManager = () => {
           quantity: item.quantity,
           reserved: item.reserved || 0,
           reorderLevel: item.reorderLevel || 0,
-          sku: item.product?.sku,
+          sku: item.product?.sku ?? undefined,
         });
       }
     }
@@ -833,7 +833,7 @@ const OrderManager = () => {
                                     <div className="flex items-center gap-3">
                                       <div className="h-9 w-9 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
                                         <img
-                                          src={item.image}
+                                          src={item.image ?? '/placeholder.png'}
                                           alt={item.name}
                                           className="h-full w-full object-contain"
                                           onError={handleImgError}
@@ -897,7 +897,7 @@ const OrderManager = () => {
                           <div key={item.id} className="p-3 flex gap-3">
                             <div className="h-12 w-12 rounded-lg bg-stone-100 border border-stone-200 flex-shrink-0 overflow-hidden">
                               <img
-                                src={item.image}
+                                src={item.image ?? '/placeholder.png'}
                                 alt={item.name}
                                 className="h-full w-full object-contain"
                                 onError={handleImgError}

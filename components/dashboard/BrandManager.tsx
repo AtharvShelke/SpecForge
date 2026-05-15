@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
-import { Category, Brand } from '@/types';
+import { Category, Brand, CreateBrandRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import {
     Trash,
@@ -126,7 +126,7 @@ CategoryPill.displayName = 'CategoryPill';
 // BRAND CARD — memoized to prevent re-renders on list changes
 // ─────────────────────────────────────────────────────────────
 const BrandCard = memo(({ brand, onDelete }: {
-    brand: { id: string; name: string; categories: Category[] };
+    brand: { id: string; name: string; categories?: Category[] };
     onDelete: (id: string, name: string) => void;
 }) => {
     const handleDelete = useCallback(() => onDelete(brand.id, brand.name), [onDelete, brand.id, brand.name]);
@@ -157,9 +157,9 @@ const BrandCard = memo(({ brand, onDelete }: {
 
                 <div className="h-px bg-stone-100" />
 
-                {brand.categories.length > 0 ? (
+                {(brand.categories?.length ?? 0) > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                        {brand.categories.map(cat => (
+                        {brand.categories?.map(cat => (
                             <CategoryPill key={cat?.id} label={cat?.name} />
                         ))}
                     </div>
@@ -285,7 +285,7 @@ const BrandManager = () => {
     }, [fetchCategories, fetchBrands]);
 
     // Add brand
-    const addBrand = useCallback(async (brand: Partial<Brand>) => {
+    const addBrand = useCallback(async (brand: CreateBrandRequest) => {
         try {
             const res = await fetch('/api/brands', {
                 method: 'POST',
@@ -324,10 +324,8 @@ const BrandManager = () => {
         if (!newBrandName.trim() || selectedCats.length === 0) return;
 
         addBrand({
-            id: `brand-${Date.now()}`,
             name: newBrandName.trim(),
-            // Send names as expected by the API (based on route.ts)
-            categories: selectedCats.map(c => c.name) as any,
+            categories: selectedCats.map(c => c.name),
         });
 
         setNewBrandName('');

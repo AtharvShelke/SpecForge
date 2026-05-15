@@ -32,7 +32,7 @@ export async function GET(
       );
     }
 
-    const pdfBuffer = await generateInvoicePdfBuffer(order as any);
+    const pdfBuffer = await generateInvoicePdfBuffer(order);
 
     return withRateLimitHeaders(
       new NextResponse(new Uint8Array(pdfBuffer), {

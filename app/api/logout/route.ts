@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME, getSessionCookieOptions } from "@/lib/auth";
+import { getSessionCookieOptions } from "@/lib/auth";
+import { SESSION_COOKIE_NAME } from "@/lib/session";
 import { handleApiError } from "@/lib/security/errors";
 import { assertTrustedOrigin } from "@/lib/security/request";
 

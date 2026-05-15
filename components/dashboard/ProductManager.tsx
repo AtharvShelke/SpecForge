@@ -109,6 +109,23 @@ function getProductStock(product: any): number {
     return 0;
 }
 
+function getSpecArrayValue(value: ProductSpecsFlat[string]): string[] {
+    if (Array.isArray(value)) {
+        return value.map((entry) => String(entry));
+    }
+    return typeof value === 'string' ? [value] : [];
+}
+
+function getSpecInputValue(value: ProductSpecsFlat[string]): string | number {
+    if (Array.isArray(value)) {
+        return value.map((entry) => String(entry)).join(', ');
+    }
+    if (typeof value === 'boolean') {
+        return value ? 'true' : 'false';
+    }
+    return value ?? '';
+}
+
 const StockPill = memo(({ product }: { product: Product;}) => {
     const totalStock = getProductStock(product);
     if (totalStock <= 0) return (
@@ -337,9 +354,24 @@ MobileProductCard.displayName = 'MobileProductCard';
 interface ProductFormState extends Omit<Partial<Product>, 'specs' | 'category'> {
     specs: ProductSpecsFlat;
     category: string;
-    price?: number;
+    price?: number | null;
     stock?: number;
-    sku?: string;
+    sku?: string | null;
+    images: string[];
+}
+
+type InventoryUnitInput = {
+    partNumber: string;
+    serialNumber: string;
+    costPrice?: number;
+    location?: string;
+};
+
+interface ProductWritePayload extends Omit<Partial<Product>, 'specs' | 'category'> {
+    category: string;
+    specs: ProductSpec[];
+    stock?: number;
+    inventoryUnits?: InventoryUnitInput[];
     images: string[];
 }
 
@@ -350,7 +382,7 @@ const EMPTY_FORM: ProductFormState = {
     specs: { brand: '' }, description: ''
 };
 
-function parseInventoryUnits(text: string, fallbackCostPrice: number) {
+function parseInventoryUnits(text: string, fallbackCostPrice: number): InventoryUnitInput[] {
     return text
         .split('\n')
         .map((line) => line.trim())
@@ -438,7 +470,7 @@ const ProductManager = () => {
     }, [fetchProducts, fetchCategories, fetchBrands, fetchAttributeConfigs]);
 
     // Add product
-    const addProduct = useCallback(async (product: Partial<Product>, inventoryUnits: Array<{ partNumber: string; serialNumber: string; costPrice?: number; location?: string }>, costPrice: number) => {
+    const addProduct = useCallback(async (product: ProductWritePayload, inventoryUnits: InventoryUnitInput[], costPrice: number) => {
         try {
             const res = await fetch('/api/products', {
                 method: 'POST',
@@ -455,7 +487,7 @@ const ProductManager = () => {
     }, [fetchProducts, toast]);
 
     // Update product
-    const updateProduct = useCallback(async (product: Product) => {
+    const updateProduct = useCallback(async (product: ProductWritePayload) => {
         try {
             const res = await fetch(`/api/products/${product.id}`, {
                 method: 'PUT',
@@ -579,7 +611,7 @@ const ProductManager = () => {
     }, [attributeConfigs, currentProduct.category, currentProduct.specs]);
 
     const availableBrands = useMemo(() =>
-        brands.filter(b => b.categories.some(c => matchesCategorySelection(currentProduct.category, c))),
+        brands.filter(b => (b.categories ?? []).some(c => matchesCategorySelection(currentProduct.category, c))),
         [currentProduct.category, brands]
     );
 
@@ -610,7 +642,7 @@ const ProductManager = () => {
         const selectedCategory = currentProduct.category;
         
         if (currentProduct.id && products.find(p => p.id === currentProduct.id)) {
-            await updateProduct({ 
+            const updatedProduct: ProductWritePayload = {
                 ...currentProduct, 
                 specs: apiSpecs, 
                 category: selectedCategory,
@@ -618,9 +650,10 @@ const ProductManager = () => {
                 stock: inventoryUnits.length,
                 inventoryUnits,
                 images: currentProduct.images 
-            } as any);
+            };
+            await updateProduct(updatedProduct);
         } else {
-            const newProduct = {
+            const newProduct: ProductWritePayload = {
                 ...currentProduct,
                 id: `prod-${Date.now()}`,
                 sku: generateSKU(currentProduct),
@@ -632,7 +665,7 @@ const ProductManager = () => {
                 description: currentProduct.description || '',
                 specs: apiSpecs
             };
-            await addProduct(newProduct as any, inventoryUnits, newProductCost);
+            await addProduct(newProduct, inventoryUnits, newProductCost);
         }
         setRefreshTrigger(p => !p);
         setIsEditing(false);
@@ -852,7 +885,7 @@ const ProductManager = () => {
                                             <FieldLabel required>Product Name</FieldLabel>
                                             <Input
                                                 required
-                                                value={currentProduct.name}
+                                                value={currentProduct.name ?? ''}
                                                 onChange={e => setCurrentProduct(prev => ({ ...prev, name: e.target.value }))}
                                                 placeholder="Identifying name..."
                                                 className="h-10 md:h-9 text-sm rounded-xl border-stone-200 shadow-none focus-visible:ring-indigo-400"
@@ -861,7 +894,7 @@ const ProductManager = () => {
                                         <div>
                                             <FieldLabel>SKU / Serial</FieldLabel>
                                             <Input
-                                                value={currentProduct.sku}
+                                                value={currentProduct.sku ?? ''}
                                                 onChange={e => setCurrentProduct(prev => ({ ...prev, sku: e.target.value }))}
                                                 placeholder="SKU-XXXXX"
                                                 className="h-10 md:h-9 text-sm font-mono rounded-xl border-stone-200 shadow-none"
@@ -896,7 +929,7 @@ const ProductManager = () => {
                                         <div className="sm:col-span-2">
                                             <FieldLabel>Description</FieldLabel>
                                             <Textarea
-                                                value={currentProduct.description}
+                                                value={currentProduct.description ?? ''}
                                                 onChange={e => setCurrentProduct(prev => ({ ...prev, description: e.target.value }))}
                                                 placeholder="Enter technical details and overview..."
                                                 className="min-h-[100px] text-sm border-stone-200 rounded-xl shadow-none resize-none"
@@ -916,7 +949,7 @@ const ProductManager = () => {
                                             <FieldLabel required={attr.required}>
                                                 {attr.label}{attr.unit && <span className="normal-case text-stone-400 ml-1">({attr.unit})</span>}
                                             </FieldLabel>
-                                            {attr.type === 'multi-select' ? (
+                                            {attr.type === 'multi_select' ? (
                                                 <div className="flex flex-wrap gap-1.5 pt-1">
                                                     {attr.options?.map(option => (
                                                         <button
@@ -924,7 +957,7 @@ const ProductManager = () => {
                                                             onClick={() => handleMultiSelectToggle(attr.key, option)}
                                                             className={cn(
                                                                 'px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border',
-                                                                ((currentProduct.specs?.[attr.key] as string[]) || []).includes(option)
+                                                                getSpecArrayValue(currentProduct.specs?.[attr.key]).includes(option)
                                                                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                                                                     : 'bg-white text-stone-500 border-stone-200 active:bg-stone-50'
                                                             )}
@@ -937,7 +970,7 @@ const ProductManager = () => {
                                                 <Input
                                                     type={attr.type === 'number' ? 'number' : 'text'}
                                                     className="h-10 md:h-9 text-sm rounded-xl border-stone-200"
-                                                    value={currentProduct.specs?.[attr.key] || ''}
+                                                    value={getSpecInputValue(currentProduct.specs?.[attr.key])}
                                                     onChange={e => handleSpecChange(attr.key, attr.type === 'number' ? Number(e.target.value) : e.target.value)}
                                                 />
                                             )}
@@ -1061,7 +1094,7 @@ const ProductManager = () => {
                                             <Input
                                                 type="number" step="0.01"
                                                 className="h-11 md:h-10 pl-7 text-base md:text-sm font-mono rounded-xl border-stone-200 bg-white shadow-sm focus-visible:ring-indigo-400"
-                                                value={currentProduct.price}
+                                                value={currentProduct.price ?? 0}
                                                 onChange={e => setCurrentProduct(prev => ({ ...prev, price: Number(e.target.value) }))}
                                             />
                                         </div>
@@ -1202,7 +1235,7 @@ const ProductManager = () => {
                             </span>
                             <span className={cn(
                                 'p-1 rounded-md shrink-0',
-                                (card as any).alert ? 'text-rose-500 bg-rose-50' : 'text-stone-400 bg-stone-50'
+                                card.alert ? 'text-rose-500 bg-rose-50' : 'text-stone-400 bg-stone-50'
                             )}>
                                 {React.isValidElement(card.icon)
                                     ? React.cloneElement(card.icon as React.ReactElement<{ size?: number }>, { size: 12 })

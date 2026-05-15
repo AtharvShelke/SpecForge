@@ -13,23 +13,11 @@ import {
     ChevronLeft,
     Plus,
 } from 'lucide-react';
-import { CompatibilityLevel, specsToFlat, Product } from '@/types';
+import { CompatibilityIssue, CompatibilityLevel, Product, toCartItem, specsToFlat } from '@/types';
 import { validateBuild } from '@/lib/calculations/compatibility';
 
-// ── Constants (module scope — never recreated) ────────────────────────────────
 
-const CATEGORY_HIGHLIGHTS: Record<string, string[]> = {
-    PROCESSOR:   ['cores', 'socket', 'wattage', 'ramType', 'series', 'generation'],
-    GPU:         ['memory', 'wattage', 'series'],
-    RAM:         ['capacity', 'frequency', 'ramType'],
-    MOTHERBOARD: ['chipset', 'socket', 'formFactor', 'ramType'],
-    COOLER:      ['type', 'size'],
-    STORAGE:     ['type', 'interface', 'capacity'],
-    CABINET:     ['formFactor', 'color'],
-    PSU:         ['wattage', 'efficiency'],
-    MONITOR:     ['size', 'resolution', 'type'],
-    PERIPHERAL:  ['type', 'connectivity'],
-};
+
 
 // Status config — plain object, never recreated
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
@@ -135,7 +123,7 @@ const SpecRow = memo(function SpecRow({ label, value }: { label: string; value: 
 // ── ProductDetailClient ───────────────────────────────────────────────────────
 
 interface ProductDetailClientProps {
-    product: Product & { brand?: any; specs: any };
+    product: Product;
 }
 
 const ProductDetailClient = memo(function ProductDetailClient({ product }: ProductDetailClientProps) {
@@ -148,7 +136,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
 
     const media = useMemo(() => {
         return product.media?.length
-            ? product.media.map((m: any) => m.url)
+            ? product.media.map((mediaItem) => mediaItem.url)
             : [product.image ?? '/placeholder.png'];
     }, [product.media, product.image]);
 
@@ -156,7 +144,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
 
     const prevImage = useCallback(() => setSelectedImage(i => (i - 1 + media.length) % media.length), [media.length]);
     const nextImage = useCallback(() => setSelectedImage(i => (i + 1) % media.length),                [media.length]);
-    const handleAddToCart = useCallback(() => addToCart(product as any), [addToCart, product]);
+    const handleAddToCart = useCallback(() => addToCart(product), [addToCart, product]);
 
     // Derived values — all memoised so they don't recompute on tab/image changes
     const price         = product.price ?? 0;
@@ -167,12 +155,12 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
     const hasDiscount   = !!(compareAtPrice && compareAtPrice > price);
     const discountPct   = hasDiscount ? Math.round(((compareAtPrice! - price) / compareAtPrice!) * 100) : 0;
 
-    const inCart        = useMemo(() => cart.find((c: any) => c.id === product.id), [cart, product.id]);
+    const inCart        = useMemo(() => cart.find((cartItem) => cartItem.id === product.id), [cart, product.id]);
     const statusInfo    = STATUS_CONFIG[status] ?? STATUS_CONFIG.IN_STOCK;
-    const highlights    = CATEGORY_HIGHLIGHTS[typeof product.category === 'string' ? product.category : product.category?.code ?? product.category?.slug] ?? [];
+    
 
     const report = useMemo(() => {
-        const hypotheticalCart = [...cart, { ...product, quantity: 1 } as any];
+        const hypotheticalCart = [...cart, toCartItem(product)];
         return validateBuild(hypotheticalCart);
     }, [cart, product]);
 
@@ -341,19 +329,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
                             </span>
                         </div>
 
-                        {/* Spec chips */}
-                        {highlights.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                                {highlights.slice(0, 6).map(key =>
-                                    flatSpecs[key] && (
-                                        <div key={key} className="px-2 py-1 bg-zinc-50 border border-zinc-200 rounded-xl text-[10px] font-medium text-zinc-600">
-                                            <span className="text-zinc-400">{formatKey(key)}: </span>{String(flatSpecs[key])}
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        )}
-
+                       
                         {/* Compat detail banner */}
                         {report.status !== CompatibilityLevel.COMPATIBLE && (
                             <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-[10px] ${compat.bg} ${compat.border}`}>
@@ -403,7 +379,7 @@ const ProductDetailClient = memo(function ProductDetailClient({ product }: Produ
                                             <p className="text-[11px] text-zinc-500 leading-snug">{compat.desc}</p>
                                             {report.issues.length > 0 && (
                                                 <ul className="mt-2 space-y-1">
-                                                    {report.issues.map((issue: any, i: number) => (
+                                                    {report.issues.map((issue: CompatibilityIssue, i: number) => (
                                                         <li key={i} className="text-[10px] text-zinc-500 flex items-start gap-1.5">
                                                             <span className="w-1 h-1 rounded-full bg-zinc-300 mt-1.5 shrink-0" />
                                                             {issue.message}

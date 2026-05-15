@@ -138,7 +138,7 @@ export default function GpuTierSection() {
     )
 
     const hasGpus = useMemo(
-        () => products.some(p => p.category.name === 'GPU'),
+        () => products.some(p => p.category?.name === 'GPU'),
         [products]
     )
 

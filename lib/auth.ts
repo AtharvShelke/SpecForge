@@ -2,8 +2,7 @@ import type { NextRequest } from "next/server";
 import { ApiError } from "@/lib/security/errors";
 import { prisma } from "./prisma";
 import { verifyToken } from "./jwt";
-
-export const SESSION_COOKIE_NAME = "token";
+import { SESSION_COOKIE_NAME } from "./session";
 
 export type AppRole = "ADMIN" | "USER";
 

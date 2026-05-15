@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
+import { CurrencySchema } from "@/lib/contracts/validation";
 import { calculateTax, type TaxLineInput } from "@/lib/tax-engine";
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import { buildAuditContext } from "@/lib/security/request";
 import { parseJsonBody } from "@/lib/security/validation";
-
-const CurrencyEnum = z.enum(["INR", "USD", "EUR", "GBP"]);
 
 const lineItemSchema = z.object({
     name: z.string().min(1),
@@ -21,7 +20,7 @@ const lineItemSchema = z.object({
 const createInvoiceSchema = z.object({
     customerId: z.string().uuid(),
     orderId: z.string().optional(),
-    currency: CurrencyEnum.default("INR"),
+    currency: CurrencySchema.default("INR"),
     discountPct: z.number().min(0).max(100).default(0),
     shipping: z.number().min(0).default(0),
     notes: z.string().optional(),

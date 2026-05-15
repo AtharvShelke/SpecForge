@@ -332,6 +332,14 @@ const EDIT_FIELDS = [
     { label: 'Category', field: 'category', placeholder: 'e.g. Gaming, Workstation', type: 'text', required: false },
 ] as const;
 
+type EditableBuild = {
+    id: string;
+    title: string;
+    category?: string;
+    description?: string;
+    total: number;
+};
+
 // ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
@@ -357,7 +365,7 @@ export default function SavedBuildsManager() {
     }, [fetchBuilds]);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [editingBuild, setEditingBuild] = useState<any | null>(null);
+    const [editingBuild, setEditingBuild] = useState<EditableBuild | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -413,7 +421,7 @@ export default function SavedBuildsManager() {
         setExpandedId(prev => prev === id ? null : id),
     []);
 
-    const handleEditBuild = useCallback((build: any) => setEditingBuild(build), []);
+    const handleEditBuild = useCallback((build: EditableBuild) => setEditingBuild(build), []);
     const handleDeleteConfirm = useCallback((id: string) => setDeleteConfirmId(id), []);
 
     const handleSyncData = useCallback(() => syncData(), [syncData]);
@@ -466,17 +474,17 @@ export default function SavedBuildsManager() {
     [categories]);
 
     // Stable handler for edit field changes — avoids new function per field per render
-    const handleEditFieldChange = useCallback((field: string) =>
+    const handleEditFieldChange = useCallback((field: (typeof EDIT_FIELDS)[number]['field']) =>
         (e: React.ChangeEvent<HTMLInputElement>) =>
-            setEditingBuild((prev: any) => ({ ...prev, [field]: e.target.value })),
+            setEditingBuild((prev) => prev ? ({ ...prev, [field]: e.target.value }) : prev),
     []);
 
     const handleEditDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) =>
-        setEditingBuild((prev: any) => ({ ...prev, description: e.target.value })),
+        setEditingBuild((prev) => prev ? ({ ...prev, description: e.target.value }) : prev),
     []);
 
     const handleEditTotalChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) =>
-        setEditingBuild((prev: any) => ({ ...prev, total: parseFloat(e.target.value) || 0 })),
+        setEditingBuild((prev) => prev ? ({ ...prev, total: parseFloat(e.target.value) || 0 }) : prev),
     []);
 
     const cancelEdit = useCallback(() => setEditingBuild(null), []);
@@ -633,7 +641,7 @@ export default function SavedBuildsManager() {
                                         type={type}
                                         placeholder={placeholder}
                                         required={required}
-                                        value={(editingBuild as any)[field] || ''}
+                                        value={editingBuild[field] || ''}
                                         onChange={handleEditFieldChange(field)}
                                         className="h-8 text-xs border-stone-200 bg-stone-50 rounded-lg focus:bg-white focus:border-violet-300 focus:ring-violet-500/20 placeholder:text-stone-400 font-medium"
                                     />

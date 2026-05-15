@@ -2,6 +2,7 @@
 
 import { OrderStatus } from "@/generated/prisma/client";
 import { getBaseUrl } from "@/lib/env";
+import { OrderPaymentMethodSchema } from "@/lib/contracts/validation";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { calculateOrderFinancials } from '@/lib/tax-engine';
@@ -24,7 +25,7 @@ const checkoutSchema = z.object({
     shippingState: z.string().optional(),
     shippingZip: z.string().optional(),
     shippingCountry: z.string().optional(),
-    paymentMethod: z.string().optional(),
+    paymentMethod: OrderPaymentMethodSchema.optional(),
     paymentTransactionId: z.string().optional(),
     paymentStatus: z.string().optional(),
     isPosOverride: z.boolean().optional(),

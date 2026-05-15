@@ -67,7 +67,15 @@ function buildTree(records: HierarchyRecord[]): CategoryNode[] {
     map.set(record.id, {
       id: record.id,
       label: record.label,
-      category: record.category?.code as any,
+      category: record.category
+        ? {
+            id: record.category.id,
+            code: record.category.code,
+            name: record.category.name,
+            slug: slugify(record.category.name),
+            shortLabel: record.category.shortLabel,
+          }
+        : null,
       query: record.query ?? undefined,
       brand: record.brand ?? undefined,
       parentId: record.parentId ?? undefined,
@@ -173,7 +181,7 @@ export default async function StorefrontPage() {
   const storefrontBrands = brands.map(({ _count, ...brand }) => brand)
   const storefrontProducts = products.map((product) => ({
     ...product,
-    category: resolveCategoryCode(product.category, categoriesMaster),
+    category: product.category,
     specs: product.specs.map(mapSpec),
   }))
   const storefrontBuildGuides = buildGuides.map((buildGuide) => ({
@@ -186,10 +194,10 @@ export default async function StorefrontPage() {
 
   return (
     <StorefrontPageClient
-      products={storefrontProducts as any}
+      products={storefrontProducts}
       categories={categories}
-      brands={storefrontBrands as any}
-      buildGuides={storefrontBuildGuides as any}
+      brands={storefrontBrands}
+      buildGuides={storefrontBuildGuides}
     />
   )
 }

@@ -32,7 +32,7 @@ const ProductCard = memo(function ProductCard({
   const price = product?.price ?? 0
   const image = product.media?.[0]?.url
   const brand = product.brand?.name
-  const isOutOfStock = product.status === 'OUT_OF_STOCK'
+  const isOutOfStock = product.stockStatus === 'OUT_OF_STOCK'
 
   const handleAddToCart = useCallback(
     (e: React.MouseEvent) => {

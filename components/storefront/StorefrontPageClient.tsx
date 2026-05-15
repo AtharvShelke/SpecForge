@@ -44,14 +44,17 @@ export default function StorefrontPageClient({
   const builds = buildGuides.slice(0, 4)
 
   const productCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    for (const product of products) {
-      if (product.status === 'ACTIVE') {
-        counts[product.category.name] = (counts[product.category.name] ?? 0) + 1
-      }
+  const counts: Record<string, number> = {}
+
+  for (const product of products) {
+    if (product.status === 'ACTIVE' && product.category?.name) {
+      counts[product.category.name] =
+        (counts[product.category.name] ?? 0) + 1
     }
-    return counts
-  }, [products])
+  }
+
+  return counts
+}, [products])
 
   return (
     <PageLayout bgClass="bg-zinc-950">

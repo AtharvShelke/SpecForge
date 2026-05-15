@@ -102,7 +102,7 @@ export function AttributeEditorModal({
                 <SelectItem value="text">Text</SelectItem>
                 <SelectItem value="number">Number</SelectItem>
                 <SelectItem value="select">Select</SelectItem>
-                <SelectItem value="multi-select">Multi-select</SelectItem>
+                <SelectItem value="multi_select">Multi-select</SelectItem>
                 <SelectItem value="boolean">Boolean</SelectItem>
               </SelectContent>
             </Select>
@@ -197,7 +197,7 @@ export function AttributeEditorModal({
         </div>
 
         <div className="space-y-1">
-          <HintLabel label="Options" hint="Comma-separated allowed values for select and multi-select attributes." />
+          <HintLabel label="Options" hint="Comma-separated allowed values for select and multi_select attributes." />
           <Textarea
             value={value.options.join(', ')}
             onChange={(event) => onChange({

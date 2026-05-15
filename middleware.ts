@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/auth";
 import { verifyToken } from "@/lib/jwt";
+import { SESSION_COOKIE_NAME } from "@/lib/session";
 import { jsonError } from "@/lib/security/errors";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { assertTrustedOrigin } from "@/lib/security/request";

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import type { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { getBaseUrl } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +11,14 @@ import {
 } from "@/lib/services/inventory";
 import { sendMail } from "@/lib/services/mail";
 import { createPaymentTransaction } from "@/lib/services/payment";
+import { mapOrderPaymentMethodToTransactionMethod } from "@/lib/contracts/domain";
+import {
+  OrderPaymentMethodSchema,
+  OrderStatusSchema,
+  SalesChannelSchema,
+} from "@/lib/contracts/validation";
 import { createOrderInvoiceAccessToken } from "@/lib/security/documents";
+import { buildOrdersResponse } from "@/lib/contracts/server-mappers";
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import { escapeHtml } from "@/lib/security/html";
 import {
@@ -19,25 +27,6 @@ import {
 } from "@/lib/security/rate-limit";
 import { buildAuditContext } from "@/lib/security/request";
 import { parseJsonBody } from "@/lib/security/validation";
-
-const OrderStatusEnum = z.enum([
-  "PENDING",
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-  "RETURNED",
-]);
-
-const SalesChannelEnum = z.enum(["ONLINE", "POS", "MANUAL", "API", "PHONE"]);
-const PaymentMethodEnum = z.enum([
-  "CARD",
-  "UPI",
-  "BANK_TRANSFER",
-  "CASH",
-  "WALLET",
-]);
 
 const orderItemSchema = z.object({
   productId: z.string().min(1),
@@ -51,7 +40,7 @@ const orderItemSchema = z.object({
 
 const createOrderSchema = z.object({
   id: z.string().min(1),
-  channel: SalesChannelEnum.default("ONLINE"),
+  channel: SalesChannelSchema.default("ONLINE"),
   customerName: z.string().min(1),
   email: z.string().email(),
   phone: z.string().optional(),
@@ -61,13 +50,25 @@ const createOrderSchema = z.object({
   shippingState: z.string().optional(),
   shippingZip: z.string().optional(),
   shippingCountry: z.string().optional(),
-  paymentMethod: PaymentMethodEnum.optional(),
+  paymentMethod: OrderPaymentMethodSchema.optional(),
   paymentTransactionId: z.string().optional(),
   paymentStatus: z.string().optional(),
   idempotencyKey: z.string().optional(),
-  source: z.record(z.string(), z.any()).optional(),
+  source: z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean(), z.null()])
+  ).optional(),
   items: z.array(orderItemSchema).min(1),
 });
+
+function toInputJsonValue(
+  value: z.infer<typeof createOrderSchema>["source"]
+): Prisma.InputJsonValue | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return Object.fromEntries(Object.entries(value)) as Prisma.InputJsonObject;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -81,12 +82,14 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
 
-    const where: any = {};
-    if (status && OrderStatusEnum.safeParse(status).success) {
-      where.status = status;
+    const where: Prisma.OrderWhereInput = {};
+    const parsedStatus = status ? OrderStatusSchema.safeParse(status) : null;
+    if (parsedStatus?.success) {
+      where.status = parsedStatus.data;
     }
-    if (channel && SalesChannelEnum.safeParse(channel).success) {
-      where.channel = channel;
+    const parsedChannel = channel ? SalesChannelSchema.safeParse(channel) : null;
+    if (parsedChannel?.success) {
+      where.channel = parsedChannel.data;
     }
     if (email) {
       where.email = email;
@@ -115,13 +118,17 @@ export async function GET(req: NextRequest) {
           discountAmount: true,
           total: true,
           status: true,
+          version: true,
           customerId: true,
           paymentMethod: true,
           paymentStatus: true,
+          source: true,
           createdAt: true,
+          updatedAt: true,
           items: {
             select: {
               id: true,
+              orderId: true,
               productId: true,
               name: true,
               categoryId: true,
@@ -140,7 +147,13 @@ export async function GET(req: NextRequest) {
             },
           },
           logs: {
-            select: { id: true, status: true, timestamp: true, note: true },
+            select: {
+              id: true,
+              orderId: true,
+              status: true,
+              timestamp: true,
+              note: true,
+            },
             orderBy: { timestamp: "asc" as const },
           },
           shippingStreet: true,
@@ -157,7 +170,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     return withRateLimitHeaders(
-      NextResponse.json({ orders, total, page, limit }),
+      NextResponse.json(buildOrdersResponse(orders, total, page, limit)),
       rateLimit
     );
   } catch (error) {
@@ -245,7 +258,7 @@ export async function POST(req: NextRequest) {
             paymentTransactionId: data.paymentTransactionId,
             paymentStatus: data.paymentStatus,
             idempotencyKey: data.idempotencyKey,
-            source: data.source,
+            source: toInputJsonValue(data.source),
             items: {
               create: data.items.map((item) => ({
                 productId: item.productId,
@@ -280,14 +293,20 @@ export async function POST(req: NextRequest) {
         });
 
         if (data.channel === "POS" && data.paymentMethod) {
-          await createPaymentTransaction(tx, {
-            orderId: data.id,
-            method: data.paymentMethod as any,
-            amount: total,
-            idempotencyKey: `pay-${data.id}-${Date.now()}`,
-            status: "COMPLETED",
-            metadata: { channel: data.channel },
-          });
+          const transactionMethod = mapOrderPaymentMethodToTransactionMethod(
+            data.paymentMethod
+          );
+
+          if (transactionMethod) {
+            await createPaymentTransaction(tx, {
+              orderId: data.id,
+              method: transactionMethod,
+              amount: total,
+              idempotencyKey: `pay-${data.id}-${Date.now()}`,
+              status: "COMPLETED",
+              metadata: { channel: data.channel },
+            });
+          }
 
           await tx.order.update({
             where: { id: data.id },
@@ -354,7 +373,7 @@ export async function POST(req: NextRequest) {
             <ul style="list-style: none; padding: 0; margin: 0;">
               ${order.items
                 .map(
-                  (item: any) => `
+                  (item) => `
                     <li style="margin-bottom: 10px; border-bottom: 1px solid #eaeaea; padding-bottom: 10px;">
                       <strong>${escapeHtml(item.name)}</strong><br />
                       <span>Quantity: ${escapeHtml(item.quantity)}</span> | <span>Price: Rs.${escapeHtml(
