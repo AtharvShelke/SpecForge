@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Share2, Copy, Check, Download, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,10 +28,11 @@ export default function BuildShareDialog({
   buildName = "My PC Build",
 }: BuildShareDialogProps) {
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const { toast } = useToast();
 
-  // Generate a shareable URL with build data
-  const generateShareUrl = () => {
+  // Generate a shareable URL with build data (client-side only)
+  useEffect(() => {
     const buildData = cart.map(item => ({
       id: item.id,
       variantId: item.selectedVariant?.id,
@@ -39,10 +40,8 @@ export default function BuildShareDialog({
     }));
     
     const encoded = btoa(JSON.stringify(buildData));
-    return `${window.location.origin}/builds/shared?data=${encoded}`;
-  };
-
-  const shareUrl = generateShareUrl();
+    setShareUrl(`${window.location.origin}/builds/shared?data=${encoded}`);
+  }, [cart]);
 
   const handleCopyLink = async () => {
     try {

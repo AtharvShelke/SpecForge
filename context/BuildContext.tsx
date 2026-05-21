@@ -509,6 +509,7 @@ export const BuildProvider = ({
       updateBuildGuide,
       deleteBuildGuide,
       deleteBuild,
+      
       addItem,
       removeItem,
       checkCompatibility,

@@ -7,11 +7,17 @@ import { cn } from "@/lib/utils";
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
+  onClick?: () => void;
+  onAdd?: () => void;
+  isSelected?: boolean;
 }
 
 export default function ProductCard({
   product,
   priority = false,
+  onClick,
+  onAdd,
+  isSelected = false,
 }: ProductCardProps) {
   const primaryImage =
     product.media?.[0]?.url ?? product.image ?? "/placeholder.png";
@@ -30,7 +36,13 @@ export default function ProductCard({
   return (
     <Link
       href={href}
-      className="group relative flex h-full flex-col overflow-hidden border border-gray-200 bg-white transition-all duration-300 hover:border-gray-300 hover:shadow-md"
+      onClick={onClick}
+      className={cn(
+        "group relative flex h-full flex-col overflow-hidden border bg-white transition-all duration-300 hover:shadow-md",
+        isSelected 
+          ? "border-blue-500 ring-1 ring-blue-500" 
+          : "border-gray-200 hover:border-gray-300"
+      )}
     >
       {/* Discount Badge */}
       {hasDiscount && !isOutOfStock && (
@@ -98,8 +110,25 @@ export default function ProductCard({
         </div>
 
         {/* Quick Action Hint */}
-        <div className="mt-2.5">
+        <div className="mt-2.5 flex items-center justify-between">
           <span className="text-xs text-gray-400">Click to view details →</span>
+          {onAdd && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAdd();
+              }}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                isSelected
+                  ? "bg-blue-50 text-blue-700"
+                  : "bg-black text-white hover:bg-gray-800"
+              )}
+            >
+              {isSelected ? "Selected" : "Add to Build"}
+            </button>
+          )}
         </div>
       </div>
     </Link>

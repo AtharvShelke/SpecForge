@@ -2,6 +2,11 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/jwt";
 
+// Prevent this file from being bundled in the client
+if (typeof window !== "undefined") {
+  throw new Error("This module can only be used on the server side");
+}
+
 export interface SessionUser {
   id: string;
   email: string;

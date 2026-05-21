@@ -13,6 +13,11 @@
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_BUILDER_SETTINGS, BuilderSettings } from "@/types";
 
+// Prevent this file from being bundled in the client
+if (typeof window !== "undefined") {
+  throw new Error("This module can only be used on the server side");
+}
+
 /** Fetches and returns the active BuilderSettings, merged with defaults. */
 export async function getBuilderSettings(): Promise<BuilderSettings> {
   try {

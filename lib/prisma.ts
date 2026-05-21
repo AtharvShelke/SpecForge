@@ -3,6 +3,11 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 import { Pool } from "pg";
 
+// Prevent this file from being bundled in the client
+if (typeof window !== "undefined") {
+  throw new Error("This module can only be used on the server side");
+}
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {

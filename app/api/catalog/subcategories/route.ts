@@ -9,8 +9,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
+    const builderEnabled = searchParams.get("builderEnabled") === "true";
     const subCategories = await CatalogService.getSubCategories(
       categoryId || undefined,
+      builderEnabled,
     );
     return NextResponse.json(subCategories);
   } catch (error: any) {

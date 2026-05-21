@@ -1,13 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT_DIR = path.join(__dirname, "context"); 
-const OUTPUT_FILE = path.join(__dirname, "txt/context.txt");
+const ROOT_DIR = path.join(__dirname, "app/admin");
+const OUTPUT_FILE = path.join(__dirname, "txt/admin.txt");
 
 // 👇 ignore rule
 function shouldIgnore(p) {
   return (
-    p.includes(path.join("app", "generated")) || p.includes(path.join("app", "api")) || p.includes(path.join("components", "ui")) || p.includes(path.join("lib", "services"))
+    p.includes(path.join("app", "generated")) || p.includes(path.join("components", "ui")) || p.includes(path.join("lib", "services"))
   );
 }
 
@@ -15,6 +15,7 @@ function shouldIgnore(p) {
 function getDirectoryTree(dir, prefix = "") {
   let result = "";
   const items = fs.readdirSync(dir);
+
 
   items.forEach((item, index) => {
     const fullPath = path.join(dir, item);

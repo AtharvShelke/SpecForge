@@ -443,10 +443,22 @@ export class CatalogService {
     });
   }
 
-  static async getSubCategories(categoryId?: string) {
+  static async getSubCategories(categoryId?: string, builderEnabled?: boolean) {
+    const where: any = { deletedAt: null };
+    if (categoryId) where.categoryId = categoryId;
+    if (builderEnabled) where.isBuilderEnabled = true;
+
     return prisma.subCategory.findMany({
-      where: categoryId ? { categoryId, deletedAt: null } : { deletedAt: null },
-      include: { category: true },
+      where,
+      include: { 
+        category: true,
+        subCategorySlots: {
+          include: {
+            slot: true
+          }
+        }
+      },
+      orderBy: [{ builderOrder: "asc" }, { name: "asc" }],
     });
   }
 

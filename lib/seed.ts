@@ -3281,8 +3281,255 @@ async function main() {
     }
   }
 
-  // ── 7.25 Compatibility Rules ───────────────────────────────────────────────
-  console.log("  → Seeding compatibility rules...");
+  // ── 7.25 Real Compatibility Rules (Spec-Based) ──────────────────────────────
+  console.log("  → Seeding real compatibility rules with scopes and specs...");
+
+  // Helper: find specDefId by subCategory name + spec name
+  const findSpecDefId = (subCatName: string, specName: string): string | null => {
+    const subCatId = subCategoryMap.get(subCatName);
+    if (!subCatId) return null;
+    return specDefMap.get(`${subCatId}::${specName}`) ?? null;
+  };
+
+  // ─── Compatibility Scopes ────────────────────────────────────────────────
+  const SCOPE_PAIRS = [
+    // CPU ↔ Motherboard (all mobo form factors)
+    { src: "Desktop CPU", tgt: "ATX Motherboard" },
+    { src: "Desktop CPU", tgt: "Micro-ATX Motherboard" },
+    { src: "Desktop CPU", tgt: "Mini-ITX Motherboard" },
+    // RAM ↔ Motherboard
+    { src: "DDR5 RAM", tgt: "ATX Motherboard" },
+    { src: "DDR5 RAM", tgt: "Micro-ATX Motherboard" },
+    { src: "DDR5 RAM", tgt: "Mini-ITX Motherboard" },
+    { src: "DDR4 RAM", tgt: "ATX Motherboard" },
+    { src: "DDR4 RAM", tgt: "Micro-ATX Motherboard" },
+    // Cooler ↔ CPU
+    { src: "AIO Liquid Cooler", tgt: "Desktop CPU" },
+    { src: "Air Cooler", tgt: "Desktop CPU" },
+    // GPU ↔ Case
+    { src: "NVIDIA GPU", tgt: "Mid Tower Case" },
+    { src: "NVIDIA GPU", tgt: "Full Tower Case" },
+    { src: "NVIDIA GPU", tgt: "Mini-ITX Case" },
+    { src: "AMD GPU", tgt: "Mid Tower Case" },
+    { src: "AMD GPU", tgt: "Full Tower Case" },
+  ];
+
+  const scopeMap = new Map<string, string>(); // "srcSubCat::tgtSubCat" → scopeId
+  for (const pair of SCOPE_PAIRS) {
+    const srcId = subCategoryMap.get(pair.src);
+    const tgtId = subCategoryMap.get(pair.tgt);
+    if (!srcId || !tgtId) {
+      console.warn(`    ⚠ Scope subcategory not found: ${pair.src} → ${pair.tgt}`);
+      continue;
+    }
+
+    const scope = await prisma.compatibilityScope.upsert({
+      where: {
+        sourceSubCategoryId_targetSubCategoryId: {
+          sourceSubCategoryId: srcId,
+          targetSubCategoryId: tgtId,
+        },
+      },
+      update: {},
+      create: { sourceSubCategoryId: srcId, targetSubCategoryId: tgtId },
+    });
+    scopeMap.set(`${pair.src}::${pair.tgt}`, scope.id);
+  }
+
+  // ─── PAIR Rules ─────────────────────────────────────────────────────────
+  interface PairRuleSeed {
+    name: string;
+    description: string;
+    srcSubCat: string;
+    tgtSubCat: string;
+    srcSpec: string;
+    tgtSpec: string;
+    operator: string;
+    severity: string;
+    message: string;
+    messageTemplate: string;
+    priority: number;
+  }
+
+  const PAIR_RULES: PairRuleSeed[] = [
+    // CPU Socket ↔ Motherboard Socket
+    {
+      name: "CPU-Motherboard Socket Match (ATX)",
+      description: "CPU socket must match ATX motherboard socket",
+      srcSubCat: "Desktop CPU", tgtSubCat: "ATX Motherboard",
+      srcSpec: "Socket", tgtSpec: "Socket",
+      operator: "EQUAL", severity: "ERROR",
+      message: "CPU socket does not match motherboard socket.",
+      messageTemplate: "CPU socket ({DESKTOP_CPU.Socket}) ≠ Motherboard socket ({ATX_MOTHERBOARD.Socket})",
+      priority: 100,
+    },
+    {
+      name: "CPU-Motherboard Socket Match (mATX)",
+      description: "CPU socket must match Micro-ATX motherboard socket",
+      srcSubCat: "Desktop CPU", tgtSubCat: "Micro-ATX Motherboard",
+      srcSpec: "Socket", tgtSpec: "Socket",
+      operator: "EQUAL", severity: "ERROR",
+      message: "CPU socket does not match motherboard socket.",
+      messageTemplate: "CPU socket ({DESKTOP_CPU.Socket}) ≠ Motherboard socket ({MICRO-ATX_MOTHERBOARD.Socket})",
+      priority: 100,
+    },
+    {
+      name: "CPU-Motherboard Socket Match (ITX)",
+      description: "CPU socket must match Mini-ITX motherboard socket",
+      srcSubCat: "Desktop CPU", tgtSubCat: "Mini-ITX Motherboard",
+      srcSpec: "Socket", tgtSpec: "Socket",
+      operator: "EQUAL", severity: "ERROR",
+      message: "CPU socket does not match motherboard socket.",
+      messageTemplate: "CPU socket ({DESKTOP_CPU.Socket}) ≠ Motherboard socket ({MINI-ITX_MOTHERBOARD.Socket})",
+      priority: 100,
+    },
+    // RAM ↔ Motherboard Memory Type
+    {
+      name: "DDR5 RAM-Motherboard Memory Type (ATX)",
+      description: "DDR5 RAM must match ATX motherboard memory type",
+      srcSubCat: "DDR5 RAM", tgtSubCat: "ATX Motherboard",
+      srcSpec: "Memory Type", tgtSpec: "Memory Type",
+      operator: "EQUAL", severity: "ERROR",
+      message: "RAM type does not match motherboard memory type.",
+      messageTemplate: "RAM ({DDR5_RAM.Memory Type}) ≠ Motherboard ({ATX_MOTHERBOARD.Memory Type})",
+      priority: 90,
+    },
+    {
+      name: "DDR5 RAM-Motherboard Memory Type (mATX)",
+      description: "DDR5 RAM must match Micro-ATX motherboard memory type",
+      srcSubCat: "DDR5 RAM", tgtSubCat: "Micro-ATX Motherboard",
+      srcSpec: "Memory Type", tgtSpec: "Memory Type",
+      operator: "EQUAL", severity: "ERROR",
+      message: "RAM type does not match motherboard memory type.",
+      messageTemplate: "RAM ({DDR5_RAM.Memory Type}) ≠ Motherboard ({MICRO-ATX_MOTHERBOARD.Memory Type})",
+      priority: 90,
+    },
+    {
+      name: "DDR4 RAM-Motherboard Memory Type (ATX)",
+      description: "DDR4 RAM must match ATX motherboard memory type",
+      srcSubCat: "DDR4 RAM", tgtSubCat: "ATX Motherboard",
+      srcSpec: "Memory Type", tgtSpec: "Memory Type",
+      operator: "EQUAL", severity: "ERROR",
+      message: "RAM type does not match motherboard memory type.",
+      messageTemplate: "RAM ({DDR4_RAM.Memory Type}) ≠ Motherboard ({ATX_MOTHERBOARD.Memory Type})",
+      priority: 90,
+    },
+    // GPU Length ↔ Case Max GPU Length
+    {
+      name: "GPU Length vs Mid Tower Case",
+      description: "GPU must fit inside Mid Tower case",
+      srcSubCat: "NVIDIA GPU", tgtSubCat: "Mid Tower Case",
+      srcSpec: "Card Length (mm)", tgtSpec: "Max GPU Length (mm)",
+      operator: "LESS_OR_EQUAL", severity: "ERROR",
+      message: "GPU is too long for this case.",
+      messageTemplate: "GPU length ({NVIDIA_GPU.Card Length (mm)}mm) exceeds case max ({MID_TOWER_CASE.Max GPU Length (mm)}mm)",
+      priority: 80,
+    },
+    {
+      name: "AMD GPU Length vs Mid Tower Case",
+      description: "AMD GPU must fit inside Mid Tower case",
+      srcSubCat: "AMD GPU", tgtSubCat: "Mid Tower Case",
+      srcSpec: "Card Length (mm)", tgtSpec: "Max GPU Length (mm)",
+      operator: "LESS_OR_EQUAL", severity: "ERROR",
+      message: "GPU is too long for this case.",
+      messageTemplate: "GPU length ({AMD_GPU.Card Length (mm)}mm) exceeds case max ({MID_TOWER_CASE.Max GPU Length (mm)}mm)",
+      priority: 80,
+    },
+  ];
+
+  for (const rule of PAIR_RULES) {
+    const scopeKey = `${rule.srcSubCat}::${rule.tgtSubCat}`;
+    const scopeId = scopeMap.get(scopeKey);
+    const sourceSpecId = findSpecDefId(rule.srcSubCat, rule.srcSpec);
+    const targetSpecId = findSpecDefId(rule.tgtSubCat, rule.tgtSpec);
+
+    if (!scopeId || !sourceSpecId || !targetSpecId) {
+      console.warn(`    ⚠ Skipping rule "${rule.name}": missing scope/spec IDs`);
+      continue;
+    }
+
+    const existing = await prisma.compatibilityRule.findFirst({ where: { name: rule.name } });
+    if (!existing) {
+      await prisma.compatibilityRule.create({
+        data: {
+          name: rule.name,
+          description: rule.description,
+          type: "PAIR",
+          scopeId,
+          sourceSpecId,
+          targetSpecId,
+          operator: rule.operator as any,
+          message: rule.message,
+          messageTemplate: rule.messageTemplate,
+          severity: rule.severity as any,
+          priority: rule.priority,
+          enabled: true,
+        },
+      });
+      console.log(`    ✓ Created PAIR rule: ${rule.name}`);
+    }
+  }
+
+  // ─── GLOBAL Rules (PSU Wattage) ─────────────────────────────────────────
+  const GLOBAL_RULES = [
+    {
+      name: "PSU Wattage Sufficiency",
+      description: "PSU wattage must meet or exceed total system TDP with 20% headroom",
+      type: "GLOBAL",
+      severity: "WARNING",
+      message: "PSU wattage may be insufficient for this build.",
+      messageTemplate: "Total TDP ({totals.totalTDP}W) exceeds safe PSU headroom. Consider a higher wattage PSU.",
+      priority: 70,
+      logic: {
+        or: [
+          // Skip if no PSU component or no TDP info
+          { operator: "LESS_OR_EQUAL", left: { ref: "totals.totalTDP" }, right: { value: 0 } },
+          // PSU wattage must be ≥ totalTDP
+          {
+            operator: "GREATER_OR_EQUAL",
+            left: { ref: "ATX_PSU.Wattage" },
+            right: { ref: "totals.totalTDP" },
+          },
+        ],
+      },
+    },
+    {
+      name: "Minimum Components for Build",
+      description: "A valid build needs at least a CPU, Motherboard, and RAM",
+      type: "GLOBAL",
+      severity: "INFO",
+      message: "Build is incomplete. Add at least a CPU, Motherboard, and RAM.",
+      messageTemplate: "Build has {global.itemCount} components. Minimum recommended: 3 (CPU, Motherboard, RAM).",
+      priority: 50,
+      logic: {
+        operator: "GREATER_OR_EQUAL",
+        left: { ref: "global.itemCount" },
+        right: { value: 3 },
+      },
+    },
+  ];
+
+  for (const rule of GLOBAL_RULES) {
+    const existing = await prisma.compatibilityRule.findFirst({ where: { name: rule.name } });
+    if (!existing) {
+      await prisma.compatibilityRule.create({
+        data: {
+          name: rule.name,
+          description: rule.description,
+          type: rule.type as any,
+          message: rule.message,
+          messageTemplate: rule.messageTemplate,
+          severity: rule.severity as any,
+          priority: rule.priority,
+          logic: rule.logic,
+          enabled: true,
+        },
+      });
+      console.log(`    ✓ Created ${rule.type} rule: ${rule.name}`);
+    }
+  }
+
+  // Also keep legacy sample rules for backward compat with existing checks
   const sampleRules = Array.from(new Set(COMPATIBILITY_CHECKS.map(c => c.ruleName)));
   for (const ruleName of sampleRules) {
     const existing = await prisma.compatibilityRule.findFirst({ where: { id: ruleName } });
@@ -3762,7 +4009,42 @@ async function main() {
     }
   }
 
-  // ── 15. App Settings ───────────────────────────────────────────────────
+  // ── 15. Builder Flags ───────────────────────────────────────────────────
+  console.log("  → Setting builder flags for core subcategories...");
+  const builderSteps = [
+    { name: "Desktop CPU", order: 1, core: true, required: true },
+    { name: "ATX Motherboard", order: 2, core: true, required: true },
+    { name: "Micro-ATX Motherboard", order: 2, core: true, required: true },
+    { name: "Mini-ITX Motherboard", order: 2, core: true, required: true },
+    { name: "DDR5 RAM", order: 3, core: true, required: true },
+    { name: "DDR4 RAM", order: 3, core: true, required: true },
+    { name: "NVIDIA GPU", order: 4, core: true, required: false },
+    { name: "AMD GPU", order: 4, core: true, required: false },
+    { name: "NVMe SSD", order: 5, core: true, required: true },
+    { name: "SATA SSD", order: 5, core: true, required: false },
+    { name: "Air Cooler", order: 6, core: true, required: true },
+    { name: "AIO Liquid Cooler", order: 6, core: true, required: true },
+    { name: "ATX PSU", order: 7, core: true, required: true },
+    { name: "Mid Tower Case", order: 8, core: true, required: true },
+    { name: "Full Tower Case", order: 8, core: true, required: true },
+  ];
+
+  for (const step of builderSteps) {
+    const subCatId = subCategoryMap.get(step.name);
+    if (subCatId) {
+      await prisma.subCategory.update({
+        where: { id: subCatId },
+        data: {
+          isBuilderEnabled: true,
+          builderOrder: step.order,
+          isCore: step.core,
+          isRequired: step.required,
+        },
+      });
+    }
+  }
+
+  // ── 16. App Settings ───────────────────────────────────────────────────
   console.log("  → Seeding app settings...");
   const APP_SETTINGS = [
     { key: 'default_country', value: 'India' },

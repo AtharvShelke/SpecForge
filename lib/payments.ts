@@ -2,6 +2,11 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { CreatePaymentInput } from "@/types";
 import { createHmac } from "crypto";
 
+// Prevent this file from being bundled in the client
+if (typeof window !== "undefined") {
+  throw new Error("This module can only be used on the server side");
+}
+
 export const MANUAL_PAYMENT_DISCOUNT_RATE = 0.02;
 
 export function getRazorpayConfig() {
