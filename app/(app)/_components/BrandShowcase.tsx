@@ -1,16 +1,26 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Container } from '@/components/layout/Container'
 import { Brand } from '@/types'
 
-interface Props {
-    brands: Brand[]
-}
+export default function BrandShowcase() {
+    const [brands, setBrands] = useState<Brand[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
-export default function BrandShowcase({ brands }: Props) {
-    if (!brands?.length) return null
+    useEffect(() => {
+        fetch('/api/storefront/brandshowcase')
+            .then((res) => res.json())
+            .then((data) => {
+                if (Array.isArray(data)) setBrands(data)
+            })
+            .catch((err) => console.error('Error loading storefront brands:', err))
+            .finally(() => setIsLoading(false))
+    }, [])
+
+    if (isLoading || !brands?.length) return null
 
     // For infinite scroll, double the brands so there is no gap
     const loopedBrands = [...brands, ...brands, ...brands, ...brands].slice(0, 30)
@@ -28,7 +38,6 @@ export default function BrandShowcase({ brands }: Props) {
             </Container>
 
             <div className="relative w-full flex overflow-hidden group">
-                {/* Gradient Masks for fading effect */}
                 <div className="absolute inset-y-0 left-0 w-16 sm:w-24 md:w-32 bg-gradient-to-r from-zinc-950 to-transparent z-10" />
                 <div className="absolute inset-y-0 right-0 w-16 sm:w-24 md:w-32 bg-gradient-to-l from-zinc-950 to-transparent z-10" />
 

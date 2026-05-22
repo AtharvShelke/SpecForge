@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { ShopProvider } from "@/context/ShopContext";
+import CartDrawer from "@/components/CartDrawer";
 
 export const metadata: Metadata = {
   title: {
@@ -50,9 +52,14 @@ export default function Layout({
 }>) {
   return (
     <>
-      <Navbar />
-      {children}
-      <Footer />
+      <ShopProvider>
+        <Navbar />
+        {children}
+        
+        <Footer />
+        <CartDrawer />
+      </ShopProvider>
     </>
   );
 }
+

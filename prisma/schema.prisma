@@ -384,7 +384,7 @@ model Product {
   status          ProductStatus @default(ACTIVE)
   deletedAt       DateTime?
   version         Int           @default(1)
-
+  isFeatured      Boolean       @default(false) @map("is_featured")
   // Moved from ProductVariant
   sku            String? @unique
   price          Float?

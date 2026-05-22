@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ShopProvider } from "@/context/ShopContext";
-import Navbar from "@/components/Navbar";
-
 import { Toaster } from "@/components/ui/toaster";
-import Footer from "@/components/Footer";
-import CartDrawer from "@/components/CartDrawer";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
@@ -49,14 +44,12 @@ export default function RootLayout({
            */
           routerConfig={extractRouterConfig(ourFileRouter)}
         />
-        <ShopProvider>
+        
           <main className="min-h-screen pb-16 md:pb-0">
             {children}
           </main>
-          <CartDrawer />
-
+         
           <Toaster />
-        </ShopProvider>
       </body>
     </html>
   );

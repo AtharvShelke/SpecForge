@@ -384,12 +384,12 @@ model Product {
   status          ProductStatus @default(ACTIVE)
   deletedAt       DateTime?
   version         Int           @default(1)
-
+  isFeatured      Boolean       @default(false) @map("is_featured")
   // Moved from ProductVariant
-  sku            String? @unique
-  price          Float?
-  compareAtPrice Float?
-  stockStatus    String  @default("IN_STOCK") @map("stock_status")
+  sku             String?       @unique
+  price           Float?
+  compareAtPrice  Float?
+  stockStatus     String        @default("IN_STOCK") @map("stock_status")
 
   brandId String?
   brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)

@@ -1,23 +1,27 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getRecentActivity } from '@/app/actions/activity';
 import { ShoppingBag, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function RecentActivity() {
-    const [activities, setActivities] = useState<Awaited<ReturnType<typeof getRecentActivity>>>([]);
+export default function RecentActivity() {
+    const [activities, setActivities] = useState<any[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
-        getRecentActivity().then(setActivities);
+        fetch('/api/storefront/live-activity')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setActivities(data)
+            })
+            .catch(err => console.error('Failed to load live tracking:', err))
     }, []);
 
     useEffect(() => {
         if (activities.length <= 1) return;
         const timer = setInterval(() => {
             setCurrentIndex(prev => (prev + 1) % activities.length);
-        }, 5000); // rotate every 5 seconds
+        }, 5000);
         return () => clearInterval(timer);
     }, [activities.length]);
 

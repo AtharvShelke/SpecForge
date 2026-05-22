@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { memo, useCallback, useState } from 'react'
+import { memo, useCallback, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, Plus, ArrowRight, Package } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
@@ -16,10 +16,10 @@ const cardVariants = {
 const VIEWPORT = { once: true, margin: '-40px' } as const
 
 interface Props {
-  products: Product[]
   addToCart: (p: Product) => void
 }
 
+// ── Sub-component: ProductCard ───────────────────────────────────────────────────
 const ProductCard = memo(function ProductCard({
   product,
   onAddToCart,
@@ -117,6 +117,7 @@ const ProductCard = memo(function ProductCard({
   )
 })
 
+// ── Sub-component: TabPill ───────────────────────────────────────────────────────
 function TabPill({
   label, count, active, onClick,
 }: {
@@ -137,21 +138,40 @@ function TabPill({
   )
 }
 
-export default function FeaturedProductsSection({ products, addToCart }: Props) {
+// ── Main Component: FeaturedProductsSection ───────────────────────────────────────
+export default function FeaturedProductsSection({ addToCart }: Props) {
+  const [products, setProducts] = useState<Product[]>([])
+  const [activeTab, setActiveTab] = useState<'ALL' | string>('ALL')
   const { categories, getLabel } = useCategories()
+
+  // Internalize storefront data loading context
+  useEffect(() => {
+    fetch('/api/storefront/featured-products')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setProducts(data)
+        }
+      })
+      .catch((err) => console.error('Failed to load storefront featured products:', err))
+  }, [])
+
+  // Process category navigation dynamically after data fetches
   const categoryOrder = categories
     .filter((category) => category.showInFeatured)
     .sort((a, b) => (a.featuredOrder ?? a.displayOrder ?? 0) - (b.featuredOrder ?? b.displayOrder ?? 0))
     .map((category) => category.code)
 
   const categoryMap = categoryOrder.reduce<Record<string, Product[]>>((acc, cat) => {
-    const items = products.filter((product) => (typeof product.category === 'string' ? product.category : product.category?.code) === cat)
+    const items = products.filter((product) => {
+      const productCat = typeof product.category === 'string' ? product.category : product.category?.code
+      return productCat === cat
+    })
     if (items.length > 0) acc[cat] = items
     return acc
   }, {})
 
   const availableCats = Object.keys(categoryMap)
-  const [activeTab, setActiveTab] = useState<'ALL' | string>('ALL')
 
   const shownProducts =
     activeTab === 'ALL'

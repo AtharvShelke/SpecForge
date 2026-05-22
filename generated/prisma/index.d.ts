@@ -21594,6 +21594,7 @@ export namespace Prisma {
     status: $Enums.ProductStatus | null
     deletedAt: Date | null
     version: number | null
+    isFeatured: boolean | null
     sku: string | null
     price: number | null
     compareAtPrice: number | null
@@ -21615,6 +21616,7 @@ export namespace Prisma {
     status: $Enums.ProductStatus | null
     deletedAt: Date | null
     version: number | null
+    isFeatured: boolean | null
     sku: string | null
     price: number | null
     compareAtPrice: number | null
@@ -21636,6 +21638,7 @@ export namespace Prisma {
     status: number
     deletedAt: number
     version: number
+    isFeatured: number
     sku: number
     price: number
     compareAtPrice: number
@@ -21675,6 +21678,7 @@ export namespace Prisma {
     status?: true
     deletedAt?: true
     version?: true
+    isFeatured?: true
     sku?: true
     price?: true
     compareAtPrice?: true
@@ -21696,6 +21700,7 @@ export namespace Prisma {
     status?: true
     deletedAt?: true
     version?: true
+    isFeatured?: true
     sku?: true
     price?: true
     compareAtPrice?: true
@@ -21717,6 +21722,7 @@ export namespace Prisma {
     status?: true
     deletedAt?: true
     version?: true
+    isFeatured?: true
     sku?: true
     price?: true
     compareAtPrice?: true
@@ -21825,6 +21831,7 @@ export namespace Prisma {
     status: $Enums.ProductStatus
     deletedAt: Date | null
     version: number
+    isFeatured: boolean
     sku: string | null
     price: number | null
     compareAtPrice: number | null
@@ -21865,6 +21872,7 @@ export namespace Prisma {
     status?: boolean
     deletedAt?: boolean
     version?: boolean
+    isFeatured?: boolean
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
@@ -21897,6 +21905,7 @@ export namespace Prisma {
     status?: boolean
     deletedAt?: boolean
     version?: boolean
+    isFeatured?: boolean
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
@@ -21921,6 +21930,7 @@ export namespace Prisma {
     status?: boolean
     deletedAt?: boolean
     version?: boolean
+    isFeatured?: boolean
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
@@ -21945,6 +21955,7 @@ export namespace Prisma {
     status?: boolean
     deletedAt?: boolean
     version?: boolean
+    isFeatured?: boolean
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
@@ -21954,7 +21965,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "slug" | "name" | "metaTitle" | "metaDescription" | "categoryId" | "subcategoryId" | "description" | "status" | "deletedAt" | "version" | "sku" | "price" | "compareAtPrice" | "stockStatus" | "brandId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "slug" | "name" | "metaTitle" | "metaDescription" | "categoryId" | "subcategoryId" | "description" | "status" | "deletedAt" | "version" | "isFeatured" | "sku" | "price" | "compareAtPrice" | "stockStatus" | "brandId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     brand?: boolean | Product$brandArgs<ExtArgs>
     category?: boolean | CategoryDefaultArgs<ExtArgs>
@@ -22005,6 +22016,7 @@ export namespace Prisma {
       status: $Enums.ProductStatus
       deletedAt: Date | null
       version: number
+      isFeatured: boolean
       sku: string | null
       price: number | null
       compareAtPrice: number | null
@@ -22456,6 +22468,7 @@ export namespace Prisma {
     readonly status: FieldRef<"Product", 'ProductStatus'>
     readonly deletedAt: FieldRef<"Product", 'DateTime'>
     readonly version: FieldRef<"Product", 'Int'>
+    readonly isFeatured: FieldRef<"Product", 'Boolean'>
     readonly sku: FieldRef<"Product", 'String'>
     readonly price: FieldRef<"Product", 'Float'>
     readonly compareAtPrice: FieldRef<"Product", 'Float'>
@@ -49975,6 +49988,7 @@ export namespace Prisma {
     status: 'status',
     deletedAt: 'deletedAt',
     version: 'version',
+    isFeatured: 'isFeatured',
     sku: 'sku',
     price: 'price',
     compareAtPrice: 'compareAtPrice',
@@ -51721,6 +51735,7 @@ export namespace Prisma {
     status?: EnumProductStatusFilter<"Product"> | $Enums.ProductStatus
     deletedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     version?: IntFilter<"Product"> | number
+    isFeatured?: BoolFilter<"Product"> | boolean
     sku?: StringNullableFilter<"Product"> | string | null
     price?: FloatNullableFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableFilter<"Product"> | number | null
@@ -51752,6 +51767,7 @@ export namespace Prisma {
     status?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
     version?: SortOrder
+    isFeatured?: SortOrder
     sku?: SortOrderInput | SortOrder
     price?: SortOrderInput | SortOrder
     compareAtPrice?: SortOrderInput | SortOrder
@@ -51787,6 +51803,7 @@ export namespace Prisma {
     status?: EnumProductStatusFilter<"Product"> | $Enums.ProductStatus
     deletedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     version?: IntFilter<"Product"> | number
+    isFeatured?: BoolFilter<"Product"> | boolean
     price?: FloatNullableFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableFilter<"Product"> | number | null
     stockStatus?: StringFilter<"Product"> | string
@@ -51817,6 +51834,7 @@ export namespace Prisma {
     status?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
     version?: SortOrder
+    isFeatured?: SortOrder
     sku?: SortOrderInput | SortOrder
     price?: SortOrderInput | SortOrder
     compareAtPrice?: SortOrderInput | SortOrder
@@ -51846,6 +51864,7 @@ export namespace Prisma {
     status?: EnumProductStatusWithAggregatesFilter<"Product"> | $Enums.ProductStatus
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Product"> | Date | string | null
     version?: IntWithAggregatesFilter<"Product"> | number
+    isFeatured?: BoolWithAggregatesFilter<"Product"> | boolean
     sku?: StringNullableWithAggregatesFilter<"Product"> | string | null
     price?: FloatNullableWithAggregatesFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableWithAggregatesFilter<"Product"> | number | null
@@ -54859,6 +54878,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -54889,6 +54909,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -54915,6 +54936,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -54945,6 +54967,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -54973,6 +54996,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -54992,6 +55016,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -55012,6 +55037,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -58198,6 +58224,7 @@ export namespace Prisma {
     status?: SortOrder
     deletedAt?: SortOrder
     version?: SortOrder
+    isFeatured?: SortOrder
     sku?: SortOrder
     price?: SortOrder
     compareAtPrice?: SortOrder
@@ -58227,6 +58254,7 @@ export namespace Prisma {
     status?: SortOrder
     deletedAt?: SortOrder
     version?: SortOrder
+    isFeatured?: SortOrder
     sku?: SortOrder
     price?: SortOrder
     compareAtPrice?: SortOrder
@@ -58248,6 +58276,7 @@ export namespace Prisma {
     status?: SortOrder
     deletedAt?: SortOrder
     version?: SortOrder
+    isFeatured?: SortOrder
     sku?: SortOrder
     price?: SortOrder
     compareAtPrice?: SortOrder
@@ -63014,6 +63043,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -63042,6 +63072,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -63391,6 +63422,7 @@ export namespace Prisma {
     status?: EnumProductStatusFilter<"Product"> | $Enums.ProductStatus
     deletedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     version?: IntFilter<"Product"> | number
+    isFeatured?: BoolFilter<"Product"> | boolean
     sku?: StringNullableFilter<"Product"> | string | null
     price?: FloatNullableFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableFilter<"Product"> | number | null
@@ -63691,6 +63723,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -63719,6 +63752,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -64073,6 +64107,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -64102,6 +64137,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -65995,6 +66031,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -66024,6 +66061,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -66070,6 +66108,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -66099,6 +66138,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -66140,6 +66180,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -66169,6 +66210,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -66790,6 +66832,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -66819,6 +66862,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -66942,6 +66986,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -66971,6 +67016,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -67090,6 +67136,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -67119,6 +67166,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -67216,6 +67264,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -67245,6 +67294,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -68084,6 +68134,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -68113,6 +68164,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -68323,6 +68375,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -68352,6 +68405,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -69008,6 +69062,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -69037,6 +69092,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -69198,6 +69254,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -69227,6 +69284,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -69472,6 +69530,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -69501,6 +69560,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -69573,6 +69633,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -69602,6 +69663,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -70868,6 +70930,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -70999,6 +71062,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71027,6 +71091,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71054,6 +71119,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71322,6 +71388,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -71360,6 +71427,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71388,6 +71456,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71415,6 +71484,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71503,6 +71573,7 @@ export namespace Prisma {
     status?: $Enums.ProductStatus
     deletedAt?: Date | string | null
     version?: number
+    isFeatured?: boolean
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
@@ -71525,6 +71596,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71554,6 +71626,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -71581,6 +71654,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -72065,6 +72139,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -72094,6 +72169,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -72121,6 +72197,7 @@ export namespace Prisma {
     status?: EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null

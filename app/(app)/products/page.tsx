@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { getProductsData } from '@/app/api/products/route';
+import { getProductsData } from '@/app/api/(product)/products/route';
 import ProductsClient from './ProductsClient';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
     const params = await searchParams;
     const category = Array.isArray(params.category) ? params.category[0] : params.category;
-    const q        = Array.isArray(params.q)        ? params.q[0]        : params.q;
+    const q = Array.isArray(params.q) ? params.q[0] : params.q;
 
     const title = category
         ? `${category} | MD Computers`
@@ -70,16 +70,16 @@ export default async function ProductsPage({
     }
 
     // Apply defaults only when missing
-    if (!urlParams.has('limit'))  urlParams.set('limit',  '12');
-    if (!urlParams.has('page'))   urlParams.set('page',   '1');
-    if (!urlParams.has('sort'))   urlParams.set('sort',   'price-asc');
+    if (!urlParams.has('limit')) urlParams.set('limit', '12');
+    if (!urlParams.has('page')) urlParams.set('page', '1');
+    if (!urlParams.has('sort')) urlParams.set('sort', 'price-asc');
     urlParams.set('getFilters', 'true');
 
     // Only SSR-fetch when a category is present; client handles the rest
     let initialData = null;
     if (urlParams.has('category')) {
         try {
-            const res  = await getProductsData(urlParams);
+            const res = await getProductsData(urlParams);
             initialData = await res.json();
         } catch {
             // Non-fatal — client will re-fetch

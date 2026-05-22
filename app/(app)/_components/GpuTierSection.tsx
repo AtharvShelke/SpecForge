@@ -1,12 +1,11 @@
 'use client'
 
-import { useMemo, useCallback, memo, useState, useEffect } from 'react'
+import { useCallback, memo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { ShoppingBag, ArrowRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { useShop } from '@/context/ShopContext'
-import { filterGpuTier } from '@/lib/calculations/product'
 import { Product } from '@/types'
 
 // ── Animation variants (defined once at module scope, never recreated) ────────
@@ -57,7 +56,7 @@ const GpuPremiumCard = memo(function GpuPremiumCard({
     )
 
     return (
-        <div className="group relative w-[72vw] sm:w-[280px] md:w-[360px]w-[85vw] md:w-[360px] flex-shrink-0 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden hover:bg-zinc-800/80 transition-all duration-500">
+        <div className="group relative w-[72vw] sm:w-[280px] md:w-[360px] flex-shrink-0 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden hover:bg-zinc-800/80 transition-all duration-500">
             {/* Glossy overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -125,22 +124,15 @@ export default function GpuTierSection() {
 
     // Fetch products
     useEffect(() => {
-        fetch('/api/products?category=GPU&limit=100')
+        fetch('/api/storefront/gpu-tier')
             .then(r => r.json())
-            .then(data => setProducts(data.products ?? data))
+            .then(data => {
+                if (Array.isArray(data)) setProducts(data)
+            })
             .catch(err => console.error('Failed to fetch GPU products:', err))
     }, [])
-    const yTransform = useTransform(scrollYProgress, [0, 1], [100, -100])
 
-    const enthusiastGpus = useMemo(
-        () => filterGpuTier(products, 'ENTHUSIAST').slice(0, 6),
-        [products]
-    )
-
-    const hasGpus = useMemo(
-        () => products.some(p => p.category?.name === 'GPU'),
-        [products]
-    )
+    const hasGpus = products.length > 0
 
     if (!hasGpus) return null
 
@@ -193,7 +185,7 @@ export default function GpuTierSection() {
                         className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto pb-8 pt-4 snap-x snap-mandatory hide-scrollbar hide-scrollbar-css relative z-20"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
-                        {enthusiastGpus.map((gpu, i) => (
+                        {products.map((gpu, i) => (
                             <motion.div
                                 key={gpu.id}
                                 className="snap-start"

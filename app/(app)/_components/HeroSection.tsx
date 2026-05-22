@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ArrowRight, ChevronDown, Gamepad2, Video, Cpu } from 'lucide-react'
+import { Search, ArrowRight, ChevronDown } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
 import { HERO_SLIDES } from '@/data/constants'
 
@@ -244,7 +244,9 @@ export default function HeroSection() {
                     <div className="backdrop-blur-xl bg-black/30 p-1.5 border border-white/10 rounded-xl sm:rounded-2xl md:rounded-full shadow-2xl">
                         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-0">
                             <div className="w-full flex items-center pl-3 sm:pl-4">
-                                <Search className="text-zinc-400 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                                <span className="text-zinc-400 shrink-0">
+                                    <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                </span>
                                 <input
                                     value={query}
                                     onChange={e => setQuery(e.target.value)}

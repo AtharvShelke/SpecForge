@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Cpu, MonitorSpeaker, MemoryStick, HardDrive, ArrowRight, Zap, ArrowUpRight } from 'lucide-react'
 import { Container } from '@/components/layout/Container'
@@ -153,8 +153,21 @@ const BuildCardCinematic = memo(function BuildCardCinematic({
 
 // ── FeaturedBuildsSection ─────────────────────────────────────────────────────
 
-export default function FeaturedBuildsSection({ builds }: { builds: any[] }) {
-    if (!builds?.length) return null
+export default function FeaturedBuildsSection() {
+    const [builds, setBuilds] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        fetch('/api/storefront/featured-builds')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setBuilds(data)
+            })
+            .catch(err => console.error('Failed to fetch storefront featured builds:', err))
+            .finally(() => setIsLoading(false))
+    }, [])
+
+    if (isLoading || !builds?.length) return null
 
     return (
         <section className="py-10 sm:py-20 md:py-24 bg-zinc-950 px-3 sm:px-4 md:px-0" id="featured-builds">

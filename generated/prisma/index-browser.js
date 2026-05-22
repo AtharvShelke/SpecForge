@@ -279,6 +279,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   status: 'status',
   deletedAt: 'deletedAt',
   version: 'version',
+  isFeatured: 'isFeatured',
   sku: 'sku',
   price: 'price',
   compareAtPrice: 'compareAtPrice',
