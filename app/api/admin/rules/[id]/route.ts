@@ -8,12 +8,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateRule, deleteRule } from "@/services/compatibility.service";
 import { ServiceError } from "@/lib/errors";
+import { requireAdmin } from "@/lib/api/requireAdmin";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+     const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const { id } = await params;
     const body = await req.json();
     const rule = await updateRule(id, body);
@@ -34,6 +40,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+     const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const { id } = await params;
     await deleteRule(id);
     return new NextResponse(null, { status: 204 });

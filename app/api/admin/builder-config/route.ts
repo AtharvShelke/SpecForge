@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { DEFAULT_BUILDER_SETTINGS, BuilderSettings } from '@/types';
 import { getBuilderSettings } from '@/lib/builderConfig';
 import { z } from 'zod';
+import { requireAdmin } from '@/lib/api/requireAdmin';
 
 /** Runtime schema for BuilderSettings — validates incoming POST body. */
 const BuilderSettingsSchema = z.object({
@@ -50,7 +51,13 @@ const BuilderSettingsSchema = z.object({
  * Delegates to getBuilderSettings() which handles the create-if-missing fallback.
  */
 export async function GET() {
+   
   try {
+     const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
     const settings = await getBuilderSettings();
     return NextResponse.json({ settings });
   } catch (error) {
@@ -67,7 +74,13 @@ export async function GET() {
  * Create or update the global builder configuration.
  */
 export async function POST(req: NextRequest) {
+   
   try {
+     const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
     const body = await req.json();
     const { settings } = body;
 

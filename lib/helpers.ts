@@ -2,7 +2,7 @@ import { HomepageCategory } from "@/types";
 import { normalizeCatalogProduct } from "./catalogFrontend";
 
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export async function getNewArrivals() {
   const res = await fetch(`${baseUrl}/api/storefront/new-arrivals`, {
@@ -51,7 +51,7 @@ export async function apiFetch<T>(
     } catch {
       try {
         message = await res.text();
-      } catch {}
+      } catch { }
     }
 
     throw new Error(message);

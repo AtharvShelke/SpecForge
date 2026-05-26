@@ -111,31 +111,24 @@ function getSpecValue(spec: RawVariantSpec) {
 }
 
 function normalizeSpecs(product: RawProduct): SpecEntry[] {
-  const firstVariant = product.variants?.[0];
-  const variantSpecs = firstVariant?.variantSpecs ?? [];
-
-  const specs: SpecEntry[] = [];
-
-  for (const entry of variantSpecs) {
-    const name = entry.spec?.name?.trim();
-    if (!name) continue;
-
-    const specEntry = {
-      key: toCamelCase(name),
-      value: getSpecValue(entry),
-      name,
-    } satisfies SpecEntry;
-
-    if (specEntry.key) specs.push(specEntry);
+  const specsMap = new Map<string, SpecEntry>();
+  for (const variant of product.variants ?? []) {
+    for (const entry of variant.variantSpecs ?? []) {
+      const name = entry.spec?.name?.trim();
+      if (!name) continue;
+      const key = toCamelCase(name);
+      const value = getSpecValue(entry);
+      if (key && value !== undefined && value !== "") {
+        specsMap.set(`${key}-${value}`, { key, value, name });
+      }
+    }
   }
-
-  if (product.brand?.name && !specs.some((entry) => entry.key === "brand")) {
+  const specs = Array.from(specsMap.values());
+  if (product.brand?.name && !specs.some((e) => e.key === "brand")) {
     specs.unshift({ key: "brand", value: product.brand.name, name: "Brand" });
   }
-
   return specs;
 }
-
 function normalizeCategory(product: RawProduct) {
   return (
     // Prefer the parent category (e.g. "Processor") over stored subcategory labels

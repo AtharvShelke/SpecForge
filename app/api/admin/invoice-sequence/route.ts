@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/api/requireAdmin";
 
 const SEQ_ID = "invoice_seq";
 
@@ -10,6 +11,11 @@ const SEQ_ID = "invoice_seq";
  */
 export async function GET() {
   try {
+     const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const seq = await prisma.invoiceSequence.findUnique({
       where: { id: SEQ_ID },
     });
@@ -46,6 +52,11 @@ const ResetSchema = z.object({
  */
 export async function POST(req: NextRequest) {
   try {
+     const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const body = await req.json();
     const parsed = ResetSchema.safeParse(body);
 

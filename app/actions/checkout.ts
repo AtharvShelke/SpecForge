@@ -153,7 +153,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
     const order = await createOrder(apiPayload as any);
 
     // 5. MOCK EXTERNAL NOTIFICATIONS
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const invoiceLink = `${baseUrl}/api/orders/${orderId}/invoice`;
     const trackingLink = `${baseUrl}/track-order`;
 

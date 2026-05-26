@@ -7,12 +7,19 @@ import {
 import { ServiceError } from "@/lib/errors";
 import { serializeDerivedSpec } from "@/lib/adminSerializers";
 import { getSessionUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/api/requireAdmin";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+ 
   try {
+     const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const { id } = await params;
     const spec = await getDerivedSpecById(id);
     if (!spec) {
@@ -31,14 +38,15 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+ 
+
+  
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
 
     const { id } = await params;
     const body = await request.json();
@@ -60,13 +68,12 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const auth = await requireAdmin();
+
+    if (auth.error) {
+      return auth.error;
     }
 
     const { id } = await params;

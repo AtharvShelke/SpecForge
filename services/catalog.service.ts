@@ -220,39 +220,70 @@ export class CatalogService {
       return product;
     });
   }
+static async updateProduct(id: string, data: Partial<CreateProduct>) {
+  return prisma.$transaction(async (tx) => {
 
-  static async updateProduct(id: string, data: Partial<CreateProduct>) {
-    return prisma.$transaction(async (tx) => {
-      const product = await tx.product.update({
-        where: { id },
-        data: {
-          name: data.name,
-          subCategoryId: data.subCategoryId,
-          brandId: data.brandId,
-          metaTitle: data.metaTitle,
-          metaDescription: data.metaDescription,
-          description: data.description,
-          status: data.status as any,
-          slug: data.slug,
-        },
+    // Fetch existing product first
+    const existingProduct = await tx.product.findUnique({
+      where: { id },
+      include: {
+        variants: true,
+      },
+    });
+
+    if (!existingProduct) {
+      throw new Error("Product not found");
+    }
+
+    const product = await tx.product.update({
+      where: { id },
+      data: {
+        name: data.name,
+        subCategoryId: data.subCategoryId,
+        brandId: data.brandId,
+        metaTitle: data.metaTitle,
+        metaDescription: data.metaDescription,
+        description: data.description,
+        status: data.status as any,
+        slug: data.slug,
+      },
+    });
+
+    if (data.images !== undefined) {
+      await tx.productMedia.deleteMany({
+        where: { productId: id },
       });
 
-      if (data.images !== undefined) {
-        await tx.productMedia.deleteMany({ where: { productId: id } });
-        if (data.images.length > 0) {
-          await tx.productMedia.createMany({
-            data: data.images.map((url, index) => ({
-              productId: id,
-              url,
-              sortOrder: index,
-            })),
-          });
-        }
+      if (data.images.length > 0) {
+        await tx.productMedia.createMany({
+          data: data.images.map((url, index) => ({
+            productId: id,
+            url,
+            sortOrder: index,
+          })),
+        });
       }
+    }
 
-      return product;
-    });
-  }
+    // If subcategory changed, remove variant specs
+   if (
+  data.subCategoryId &&
+  existingProduct.subCategoryId !== data.subCategoryId
+) {
+      const variantIds = existingProduct.variants.map(v => v.id);
+
+      await tx.variantSpec.deleteMany({
+        where: {
+          variantId: {
+            in: variantIds,
+          },
+        },
+      });
+    }
+
+    return product;
+  });
+}
 
   static async deleteProduct(id: string) {
     return prisma.product.update({
@@ -858,6 +889,7 @@ export async function updateSpec(
               order: option.order ?? index,
             },
           });
+          
         } else {
           saved = await tx.specOption.create({
             data: {

@@ -7,9 +7,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/errors";
+import { requireAdmin } from "@/lib/api/requireAdmin";
 
 export async function POST(req: NextRequest) {
+    
   try {
+    const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
     const body = await req.json();
     const {
       name,

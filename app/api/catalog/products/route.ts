@@ -4,6 +4,7 @@ import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
 import { prisma } from "@/lib/prisma";
 import { CatalogService } from "@/services/catalog.service";
 import { DynamicCatalogFilter, Product } from "@/types";
+import { requireAdmin } from "@/lib/api/requireAdmin";
 
 function hasInventoryUnitFields(payload: unknown): boolean {
   if (!payload || typeof payload !== "object") return false;
@@ -301,6 +302,7 @@ function selectedFilterMap(searchParams: URLSearchParams) {
 
 export async function GET(request: NextRequest) {
   try {
+    
     const searchParams = request.nextUrl.searchParams;
     const subCategoryId = searchParams.get("subCategoryId");
     const category = searchParams.get("category");
@@ -525,6 +527,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
   try {
     const data = await request.json();
     if (hasInventoryUnitFields(data)) {

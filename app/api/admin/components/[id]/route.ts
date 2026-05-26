@@ -8,12 +8,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/errors";
+import { requireAdmin } from "@/lib/api/requireAdmin";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+    
   try {
+    const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
     const { id } = await params;
     const body = await req.json();
 
@@ -147,10 +154,17 @@ export async function PUT(
 }
 
 export async function DELETE(
+  
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+    
   try {
+    const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const { id } = await params;
 
     const existing = await prisma.product.findUnique({ where: { id } });

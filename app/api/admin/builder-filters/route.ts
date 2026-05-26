@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/api/requireAdmin';
 
 /**
  * GET /api/admin/builder-filters
  * Returns all filter overrides, optionally filtered by categoryName.
  */
 export async function GET(req: NextRequest) {
+   
   try {
+     const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
     const { searchParams } = new URL(req.url);
     const categoryName = searchParams.get('category');
 
@@ -51,7 +58,13 @@ export async function GET(req: NextRequest) {
  * Create or update a filter override (upsert by specDefinitionId + categoryName).
  */
 export async function POST(req: NextRequest) {
+  
   try {
+        const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const body = await req.json();
     const {
       specDefinitionId,
@@ -149,7 +162,13 @@ export async function POST(req: NextRequest) {
  * Delete a filter override. Pass ?id=... as query param.
  */
 export async function DELETE(req: NextRequest) {
+   
   try {
+     const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 

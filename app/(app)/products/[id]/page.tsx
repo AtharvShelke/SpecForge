@@ -6,7 +6,7 @@ import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
 
 export const dynamic = "force-dynamic";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 async function getProduct(identifier: string) {
   const res = await fetch(`${baseUrl}/api/storefront/products/${identifier}`, {

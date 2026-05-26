@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/api/requireAdmin';
 
 /**
  * GET /api/admin/builder-rules
  * Returns all UI rules, ordered by priority (desc) then createdAt.
  */
 export async function GET() {
+  
   try {
+     const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
     const rules = await prisma.builderUIRule.findMany({
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
     });
@@ -25,7 +32,13 @@ export async function GET() {
  * Create a new UI rule.
  */
 export async function POST(req: NextRequest) {
+
   try {
+     const auth = await requireAdmin();
+  
+    if (auth.error) {
+      return auth.error;
+    }
     const body = await req.json();
     const {
       name,
@@ -88,7 +101,13 @@ export async function POST(req: NextRequest) {
  * Update an existing UI rule.
  */
 export async function PUT(req: NextRequest) {
+  
   try {
+    const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const body = await req.json();
     const { id, ...data } = body;
 
@@ -144,7 +163,13 @@ export async function PUT(req: NextRequest) {
  * Delete a UI rule. Pass ?id=... as query param.
  */
 export async function DELETE(req: NextRequest) {
+  
   try {
+    const auth = await requireAdmin();
+
+  if (auth.error) {
+    return auth.error;
+  }
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
