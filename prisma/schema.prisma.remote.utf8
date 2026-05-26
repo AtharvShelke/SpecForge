@@ -1,0 +1,902 @@
+﻿// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ENUMS
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum CompatibilityLevel {
+  COMPATIBLE
+  WARNING
+  INCOMPATIBLE
+}
+
+enum StockMovementType {
+  PURCHASE
+  INWARD
+  OUTWARD
+  SALE
+  RETURN
+  ADJUSTMENT
+  RESERVE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+  VOIDED
+}
+
+enum InvoiceType {
+  STANDARD
+  CREDIT_NOTE
+}
+
+enum SalesChannel {
+  ONLINE
+  POS
+  MANUAL
+  API
+  PHONE
+}
+
+enum PaymentMethodType {
+  UPI
+  BANK_TRANSFER
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum Currency {
+  INR
+  USD
+  EUR
+  GBP
+}
+
+enum FilterType {
+  checkbox
+  range
+  boolean
+  search
+  dropdown
+}
+
+enum AttributeInputType {
+  text
+  number
+  boolean
+  select
+  multi_select
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// AUTH
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// CATALOG ΓÇö Category & Brand
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model Category {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique @db.VarChar(100)
+  name           String   @unique @db.VarChar(100)
+  slug           String   @unique @db.VarChar(100)
+  shortLabel     String?  @map("short_label") @db.VarChar(100)
+  description    String?  @db.Text
+  image          String?  @db.VarChar(500)
+  icon           String?  @db.VarChar(100)
+  displayOrder   Int      @default(0) @map("display_order")
+  featuredOrder  Int?     @map("featured_order")
+  showInFeatured Boolean  @default(false) @map("show_in_featured")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  subcategories   Subcategory[]
+  products        Product[]
+  brandCategories BrandCategory[]
+  orderItems      OrderItem[]
+  buildGuides     BuildGuide[]
+  buildSequence   BuildSequence?
+  hierarchyNodes  CategoryHierarchy[]
+  attributes      CategoryAttribute[]
+  outgoingRules   CompatibilityRule[] @relation("CompatibilityRuleSource")
+  incomingRules   CompatibilityRule[] @relation("CompatibilityRuleTarget")
+
+  @@index([isActive, displayOrder])
+  @@index([showInFeatured, featuredOrder])
+  @@map("categories")
+}
+
+model Subcategory {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int      @map("category_id")
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  image       String?  @db.VarChar(500)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category   Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products   Product[]
+  attributes CategoryAttribute[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@index([slug])
+  @@map("subcategories")
+}
+
+// Explicit join table for Brand <-> Category (many-to-many)
+model BrandCategory {
+  brandId    String
+  categoryId Int
+
+  brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([brandId, categoryId])
+  @@map("brand_categories")
+}
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products        Product[]
+  brandCategories BrandCategory[]
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// CATALOG ΓÇö Category Hierarchy, Attributes & Compatibility
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model BuildSequence {
+  id         String   @id @default(cuid())
+  categoryId Int      @unique @map("category_id")
+  stepOrder  Int      @unique
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([stepOrder])
+}
+
+model CategoryRelationship {
+  id               String   @id @default(uuid())
+  fromCategoryCode String?
+  toCategoryCode   String?
+  relationshipType String
+  sortOrder        Int      @default(0)
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  @@index([relationshipType, sortOrder])
+  @@index([fromCategoryCode])
+  @@index([toCategoryCode])
+}
+
+model CategoryHierarchy {
+  id         String  @id @default(uuid())
+  label      String
+  categoryId Int?    @map("category_id")
+  query      String?
+  brand      String?
+  parentId   String?
+  sortOrder  Int     @default(0)
+
+  category Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  parent   CategoryHierarchy?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children CategoryHierarchy[] @relation("CategoryTree")
+
+  @@index([parentId])
+  @@index([sortOrder])
+  @@index([categoryId])
+}
+
+model CategoryAttribute {
+  id                    String             @id @default(uuid())
+  categoryId            Int                @map("category_id")
+  subcategoryId         Int?               @map("subcategory_id")
+  key                   String             @db.VarChar(100)
+  label                 String             @db.VarChar(150)
+  type                  AttributeInputType
+  isRequired            Boolean            @default(false) @map("is_required")
+  isFilterable          Boolean            @default(true) @map("is_filterable")
+  isComparable          Boolean            @default(true) @map("is_comparable")
+  filterType            FilterType?        @map("filter_type")
+  unit                  String?            @db.VarChar(50)
+  helpText              String?            @map("help_text") @db.Text
+  dependencyAttributeId String?            @map("dependency_attribute_id")
+  dependencyOptionId    String?            @map("dependency_option_id")
+  sortOrder             Int                @default(0) @map("sort_order")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  category                   Category                  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategory                Subcategory?              @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  dependencyAttribute        CategoryAttribute?        @relation("AttributeDependency", fields: [dependencyAttributeId], references: [id], onDelete: SetNull)
+  dependentAttributes        CategoryAttribute[]       @relation("AttributeDependency")
+  dependencyOption           AttributeOption?          @relation("AttributeOptionDependency", fields: [dependencyOptionId], references: [id], onDelete: SetNull)
+  options                    AttributeOption[]
+  productSpecs               ProductSpec[]
+  sourceCompatibilityClauses CompatibilityRuleClause[] @relation("CompatibilityClauseSourceAttribute")
+  targetCompatibilityClauses CompatibilityRuleClause[] @relation("CompatibilityClauseTargetAttribute")
+
+  @@unique([categoryId, subcategoryId, key])
+  @@index([categoryId, sortOrder])
+  @@index([categoryId, isFilterable, sortOrder])
+  @@index([subcategoryId, sortOrder])
+  @@index([dependencyAttributeId])
+  @@index([dependencyOptionId])
+  @@map("category_attributes")
+}
+
+model AttributeOption {
+  id          String   @id @default(uuid())
+  attributeId String   @map("attribute_id")
+  value       String   @db.VarChar(200)
+  slug        String   @db.VarChar(200)
+  sortOrder   Int      @default(0) @map("sort_order")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  attribute           CategoryAttribute   @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  dependentAttributes CategoryAttribute[] @relation("AttributeOptionDependency")
+  productSpecs        ProductSpec[]
+
+  @@unique([attributeId, slug])
+  @@index([attributeId, sortOrder])
+  @@map("attribute_options")
+}
+
+model CompatibilityRule {
+  id               String             @id @default(uuid())
+  sourceCategoryId Int                @map("source_category_id")
+  targetCategoryId Int                @map("target_category_id")
+  name             String             @db.VarChar(150)
+  message          String?            @db.Text
+  severity         CompatibilityLevel @default(INCOMPATIBLE)
+  isActive         Boolean            @default(true) @map("is_active")
+  sortOrder        Int                @default(0) @map("sort_order")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  sourceCategory Category                  @relation("CompatibilityRuleSource", fields: [sourceCategoryId], references: [id], onDelete: Cascade)
+  targetCategory Category                  @relation("CompatibilityRuleTarget", fields: [targetCategoryId], references: [id], onDelete: Cascade)
+  clauses        CompatibilityRuleClause[]
+
+  @@index([sourceCategoryId, targetCategoryId, isActive])
+  @@map("compatibility_rules")
+}
+
+model CompatibilityRuleClause {
+  id                String  @id @default(uuid())
+  ruleId            String  @map("rule_id")
+  sourceAttributeId String  @map("source_attribute_id")
+  targetAttributeId String  @map("target_attribute_id")
+  operator          String  @db.VarChar(50)
+  sourceValue       String? @map("source_value") @db.VarChar(200)
+  targetValue       String? @map("target_value") @db.VarChar(200)
+  sortOrder         Int     @default(0) @map("sort_order")
+
+  rule            CompatibilityRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  sourceAttribute CategoryAttribute @relation("CompatibilityClauseSourceAttribute", fields: [sourceAttributeId], references: [id], onDelete: Cascade)
+  targetAttribute CategoryAttribute @relation("CompatibilityClauseTargetAttribute", fields: [targetAttributeId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId, sortOrder])
+  @@index([sourceAttributeId])
+  @@index([targetAttributeId])
+  @@map("compatibility_rule_clauses")
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// CATALOG ΓÇö Product, Variants, Media, Tags
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model Tag {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  products Product[]
+}
+
+model ProductMedia {
+  id        String  @id @default(uuid())
+  productId String
+  url       String
+  altText   String?
+  sortOrder Int     @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([sortOrder])
+  @@index([productId, sortOrder])
+}
+
+model Product {
+  id              String        @id @default(uuid())
+  slug            String        @unique @default(uuid())
+  name            String
+  metaTitle       String?
+  metaDescription String?
+  categoryId      Int           @map("category_id")
+  subcategoryId   Int?          @map("subcategory_id")
+  description     String?
+  status          ProductStatus @default(ACTIVE)
+  deletedAt       DateTime?
+  version         Int           @default(1)
+
+  // Moved from ProductVariant
+  sku            String? @unique
+  price          Float?
+  compareAtPrice Float?
+  stockStatus    String  @default("IN_STOCK") @map("stock_status")
+
+  brandId String?
+  brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category        Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory     Subcategory?     @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  specs           ProductSpec[]
+  media           ProductMedia[]
+  tags            Tag[]
+  orderItems      OrderItem[]
+  buildGuideItems BuildGuideItem[]
+  inventoryItems  InventoryItem[]
+  stockMovements  StockMovement[]
+
+  @@index([status])
+  @@index([brandId])
+  @@index([slug])
+  @@index([name])
+  @@index([categoryId])
+  @@index([categoryId, status, brandId])
+  @@index([status, name])
+}
+
+model ProductSpec {
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  attributeId   String   @map("attribute_id")
+  optionId      String?  @map("option_id")
+  value         String   @db.VarChar(300)
+  valueNumber   Float?   @map("value_number")
+  valueBoolean  Boolean? @map("value_boolean")
+  isHighlighted Boolean  @default(false) @map("is_highlighted")
+
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attribute CategoryAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  option    AttributeOption?  @relation(fields: [optionId], references: [id], onDelete: SetNull)
+
+  @@unique([productId, attributeId, value])
+  @@index([productId, attributeId])
+  @@index([attributeId, value])
+  @@index([attributeId, valueNumber])
+  @@index([optionId])
+  @@map("product_specs")
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// CACHING & SEARCH OPTIMIZATION
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model CategoryProductCache {
+  id           String   @id @default(uuid())
+  categoryId   Int      @unique
+  productCount Int
+  minPrice     Float?
+  maxPrice     Float?
+  filters      Json?
+  lastBuilt    DateTime @default(now())
+  builtAt      DateTime @default(now())
+
+  @@index([categoryId])
+  @@map("category_product_cache")
+}
+
+model SearchSuggestion {
+  id           String   @id @default(uuid())
+  term         String
+  categoryId   Int?
+  frequency    Int      @default(1)
+  lastSearched DateTime @default(now())
+
+  @@index([term, frequency])
+  @@index([categoryId, frequency])
+  @@map("search_suggestions")
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// WAREHOUSING & INVENTORY
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model InventoryItem {
+  id           String    @id @default(uuid())
+  productId    String
+  partNumber   String?
+  serialNumber String?
+  quantity     Int       @default(1)
+  reserved     Int       @default(0)
+  reorderLevel Int       @default(5)
+  costPrice    Float     @default(0)
+  location     String    @default("")
+  lastUpdated  DateTime?
+
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItemUnits OrderItemUnit[]
+  stockMovements StockMovement[]
+
+  @@index([quantity])
+  @@index([productId])
+  @@index([productId, location])
+  @@index([location, quantity])
+  @@index([lastUpdated])
+  @@unique([productId, partNumber])
+  @@unique([productId, serialNumber])
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// CUSTOMER (Guest ΓÇö no auth)
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model Customer {
+  id           String  @id @default(uuid())
+  name         String
+  email        String  @unique
+  phone        String?
+  company      String?
+  addressLine1 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+  orders   Order[]
+
+  @@index([email])
+  @@index([name])
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ORDERS & SHIPMENTS
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model Order {
+  id             String       @id
+  channel        SalesChannel @default(ONLINE)
+  customerName   String
+  email          String
+  phone          String?
+  date           DateTime     @default(now())
+  subtotal       Float        @default(0)
+  gstAmount      Float        @default(0)
+  taxAmount      Float        @default(0)
+  discountAmount Float        @default(0)
+  total          Float
+  status         OrderStatus  @default(PENDING)
+  version        Int          @default(1)
+  deletedAt      DateTime?
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  shippingStreet  String?
+  shippingCity    String?
+  shippingState   String?
+  shippingZip     String?
+  shippingCountry String?
+
+  paymentMethod        String?
+  paymentTransactionId String?
+  paymentStatus        String?
+  paymentDueDate       DateTime?
+  paymentCompletedAt   DateTime?
+  paymentFailureReason String?
+  idempotencyKey       String?   @unique
+  source               Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items      OrderItem[]
+  logs       OrderLog[]
+  invoices   Invoice[]
+  shipments  ShipmentTracking[]
+  payments   PaymentTransaction[]
+  stockMoves StockMovement[]
+
+  @@index([email])
+  @@index([status])
+  @@index([date])
+  @@index([status, date])
+  @@index([channel])
+  @@index([customerId])
+  @@index([paymentStatus, paymentDueDate])
+  @@index([idempotencyKey, status])
+}
+
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String
+  productId  String
+  name       String
+  categoryId Int     @map("category_id")
+  price      Float
+  quantity   Int
+  image      String?
+  sku        String?
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  assignedUnits OrderItemUnit[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([categoryId, orderId])
+}
+
+model OrderItemUnit {
+  id              String   @id @default(uuid())
+  orderItemId      String   @map("order_item_id")
+  inventoryItemId  String   @map("inventory_item_id")
+  serialNumber     String?  @map("serial_number")
+  partNumber       String?  @map("part_number")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  orderItem      OrderItem      @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  inventoryItem  InventoryItem  @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([orderItemId])
+  @@index([inventoryItemId])
+  @@map("order_item_units")
+}
+
+model OrderLog {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  timestamp DateTime    @default(now())
+  note      String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, timestamp])
+}
+
+model ShipmentTracking {
+  id                String    @id @default(uuid())
+  orderId           String
+  trackingNumber    String
+  carrier           String
+  status            String
+  estimatedDelivery DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// STOCK MOVEMENTS
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model StockMovement {
+  id        String            @id @default(uuid())
+  orderId   String?
+  productId String
+  inventoryItemId String?     @map("inventory_item_id")
+  type      StockMovementType
+  quantity  Int
+  note      String?
+  createdAt DateTime          @default(now())
+
+  order         Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([inventoryItemId])
+  @@index([type])
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// BUILD GUIDES
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model BuildGuide {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  categoryId  Int?
+  total       Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items    BuildGuideItem[]
+  category Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([categoryId])
+}
+
+model BuildGuideItem {
+  id           String @id @default(uuid())
+  buildGuideId String
+  productId    String
+  quantity     Int    @default(1)
+
+  buildGuide BuildGuide @relation(fields: [buildGuideId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([buildGuideId, productId])
+  @@index([buildGuideId])
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// BILLING & INVOICES
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model InvoiceSequence {
+  id           String @id @default("invoice_seq")
+  currentValue Int    @default(0)
+}
+
+model BillingProfile {
+  id           String   @id @default(uuid())
+  companyName  String
+  legalName    String?
+  email        String
+  phone        String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  postalCode   String
+  country      String
+  gstin        String?
+  currency     Currency @default(INR)
+  logoUrl      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  orderId       String?
+  type          InvoiceType   @default(STANDARD)
+  status        InvoiceStatus @default(DRAFT)
+  customerId    String
+  currency      Currency      @default(INR)
+
+  subtotal    Float @default(0)
+  taxTotal    Float @default(0)
+  discountPct Float @default(0)
+  shipping    Float @default(0)
+  total       Float @default(0)
+  amountPaid  Float @default(0)
+  amountDue   Float @default(0)
+
+  notes       String?
+  sentAt      DateTime?
+  refundedAt  DateTime?
+  cancelledAt DateTime?
+  paidAt      DateTime?
+  voidedAt    DateTime?
+
+  createdAt     DateTime @default(now())
+  dueDate       DateTime
+  lastUpdatedAt DateTime @updatedAt
+
+  order       Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  customer    Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lineItems   InvoiceLineItem[]
+  audit       InvoiceAuditEvent[]
+  creditNotes CreditNote[]
+
+  @@index([customerId])
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  name        String
+  description String?
+  quantity    Int
+  unitPrice   Float
+  taxRatePct  Float   @default(18)
+  hsnCode     String?
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model InvoiceAuditEvent {
+  id        String   @id @default(uuid())
+  invoiceId String
+  type      String
+  actor     String
+  message   String?
+  createdAt DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, createdAt])
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// PAYMENT TRANSACTIONS
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model PaymentTransaction {
+  id             String            @id @default(uuid())
+  orderId        String
+  method         PaymentMethodType
+  gatewayTxnId   String?           @unique
+  amount         Float
+  currency       Currency          @default(INR)
+  status         PaymentStatus     @default(INITIATED)
+  idempotencyKey String            @unique
+  metadata       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order    Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  attempts PaymentAttempt[]
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model PaymentAttempt {
+  id              String        @id @default(uuid())
+  paymentTxnId    String
+  attemptNumber   Int
+  status          PaymentStatus
+  gatewayResponse Json?
+  errorMessage    String?
+  createdAt       DateTime      @default(now())
+
+  transaction PaymentTransaction @relation(fields: [paymentTxnId], references: [id], onDelete: Cascade)
+
+  @@index([paymentTxnId, attemptNumber])
+  @@map("payment_attempts")
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// CREDIT NOTES
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model CreditNote {
+  id                String  @id @default(uuid())
+  creditNoteNumber  String  @unique
+  originalInvoiceId String
+  orderId           String?
+  reason            String
+  subtotal          Float
+  taxTotal          Float
+  total             Float
+
+  createdAt DateTime @default(now())
+
+  originalInvoice Invoice              @relation(fields: [originalInvoiceId], references: [id], onDelete: Restrict)
+  lineItems       CreditNoteLineItem[]
+
+  @@index([originalInvoiceId])
+  @@index([orderId])
+}
+
+model CreditNoteLineItem {
+  id           String  @id @default(uuid())
+  creditNoteId String
+  name         String
+  quantity     Int
+  unitPrice    Float
+  taxRatePct   Float   @default(18)
+  hsnCode      String?
+
+  creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId])
+}
+
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// UNIFIED AUDIT LOG
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  actor      String   @default("System")
+  changes    Json?
+  before     Json?
+  after      Json?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actor])
+  @@index([entityType, createdAt(sort: Desc)])
+  @@index([actor, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}

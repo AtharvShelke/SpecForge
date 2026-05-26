@@ -37,21 +37,21 @@ export type BuildGuideItemSumAggregateOutputType = {
 export type BuildGuideItemMinAggregateOutputType = {
   id: string | null
   buildGuideId: string | null
-  variantId: string | null
+  productId: string | null
   quantity: number | null
 }
 
 export type BuildGuideItemMaxAggregateOutputType = {
   id: string | null
   buildGuideId: string | null
-  variantId: string | null
+  productId: string | null
   quantity: number | null
 }
 
 export type BuildGuideItemCountAggregateOutputType = {
   id: number
   buildGuideId: number
-  variantId: number
+  productId: number
   quantity: number
   _all: number
 }
@@ -68,21 +68,21 @@ export type BuildGuideItemSumAggregateInputType = {
 export type BuildGuideItemMinAggregateInputType = {
   id?: true
   buildGuideId?: true
-  variantId?: true
+  productId?: true
   quantity?: true
 }
 
 export type BuildGuideItemMaxAggregateInputType = {
   id?: true
   buildGuideId?: true
-  variantId?: true
+  productId?: true
   quantity?: true
 }
 
 export type BuildGuideItemCountAggregateInputType = {
   id?: true
   buildGuideId?: true
-  variantId?: true
+  productId?: true
   quantity?: true
   _all?: true
 }
@@ -176,7 +176,7 @@ export type BuildGuideItemGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
 export type BuildGuideItemGroupByOutputType = {
   id: string
   buildGuideId: string
-  variantId: string
+  productId: string
   quantity: number
   _count: BuildGuideItemCountAggregateOutputType | null
   _avg: BuildGuideItemAvgAggregateOutputType | null
@@ -206,38 +206,38 @@ export type BuildGuideItemWhereInput = {
   NOT?: Prisma.BuildGuideItemWhereInput | Prisma.BuildGuideItemWhereInput[]
   id?: Prisma.StringFilter<"BuildGuideItem"> | string
   buildGuideId?: Prisma.StringFilter<"BuildGuideItem"> | string
-  variantId?: Prisma.StringFilter<"BuildGuideItem"> | string
+  productId?: Prisma.StringFilter<"BuildGuideItem"> | string
   quantity?: Prisma.IntFilter<"BuildGuideItem"> | number
   buildGuide?: Prisma.XOR<Prisma.BuildGuideScalarRelationFilter, Prisma.BuildGuideWhereInput>
-  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
+  product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
 }
 
 export type BuildGuideItemOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   buildGuideId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   buildGuide?: Prisma.BuildGuideOrderByWithRelationInput
-  variant?: Prisma.ProductVariantOrderByWithRelationInput
+  product?: Prisma.ProductOrderByWithRelationInput
 }
 
 export type BuildGuideItemWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  buildGuideId_variantId?: Prisma.BuildGuideItemBuildGuideIdVariantIdCompoundUniqueInput
+  buildGuideId_productId?: Prisma.BuildGuideItemBuildGuideIdProductIdCompoundUniqueInput
   AND?: Prisma.BuildGuideItemWhereInput | Prisma.BuildGuideItemWhereInput[]
   OR?: Prisma.BuildGuideItemWhereInput[]
   NOT?: Prisma.BuildGuideItemWhereInput | Prisma.BuildGuideItemWhereInput[]
   buildGuideId?: Prisma.StringFilter<"BuildGuideItem"> | string
-  variantId?: Prisma.StringFilter<"BuildGuideItem"> | string
+  productId?: Prisma.StringFilter<"BuildGuideItem"> | string
   quantity?: Prisma.IntFilter<"BuildGuideItem"> | number
   buildGuide?: Prisma.XOR<Prisma.BuildGuideScalarRelationFilter, Prisma.BuildGuideWhereInput>
-  variant?: Prisma.XOR<Prisma.ProductVariantScalarRelationFilter, Prisma.ProductVariantWhereInput>
-}, "id" | "buildGuideId_variantId">
+  product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
+}, "id" | "buildGuideId_productId">
 
 export type BuildGuideItemOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   buildGuideId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   _count?: Prisma.BuildGuideItemCountOrderByAggregateInput
   _avg?: Prisma.BuildGuideItemAvgOrderByAggregateInput
@@ -252,7 +252,7 @@ export type BuildGuideItemScalarWhereWithAggregatesInput = {
   NOT?: Prisma.BuildGuideItemScalarWhereWithAggregatesInput | Prisma.BuildGuideItemScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"BuildGuideItem"> | string
   buildGuideId?: Prisma.StringWithAggregatesFilter<"BuildGuideItem"> | string
-  variantId?: Prisma.StringWithAggregatesFilter<"BuildGuideItem"> | string
+  productId?: Prisma.StringWithAggregatesFilter<"BuildGuideItem"> | string
   quantity?: Prisma.IntWithAggregatesFilter<"BuildGuideItem"> | number
 }
 
@@ -260,13 +260,13 @@ export type BuildGuideItemCreateInput = {
   id?: string
   quantity?: number
   buildGuide: Prisma.BuildGuideCreateNestedOneWithoutItemsInput
-  variant: Prisma.ProductVariantCreateNestedOneWithoutBuildGuideItemsInput
+  product: Prisma.ProductCreateNestedOneWithoutBuildGuideItemsInput
 }
 
 export type BuildGuideItemUncheckedCreateInput = {
   id?: string
   buildGuideId: string
-  variantId: string
+  productId: string
   quantity?: number
 }
 
@@ -274,20 +274,20 @@ export type BuildGuideItemUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   buildGuide?: Prisma.BuildGuideUpdateOneRequiredWithoutItemsNestedInput
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutBuildGuideItemsNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutBuildGuideItemsNestedInput
 }
 
 export type BuildGuideItemUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   buildGuideId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type BuildGuideItemCreateManyInput = {
   id?: string
   buildGuideId: string
-  variantId: string
+  productId: string
   quantity?: number
 }
 
@@ -299,7 +299,7 @@ export type BuildGuideItemUpdateManyMutationInput = {
 export type BuildGuideItemUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   buildGuideId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
@@ -313,15 +313,15 @@ export type BuildGuideItemOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type BuildGuideItemBuildGuideIdVariantIdCompoundUniqueInput = {
+export type BuildGuideItemBuildGuideIdProductIdCompoundUniqueInput = {
   buildGuideId: string
-  variantId: string
+  productId: string
 }
 
 export type BuildGuideItemCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   buildGuideId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
 }
 
@@ -332,14 +332,14 @@ export type BuildGuideItemAvgOrderByAggregateInput = {
 export type BuildGuideItemMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   buildGuideId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
 }
 
 export type BuildGuideItemMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   buildGuideId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
 }
 
@@ -347,45 +347,45 @@ export type BuildGuideItemSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
 }
 
-export type BuildGuideItemCreateNestedManyWithoutVariantInput = {
-  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutVariantInput, Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput> | Prisma.BuildGuideItemCreateWithoutVariantInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput[]
-  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput | Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput[]
-  createMany?: Prisma.BuildGuideItemCreateManyVariantInputEnvelope
+export type BuildGuideItemCreateNestedManyWithoutProductInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutProductInput, Prisma.BuildGuideItemUncheckedCreateWithoutProductInput> | Prisma.BuildGuideItemCreateWithoutProductInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutProductInput | Prisma.BuildGuideItemCreateOrConnectWithoutProductInput[]
+  createMany?: Prisma.BuildGuideItemCreateManyProductInputEnvelope
   connect?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
 }
 
-export type BuildGuideItemUncheckedCreateNestedManyWithoutVariantInput = {
-  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutVariantInput, Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput> | Prisma.BuildGuideItemCreateWithoutVariantInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput[]
-  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput | Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput[]
-  createMany?: Prisma.BuildGuideItemCreateManyVariantInputEnvelope
+export type BuildGuideItemUncheckedCreateNestedManyWithoutProductInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutProductInput, Prisma.BuildGuideItemUncheckedCreateWithoutProductInput> | Prisma.BuildGuideItemCreateWithoutProductInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutProductInput | Prisma.BuildGuideItemCreateOrConnectWithoutProductInput[]
+  createMany?: Prisma.BuildGuideItemCreateManyProductInputEnvelope
   connect?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
 }
 
-export type BuildGuideItemUpdateManyWithoutVariantNestedInput = {
-  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutVariantInput, Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput> | Prisma.BuildGuideItemCreateWithoutVariantInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput[]
-  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput | Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput[]
-  upsert?: Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutVariantInput | Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutVariantInput[]
-  createMany?: Prisma.BuildGuideItemCreateManyVariantInputEnvelope
+export type BuildGuideItemUpdateManyWithoutProductNestedInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutProductInput, Prisma.BuildGuideItemUncheckedCreateWithoutProductInput> | Prisma.BuildGuideItemCreateWithoutProductInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutProductInput | Prisma.BuildGuideItemCreateOrConnectWithoutProductInput[]
+  upsert?: Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutProductInput | Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutProductInput[]
+  createMany?: Prisma.BuildGuideItemCreateManyProductInputEnvelope
   set?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
   disconnect?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
   delete?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
   connect?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
-  update?: Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutVariantInput | Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutVariantInput[]
-  updateMany?: Prisma.BuildGuideItemUpdateManyWithWhereWithoutVariantInput | Prisma.BuildGuideItemUpdateManyWithWhereWithoutVariantInput[]
+  update?: Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutProductInput | Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutProductInput[]
+  updateMany?: Prisma.BuildGuideItemUpdateManyWithWhereWithoutProductInput | Prisma.BuildGuideItemUpdateManyWithWhereWithoutProductInput[]
   deleteMany?: Prisma.BuildGuideItemScalarWhereInput | Prisma.BuildGuideItemScalarWhereInput[]
 }
 
-export type BuildGuideItemUncheckedUpdateManyWithoutVariantNestedInput = {
-  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutVariantInput, Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput> | Prisma.BuildGuideItemCreateWithoutVariantInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput[]
-  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput | Prisma.BuildGuideItemCreateOrConnectWithoutVariantInput[]
-  upsert?: Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutVariantInput | Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutVariantInput[]
-  createMany?: Prisma.BuildGuideItemCreateManyVariantInputEnvelope
+export type BuildGuideItemUncheckedUpdateManyWithoutProductNestedInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutProductInput, Prisma.BuildGuideItemUncheckedCreateWithoutProductInput> | Prisma.BuildGuideItemCreateWithoutProductInput[] | Prisma.BuildGuideItemUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.BuildGuideItemCreateOrConnectWithoutProductInput | Prisma.BuildGuideItemCreateOrConnectWithoutProductInput[]
+  upsert?: Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutProductInput | Prisma.BuildGuideItemUpsertWithWhereUniqueWithoutProductInput[]
+  createMany?: Prisma.BuildGuideItemCreateManyProductInputEnvelope
   set?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
   disconnect?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
   delete?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
   connect?: Prisma.BuildGuideItemWhereUniqueInput | Prisma.BuildGuideItemWhereUniqueInput[]
-  update?: Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutVariantInput | Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutVariantInput[]
-  updateMany?: Prisma.BuildGuideItemUpdateManyWithWhereWithoutVariantInput | Prisma.BuildGuideItemUpdateManyWithWhereWithoutVariantInput[]
+  update?: Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutProductInput | Prisma.BuildGuideItemUpdateWithWhereUniqueWithoutProductInput[]
+  updateMany?: Prisma.BuildGuideItemUpdateManyWithWhereWithoutProductInput | Prisma.BuildGuideItemUpdateManyWithWhereWithoutProductInput[]
   deleteMany?: Prisma.BuildGuideItemScalarWhereInput | Prisma.BuildGuideItemScalarWhereInput[]
 }
 
@@ -431,42 +431,42 @@ export type BuildGuideItemUncheckedUpdateManyWithoutBuildGuideNestedInput = {
   deleteMany?: Prisma.BuildGuideItemScalarWhereInput | Prisma.BuildGuideItemScalarWhereInput[]
 }
 
-export type BuildGuideItemCreateWithoutVariantInput = {
+export type BuildGuideItemCreateWithoutProductInput = {
   id?: string
   quantity?: number
   buildGuide: Prisma.BuildGuideCreateNestedOneWithoutItemsInput
 }
 
-export type BuildGuideItemUncheckedCreateWithoutVariantInput = {
+export type BuildGuideItemUncheckedCreateWithoutProductInput = {
   id?: string
   buildGuideId: string
   quantity?: number
 }
 
-export type BuildGuideItemCreateOrConnectWithoutVariantInput = {
+export type BuildGuideItemCreateOrConnectWithoutProductInput = {
   where: Prisma.BuildGuideItemWhereUniqueInput
-  create: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutVariantInput, Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput>
+  create: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutProductInput, Prisma.BuildGuideItemUncheckedCreateWithoutProductInput>
 }
 
-export type BuildGuideItemCreateManyVariantInputEnvelope = {
-  data: Prisma.BuildGuideItemCreateManyVariantInput | Prisma.BuildGuideItemCreateManyVariantInput[]
+export type BuildGuideItemCreateManyProductInputEnvelope = {
+  data: Prisma.BuildGuideItemCreateManyProductInput | Prisma.BuildGuideItemCreateManyProductInput[]
   skipDuplicates?: boolean
 }
 
-export type BuildGuideItemUpsertWithWhereUniqueWithoutVariantInput = {
+export type BuildGuideItemUpsertWithWhereUniqueWithoutProductInput = {
   where: Prisma.BuildGuideItemWhereUniqueInput
-  update: Prisma.XOR<Prisma.BuildGuideItemUpdateWithoutVariantInput, Prisma.BuildGuideItemUncheckedUpdateWithoutVariantInput>
-  create: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutVariantInput, Prisma.BuildGuideItemUncheckedCreateWithoutVariantInput>
+  update: Prisma.XOR<Prisma.BuildGuideItemUpdateWithoutProductInput, Prisma.BuildGuideItemUncheckedUpdateWithoutProductInput>
+  create: Prisma.XOR<Prisma.BuildGuideItemCreateWithoutProductInput, Prisma.BuildGuideItemUncheckedCreateWithoutProductInput>
 }
 
-export type BuildGuideItemUpdateWithWhereUniqueWithoutVariantInput = {
+export type BuildGuideItemUpdateWithWhereUniqueWithoutProductInput = {
   where: Prisma.BuildGuideItemWhereUniqueInput
-  data: Prisma.XOR<Prisma.BuildGuideItemUpdateWithoutVariantInput, Prisma.BuildGuideItemUncheckedUpdateWithoutVariantInput>
+  data: Prisma.XOR<Prisma.BuildGuideItemUpdateWithoutProductInput, Prisma.BuildGuideItemUncheckedUpdateWithoutProductInput>
 }
 
-export type BuildGuideItemUpdateManyWithWhereWithoutVariantInput = {
+export type BuildGuideItemUpdateManyWithWhereWithoutProductInput = {
   where: Prisma.BuildGuideItemScalarWhereInput
-  data: Prisma.XOR<Prisma.BuildGuideItemUpdateManyMutationInput, Prisma.BuildGuideItemUncheckedUpdateManyWithoutVariantInput>
+  data: Prisma.XOR<Prisma.BuildGuideItemUpdateManyMutationInput, Prisma.BuildGuideItemUncheckedUpdateManyWithoutProductInput>
 }
 
 export type BuildGuideItemScalarWhereInput = {
@@ -475,19 +475,19 @@ export type BuildGuideItemScalarWhereInput = {
   NOT?: Prisma.BuildGuideItemScalarWhereInput | Prisma.BuildGuideItemScalarWhereInput[]
   id?: Prisma.StringFilter<"BuildGuideItem"> | string
   buildGuideId?: Prisma.StringFilter<"BuildGuideItem"> | string
-  variantId?: Prisma.StringFilter<"BuildGuideItem"> | string
+  productId?: Prisma.StringFilter<"BuildGuideItem"> | string
   quantity?: Prisma.IntFilter<"BuildGuideItem"> | number
 }
 
 export type BuildGuideItemCreateWithoutBuildGuideInput = {
   id?: string
   quantity?: number
-  variant: Prisma.ProductVariantCreateNestedOneWithoutBuildGuideItemsInput
+  product: Prisma.ProductCreateNestedOneWithoutBuildGuideItemsInput
 }
 
 export type BuildGuideItemUncheckedCreateWithoutBuildGuideInput = {
   id?: string
-  variantId: string
+  productId: string
   quantity?: number
 }
 
@@ -517,25 +517,25 @@ export type BuildGuideItemUpdateManyWithWhereWithoutBuildGuideInput = {
   data: Prisma.XOR<Prisma.BuildGuideItemUpdateManyMutationInput, Prisma.BuildGuideItemUncheckedUpdateManyWithoutBuildGuideInput>
 }
 
-export type BuildGuideItemCreateManyVariantInput = {
+export type BuildGuideItemCreateManyProductInput = {
   id?: string
   buildGuideId: string
   quantity?: number
 }
 
-export type BuildGuideItemUpdateWithoutVariantInput = {
+export type BuildGuideItemUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   buildGuide?: Prisma.BuildGuideUpdateOneRequiredWithoutItemsNestedInput
 }
 
-export type BuildGuideItemUncheckedUpdateWithoutVariantInput = {
+export type BuildGuideItemUncheckedUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   buildGuideId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
-export type BuildGuideItemUncheckedUpdateManyWithoutVariantInput = {
+export type BuildGuideItemUncheckedUpdateManyWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   buildGuideId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
@@ -543,25 +543,25 @@ export type BuildGuideItemUncheckedUpdateManyWithoutVariantInput = {
 
 export type BuildGuideItemCreateManyBuildGuideInput = {
   id?: string
-  variantId: string
+  productId: string
   quantity?: number
 }
 
 export type BuildGuideItemUpdateWithoutBuildGuideInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  variant?: Prisma.ProductVariantUpdateOneRequiredWithoutBuildGuideItemsNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutBuildGuideItemsNestedInput
 }
 
 export type BuildGuideItemUncheckedUpdateWithoutBuildGuideInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type BuildGuideItemUncheckedUpdateManyWithoutBuildGuideInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
@@ -570,61 +570,61 @@ export type BuildGuideItemUncheckedUpdateManyWithoutBuildGuideInput = {
 export type BuildGuideItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   buildGuideId?: boolean
-  variantId?: boolean
+  productId?: boolean
   quantity?: boolean
   buildGuide?: boolean | Prisma.BuildGuideDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildGuideItem"]>
 
 export type BuildGuideItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   buildGuideId?: boolean
-  variantId?: boolean
+  productId?: boolean
   quantity?: boolean
   buildGuide?: boolean | Prisma.BuildGuideDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildGuideItem"]>
 
 export type BuildGuideItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   buildGuideId?: boolean
-  variantId?: boolean
+  productId?: boolean
   quantity?: boolean
   buildGuide?: boolean | Prisma.BuildGuideDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildGuideItem"]>
 
 export type BuildGuideItemSelectScalar = {
   id?: boolean
   buildGuideId?: boolean
-  variantId?: boolean
+  productId?: boolean
   quantity?: boolean
 }
 
-export type BuildGuideItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "buildGuideId" | "variantId" | "quantity", ExtArgs["result"]["buildGuideItem"]>
+export type BuildGuideItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "buildGuideId" | "productId" | "quantity", ExtArgs["result"]["buildGuideItem"]>
 export type BuildGuideItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   buildGuide?: boolean | Prisma.BuildGuideDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
 export type BuildGuideItemIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   buildGuide?: boolean | Prisma.BuildGuideDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
 export type BuildGuideItemIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   buildGuide?: boolean | Prisma.BuildGuideDefaultArgs<ExtArgs>
-  variant?: boolean | Prisma.ProductVariantDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
 
 export type $BuildGuideItemPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BuildGuideItem"
   objects: {
     buildGuide: Prisma.$BuildGuidePayload<ExtArgs>
-    variant: Prisma.$ProductVariantPayload<ExtArgs>
+    product: Prisma.$ProductPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     buildGuideId: string
-    variantId: string
+    productId: string
     quantity: number
   }, ExtArgs["result"]["buildGuideItem"]>
   composites: {}
@@ -1021,7 +1021,7 @@ readonly fields: BuildGuideItemFieldRefs;
 export interface Prisma__BuildGuideItemClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   buildGuide<T extends Prisma.BuildGuideDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BuildGuideDefaultArgs<ExtArgs>>): Prisma.Prisma__BuildGuideClient<runtime.Types.Result.GetResult<Prisma.$BuildGuidePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  variant<T extends Prisma.ProductVariantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductVariantDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductVariantClient<runtime.Types.Result.GetResult<Prisma.$ProductVariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  product<T extends Prisma.ProductDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1053,7 +1053,7 @@ export interface Prisma__BuildGuideItemClient<T, Null = never, ExtArgs extends r
 export interface BuildGuideItemFieldRefs {
   readonly id: Prisma.FieldRef<"BuildGuideItem", 'String'>
   readonly buildGuideId: Prisma.FieldRef<"BuildGuideItem", 'String'>
-  readonly variantId: Prisma.FieldRef<"BuildGuideItem", 'String'>
+  readonly productId: Prisma.FieldRef<"BuildGuideItem", 'String'>
   readonly quantity: Prisma.FieldRef<"BuildGuideItem", 'Int'>
 }
     

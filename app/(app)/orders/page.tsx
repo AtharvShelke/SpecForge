@@ -47,8 +47,8 @@ const Orders: React.FC = () => {
     };
 
     const getExpectedDelivery = (order: Order) => {
-        const delivered = order.logs.find((l) => l.status === OrderStatus.DELIVERED);
-        const shipped = order.logs.find((l) => l.status === OrderStatus.SHIPPED);
+        const delivered = order.logs?.find((l) => l.status === OrderStatus.DELIVERED);
+        const shipped = order.logs?.find((l) => l.status === OrderStatus.SHIPPED);
 
         if (delivered) {
             return `Delivered on ${new Date(delivered.timestamp).toLocaleDateString()}`;
@@ -124,7 +124,7 @@ const Orders: React.FC = () => {
 
                                     {/* Items */}
                                     <div className="px-6 space-y-4">
-                                        {order.items.map((item: any) => (
+                                        {order.items?.map((item: any) => (
                                             <div key={item.id} className="flex gap-4">
                                                 <img
                                                     src={item.image}

@@ -27,19 +27,21 @@ export type AggregateBuildGuide = {
 }
 
 export type BuildGuideAvgAggregateOutputType = {
-  total: runtime.Decimal | null
+  categoryId: number | null
+  total: number | null
 }
 
 export type BuildGuideSumAggregateOutputType = {
-  total: runtime.Decimal | null
+  categoryId: number | null
+  total: number | null
 }
 
 export type BuildGuideMinAggregateOutputType = {
   id: string | null
   title: string | null
   description: string | null
-  category: string | null
-  total: runtime.Decimal | null
+  categoryId: number | null
+  total: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -48,8 +50,8 @@ export type BuildGuideMaxAggregateOutputType = {
   id: string | null
   title: string | null
   description: string | null
-  category: string | null
-  total: runtime.Decimal | null
+  categoryId: number | null
+  total: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -58,7 +60,7 @@ export type BuildGuideCountAggregateOutputType = {
   id: number
   title: number
   description: number
-  category: number
+  categoryId: number
   total: number
   createdAt: number
   updatedAt: number
@@ -67,10 +69,12 @@ export type BuildGuideCountAggregateOutputType = {
 
 
 export type BuildGuideAvgAggregateInputType = {
+  categoryId?: true
   total?: true
 }
 
 export type BuildGuideSumAggregateInputType = {
+  categoryId?: true
   total?: true
 }
 
@@ -78,7 +82,7 @@ export type BuildGuideMinAggregateInputType = {
   id?: true
   title?: true
   description?: true
-  category?: true
+  categoryId?: true
   total?: true
   createdAt?: true
   updatedAt?: true
@@ -88,7 +92,7 @@ export type BuildGuideMaxAggregateInputType = {
   id?: true
   title?: true
   description?: true
-  category?: true
+  categoryId?: true
   total?: true
   createdAt?: true
   updatedAt?: true
@@ -98,7 +102,7 @@ export type BuildGuideCountAggregateInputType = {
   id?: true
   title?: true
   description?: true
-  category?: true
+  categoryId?: true
   total?: true
   createdAt?: true
   updatedAt?: true
@@ -195,8 +199,8 @@ export type BuildGuideGroupByOutputType = {
   id: string
   title: string
   description: string | null
-  category: string
-  total: runtime.Decimal
+  categoryId: number | null
+  total: number
   createdAt: Date
   updatedAt: Date
   _count: BuildGuideCountAggregateOutputType | null
@@ -228,22 +232,24 @@ export type BuildGuideWhereInput = {
   id?: Prisma.StringFilter<"BuildGuide"> | string
   title?: Prisma.StringFilter<"BuildGuide"> | string
   description?: Prisma.StringNullableFilter<"BuildGuide"> | string | null
-  category?: Prisma.StringFilter<"BuildGuide"> | string
-  total?: Prisma.DecimalFilter<"BuildGuide"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: Prisma.IntNullableFilter<"BuildGuide"> | number | null
+  total?: Prisma.FloatFilter<"BuildGuide"> | number
   createdAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   items?: Prisma.BuildGuideItemListRelationFilter
+  category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
 }
 
 export type BuildGuideOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrderInput | Prisma.SortOrder
   total?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   items?: Prisma.BuildGuideItemOrderByRelationAggregateInput
+  category?: Prisma.CategoryOrderByWithRelationInput
 }
 
 export type BuildGuideWhereUniqueInput = Prisma.AtLeast<{
@@ -253,18 +259,19 @@ export type BuildGuideWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.BuildGuideWhereInput | Prisma.BuildGuideWhereInput[]
   title?: Prisma.StringFilter<"BuildGuide"> | string
   description?: Prisma.StringNullableFilter<"BuildGuide"> | string | null
-  category?: Prisma.StringFilter<"BuildGuide"> | string
-  total?: Prisma.DecimalFilter<"BuildGuide"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: Prisma.IntNullableFilter<"BuildGuide"> | number | null
+  total?: Prisma.FloatFilter<"BuildGuide"> | number
   createdAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
   items?: Prisma.BuildGuideItemListRelationFilter
+  category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
 }, "id">
 
 export type BuildGuideOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrderInput | Prisma.SortOrder
   total?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -282,8 +289,8 @@ export type BuildGuideScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"BuildGuide"> | string
   title?: Prisma.StringWithAggregatesFilter<"BuildGuide"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"BuildGuide"> | string | null
-  category?: Prisma.StringWithAggregatesFilter<"BuildGuide"> | string
-  total?: Prisma.DecimalWithAggregatesFilter<"BuildGuide"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: Prisma.IntNullableWithAggregatesFilter<"BuildGuide"> | number | null
+  total?: Prisma.FloatWithAggregatesFilter<"BuildGuide"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"BuildGuide"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"BuildGuide"> | Date | string
 }
@@ -292,19 +299,19 @@ export type BuildGuideCreateInput = {
   id?: string
   title: string
   description?: string | null
-  category?: string
-  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  total?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.BuildGuideItemCreateNestedManyWithoutBuildGuideInput
+  category?: Prisma.CategoryCreateNestedOneWithoutBuildGuidesInput
 }
 
 export type BuildGuideUncheckedCreateInput = {
   id?: string
   title: string
   description?: string | null
-  category?: string
-  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: number | null
+  total?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.BuildGuideItemUncheckedCreateNestedManyWithoutBuildGuideInput
@@ -314,19 +321,19 @@ export type BuildGuideUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.BuildGuideItemUpdateManyWithoutBuildGuideNestedInput
+  category?: Prisma.CategoryUpdateOneWithoutBuildGuidesNestedInput
 }
 
 export type BuildGuideUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.BuildGuideItemUncheckedUpdateManyWithoutBuildGuideNestedInput
@@ -336,8 +343,8 @@ export type BuildGuideCreateManyInput = {
   id?: string
   title: string
   description?: string | null
-  category?: string
-  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: number | null
+  total?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -346,8 +353,7 @@ export type BuildGuideUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -356,23 +362,34 @@ export type BuildGuideUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type BuildGuideListRelationFilter = {
+  every?: Prisma.BuildGuideWhereInput
+  some?: Prisma.BuildGuideWhereInput
+  none?: Prisma.BuildGuideWhereInput
+}
+
+export type BuildGuideOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type BuildGuideCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
   total?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type BuildGuideAvgOrderByAggregateInput = {
+  categoryId?: Prisma.SortOrder
   total?: Prisma.SortOrder
 }
 
@@ -380,7 +397,7 @@ export type BuildGuideMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
   total?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -390,19 +407,62 @@ export type BuildGuideMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  category?: Prisma.SortOrder
+  categoryId?: Prisma.SortOrder
   total?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type BuildGuideSumOrderByAggregateInput = {
+  categoryId?: Prisma.SortOrder
   total?: Prisma.SortOrder
 }
 
 export type BuildGuideScalarRelationFilter = {
   is?: Prisma.BuildGuideWhereInput
   isNot?: Prisma.BuildGuideWhereInput
+}
+
+export type BuildGuideCreateNestedManyWithoutCategoryInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideCreateWithoutCategoryInput, Prisma.BuildGuideUncheckedCreateWithoutCategoryInput> | Prisma.BuildGuideCreateWithoutCategoryInput[] | Prisma.BuildGuideUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.BuildGuideCreateOrConnectWithoutCategoryInput | Prisma.BuildGuideCreateOrConnectWithoutCategoryInput[]
+  createMany?: Prisma.BuildGuideCreateManyCategoryInputEnvelope
+  connect?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+}
+
+export type BuildGuideUncheckedCreateNestedManyWithoutCategoryInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideCreateWithoutCategoryInput, Prisma.BuildGuideUncheckedCreateWithoutCategoryInput> | Prisma.BuildGuideCreateWithoutCategoryInput[] | Prisma.BuildGuideUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.BuildGuideCreateOrConnectWithoutCategoryInput | Prisma.BuildGuideCreateOrConnectWithoutCategoryInput[]
+  createMany?: Prisma.BuildGuideCreateManyCategoryInputEnvelope
+  connect?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+}
+
+export type BuildGuideUpdateManyWithoutCategoryNestedInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideCreateWithoutCategoryInput, Prisma.BuildGuideUncheckedCreateWithoutCategoryInput> | Prisma.BuildGuideCreateWithoutCategoryInput[] | Prisma.BuildGuideUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.BuildGuideCreateOrConnectWithoutCategoryInput | Prisma.BuildGuideCreateOrConnectWithoutCategoryInput[]
+  upsert?: Prisma.BuildGuideUpsertWithWhereUniqueWithoutCategoryInput | Prisma.BuildGuideUpsertWithWhereUniqueWithoutCategoryInput[]
+  createMany?: Prisma.BuildGuideCreateManyCategoryInputEnvelope
+  set?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  disconnect?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  delete?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  connect?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  update?: Prisma.BuildGuideUpdateWithWhereUniqueWithoutCategoryInput | Prisma.BuildGuideUpdateWithWhereUniqueWithoutCategoryInput[]
+  updateMany?: Prisma.BuildGuideUpdateManyWithWhereWithoutCategoryInput | Prisma.BuildGuideUpdateManyWithWhereWithoutCategoryInput[]
+  deleteMany?: Prisma.BuildGuideScalarWhereInput | Prisma.BuildGuideScalarWhereInput[]
+}
+
+export type BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput = {
+  create?: Prisma.XOR<Prisma.BuildGuideCreateWithoutCategoryInput, Prisma.BuildGuideUncheckedCreateWithoutCategoryInput> | Prisma.BuildGuideCreateWithoutCategoryInput[] | Prisma.BuildGuideUncheckedCreateWithoutCategoryInput[]
+  connectOrCreate?: Prisma.BuildGuideCreateOrConnectWithoutCategoryInput | Prisma.BuildGuideCreateOrConnectWithoutCategoryInput[]
+  upsert?: Prisma.BuildGuideUpsertWithWhereUniqueWithoutCategoryInput | Prisma.BuildGuideUpsertWithWhereUniqueWithoutCategoryInput[]
+  createMany?: Prisma.BuildGuideCreateManyCategoryInputEnvelope
+  set?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  disconnect?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  delete?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  connect?: Prisma.BuildGuideWhereUniqueInput | Prisma.BuildGuideWhereUniqueInput[]
+  update?: Prisma.BuildGuideUpdateWithWhereUniqueWithoutCategoryInput | Prisma.BuildGuideUpdateWithWhereUniqueWithoutCategoryInput[]
+  updateMany?: Prisma.BuildGuideUpdateManyWithWhereWithoutCategoryInput | Prisma.BuildGuideUpdateManyWithWhereWithoutCategoryInput[]
+  deleteMany?: Prisma.BuildGuideScalarWhereInput | Prisma.BuildGuideScalarWhereInput[]
 }
 
 export type BuildGuideCreateNestedOneWithoutItemsInput = {
@@ -419,22 +479,81 @@ export type BuildGuideUpdateOneRequiredWithoutItemsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.BuildGuideUpdateToOneWithWhereWithoutItemsInput, Prisma.BuildGuideUpdateWithoutItemsInput>, Prisma.BuildGuideUncheckedUpdateWithoutItemsInput>
 }
 
+export type BuildGuideCreateWithoutCategoryInput = {
+  id?: string
+  title: string
+  description?: string | null
+  total?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  items?: Prisma.BuildGuideItemCreateNestedManyWithoutBuildGuideInput
+}
+
+export type BuildGuideUncheckedCreateWithoutCategoryInput = {
+  id?: string
+  title: string
+  description?: string | null
+  total?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  items?: Prisma.BuildGuideItemUncheckedCreateNestedManyWithoutBuildGuideInput
+}
+
+export type BuildGuideCreateOrConnectWithoutCategoryInput = {
+  where: Prisma.BuildGuideWhereUniqueInput
+  create: Prisma.XOR<Prisma.BuildGuideCreateWithoutCategoryInput, Prisma.BuildGuideUncheckedCreateWithoutCategoryInput>
+}
+
+export type BuildGuideCreateManyCategoryInputEnvelope = {
+  data: Prisma.BuildGuideCreateManyCategoryInput | Prisma.BuildGuideCreateManyCategoryInput[]
+  skipDuplicates?: boolean
+}
+
+export type BuildGuideUpsertWithWhereUniqueWithoutCategoryInput = {
+  where: Prisma.BuildGuideWhereUniqueInput
+  update: Prisma.XOR<Prisma.BuildGuideUpdateWithoutCategoryInput, Prisma.BuildGuideUncheckedUpdateWithoutCategoryInput>
+  create: Prisma.XOR<Prisma.BuildGuideCreateWithoutCategoryInput, Prisma.BuildGuideUncheckedCreateWithoutCategoryInput>
+}
+
+export type BuildGuideUpdateWithWhereUniqueWithoutCategoryInput = {
+  where: Prisma.BuildGuideWhereUniqueInput
+  data: Prisma.XOR<Prisma.BuildGuideUpdateWithoutCategoryInput, Prisma.BuildGuideUncheckedUpdateWithoutCategoryInput>
+}
+
+export type BuildGuideUpdateManyWithWhereWithoutCategoryInput = {
+  where: Prisma.BuildGuideScalarWhereInput
+  data: Prisma.XOR<Prisma.BuildGuideUpdateManyMutationInput, Prisma.BuildGuideUncheckedUpdateManyWithoutCategoryInput>
+}
+
+export type BuildGuideScalarWhereInput = {
+  AND?: Prisma.BuildGuideScalarWhereInput | Prisma.BuildGuideScalarWhereInput[]
+  OR?: Prisma.BuildGuideScalarWhereInput[]
+  NOT?: Prisma.BuildGuideScalarWhereInput | Prisma.BuildGuideScalarWhereInput[]
+  id?: Prisma.StringFilter<"BuildGuide"> | string
+  title?: Prisma.StringFilter<"BuildGuide"> | string
+  description?: Prisma.StringNullableFilter<"BuildGuide"> | string | null
+  categoryId?: Prisma.IntNullableFilter<"BuildGuide"> | number | null
+  total?: Prisma.FloatFilter<"BuildGuide"> | number
+  createdAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"BuildGuide"> | Date | string
+}
+
 export type BuildGuideCreateWithoutItemsInput = {
   id?: string
   title: string
   description?: string | null
-  category?: string
-  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  total?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  category?: Prisma.CategoryCreateNestedOneWithoutBuildGuidesInput
 }
 
 export type BuildGuideUncheckedCreateWithoutItemsInput = {
   id?: string
   title: string
   description?: string | null
-  category?: string
-  total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: number | null
+  total?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -459,18 +578,56 @@ export type BuildGuideUpdateWithoutItemsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneWithoutBuildGuidesNestedInput
 }
 
 export type BuildGuideUncheckedUpdateWithoutItemsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type BuildGuideCreateManyCategoryInput = {
+  id?: string
+  title: string
+  description?: string | null
+  total?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type BuildGuideUpdateWithoutCategoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  items?: Prisma.BuildGuideItemUpdateManyWithoutBuildGuideNestedInput
+}
+
+export type BuildGuideUncheckedUpdateWithoutCategoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  items?: Prisma.BuildGuideItemUncheckedUpdateManyWithoutBuildGuideNestedInput
+}
+
+export type BuildGuideUncheckedUpdateManyWithoutCategoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -510,11 +667,12 @@ export type BuildGuideSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   id?: boolean
   title?: boolean
   description?: boolean
-  category?: boolean
+  categoryId?: boolean
   total?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   items?: boolean | Prisma.BuildGuide$itemsArgs<ExtArgs>
+  category?: boolean | Prisma.BuildGuide$categoryArgs<ExtArgs>
   _count?: boolean | Prisma.BuildGuideCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["buildGuide"]>
 
@@ -522,51 +680,59 @@ export type BuildGuideSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   id?: boolean
   title?: boolean
   description?: boolean
-  category?: boolean
+  categoryId?: boolean
   total?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  category?: boolean | Prisma.BuildGuide$categoryArgs<ExtArgs>
 }, ExtArgs["result"]["buildGuide"]>
 
 export type BuildGuideSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   title?: boolean
   description?: boolean
-  category?: boolean
+  categoryId?: boolean
   total?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  category?: boolean | Prisma.BuildGuide$categoryArgs<ExtArgs>
 }, ExtArgs["result"]["buildGuide"]>
 
 export type BuildGuideSelectScalar = {
   id?: boolean
   title?: boolean
   description?: boolean
-  category?: boolean
+  categoryId?: boolean
   total?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type BuildGuideOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "category" | "total" | "createdAt" | "updatedAt", ExtArgs["result"]["buildGuide"]>
+export type BuildGuideOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "categoryId" | "total" | "createdAt" | "updatedAt", ExtArgs["result"]["buildGuide"]>
 export type BuildGuideInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   items?: boolean | Prisma.BuildGuide$itemsArgs<ExtArgs>
+  category?: boolean | Prisma.BuildGuide$categoryArgs<ExtArgs>
   _count?: boolean | Prisma.BuildGuideCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type BuildGuideIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type BuildGuideIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type BuildGuideIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  category?: boolean | Prisma.BuildGuide$categoryArgs<ExtArgs>
+}
+export type BuildGuideIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  category?: boolean | Prisma.BuildGuide$categoryArgs<ExtArgs>
+}
 
 export type $BuildGuidePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BuildGuide"
   objects: {
     items: Prisma.$BuildGuideItemPayload<ExtArgs>[]
+    category: Prisma.$CategoryPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     title: string
     description: string | null
-    category: string
-    total: runtime.Decimal
+    categoryId: number | null
+    total: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["buildGuide"]>
@@ -964,6 +1130,7 @@ readonly fields: BuildGuideFieldRefs;
 export interface Prisma__BuildGuideClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   items<T extends Prisma.BuildGuide$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BuildGuide$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BuildGuideItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  category<T extends Prisma.BuildGuide$categoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BuildGuide$categoryArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -996,8 +1163,8 @@ export interface BuildGuideFieldRefs {
   readonly id: Prisma.FieldRef<"BuildGuide", 'String'>
   readonly title: Prisma.FieldRef<"BuildGuide", 'String'>
   readonly description: Prisma.FieldRef<"BuildGuide", 'String'>
-  readonly category: Prisma.FieldRef<"BuildGuide", 'String'>
-  readonly total: Prisma.FieldRef<"BuildGuide", 'Decimal'>
+  readonly categoryId: Prisma.FieldRef<"BuildGuide", 'Int'>
+  readonly total: Prisma.FieldRef<"BuildGuide", 'Float'>
   readonly createdAt: Prisma.FieldRef<"BuildGuide", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"BuildGuide", 'DateTime'>
 }
@@ -1249,6 +1416,10 @@ export type BuildGuideCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    */
   data: Prisma.BuildGuideCreateManyInput | Prisma.BuildGuideCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BuildGuideIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1319,6 +1490,10 @@ export type BuildGuideUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * Limit how many BuildGuides to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BuildGuideIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1409,6 +1584,25 @@ export type BuildGuide$itemsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.BuildGuideItemScalarFieldEnum | Prisma.BuildGuideItemScalarFieldEnum[]
+}
+
+/**
+ * BuildGuide.category
+ */
+export type BuildGuide$categoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Category
+   */
+  select?: Prisma.CategorySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Category
+   */
+  omit?: Prisma.CategoryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CategoryInclude<ExtArgs> | null
+  where?: Prisma.CategoryWhereInput
 }
 
 /**

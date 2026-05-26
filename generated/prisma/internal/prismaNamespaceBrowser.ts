@@ -52,22 +52,31 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
-  Brand: 'Brand',
   Category: 'Category',
-  SubCategory: 'SubCategory',
+  Subcategory: 'Subcategory',
+  BrandCategory: 'BrandCategory',
+  Brand: 'Brand',
+  BuildSequence: 'BuildSequence',
+  CategoryRelationship: 'CategoryRelationship',
   CategoryHierarchy: 'CategoryHierarchy',
-  SpecDefinition: 'SpecDefinition',
-  VariantSpec: 'VariantSpec',
-  SpecOptionDependency: 'SpecOptionDependency',
-  SpecOption: 'SpecOption',
+  CategoryAttribute: 'CategoryAttribute',
+  AttributeOption: 'AttributeOption',
+  CompatibilityRule: 'CompatibilityRule',
+  CompatibilityRuleClause: 'CompatibilityRuleClause',
+  Tag: 'Tag',
   ProductMedia: 'ProductMedia',
   Product: 'Product',
-  ProductVariant: 'ProductVariant',
+  ProductSpec: 'ProductSpec',
+  CategoryProductCache: 'CategoryProductCache',
+  SearchSuggestion: 'SearchSuggestion',
+  InventoryItem: 'InventoryItem',
   Customer: 'Customer',
   Order: 'Order',
   OrderItem: 'OrderItem',
+  OrderItemUnit: 'OrderItemUnit',
   OrderLog: 'OrderLog',
   ShipmentTracking: 'ShipmentTracking',
+  StockMovement: 'StockMovement',
   BuildGuide: 'BuildGuide',
   BuildGuideItem: 'BuildGuideItem',
   InvoiceSequence: 'InvoiceSequence',
@@ -75,29 +84,11 @@ export const ModelName = {
   Invoice: 'Invoice',
   InvoiceLineItem: 'InvoiceLineItem',
   InvoiceAuditEvent: 'InvoiceAuditEvent',
-  TaxSettings: 'TaxSettings',
-  PaymentMethod: 'PaymentMethod',
-  AppSettings: 'AppSettings',
   PaymentTransaction: 'PaymentTransaction',
-  PaymentProof: 'PaymentProof',
-  AuditLog: 'AuditLog',
-  InventoryItem: 'InventoryItem',
-  Reservation: 'Reservation',
-  Build: 'Build',
-  BuildItem: 'BuildItem',
-  PartSlot: 'PartSlot',
-  CompatibilityRule: 'CompatibilityRule',
-  CompatibilityScope: 'CompatibilityScope',
-  DerivedSpec: 'DerivedSpec',
-  DerivedSpecValue: 'DerivedSpecValue',
-  BuildCompatibilityResult: 'BuildCompatibilityResult',
-  CompatibilityCheck: 'CompatibilityCheck',
-  SlotConstraint: 'SlotConstraint',
-  VariantCompatibilityCache: 'VariantCompatibilityCache',
-  SubCategorySlot: 'SubCategorySlot',
-  BuilderConfig: 'BuilderConfig',
-  BuilderUIRule: 'BuilderUIRule',
-  FilterOverride: 'FilterOverride'
+  PaymentAttempt: 'PaymentAttempt',
+  CreditNote: 'CreditNote',
+  CreditNoteLineItem: 'CreditNoteLineItem',
+  AuditLog: 'AuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -129,48 +120,81 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
-export const BrandScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  slug: 'slug',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
-} as const
-
-export type BrandScalarFieldEnum = (typeof BrandScalarFieldEnum)[keyof typeof BrandScalarFieldEnum]
-
-
 export const CategoryScalarFieldEnum = {
   id: 'id',
+  code: 'code',
   name: 'name',
+  slug: 'slug',
+  shortLabel: 'shortLabel',
   description: 'description',
+  image: 'image',
+  icon: 'icon',
+  displayOrder: 'displayOrder',
+  featuredOrder: 'featuredOrder',
+  showInFeatured: 'showInFeatured',
+  isActive: 'isActive',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
+  updatedAt: 'updatedAt'
 } as const
 
 export type CategoryScalarFieldEnum = (typeof CategoryScalarFieldEnum)[keyof typeof CategoryScalarFieldEnum]
 
 
-export const SubCategoryScalarFieldEnum = {
+export const SubcategoryScalarFieldEnum = {
   id: 'id',
-  name: 'name',
-  description: 'description',
   categoryId: 'categoryId',
+  name: 'name',
+  slug: 'slug',
+  description: 'description',
+  image: 'image',
+  isActive: 'isActive',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt',
-  isBuilderEnabled: 'isBuilderEnabled',
-  isCore: 'isCore',
-  isRequired: 'isRequired',
-  allowMultiple: 'allowMultiple',
-  builderOrder: 'builderOrder',
-  icon: 'icon',
-  shortLabel: 'shortLabel'
+  updatedAt: 'updatedAt'
 } as const
 
-export type SubCategoryScalarFieldEnum = (typeof SubCategoryScalarFieldEnum)[keyof typeof SubCategoryScalarFieldEnum]
+export type SubcategoryScalarFieldEnum = (typeof SubcategoryScalarFieldEnum)[keyof typeof SubcategoryScalarFieldEnum]
+
+
+export const BrandCategoryScalarFieldEnum = {
+  brandId: 'brandId',
+  categoryId: 'categoryId'
+} as const
+
+export type BrandCategoryScalarFieldEnum = (typeof BrandCategoryScalarFieldEnum)[keyof typeof BrandCategoryScalarFieldEnum]
+
+
+export const BrandScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BrandScalarFieldEnum = (typeof BrandScalarFieldEnum)[keyof typeof BrandScalarFieldEnum]
+
+
+export const BuildSequenceScalarFieldEnum = {
+  id: 'id',
+  categoryId: 'categoryId',
+  stepOrder: 'stepOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BuildSequenceScalarFieldEnum = (typeof BuildSequenceScalarFieldEnum)[keyof typeof BuildSequenceScalarFieldEnum]
+
+
+export const CategoryRelationshipScalarFieldEnum = {
+  id: 'id',
+  fromCategoryCode: 'fromCategoryCode',
+  toCategoryCode: 'toCategoryCode',
+  relationshipType: 'relationshipType',
+  sortOrder: 'sortOrder',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type CategoryRelationshipScalarFieldEnum = (typeof CategoryRelationshipScalarFieldEnum)[keyof typeof CategoryRelationshipScalarFieldEnum]
 
 
 export const CategoryHierarchyScalarFieldEnum = {
@@ -186,55 +210,79 @@ export const CategoryHierarchyScalarFieldEnum = {
 export type CategoryHierarchyScalarFieldEnum = (typeof CategoryHierarchyScalarFieldEnum)[keyof typeof CategoryHierarchyScalarFieldEnum]
 
 
-export const SpecDefinitionScalarFieldEnum = {
+export const CategoryAttributeScalarFieldEnum = {
   id: 'id',
-  subCategoryId: 'subCategoryId',
-  name: 'name',
-  valueType: 'valueType',
-  isFilterable: 'isFilterable',
-  isRange: 'isRange',
-  isMulti: 'isMulti',
-  filterGroup: 'filterGroup',
-  filterOrder: 'filterOrder'
-} as const
-
-export type SpecDefinitionScalarFieldEnum = (typeof SpecDefinitionScalarFieldEnum)[keyof typeof SpecDefinitionScalarFieldEnum]
-
-
-export const VariantSpecScalarFieldEnum = {
-  id: 'id',
-  variantId: 'variantId',
-  specId: 'specId',
-  optionId: 'optionId',
-  valueString: 'valueString',
-  valueNumber: 'valueNumber',
-  valueBool: 'valueBool'
-} as const
-
-export type VariantSpecScalarFieldEnum = (typeof VariantSpecScalarFieldEnum)[keyof typeof VariantSpecScalarFieldEnum]
-
-
-export const SpecOptionDependencyScalarFieldEnum = {
-  id: 'id',
-  parentSpecId: 'parentSpecId',
-  parentOptionId: 'parentOptionId',
-  childSpecId: 'childSpecId',
-  childOptionId: 'childOptionId'
-} as const
-
-export type SpecOptionDependencyScalarFieldEnum = (typeof SpecOptionDependencyScalarFieldEnum)[keyof typeof SpecOptionDependencyScalarFieldEnum]
-
-
-export const SpecOptionScalarFieldEnum = {
-  id: 'id',
-  specId: 'specId',
-  value: 'value',
+  categoryId: 'categoryId',
+  subcategoryId: 'subcategoryId',
+  key: 'key',
   label: 'label',
-  order: 'order',
-  parentOptionId: 'parentOptionId'
+  type: 'type',
+  isRequired: 'isRequired',
+  isFilterable: 'isFilterable',
+  isComparable: 'isComparable',
+  filterType: 'filterType',
+  unit: 'unit',
+  helpText: 'helpText',
+  dependencyAttributeId: 'dependencyAttributeId',
+  dependencyOptionId: 'dependencyOptionId',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
-export type SpecOptionScalarFieldEnum = (typeof SpecOptionScalarFieldEnum)[keyof typeof SpecOptionScalarFieldEnum]
+export type CategoryAttributeScalarFieldEnum = (typeof CategoryAttributeScalarFieldEnum)[keyof typeof CategoryAttributeScalarFieldEnum]
+
+
+export const AttributeOptionScalarFieldEnum = {
+  id: 'id',
+  attributeId: 'attributeId',
+  value: 'value',
+  slug: 'slug',
+  sortOrder: 'sortOrder',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AttributeOptionScalarFieldEnum = (typeof AttributeOptionScalarFieldEnum)[keyof typeof AttributeOptionScalarFieldEnum]
+
+
+export const CompatibilityRuleScalarFieldEnum = {
+  id: 'id',
+  sourceCategoryId: 'sourceCategoryId',
+  targetCategoryId: 'targetCategoryId',
+  name: 'name',
+  message: 'message',
+  severity: 'severity',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CompatibilityRuleScalarFieldEnum = (typeof CompatibilityRuleScalarFieldEnum)[keyof typeof CompatibilityRuleScalarFieldEnum]
+
+
+export const CompatibilityRuleClauseScalarFieldEnum = {
+  id: 'id',
+  ruleId: 'ruleId',
+  sourceAttributeId: 'sourceAttributeId',
+  targetAttributeId: 'targetAttributeId',
+  operator: 'operator',
+  sourceValue: 'sourceValue',
+  targetValue: 'targetValue',
+  sortOrder: 'sortOrder'
+} as const
+
+export type CompatibilityRuleClauseScalarFieldEnum = (typeof CompatibilityRuleClauseScalarFieldEnum)[keyof typeof CompatibilityRuleClauseScalarFieldEnum]
+
+
+export const TagScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
+} as const
+
+export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
 
 
 export const ProductMediaScalarFieldEnum = {
@@ -254,32 +302,77 @@ export const ProductScalarFieldEnum = {
   name: 'name',
   metaTitle: 'metaTitle',
   metaDescription: 'metaDescription',
+  categoryId: 'categoryId',
+  subcategoryId: 'subcategoryId',
   description: 'description',
   status: 'status',
-  subCategoryId: 'subCategoryId',
+  deletedAt: 'deletedAt',
+  version: 'version',
+  sku: 'sku',
+  price: 'price',
+  compareAtPrice: 'compareAtPrice',
+  stockStatus: 'stockStatus',
   brandId: 'brandId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
+  updatedAt: 'updatedAt'
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
 
 
-export const ProductVariantScalarFieldEnum = {
+export const ProductSpecScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
-  sku: 'sku',
-  price: 'price',
-  compareAtPrice: 'compareAtPrice',
-  attributes: 'attributes',
-  status: 'status',
-  deletedAt: 'deletedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  attributeId: 'attributeId',
+  optionId: 'optionId',
+  value: 'value',
+  valueNumber: 'valueNumber',
+  valueBoolean: 'valueBoolean',
+  isHighlighted: 'isHighlighted'
 } as const
 
-export type ProductVariantScalarFieldEnum = (typeof ProductVariantScalarFieldEnum)[keyof typeof ProductVariantScalarFieldEnum]
+export type ProductSpecScalarFieldEnum = (typeof ProductSpecScalarFieldEnum)[keyof typeof ProductSpecScalarFieldEnum]
+
+
+export const CategoryProductCacheScalarFieldEnum = {
+  id: 'id',
+  categoryId: 'categoryId',
+  productCount: 'productCount',
+  minPrice: 'minPrice',
+  maxPrice: 'maxPrice',
+  filters: 'filters',
+  lastBuilt: 'lastBuilt',
+  builtAt: 'builtAt'
+} as const
+
+export type CategoryProductCacheScalarFieldEnum = (typeof CategoryProductCacheScalarFieldEnum)[keyof typeof CategoryProductCacheScalarFieldEnum]
+
+
+export const SearchSuggestionScalarFieldEnum = {
+  id: 'id',
+  term: 'term',
+  categoryId: 'categoryId',
+  frequency: 'frequency',
+  lastSearched: 'lastSearched'
+} as const
+
+export type SearchSuggestionScalarFieldEnum = (typeof SearchSuggestionScalarFieldEnum)[keyof typeof SearchSuggestionScalarFieldEnum]
+
+
+export const InventoryItemScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  partNumber: 'partNumber',
+  serialNumber: 'serialNumber',
+  quantity: 'quantity',
+  reserved: 'reserved',
+  reorderLevel: 'reorderLevel',
+  costPrice: 'costPrice',
+  location: 'location',
+  lastUpdated: 'lastUpdated'
+} as const
+
+export type InventoryItemScalarFieldEnum = (typeof InventoryItemScalarFieldEnum)[keyof typeof InventoryItemScalarFieldEnum]
 
 
 export const CustomerScalarFieldEnum = {
@@ -302,6 +395,7 @@ export type CustomerScalarFieldEnum = (typeof CustomerScalarFieldEnum)[keyof typ
 
 export const OrderScalarFieldEnum = {
   id: 'id',
+  channel: 'channel',
   customerName: 'customerName',
   email: 'email',
   phone: 'phone',
@@ -323,6 +417,9 @@ export const OrderScalarFieldEnum = {
   paymentMethod: 'paymentMethod',
   paymentTransactionId: 'paymentTransactionId',
   paymentStatus: 'paymentStatus',
+  paymentDueDate: 'paymentDueDate',
+  paymentCompletedAt: 'paymentCompletedAt',
+  paymentFailureReason: 'paymentFailureReason',
   idempotencyKey: 'idempotencyKey',
   source: 'source',
   createdAt: 'createdAt',
@@ -334,23 +431,29 @@ export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof Or
 
 export const OrderItemScalarFieldEnum = {
   id: 'id',
-  lineReference: 'lineReference',
   orderId: 'orderId',
-  variantId: 'variantId',
-  inventoryItemId: 'inventoryItemId',
-  productNumber: 'productNumber',
-  partNumber: 'partNumber',
-  serialNumber: 'serialNumber',
+  productId: 'productId',
   name: 'name',
-  category: 'category',
+  categoryId: 'categoryId',
   price: 'price',
   quantity: 'quantity',
   image: 'image',
-  sku: 'sku',
-  variantSnapshot: 'variantSnapshot'
+  sku: 'sku'
 } as const
 
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
+
+
+export const OrderItemUnitScalarFieldEnum = {
+  id: 'id',
+  orderItemId: 'orderItemId',
+  inventoryItemId: 'inventoryItemId',
+  serialNumber: 'serialNumber',
+  partNumber: 'partNumber',
+  createdAt: 'createdAt'
+} as const
+
+export type OrderItemUnitScalarFieldEnum = (typeof OrderItemUnitScalarFieldEnum)[keyof typeof OrderItemUnitScalarFieldEnum]
 
 
 export const OrderLogScalarFieldEnum = {
@@ -378,11 +481,25 @@ export const ShipmentTrackingScalarFieldEnum = {
 export type ShipmentTrackingScalarFieldEnum = (typeof ShipmentTrackingScalarFieldEnum)[keyof typeof ShipmentTrackingScalarFieldEnum]
 
 
+export const StockMovementScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  productId: 'productId',
+  inventoryItemId: 'inventoryItemId',
+  type: 'type',
+  quantity: 'quantity',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type StockMovementScalarFieldEnum = (typeof StockMovementScalarFieldEnum)[keyof typeof StockMovementScalarFieldEnum]
+
+
 export const BuildGuideScalarFieldEnum = {
   id: 'id',
   title: 'title',
   description: 'description',
-  category: 'category',
+  categoryId: 'categoryId',
   total: 'total',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -394,7 +511,7 @@ export type BuildGuideScalarFieldEnum = (typeof BuildGuideScalarFieldEnum)[keyof
 export const BuildGuideItemScalarFieldEnum = {
   id: 'id',
   buildGuideId: 'buildGuideId',
-  variantId: 'variantId',
+  productId: 'productId',
   quantity: 'quantity'
 } as const
 
@@ -422,6 +539,7 @@ export const BillingProfileScalarFieldEnum = {
   postalCode: 'postalCode',
   country: 'country',
   gstin: 'gstin',
+  currency: 'currency',
   logoUrl: 'logoUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -437,6 +555,7 @@ export const InvoiceScalarFieldEnum = {
   type: 'type',
   status: 'status',
   customerId: 'customerId',
+  currency: 'currency',
   subtotal: 'subtotal',
   taxTotal: 'taxTotal',
   discountPct: 'discountPct',
@@ -461,14 +580,8 @@ export type InvoiceScalarFieldEnum = (typeof InvoiceScalarFieldEnum)[keyof typeo
 export const InvoiceLineItemScalarFieldEnum = {
   id: 'id',
   invoiceId: 'invoiceId',
-  orderItemId: 'orderItemId',
-  inventoryItemId: 'inventoryItemId',
-  lineReference: 'lineReference',
   name: 'name',
   description: 'description',
-  productNumber: 'productNumber',
-  partNumber: 'partNumber',
-  serialNumber: 'serialNumber',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   taxRatePct: 'taxRatePct',
@@ -490,51 +603,13 @@ export const InvoiceAuditEventScalarFieldEnum = {
 export type InvoiceAuditEventScalarFieldEnum = (typeof InvoiceAuditEventScalarFieldEnum)[keyof typeof InvoiceAuditEventScalarFieldEnum]
 
 
-export const TaxSettingsScalarFieldEnum = {
-  id: 'id',
-  taxRatePct: 'taxRatePct',
-  taxName: 'taxName',
-  taxDescription: 'taxDescription',
-  enabled: 'enabled',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
-
-
-export const PaymentMethodScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  label: 'label',
-  icon: 'icon',
-  color: 'color',
-  placeholder: 'placeholder',
-  enabled: 'enabled',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PaymentMethodScalarFieldEnum = (typeof PaymentMethodScalarFieldEnum)[keyof typeof PaymentMethodScalarFieldEnum]
-
-
-export const AppSettingsScalarFieldEnum = {
-  id: 'id',
-  key: 'key',
-  value: 'value',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type AppSettingsScalarFieldEnum = (typeof AppSettingsScalarFieldEnum)[keyof typeof AppSettingsScalarFieldEnum]
-
-
 export const PaymentTransactionScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
   method: 'method',
   gatewayTxnId: 'gatewayTxnId',
   amount: 'amount',
+  currency: 'currency',
   status: 'status',
   idempotencyKey: 'idempotencyKey',
   metadata: 'metadata',
@@ -545,15 +620,45 @@ export const PaymentTransactionScalarFieldEnum = {
 export type PaymentTransactionScalarFieldEnum = (typeof PaymentTransactionScalarFieldEnum)[keyof typeof PaymentTransactionScalarFieldEnum]
 
 
-export const PaymentProofScalarFieldEnum = {
+export const PaymentAttemptScalarFieldEnum = {
   id: 'id',
-  transactionId: 'transactionId',
-  proofUrl: 'proofUrl',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  paymentTxnId: 'paymentTxnId',
+  attemptNumber: 'attemptNumber',
+  status: 'status',
+  gatewayResponse: 'gatewayResponse',
+  errorMessage: 'errorMessage',
+  createdAt: 'createdAt'
 } as const
 
-export type PaymentProofScalarFieldEnum = (typeof PaymentProofScalarFieldEnum)[keyof typeof PaymentProofScalarFieldEnum]
+export type PaymentAttemptScalarFieldEnum = (typeof PaymentAttemptScalarFieldEnum)[keyof typeof PaymentAttemptScalarFieldEnum]
+
+
+export const CreditNoteScalarFieldEnum = {
+  id: 'id',
+  creditNoteNumber: 'creditNoteNumber',
+  originalInvoiceId: 'originalInvoiceId',
+  orderId: 'orderId',
+  reason: 'reason',
+  subtotal: 'subtotal',
+  taxTotal: 'taxTotal',
+  total: 'total',
+  createdAt: 'createdAt'
+} as const
+
+export type CreditNoteScalarFieldEnum = (typeof CreditNoteScalarFieldEnum)[keyof typeof CreditNoteScalarFieldEnum]
+
+
+export const CreditNoteLineItemScalarFieldEnum = {
+  id: 'id',
+  creditNoteId: 'creditNoteId',
+  name: 'name',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  taxRatePct: 'taxRatePct',
+  hsnCode: 'hsnCode'
+} as const
+
+export type CreditNoteLineItemScalarFieldEnum = (typeof CreditNoteLineItemScalarFieldEnum)[keyof typeof CreditNoteLineItemScalarFieldEnum]
 
 
 export const AuditLogScalarFieldEnum = {
@@ -562,234 +667,16 @@ export const AuditLogScalarFieldEnum = {
   entityId: 'entityId',
   action: 'action',
   actor: 'actor',
+  changes: 'changes',
   before: 'before',
   after: 'after',
   metadata: 'metadata',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
   createdAt: 'createdAt'
 } as const
 
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
-
-
-export const InventoryItemScalarFieldEnum = {
-  id: 'id',
-  variantId: 'variantId',
-  trackingType: 'trackingType',
-  serialNumber: 'serialNumber',
-  partNumber: 'partNumber',
-  quantityOnHand: 'quantityOnHand',
-  quantityReserved: 'quantityReserved',
-  status: 'status',
-  costPrice: 'costPrice',
-  batchNumber: 'batchNumber',
-  receivedAt: 'receivedAt',
-  notes: 'notes',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type InventoryItemScalarFieldEnum = (typeof InventoryItemScalarFieldEnum)[keyof typeof InventoryItemScalarFieldEnum]
-
-
-export const ReservationScalarFieldEnum = {
-  id: 'id',
-  orderId: 'orderId',
-  inventoryItemId: 'inventoryItemId',
-  quantity: 'quantity',
-  status: 'status',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type ReservationScalarFieldEnum = (typeof ReservationScalarFieldEnum)[keyof typeof ReservationScalarFieldEnum]
-
-
-export const BuildScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type BuildScalarFieldEnum = (typeof BuildScalarFieldEnum)[keyof typeof BuildScalarFieldEnum]
-
-
-export const BuildItemScalarFieldEnum = {
-  id: 'id',
-  buildId: 'buildId',
-  variantId: 'variantId',
-  slotId: 'slotId'
-} as const
-
-export type BuildItemScalarFieldEnum = (typeof BuildItemScalarFieldEnum)[keyof typeof BuildItemScalarFieldEnum]
-
-
-export const PartSlotScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  maxItems: 'maxItems',
-  minItems: 'minItems'
-} as const
-
-export type PartSlotScalarFieldEnum = (typeof PartSlotScalarFieldEnum)[keyof typeof PartSlotScalarFieldEnum]
-
-
-export const CompatibilityRuleScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  description: 'description',
-  type: 'type',
-  sourceSpecId: 'sourceSpecId',
-  targetSpecId: 'targetSpecId',
-  operator: 'operator',
-  scopeId: 'scopeId',
-  message: 'message',
-  messageTemplate: 'messageTemplate',
-  severity: 'severity',
-  logic: 'logic',
-  priority: 'priority',
-  enabled: 'enabled',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type CompatibilityRuleScalarFieldEnum = (typeof CompatibilityRuleScalarFieldEnum)[keyof typeof CompatibilityRuleScalarFieldEnum]
-
-
-export const CompatibilityScopeScalarFieldEnum = {
-  id: 'id',
-  sourceSubCategoryId: 'sourceSubCategoryId',
-  targetSubCategoryId: 'targetSubCategoryId'
-} as const
-
-export type CompatibilityScopeScalarFieldEnum = (typeof CompatibilityScopeScalarFieldEnum)[keyof typeof CompatibilityScopeScalarFieldEnum]
-
-
-export const DerivedSpecScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  description: 'description',
-  resultSpecId: 'resultSpecId',
-  formula: 'formula',
-  formulaType: 'formulaType',
-  inputSpecIds: 'inputSpecIds',
-  enabled: 'enabled',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type DerivedSpecScalarFieldEnum = (typeof DerivedSpecScalarFieldEnum)[keyof typeof DerivedSpecScalarFieldEnum]
-
-
-export const DerivedSpecValueScalarFieldEnum = {
-  id: 'id',
-  derivedSpecId: 'derivedSpecId',
-  buildId: 'buildId',
-  value: 'value',
-  computedAt: 'computedAt'
-} as const
-
-export type DerivedSpecValueScalarFieldEnum = (typeof DerivedSpecValueScalarFieldEnum)[keyof typeof DerivedSpecValueScalarFieldEnum]
-
-
-export const BuildCompatibilityResultScalarFieldEnum = {
-  id: 'id',
-  buildId: 'buildId',
-  isCompatible: 'isCompatible',
-  createdAt: 'createdAt'
-} as const
-
-export type BuildCompatibilityResultScalarFieldEnum = (typeof BuildCompatibilityResultScalarFieldEnum)[keyof typeof BuildCompatibilityResultScalarFieldEnum]
-
-
-export const CompatibilityCheckScalarFieldEnum = {
-  id: 'id',
-  resultId: 'resultId',
-  ruleId: 'ruleId',
-  sourceVariantId: 'sourceVariantId',
-  targetVariantId: 'targetVariantId',
-  passed: 'passed',
-  message: 'message',
-  severity: 'severity'
-} as const
-
-export type CompatibilityCheckScalarFieldEnum = (typeof CompatibilityCheckScalarFieldEnum)[keyof typeof CompatibilityCheckScalarFieldEnum]
-
-
-export const SlotConstraintScalarFieldEnum = {
-  id: 'id',
-  slotId: 'slotId',
-  minItems: 'minItems',
-  maxItems: 'maxItems'
-} as const
-
-export type SlotConstraintScalarFieldEnum = (typeof SlotConstraintScalarFieldEnum)[keyof typeof SlotConstraintScalarFieldEnum]
-
-
-export const VariantCompatibilityCacheScalarFieldEnum = {
-  id: 'id',
-  variantAId: 'variantAId',
-  variantBId: 'variantBId',
-  compatible: 'compatible',
-  message: 'message',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type VariantCompatibilityCacheScalarFieldEnum = (typeof VariantCompatibilityCacheScalarFieldEnum)[keyof typeof VariantCompatibilityCacheScalarFieldEnum]
-
-
-export const SubCategorySlotScalarFieldEnum = {
-  id: 'id',
-  subCategoryId: 'subCategoryId',
-  slotId: 'slotId'
-} as const
-
-export type SubCategorySlotScalarFieldEnum = (typeof SubCategorySlotScalarFieldEnum)[keyof typeof SubCategorySlotScalarFieldEnum]
-
-
-export const BuilderConfigScalarFieldEnum = {
-  id: 'id',
-  settings: 'settings',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type BuilderConfigScalarFieldEnum = (typeof BuilderConfigScalarFieldEnum)[keyof typeof BuilderConfigScalarFieldEnum]
-
-
-export const BuilderUIRuleScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  category: 'category',
-  specKey: 'specKey',
-  operator: 'operator',
-  value: 'value',
-  action: 'action',
-  priority: 'priority',
-  enabled: 'enabled',
-  metadata: 'metadata',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type BuilderUIRuleScalarFieldEnum = (typeof BuilderUIRuleScalarFieldEnum)[keyof typeof BuilderUIRuleScalarFieldEnum]
-
-
-export const FilterOverrideScalarFieldEnum = {
-  id: 'id',
-  specDefinitionId: 'specDefinitionId',
-  categoryName: 'categoryName',
-  labelOverride: 'labelOverride',
-  hidden: 'hidden',
-  displayOrder: 'displayOrder',
-  groupOverride: 'groupOverride',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type FilterOverrideScalarFieldEnum = (typeof FilterOverrideScalarFieldEnum)[keyof typeof FilterOverrideScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -806,13 +693,6 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
-
-
-export const JsonNullValueInput = {
-  JsonNull: JsonNull
-} as const
-
-export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

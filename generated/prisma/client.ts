@@ -47,45 +47,65 @@ export { Prisma }
  */
 export type User = Prisma.UserModel
 /**
- * Model Brand
- * 
- */
-export type Brand = Prisma.BrandModel
-/**
  * Model Category
  * 
  */
 export type Category = Prisma.CategoryModel
 /**
- * Model SubCategory
+ * Model Subcategory
  * 
  */
-export type SubCategory = Prisma.SubCategoryModel
+export type Subcategory = Prisma.SubcategoryModel
+/**
+ * Model BrandCategory
+ * 
+ */
+export type BrandCategory = Prisma.BrandCategoryModel
+/**
+ * Model Brand
+ * 
+ */
+export type Brand = Prisma.BrandModel
+/**
+ * Model BuildSequence
+ * 
+ */
+export type BuildSequence = Prisma.BuildSequenceModel
+/**
+ * Model CategoryRelationship
+ * 
+ */
+export type CategoryRelationship = Prisma.CategoryRelationshipModel
 /**
  * Model CategoryHierarchy
  * 
  */
 export type CategoryHierarchy = Prisma.CategoryHierarchyModel
 /**
- * Model SpecDefinition
+ * Model CategoryAttribute
  * 
  */
-export type SpecDefinition = Prisma.SpecDefinitionModel
+export type CategoryAttribute = Prisma.CategoryAttributeModel
 /**
- * Model VariantSpec
+ * Model AttributeOption
  * 
  */
-export type VariantSpec = Prisma.VariantSpecModel
+export type AttributeOption = Prisma.AttributeOptionModel
 /**
- * Model SpecOptionDependency
+ * Model CompatibilityRule
  * 
  */
-export type SpecOptionDependency = Prisma.SpecOptionDependencyModel
+export type CompatibilityRule = Prisma.CompatibilityRuleModel
 /**
- * Model SpecOption
+ * Model CompatibilityRuleClause
  * 
  */
-export type SpecOption = Prisma.SpecOptionModel
+export type CompatibilityRuleClause = Prisma.CompatibilityRuleClauseModel
+/**
+ * Model Tag
+ * 
+ */
+export type Tag = Prisma.TagModel
 /**
  * Model ProductMedia
  * 
@@ -97,10 +117,25 @@ export type ProductMedia = Prisma.ProductMediaModel
  */
 export type Product = Prisma.ProductModel
 /**
- * Model ProductVariant
+ * Model ProductSpec
  * 
  */
-export type ProductVariant = Prisma.ProductVariantModel
+export type ProductSpec = Prisma.ProductSpecModel
+/**
+ * Model CategoryProductCache
+ * 
+ */
+export type CategoryProductCache = Prisma.CategoryProductCacheModel
+/**
+ * Model SearchSuggestion
+ * 
+ */
+export type SearchSuggestion = Prisma.SearchSuggestionModel
+/**
+ * Model InventoryItem
+ * 
+ */
+export type InventoryItem = Prisma.InventoryItemModel
 /**
  * Model Customer
  * 
@@ -117,6 +152,11 @@ export type Order = Prisma.OrderModel
  */
 export type OrderItem = Prisma.OrderItemModel
 /**
+ * Model OrderItemUnit
+ * 
+ */
+export type OrderItemUnit = Prisma.OrderItemUnitModel
+/**
  * Model OrderLog
  * 
  */
@@ -126,6 +166,11 @@ export type OrderLog = Prisma.OrderLogModel
  * 
  */
 export type ShipmentTracking = Prisma.ShipmentTrackingModel
+/**
+ * Model StockMovement
+ * 
+ */
+export type StockMovement = Prisma.StockMovementModel
 /**
  * Model BuildGuide
  * 
@@ -162,117 +207,27 @@ export type InvoiceLineItem = Prisma.InvoiceLineItemModel
  */
 export type InvoiceAuditEvent = Prisma.InvoiceAuditEventModel
 /**
- * Model TaxSettings
- * 
- */
-export type TaxSettings = Prisma.TaxSettingsModel
-/**
- * Model PaymentMethod
- * 
- */
-export type PaymentMethod = Prisma.PaymentMethodModel
-/**
- * Model AppSettings
- * 
- */
-export type AppSettings = Prisma.AppSettingsModel
-/**
  * Model PaymentTransaction
  * 
  */
 export type PaymentTransaction = Prisma.PaymentTransactionModel
 /**
- * Model PaymentProof
+ * Model PaymentAttempt
  * 
  */
-export type PaymentProof = Prisma.PaymentProofModel
+export type PaymentAttempt = Prisma.PaymentAttemptModel
+/**
+ * Model CreditNote
+ * 
+ */
+export type CreditNote = Prisma.CreditNoteModel
+/**
+ * Model CreditNoteLineItem
+ * 
+ */
+export type CreditNoteLineItem = Prisma.CreditNoteLineItemModel
 /**
  * Model AuditLog
  * 
  */
 export type AuditLog = Prisma.AuditLogModel
-/**
- * Model InventoryItem
- * 
- */
-export type InventoryItem = Prisma.InventoryItemModel
-/**
- * Model Reservation
- * 
- */
-export type Reservation = Prisma.ReservationModel
-/**
- * Model Build
- * 
- */
-export type Build = Prisma.BuildModel
-/**
- * Model BuildItem
- * 
- */
-export type BuildItem = Prisma.BuildItemModel
-/**
- * Model PartSlot
- * 
- */
-export type PartSlot = Prisma.PartSlotModel
-/**
- * Model CompatibilityRule
- * 
- */
-export type CompatibilityRule = Prisma.CompatibilityRuleModel
-/**
- * Model CompatibilityScope
- * 
- */
-export type CompatibilityScope = Prisma.CompatibilityScopeModel
-/**
- * Model DerivedSpec
- * 
- */
-export type DerivedSpec = Prisma.DerivedSpecModel
-/**
- * Model DerivedSpecValue
- * 
- */
-export type DerivedSpecValue = Prisma.DerivedSpecValueModel
-/**
- * Model BuildCompatibilityResult
- * 
- */
-export type BuildCompatibilityResult = Prisma.BuildCompatibilityResultModel
-/**
- * Model CompatibilityCheck
- * 
- */
-export type CompatibilityCheck = Prisma.CompatibilityCheckModel
-/**
- * Model SlotConstraint
- * 
- */
-export type SlotConstraint = Prisma.SlotConstraintModel
-/**
- * Model VariantCompatibilityCache
- * 
- */
-export type VariantCompatibilityCache = Prisma.VariantCompatibilityCacheModel
-/**
- * Model SubCategorySlot
- * 
- */
-export type SubCategorySlot = Prisma.SubCategorySlotModel
-/**
- * Model BuilderConfig
- * 
- */
-export type BuilderConfig = Prisma.BuilderConfigModel
-/**
- * Model BuilderUIRule
- * 
- */
-export type BuilderUIRule = Prisma.BuilderUIRuleModel
-/**
- * Model FilterOverride
- * 
- */
-export type FilterOverride = Prisma.FilterOverrideModel

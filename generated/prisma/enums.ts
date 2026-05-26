@@ -65,10 +65,21 @@ export const InvoiceType = {
 export type InvoiceType = (typeof InvoiceType)[keyof typeof InvoiceType]
 
 
+export const SalesChannel = {
+  ONLINE: 'ONLINE',
+  POS: 'POS',
+  MANUAL: 'MANUAL',
+  API: 'API',
+  PHONE: 'PHONE'
+} as const
+
+export type SalesChannel = (typeof SalesChannel)[keyof typeof SalesChannel]
+
+
 export const PaymentMethodType = {
-  RAZORPAY: 'RAZORPAY',
   UPI: 'UPI',
-  BANK_TRANSFER: 'BANK_TRANSFER'
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  RAZORPAY: 'RAZORPAY'
 } as const
 
 export type PaymentMethodType = (typeof PaymentMethodType)[keyof typeof PaymentMethodType]
@@ -86,6 +97,16 @@ export const PaymentStatus = {
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
 
 
+export const Currency = {
+  INR: 'INR',
+  USD: 'USD',
+  EUR: 'EUR',
+  GBP: 'GBP'
+} as const
+
+export type Currency = (typeof Currency)[keyof typeof Currency]
+
+
 export const FilterType = {
   checkbox: 'checkbox',
   range: 'range',
@@ -97,6 +118,17 @@ export const FilterType = {
 export type FilterType = (typeof FilterType)[keyof typeof FilterType]
 
 
+export const AttributeInputType = {
+  text: 'text',
+  number: 'number',
+  boolean: 'boolean',
+  select: 'select',
+  multi_select: 'multi_select'
+} as const
+
+export type AttributeInputType = (typeof AttributeInputType)[keyof typeof AttributeInputType]
+
+
 export const ProductStatus = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
@@ -106,112 +138,9 @@ export const ProductStatus = {
 export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus]
 
 
-export const VariantStatus = {
-  IN_STOCK: 'IN_STOCK',
-  OUT_OF_STOCK: 'OUT_OF_STOCK',
-  DISCONTINUED: 'DISCONTINUED',
-  PREORDER: 'PREORDER'
-} as const
-
-export type VariantStatus = (typeof VariantStatus)[keyof typeof VariantStatus]
-
-
 export const Role = {
   ADMIN: 'ADMIN',
   USER: 'USER'
 } as const
 
 export type Role = (typeof Role)[keyof typeof Role]
-
-
-export const SpecValueType = {
-  STRING: 'STRING',
-  NUMBER: 'NUMBER',
-  BOOLEAN: 'BOOLEAN'
-} as const
-
-export type SpecValueType = (typeof SpecValueType)[keyof typeof SpecValueType]
-
-
-export const CompatibilityOperator = {
-  EQUAL: 'EQUAL',
-  NOT_EQUAL: 'NOT_EQUAL',
-  LESS_THAN: 'LESS_THAN',
-  LESS_OR_EQUAL: 'LESS_OR_EQUAL',
-  GREATER_THAN: 'GREATER_THAN',
-  GREATER_OR_EQUAL: 'GREATER_OR_EQUAL',
-  IN_LIST: 'IN_LIST',
-  CONTAINS: 'CONTAINS'
-} as const
-
-export type CompatibilityOperator = (typeof CompatibilityOperator)[keyof typeof CompatibilityOperator]
-
-
-export const CompatibilitySeverity = {
-  ERROR: 'ERROR',
-  WARNING: 'WARNING',
-  INFO: 'INFO'
-} as const
-
-export type CompatibilitySeverity = (typeof CompatibilitySeverity)[keyof typeof CompatibilitySeverity]
-
-
-export const InventoryStatus = {
-  IN_STOCK: 'IN_STOCK',
-  RESERVED: 'RESERVED',
-  SOLD: 'SOLD',
-  DAMAGED: 'DAMAGED',
-  RMA: 'RMA',
-  IN_TRANSIT: 'IN_TRANSIT',
-  RETURNED: 'RETURNED'
-} as const
-
-export type InventoryStatus = (typeof InventoryStatus)[keyof typeof InventoryStatus]
-
-
-export const InventoryTrackingType = {
-  SERIALIZED: 'SERIALIZED',
-  BULK: 'BULK'
-} as const
-
-export type InventoryTrackingType = (typeof InventoryTrackingType)[keyof typeof InventoryTrackingType]
-
-
-export const ReservationStatus = {
-  ACTIVE: 'ACTIVE',
-  RELEASED: 'RELEASED',
-  CONVERTED: 'CONVERTED',
-  EXPIRED: 'EXPIRED'
-} as const
-
-export type ReservationStatus = (typeof ReservationStatus)[keyof typeof ReservationStatus]
-
-
-export const RuleType = {
-  PAIR: 'PAIR',
-  COMPONENT: 'COMPONENT',
-  GLOBAL: 'GLOBAL'
-} as const
-
-export type RuleType = (typeof RuleType)[keyof typeof RuleType]
-
-
-export const BuilderRuleAction = {
-  HIGHLIGHT: 'HIGHLIGHT',
-  HIDE_FILTER: 'HIDE_FILTER',
-  LOCK_CATEGORY: 'LOCK_CATEGORY',
-  AUTO_SELECT: 'AUTO_SELECT',
-  SHOW_WARNING: 'SHOW_WARNING'
-} as const
-
-export type BuilderRuleAction = (typeof BuilderRuleAction)[keyof typeof BuilderRuleAction]
-
-
-export const DerivedSpecType = {
-  AGGREGATION: 'AGGREGATION',
-  CALCULATION: 'CALCULATION',
-  CONDITIONAL: 'CONDITIONAL',
-  REFERENCE: 'REFERENCE'
-} as const
-
-export type DerivedSpecType = (typeof DerivedSpecType)[keyof typeof DerivedSpecType]

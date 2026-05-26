@@ -170,7 +170,7 @@ export default function ProductDetailClient({
 
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
-              {product.brand?.name ?? product.category}
+              {product.brand?.name ?? (typeof product.category === "string" ? product.category : product.category?.name)}
             </p>
             <h1 className="mt-3 text-2xl font-semibold text-gray-900 sm:text-4xl">
               {product.name}

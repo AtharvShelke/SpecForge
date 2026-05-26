@@ -27,17 +27,19 @@ export type AggregateCategoryHierarchy = {
 }
 
 export type CategoryHierarchyAvgAggregateOutputType = {
+  categoryId: number | null
   sortOrder: number | null
 }
 
 export type CategoryHierarchySumAggregateOutputType = {
+  categoryId: number | null
   sortOrder: number | null
 }
 
 export type CategoryHierarchyMinAggregateOutputType = {
   id: string | null
   label: string | null
-  categoryId: string | null
+  categoryId: number | null
   query: string | null
   brand: string | null
   parentId: string | null
@@ -47,7 +49,7 @@ export type CategoryHierarchyMinAggregateOutputType = {
 export type CategoryHierarchyMaxAggregateOutputType = {
   id: string | null
   label: string | null
-  categoryId: string | null
+  categoryId: number | null
   query: string | null
   brand: string | null
   parentId: string | null
@@ -67,10 +69,12 @@ export type CategoryHierarchyCountAggregateOutputType = {
 
 
 export type CategoryHierarchyAvgAggregateInputType = {
+  categoryId?: true
   sortOrder?: true
 }
 
 export type CategoryHierarchySumAggregateInputType = {
+  categoryId?: true
   sortOrder?: true
 }
 
@@ -194,7 +198,7 @@ export type CategoryHierarchyGroupByArgs<ExtArgs extends runtime.Types.Extension
 export type CategoryHierarchyGroupByOutputType = {
   id: string
   label: string
-  categoryId: string | null
+  categoryId: number | null
   query: string | null
   brand: string | null
   parentId: string | null
@@ -227,7 +231,7 @@ export type CategoryHierarchyWhereInput = {
   NOT?: Prisma.CategoryHierarchyWhereInput | Prisma.CategoryHierarchyWhereInput[]
   id?: Prisma.StringFilter<"CategoryHierarchy"> | string
   label?: Prisma.StringFilter<"CategoryHierarchy"> | string
-  categoryId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
+  categoryId?: Prisma.IntNullableFilter<"CategoryHierarchy"> | number | null
   query?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   brand?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   parentId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
@@ -256,7 +260,7 @@ export type CategoryHierarchyWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.CategoryHierarchyWhereInput[]
   NOT?: Prisma.CategoryHierarchyWhereInput | Prisma.CategoryHierarchyWhereInput[]
   label?: Prisma.StringFilter<"CategoryHierarchy"> | string
-  categoryId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
+  categoryId?: Prisma.IntNullableFilter<"CategoryHierarchy"> | number | null
   query?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   brand?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   parentId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
@@ -287,7 +291,7 @@ export type CategoryHierarchyScalarWhereWithAggregatesInput = {
   NOT?: Prisma.CategoryHierarchyScalarWhereWithAggregatesInput | Prisma.CategoryHierarchyScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"CategoryHierarchy"> | string
   label?: Prisma.StringWithAggregatesFilter<"CategoryHierarchy"> | string
-  categoryId?: Prisma.StringNullableWithAggregatesFilter<"CategoryHierarchy"> | string | null
+  categoryId?: Prisma.IntNullableWithAggregatesFilter<"CategoryHierarchy"> | number | null
   query?: Prisma.StringNullableWithAggregatesFilter<"CategoryHierarchy"> | string | null
   brand?: Prisma.StringNullableWithAggregatesFilter<"CategoryHierarchy"> | string | null
   parentId?: Prisma.StringNullableWithAggregatesFilter<"CategoryHierarchy"> | string | null
@@ -300,7 +304,7 @@ export type CategoryHierarchyCreateInput = {
   query?: string | null
   brand?: string | null
   sortOrder?: number
-  category?: Prisma.CategoryCreateNestedOneWithoutCategoryHierarchiesInput
+  category?: Prisma.CategoryCreateNestedOneWithoutHierarchyNodesInput
   parent?: Prisma.CategoryHierarchyCreateNestedOneWithoutChildrenInput
   children?: Prisma.CategoryHierarchyCreateNestedManyWithoutParentInput
 }
@@ -308,7 +312,7 @@ export type CategoryHierarchyCreateInput = {
 export type CategoryHierarchyUncheckedCreateInput = {
   id?: string
   label: string
-  categoryId?: string | null
+  categoryId?: number | null
   query?: string | null
   brand?: string | null
   parentId?: string | null
@@ -322,7 +326,7 @@ export type CategoryHierarchyUpdateInput = {
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  category?: Prisma.CategoryUpdateOneWithoutCategoryHierarchiesNestedInput
+  category?: Prisma.CategoryUpdateOneWithoutHierarchyNodesNestedInput
   parent?: Prisma.CategoryHierarchyUpdateOneWithoutChildrenNestedInput
   children?: Prisma.CategoryHierarchyUpdateManyWithoutParentNestedInput
 }
@@ -330,7 +334,7 @@ export type CategoryHierarchyUpdateInput = {
 export type CategoryHierarchyUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
-  categoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -341,7 +345,7 @@ export type CategoryHierarchyUncheckedUpdateInput = {
 export type CategoryHierarchyCreateManyInput = {
   id?: string
   label: string
-  categoryId?: string | null
+  categoryId?: number | null
   query?: string | null
   brand?: string | null
   parentId?: string | null
@@ -359,7 +363,7 @@ export type CategoryHierarchyUpdateManyMutationInput = {
 export type CategoryHierarchyUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
-  categoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -392,6 +396,7 @@ export type CategoryHierarchyCountOrderByAggregateInput = {
 }
 
 export type CategoryHierarchyAvgOrderByAggregateInput = {
+  categoryId?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
 }
 
@@ -416,6 +421,7 @@ export type CategoryHierarchyMinOrderByAggregateInput = {
 }
 
 export type CategoryHierarchySumOrderByAggregateInput = {
+  categoryId?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
 }
 
@@ -571,7 +577,7 @@ export type CategoryHierarchyScalarWhereInput = {
   NOT?: Prisma.CategoryHierarchyScalarWhereInput | Prisma.CategoryHierarchyScalarWhereInput[]
   id?: Prisma.StringFilter<"CategoryHierarchy"> | string
   label?: Prisma.StringFilter<"CategoryHierarchy"> | string
-  categoryId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
+  categoryId?: Prisma.IntNullableFilter<"CategoryHierarchy"> | number | null
   query?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   brand?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
   parentId?: Prisma.StringNullableFilter<"CategoryHierarchy"> | string | null
@@ -584,14 +590,14 @@ export type CategoryHierarchyCreateWithoutChildrenInput = {
   query?: string | null
   brand?: string | null
   sortOrder?: number
-  category?: Prisma.CategoryCreateNestedOneWithoutCategoryHierarchiesInput
+  category?: Prisma.CategoryCreateNestedOneWithoutHierarchyNodesInput
   parent?: Prisma.CategoryHierarchyCreateNestedOneWithoutChildrenInput
 }
 
 export type CategoryHierarchyUncheckedCreateWithoutChildrenInput = {
   id?: string
   label: string
-  categoryId?: string | null
+  categoryId?: number | null
   query?: string | null
   brand?: string | null
   parentId?: string | null
@@ -609,14 +615,14 @@ export type CategoryHierarchyCreateWithoutParentInput = {
   query?: string | null
   brand?: string | null
   sortOrder?: number
-  category?: Prisma.CategoryCreateNestedOneWithoutCategoryHierarchiesInput
+  category?: Prisma.CategoryCreateNestedOneWithoutHierarchyNodesInput
   children?: Prisma.CategoryHierarchyCreateNestedManyWithoutParentInput
 }
 
 export type CategoryHierarchyUncheckedCreateWithoutParentInput = {
   id?: string
   label: string
-  categoryId?: string | null
+  categoryId?: number | null
   query?: string | null
   brand?: string | null
   sortOrder?: number
@@ -650,14 +656,14 @@ export type CategoryHierarchyUpdateWithoutChildrenInput = {
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  category?: Prisma.CategoryUpdateOneWithoutCategoryHierarchiesNestedInput
+  category?: Prisma.CategoryUpdateOneWithoutHierarchyNodesNestedInput
   parent?: Prisma.CategoryHierarchyUpdateOneWithoutChildrenNestedInput
 }
 
 export type CategoryHierarchyUncheckedUpdateWithoutChildrenInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
-  categoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -721,7 +727,7 @@ export type CategoryHierarchyUncheckedUpdateManyWithoutCategoryInput = {
 export type CategoryHierarchyCreateManyParentInput = {
   id?: string
   label: string
-  categoryId?: string | null
+  categoryId?: number | null
   query?: string | null
   brand?: string | null
   sortOrder?: number
@@ -733,14 +739,14 @@ export type CategoryHierarchyUpdateWithoutParentInput = {
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  category?: Prisma.CategoryUpdateOneWithoutCategoryHierarchiesNestedInput
+  category?: Prisma.CategoryUpdateOneWithoutHierarchyNodesNestedInput
   children?: Prisma.CategoryHierarchyUpdateManyWithoutParentNestedInput
 }
 
 export type CategoryHierarchyUncheckedUpdateWithoutParentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
-  categoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
@@ -750,7 +756,7 @@ export type CategoryHierarchyUncheckedUpdateWithoutParentInput = {
 export type CategoryHierarchyUncheckedUpdateManyWithoutParentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
-  categoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  categoryId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   query?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
@@ -861,7 +867,7 @@ export type $CategoryHierarchyPayload<ExtArgs extends runtime.Types.Extensions.I
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     label: string
-    categoryId: string | null
+    categoryId: number | null
     query: string | null
     brand: string | null
     parentId: string | null
@@ -1294,7 +1300,7 @@ export interface Prisma__CategoryHierarchyClient<T, Null = never, ExtArgs extend
 export interface CategoryHierarchyFieldRefs {
   readonly id: Prisma.FieldRef<"CategoryHierarchy", 'String'>
   readonly label: Prisma.FieldRef<"CategoryHierarchy", 'String'>
-  readonly categoryId: Prisma.FieldRef<"CategoryHierarchy", 'String'>
+  readonly categoryId: Prisma.FieldRef<"CategoryHierarchy", 'Int'>
   readonly query: Prisma.FieldRef<"CategoryHierarchy", 'String'>
   readonly brand: Prisma.FieldRef<"CategoryHierarchy", 'String'>
   readonly parentId: Prisma.FieldRef<"CategoryHierarchy", 'String'>

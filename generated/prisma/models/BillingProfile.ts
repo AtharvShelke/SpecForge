@@ -37,6 +37,7 @@ export type BillingProfileMinAggregateOutputType = {
   postalCode: string | null
   country: string | null
   gstin: string | null
+  currency: $Enums.Currency | null
   logoUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -55,6 +56,7 @@ export type BillingProfileMaxAggregateOutputType = {
   postalCode: string | null
   country: string | null
   gstin: string | null
+  currency: $Enums.Currency | null
   logoUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -73,6 +75,7 @@ export type BillingProfileCountAggregateOutputType = {
   postalCode: number
   country: number
   gstin: number
+  currency: number
   logoUrl: number
   createdAt: number
   updatedAt: number
@@ -93,6 +96,7 @@ export type BillingProfileMinAggregateInputType = {
   postalCode?: true
   country?: true
   gstin?: true
+  currency?: true
   logoUrl?: true
   createdAt?: true
   updatedAt?: true
@@ -111,6 +115,7 @@ export type BillingProfileMaxAggregateInputType = {
   postalCode?: true
   country?: true
   gstin?: true
+  currency?: true
   logoUrl?: true
   createdAt?: true
   updatedAt?: true
@@ -129,6 +134,7 @@ export type BillingProfileCountAggregateInputType = {
   postalCode?: true
   country?: true
   gstin?: true
+  currency?: true
   logoUrl?: true
   createdAt?: true
   updatedAt?: true
@@ -220,6 +226,7 @@ export type BillingProfileGroupByOutputType = {
   postalCode: string
   country: string
   gstin: string | null
+  currency: $Enums.Currency
   logoUrl: string | null
   createdAt: Date
   updatedAt: Date
@@ -259,6 +266,7 @@ export type BillingProfileWhereInput = {
   postalCode?: Prisma.StringFilter<"BillingProfile"> | string
   country?: Prisma.StringFilter<"BillingProfile"> | string
   gstin?: Prisma.StringNullableFilter<"BillingProfile"> | string | null
+  currency?: Prisma.EnumCurrencyFilter<"BillingProfile"> | $Enums.Currency
   logoUrl?: Prisma.StringNullableFilter<"BillingProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"BillingProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BillingProfile"> | Date | string
@@ -277,6 +285,7 @@ export type BillingProfileOrderByWithRelationInput = {
   postalCode?: Prisma.SortOrder
   country?: Prisma.SortOrder
   gstin?: Prisma.SortOrderInput | Prisma.SortOrder
+  currency?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -298,6 +307,7 @@ export type BillingProfileWhereUniqueInput = Prisma.AtLeast<{
   postalCode?: Prisma.StringFilter<"BillingProfile"> | string
   country?: Prisma.StringFilter<"BillingProfile"> | string
   gstin?: Prisma.StringNullableFilter<"BillingProfile"> | string | null
+  currency?: Prisma.EnumCurrencyFilter<"BillingProfile"> | $Enums.Currency
   logoUrl?: Prisma.StringNullableFilter<"BillingProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"BillingProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BillingProfile"> | Date | string
@@ -316,6 +326,7 @@ export type BillingProfileOrderByWithAggregationInput = {
   postalCode?: Prisma.SortOrder
   country?: Prisma.SortOrder
   gstin?: Prisma.SortOrderInput | Prisma.SortOrder
+  currency?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -340,6 +351,7 @@ export type BillingProfileScalarWhereWithAggregatesInput = {
   postalCode?: Prisma.StringWithAggregatesFilter<"BillingProfile"> | string
   country?: Prisma.StringWithAggregatesFilter<"BillingProfile"> | string
   gstin?: Prisma.StringNullableWithAggregatesFilter<"BillingProfile"> | string | null
+  currency?: Prisma.EnumCurrencyWithAggregatesFilter<"BillingProfile"> | $Enums.Currency
   logoUrl?: Prisma.StringNullableWithAggregatesFilter<"BillingProfile"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"BillingProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"BillingProfile"> | Date | string
@@ -358,6 +370,7 @@ export type BillingProfileCreateInput = {
   postalCode: string
   country: string
   gstin?: string | null
+  currency?: $Enums.Currency
   logoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -376,6 +389,7 @@ export type BillingProfileUncheckedCreateInput = {
   postalCode: string
   country: string
   gstin?: string | null
+  currency?: $Enums.Currency
   logoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -394,6 +408,7 @@ export type BillingProfileUpdateInput = {
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   gstin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -412,6 +427,7 @@ export type BillingProfileUncheckedUpdateInput = {
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   gstin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -430,6 +446,7 @@ export type BillingProfileCreateManyInput = {
   postalCode: string
   country: string
   gstin?: string | null
+  currency?: $Enums.Currency
   logoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -448,6 +465,7 @@ export type BillingProfileUpdateManyMutationInput = {
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   gstin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -466,6 +484,7 @@ export type BillingProfileUncheckedUpdateManyInput = {
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   gstin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -484,6 +503,7 @@ export type BillingProfileCountOrderByAggregateInput = {
   postalCode?: Prisma.SortOrder
   country?: Prisma.SortOrder
   gstin?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -502,6 +522,7 @@ export type BillingProfileMaxOrderByAggregateInput = {
   postalCode?: Prisma.SortOrder
   country?: Prisma.SortOrder
   gstin?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -520,9 +541,14 @@ export type BillingProfileMinOrderByAggregateInput = {
   postalCode?: Prisma.SortOrder
   country?: Prisma.SortOrder
   gstin?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type EnumCurrencyFieldUpdateOperationsInput = {
+  set?: $Enums.Currency
 }
 
 
@@ -540,6 +566,7 @@ export type BillingProfileSelect<ExtArgs extends runtime.Types.Extensions.Intern
   postalCode?: boolean
   country?: boolean
   gstin?: boolean
+  currency?: boolean
   logoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -558,6 +585,7 @@ export type BillingProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   postalCode?: boolean
   country?: boolean
   gstin?: boolean
+  currency?: boolean
   logoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -576,6 +604,7 @@ export type BillingProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   postalCode?: boolean
   country?: boolean
   gstin?: boolean
+  currency?: boolean
   logoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -594,12 +623,13 @@ export type BillingProfileSelectScalar = {
   postalCode?: boolean
   country?: boolean
   gstin?: boolean
+  currency?: boolean
   logoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type BillingProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "companyName" | "legalName" | "email" | "phone" | "addressLine1" | "addressLine2" | "city" | "state" | "postalCode" | "country" | "gstin" | "logoUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["billingProfile"]>
+export type BillingProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "companyName" | "legalName" | "email" | "phone" | "addressLine1" | "addressLine2" | "city" | "state" | "postalCode" | "country" | "gstin" | "currency" | "logoUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["billingProfile"]>
 
 export type $BillingProfilePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BillingProfile"
@@ -617,6 +647,7 @@ export type $BillingProfilePayload<ExtArgs extends runtime.Types.Extensions.Inte
     postalCode: string
     country: string
     gstin: string | null
+    currency: $Enums.Currency
     logoUrl: string | null
     createdAt: Date
     updatedAt: Date
@@ -1055,6 +1086,7 @@ export interface BillingProfileFieldRefs {
   readonly postalCode: Prisma.FieldRef<"BillingProfile", 'String'>
   readonly country: Prisma.FieldRef<"BillingProfile", 'String'>
   readonly gstin: Prisma.FieldRef<"BillingProfile", 'String'>
+  readonly currency: Prisma.FieldRef<"BillingProfile", 'Currency'>
   readonly logoUrl: Prisma.FieldRef<"BillingProfile", 'String'>
   readonly createdAt: Prisma.FieldRef<"BillingProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"BillingProfile", 'DateTime'>

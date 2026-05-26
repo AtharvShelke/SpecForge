@@ -168,6 +168,7 @@ export interface User {
 export interface Category {
   id: string;
   name: string;
+  label?: string;
   description?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -421,7 +422,12 @@ export interface Product {
   brandId?: string | null;
   brand?: Brand | null;
 
-  category: string;
+  category?: Category | string;
+  price?: number | null;
+  compareAtPrice?: number | null;
+  stockStatus?: string | null;
+  sku?: string | null;
+
   image?: string | null;
   images?: string[];
   specs?: ProductSpec[];

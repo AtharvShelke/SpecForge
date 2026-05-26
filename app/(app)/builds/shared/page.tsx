@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useShop } from "@/context/ShopContext";
 import { CartItem, Product } from "@/types";
 import { toast } from "@/hooks/use-toast";
+import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
 
 interface SharedBuildData {
   id: string;
@@ -53,7 +54,7 @@ export default function SharedBuildPage() {
       );
       
       const loadedProducts = await Promise.all(promises);
-      setProducts(loadedProducts);
+      setProducts(loadedProducts.map(p => normalizeCatalogProduct(p as any)));
     } catch (err) {
       setError("Failed to load build components");
     } finally {
@@ -237,7 +238,7 @@ export default function SharedBuildPage() {
                             {product.name}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            {product.brand?.name} • {product.category}
+                            {product.brand?.name} • {typeof product.category === 'string' ? product.category : (product.category?.label || product.category?.name || '')}
                           </p>
                           <p className="text-sm text-gray-500">
                             Quantity: {quantity}

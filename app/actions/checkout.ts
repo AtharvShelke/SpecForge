@@ -42,23 +42,13 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
     const data = checkoutSchema.parse(payload);
 
     // 1. Fetch tax settings from database
-    let taxRate = 0.18; // default fallback
-    try {
-      const taxSettings = await prisma.taxSettings.findUnique({
-        where: { id: "tax_config" },
-      });
-      if (taxSettings && taxSettings.enabled) {
-        taxRate = Number(taxSettings.taxRatePct) / 100; // convert percentage to decimal
-      }
-    } catch (error) {
-      console.error("Error fetching tax settings, using default 18%:", error);
-    }
+    const taxRate = 0.18; // default fallback
 
     // 2. Bulk fetch all products to retrieve server-side pricing and metadata
     const productIds = data.items.map((i) => i.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
-      include: { variants: true, media: true, subCategory: true },
+      include: { media: true, subcategory: true },
     });
 
     const productMap = new Map(products.map((p) => [p.id, p]));
@@ -72,29 +62,26 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         throw new Error(`Product not found: ${item.productId}`);
       }
 
-      const variant =
-        product.variants.find((v) => v.id === item.variantId) ||
-        product.variants[0];
-      if (!variant)
-        throw new Error(`Product variant missing for ${product.name}`);
-      if (variant.status === "OUT_OF_STOCK") {
+      if (product.stockStatus === "OUT_OF_STOCK") {
         return { success: false, error: `${product.name} is out of stock.` };
       }
 
+      const price = product.price || 0;
+
       calculationItems.push({
-        price: Number(variant.price),
+        price: Number(price),
         quantity: item.quantity,
       });
 
       orderItemsPayload.push({
         productId: product.id,
-        variantId: variant.id,
+        variantId: product.id, // Using product.id as variantId since variant system is removed
         name: product.name,
-        category: product.subCategory?.name || "Uncategorized", // Replaced Enum with String (subCategoryId map)
-        price: Number(variant.price),
+        category: product.subcategory?.name || "Uncategorized",
+        price: Number(price),
         quantity: item.quantity,
         image: product.media?.[0]?.url || "",
-        sku: variant.sku,
+        sku: product.sku || "",
       });
     }
 

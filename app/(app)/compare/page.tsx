@@ -39,7 +39,8 @@ export default function ComparePage() {
     }
 
     // Since validation prevents different categories, we can assume all items are of the same category
-    const categoryLabel = compareItems[0].category?.label;
+    const category = compareItems[0].category;
+    const categoryLabel = typeof category === 'string' ? category : (category?.label || category?.name || '');
 
     return (
         <div className="min-h-screen bg-zinc-50 pt-8 pb-20">
