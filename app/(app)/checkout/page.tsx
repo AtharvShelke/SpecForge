@@ -1,6 +1,5 @@
 "use client";
 
-<<<<<<< HEAD
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -11,15 +10,6 @@ import {
   Lock,
   Smartphone,
 } from "lucide-react";
-=======
-import { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { useShop } from '@/context/ShopContext';
-import { useRouter } from 'next/navigation';
-import { processCheckout } from '@/app/actions/checkout';
-import { calculateOrderFinancials } from '@/lib/tax-engine';
-import { CreditCard, ShoppingBag, ArrowLeft, CheckCircle2, ShieldAlert } from 'lucide-react';
-import Link from 'next/link';
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 import { processCheckout } from "@/app/actions/checkout";
 import ImageUploader from "@/components/uploadthing/ImageUploader";
@@ -66,32 +56,7 @@ const INITIAL_FORM = {
   shippingCountry: "India",
 };
 
-<<<<<<< HEAD
 const MANUAL_DISCOUNT_RATE = 0.02;
-=======
-                <ul className="divide-y divide-gray-100 flex-1 overflow-y-auto max-h-[40vh] pr-2">
-                    {cart.map((product) => (
-                        <li key={product.id} className="py-4 flex gap-4">
-                            <div className="h-16 w-16 flex-shrink-0 bg-gray-50 rounded-lg p-1 border border-gray-100">
-                                <img
-                                    src={product.media?.[0]?.url ?? '/placeholder.png'}
-                                    alt={product.name}
-                                    loading="lazy"
-                                    decoding="async"
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
-                            <div className="flex-1 flex flex-col justify-center">
-                                <h3 className="text-sm font-medium text-gray-900 line-clamp-2">{product.name}</h3>
-                                <p className="mt-1 text-sm text-gray-500">Qty: {product.quantity}</p>
-                            </div>
-                            <div className="flex-shrink-0 text-sm font-medium text-gray-900 mt-0.5">
-                                ₹{((product.price ?? 0) * product.quantity).toLocaleString('en-IN')}
-                            </div>
-                        </li>
-                    ))}
-                </ul>
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 const PAYMENT_METHODS = [
   {
@@ -229,7 +194,6 @@ export default function CheckoutPage() {
       const { name, value } = event.target;
       setFormError("");
 
-<<<<<<< HEAD
       if (name === "phone") {
         let nextValue = value;
         if (nextValue.startsWith("+91 ")) nextValue = nextValue.slice(4);
@@ -347,23 +311,6 @@ export default function CheckoutPage() {
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
               }),
-=======
-    const handleSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (formData.phone.length !== 14) {
-            alert('Please enter a valid 10-digit phone number.');
-            return;
-        }
-        setIsSubmitting(true);
-        try {
-            const res = await processCheckout({
-                ...formData,
-                isPosOverride: isAdmin,
-                items: cart.map(item => ({
-                    productId: item.id,
-                    quantity:  item.quantity,
-                })),
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
             });
 
             const verifyPayload = await verifyRes.json();
@@ -374,7 +321,6 @@ export default function CheckoutPage() {
               return;
             }
 
-<<<<<<< HEAD
             clearCart?.();
             setSuccessMessage(
               `Order #${createPayload.orderId} has been paid successfully.`,
@@ -389,18 +335,6 @@ export default function CheckoutPage() {
             reject(new Error("Payment was cancelled before completion.")),
         },
       });
-=======
-    // Memoised — only recomputes when cart contents change
-    const financials = useMemo(
-        () => calculateOrderFinancials(
-            cart.map(item => ({
-                price:    item.price ?? 0,
-                quantity: item.quantity,
-            }))
-        ),
-        [cart]
-    );
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
       instance.open();
     });

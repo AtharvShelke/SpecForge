@@ -1,8 +1,6 @@
 import { Order } from "@/types";
-import { escapeHtml } from "@/lib/security/html";
 
 export const BILLING_PROFILE = {
-<<<<<<< HEAD
   companyName: 'Computer Store Store',
   email: 'billing@nexushardware.com',
   addressLine1: '123, Tech Park',
@@ -10,36 +8,19 @@ export const BILLING_PROFILE = {
   city: 'Bengaluru',
   postalCode: '560001',
   gstin: '29ABCDE1234F1Z5',
-=======
-  companyName: "SpecForge",
-  email: "billing@specforge.com",
-  addressLine1: "123, Tech Park",
-  addressLine2: "MG Road",
-  city: "Bengaluru",
-  postalCode: "560001",
-  gstin: "29ABCDE1234F1Z5",
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 };
 
 export const generateInvoiceHTML = (order: Order): string => {
+  // Backward hook for historical orders
   const subtotal = order.subtotal || Math.round(order.total / 1.18);
   const taxAmount = order.gstAmount || (order.total - subtotal);
   const total = order.total;
   const invoiceNumber = `INV-${order.id}-${new Date().getFullYear()}`;
-  const today = new Date().toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 
   const fmtINR = (n: number) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(n);
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
-<<<<<<< HEAD
   const itemRows = (order.items ?? []).map(item => {
     const lineTotal = item.quantity * item.price;
     return `
@@ -57,42 +38,9 @@ export const generateInvoiceHTML = (order: Order): string => {
         <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;color:#1e293b">${fmtINR(lineTotal)}</td>
       </tr>`;
   }).join('');
-=======
-  const getItemCategoryLabel = (item: Order["items"][number]) =>
-    typeof item.category === "string" ? item.category : item.category?.name ?? "";
-
-  const itemRows = order.items
-    .map((item) => {
-      const lineTotal = item.quantity * item.price;
-      const unitLines = (item.assignedUnits ?? [])
-        .map((unit) =>
-          [unit.partNumber, unit.serialNumber].filter(Boolean).join(" / ")
-        )
-        .filter(Boolean)
-        .map(
-          (text) =>
-            `<div style="margin-top:2px;color:#64748b">Unit: ${escapeHtml(text)}</div>`
-        )
-        .join("");
-
-      return `
-        <tr>
-          <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">
-            <strong style="color:#1e293b">${escapeHtml(item.name)}</strong>
-            <br/><small style="color:#94a3b8">${escapeHtml(getItemCategoryLabel(item) || item.sku || "")}</small>
-            ${unitLines}
-          </td>
-          <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center">${escapeHtml(item.quantity)}</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right">${escapeHtml(fmtINR(item.price))}</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;color:#6366f1">18%</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;color:#1e293b">${escapeHtml(fmtINR(lineTotal))}</td>
-        </tr>`;
-    })
-    .join("");
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
-<title>${escapeHtml(invoiceNumber)}</title>
+<title>${invoiceNumber}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;color:#334155;background:#f8fafc}
@@ -116,6 +64,8 @@ tbody td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top;col
 tbody td:nth-child(5){text-align:center}
 tbody td:nth-child(6),tbody td:nth-child(7),tbody td:nth-child(8){text-align:right}
 tbody tr:last-child td{border-bottom:none}
+.item-name{font-weight:600;color:#1e293b;font-size:12px;margin-bottom:1px}
+.item-sku{font-size:11px;color:#94a3b8}
 .totals{margin-left:auto;max-width:256px;margin-bottom:22px}
 .tot-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#64748b}
 .tot-row span:last-child{color:#334155}
@@ -128,20 +78,14 @@ tbody tr:last-child td{border-bottom:none}
 
 <div class="hdr">
   <div>
-    <div class="brand">${escapeHtml(BILLING_PROFILE.companyName)}</div>
-    <div class="brand-sub">${escapeHtml(BILLING_PROFILE.addressLine1)}${BILLING_PROFILE.addressLine2 ? `, ${escapeHtml(BILLING_PROFILE.addressLine2)}` : ""}, ${escapeHtml(BILLING_PROFILE.city)} - ${escapeHtml(BILLING_PROFILE.postalCode)}<br>GSTIN: ${escapeHtml(BILLING_PROFILE.gstin || "N/A")} · ${escapeHtml(BILLING_PROFILE.email)}</div>
+    <div class="brand">${BILLING_PROFILE.companyName}</div>
+    <div class="brand-sub">${BILLING_PROFILE.addressLine1}${BILLING_PROFILE.addressLine2 ? ', ' + BILLING_PROFILE.addressLine2 : ''}, ${BILLING_PROFILE.city} – ${BILLING_PROFILE.postalCode}<br>GSTIN: ${BILLING_PROFILE.gstin || 'N/A'} &nbsp;·&nbsp; ${BILLING_PROFILE.email}</div>
   </div>
   <div>
     <div class="inv-label">Invoice</div>
-    <div class="inv-num">${escapeHtml(invoiceNumber)}</div>
-    <div class="inv-date">${escapeHtml(
-      new Date(order.date).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    )}</div>
-    <div style="text-align:right"><span class="chip">${escapeHtml(order.status.toUpperCase())}</span></div>
+    <div class="inv-num">${invoiceNumber}</div>
+    <div class="inv-date">${new Date(order.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div style="text-align:right"><span class="chip">${order.status.toUpperCase()}</span></div>
   </div>
 </div>
 
@@ -149,16 +93,16 @@ tbody tr:last-child td{border-bottom:none}
   <div>
     <div class="sec-lbl">Bill to</div>
     <div class="sec-val">
-      <strong>${escapeHtml(order.customerName)}</strong><br>${escapeHtml(order.email)}<br>${escapeHtml(order.shippingStreet)}<br>${escapeHtml(order.shippingCity)}, ${escapeHtml(order.shippingState)} - ${escapeHtml(order.shippingZip)}<br>${escapeHtml(order.shippingCountry)}
+      <strong>${order.customerName}</strong><br>${order.email}<br>${order.shippingStreet}<br>${order.shippingCity}, ${order.shippingState} – ${order.shippingZip}<br>${order.shippingCountry}
     </div>
   </div>
   <div>
     <div class="sec-lbl">Payment details</div>
     <div class="sec-val">
-      <strong>Order ID:</strong> ${escapeHtml(order.id)}<br>
-      <strong>Method:</strong> ${escapeHtml(order.paymentMethod)}<br>
-      <strong>Payment status:</strong> ${escapeHtml(order.paymentStatus)}
-      ${order.paymentTransactionId ? `<br><strong>TXN ID:</strong> ${escapeHtml(order.paymentTransactionId)}` : ""}
+      <strong>Order ID:</strong> ${order.id}<br>
+      <strong>Method:</strong> ${order.paymentMethod}<br>
+      <strong>Payment status:</strong> ${order.paymentStatus}
+      ${order.paymentTransactionId ? `<br><strong>TXN ID:</strong> ${order.paymentTransactionId}` : ''}
     </div>
   </div>
 </div>
@@ -178,16 +122,16 @@ tbody tr:last-child td{border-bottom:none}
 </table>
 
 <div class="totals">
-  <div class="tot-row"><span>Subtotal (excl. tax)</span><span>${escapeHtml(fmtINR(subtotal))}</span></div>
+  <div class="tot-row"><span>Subtotal (excl. tax)</span><span>${fmtINR(subtotal)}</span></div>
   <div class="tot-row"><span>Shipping</span><span>Free</span></div>
-  <div class="tot-row"><span>GST 18%</span><span>${escapeHtml(fmtINR(taxAmount))}</span></div>
+  <div class="tot-row"><span>GST 18%</span><span>${fmtINR(taxAmount)}</span></div>
   <hr class="tot-sep">
-  <div class="tot-final"><span>Total due</span><span>${escapeHtml(fmtINR(total))}</span></div>
+  <div class="tot-final"><span>Total due</span><span>${fmtINR(total)}</span></div>
 </div>
 
 <div class="footer">
   <span>Thank you for your business.</span>
-  <span>${escapeHtml(invoiceNumber)} · Generated ${escapeHtml(today)}</span>
+  <span>${invoiceNumber} · Generated ${today}</span>
 </div>
 </div></body></html>`;
 };

@@ -1,16 +1,8 @@
 "use client";
 
-<<<<<<< HEAD
 import { memo, useCallback, useMemo } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import { InventorySkuSummary, Order, OrderStatus } from "@/types";
-=======
-import React, { useEffect, useState, memo, useCallback, useMemo } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { Order, Product, InventoryItem } from '@/types';
-import { OrderStatus } from '@/types';
-import { useRouter } from 'next/navigation';
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -53,25 +45,11 @@ type OverviewOrderRow = Pick<Order, "id" | "status" | "date" | "total"> & {
   email: string;
 };
 
-<<<<<<< HEAD
 type OrderItemSnapshot = {
   category?: string;
   price: number;
   quantity: number;
 };
-=======
-function getProductStock(product: any): number {
-  if (typeof product?.stock === 'number') return product.stock;
-  if (Array.isArray(product?.inventoryItems)) {
-    return product.inventoryItems.reduce((a: number, inv: any) => a + Math.max(0, (inv.quantity || 0) - (inv.reserved || 0)), 0);
-  }
-  return 0;
-}
-
-// ─────────────────────────────────────────────────────────────
-// STATUS PILL — memoized + precomputed class map
-// ─────────────────────────────────────────────────────────────
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 const STATUS_PILL_MAP: Record<string, string> = {
   [OrderStatus.PENDING]: "bg-amber-50 text-amber-700 border-amber-200",
@@ -245,7 +223,6 @@ const DesktopOrderRow = memo(({ order }: { order: OverviewOrderRow }) => (
 DesktopOrderRow.displayName = "DesktopOrderRow";
 
 const Overview = () => {
-<<<<<<< HEAD
   const { orders, inventory, syncData, isLoading, setActiveTab } =
     useAdmin() as unknown as {
       orders: Order[];
@@ -254,65 +231,6 @@ const Overview = () => {
       isLoading: boolean;
       setActiveTab: (tab: string) => void;
     };
-=======
-  const { toast } = useToast();
-  const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Fetch orders
-  const fetchOrders = useCallback(async () => {
-    try {
-      const res = await fetch('/api/orders');
-      const data = await res.json();
-      setOrders(data.orders ?? []);
-    } catch (err) {
-      console.error('Failed to fetch orders:', err);
-    }
-  }, []);
-
-  // Fetch inventory
-  const fetchInventory = useCallback(async () => {
-    try {
-      const res = await fetch('/api/inventory?limit=3000');
-      const data = await res.json();
-      setInventory(data.items ?? (Array.isArray(data) ? data : []));
-    } catch (err) {
-      console.error('Failed to fetch inventory:', err);
-    }
-  }, []);
-
-  // Fetch products
-  const fetchProducts = useCallback(async () => {
-    try {
-      const res = await fetch('/api/products?fields=minimal&limit=5000');
-      const data = await res.json();
-      setProducts(data.products ?? data);
-    } catch (err) {
-      console.error('Failed to fetch products:', err);
-    }
-  }, []);
-
-  // Sync data
-  const syncData = useCallback(async () => {
-    setIsLoading(true);
-    await Promise.all([fetchOrders(), fetchInventory(), fetchProducts()]);
-    setIsLoading(false);
-    toast({ title: 'Data synced' });
-  }, [fetchOrders, fetchInventory, fetchProducts, toast]);
-
-  // Set active tab (navigate to a tab)
-  const setActiveTab = useCallback((tab: string) => {
-    router.push(`/admin?tab=${tab}`);
-  }, [router]);
-
-  // Initial data fetch
-  useEffect(() => {
-    syncData();
-  }, [syncData]);
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
   const {
     totalRevenue,
@@ -395,7 +313,6 @@ const Overview = () => {
     };
   }, [orders]);
 
-<<<<<<< HEAD
   const inventoryArray = useMemo(
     () => (Array.isArray(inventory) ? inventory : []),
     [inventory],
@@ -408,16 +325,6 @@ const Overview = () => {
         .sort((left, right) => left.quantity - right.quantity)
         .slice(0, 3),
     [inventoryArray],
-=======
-  const lowStockProducts = useMemo(() =>
-    products.filter(p => getProductStock(p) <= 5),
-    [products]
-  );
-
-  const outOfStockProducts = useMemo(() =>
-    products.filter(p => getProductStock(p) <= 0),
-    [products]
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
   );
 
   const fulfilmentRate =
@@ -923,7 +830,6 @@ const Overview = () => {
                 </div>
               </div>
 
-<<<<<<< HEAD
               <div className="space-y-3">
                 <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                   Requires Restock
@@ -952,104 +858,6 @@ const Overview = () => {
                         )}
                       >
                         {stock <= 0 ? "Out" : "Low"}
-=======
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-0.5">
-                {[
-                  { label: 'Available', value: totalInventoryUnitsFormatted, color: 'text-stone-800' },
-                  { label: 'Low Stock', value: lowStockCount, color: lowStockCount > 0 ? 'text-amber-600' : 'text-stone-800' },
-                  { label: 'Out', value: outOfStockCount, color: outOfStockCount > 0 ? 'text-rose-600' : 'text-stone-800' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="px-1.5 sm:px-2 py-2 bg-stone-50 border border-stone-100 rounded-lg text-center">
-                    <p className={cn('text-sm sm:text-base font-extrabold tabular-nums font-mono', color)}>{value}</p>
-                    <p className="text-[8px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-0.5 leading-tight">{label}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Top alerts */}
-              {lowStockProducts.slice(0, 3).map(product => {
-                const stock = getProductStock(product);
-                return (
-                  <div key={product.id} className="flex items-center justify-between gap-2 px-2 py-2 bg-amber-50/60 border border-amber-100 rounded-lg">
-                    <div className="min-w-0">
-                      <p className="text-[11px] sm:text-xs font-semibold text-stone-700 truncate">{product.name}</p>
-                      <p className="text-[9px] sm:text-[10px] font-mono text-stone-400">{product.sku || '—'}</p>
-                    </div>
-                    <span className={cn(
-                      'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ring-1',
-                      stock <= 0
-                        ? 'bg-rose-50 text-rose-600 ring-rose-200'
-                        : 'bg-amber-50 text-amber-700 ring-amber-200'
-                    )}>
-                      {stock <= 0 ? 'Out' : 'Low'}
-                    </span>
-                  </div>
-                );
-              })}
-              {lowStockProducts.length === 0 && (
-                <div className="flex items-center gap-2 px-2 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
-                  <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                  <p className="text-[11px] sm:text-xs font-semibold text-emerald-700">All products healthy</p>
-                </div>
-              )}
-            </div>
-          </Panel>
-        </div>
-      </div>
-
-      {/* ─── FOURTH ROW: Daily Orders Bar + Category Revenue ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
-
-        {/* Daily Order Volume */}
-        <Panel stripe="violet">
-          <PanelHeader
-            icon={<BarChart3 size={12} />}
-            onClick={handleSetOrdersTab}
-          >
-            Daily Order Volume
-          </PanelHeader>
-          <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-3 h-[160px] sm:h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barSize={18}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f0ee" />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false} tickLine={false}
-                  tick={{ fontSize: 10, fill: '#a8a29e', fontWeight: 600 }}
-                />
-                <YAxis
-                  axisLine={false} tickLine={false}
-                  tick={{ fontSize: 10, fill: '#a8a29e', fontWeight: 600 }}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="orders" fill="#6366f1" radius={[4, 4, 0, 0]} opacity={0.85} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Panel>
-
-        {/* Revenue by Category */}
-        <Panel stripe="teal">
-          <PanelHeader
-            icon={<Tag size={12} />}
-            onClick={handleSetProductsTab}
-          >
-            Revenue by Category
-          </PanelHeader>
-          <div className="px-3 sm:px-4 py-2.5 sm:py-3 space-y-2">
-            {categoryRevenue.length === 0 ? (
-              <div className="py-5 text-center text-xs text-stone-400">No category data yet</div>
-            ) : (() => {
-              const max = categoryRevenue[0][1]; // already sorted desc, first is max
-              return categoryRevenue.map(([cat, value]) => {
-                const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-                return (
-                  <div key={cat}>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-[11px] sm:text-xs font-semibold text-stone-700 truncate">{cat}</span>
-                      <span className="text-[11px] sm:text-xs font-bold text-stone-600 font-mono tabular-nums shrink-0">
-                        ₹{value.toLocaleString('en-IN')}
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                       </span>
                     </div>
                   );

@@ -1,17 +1,11 @@
 "use client";
 
-<<<<<<< HEAD
 import { useState, useCallback, memo, type ReactNode } from "react";
 import { AdminProvider, useAdmin } from "@/context/AdminContext";
-=======
-import { useState, useCallback, memo, type ReactNode } from 'react';
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ADMIN_TAB_LABELS, getAdminTab } from "@/components/admin/adminTabs";
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { AdminHeader } from "@/components/dashboard/AdminHeader";
+import { useRouter } from "next/navigation";
 
-<<<<<<< HEAD
 const TAB_LABELS: Record<string, string> = {
   overview: "Overview",
   orders: "Orders",
@@ -25,16 +19,8 @@ const TAB_LABELS: Record<string, string> = {
   compatibility: "Compatibility Rules",
 } as const;
 
-=======
-// ── Constants (module scope — never recreated) ────────────────────────────────
-
-const SHELL_STYLE = {
-    fontFamily: "'DM Sans', 'Geist', 'system-ui', sans-serif",
-} as const;
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 
-<<<<<<< HEAD
 export const AdminShell = memo(function AdminShell({
   children,
 }: {
@@ -43,14 +29,6 @@ export const AdminShell = memo(function AdminShell({
   const { activeTab, setActiveTab } = useAdmin();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
-=======
-const AdminShell = memo(function AdminShell({ children }: { children: ReactNode }) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const activeTab = getAdminTab(searchParams.get('tab'));
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
   const handleLogout = useCallback(async () => {
     await fetch("/api/logout", { method: "POST" });
@@ -68,7 +46,6 @@ const AdminShell = memo(function AdminShell({ children }: { children: ReactNode 
         setIsOpen={setIsSidebarOpen}
       />
 
-<<<<<<< HEAD
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminHeader
           onLogout={handleLogout}
@@ -89,56 +66,14 @@ const AdminShell = memo(function AdminShell({ children }: { children: ReactNode 
       </div>
     </div>
   );
-=======
-    const handleTabChange = useCallback((tab: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (tab === 'overview') params.delete('tab');
-        else params.set('tab', tab);
-        const query = params.toString();
-        router.push(query ? `${pathname}?${query}` : pathname);
-    }, [pathname, router, searchParams]);
-
-    return (
-        <div
-            className="flex h-screen bg-stone-50 overflow-hidden antialiased"
-            style={SHELL_STYLE}
-        >
-            <AdminSidebar
-                activeTab={activeTab}
-                setActiveTab={handleTabChange}
-                onLogout={handleLogout}
-                isOpen={isSidebarOpen}
-                setIsOpen={setIsSidebarOpen}
-            />
-
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <AdminHeader
-                    onLogout={handleLogout}
-                    onMenuClick={handleMenuClick}
-                    title={ADMIN_TAB_LABELS[activeTab] ?? 'Admin'}
-                />
-
-                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-stone-50">
-                    <div className="p-5 lg:p-6 max-w-[1400px] mx-auto 2xl:max-w-[1600px]">
-                        {children}
-                    </div>
-                </main>
-            </div>
-        </div>
-    );
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 });
 
 AdminShell.displayName = "AdminShell";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-<<<<<<< HEAD
   return (
     <AdminProvider>
       <AdminShell>{children}</AdminShell>
     </AdminProvider>
   );
-=======
-    return <AdminShell>{children}</AdminShell>;
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 }

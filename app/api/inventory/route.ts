@@ -1,27 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-<<<<<<< HEAD
 import { getInventoryItems } from "@/services/inventory.service";
 import { serializeInventoryItems } from "@/lib/adminSerializers";
 import { ServiceError } from "@/lib/errors";
-=======
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
-import { createInventoryUnits } from "@/lib/services/inventory";
-
-const inventoryUnitSchema = z.object({
-    partNumber: z.string().min(1),
-    serialNumber: z.string().min(1),
-    costPrice: z.number().min(0).optional(),
-    location: z.string().optional(),
-    reorderLevel: z.number().int().min(0).optional(),
-});
-
-const createInventorySchema = z.object({
-    productId: z.string().min(1),
-    note: z.string().optional(),
-    units: z.array(inventoryUnitSchema).min(1),
-});
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,7 +26,6 @@ export async function GET(req: NextRequest) {
           const key = item.variantId ?? item.sku ?? item.id;
           const existing = map.get(key);
 
-<<<<<<< HEAD
           if (!existing) {
             map.set(key, { ...item });
             return map;
@@ -86,87 +65,6 @@ export async function GET(req: NextRequest) {
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-=======
-        // 1. Text Search
-        if (search && search.trim() !== "") {
-            dbWhere.OR = [
-                { product: { sku: { contains: search, mode: "insensitive" } } },
-                { product: { name: { contains: search, mode: "insensitive" } } },
-                { serialNumber: { contains: search, mode: "insensitive" } },
-                { partNumber: { contains: search, mode: "insensitive" } },
-            ];
-        }
-
-        // 2. Category Filter
-        if (category && category !== "all") {
-            dbWhere.product = {
-                ...(dbWhere.product || {}),
-                category: {
-                    OR: [
-                        { slug: category },
-                        { code: category }
-                    ]
-                }
-            };
-        }
-
-        // 3. Stock Status Filter
-        if (fStockStatus === "out") {
-            dbWhere.quantity = 0;
-        } else if (fStockStatus === "low") {
-            // Use raw SQL to efficiently find items where quantity > 0 AND quantity <= reorderLevel
-            const lowStockIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
-                `SELECT id FROM "InventoryItem" WHERE quantity > 0 AND quantity <= "reorderLevel"`
-            );
-            dbWhere.id = { in: lowStockIds.map(r => r.id) };
-        } else if (fStockStatus === "in") {
-            dbWhere.quantity = { gt: 0 };
-        }
-
-        // Execute count + paginated query in parallel
-        const [total, items] = await Promise.all([
-            prisma.inventoryItem.count({ where: dbWhere }),
-            prisma.inventoryItem.findMany({
-                where: dbWhere,
-                select: {
-                    id: true,
-                    productId: true,
-                    partNumber: true,
-                    serialNumber: true,
-                    quantity: true,
-                    reserved: true,
-                    reorderLevel: true,
-                    costPrice: true,
-                    location: true,
-                    lastUpdated: true,
-                    product: {
-                        select: {
-                            id: true,
-                            sku: true,
-                            name: true,
-                            price: true,
-                            stockStatus: true,
-                            category: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    slug: true,
-                                }
-                            },
-                            brand: { select: { id: true, name: true } },
-                            media: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
-                        },
-                    },
-                },
-                orderBy: [
-                    { lastUpdated: "desc" },
-                    { serialNumber: "asc" },
-                ],
-                skip,
-                take: limit,
-            }),
-        ]);
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
       if (category && category !== "all" && productCategory !== category) {
         return false;
@@ -201,28 +99,4 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
-
-export async function POST(req: NextRequest) {
-    try {
-        const body = await req.json();
-        const data = createInventorySchema.parse(body);
-
-        await prisma.$transaction(async (tx) => {
-            await createInventoryUnits(
-                tx,
-                data.productId,
-                data.units,
-                data.note || "Inventory units added",
-            );
-        });
-
-        return NextResponse.json({ success: true }, { status: 201 });
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
-        }
-        console.error("POST /api/inventory error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
 }

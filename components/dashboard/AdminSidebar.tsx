@@ -2,7 +2,6 @@
 
 import { memo, useCallback } from "react";
 import {
-<<<<<<< HEAD
   Bookmark,
   Calculator,
   Hammer,
@@ -18,21 +17,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-=======
-    LayoutDashboard,
-    ShoppingBag,
-    Package,
-    Layers,
-    Tag,
-    Bookmark,
-    Megaphone,
-    X,
-    CreditCard,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import Link from 'next/link';
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 interface NavItem {
   label: string;
@@ -42,7 +26,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-<<<<<<< HEAD
   { label: "Overview", icon: LayoutDashboard, key: "overview", group: "primary" },
   { label: "Orders", icon: ShoppingBag, key: "orders", group: "primary" },
   { label: "Billing", icon: Receipt, key: "billing", group: "primary" },
@@ -53,16 +36,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Builder Config", icon: Hammer, key: "builder-config", group: "settings" },
   { label: "Compatibility", icon: Wrench, key: "compatibility", group: "settings" },
   { label: "Tax Settings", icon: Calculator, key: "tax-settings", group: "settings" },
-=======
-    { label: 'Overview',     icon: LayoutDashboard, key: 'overview',     group: 'primary'   },
-    { label: 'Orders',       icon: ShoppingBag,     key: 'orders',       group: 'primary'   },
-    { label: 'Products',     icon: Package,         key: 'products',     group: 'primary'   },
-    { label: 'Inventory',    icon: Layers,          key: 'inventory',    group: 'primary'   },
-    { label: 'Categories',   icon: Tag,             key: 'categories',   group: 'secondary' },
-    { label: 'Brands',       icon: Bookmark,        key: 'brands',       group: 'secondary' },
-    { label: 'Saved Builds', icon: Layers,          key: 'saved-builds', group: 'secondary' },
-    { label: 'Builder Config', icon: LayoutDashboard, key: 'builder-config', group: 'secondary' },
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 ];
 
 const PRIMARY_NAV = NAV_ITEMS.filter((item) => item.group === "primary");
@@ -144,7 +117,6 @@ export const AdminSidebar = memo<AdminSidebarProps>(
               className="ml-auto text-slate-400 hover:text-slate-900 lg:hidden"
               onClick={() => setIsOpen(false)}
             >
-<<<<<<< HEAD
               <X className="size-5" />
             </button>
           </div>
@@ -165,23 +137,6 @@ export const AdminSidebar = memo<AdminSidebarProps>(
                       onClick={handleNavClick}
                     />
                   ))}
-=======
-                {/* Brand */}
-                <div className="px-5 h-[60px] flex items-center gap-3 shrink-0 border-b border-stone-100">
-                    <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
-                        <Layers className="w-3.5 h-3.5 text-white" strokeWidth={2} />
-                    </div>
-                    <Link href="/"  className="min-w-0">
-                        <h1 className="text-sm font-bold text-stone-900 tracking-tight leading-none">SpecForge</h1>
-                        <p className="text-[10px] text-stone-400 mt-0.5 font-bold tracking-[0.12em] uppercase">Admin Hub</p>
-                    </Link>
-                    <button
-                        className="ml-auto lg:hidden p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
-                        onClick={handleOverlayClick}
-                    >
-                        <X className="w-3.5 h-3.5 text-stone-400" />
-                    </button>
->>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                 </div>
               </div>
 
