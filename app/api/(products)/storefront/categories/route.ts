@@ -5,12 +5,12 @@ export async function GET() {
   try {
     const [categories, hierarchy] = await Promise.all([
       prisma.category.findMany({
-        where: { deletedAt: null },
+        where: { isActive: true },
         select: {
           id: true,
           name: true,
-          subCategories: {
-            where: { deletedAt: null },
+          subcategories: {
+            where: { isActive: true },
             select: { id: true, name: true },
             orderBy: { name: "asc" },
           },
@@ -32,8 +32,8 @@ export async function GET() {
 
     const hierarchyByCategoryId = new Map(
       hierarchy
-        .filter((entry): entry is { categoryId: string; label: string; sortOrder: number } =>
-          Boolean(entry.categoryId),
+        .filter((entry): entry is { categoryId: number; label: string; sortOrder: number } =>
+          entry.categoryId !== null,
         )
         .map((entry) => [entry.categoryId, { label: entry.label, sortOrder: entry.sortOrder }]),
     );
@@ -46,7 +46,7 @@ export async function GET() {
           name: category.name,
           displayName: hierarchyEntry?.label ?? category.name,
           sortOrder: hierarchyEntry?.sortOrder ?? Number.MAX_SAFE_INTEGER,
-          subCategories: category.subCategories,
+          subCategories: category.subcategories,
         };
       })
       .sort((a, b) => {

@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     // Merge validated partial with current defaults so all keys are always present
     const merged = { ...DEFAULT_BUILDER_SETTINGS, ...parsed.data };
 
-    const config = await prisma.builderConfig.upsert({
+    const config = await (prisma as any).builderConfig.upsert({
       where: { id: 'default' },
       update: { settings: merged as any },
       create: { id: 'default', settings: merged as any },

@@ -9,7 +9,7 @@ export const categoryService = {
 
   async getById(id: string) {
     return await prisma.category.findUnique({
-      where: { id }
+      where: { id: Number(id) }
     });
   },
 

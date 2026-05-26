@@ -30,15 +30,13 @@ export function useBuildCompatibility() {
         // Build compatibility context
         const context = buildCompatibilityContextSync(
           items.map((item) => ({
-            variantId: item.selectedVariant?.id || item.variants?.[0]?.id,
+            ...item,
+            productId: item.productId || item.id,
+            variantId: item.productId || item.id,
             variant: {
-              ...item.selectedVariant || item.variants?.[0],
+              id: item.productId || item.id,
+              price: item.price || 0,
               product: item,
-              variantSpecs: item.specs?.map((spec) => ({
-                spec: { name: spec.key },
-                valueString: String(spec.value),
-                option: { value: String(spec.value) },
-              })) || [],
             },
           }))
         );

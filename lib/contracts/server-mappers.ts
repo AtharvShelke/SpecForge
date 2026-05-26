@@ -12,7 +12,7 @@ import type {
   ProductsResponse,
 } from "@/lib/contracts/dtos";
 
-export const categorySelect = Prisma.validator<Prisma.CategorySelect>()({
+export const categorySelect: Prisma.CategorySelect = {
   id: true,
   code: true,
   name: true,
@@ -27,9 +27,9 @@ export const categorySelect = Prisma.validator<Prisma.CategorySelect>()({
   showInFeatured: true,
   createdAt: true,
   updatedAt: true,
-});
+};
 
-export const baseProductInclude = Prisma.validator<Prisma.ProductInclude>()({
+export const baseProductInclude: Prisma.ProductInclude = {
   category: {
     select: {
       id: true,
@@ -80,9 +80,9 @@ export const baseProductInclude = Prisma.validator<Prisma.ProductInclude>()({
     },
     orderBy: { sortOrder: "asc" },
   },
-});
+};
 
-export const fullProductInclude = Prisma.validator<Prisma.ProductInclude>()({
+export const fullProductInclude: Prisma.ProductInclude = {
   ...baseProductInclude,
   tags: true,
   specs: {
@@ -102,7 +102,7 @@ export const fullProductInclude = Prisma.validator<Prisma.ProductInclude>()({
       },
     },
   },
-});
+};
 
 export type ProductRow = Prisma.ProductGetPayload<{
   include: typeof fullProductInclude;
@@ -333,7 +333,7 @@ export function mapProduct(
     compareAtPrice: product.compareAtPrice ?? undefined,
     stockStatus: product.stockStatus,
     specs: "specs" in product
-      ? product.specs.map((spec) => ({
+      ? product.specs.map((spec: any) => ({
           id: spec.id,
           productId: spec.productId,
           attributeId: spec.attributeId,
@@ -345,7 +345,7 @@ export function mapProduct(
           isHighlighted: spec.isHighlighted,
         }))
       : [],
-    inventoryItems: product.inventoryItems.map((item) => ({
+    inventoryItems: product.inventoryItems.map((item: any) => ({
       id: item.id,
       productId: item.productId,
       quantity: item.quantity,

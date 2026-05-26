@@ -27,11 +27,11 @@ interface AttributeEditorModalProps {
 }
 
 const FILTER_OPTIONS: Array<{ value: FilterType; label: string }> = [
-  { value: 'dropdown', label: 'Dropdown' },
-  { value: 'checkbox', label: 'Checkbox list' },
-  { value: 'range', label: 'Range' },
-  { value: 'boolean', label: 'Boolean toggle' },
-  { value: 'search', label: 'Search' },
+  { value: FilterType.dropdown, label: 'Dropdown' },
+  { value: FilterType.checkbox, label: 'Checkbox list' },
+  { value: FilterType.range, label: 'Range' },
+  { value: FilterType.boolean, label: 'Boolean toggle' },
+  { value: FilterType.search, label: 'Search' },
 ];
 
 function HintLabel({
@@ -140,7 +140,7 @@ export function AttributeEditorModal({
           <div className="space-y-1">
             <HintLabel label="Filter Type" hint="Choose how this attribute should be presented when filterable is enabled." />
             <Select
-              value={value.filterType ?? 'dropdown'}
+              value={value.filterType ?? FilterType.dropdown}
               onValueChange={(next) => onChange({ ...value, filterType: next as FilterType })}
             >
               <SelectTrigger><SelectValue /></SelectTrigger>

@@ -21,7 +21,7 @@ if (typeof window !== "undefined") {
 /** Fetches and returns the active BuilderSettings, merged with defaults. */
 export async function getBuilderSettings(): Promise<BuilderSettings> {
   try {
-    const config = await prisma.builderConfig.findUnique({
+    const config = await (prisma as any).builderConfig.findUnique({
       where: { id: "default" },
     });
 

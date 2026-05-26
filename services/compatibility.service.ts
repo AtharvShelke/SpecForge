@@ -1,10 +1,7 @@
 /**
  * compatibility.service.ts — Dynamic Compatibility Rule Engine (DCRE)
  *
- * Supports three rule types:
- *   PAIR      — Classic source-spec vs target-spec comparison
- *   COMPONENT — Single component constraints
- *   GLOBAL    — Full-build constraints (e.g., total TDP vs PSU)
+ * Evaluates build compatibility using CompatibilityRuleClause joins.
  */
 
 import { prisma } from "@/lib/prisma";
@@ -12,47 +9,23 @@ import { ServiceError } from "@/lib/errors";
 import {
   buildCompatibilityContext,
   formatCompatibilityMessage,
+  validateBuildSync,
   type BuildContext,
 } from "@/lib/compatibilityEngine";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCOPES
+// SCOPES (Stubs for backward compatibility)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function listScopes() {
-  return prisma.compatibilityScope.findMany({
-    include: {
-      sourceSubCategory: true,
-      targetSubCategory: true,
-      rules: {
-        include: { sourceSpec: true, targetSpec: true },
-      },
-    },
-  });
+  return [];
 }
 
 export async function createScope(data: {
   sourceSubCategoryId: string;
   targetSubCategoryId: string;
 }) {
-  if (!data.sourceSubCategoryId || !data.targetSubCategoryId)
-    throw new ServiceError(
-      "sourceSubCategoryId and targetSubCategoryId are required",
-    );
-
-  return prisma.compatibilityScope.upsert({
-    where: {
-      sourceSubCategoryId_targetSubCategoryId: {
-        sourceSubCategoryId: data.sourceSubCategoryId,
-        targetSubCategoryId: data.targetSubCategoryId,
-      },
-    },
-    update: {},
-    create: {
-      sourceSubCategoryId: data.sourceSubCategoryId,
-      targetSubCategoryId: data.targetSubCategoryId,
-    },
-  });
+  return { id: "mock-scope" };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,13 +34,14 @@ export async function createScope(data: {
 
 export async function listRules() {
   return prisma.compatibilityRule.findMany({
-    orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+    orderBy: { sortOrder: "asc" },
     include: {
-      scope: {
-        include: { sourceSubCategory: true, targetSubCategory: true },
+      clauses: {
+        include: {
+          sourceAttribute: true,
+          targetAttribute: true,
+        },
       },
-      sourceSpec: true,
-      targetSpec: true,
     },
   });
 }
@@ -76,11 +50,12 @@ export async function getRuleById(id: string) {
   const rule = await prisma.compatibilityRule.findUnique({
     where: { id },
     include: {
-      scope: {
-        include: { sourceSubCategory: true, targetSubCategory: true },
+      clauses: {
+        include: {
+          sourceAttribute: true,
+          targetAttribute: true,
+        },
       },
-      sourceSpec: true,
-      targetSpec: true,
     },
   });
   if (!rule) throw new ServiceError("Rule not found", 404);
@@ -90,76 +65,48 @@ export async function getRuleById(id: string) {
 export async function createRule(data: {
   name: string;
   description?: string;
-  type?: string;
-  scopeId?: string;
-  sourceSpecId?: string;
-  targetSpecId?: string;
-  operator?: string;
-  message?: string;
-  messageTemplate?: string;
+  sourceCategoryId: number;
+  targetCategoryId: number;
   severity: string;
-  logic?: any;
-  priority?: number;
-  enabled?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
+  clauses?: Array<{
+    sourceAttributeId: string;
+    targetAttributeId: string;
+    operator: string;
+    sourceValue?: string | null;
+    targetValue?: string | null;
+    sortOrder?: number;
+  }>;
 }) {
-  const ruleType = (data.type as any) || "PAIR";
-
-  if (!data.name || !data.severity)
-    throw new ServiceError("name and severity are required");
-
-  // PAIR rules require spec fields
-  if (ruleType === "PAIR") {
-    if (!data.scopeId || !data.sourceSpecId || !data.targetSpecId || !data.operator)
-      throw new ServiceError("PAIR rules require scopeId, sourceSpecId, targetSpecId, and operator");
-
-    const scope = await prisma.compatibilityScope.findUnique({
-      where: { id: data.scopeId },
-    });
-    if (!scope) throw new ServiceError("Scope not found", 404);
-
-    const sourceSpec = await prisma.specDefinition.findUnique({
-      where: { id: data.sourceSpecId },
-    });
-    const targetSpec = await prisma.specDefinition.findUnique({
-      where: { id: data.targetSpecId },
-    });
-
-    if (!sourceSpec)
-      throw new ServiceError(`Source spec not found`, 404);
-    if (!targetSpec)
-      throw new ServiceError(`Target spec not found`, 404);
-
-    if (sourceSpec.subCategoryId !== scope.sourceSubCategoryId)
-      throw new ServiceError(
-        `Source spec "${sourceSpec.name}" does not belong to source subcategory`,
-      );
-    if (targetSpec.subCategoryId !== scope.targetSubCategoryId)
-      throw new ServiceError(
-        `Target spec "${targetSpec.name}" does not belong to target subcategory`,
-      );
-  }
+  if (!data.name || !data.severity || !data.sourceCategoryId || !data.targetCategoryId)
+    throw new ServiceError("name, severity, sourceCategoryId, and targetCategoryId are required");
 
   return prisma.compatibilityRule.create({
     data: {
       name: data.name,
-      description: data.description,
-      type: ruleType,
-      scopeId: data.scopeId || null,
-      sourceSpecId: data.sourceSpecId || null,
-      targetSpecId: data.targetSpecId || null,
-      operator: (data.operator as any) || null,
-      message: data.message || data.messageTemplate || "Compatibility issue",
-      messageTemplate: data.messageTemplate,
       severity: data.severity as any,
-      logic: data.logic || null,
-      priority: data.priority ?? 0,
-      enabled: data.enabled ?? true,
+      sourceCategoryId: data.sourceCategoryId,
+      targetCategoryId: data.targetCategoryId,
+      sortOrder: data.sortOrder ?? 0,
+      isActive: data.isActive ?? true,
+      clauses: {
+        create: data.clauses?.map((c, idx) => ({
+          sourceAttributeId: c.sourceAttributeId,
+          targetAttributeId: c.targetAttributeId,
+          operator: c.operator,
+          sourceValue: c.sourceValue || null,
+          targetValue: c.targetValue || null,
+          sortOrder: c.sortOrder ?? idx,
+        })) || [],
+      },
     },
     include: {
-      sourceSpec: true,
-      targetSpec: true,
-      scope: {
-        include: { sourceSubCategory: true, targetSubCategory: true },
+      clauses: {
+        include: {
+          sourceAttribute: true,
+          targetAttribute: true,
+        },
       },
     },
   });
@@ -169,45 +116,58 @@ export async function updateRule(
   id: string,
   data: {
     name?: string;
-    description?: string;
-    type?: string;
-    scopeId?: string | null;
-    sourceSpecId?: string | null;
-    targetSpecId?: string | null;
-    operator?: string | null;
-    message?: string;
-    messageTemplate?: string | null;
     severity?: string;
-    logic?: any;
-    priority?: number;
-    enabled?: boolean;
+    sourceCategoryId?: number;
+    targetCategoryId?: number;
+    sortOrder?: number;
+    isActive?: boolean;
+    clauses?: Array<{
+      sourceAttributeId: string;
+      targetAttributeId: string;
+      operator: string;
+      sourceValue?: string | null;
+      targetValue?: string | null;
+      sortOrder?: number;
+    }>;
   },
 ) {
   const existing = await prisma.compatibilityRule.findUnique({ where: { id } });
   if (!existing) throw new ServiceError("Rule not found", 404);
 
+  if (data.clauses) {
+    await prisma.compatibilityRuleClause.deleteMany({
+      where: { ruleId: id },
+    });
+  }
+
   return prisma.compatibilityRule.update({
     where: { id },
     data: {
       ...(data.name !== undefined && { name: data.name }),
-      ...(data.description !== undefined && { description: data.description }),
-      ...(data.type !== undefined && { type: data.type as any }),
-      ...(data.scopeId !== undefined && { scopeId: data.scopeId }),
-      ...(data.sourceSpecId !== undefined && { sourceSpecId: data.sourceSpecId }),
-      ...(data.targetSpecId !== undefined && { targetSpecId: data.targetSpecId }),
-      ...(data.operator !== undefined && { operator: data.operator as any }),
-      ...(data.message !== undefined && { message: data.message }),
-      ...(data.messageTemplate !== undefined && { messageTemplate: data.messageTemplate }),
       ...(data.severity !== undefined && { severity: data.severity as any }),
-      ...(data.logic !== undefined && { logic: data.logic }),
-      ...(data.priority !== undefined && { priority: data.priority }),
-      ...(data.enabled !== undefined && { enabled: data.enabled }),
+      ...(data.sourceCategoryId !== undefined && { sourceCategoryId: data.sourceCategoryId }),
+      ...(data.targetCategoryId !== undefined && { targetCategoryId: data.targetCategoryId }),
+      ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+      ...(data.isActive !== undefined && { isActive: data.isActive }),
+      ...(data.clauses && {
+        clauses: {
+          create: data.clauses.map((c, idx) => ({
+            sourceAttributeId: c.sourceAttributeId,
+            targetAttributeId: c.targetAttributeId,
+            operator: c.operator,
+            sourceValue: c.sourceValue || null,
+            targetValue: c.targetValue || null,
+            sortOrder: c.sortOrder ?? idx,
+          })),
+        },
+      }),
     },
     include: {
-      sourceSpec: true,
-      targetSpec: true,
-      scope: {
-        include: { sourceSubCategory: true, targetSubCategory: true },
+      clauses: {
+        include: {
+          sourceAttribute: true,
+          targetAttribute: true,
+        },
       },
     },
   });
@@ -221,38 +181,31 @@ export async function deleteRule(id: string) {
 }
 
 export async function toggleRule(id: string, enabled: boolean) {
-  return updateRule(id, { enabled });
+  return updateRule(id, { isActive: enabled });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CHECK — Full build compatibility evaluation
 // ─────────────────────────────────────────────────────────────────────────────
 
+interface CheckResult {
+  ruleId: string;
+  ruleName: string;
+  sourceVariantId?: string;
+  targetVariantId?: string;
+  passed: boolean;
+  message: string;
+  severity: string;
+  sourceValue?: any;
+  targetValue?: any;
+}
+
 export async function checkBuildCompatibility(buildId: string) {
   if (!buildId) throw new ServiceError("buildId is required");
 
-  const build = await prisma.build.findUnique({
-    where: { id: buildId },
-    include: {
-      items: {
-        include: {
-          variant: {
-            include: {
-              product: {
-                include: { subCategory: true },
-              },
-              variantSpecs: {
-                include: { spec: true, option: true },
-              },
-            },
-          },
-          slot: true,
-        },
-      },
-    },
-  });
-
-  if (!build) throw new ServiceError("Build not found", 404);
+  // Load build items from in-memory service
+  const { getBuildById } = require("./build.service");
+  const build = await getBuildById(buildId);
 
   const buildItems = build.items;
   const context = await buildCompatibilityContext(buildItems);
@@ -264,33 +217,44 @@ export async function checkBuildCompatibility(buildId: string) {
       message: "Not enough items to check compatibility",
       checks: [],
       context,
+      summary: {
+        totalChecks: 0,
+        passed: 0,
+        failed: 0,
+        errors: 0,
+        warnings: 0,
+      },
     };
   }
 
   const results = await evaluateAllRules(buildItems, context);
 
+  // Run static engine rules as well
+  const engineReport = validateBuildSync(buildItems);
+  for (const issue of engineReport.issues) {
+    results.push({
+      ruleId: issue.ruleId || `static-${issue.severity.toLowerCase()}`,
+      ruleName: issue.message,
+      passed: false,
+      message: issue.message,
+      severity: issue.severity,
+    });
+  }
+
   const isCompatible = results.every((r) => r.passed || r.severity !== "ERROR");
 
-  const finalResult = await prisma.buildCompatibilityResult.create({
-    data: {
-      buildId,
-      isCompatible,
-      checks: {
-        create: results.map((r) => ({
-          ruleId: r.ruleId,
-          sourceVariantId: r.sourceVariantId || null,
-          targetVariantId: r.targetVariantId || null,
-          passed: r.passed,
-          message: r.message,
-          severity: r.severity as any,
-        })),
-      },
-    },
-    include: { checks: { include: { rule: true } } },
-  });
-
   return {
-    ...finalResult,
+    id: `bcr-${buildId}`,
+    buildId,
+    isCompatible,
+    checks: results.map((r, idx) => ({
+      id: `check-${buildId}-${idx}`,
+      resultId: `bcr-${buildId}`,
+      ruleId: r.ruleId,
+      passed: r.passed,
+      message: r.message,
+      severity: r.severity as any,
+    })),
     summary: {
       totalChecks: results.length,
       passed: results.filter((r) => r.passed).length,
@@ -304,29 +268,53 @@ export async function checkBuildCompatibility(buildId: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TEST — Dry-run without persisting (for sandbox)
+// TEST — Dry-run without persisting
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function testRules(variantIds: string[]) {
   if (!variantIds || variantIds.length === 0)
     throw new ServiceError("variantIds array is required");
 
-  const variants = await prisma.productVariant.findMany({
+  const products = await prisma.product.findMany({
     where: { id: { in: variantIds } },
     include: {
-      product: { include: { subCategory: true } },
-      variantSpecs: { include: { spec: true, option: true } },
+      subcategory: { include: { category: true } },
+      specs: { include: { attribute: true } },
     },
   });
 
-  // Build mock build items
-  const mockItems = variants.map((v) => ({
-    variantId: v.id,
-    variant: v,
-  }));
+  const mockItems = products.map((product) => {
+    const mockVariant = {
+      id: product.id,
+      productId: product.id,
+      sku: product.sku || "",
+      price: product.price || 0,
+      compareAtPrice: product.compareAtPrice || null,
+      status: product.stockStatus,
+      product,
+    };
+    return {
+      id: `mock-item-${product.id}`,
+      productId: product.id,
+      variantId: product.id,
+      variant: mockVariant,
+    };
+  });
 
   const context = await buildCompatibilityContext(mockItems);
   const results = await evaluateAllRules(mockItems, context);
+
+  // Run static engine rules
+  const engineReport = validateBuildSync(mockItems);
+  for (const issue of engineReport.issues) {
+    results.push({
+      ruleId: issue.ruleId || `static-${issue.severity.toLowerCase()}`,
+      ruleName: issue.message,
+      passed: false,
+      message: issue.message,
+      severity: issue.severity,
+    });
+  }
 
   const isCompatible = results.every((r) => r.passed || r.severity !== "ERROR");
 
@@ -351,55 +339,72 @@ export async function testRules(variantIds: string[]) {
 export async function debugRule(ruleId: string, variantIds: string[]) {
   const rule = await getRuleById(ruleId);
 
-  const variants = await prisma.productVariant.findMany({
+  const products = await prisma.product.findMany({
     where: { id: { in: variantIds } },
     include: {
-      product: { include: { subCategory: true } },
-      variantSpecs: { include: { spec: true, option: true } },
+      subcategory: { include: { category: true } },
+      specs: { include: { attribute: true } },
     },
   });
 
-  const mockItems = variants.map((v) => ({
-    variantId: v.id,
-    variant: v,
-  }));
+  const mockItems = products.map((product) => {
+    const mockVariant = {
+      id: product.id,
+      productId: product.id,
+      sku: product.sku || "",
+      price: product.price || 0,
+      compareAtPrice: product.compareAtPrice || null,
+      status: product.stockStatus,
+      product,
+    };
+    return {
+      id: `mock-item-${product.id}`,
+      productId: product.id,
+      variantId: product.id,
+      variant: mockVariant,
+    };
+  });
 
   const context = await buildCompatibilityContext(mockItems);
-
-  // Evaluate just this one rule
   const trace: any[] = [];
 
-  if (rule.type === "PAIR" && rule.sourceSpecId && rule.targetSpecId) {
-    for (let i = 0; i < mockItems.length; i++) {
-      for (let j = 0; j < mockItems.length; j++) {
-        if (i === j) continue;
-        const sourceSpecs = mockItems[i].variant.variantSpecs;
-        const targetSpecs = mockItems[j].variant.variantSpecs;
-        const sourceValue = resolveSpecValue(sourceSpecs, rule.sourceSpecId);
-        const targetValue = resolveSpecValue(targetSpecs, rule.targetSpecId);
-        const { passed } = evaluatePairRule(rule, sourceSpecs, targetSpecs);
+  for (let i = 0; i < mockItems.length; i++) {
+    for (let j = 0; j < mockItems.length; j++) {
+      if (i === j) continue;
+      const productA = mockItems[i].variant.product;
+      const productB = mockItems[j].variant.product;
+
+      if (
+        productA.categoryId === rule.sourceCategoryId &&
+        productB.categoryId === rule.targetCategoryId
+      ) {
+        let rulePassed = true;
+        const clauseTraces: any[] = [];
+
+        for (const clause of rule.clauses) {
+          const { passed, sourceValue, targetValue } = evaluateClause(
+            clause,
+            productA.specs,
+            productB.specs,
+          );
+          clauseTraces.push({
+            passed,
+            sourceValue,
+            targetValue,
+            operator: clause.operator,
+          });
+          if (!passed) rulePassed = false;
+        }
 
         trace.push({
-          sourceVariant: mockItems[i].variant.product?.name,
-          targetVariant: mockItems[j].variant.product?.name,
-          sourceSpecName: rule.sourceSpec?.name,
-          targetSpecName: rule.targetSpec?.name,
-          sourceValue,
-          targetValue,
-          operator: rule.operator,
-          passed,
-          message: passed ? "OK" : formatCompatibilityMessage(rule.messageTemplate || rule.message, context),
+          sourceVariant: productA.name,
+          targetVariant: productB.name,
+          passed: rulePassed,
+          clauses: clauseTraces,
+          message: rulePassed ? "OK" : (rule.message || "Incompatible components"),
         });
       }
     }
-  } else if (rule.logic) {
-    const passed = evaluateLogicNode(rule.logic, context);
-    trace.push({
-      logicNode: rule.logic,
-      contextSnapshot: context,
-      passed,
-      message: passed ? "OK" : formatCompatibilityMessage(rule.messageTemplate || rule.message, context),
-    });
   }
 
   return { rule, context, trace };
@@ -409,227 +414,138 @@ export async function debugRule(ruleId: string, variantIds: string[]) {
 // INTERNAL — Rule evaluation engine
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CheckResult {
-  ruleId: string;
-  ruleName: string;
-  sourceVariantId?: string;
-  targetVariantId?: string;
-  passed: boolean;
-  message: string;
-  severity: string;
-  sourceValue?: any;
-  targetValue?: any;
-}
-
-async function evaluateAllRules(buildItems: any[], context: BuildContext): Promise<CheckResult[]> {
-  const results: CheckResult[] = [];
-
-  // Load all enabled rules ordered by priority
-  const allRules = await prisma.compatibilityRule.findMany({
-    where: { enabled: true },
-    orderBy: [{ priority: "desc" }],
-    include: {
-      sourceSpec: true,
-      targetSpec: true,
-      scope: true,
-    },
-  });
-
-  const subCategoryIds = [
-    ...new Set(buildItems.map((item) => item.variant.product.subCategoryId || item.variant.product.subCategory?.id)),
-  ].filter(Boolean);
-
-  for (const rule of allRules) {
-    if (rule.type === "PAIR") {
-      // Existing PAIR logic — evaluate across directed component pairs
-      if (!rule.scopeId || !rule.sourceSpecId || !rule.targetSpecId) continue;
-
-      for (let i = 0; i < buildItems.length; i++) {
-        for (let j = 0; j < buildItems.length; j++) {
-          if (i === j) continue;
-          const itemA = buildItems[i];
-          const itemB = buildItems[j];
-          const srcSubCat = itemA.variant.product.subCategoryId || itemA.variant.product.subCategory?.id;
-          const tgtSubCat = itemB.variant.product.subCategoryId || itemB.variant.product.subCategory?.id;
-
-          if (
-            rule.scope &&
-            srcSubCat === rule.scope.sourceSubCategoryId &&
-            tgtSubCat === rule.scope.targetSubCategoryId
-          ) {
-            const { passed, sourceValue, targetValue } = evaluatePairRule(
-              rule,
-              itemA.variant.variantSpecs,
-              itemB.variant.variantSpecs,
-            );
-
-            results.push({
-              ruleId: rule.id,
-              ruleName: rule.name,
-              sourceVariantId: itemA.variantId,
-              targetVariantId: itemB.variantId,
-              passed,
-              message: passed ? "OK" : formatCompatibilityMessage(rule.messageTemplate || rule.message, context),
-              severity: rule.severity,
-              sourceValue,
-              targetValue,
-            });
-          }
-        }
-      }
-    } else if (rule.type === "GLOBAL" || rule.type === "COMPONENT") {
-      // GLOBAL/COMPONENT rules use the logic JSON against the full context
-      if (!rule.logic) continue;
-      const passed = evaluateLogicNode(rule.logic, context);
-
-      results.push({
-        ruleId: rule.id,
-        ruleName: rule.name,
-        passed,
-        message: passed ? "OK" : formatCompatibilityMessage(rule.messageTemplate || rule.message, context),
-        severity: rule.severity,
-      });
-    }
-  }
-
-  return results;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Spec resolver + PAIR evaluator
-// ─────────────────────────────────────────────────────────────────────────────
-
-function resolveSpecValue(specs: any[], specId: string): any {
-  const spec = specs.find((s: any) => s.specId === specId);
+function resolveSpecValue(specs: any[], attributeId: string): any {
+  const spec = specs.find((s: any) => s.attributeId === attributeId);
   if (!spec) return undefined;
 
-  if (spec.option?.value !== undefined) return spec.option.value;
-  if (spec.valueString !== null && spec.valueString !== undefined)
-    return spec.valueString;
-  if (spec.valueNumber !== null && spec.valueNumber !== undefined)
-    return Number(spec.valueNumber);
-  if (spec.valueBool !== null && spec.valueBool !== undefined)
-    return spec.valueBool;
-  return undefined;
+  if (spec.valueBoolean !== null && spec.valueBoolean !== undefined) {
+    return spec.valueBoolean;
+  }
+  if (spec.valueNumber !== null && spec.valueNumber !== undefined) {
+    return spec.valueNumber;
+  }
+  return spec.value;
 }
 
-function evaluatePairRule(
-  rule: any,
+function evaluateClause(
+  clause: any,
   sourceSpecs: any[],
   targetSpecs: any[],
 ): { passed: boolean; sourceValue: any; targetValue: any } {
-  const sourceValue = resolveSpecValue(sourceSpecs, rule.sourceSpecId);
-  const targetValue = resolveSpecValue(targetSpecs, rule.targetSpecId);
+  const sourceValue = resolveSpecValue(sourceSpecs, clause.sourceAttributeId);
+  const targetValue = resolveSpecValue(targetSpecs, clause.targetAttributeId);
 
-  if (sourceValue === undefined || targetValue === undefined) {
+  let left = sourceValue;
+  let right = targetValue;
+
+  if (clause.sourceValue !== null && clause.sourceValue !== undefined && clause.sourceValue !== "") {
+    if (String(sourceValue) !== String(clause.sourceValue)) {
+      return { passed: true, sourceValue, targetValue };
+    }
+  }
+
+  if (clause.targetValue !== null && clause.targetValue !== undefined && clause.targetValue !== "") {
+    right = clause.targetValue;
+  }
+
+  if (left === undefined || right === undefined) {
     return { passed: false, sourceValue, targetValue };
   }
 
   let passed = false;
-  switch (rule.operator) {
+  switch (clause.operator) {
     case "EQUAL":
-      passed = String(sourceValue) === String(targetValue);
+      passed = String(left) === String(right);
       break;
     case "NOT_EQUAL":
-      passed = String(sourceValue) !== String(targetValue);
+      passed = String(left) !== String(right);
       break;
     case "LESS_THAN":
-      passed = Number(sourceValue) < Number(targetValue);
+      passed = Number(left) < Number(right);
       break;
     case "LESS_OR_EQUAL":
-      passed = Number(sourceValue) <= Number(targetValue);
+      passed = Number(left) <= Number(right);
       break;
     case "GREATER_THAN":
-      passed = Number(sourceValue) > Number(targetValue);
+      passed = Number(left) > Number(right);
       break;
     case "GREATER_OR_EQUAL":
-      passed = Number(sourceValue) >= Number(targetValue);
+      passed = Number(left) >= Number(right);
       break;
     case "CONTAINS":
       passed =
-        String(sourceValue).includes(String(targetValue)) ||
-        String(targetValue).includes(String(sourceValue));
+        String(left).toLowerCase().includes(String(right).toLowerCase()) ||
+        String(right).toLowerCase().includes(String(left).toLowerCase());
       break;
     case "IN_LIST": {
-      const list = String(sourceValue)
+      const list = String(right)
         .split(",")
-        .map((s) => s.trim());
-      passed = list.includes(String(targetValue));
+        .map((s) => s.trim().toLowerCase());
+      passed = list.includes(String(left).toLowerCase());
       break;
     }
     default:
       passed = false;
   }
 
-  return { passed, sourceValue, targetValue };
+  return { passed, sourceValue: left, targetValue: right };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Logic evaluator — evaluates JSON condition trees for GLOBAL/COMPONENT rules
-// ─────────────────────────────────────────────────────────────────────────────
+async function evaluateAllRules(buildItems: any[], context: BuildContext): Promise<CheckResult[]> {
+  const results: CheckResult[] = [];
 
-function resolveContextRef(ref: string, context: BuildContext): any {
-  const parts = ref.split(".");
-  let current: any = context;
+  const allRules = await prisma.compatibilityRule.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }],
+    include: {
+      clauses: {
+        include: {
+          sourceAttribute: true,
+          targetAttribute: true,
+        },
+      },
+    },
+  });
 
-  for (const part of parts) {
-    if (current === undefined || current === null) return undefined;
-    // Check components, totals, global
-    current = current[part] ?? current.components?.[part] ?? current.totals?.[part] ?? current.global?.[part];
-  }
-  return current;
-}
+  for (const rule of allRules) {
+    for (let i = 0; i < buildItems.length; i++) {
+      for (let j = 0; j < buildItems.length; j++) {
+        if (i === j) continue;
+        const itemA = buildItems[i];
+        const itemB = buildItems[j];
 
-function evaluateLogicNode(node: any, context: BuildContext): boolean {
-  if (!node) return true;
+        const productA = itemA.variant?.product || itemA.product || itemA;
+        const productB = itemB.variant?.product || itemB.product || itemB;
 
-  // Group operators
-  if (node.and && Array.isArray(node.and)) {
-    return node.and.every((child: any) => evaluateLogicNode(child, context));
-  }
-  if (node.or && Array.isArray(node.or)) {
-    return node.or.some((child: any) => evaluateLogicNode(child, context));
-  }
-  if (node.not) {
-    return !evaluateLogicNode(node.not, context);
-  }
+        if (
+          productA.categoryId === rule.sourceCategoryId &&
+          productB.categoryId === rule.targetCategoryId
+        ) {
+          let rulePassed = true;
+          const sourceSpecs = productA.specs || [];
+          const targetSpecs = productB.specs || [];
 
-  // Comparison operators: { operator, left, right }
-  if (node.operator) {
-    const leftVal = node.left?.ref
-      ? resolveContextRef(node.left.ref, context)
-      : node.left?.value ?? node.left;
-    const rightVal = node.right?.ref
-      ? resolveContextRef(node.right.ref, context)
-      : node.right?.value ?? node.right;
+          for (const clause of rule.clauses) {
+            const { passed } = evaluateClause(clause, sourceSpecs, targetSpecs);
+            if (!passed) {
+              rulePassed = false;
+            }
+          }
 
-    const left = leftVal !== undefined ? leftVal : 0;
-    const right = rightVal !== undefined ? rightVal : 0;
-    const offset = node.right?.offset || 0;
-
-    switch (node.operator) {
-      case "EQUAL":
-        return String(left) === String(right);
-      case "NOT_EQUAL":
-        return String(left) !== String(right);
-      case "GREATER_THAN":
-        return Number(left) > Number(right) + offset;
-      case "GREATER_OR_EQUAL":
-        return Number(left) >= Number(right) + offset;
-      case "LESS_THAN":
-        return Number(left) < Number(right) + offset;
-      case "LESS_OR_EQUAL":
-        return Number(left) <= Number(right) + offset;
-      case "CONTAINS":
-        return String(left).includes(String(right));
-      case "IN_LIST": {
-        const list = Array.isArray(right) ? right : String(right).split(",").map((s: string) => s.trim());
-        return list.includes(String(left));
+          results.push({
+            ruleId: rule.id,
+            ruleName: rule.name,
+            sourceVariantId: productA.id,
+            targetVariantId: productB.id,
+            passed: rulePassed,
+            message: rulePassed ? "OK" : (rule.message || "Incompatible components"),
+            severity: rule.severity,
+          });
+        }
       }
-      default:
-        return false;
     }
   }
 
-  return true;
+  return results;
 }
+

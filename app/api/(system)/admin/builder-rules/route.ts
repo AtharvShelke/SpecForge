@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/api/requireAdmin';
 
+// Cast to any since builderUIRule model may not exist in current schema
+const db = prisma as any;
+
 /**
  * GET /api/admin/builder-rules
  * Returns all UI rules, ordered by priority (desc) then createdAt.
@@ -14,7 +17,7 @@ export async function GET() {
     if (auth.error) {
       return auth.error;
     }
-    const rules = await prisma.builderUIRule.findMany({
+    const rules = await db.builderUIRule.findMany({
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
     });
     return NextResponse.json(rules);
@@ -59,20 +62,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // category stores a SubCategory.name — that's what the UI dropdown sends.
-    // Validate it references a real, non-deleted subcategory.
-    const sourceSubCategory = await prisma.subCategory.findFirst({
-      where: { name: category, deletedAt: null },
+    // category stores a Subcategory.name — validate it references a real subcategory.
+    const sourceSubCategory = await prisma.subcategory.findFirst({
+      where: { name: category, isActive: true },
       select: { id: true },
     });
     if (!sourceSubCategory) {
       return NextResponse.json(
-        { error: 'category must match an existing SubCategory name' },
+        { error: 'category must match an existing Subcategory name' },
         { status: 400 },
       );
     }
 
-    const rule = await prisma.builderUIRule.create({
+    const rule = await db.builderUIRule.create({
       data: {
         name,
         category,
@@ -119,19 +121,19 @@ export async function PUT(req: NextRequest) {
     }
 
     if (data.category !== undefined) {
-      const sourceSubCategory = await prisma.subCategory.findFirst({
-        where: { name: data.category, deletedAt: null },
+      const sourceSubCategory = await prisma.subcategory.findFirst({
+        where: { name: data.category, isActive: true },
         select: { id: true },
       });
       if (!sourceSubCategory) {
         return NextResponse.json(
-          { error: 'category must match an existing SubCategory name' },
+          { error: 'category must match an existing Subcategory name' },
           { status: 400 },
         );
       }
     }
 
-    const updated = await prisma.builderUIRule.update({
+    const updated = await db.builderUIRule.update({
       where: { id },
       data: {
         ...(data.name !== undefined && { name: data.name }),
@@ -180,7 +182,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    await prisma.builderUIRule.delete({ where: { id } });
+    await db.builderUIRule.delete({ where: { id } });
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

@@ -1,7 +1,7 @@
 /**
  * GET /api/components/:id
  *
- * Get a single component (product) with full specs and variant data.
+ * Get a single component (product) with full specs and inventory data.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -18,21 +18,17 @@ export async function GET(
       where: { id },
       include: {
         brand: true,
-        subCategory: {
+        subcategory: {
           include: {
             category: true,
-            subCategorySlots: { include: { slot: true } },
           },
         },
+        category: true,
         media: { orderBy: { sortOrder: "asc" } },
-        variants: {
-          where: { deletedAt: null },
-          include: {
-            variantSpecs: {
-              include: { spec: true, option: true },
-            },
-          },
+        specs: {
+          include: { attribute: true, option: true },
         },
+        inventoryItems: true,
       },
     });
 

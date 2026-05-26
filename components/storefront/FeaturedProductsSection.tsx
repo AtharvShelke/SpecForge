@@ -138,14 +138,24 @@ function TabPill({
 }
 
 export default function FeaturedProductsSection({ products, addToCart }: Props) {
-  const { categories, getLabel } = useCategories()
-  const categoryOrder = categories
-    .filter((category) => category.showInFeatured)
-    .sort((a, b) => (a.featuredOrder ?? a.displayOrder ?? 0) - (b.featuredOrder ?? b.displayOrder ?? 0))
-    .map((category) => category.code)
+  const { categories } = useCategories() as any
+  const getLabel = (catCode: string) => {
+    const cat = categories?.find((c: any) => c.code === catCode || c.slug === catCode || c.name === catCode);
+    return cat ? cat.name : catCode;
+  }
 
-  const categoryMap = categoryOrder.reduce<Record<string, Product[]>>((acc, cat) => {
-    const items = products.filter((product) => (typeof product.category === 'string' ? product.category : product.category?.code) === cat)
+  const categoryOrder = (categories || [])
+    .filter((category: any) => category.showInFeatured || category.isActive)
+    .sort((a: any, b: any) => (a.featuredOrder ?? a.displayOrder ?? 0) - (b.featuredOrder ?? b.displayOrder ?? 0))
+    .map((category: any) => category.code || category.slug || category.name)
+
+  const categoryMap = (categoryOrder as string[]).reduce((acc: Record<string, Product[]>, cat: string) => {
+    const items = products.filter((product) => {
+      const prodCat = product.category
+        ? (typeof product.category === 'string' ? product.category : ((product.category as any).code || product.category.slug || product.category.name))
+        : '';
+      return prodCat === cat;
+    })
     if (items.length > 0) acc[cat] = items
     return acc
   }, {})
@@ -203,7 +213,7 @@ export default function FeaturedProductsSection({ products, addToCart }: Props) 
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-          {shownProducts.map((product, i) => (
+          {shownProducts.map((product: Product, i: number) => (
             <ProductCard
               key={product.id}
               product={product}

@@ -900,3 +900,16 @@ model AuditLog {
   @@index([actor, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
 }
+
+model TaxSettings {
+  id              String   @id @default("tax_config")
+  taxRatePct      Float    @default(18)
+  taxName         String   @default("GST")
+  taxDescription  String?
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("tax_settings")
+}
+

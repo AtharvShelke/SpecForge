@@ -7,10 +7,14 @@ const PRODUCT_SELECT = {
   name: true,
   description: true,
   status: true,
+  price: true,
+  compareAtPrice: true,
+  sku: true,
+  stockStatus: true,
   createdAt: true,
   updatedAt: true,
-  subCategoryId: true,
-  subCategory: {
+  subcategoryId: true,
+  subcategory: {
     include: {
       category: true,
     },
@@ -21,33 +25,19 @@ const PRODUCT_SELECT = {
       sortOrder: "asc" as const,
     },
   },
-  variants: {
-    where: {
-      deletedAt: null,
-    },
+  specs: {
     include: {
-      inventoryItems: {
-        select: {
-          quantityOnHand: true,
-          quantityReserved: true,
-          status: true,
-          trackingType: true,
-        },
-      },
-      variantSpecs: {
-        include: {
-          spec: true,
-          option: true,
-        },
-      },
+      attribute: true,
+      option: true,
     },
   },
 } as const;
 
 export async function GET() {
   try {
-    const topVariants = await prisma.orderItem.groupBy({
-      by: ["variantId"],
+    // Group best-selling products by productId from order items
+    const topProducts = await prisma.orderItem.groupBy({
+      by: ["productId"],
       _sum: {
         quantity: true,
       },
@@ -59,7 +49,7 @@ export async function GET() {
       take: 8,
     });
 
-    if (topVariants.length === 0) {
+    if (topProducts.length === 0) {
       // Fallback to new arrivals
       const products = await prisma.product.findMany({
         where: {
@@ -75,19 +65,8 @@ export async function GET() {
       return NextResponse.json(products);
     }
 
-    const variants = await prisma.productVariant.findMany({
-      where: {
-        id: {
-          in: topVariants.map((item) => item.variantId),
-        },
-      },
-      select: {
-        id: true,
-        productId: true,
-      },
-    });
+    const productIds = topProducts.map((item) => item.productId);
 
-    const productIds = Array.from(new Set(variants.map((variant) => variant.productId)));
     const products = await prisma.product.findMany({
       where: {
         id: {

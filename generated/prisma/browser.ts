@@ -207,3 +207,8 @@ export type CreditNoteLineItem = Prisma.CreditNoteLineItemModel
  * 
  */
 export type AuditLog = Prisma.AuditLogModel
+/**
+ * Model TaxSettings
+ * 
+ */
+export type TaxSettings = Prisma.TaxSettingsModel

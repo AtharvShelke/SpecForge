@@ -109,7 +109,7 @@ const StepConfigurator = () => {
   };
 
   const availableCategories = allCategories.filter(
-    cat => !steps.some(step => step.categoryId === cat.id) &&
+    cat => !steps.some(step => step.categoryId === Number(cat.id)) &&
     (cat.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
      cat.code.toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -224,7 +224,7 @@ const StepConfigurator = () => {
                 availableCategories.map(cat => (
                   <button
                     key={cat.id}
-                    onClick={() => addStep(cat.id)}
+                    onClick={() => addStep(Number(cat.id))}
                     className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-indigo-50 transition-colors group text-left"
                   >
                     <div className="w-8 h-8 rounded-lg bg-white border border-stone-100 flex items-center justify-center text-stone-400 group-hover:text-indigo-600 group-hover:border-indigo-100">

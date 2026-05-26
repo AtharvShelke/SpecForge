@@ -39,18 +39,19 @@ const FilterGroup: React.FC<{
   const getProductValue = (p: Product, key: string): string | undefined => {
     if (key === 'stock_status') return p.stockStatus === 'IN_STOCK' ? 'In Stock' : 'Out of Stock';
     if (key === 'brand') return p.brand?.name;
+    const specs = p.specs || [];
     if (key.startsWith('specs.')) {
       const specKey = key.split('.')[1];
-      const spec = p.specs.find(s => s.key === specKey);
-      return spec?.value;
+      const spec = specs.find(s => s.key === specKey);
+      return spec?.value !== null && spec?.value !== undefined ? String(spec.value) : undefined;
     }
-    const spec = p.specs.find(s => s.key === key);
-    return spec?.value;
+    const spec = specs.find(s => s.key === key);
+    return spec?.value !== null && spec?.value !== undefined ? String(spec.value) : undefined;
   };
 
   const options = useMemo(() => {
     if (dynamicOptions && dynamicOptions.length > 0) {
-      return dynamicOptions.map(opt => ({ value: opt, count: '' }));
+      return dynamicOptions.map((opt: any) => ({ value: opt, count: '' }));
     }
     const counts = new Map<string, number>();
     products.forEach(p => {
@@ -60,11 +61,11 @@ const FilterGroup: React.FC<{
     const hasStaticOptions = Array.isArray(filter.options) && filter.options.length > 0;
     const baseOptions = hasStaticOptions ? filter.options : Array.from(counts.keys()).sort();
     return baseOptions
-      .map(opt => ({ value: opt, count: counts.get(opt) || 0 }))
+      .map((opt: any) => ({ value: opt, count: counts.get(opt) || 0 }))
       // BUG FIX: was `|| filter.options` which is always truthy (array).
       // Should be `|| !filter.options` — only show zero-count rows when
       // options are dynamically derived (no static list provided).
-      .filter(o => o.count > 0 || hasStaticOptions);
+      .filter((o: any) => o.count > 0 || hasStaticOptions);
   }, [products, filter, dynamicOptions]);
 
   const visibleOptions = showAll ? options : options.slice(0, 5);
@@ -88,7 +89,7 @@ const FilterGroup: React.FC<{
 
       {isExpanded && (
         <div className="space-y-1.5">
-          {visibleOptions.map(option => {
+          {visibleOptions.map((option: any) => {
             const checked = selectedValues.includes(option.value);
             // Use a stable unique id so <label htmlFor> wires to the input,
             // and the click reaches onChange exactly ONCE (not twice).
@@ -227,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
       ] as CategoryAttributeDefinition[];
     }
-    return (attributeConfig?.attributes || []).filter((attribute) => attribute.isFilterable);
+    return (attributeConfig?.attributes || []).filter((attribute: any) => attribute.isFilterable);
   }, [activeCategory, attributeConfig]);
 
   const visibleFilters = useMemo(() => {

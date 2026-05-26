@@ -835,8 +835,8 @@ const Overview = () => {
                   Requires Restock
                 </p>
                 {criticalInventoryItems.map((item) => {
-                  const product = item.variant?.product;
-                  const sku = item.variant?.sku || item.sku || item.variantId;
+                  const product = item.product;
+                  const sku = item.sku || product?.sku || item.productId;
                   const stock = item.quantity;
                   return (
                     <div

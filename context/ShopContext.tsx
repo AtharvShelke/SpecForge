@@ -12,12 +12,11 @@ import {
 
 import {
   Product,
-  ProductVariant,
   SubCategory,
-  SpecDefinition,
   Category,
   Brand,
   Order,
+  CategoryAttribute,
 } from "../types";
 import { sameCategory } from "../lib/categoryUtils";
 import { apiFetch } from "@/lib/helpers";
@@ -28,16 +27,11 @@ interface ShopContextType {
   categories: Category[];
   brands: Brand[];
   subCategories: SubCategory[];
-  specs: SpecDefinition[];
 
   cart: any[];
   isCartOpen: boolean;
   setCartOpen: (open: boolean) => void;
-  addToCart: (
-    product: Product,
-    selectedVariant?: ProductVariant,
-    preventOpenDrawer?: boolean,
-  ) => void;
+  addToCart: (product: Product, preventOpenDrawer?: boolean) => void;
   loadCart: (items: any[]) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, qty: number) => void;
@@ -81,7 +75,6 @@ export const ShopProvider = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [specs, setSpecs] = useState<SpecDefinition[]>([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
     null,
   );
@@ -101,7 +94,7 @@ export const ShopProvider = ({
       start();
       try {
         const formattedFilters = Object.entries(filtersObj ?? {}).map(
-          ([specId, values]) => ({ specId, values }),
+          ([attributeId, values]) => ({ attributeId, values }),
         );
 
         const data = await apiFetch<any>("/api/catalog/products/filter", {
@@ -129,11 +122,6 @@ export const ShopProvider = ({
       setError(null);
       start();
       try {
-        const specData = await apiFetch<SpecDefinition[]>(
-          `/api/catalog/specs?subCategoryId=${id}`,
-        );
-        setSpecs(specData);
-
         await fetchProducts(id, {});
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -192,24 +180,15 @@ export const ShopProvider = ({
 
   const refreshFilterConfigs = useCallback(async () => {}, []);
 
-  // Cart Actions
+  // Cart Actions — now uses product-level pricing
   const addToCart = useCallback(
-    (
-      product: Product,
-      selectedVariant?: ProductVariant,
-      preventOpenDrawer?: boolean,
-    ) => {
+    (product: Product, preventOpenDrawer?: boolean) => {
       setCart((prev) => {
-        const variantToUse = selectedVariant ?? product.variants?.[0];
         const existing = prev.find((item) => item.id === product.id);
         if (existing) {
           return prev.map((item) =>
             item.id === product.id
-              ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                  selectedVariant: variantToUse,
-                }
+              ? { ...item, quantity: item.quantity + 1 }
               : item,
           );
         }
@@ -218,7 +197,7 @@ export const ShopProvider = ({
           {
             ...product,
             quantity: 1,
-            selectedVariant: variantToUse,
+            price: product.price ?? 0,
           },
         ];
       });
@@ -258,9 +237,11 @@ export const ShopProvider = ({
     setCompareItems((prev) => {
       if (prev.some((item) => item.id === product.id)) return prev;
 
-      const sameGroupItems = prev.filter((item) =>
-        sameCategory(item.category, product.category),
-      );
+      const sameGroupItems = prev.filter((item) => {
+        const itemCatName = typeof item.category === "string" ? item.category : item.category?.name;
+        const productCatName = typeof product.category === "string" ? product.category : product.category?.name;
+        return sameCategory(itemCatName, productCatName);
+      });
       return [...sameGroupItems, product].slice(-4);
     });
   }, []);
@@ -273,9 +254,8 @@ export const ShopProvider = ({
 
   const cartTotal = useMemo(() => {
     return cart.reduce((acc, item) => {
-      const price =
-        item.selectedVariant?.price || item.variants?.[0]?.price || 0;
-      return acc + Number(price) * item.quantity;
+      const price = Number(item.price ?? 0);
+      return acc + price * item.quantity;
     }, 0);
   }, [cart]);
 
@@ -321,7 +301,6 @@ export const ShopProvider = ({
         categories,
         brands,
         subCategories,
-        specs,
         cart,
         isCartOpen,
         setCartOpen,

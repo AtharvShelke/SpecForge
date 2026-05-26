@@ -17,35 +17,14 @@ type CatalogResult = {
   filters: DynamicCatalogFilter[];
 };
 
-type RawVariantSpec = {
-  spec?: { name?: string | null } | null;
-  option?: { label?: string | null; value?: string | null } | null;
-  valueString?: string | null;
-  valueNumber?: number | null;
-  valueBool?: boolean | null;
-};
-
-type RawVariant = {
-  price?: number | string | any | null;
-  compareAtPrice?: number | string | any | null;
-  variantSpecs?: RawVariantSpec[];
-  inventoryItems?: Array<{
-    quantityOnHand?: number | null;
-    quantityReserved?: number | null;
-  }>;
-  status?: string | null;
-  [key: string]: any;
-};
-
 type RawProduct = Product & {
   brand?: { name?: string | null } | null;
   subCategory?: {
     name?: string | null;
     category?: { name?: string | null } | null;
   } | null;
-  variants?: RawVariant[];
   media?: Array<{ url?: string | null }>;
-  specs?: SpecEntry[];
+  specs?: any[];
   category?: string;
 };
 
@@ -80,59 +59,8 @@ function toSearchParams(input?: CatalogQueryInput): URLSearchParams {
   return params;
 }
 
-function toCamelCase(value: string) {
-  const cleaned = value
-    .replace(/[^a-zA-Z0-9]+/g, " ")
-    .trim()
-    .split(/\s+/)
-    .map((part) => part.toLowerCase());
-
-  if (cleaned.length === 0) return "";
-
-  return (
-    cleaned[0] +
-    cleaned
-      .slice(1)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join("")
-  );
-}
-
-function getSpecValue(spec: RawVariantSpec) {
-  if (spec.option?.label) return spec.option.label;
-  if (spec.option?.value) return spec.option.value;
-  if (spec.valueString !== undefined && spec.valueString !== null)
-    return spec.valueString;
-  if (spec.valueNumber !== undefined && spec.valueNumber !== null)
-    return spec.valueNumber;
-  if (spec.valueBool !== undefined && spec.valueBool !== null)
-    return spec.valueBool;
-  return "";
-}
-
-function normalizeSpecs(product: RawProduct): SpecEntry[] {
-  const specsMap = new Map<string, SpecEntry>();
-  for (const variant of product.variants ?? []) {
-    for (const entry of variant.variantSpecs ?? []) {
-      const name = entry.spec?.name?.trim();
-      if (!name) continue;
-      const key = toCamelCase(name);
-      const value = getSpecValue(entry);
-      if (key && value !== undefined && value !== "") {
-        specsMap.set(`${key}-${value}`, { key, value, name });
-      }
-    }
-  }
-  const specs = Array.from(specsMap.values());
-  if (product.brand?.name && !specs.some((e) => e.key === "brand")) {
-    specs.unshift({ key: "brand", value: product.brand.name, name: "Brand" });
-  }
-  return specs;
-}
 function normalizeCategory(product: RawProduct) {
   return (
-    // Prefer the parent category (e.g. "Processor") over stored subcategory labels
-    // (e.g. "Desktop CPU") so category-based UIs like PC Builder can match reliably.
     product.subCategory?.category?.name ||
     product.category ||
     product.subCategory?.name ||
@@ -140,49 +68,61 @@ function normalizeCategory(product: RawProduct) {
   );
 }
 
-function variantAvailableQuantity(variant: RawVariant): number {
-  if (Array.isArray(variant.inventoryItems) && variant.inventoryItems.length > 0) {
-    return variant.inventoryItems.reduce(
-      (sum, item) =>
-        sum +
-        Math.max(
-          0,
-          Number(item?.quantityOnHand ?? 0) - Number(item?.quantityReserved ?? 0),
-        ),
-      0,
-    );
-  }
-
-  return 0;
-}
-
 export function normalizeCatalogProduct(product: RawProduct): Product {
   const normalizedMedia = (product.media ?? [])
     .map((media) => ({ ...media, url: sanitizeImageUrl(media.url) }))
     .filter((media) => Boolean(media.url));
 
-  const normalizedVariants = (product.variants ?? []).map((v) => {
-    const availableQty = variantAvailableQuantity(v);
-    return {
-      ...v,
-      price: v.price ? Number(v.price.toString()) : 0,
-      compareAtPrice: v.compareAtPrice
-        ? Number(v.compareAtPrice.toString())
-        : null,
-      status: availableQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK",
-    };
-  });
+  // Determine availability directly from inventoryItems or stockStatus
+  const availableQty = Array.isArray(product.inventoryItems)
+    ? product.inventoryItems.reduce(
+        (sum, item) => sum + Math.max(0, (item?.quantity ?? 0) - (item?.reserved ?? 0)),
+        0,
+      )
+    : 0;
+
+  const resolvedStockStatus =
+    product.stockStatus || (availableQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK");
+
+  // Map product specs from product.specs (ProductSpecRelation) to SpecEntry[]
+  const mappedSpecs: SpecEntry[] = Array.isArray(product.specs)
+    ? (product.specs as any[]).map((s: any) => ({
+        key: String(s.attribute?.key || s.key || ""),
+        value: s.value !== null && s.value !== undefined ? (Array.isArray(s.value) ? s.value.join(", ") : s.value) : "",
+        name: String(s.attribute?.label || s.name || s.attribute?.key || s.key || ""),
+      }))
+    : [];
+
+  if (product.brand?.name && !mappedSpecs.some((e) => e.key === "brand")) {
+    mappedSpecs.unshift({ key: "brand", value: product.brand.name, name: "Brand" });
+  }
+
+  const priceNum = product.price ? Number(product.price.toString()) : 0;
+  const compareAtPriceNum = product.compareAtPrice
+    ? Number(product.compareAtPrice.toString())
+    : null;
+
+  // Mock variant for backward compatibility with any files calling variants[0]
+  const mockVariant = {
+    id: product.id,
+    productId: product.id,
+    sku: product.sku || "",
+    price: priceNum,
+    compareAtPrice: compareAtPriceNum,
+    status: resolvedStockStatus,
+    inventoryItems: product.inventoryItems || [],
+  };
 
   return {
     ...product,
-    variants: normalizedVariants,
+    price: priceNum,
+    compareAtPrice: compareAtPriceNum,
+    stockStatus: resolvedStockStatus,
     category: normalizeCategory(product),
-    image: sanitizeImageUrl(product.image),
+    image: normalizedMedia[0]?.url || "/placeholder.png",
     media: normalizedMedia,
-    specs:
-      product.specs && product.specs.length > 0
-        ? product.specs
-        : normalizeSpecs(product),
+    specs: mappedSpecs,
+    variants: [mockVariant],
   } as unknown as Product;
 }
 
@@ -238,17 +178,15 @@ function matchesNodeQuery(product: Product, query?: string | null) {
 
 function matchesStock(product: Product, stockStatus?: string | null) {
   if (!stockStatus || stockStatus === "all") return true;
-  const variants = (product.variants ?? []) as RawVariant[];
-  const quantity = variants.reduce((sum, variant) => {
-    return sum + variantAvailableQuantity(variant);
-  }, 0);
+
+  const isAvailable = product.stockStatus === "IN_STOCK" || product.stockStatus === "ACTIVE";
 
   if (stockStatus === "In Stock") {
-    return quantity > 0;
+    return isAvailable;
   }
 
   if (stockStatus === "Out of Stock") {
-    return quantity <= 0;
+    return !isAvailable;
   }
 
   return true;
@@ -259,7 +197,7 @@ function matchesPrice(
   minPrice?: string | null,
   maxPrice?: string | null,
 ) {
-  const price = Number(product.variants?.[0]?.price ?? 0);
+  const price = Number(product.price ?? 0);
   const min = minPrice ? Number(minPrice) : null;
   const max = maxPrice ? Number(maxPrice) : null;
 
@@ -272,13 +210,14 @@ function matchesSpecFilters(product: Product, params: URLSearchParams) {
   const specs = (
     (product as Product & { specs?: SpecEntry[] }).specs ?? []
   ).reduce<Record<string, string>>((acc, spec) => {
-    acc[spec.key] = String(spec.value).toLowerCase();
+    acc[spec.key.toLowerCase()] = String(spec.value).toLowerCase();
     return acc;
   }, {});
 
   for (const [key, value] of params.entries()) {
-    if (!key.startsWith("f_specs.")) continue;
-    const specKey = key.slice("f_specs.".length).toLowerCase();
+    if (!key.startsWith("f.")) continue;
+    const specKey = key.slice("f.".length).toLowerCase();
+    if (specKey === "brand" || specKey === "stock_status") continue;
     if (!specs[specKey]) return false;
     if (!specs[specKey].includes(String(value).toLowerCase())) return false;
   }
@@ -292,9 +231,7 @@ function sortProducts(products: Product[], sort?: string | null) {
   switch (sort) {
     case "price-desc":
       next.sort(
-        (a, b) =>
-          Number(b.variants?.[0]?.price ?? 0) -
-          Number(a.variants?.[0]?.price ?? 0),
+        (a, b) => Number(b.price ?? 0) - Number(a.price ?? 0),
       );
       break;
     case "name-asc":
@@ -317,9 +254,7 @@ function sortProducts(products: Product[], sort?: string | null) {
     case "price-asc":
     default:
       next.sort(
-        (a, b) =>
-          Number(a.variants?.[0]?.price ?? 0) -
-          Number(b.variants?.[0]?.price ?? 0),
+        (a, b) => Number(a.price ?? 0) - Number(b.price ?? 0),
       );
       break;
   }
@@ -340,6 +275,7 @@ function buildFilterOptions(products: Product[]): DynamicCatalogFilter[] {
 
     const specs = (product as Product & { specs?: SpecEntry[] }).specs ?? [];
     for (const spec of specs) {
+      if (spec.key === "brand") continue;
       if (!specsMap.has(spec.key)) specsMap.set(spec.key, new Set());
       specsMap.get(spec.key)!.add(String(spec.value));
     }

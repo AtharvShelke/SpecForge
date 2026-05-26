@@ -15,9 +15,7 @@ export async function GET(req: NextRequest) {
     const query = searchParams.get("q")?.trim().toLowerCase();
     const stockStatus = searchParams.get("f_stock_status");
 
-    const items = await getInventoryItems({
-      status: searchParams.get("status") || undefined,
-    });
+    const items = await getInventoryItems();
 
     const normalized = serializeInventoryItems(items as any[]);
     const grouped = Array.from(

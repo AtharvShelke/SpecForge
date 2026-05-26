@@ -174,7 +174,7 @@ export default function CheckoutPage() {
     () =>
       calculateOrderFinancials(
         cart.map((item) => ({
-          price: item.selectedVariant?.price ?? 0,
+          price: item.price ?? item.product?.price ?? 0,
           quantity: item.quantity,
         })),
       ),
@@ -237,7 +237,7 @@ export default function CheckoutPage() {
       paymentProofUrl: paymentProofUrl || undefined,
       items: cart.map((item) => ({
         productId: item.id,
-        variantId: item.selectedVariant?.id || item.variants?.[0]?.id || "",
+        variantId: item.id,
         quantity: item.quantity,
       })),
     });
@@ -273,7 +273,7 @@ export default function CheckoutPage() {
         ...formData,
         items: cart.map((item) => ({
           productId: item.id,
-          variantId: item.selectedVariant?.id || item.variants?.[0]?.id || "",
+          variantId: item.id,
           quantity: item.quantity,
         })),
       }),
@@ -699,7 +699,7 @@ export default function CheckoutPage() {
                 <ul className="space-y-4">
                   {cart.map((item) => (
                     <li
-                      key={`${item.id}-${item.selectedVariant?.id ?? "default"}`}
+                      key={`${item.id}`}
                       className="flex gap-3"
                     >
                       <div className="relative size-16 shrink-0 overflow-hidden border border-gray-200 bg-gray-50">
@@ -722,7 +722,7 @@ export default function CheckoutPage() {
                       <p className="text-sm font-medium text-gray-900">
                         Rs.{" "}
                         {(
-                          (item.selectedVariant?.price ?? 0) * item.quantity
+                          (item.price ?? item.product?.price ?? 0) * item.quantity
                         ).toLocaleString("en-IN")}
                       </p>
                     </li>

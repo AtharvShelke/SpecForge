@@ -77,7 +77,7 @@ export const InventoryProvider = ({
     const map = new Map<string, InventorySummary>();
 
     inventory.forEach((item) => {
-      const sku = item.variant?.sku || item.variantId;
+      const sku = item.product?.sku || item.productId;
       if (!map.has(sku)) {
         map.set(sku, {
           available: 0,

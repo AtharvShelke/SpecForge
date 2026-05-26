@@ -136,27 +136,27 @@ export const ConfirmStatusDialog = ({
                     const variantTotals = new Map<string, { quantity: number; reserved: number; sku?: string }>();
 
                     inventoryArray.forEach((item) => {
-                      const existing = variantTotals.get(item.variantId);
+                      const existing = variantTotals.get(item.productId);
                       if (existing) {
                         existing.quantity += item.quantity;
                         existing.reserved += item.reserved || 0;
                       } else {
-                        variantTotals.set(item.variantId, {
+                        variantTotals.set(item.productId, {
                           quantity: item.quantity,
                           reserved: item.reserved || 0,
-                          sku: item.variant?.sku,
+                          sku: item.sku,
                         });
                       }
                     });
 
                     const lookupMap = new Map<string, { quantity: number; reserved: number }>();
-                    variantTotals.forEach((data, variantId) => {
-                      lookupMap.set(variantId, data);
+                    variantTotals.forEach((data, productId) => {
+                      lookupMap.set(productId, data);
                       if (data.sku) lookupMap.set(data.sku, data);
                     });
 
                     return (selectedOrder.items ?? []).map((item) => {
-                      const inventory = lookupMap.get(item.variantId) || (item.sku ? lookupMap.get(item.sku) : undefined);
+                      const inventory = lookupMap.get(item.productId) || (item.sku ? lookupMap.get(item.sku) : undefined);
                       const current = inventory?.quantity ?? 0;
 
                       let changeLabel = '';

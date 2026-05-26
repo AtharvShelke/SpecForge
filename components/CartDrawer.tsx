@@ -51,7 +51,7 @@ export default function CartDrawer() {
             <ul className="space-y-4">
               {cart.map((item) => {
                 const unitPrice = Number(
-                  item.selectedVariant?.price ?? item.variants?.[0]?.price ?? 0,
+                  item.price ?? item.product?.price ?? 0,
                 );
                 const lineTotal = unitPrice * item.quantity;
 

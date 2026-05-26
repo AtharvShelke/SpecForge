@@ -1,12 +1,5 @@
-/**
- * POST /api/build/save
- *
- * Saves the current build configuration, optionally running compatibility check.
- * Accepts: { buildId, name?, runCheck? }
- */
-
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getBuildById, updateBuild } from "@/services/build.service";
 import { checkBuildCompatibility } from "@/services/compatibility.service";
 import { ServiceError } from "@/lib/errors";
 
@@ -22,37 +15,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const build = await prisma.build.findUnique({
-      where: { id: buildId },
-      include: {
-        items: {
-          include: {
-            variant: {
-              include: {
-                product: { include: { media: true, subCategory: true } },
-              },
-            },
-            slot: true,
-          },
-        },
-      },
-    });
-
-    if (!build) {
-      return NextResponse.json({ error: "Build not found" }, { status: 404 });
-    }
+    let build = await getBuildById(buildId);
 
     // Update name if provided
     if (name && name !== build.name) {
-      await prisma.build.update({
-        where: { id: buildId },
-        data: { name },
-      });
+      await updateBuild(buildId, { name });
+      build = await getBuildById(buildId);
     }
 
     // Calculate total price
     const totalPrice = build.items.reduce(
-      (sum, item) => sum + Number(item.variant?.price ?? 0),
+      (sum: number, item: any) => sum + Number(item.variant?.price ?? 0),
       0,
     );
 

@@ -62,7 +62,7 @@ export function generateInvoicePdfBlob({
     : ['Bill To:', 'Unknown Customer'];
 
   const itemsHeader = 'Items:';
-  const itemsLines = invoice.lineItems.map((li) => {
+  const itemsLines = (invoice.lineItems || []).map((li) => {
     const lineTotal = li.quantity * li.unitPrice;
     const tax = ((li.taxRatePct ?? 0) / 100) * lineTotal;
     const full = lineTotal + tax;

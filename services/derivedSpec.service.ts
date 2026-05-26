@@ -1,6 +1,5 @@
-import { prisma } from '@/lib/prisma';
-
 export interface CreateDerivedSpecInput {
+  id?: string;
   name: string;
   description?: string;
   resultSpecId: string;
@@ -10,63 +9,57 @@ export interface CreateDerivedSpecInput {
   enabled?: boolean;
 }
 
+let inMemoryDerivedSpecs: any[] = [];
+
 export const derivedSpecService = {
   async getAll() {
-    return await prisma.derivedSpec.findMany({
-      include: { resultSpec: true },
-      orderBy: { name: 'asc' }
-    });
+    return inMemoryDerivedSpecs;
   },
 
   async getById(id: string) {
-    return await prisma.derivedSpec.findUnique({
-      where: { id },
-      include: { resultSpec: true }
-    });
+    return inMemoryDerivedSpecs.find(s => s.id === id) || null;
   },
 
   async create(data: CreateDerivedSpecInput) {
-    return await prisma.derivedSpec.create({
-      data: {
-        ...data,
-        inputSpecIds: data.inputSpecIds || [],
-        formulaType: data.formulaType || 'AGGREGATION',
-        enabled: data.enabled !== undefined ? data.enabled : true,
-      },
-      include: { resultSpec: true }
-    });
+    const newSpec = {
+      id: Math.random().toString(36).substr(2, 9),
+      ...data,
+      inputSpecIds: data.inputSpecIds || [],
+      formulaType: data.formulaType || 'AGGREGATION',
+      enabled: data.enabled !== undefined ? data.enabled : true,
+      resultSpec: { id: data.resultSpecId, name: 'Mock Result Spec' }
+    };
+    inMemoryDerivedSpecs.push(newSpec);
+    return newSpec;
   },
 
   async update(id: string, data: Partial<CreateDerivedSpecInput>) {
-    return await prisma.derivedSpec.update({
-      where: { id },
-      data: {
-        ...data,
-        inputSpecIds: data.inputSpecIds !== undefined ? data.inputSpecIds : undefined,
-      },
-      include: { resultSpec: true }
-    });
+    const idx = inMemoryDerivedSpecs.findIndex(s => s.id === id);
+    if (idx === -1) throw new Error("Not found");
+    const updated = {
+      ...inMemoryDerivedSpecs[idx],
+      ...data,
+      inputSpecIds: data.inputSpecIds !== undefined ? data.inputSpecIds : inMemoryDerivedSpecs[idx].inputSpecIds,
+    };
+    inMemoryDerivedSpecs[idx] = updated;
+    return updated;
   },
 
   async delete(id: string) {
-    return await prisma.derivedSpec.delete({
-      where: { id }
-    });
+    const idx = inMemoryDerivedSpecs.findIndex(s => s.id === id);
+    if (idx === -1) throw new Error("Not found");
+    const deleted = inMemoryDerivedSpecs[idx];
+    inMemoryDerivedSpecs = inMemoryDerivedSpecs.filter(s => s.id !== id);
+    return deleted;
   },
 
   async evaluateForBuild(buildId: string) {
-    const derivedSpecs = await prisma.derivedSpec.findMany({
-      where: { enabled: true },
-      include: { resultSpec: true }
-    });
-
     const results: Record<string, any> = {};
-
-    for (const spec of derivedSpecs) {
+    for (const spec of inMemoryDerivedSpecs) {
+      if (!spec.enabled) continue;
       const value = await evaluateFormula(spec.formula, buildId);
       results[spec.name] = value;
     }
-
     return results;
   }
 };
@@ -79,8 +72,6 @@ export const updateDerivedSpec = derivedSpecService.update;
 export const deleteDerivedSpec = derivedSpecService.delete;
 
 async function evaluateFormula(formula: string, buildId: string): Promise<any> {
-  // Parse formula and evaluate
-  // This is a simplified version - in production, use a proper expression parser
   const parts = formula.match(/(\w+)\(([^)]+)\)/);
   if (!parts) return null;
 
@@ -102,3 +93,4 @@ async function evaluateFormula(formula: string, buildId: string): Promise<any> {
       return null;
   }
 }
+

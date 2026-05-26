@@ -9,15 +9,6 @@ function toNumber(value: unknown): number {
   return Number(value ?? 0);
 }
 
-function serializeVariant(variant: any) {
-  return {
-    ...variant,
-    price: toNumber(variant?.price),
-    compareAtPrice:
-      variant?.compareAtPrice == null ? null : toNumber(variant.compareAtPrice),
-  };
-}
-
 function serializePaymentProof(proof: any) {
   return {
     ...proof,
@@ -37,9 +28,8 @@ function serializePayment(payment: any) {
 export function serializeProduct(product: any) {
   return normalizeCatalogProduct({
     ...product,
-    variants: Array.isArray(product?.variants)
-      ? product.variants.map(serializeVariant)
-      : [],
+    price: product?.price ? toNumber(product.price) : 0,
+    compareAtPrice: product?.compareAtPrice == null ? null : toNumber(product.compareAtPrice),
     media: Array.isArray(product?.media) ? product.media : [],
   } as any);
 }
@@ -49,19 +39,19 @@ export function serializeProducts(products: any[]) {
 }
 
 export function serializeInventoryItem(item: any) {
-  const quantityOnHand = Number(item?.quantityOnHand ?? 0);
-  const quantityReserved = Number(item?.quantityReserved ?? 0);
-  const availableQuantity = Math.max(0, quantityOnHand - quantityReserved);
+  const quantity = Number(item?.quantity ?? 0);
+  const reserved = Number(item?.reserved ?? 0);
+  const availableQuantity = Math.max(0, quantity - reserved);
 
   return {
     ...item,
-    quantityOnHand,
-    quantityReserved,
+    quantityOnHand: quantity,
+    quantityReserved: reserved,
     costPrice: item?.costPrice == null ? null : toNumber(item.costPrice),
     quantity: availableQuantity,
-    reserved: quantityReserved,
-    reorderLevel: 5,
-    sku: item?.variant?.sku ?? item?.variantId ?? "",
+    reserved: reserved,
+    reorderLevel: item?.reorderLevel ?? 5,
+    sku: item?.product?.sku ?? item?.productId ?? "",
   };
 }
 
@@ -81,7 +71,7 @@ export function serializeOrder(order: any) {
       ? order.items.map((item: any) => ({
           ...item,
           price: toNumber(item?.price),
-          variant: item?.variant ? serializeVariant(item.variant) : item?.variant,
+          product: item?.product ? serializeProduct(item.product) : item?.product,
         }))
       : [],
     payments: Array.isArray(order?.payments)
@@ -125,7 +115,7 @@ export function serializeBuildGuide(guide: any) {
     items: Array.isArray(guide?.items)
       ? guide.items.map((item: any) => ({
           ...item,
-          variant: item?.variant ? serializeVariant(item.variant) : item?.variant,
+          product: item?.product ? serializeProduct(item.product) : item?.product,
         }))
       : [],
   };

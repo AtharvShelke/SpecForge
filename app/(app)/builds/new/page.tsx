@@ -122,7 +122,7 @@ function PCBuilderContent() {
 
   const totalPrice = useMemo(() => {
     return cart.reduce(
-      (sum, item) => sum + Number(item.variant?.price ?? 0),
+      (sum, item) => sum + Number(item.product?.price ?? 0),
       0,
     );
   }, [cart]);
@@ -138,8 +138,8 @@ function PCBuilderContent() {
     async (product: import("@/types").Product) => {
       if (!activeStep) return;
 
-      const variantId = product.variants?.[0]?.id;
-      if (!variantId) return;
+      const productId = product.id;
+      if (!productId) return;
 
       // Find the slot for the active subcategory
       const currentSubCat = subCategories.find((sc) => sc.id === activeStep);
@@ -150,7 +150,7 @@ function PCBuilderContent() {
         return;
       }
 
-      await addItem(variantId, slotId);
+      await addItem(productId, slotId);
 
       // Auto-advance to next unfilled step
       const currentIdx = steps.findIndex((s) => s.id === activeStep);
@@ -407,14 +407,14 @@ function PCBuilderContent() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {products.map((product: import("@/types").Product) => {
-                  const variantId = product.variants?.[0]?.id;
+                  const productId = product.id;
                   const activeSubCategory = subCategories.find((sc) => sc.id === activeStep);
                   const activeSlotId = activeSubCategory?.subCategorySlots?.[0]?.slotId;
 
                   const selected =
                     activeSlotId &&
-                    variantId &&
-                    itemBySlot.get(activeSlotId)?.variantId === variantId;
+                    productId &&
+                    itemBySlot.get(activeSlotId)?.productId === productId;
 
                   return (
                     <ProductCard

@@ -45,7 +45,7 @@ export async function PUT(request: Request) {
     }
 
     const categories = await prisma.category.findMany({
-      where: { deletedAt: null },
+      where: { isActive: true },
       select: { id: true, name: true },
     });
     const categoryIdByName = new Map(
@@ -60,6 +60,11 @@ export async function PUT(request: Request) {
         parentId: string | null = null,
       ): Promise<void> => {
         for (const [index, item] of items.entries()) {
+          // Extract category name — it can be a string or a Category object
+          const categoryName = typeof item.category === "string"
+            ? item.category
+            : item.category?.name ?? null;
+
           const created = await tx.categoryHierarchy.create({
             data: {
               label: item.label,
@@ -67,8 +72,8 @@ export async function PUT(request: Request) {
               sortOrder: index,
               query: item.query ?? null,
               brand: item.brand ?? null,
-              categoryId: item.category
-                ? (categoryIdByName.get(item.category) ?? null)
+              categoryId: categoryName
+                ? (categoryIdByName.get(categoryName) ?? null)
                 : null,
             },
           });

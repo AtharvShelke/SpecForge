@@ -152,7 +152,7 @@ const RuleManager = () => {
     if (attributesCache[categoryId]) return attributesCache[categoryId];
     
     try {
-      const category = categories.find(c => c.id === categoryId);
+      const category = categories.find(c => Number(c.id) === categoryId);
       if (!category) return [];
       
       const res = await fetch(`/api/categories/${category.code}/attributes`);
@@ -195,8 +195,8 @@ const RuleManager = () => {
     }
 
     await Promise.all([
-      loadAttributes(sourceCat.id),
-      loadAttributes(targetCat.id)
+      loadAttributes(Number(sourceCat.id)),
+      loadAttributes(Number(targetCat.id))
     ]);
 
     setEditingRule({
@@ -204,8 +204,8 @@ const RuleManager = () => {
       message: template.description,
       severity: template.template.severity,
       isActive: true,
-      sourceCategoryId: sourceCat.id,
-      targetCategoryId: targetCat.id,
+      sourceCategoryId: Number(sourceCat.id),
+      targetCategoryId: Number(targetCat.id),
       clauses: [{
         sourceAttributeId: '',
         targetAttributeId: '',

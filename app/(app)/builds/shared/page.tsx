@@ -66,16 +66,10 @@ export default function SharedBuildPage() {
     let addedCount = 0;
     products.forEach((product, index) => {
       const buildItem = buildData[index];
-      if (buildItem && product.variants) {
-        const variant = buildItem.variantId 
-          ? product.variants.find(v => v.id === buildItem.variantId)
-          : product.variants[0];
-        
-        if (variant) {
-          for (let i = 0; i < buildItem.quantity; i++) {
-            addToCart(product, variant);
-            addedCount++;
-          }
+      if (buildItem) {
+        for (let i = 0; i < buildItem.quantity; i++) {
+          addToCart(product, true);
+          addedCount++;
         }
       }
     });
@@ -87,22 +81,12 @@ export default function SharedBuildPage() {
   };
 
   const handleAddToCart = (product: Product, buildItem: SharedBuildData) => {
-    const variant = buildItem.variantId 
-      ? product.variants?.find(v => v.id === buildItem.variantId)
-      : product.variants?.[0];
-    
-    if (variant) {
-      addToCart(product, variant);
-    }
+    addToCart(product);
   };
 
   const totalPrice = products.reduce((sum, product, index) => {
     const buildItem = buildData[index];
-    const variant = buildItem?.variantId 
-      ? product.variants?.find(v => v.id === buildItem.variantId)
-      : product.variants?.[0];
-    
-    return sum + (variant?.price || 0) * (buildItem?.quantity || 1);
+    return sum + (product.price || 0) * (buildItem?.quantity || 1);
   }, 0);
 
   const exportBuild = () => {
@@ -111,15 +95,12 @@ export default function SharedBuildPage() {
       created: new Date().toISOString(),
       components: products.map((product, index) => {
         const buildItem = buildData[index];
-        const variant = buildItem?.variantId 
-          ? product.variants?.find(v => v.id === buildItem.variantId)
-          : product.variants?.[0];
         
         return {
           name: product.name,
           category: product.category,
           brand: product.brand?.name,
-          price: variant?.price,
+          price: product.price,
           quantity: buildItem?.quantity || 1,
           specs: product.specs,
         };
@@ -210,11 +191,7 @@ export default function SharedBuildPage() {
           <div className="divide-y divide-gray-200">
             {products.map((product, index) => {
               const buildItem = buildData[index];
-              const variant = buildItem?.variantId 
-                ? product.variants?.find(v => v.id === buildItem.variantId)
-                : product.variants?.[0];
-              
-              const price = variant?.price || 0;
+              const price = product.price || 0;
               const quantity = buildItem?.quantity || 1;
               const subtotal = price * quantity;
               

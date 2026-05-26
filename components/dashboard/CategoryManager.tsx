@@ -8,10 +8,34 @@ import {
   CategoryNode,
   FilterDefinition,
   FilterOverrideItem,
-  SpecDefinition,
   SubCategory,
-  UpdateSpecInput,
 } from "@/types";
+
+interface SpecDefinition {
+  id: string;
+  name: string;
+  subCategoryId: string;
+  valueType: string;
+  isFilterable: boolean;
+  isRange: boolean;
+  isMulti: boolean;
+  filterGroup?: string | null;
+  filterOrder?: number | null;
+  options?: any[];
+  childOptionDeps?: any[];
+}
+
+interface UpdateSpecInput {
+  name?: string;
+  valueType?: string;
+  isFilterable?: boolean;
+  isRange?: boolean;
+  isMulti?: boolean;
+  filterGroup?: string | null;
+  filterOrder?: number | null;
+  options?: any[];
+  dependencies?: any[];
+}
 import { apiFetch } from "@/lib/helpers";
 import { CATEGORY_NAMES } from "@/lib/categoryUtils";
 import {
@@ -241,7 +265,13 @@ const NodeForm = memo(
             Category Mapping
           </label>
           <Select
-            value={nodeForm.category ?? "none"}
+            value={
+              typeof nodeForm.category === "string"
+                ? nodeForm.category
+                : (nodeForm.category as any)?.name ??
+                  (nodeForm.category as any)?.code ??
+                  "none"
+            }
             onValueChange={(val) =>
               setNodeForm({
                 ...nodeForm,
@@ -361,7 +391,13 @@ const TreeNode = memo(
             </p>
             {(node.category || node.brand) && (
               <div className="mt-1 flex flex-wrap gap-2">
-                {node.category && <Pill color="indigo">{node.category}</Pill>}
+                {node.category && (
+                  <Pill color="indigo">
+                    {typeof node.category === "string"
+                      ? node.category
+                      : node.category.name || node.category.code}
+                  </Pill>
+                )}
                 {node.brand && <Pill color="slate">{node.brand}</Pill>}
               </div>
             )}
@@ -528,14 +564,14 @@ const CategoryManager = () => {
   const [filterForm, setFilterForm] = useState<Partial<FilterDefinition>>(EMPTY_FILTER_FORM);
   const [showSpecModal, setShowSpecModal] = useState(false);
   const [editingSpecId, setEditingSpecId] = useState<string | null>(null);
-  const [specForm, setSpecForm] = useState<UpdateSpecInput>(EMPTY_SPEC_FORM);
+  const [specForm, setSpecForm] = useState<any>(EMPTY_SPEC_FORM);
 
   const [overrides, setOverrides] = useState<FilterOverrideItem[]>([]);
   const [savingOverride, setSavingOverride] = useState<string | null>(null);
   const [savedOverride, setSavedOverride] = useState<string | null>(null);
 
   const [showBuilderModal, setShowBuilderModal] = useState(false);
-  const [builderForm, setBuilderForm] = useState<Partial<SubCategory>>({});
+  const [builderForm, setBuilderForm] = useState<any>({});
   const [isSavingBuilder, setIsSavingBuilder] = useState(false);
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -667,7 +703,7 @@ const CategoryManager = () => {
 
   const overrideMap = useMemo(() => {
     const map = new Map<string, FilterOverrideItem>();
-    overrides.forEach((o) => map.set(o.specDefinitionId, o));
+    overrides.forEach((o) => map.set(o.specDefinitionId || o.attributeId || "", o));
     return map;
   }, [overrides]);
 
@@ -692,7 +728,7 @@ const CategoryManager = () => {
           },
         );
         setOverrides((prev) => {
-          const idx = prev.findIndex((o) => o.specDefinitionId === specId);
+          const idx = prev.findIndex((o) => (o.specDefinitionId || o.attributeId) === specId);
           if (idx >= 0) {
             const next = [...prev];
             next[idx] = result;
@@ -717,14 +753,15 @@ const CategoryManager = () => {
 
   const openBuilderConfig = useCallback(() => {
     if (!selectedSubCategory) return;
+    const sub = selectedSubCategory as any;
     setBuilderForm({
-      isBuilderEnabled: selectedSubCategory.isBuilderEnabled ?? false,
-      isCore: selectedSubCategory.isCore ?? false,
-      isRequired: selectedSubCategory.isRequired ?? false,
-      allowMultiple: selectedSubCategory.allowMultiple ?? false,
-      builderOrder: selectedSubCategory.builderOrder ?? 0,
-      icon: selectedSubCategory.icon ?? "",
-      shortLabel: selectedSubCategory.shortLabel ?? "",
+      isBuilderEnabled: sub.isBuilderEnabled ?? false,
+      isCore: sub.isCore ?? false,
+      isRequired: sub.isRequired ?? false,
+      allowMultiple: sub.allowMultiple ?? false,
+      builderOrder: sub.builderOrder ?? 0,
+      icon: sub.icon ?? "",
+      shortLabel: sub.shortLabel ?? "",
     });
     setShowBuilderModal(true);
   }, [selectedSubCategory]);
@@ -826,7 +863,7 @@ const CategoryManager = () => {
       isMulti: spec.isMulti,
       filterGroup: spec.filterGroup ?? "",
       filterOrder: spec.filterOrder ?? 0,
-      options: (spec.options ?? []).map((option, index) => ({
+      options: (spec.options ?? []).map((option: any, index: number) => ({
         id: option.id,
         value: option.value,
         label: option.label ?? option.value,
@@ -834,14 +871,14 @@ const CategoryManager = () => {
       })),
       dependencies: [
         ...(spec.childOptionDeps ?? [])
-          .filter((dependency) => !dependency.childOptionId)
-          .map((dependency) => ({
+          .filter((dependency: any) => !dependency.childOptionId)
+          .map((dependency: any) => ({
             parentSpecId: dependency.parentSpecId,
             parentOptionValue: dependency.parentOption?.value ?? "",
             childOptionValue: null,
           })),
-        ...(spec.options ?? []).flatMap((option) =>
-          (option.childOptionDeps ?? []).map((dependency) => ({
+        ...(spec.options ?? []).flatMap((option: any) =>
+          (option.childOptionDeps ?? []).map((dependency: any) => ({
             parentSpecId: dependency.parentSpecId,
             parentOptionValue: dependency.parentOption?.value ?? "",
             childOptionValue: option.value,
@@ -868,15 +905,15 @@ const CategoryManager = () => {
       filterGroup: specForm.filterGroup || null,
       filterOrder: Number(specForm.filterOrder ?? 0),
       options: (specForm.options ?? [])
-        .filter((option) => option.value.trim().length > 0)
-        .map((option, index) => ({
+        .filter((option: any) => option.value.trim().length > 0)
+        .map((option: any, index: number) => ({
           ...option,
           value: option.value.trim(),
           label: option.label?.trim() || option.value.trim(),
           order: option.order ?? index,
         })),
       dependencies: (specForm.dependencies ?? []).filter(
-        (dependency) => dependency.parentSpecId && dependency.parentOptionValue,
+        (dependency: any) => dependency.parentSpecId && dependency.parentOptionValue,
       ),
     };
 
@@ -1291,7 +1328,7 @@ const CategoryManager = () => {
                   placeholder="e.g. Socket"
                   value={specForm.name ?? ""}
                   onChange={(e) =>
-                    setSpecForm((prev) => ({ ...prev, name: e.target.value }))
+                    setSpecForm((prev: any) => ({ ...prev, name: e.target.value }))
                   }
                   className="h-9 rounded-md border-slate-200 text-sm"
                 />
@@ -1302,7 +1339,7 @@ const CategoryManager = () => {
                   placeholder="e.g. Compatibility"
                   value={specForm.filterGroup ?? ""}
                   onChange={(e) =>
-                    setSpecForm((prev) => ({
+                    setSpecForm((prev: any) => ({
                       ...prev,
                       filterGroup: e.target.value,
                     }))
@@ -1315,7 +1352,7 @@ const CategoryManager = () => {
                 <Select
                   value={specForm.valueType ?? "STRING"}
                   onValueChange={(value) =>
-                    setSpecForm((prev) => ({ ...prev, valueType: value }))
+                    setSpecForm((prev: any) => ({ ...prev, valueType: value }))
                   }
                 >
                   <SelectTrigger className="h-9 rounded-md border-slate-200 bg-white text-sm">
@@ -1334,7 +1371,7 @@ const CategoryManager = () => {
                   type="number"
                   value={specForm.filterOrder ?? 0}
                   onChange={(e) =>
-                    setSpecForm((prev) => ({
+                    setSpecForm((prev: any) => ({
                       ...prev,
                       filterOrder: Number(e.target.value),
                     }))
@@ -1360,7 +1397,7 @@ const CategoryManager = () => {
                       (specForm as Record<string, unknown>)[field],
                     )}
                     onChange={(e) =>
-                      setSpecForm((prev) => ({
+                      setSpecForm((prev: any) => ({
                         ...prev,
                         [field]: e.target.checked,
                       }))
@@ -1377,10 +1414,10 @@ const CategoryManager = () => {
               <Textarea
                 placeholder="AM4, AM5, LGA1700 (comma-separated)"
                 value={(specForm.options ?? [])
-                  .map((option) => option.value)
+                  .map((option: any) => option.value)
                   .join(", ")}
                 onChange={(e) =>
-                  setSpecForm((prev) => ({
+                  setSpecForm((prev: any) => ({
                     ...prev,
                     options: e.target.value
                       .split(",")
@@ -1403,7 +1440,7 @@ const CategoryManager = () => {
                 <button
                   type="button"
                   onClick={() =>
-                    setSpecForm((prev) => ({
+                    setSpecForm((prev: any) => ({
                       ...prev,
                       dependencies: [
                         ...(prev.dependencies ?? []),
@@ -1421,7 +1458,7 @@ const CategoryManager = () => {
                 </button>
               </div>
 
-              {(specForm.dependencies ?? []).map((dependency, index) => {
+              {(specForm.dependencies ?? []).map((dependency: any, index: number) => {
                 const parentSpec = availableParentSpecs.find(
                   (spec) => spec.id === dependency.parentSpecId,
                 );
@@ -1435,10 +1472,10 @@ const CategoryManager = () => {
                     <Select
                       value={dependency.parentSpecId}
                       onValueChange={(value) =>
-                        setSpecForm((prev) => ({
+                        setSpecForm((prev: any) => ({
                           ...prev,
                           dependencies: (prev.dependencies ?? []).map(
-                            (item, itemIndex) =>
+                            (item: any, itemIndex: number) =>
                               itemIndex === index
                                 ? {
                                   ...item,
@@ -1465,10 +1502,10 @@ const CategoryManager = () => {
                     <Select
                       value={dependency.parentOptionValue}
                       onValueChange={(value) =>
-                        setSpecForm((prev) => ({
+                        setSpecForm((prev: any) => ({
                           ...prev,
                           dependencies: (prev.dependencies ?? []).map(
-                            (item, itemIndex) =>
+                            (item: any, itemIndex: number) =>
                               itemIndex === index
                                 ? { ...item, parentOptionValue: value }
                                 : item,
@@ -1480,7 +1517,7 @@ const CategoryManager = () => {
                         <SelectValue placeholder="Parent Value" />
                       </SelectTrigger>
                       <SelectContent>
-                        {parentOptions.map((option) => (
+                        {parentOptions.map((option: any) => (
                           <SelectItem key={option.id} value={option.value}>
                             {option.label ?? option.value}
                           </SelectItem>
@@ -1491,10 +1528,10 @@ const CategoryManager = () => {
                     <Select
                       value={dependency.childOptionValue ?? "__all__"}
                       onValueChange={(value) =>
-                        setSpecForm((prev) => ({
+                        setSpecForm((prev: any) => ({
                           ...prev,
                           dependencies: (prev.dependencies ?? []).map(
-                            (item, itemIndex) =>
+                            (item: any, itemIndex: number) =>
                               itemIndex === index
                                 ? {
                                   ...item,
@@ -1511,7 +1548,7 @@ const CategoryManager = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__all__">Entire Filter</SelectItem>
-                        {(specForm.options ?? []).map((option) => (
+                        {(specForm.options ?? []).map((option: any) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label ?? option.value}
                           </SelectItem>
@@ -1522,10 +1559,10 @@ const CategoryManager = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        setSpecForm((prev) => ({
+                        setSpecForm((prev: any) => ({
                           ...prev,
                           dependencies: (prev.dependencies ?? []).filter(
-                            (_, itemIndex) => itemIndex !== index,
+                            (_: any, itemIndex: number) => itemIndex !== index,
                           ),
                         }))
                       }
@@ -1615,7 +1652,7 @@ const CategoryManager = () => {
                   <Select
                     value={builderForm.isBuilderEnabled ? "true" : "false"}
                     onValueChange={(val) =>
-                      setBuilderForm((prev) => ({
+                      setBuilderForm((prev: any) => ({
                         ...prev,
                         isBuilderEnabled: val === "true",
                       }))
@@ -1638,7 +1675,7 @@ const CategoryManager = () => {
                     type="number"
                     value={builderForm.builderOrder ?? 0}
                     onChange={(e) =>
-                      setBuilderForm((prev) => ({
+                      setBuilderForm((prev: any) => ({
                         ...prev,
                         builderOrder: parseInt(e.target.value) || 0,
                       }))
@@ -1653,7 +1690,7 @@ const CategoryManager = () => {
                   <Input
                     value={builderForm.shortLabel ?? ""}
                     onChange={(e) =>
-                      setBuilderForm((prev) => ({
+                      setBuilderForm((prev: any) => ({
                         ...prev,
                         shortLabel: e.target.value,
                       }))
@@ -1669,7 +1706,7 @@ const CategoryManager = () => {
                   <Input
                     value={builderForm.icon ?? ""}
                     onChange={(e) =>
-                      setBuilderForm((prev) => ({
+                      setBuilderForm((prev: any) => ({
                         ...prev,
                         icon: e.target.value,
                       }))
@@ -1712,7 +1749,7 @@ const CategoryManager = () => {
                         className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                         checked={Boolean((builderForm as any)[field])}
                         onChange={(e) =>
-                          setBuilderForm((prev) => ({
+                          setBuilderForm((prev: any) => ({
                             ...prev,
                             [field]: e.target.checked,
                           }))

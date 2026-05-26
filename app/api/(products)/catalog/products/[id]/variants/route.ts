@@ -1,29 +1,29 @@
+/**
+ * Variants API — DEPRECATED
+ *
+ * ProductVariant model has been removed. Product-level attributes
+ * are now stored via ProductSpec + CategoryAttribute.
+ * These endpoints return empty/no-op responses for backwards compatibility.
+ */
+
 import { NextResponse } from "next/server";
-import { CatalogService } from "@/services/catalog.service";
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const { id } = await params;
-    const variants = await CatalogService.getVariants(id);
-    return NextResponse.json(variants);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  await params; // consume the param
+  // Variants have been replaced by product-level specs
+  return NextResponse.json([]);
 }
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const { id } = await params;
-    const data = await request.json();
-    const variant = await CatalogService.createVariant(id, data);
-    return NextResponse.json(variant, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  await params;
+  return NextResponse.json(
+    { error: "Variants are no longer supported. Use product specs instead." },
+    { status: 410 },
+  );
 }

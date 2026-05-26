@@ -15,39 +15,34 @@ export async function getSandboxVariants(params?: {
 
   if (params?.search) {
     where.OR = [
-      { product: { name: { contains: params.search, mode: "insensitive" } } },
+      { name: { contains: params.search, mode: "insensitive" } },
       { sku: { contains: params.search, mode: "insensitive" } },
     ];
   }
 
-  const [variants, total] = await Promise.all([
-    prisma.productVariant.findMany({
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
       where,
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
       include: {
-        product: {
+        subcategory: {
           select: {
             id: true,
             name: true,
-            subCategory: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
           },
         },
-        variantSpecs: {
+        specs: {
           select: {
-            spec: {
+            attribute: {
               select: {
                 id: true,
-                name: true,
+                label: true,
+                key: true,
               },
             },
-            valueString: true,
+            value: true,
             valueNumber: true,
             option: {
               select: {
@@ -58,28 +53,28 @@ export async function getSandboxVariants(params?: {
         },
       },
     }),
-    prisma.productVariant.count({ where }),
+    prisma.product.count({ where }),
   ]);
 
   return {
-    items: variants.map((v) => ({
+    items: products.map((v) => ({
       id: v.id,
       sku: v.sku,
-      price: Number(v.price),
+      price: Number(v.price || 0),
       product: {
-        id: v.product.id,
-        name: v.product.name,
+        id: v.id,
+        name: v.name,
         subCategory: {
-          id: v.product.subCategory.id,
-          name: v.product.subCategory.name,
+          id: String(v.subcategory?.id || ""),
+          name: v.subcategory?.name || "",
         },
       },
-      variantSpecs: v.variantSpecs.map((vs) => ({
+      variantSpecs: v.specs.map((vs) => ({
         spec: {
-          id: vs.spec.id,
-          name: vs.spec.name,
+          id: vs.attribute.id,
+          name: vs.attribute.label || vs.attribute.key,
         },
-        valueString: vs.valueString ?? undefined,
+        valueString: vs.value ?? undefined,
         valueNumber: vs.valueNumber !== null ? vs.valueNumber : undefined,
         option: vs.option ? { value: vs.option.value } : undefined,
       })),

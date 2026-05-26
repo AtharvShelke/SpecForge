@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify subcategory exists
-    const subCategory = await prisma.subCategory.findUnique({
+    const subCategory = await prisma.subcategory.findUnique({
       where: { id: subCategoryId },
     });
     if (!subCategory) {
@@ -49,16 +49,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create product with variant and specs in a transaction
+    // Create product and specs in a transaction
     const product = await prisma.$transaction(async (tx) => {
       // Create product
       const newProduct = await tx.product.create({
         data: {
           name,
           description,
-          subCategoryId,
+          categoryId: subCategory.categoryId,
+          subcategoryId: subCategoryId,
           brandId: brandId || null,
           status: status as any,
+          sku,
+          price,
+          compareAtPrice: compareAtPrice || null,
+          stockStatus: "IN_STOCK",
           media: images.length > 0
             ? {
                 create: images.map((url: string, idx: number) => ({
@@ -70,23 +75,12 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Create variant
-      const variant = await tx.productVariant.create({
-        data: {
-          productId: newProduct.id,
-          sku,
-          price,
-          compareAtPrice: compareAtPrice || null,
-          status: "IN_STOCK",
-        },
-      });
-
-      // Create variant specs
+      // Create product specs
       for (const spec of specs) {
-        const specDef = await tx.specDefinition.findFirst({
+        const specDef = await tx.categoryAttribute.findFirst({
           where: {
-            subCategoryId,
-            name: spec.specName,
+            subcategoryId: subCategoryId,
+            key: spec.specName,
           },
           include: { options: true },
         });
@@ -94,35 +88,33 @@ export async function POST(req: NextRequest) {
         if (!specDef) continue;
 
         const specData: any = {
-          variantId: variant.id,
-          specId: specDef.id,
+          productId: newProduct.id,
+          attributeId: specDef.id,
+          value: spec.valueString || spec.optionValue || "",
         };
 
         // Find matching option or set raw value
         if (spec.optionValue) {
           const option = specDef.options.find(
-            (o) => o.value === spec.optionValue,
+            (o: { value: string; id: string }) => o.value === spec.optionValue,
           );
           if (option) specData.optionId = option.id;
         }
 
-        if (spec.valueString !== undefined) specData.valueString = spec.valueString;
-        if (spec.valueNumber !== undefined) specData.valueNumber = spec.valueNumber;
-        if (spec.valueBool !== undefined) specData.valueBool = spec.valueBool;
+        if (spec.valueNumber !== undefined) specData.valueNumber = Number(spec.valueNumber);
+        if (spec.valueBool !== undefined) specData.valueBoolean = spec.valueBool;
 
-        await tx.variantSpec.create({ data: specData });
+        await tx.productSpec.create({ data: specData });
       }
 
       return tx.product.findUnique({
         where: { id: newProduct.id },
         include: {
           brand: true,
-          subCategory: true,
+          subcategory: true,
           media: true,
-          variants: {
-            include: {
-              variantSpecs: { include: { spec: true, option: true } },
-            },
+          specs: {
+            include: { attribute: true, option: true },
           },
         },
       });

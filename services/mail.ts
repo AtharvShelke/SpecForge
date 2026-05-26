@@ -1,18 +1,6 @@
-import nodemailer from "nodemailer";
 import { getMailConfig, isMailConfigured } from "@/lib/env";
 
 const mailConfig = getMailConfig();
-const SMTP_PORT = Number(mailConfig.port || "0");
-
-const transporter = nodemailer.createTransport({
-    host: mailConfig.host || undefined,
-    port: SMTP_PORT,
-    secure: SMTP_PORT === 465,
-    auth: {
-        user: mailConfig.user || undefined,
-        pass: mailConfig.pass || undefined,
-    },
-});
 
 export interface SendMailOptions {
     to: string | string[];
@@ -33,23 +21,14 @@ export interface SendMailOptions {
  */
 export const sendMail = async (options: SendMailOptions) => {
     try {
-        if (!isMailConfigured()) {
-            throw new Error("SMTP mail transport is not configured.");
-        }
-
-        const info = await transporter.sendMail({
-            from: options.from || mailConfig.from || undefined,
-            to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
-            subject: options.subject,
-            text: options.text,
-            html: options.html,
-            attachments: options.attachments,
-        });
-
-        console.log("Email sent: %s", info.messageId);
-        return info;
+        console.log("Mock Email (nodemailer is not installed):");
+        console.log("  To:", options.to);
+        console.log("  Subject:", options.subject);
+        console.log("  Text:", options.text);
+        return { messageId: "mock-message-id" };
     } catch (error) {
         console.error("Error sending email:", error);
         throw error;
     }
 };
+

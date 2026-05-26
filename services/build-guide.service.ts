@@ -5,6 +5,30 @@
 import { ServiceError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
+function normalizeBuildGuide(guide: any) {
+  if (!guide) return null;
+  return {
+    ...guide,
+    items: guide.items.map((item: any) => {
+      const mockVariant = item.product
+        ? {
+            id: item.product.id,
+            productId: item.product.id,
+            sku: item.product.sku || "",
+            price: item.product.price || 0,
+            compareAtPrice: item.product.compareAtPrice || null,
+            status: item.product.stockStatus,
+            product: item.product,
+          }
+        : null;
+      return {
+        ...item,
+        variant: mockVariant,
+      };
+    }),
+  };
+}
+
 export async function createBuildGuide(data: {
   title?: string;
   description?: string | null;
@@ -25,21 +49,17 @@ export async function createBuildGuide(data: {
     throw new ServiceError("At least one build item is required", 400);
   }
 
-  const variantIds = [...new Set(items.map((item) => item.variantId))];
-  const variants = await prisma.productVariant.findMany({
-    where: { id: { in: variantIds } },
+  const productIds = [...new Set(items.map((item) => item.variantId))];
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
     select: {
       id: true,
       price: true,
-      product: {
+      subcategory: {
         select: {
-          subCategory: {
+          category: {
             select: {
-              category: {
-                select: {
-                  name: true,
-                },
-              },
+              name: true,
             },
           },
         },
@@ -47,33 +67,49 @@ export async function createBuildGuide(data: {
     },
   });
 
-  if (variants.length !== variantIds.length) {
-    throw new ServiceError("One or more selected variants were not found", 400);
+  if (products.length !== productIds.length) {
+    throw new ServiceError("One or more selected products were not found", 400);
   }
 
-  const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
+  const productMap = new Map(products.map((p) => [p.id, p]));
   const total =
     data.total ??
     items.reduce((sum, item) => {
-      const variant = variantMap.get(item.variantId);
+      const product = productMap.get(item.variantId);
       const quantity = Math.max(1, Number(item.quantity ?? 1));
-      return sum + Number(variant?.price ?? 0) * quantity;
+      return sum + Number(product?.price ?? 0) * quantity;
     }, 0);
 
-  const category =
+  const categoryNameStr =
     data.category?.trim() ||
-    variantMap.get(items[0].variantId)?.product.subCategory?.category?.name ||
+    productMap.get(items[0].variantId)?.subcategory?.category?.name ||
     "Custom";
 
-  return prisma.buildGuide.create({
+  let categoryId: number | undefined = undefined;
+  if (categoryNameStr) {
+    const matchedCategory = await prisma.category.findFirst({
+      where: {
+        OR: [
+          { name: { equals: categoryNameStr, mode: "insensitive" } },
+          { slug: { equals: categoryNameStr.toLowerCase().replace(/[^a-z0-9]+/g, "-"), mode: "insensitive" } }
+        ]
+      },
+      select: { id: true }
+    });
+    if (matchedCategory) {
+      categoryId = matchedCategory.id;
+    }
+  }
+
+  const guide = await prisma.buildGuide.create({
     data: {
       title,
       description: data.description ?? null,
-      category,
+      categoryId,
       total,
       items: {
         create: items.map((item) => ({
-          variantId: item.variantId,
+          productId: item.variantId,
           quantity: Math.max(1, Number(item.quantity ?? 1)),
         })),
       },
@@ -81,40 +117,35 @@ export async function createBuildGuide(data: {
     include: {
       items: {
         include: {
-          variant: {
+          product: {
             include: {
-              product: {
-                include: {
-                  media: true,
-                },
-              },
+              media: true,
             },
           },
         },
       },
     },
   });
+
+  return normalizeBuildGuide(guide);
 }
 
 export async function listBuildGuides() {
-  return prisma.buildGuide.findMany({
+  const guides = await prisma.buildGuide.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       items: {
         include: {
-          variant: {
+          product: {
             include: {
-              product: {
-                include: {
-                  media: true,
-                },
-              },
+              media: true,
             },
           },
         },
       },
     },
   });
+  return guides.map(normalizeBuildGuide);
 }
 
 export async function getBuildGuideById(id: string) {
@@ -123,13 +154,9 @@ export async function getBuildGuideById(id: string) {
     include: {
       items: {
         include: {
-          variant: {
+          product: {
             include: {
-              product: {
-                include: {
-                  media: true,
-                },
-              },
+              media: true,
             },
           },
         },
@@ -138,7 +165,7 @@ export async function getBuildGuideById(id: string) {
   });
 
   if (!guide) throw new ServiceError("Build guide not found", 404);
-  return guide;
+  return normalizeBuildGuide(guide);
 }
 
 export async function updateBuildGuide(
@@ -151,36 +178,49 @@ export async function updateBuildGuide(
   },
 ) {
   try {
-    return await prisma.buildGuide.update({
+    let categoryId: number | undefined = undefined;
+    if (data.category) {
+      const matchedCategory = await prisma.category.findFirst({
+        where: {
+          OR: [
+            { name: { equals: data.category, mode: "insensitive" } },
+            { slug: { equals: data.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"), mode: "insensitive" } }
+          ]
+        },
+        select: { id: true }
+      });
+      if (matchedCategory) {
+        categoryId = matchedCategory.id;
+      }
+    }
+
+    const updated = await prisma.buildGuide.update({
       where: { id },
       data: {
         title: data.title,
         description: data.description,
-        category: data.category,
+        categoryId: categoryId,
         total: data.total,
       },
       include: {
         items: {
           include: {
-            variant: {
+            product: {
               include: {
-                product: {
-                  include: {
-                    media: true,
-                  },
-                },
+                media: true,
               },
             },
           },
         },
       },
     });
+    return normalizeBuildGuide(updated);
   } catch (error: unknown) {
     if (
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === "P2025"
+      (error as any).code === "P2025"
     ) {
       throw new ServiceError("Build guide not found", 404);
     }
@@ -194,3 +234,4 @@ export async function deleteBuildGuide(id: string) {
 
   await prisma.buildGuide.delete({ where: { id } });
 }
+

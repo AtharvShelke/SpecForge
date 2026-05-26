@@ -14,14 +14,11 @@ export async function createOrderInvoiceAccessToken(input: {
   orderId: string;
   email: string;
 }) {
-  return signToken(
-    {
-      purpose: "order-invoice",
-      orderId: input.orderId,
-      email: input.email.toLowerCase(),
-    },
-    "15m"
-  );
+  return signToken({
+    purpose: "order-invoice",
+    orderId: input.orderId,
+    email: input.email.toLowerCase(),
+  });
 }
 
 export async function authorizeOrderInvoiceAccess(

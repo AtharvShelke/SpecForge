@@ -1,8 +1,8 @@
 /**
  * GET /api/components?type=CPU&page=1&limit=20
  *
- * Public API to fetch components by type (subcategory slot name).
- * "type" maps to the PartSlot name (CPU, GPU, RAM, etc.)
+ * Public API to fetch components by category code.
+ * "type" maps to the Category code (CPU, GPU, RAM, etc.)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -19,33 +19,27 @@ export async function GET(req: NextRequest) {
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
 
-    // If type is given, find the subcategories that belong to that slot
-    let subCategoryIds: string[] = [];
-
-    if (type) {
-      const slot = await prisma.partSlot.findUnique({
-        where: { name: type.toUpperCase() },
-        include: { subCategorySlots: true },
-      });
-
-      if (!slot) {
-        return NextResponse.json(
-          { error: `Unknown component type: ${type}` },
-          { status: 400 },
-        );
-      }
-
-      subCategoryIds = slot.subCategorySlots.map((s) => s.subCategoryId);
-    }
-
     // Build where clause
     const where: any = {
       deletedAt: null,
       status: "ACTIVE",
     };
 
-    if (subCategoryIds.length > 0) {
-      where.subCategoryId = { in: subCategoryIds };
+    // If type is given, find products belonging to that category code
+    if (type) {
+      const category = await prisma.category.findFirst({
+        where: { code: type.toUpperCase(), isActive: true },
+        select: { id: true },
+      });
+
+      if (!category) {
+        return NextResponse.json(
+          { error: `Unknown component type: ${type}` },
+          { status: 400 },
+        );
+      }
+
+      where.categoryId = category.id;
     }
 
     if (search) {
@@ -56,26 +50,19 @@ export async function GET(req: NextRequest) {
       where.brandId = brandId;
     }
 
-    // Price filtering on variants
-    const variantWhere: any = { deletedAt: null };
-    if (minPrice) variantWhere.price = { ...variantWhere.price, gte: parseFloat(minPrice) };
-    if (maxPrice) variantWhere.price = { ...variantWhere.price, lte: parseFloat(maxPrice) };
+    // Price filtering on the product level
+    if (minPrice) where.price = { ...where.price, gte: parseFloat(minPrice) };
+    if (maxPrice) where.price = { ...where.price, lte: parseFloat(maxPrice) };
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
         include: {
           brand: true,
-          subCategory: { include: { category: true } },
+          subcategory: { include: { category: true } },
           media: { orderBy: { sortOrder: "asc" }, take: 2 },
-          variants: {
-            where: variantWhere,
-            include: {
-              variantSpecs: {
-                include: { spec: true, option: true },
-              },
-            },
-            take: 1,
+          specs: {
+            include: { attribute: true, option: true },
           },
         },
         orderBy: { name: "asc" },

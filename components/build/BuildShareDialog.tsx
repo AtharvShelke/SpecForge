@@ -35,7 +35,6 @@ export default function BuildShareDialog({
   useEffect(() => {
     const buildData = cart.map(item => ({
       id: item.id,
-      variantId: item.selectedVariant?.id,
       quantity: item.quantity,
     }));
     
@@ -69,7 +68,7 @@ export default function BuildShareDialog({
       `Components: ${cart.length} items\n` +
       `View the full build here: ${shareUrl}\n\n` +
       `Total Price: ₹${cart.reduce((sum, item) => 
-        sum + (item.selectedVariant?.price || 0) * item.quantity, 0
+        sum + (item.price || item.product?.price || 0) * item.quantity, 0
       ).toLocaleString("en-IN")}`
     );
     
@@ -84,12 +83,12 @@ export default function BuildShareDialog({
         name: item.name,
         category: item.category,
         brand: item.product?.brand?.name,
-        price: item.selectedVariant?.price,
+        price: item.price || item.product?.price,
         quantity: item.quantity,
         specs: item.specs,
       })),
       totalPrice: cart.reduce((sum, item) => 
-        sum + (item.selectedVariant?.price || 0) * item.quantity, 0
+        sum + (item.price || item.product?.price || 0) * item.quantity, 0
       ),
     };
 
@@ -128,7 +127,7 @@ export default function BuildShareDialog({
   };
 
   const totalPrice = cart.reduce((sum, item) => 
-    sum + (item.selectedVariant?.price || 0) * item.quantity, 0
+    sum + (item.price || item.product?.price || 0) * item.quantity, 0
   );
 
   return (

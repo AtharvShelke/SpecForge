@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const productIds = data.items.map((item) => item.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
-      include: { variants: true, media: true, subCategory: true },
+      include: { media: true, subcategory: true },
     });
 
     const productMap = new Map(
@@ -57,28 +57,19 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const variant =
-        product.variants.find((entry) => entry.id === item.variantId) ||
-        product.variants[0];
-      if (!variant) {
-        return NextResponse.json(
-          { error: `Product variant missing for ${product.name}` },
-          { status: 400 },
-        );
-      }
-
       calculationItems.push({
-        price: Number(variant.price),
+        price: Number(product.price || 0),
         quantity: item.quantity,
       });
       orderItemsPayload.push({
-        variantId: variant.id,
+        productId: product.id,
+        variantId: product.id,
         name: product.name,
-        category: product.subCategory?.name || "Uncategorized",
-        price: Number(variant.price),
+        category: product.subcategory?.name || "Uncategorized",
+        price: Number(product.price || 0),
         quantity: item.quantity,
         image: product.media?.[0]?.url || "",
-        sku: variant.sku,
+        sku: product.sku || undefined,
       });
     }
 

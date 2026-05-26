@@ -28,7 +28,7 @@ async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem
     const inventoryItem = await tx.inventoryItem.findUnique({
       where: { id: item.inventoryItemId },
       include: {
-        variant: {
+        product: {
           select: {
             sku: true,
           },
@@ -36,15 +36,9 @@ async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem
       },
     });
 
-    if (!inventoryItem || inventoryItem.variantId !== item.variantId) {
+    if (!inventoryItem || inventoryItem.productId !== item.productId) {
       throw new ServiceError(
-        "Requested inventory item is not available for this variant.",
-        400,
-      );
-    }
-    if (inventoryItem.trackingType !== "SERIALIZED") {
-      throw new ServiceError(
-        "Traceable order items must be allocated from serialized inventory.",
+        "Requested inventory item is not available for this product.",
         400,
       );
     }
@@ -55,10 +49,8 @@ async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem
       );
     }
 
-    const available =
-      Number(inventoryItem.quantityOnHand ?? 0) -
-      Number(inventoryItem.quantityReserved ?? 0);
-    if (available < 1 || inventoryItem.status === "SOLD") {
+    const available = Number(inventoryItem.quantity ?? 0) - Number(inventoryItem.reserved ?? 0);
+    if (available < 1) {
       throw new ServiceError(
         "Requested inventory item is no longer available.",
         409,
@@ -70,32 +62,32 @@ async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem
         inventoryItemId: inventoryItem.id,
         quantity: 1,
         productNumber:
-          inventoryItem.variant?.sku ||
+          inventoryItem.product?.sku ||
           item.productNumber ||
           item.sku ||
-          item.variantId,
+          item.productId,
         partNumber: inventoryItem.partNumber,
         serialNumber: inventoryItem.serialNumber,
       },
     ];
   }
 
+  // Find serialized inventory items first
   const serializedItems = await tx.inventoryItem.findMany({
     where: {
-      variantId: item.variantId,
-      trackingType: "SERIALIZED",
-      quantityOnHand: { gt: 0 },
-      quantityReserved: 0,
-      status: { in: ["IN_STOCK", "RETURNED"] },
+      productId: item.productId,
+      serialNumber: { not: null },
+      quantity: { gt: 0 },
+      reserved: 0,
     },
     include: {
-      variant: {
+      product: {
         select: {
           sku: true,
         },
       },
     },
-    orderBy: [{ receivedAt: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ lastUpdated: "asc" }],
     take: item.quantity,
   });
 
@@ -115,7 +107,7 @@ async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem
         seenPart.has(inventoryItem.partNumber)
       ) {
         throw new ServiceError(
-          `Inventory allocation conflict detected for variant ${item.variantId}.`,
+          `Inventory allocation conflict detected for product ${item.productId}.`,
           409,
         );
       }
@@ -127,22 +119,65 @@ async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem
         inventoryItemId: inventoryItem.id,
         quantity: 1,
         productNumber:
-          inventoryItem.variant?.sku ||
+          inventoryItem.product?.sku ||
           item.productNumber ||
           item.sku ||
-          item.variantId,
+          item.productId,
         partNumber: inventoryItem.partNumber,
         serialNumber: inventoryItem.serialNumber,
       };
     });
   }
 
+  // Fallback to bulk inventory items
+  const bulkItems = await tx.inventoryItem.findMany({
+    where: {
+      productId: item.productId,
+      serialNumber: null,
+    },
+    include: {
+      product: {
+        select: {
+          sku: true,
+        },
+      },
+    },
+  });
+
+  let totalAvailableBulk = 0;
+  for (const b of bulkItems) {
+    totalAvailableBulk += (b.quantity ?? 0) - (b.reserved ?? 0);
+  }
+
+  if (totalAvailableBulk >= item.quantity) {
+    let remainingToAllocate = item.quantity;
+    const allocations = [];
+
+    for (const b of bulkItems) {
+      const avail = (b.quantity ?? 0) - (b.reserved ?? 0);
+      if (avail <= 0) continue;
+
+      const take = Math.min(avail, remainingToAllocate);
+      allocations.push({
+        inventoryItemId: b.id,
+        quantity: take,
+        productNumber: b.product?.sku || item.sku || item.productId,
+        partNumber: b.partNumber || "",
+        serialNumber: b.serialNumber || "",
+      });
+
+      remainingToAllocate -= take;
+      if (remainingToAllocate === 0) break;
+    }
+
+    return allocations;
+  }
+
   throw new ServiceError(
-    `Insufficient serialized stock for variant ${item.variantId}. Each ordered unit must map to a unique serial and part number.`,
+    `Insufficient stock for product ${item.productId}. Each ordered unit must map to unique serial/part numbers or bulk stock.`,
     409,
   );
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIST / GET
@@ -197,20 +232,22 @@ export async function listOrders(filters?: {
         orderBy: { id: "asc" },
         select: {
           id: true,
-          lineReference: true,
           orderId: true,
-          variantId: true,
-          inventoryItemId: true,
-          productNumber: true,
-          partNumber: true,
-          serialNumber: true,
+          productId: true,
           name: true,
-          category: true,
+          categoryId: true,
           price: true,
           quantity: true,
           image: true,
           sku: true,
-          variantSnapshot: true,
+          assignedUnits: {
+            select: {
+              id: true,
+              inventoryItemId: true,
+              serialNumber: true,
+              partNumber: true,
+            },
+          },
         },
       },
       logs: { orderBy: { timestamp: "desc" } },
@@ -227,12 +264,10 @@ export async function listOrders(filters?: {
           metadata: true,
           createdAt: true,
           updatedAt: true,
-          paymentProofs: true,
         },
         orderBy: { createdAt: "desc" },
       },
       invoices: false,
-      reservations: false,
     },
   });
   return orders as any as Order[];
@@ -244,22 +279,19 @@ export async function getOrderById(id: string): Promise<Order> {
     include: {
       items: {
         include: {
-          variant: {
-            include: { product: true },
-          },
+          product: true,
+          assignedUnits: true,
         },
       },
       logs: { orderBy: { timestamp: "desc" } },
       shipments: { orderBy: { createdAt: "desc" } },
       payments: {
-        include: { paymentProofs: true },
         orderBy: { createdAt: "desc" },
       },
       invoices: {
         include: { lineItems: true },
         orderBy: { createdAt: "desc" },
       },
-      reservations: true,
       customer: true,
     },
   });
@@ -325,30 +357,33 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
       partNumber: string;
       serialNumber: string;
     }> = [];
-    const orderLineItems: Array<Record<string, unknown>> = [];
-    let lineCounter = 1;
+    const orderLineItems: Array<any> = [];
 
     for (const item of normalizedItems) {
       const allocations = await allocateInventoryForOrderItem(tx, item);
 
+      const assignedUnits = allocations.map((a) => ({
+        inventoryItemId: a.inventoryItemId,
+        serialNumber: a.serialNumber || null,
+        partNumber: a.partNumber || null,
+      }));
+
       for (const allocation of allocations) {
         reservedInventory.push(allocation);
-        orderLineItems.push({
-          lineReference: `${orderId}-LI-${String(lineCounter).padStart(4, "0")}`,
-          variantId: item.variantId,
-          inventoryItemId: allocation.inventoryItemId,
-          productNumber: allocation.productNumber,
-          partNumber: allocation.partNumber,
-          serialNumber: allocation.serialNumber,
-          name: item.name,
-          category: item.category || "General",
-          price: item.price,
-          quantity: allocation.quantity,
-          image: item.image,
-          sku: item.sku,
-        });
-        lineCounter += 1;
       }
+
+      orderLineItems.push({
+        productId: item.productId,
+        name: item.name,
+        categoryId: item.categoryId || 1,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image,
+        sku: item.sku,
+        assignedUnits: assignedUnits.length > 0 ? {
+          create: assignedUnits,
+        } : undefined,
+      });
     }
 
     const orderData: any = {
@@ -387,7 +422,7 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
     });
 
     if (data.paymentMethod) {
-      const payment = await createPaymentTransaction(tx as any, {
+      await createPaymentTransaction(tx as any, {
         orderId: newOrder.id,
         method: data.paymentMethod,
         amount: data.total,
@@ -395,56 +430,30 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
         idempotencyKey:
           data.paymentIdempotencyKey ||
           `${newOrder.id}-${data.paymentMethod}-${Date.now()}`,
-        metadata: data.paymentMetadata,
+        metadata: {
+          ...data.paymentMetadata,
+          proofUrl: data.paymentProofUrl,
+        },
         status: data.paymentStatus,
       });
-
-      if (data.paymentProofUrl) {
-        await tx.paymentProof.create({
-          data: {
-            transactionId: payment.id,
-            proofUrl: data.paymentProofUrl,
-          },
-        });
-      }
     }
 
-    // Automatically create reservations for items with inventoryItemId
+    // Update reserved inventory
     if (reservedInventory.length > 0) {
       for (const item of reservedInventory) {
-        const reservationWhere: any = {
-          id: item.inventoryItemId,
-          quantityOnHand: { gte: item.quantity },
-          trackingType: "SERIALIZED",
-          serialNumber: item.serialNumber,
-          partNumber: item.partNumber,
-          quantityReserved: 0,
-          status: { in: ["IN_STOCK", "RETURNED"] },
-        };
-
-        const reserved = await tx.inventoryItem.updateMany({
-          where: reservationWhere,
+        const updated = await tx.inventoryItem.update({
+          where: { id: item.inventoryItemId },
           data: {
-            quantityReserved: { increment: item.quantity },
-            status: "RESERVED",
+            reserved: { increment: item.quantity },
           },
         });
 
-        if (reserved.count === 0) {
+        if ((updated.quantity ?? 0) < (updated.reserved ?? 0)) {
           throw new ServiceError(
             "One or more inventory units became unavailable during checkout.",
             409,
           );
         }
-
-        await tx.reservation.create({
-          data: {
-            orderId: newOrder.id,
-            inventoryItemId: item.inventoryItemId,
-            quantity: item.quantity,
-            status: "ACTIVE",
-          },
-        });
       }
     }
 
@@ -505,7 +514,13 @@ export async function updateOrderStatus(
 
   const order = await prisma.order.findUnique({
     where: { id, deletedAt: null },
-    include: { reservations: true, items: true },
+    include: {
+      items: {
+        include: {
+          assignedUnits: true,
+        },
+      },
+    },
   });
   if (!order) throw new ServiceError("Order not found", 404);
 
@@ -534,44 +549,16 @@ export async function updateOrderStatus(
 
     // ── SIDE EFFECTS ──────────────────────────────────────────────
 
-    // PAID: Convert reservations from ACTIVE → CONVERTED, deduct on-hand
+    // PAID: Convert reservations: decrement reserved and decrement quantity
     if (status === "PAID") {
-      const activeReservations = order.reservations.filter(
-        (r) => r.status === "ACTIVE",
-      );
-      for (const res of activeReservations) {
-        await tx.reservation.update({
-          where: { id: res.id },
-          data: { status: "CONVERTED" },
-        });
-        const inventoryItem = await tx.inventoryItem.findUnique({
-          where: { id: res.inventoryItemId },
-          select: { quantityOnHand: true },
-        });
-
-        await tx.inventoryItem.update({
-          where: { id: res.inventoryItemId },
-          data: {
-            quantityReserved: { decrement: res.quantity },
-            quantityOnHand: { decrement: res.quantity },
-            status:
-              Number(inventoryItem?.quantityOnHand ?? 0) -
-                Number(res.quantity) <=
-              0
-                ? "SOLD"
-                : "IN_STOCK",
-          },
-        });
-      }
-    }
-
-    // DELIVERED: Mark inventory items as SOLD
-    if (status === "DELIVERED") {
       for (const item of order.items) {
-        if (item.inventoryItemId) {
+        for (const unit of item.assignedUnits) {
           await tx.inventoryItem.update({
-            where: { id: item.inventoryItemId },
-            data: { status: "SOLD" },
+            where: { id: unit.inventoryItemId },
+            data: {
+              reserved: { decrement: 1 },
+              quantity: { decrement: 1 },
+            },
           });
         }
       }
@@ -580,12 +567,11 @@ export async function updateOrderStatus(
     // RETURNED: Restore inventory
     if (status === "RETURNED") {
       for (const item of order.items) {
-        if (item.inventoryItemId) {
+        for (const unit of item.assignedUnits) {
           await tx.inventoryItem.update({
-            where: { id: item.inventoryItemId },
+            where: { id: unit.inventoryItemId },
             data: {
-              quantityOnHand: { increment: item.quantity },
-              status: "RETURNED",
+              quantity: { increment: 1 },
             },
           });
         }
@@ -611,7 +597,13 @@ export async function updateOrderStatus(
 export async function cancelOrder(id: string, note?: string) {
   const order = await prisma.order.findUnique({
     where: { id, deletedAt: null },
-    include: { reservations: true },
+    include: {
+      items: {
+        include: {
+          assignedUnits: true,
+        },
+      },
+    },
   });
   if (!order) throw new ServiceError("Order not found", 404);
 
@@ -638,48 +630,41 @@ export async function cancelOrder(id: string, note?: string) {
       },
     });
 
-    // 3. Release active reservations and restore inventory
-    const activeReservations = order.reservations.filter(
-      (r) => r.status === "ACTIVE",
-    );
-    for (const res of activeReservations) {
-      await tx.reservation.update({
-        where: { id: res.id },
-        data: { status: "RELEASED" },
-      });
-      await tx.inventoryItem.update({
-        where: { id: res.inventoryItemId },
-        data: {
-          quantityReserved: { decrement: res.quantity },
-          status: "IN_STOCK",
-        },
-      });
-    }
-
-    const convertedReservations = order.reservations.filter(
-      (r) => r.status === "CONVERTED",
-    );
-    for (const res of convertedReservations) {
-      await tx.reservation.update({
-        where: { id: res.id },
-        data: { status: "RELEASED" },
-      });
-      await tx.inventoryItem.update({
-        where: { id: res.inventoryItemId },
-        data: {
-          quantityOnHand: { increment: res.quantity },
-          status: "IN_STOCK",
-        },
-      });
+    // 3. Release reservations and restore inventory
+    if (order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED") {
+      // Restore inventory quantity (reserved was already decremented when transitioned to PAID)
+      for (const item of order.items) {
+        for (const unit of item.assignedUnits) {
+          await tx.inventoryItem.update({
+            where: { id: unit.inventoryItemId },
+            data: {
+              quantity: { increment: 1 },
+            },
+          });
+        }
+      }
+    } else if (order.status === "PENDING") {
+      // Release reservation: decrement reserved (quantity remains unchanged)
+      for (const item of order.items) {
+        for (const unit of item.assignedUnits) {
+          await tx.inventoryItem.update({
+            where: { id: unit.inventoryItemId },
+            data: {
+              reserved: { decrement: 1 },
+            },
+          });
+        }
+      }
     }
 
     // 4. Log reservation release
-    if (activeReservations.length > 0 || convertedReservations.length > 0) {
+    const totalReleased = order.items.reduce((acc, item) => acc + item.assignedUnits.length, 0);
+    if (totalReleased > 0) {
       await tx.orderLog.create({
         data: {
           orderId: id,
           status: "CANCELLED",
-          note: `Released ${activeReservations.length} active reservation(s) and restored ${convertedReservations.length} converted allocation(s)`,
+          note: `Released ${totalReleased} allocated inventory unit(s)`,
         },
       });
     }

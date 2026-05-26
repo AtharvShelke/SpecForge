@@ -254,9 +254,9 @@ export const BuildProvider = ({
       start();
       try {
         const items = payload.items
-          .filter((item) => item.selectedVariant?.id)
+          .filter((item) => item.id || item.productId)
           .map((item) => ({
-            variantId: item.selectedVariant!.id,
+            variantId: item.productId || item.id,
             quantity: item.quantity,
           }));
 
@@ -268,7 +268,7 @@ export const BuildProvider = ({
             description: payload.description,
             total: payload.items.reduce(
               (sum, item) =>
-                sum + (item.selectedVariant?.price || 0) * item.quantity,
+                sum + (item.price || 0) * item.quantity,
               0,
             ),
             items,

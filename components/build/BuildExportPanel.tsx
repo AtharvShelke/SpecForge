@@ -42,7 +42,7 @@ export default function BuildExportPanel({
   const { toast } = useToast();
 
   const totalPrice = cart.reduce((sum, item) => 
-    sum + (item.selectedVariant?.price || 0) * item.quantity, 0
+    sum + (item.price || item.product?.price || 0) * item.quantity, 0
   );
 
   const generateBuildData = () => {
@@ -54,7 +54,7 @@ export default function BuildExportPanel({
         name: item.name,
         category: item.category,
         brand: item.product?.brand?.name,
-        price: exportOptions.includePrices ? (item.selectedVariant?.price || 0) : undefined,
+        price: exportOptions.includePrices ? (item.price || item.product?.price || 0) : undefined,
         quantity: item.quantity,
         specs: exportOptions.includeSpecs ? item.specs : undefined,
         image: item.image || item.images?.[0],
@@ -296,7 +296,7 @@ export default function BuildExportPanel({
       let y = 100;
       
       cart.forEach((item, index) => {
-        const price = item.selectedVariant?.price || 0;
+        const price = item.price || item.product?.price || 0;
         const line = `${index + 1}. ${item.name} - ₹${price.toLocaleString('en-IN')}`;
         ctx.fillText(line, 50, y);
         y += 30;

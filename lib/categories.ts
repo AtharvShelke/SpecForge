@@ -43,15 +43,15 @@ export function formatCategoryCode(code: string): string {
 }
 
 export function buildCategoryMap(categories: CategoryDefinition[]) {
-  return Object.fromEntries(categories.map((category) => [category.code, category]));
+  return Object.fromEntries(categories.map((category: any) => [category.code || category.slug || category.id, category]));
 }
 
 export function getCategoryLabel(categoryMap: Record<string, CategoryDefinition>, code: string): string {
-  return categoryMap[code]?.label ?? formatCategoryCode(code);
+  return (categoryMap[code] as any)?.label ?? (categoryMap[code] as any)?.name ?? formatCategoryCode(code);
 }
 
 export function getCategoryShortLabel(categoryMap: Record<string, CategoryDefinition>, code: string): string {
-  return categoryMap[code]?.shortLabel ?? getCategoryLabel(categoryMap, code);
+  return (categoryMap[code] as any)?.shortLabel ?? getCategoryLabel(categoryMap, code);
 }
 
 export function getCategoryDescription(categoryMap: Record<string, CategoryDefinition>, code: string): string {

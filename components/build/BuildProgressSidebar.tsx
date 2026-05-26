@@ -20,8 +20,13 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
     const searchParams = useSearchParams();
     const isBuildMode = searchParams.get('mode') === 'build';
     const { buildSequence } = useBuildSequence();
-    const { getLabel } = useCategories();
+    const { categories } = useCategories();
     const buildSequenceCodes = buildSequence.map((item) => item.category.code);
+
+    const getLabel = React.useCallback((catCode: string) => {
+        const cat = categories?.find((c: any) => c.code === catCode || c.slug === catCode || c.name === catCode);
+        return cat ? cat.name : catCode;
+    }, [categories]);
 
     // Compute compatibility report locally from cart
     const compatibilityReport = useMemo(() => validateBuild(cart), [cart]);

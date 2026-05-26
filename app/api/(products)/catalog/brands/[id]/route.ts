@@ -9,9 +9,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const brand = await prisma.brand.update({
+    const brand = await prisma.brand.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
     return NextResponse.json(serializeBrand(brand));
   } catch (error: any) {

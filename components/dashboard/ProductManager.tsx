@@ -202,14 +202,13 @@ const DesktopProductRow = memo(
     onEdit: (p: Product) => void;
     onDelete: (id: string) => void;
   }) => {
-    const firstVar = product.variants?.[0];
     const brand =
       product.brand?.name ||
       product.specs?.find((s: any) => s.key === "brand")?.value ||
       "Generic";
-    const variantCount = product.variants?.length || 0;
-    const totalStock = getVariantStock(firstVar);
-    const price = (firstVar?.price || 0).toLocaleString("en-IN");
+    const variantCount = 1;
+    const totalStock = getVariantStock(product);
+    const price = (product.price || 0).toLocaleString("en-IN");
 
     const handleEdit = useCallback(() => onEdit(product), [onEdit, product]);
     const handleDelete = useCallback(
@@ -241,14 +240,14 @@ const DesktopProductRow = memo(
                 {product.name}
               </p>
               <p className="mt-0.5 font-mono text-xs text-slate-500">
-                {firstVar?.sku || "NO-SKU"}
+                {product.sku || "NO-SKU"}
               </p>
             </div>
           </div>
         </td>
         <td className="whitespace-nowrap px-5 py-3">
           <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
-            {product.category}
+            {typeof product.category === "string" ? product.category : product.category?.name}
           </span>
         </td>
         <td className="hidden whitespace-nowrap px-5 py-3 text-sm font-medium text-slate-600 md:table-cell">
@@ -266,7 +265,7 @@ const DesktopProductRow = memo(
         </td>
         <td className="whitespace-nowrap px-5 py-3 text-right">
           <div className="flex flex-col items-end gap-1">
-            <StockPill product={product} variant={firstVar} />
+            <StockPill product={product} variant={product} />
             <span className="font-mono text-xs text-slate-500 tabular-nums">
               {totalStock} units
             </span>
@@ -330,9 +329,8 @@ const MobileProductCard = memo(
     onEdit: (p: Product) => void;
     onDelete: (id: string) => void;
   }) => {
-    const firstVar = product.variants?.[0];
-    const totalStock = getVariantStock(firstVar);
-    const price = (firstVar?.price || 0).toLocaleString("en-IN");
+    const totalStock = getVariantStock(product);
+    const price = (product.price || 0).toLocaleString("en-IN");
 
     const handleEdit = useCallback(() => onEdit(product), [onEdit, product]);
     const handleDelete = useCallback(
@@ -360,9 +358,9 @@ const MobileProductCard = memo(
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
-              {product.category}
+              {typeof product.category === "string" ? product.category : product.category?.name}
             </span>
-            <StockPill product={product} variant={firstVar} />
+            <StockPill product={product} variant={product} />
           </div>
           <div className="mt-1.5 flex items-center gap-2">
             <span className="font-mono text-sm font-medium text-slate-900 tabular-nums">
@@ -621,7 +619,11 @@ const ProductManager = () => {
   const availableBrands = useMemo(
     () =>
       brands.filter((b) =>
-        b.categories?.includes(currentProduct.category || ""),
+        b.categories?.includes(
+          typeof currentProduct.category === "string"
+            ? currentProduct.category
+            : currentProduct.category?.name || ""
+        ),
       ),
     [currentProduct.category, brands],
   );
@@ -651,7 +653,10 @@ const ProductManager = () => {
 
   const generateSKU = useCallback((product: ProductFormState): string => {
     if (product.sku?.trim()) return product.sku.trim();
-    const catPrefix = product.category?.substring(0, 3).toUpperCase() || "PRD";
+    const categoryName = product.category
+      ? (typeof product.category === "string" ? product.category : product.category.name)
+      : "";
+    const catPrefix = categoryName.substring(0, 3).toUpperCase() || "PRD";
     const brandPrefix =
       String(product.specs?.brand || "")
         .substring(0, 3)
@@ -724,12 +729,11 @@ const ProductManager = () => {
   );
 
   const handleEdit = useCallback((product: Product) => {
-    const firstVariant = product.variants?.[0];
-    const mainStock = getVariantStock(firstVariant);
+    const mainStock = getVariantStock(product);
     setCurrentProduct({
       ...product,
-      sku: firstVariant?.sku || "",
-      price: firstVariant?.price || 0,
+      sku: product.sku || "",
+      price: product.price || 0,
       stock: mainStock,
       images: product.media?.length
         ? product.media.map((m: any) => m.url)
@@ -873,15 +877,16 @@ const ProductManager = () => {
     const prices: number[] = [];
 
     for (const p of products ?? []) {
-      const firstVar = p.variants?.[0];
-      const price = firstVar?.price || 0;
+      const price = p.price || 0;
       totalVal += price;
       if (price > 0) prices.push(price);
 
-      const stock = getVariantStock(firstVar);
-      if (!firstVar || stock <= 0) outOfStock++;
+      const stock = getVariantStock(p);
+      if (stock <= 0) outOfStock++;
 
-      const cat = p.category || "Other";
+      const cat = p.category
+        ? (typeof p.category === "string" ? p.category : p.category.name)
+        : "Other";
       catSet.add(cat);
       if (!catMap[cat]) catMap[cat] = { count: 0, value: 0 };
       catMap[cat].count++;
@@ -1015,7 +1020,7 @@ const ProductManager = () => {
                     <div>
                       <FieldLabel required>Category</FieldLabel>
                       <Select
-                        value={currentProduct.category}
+                        value={typeof currentProduct.category === 'string' ? currentProduct.category : currentProduct.category?.name}
                         onValueChange={handleCategoryChange}
                       >
                         <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">

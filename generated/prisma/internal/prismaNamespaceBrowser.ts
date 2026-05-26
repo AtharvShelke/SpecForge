@@ -88,7 +88,8 @@ export const ModelName = {
   PaymentAttempt: 'PaymentAttempt',
   CreditNote: 'CreditNote',
   CreditNoteLineItem: 'CreditNoteLineItem',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  TaxSettings: 'TaxSettings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -677,6 +678,19 @@ export const AuditLogScalarFieldEnum = {
 } as const
 
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
+export const TaxSettingsScalarFieldEnum = {
+  id: 'id',
+  taxRatePct: 'taxRatePct',
+  taxName: 'taxName',
+  taxDescription: 'taxDescription',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
 
 
 export const SortOrder = {

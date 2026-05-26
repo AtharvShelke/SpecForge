@@ -405,14 +405,15 @@ const OrderManager = () => {
   };
 
   const aggregatedInventory = useMemo(() => {
-    const variantTotals = new Map<
+    const productTotals = new Map<
       string,
       { quantity: number; reserved: number; reorderLevel: number; sku?: string }
     >();
     const arr = Array.isArray(inventory) ? inventory : [];
 
     for (const item of arr) {
-      const existing = variantTotals.get(item.variantId);
+      const key = item.sku || item.productId;
+      const existing = productTotals.get(key);
       if (existing) {
         existing.quantity += item.quantity;
         existing.reserved += item.reserved || 0;
@@ -421,11 +422,11 @@ const OrderManager = () => {
           item.reorderLevel || 0,
         );
       } else {
-        variantTotals.set(item.variantId, {
+        productTotals.set(key, {
           quantity: item.quantity,
           reserved: item.reserved || 0,
           reorderLevel: item.reorderLevel || 0,
-          sku: item.variant?.sku,
+          sku: (item.sku || item.product?.sku) ?? undefined,
         });
       }
     }
@@ -434,8 +435,8 @@ const OrderManager = () => {
       string,
       { quantity: number; reserved: number; reorderLevel: number }
     >();
-    variantTotals.forEach((data, vid) => {
-      lookupMap.set(vid, data);
+    productTotals.forEach((data, key) => {
+      lookupMap.set(key, data);
       if (data.sku) lookupMap.set(data.sku, data);
     });
     return lookupMap;
@@ -1022,7 +1023,7 @@ const OrderManager = () => {
                           <tbody className="divide-y divide-slate-100">
                             {selectedOrderItems.map((item: OrderItem) => {
                               const inv =
-                                aggregatedInventory.get(item.variantId) ||
+                                aggregatedInventory.get(item.productId) ||
                                 (item.sku
                                   ? aggregatedInventory.get(item.sku)
                                   : undefined);
@@ -1259,7 +1260,7 @@ const OrderManager = () => {
                     <div className="flex flex-col gap-3 p-5">
                       {selectedOrderItems.map((item: OrderItem) => {
                         const inv =
-                          aggregatedInventory.get(item.variantId) ||
+                          aggregatedInventory.get(item.productId) ||
                           (item.sku
                             ? aggregatedInventory.get(item.sku)
                             : undefined);

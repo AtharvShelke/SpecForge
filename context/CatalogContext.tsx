@@ -10,17 +10,15 @@ import {
 } from "react";
 import {
   Product,
-  ProductVariant,
-  SpecDefinition,
   SubCategory,
   Brand,
   Category,
   CategoryNode,
   CreateProduct,
-  CreateVariant,
   AdvancedFilter,
-  CreateSpecWithOptions,
-  UpdateSpecInput,
+  CategoryAttribute,
+  CreateCategoryAttribute,
+  UpdateCategoryAttribute,
 } from "../types";
 import { apiFetch } from "@/lib/helpers";
 import { useLoadingCounter } from "@/hooks/useLoadingCounter";
@@ -30,7 +28,7 @@ interface CatalogContextType {
   categories: Category[];
   subCategories: SubCategory[];
   brands: Brand[];
-  specs: SpecDefinition[];
+  attributes: CategoryAttribute[];
   categoryHierarchy: CategoryNode[];
 
   refreshProducts: (filters?: AdvancedFilter) => Promise<void>;
@@ -41,16 +39,15 @@ interface CatalogContextType {
   ) => Promise<CategoryNode[]>;
   refreshSubCategories: (categoryId?: string) => Promise<void>;
   refreshBrands: () => Promise<void>;
-  refreshSpecs: (subCategoryId?: string) => Promise<void>;
+  refreshAttributes: (categoryId?: number, subcategoryId?: number) => Promise<void>;
 
   createProduct: (data: CreateProduct) => Promise<void>;
   updateProduct: (id: string, data: Partial<CreateProduct>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
 
-  createVariant: (productId: string, data: CreateVariant) => Promise<void>;
-  createSpec: (data: CreateSpecWithOptions) => Promise<void>;
-  updateSpec: (id: string, data: UpdateSpecInput) => Promise<void>;
-  deleteSpec: (id: string, subCategoryId?: string) => Promise<void>;
+  createAttribute: (data: CreateCategoryAttribute) => Promise<void>;
+  updateAttribute: (id: string, data: UpdateCategoryAttribute) => Promise<void>;
+  deleteAttribute: (id: string, categoryId?: number) => Promise<void>;
 
   loading: boolean;
   error: Error | null;
@@ -65,14 +62,12 @@ export const CatalogProvider = ({
   children: ReactNode;
   autoLoad?: boolean;
 }) => {
-  // start/stop are guaranteed stable by useLoadingCounter's internal useCallback([],
-  // so including them in dependency arrays is safe and prevents exhaustive-deps warnings.
   const { loading, start, stop } = useLoadingCounter();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [specs, setSpecs] = useState<SpecDefinition[]>([]);
+  const [attributes, setAttributes] = useState<CategoryAttribute[]>([]);
   const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryNode[]>(
     [],
   );
@@ -190,16 +185,20 @@ export const CatalogProvider = ({
     }
   }, [start, stop]);
 
-  const refreshSpecs = useCallback(
-    async (subCategoryId?: string) => {
+  const refreshAttributes = useCallback(
+    async (categoryId?: number, subcategoryId?: number) => {
       setError(null);
       start();
       try {
-        const url = subCategoryId
-          ? `/api/catalog/specs?subCategoryId=${subCategoryId}`
-          : "/api/catalog/specs";
-        const data = await apiFetch<SpecDefinition[]>(url);
-        setSpecs(data);
+        const params = new URLSearchParams();
+        if (categoryId) params.set("categoryId", String(categoryId));
+        if (subcategoryId) params.set("subcategoryId", String(subcategoryId));
+        const qs = params.toString();
+        const url = qs
+          ? `/api/catalog/attributes?${qs}`
+          : "/api/catalog/attributes";
+        const data = await apiFetch<CategoryAttribute[]>(url);
+        setAttributes(data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
@@ -266,16 +265,16 @@ export const CatalogProvider = ({
     [refreshProducts, start, stop],
   );
 
-  const createVariant = useCallback(
-    async (productId: string, data: CreateVariant) => {
+  const createAttribute = useCallback(
+    async (data: CreateCategoryAttribute) => {
       setError(null);
       start();
       try {
-        await apiFetch(`/api/catalog/products/${productId}/variants`, {
+        await apiFetch("/api/catalog/attributes", {
           method: "POST",
           body: JSON.stringify(data),
         });
-        await refreshProducts();
+        await refreshAttributes(data.categoryId, data.subcategoryId ?? undefined);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
@@ -283,41 +282,19 @@ export const CatalogProvider = ({
         stop();
       }
     },
-    [refreshProducts, start, stop],
+    [refreshAttributes, start, stop],
   );
 
-  const createSpec = useCallback(
-    async (data: import("../types").CreateSpecWithOptions) => {
+  const updateAttribute = useCallback(
+    async (id: string, data: UpdateCategoryAttribute) => {
       setError(null);
       start();
       try {
-        await apiFetch("/api/catalog/specs", {
-          method: "POST",
-          body: JSON.stringify(data),
-        });
-        await refreshSpecs(data.subCategoryId);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-        throw err;
-      } finally {
-        stop();
-      }
-    },
-    [refreshSpecs, start, stop],
-  );
-
-  const updateSpec = useCallback(
-    async (id: string, data: UpdateSpecInput) => {
-      setError(null);
-      start();
-      try {
-        const result = await apiFetch(`/api/catalog/specs/${id}`, {
+        await apiFetch(`/api/catalog/attributes/${id}`, {
           method: "PATCH",
           body: JSON.stringify(data),
         });
-        const nextSubCategoryId = (result as SpecDefinition | undefined)
-          ?.subCategoryId;
-        await refreshSpecs(nextSubCategoryId);
+        await refreshAttributes();
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
@@ -325,16 +302,16 @@ export const CatalogProvider = ({
         stop();
       }
     },
-    [refreshSpecs, start, stop],
+    [refreshAttributes, start, stop],
   );
 
-  const deleteSpec = useCallback(
-    async (id: string, subCategoryId?: string) => {
+  const deleteAttribute = useCallback(
+    async (id: string, categoryId?: number) => {
       setError(null);
       start();
       try {
-        await apiFetch(`/api/catalog/specs/${id}`, { method: "DELETE" });
-        await refreshSpecs(subCategoryId);
+        await apiFetch(`/api/catalog/attributes/${id}`, { method: "DELETE" });
+        await refreshAttributes(categoryId);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
@@ -342,7 +319,7 @@ export const CatalogProvider = ({
         stop();
       }
     },
-    [refreshSpecs, start, stop],
+    [refreshAttributes, start, stop],
   );
 
   const loadAll = useCallback(async () => {
@@ -355,7 +332,7 @@ export const CatalogProvider = ({
         refreshCategoryHierarchy(),
         refreshSubCategories(),
         refreshBrands(),
-        refreshSpecs(),
+        refreshAttributes(),
       ]);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -368,7 +345,7 @@ export const CatalogProvider = ({
     refreshCategoryHierarchy,
     refreshSubCategories,
     refreshBrands,
-    refreshSpecs,
+    refreshAttributes,
     start,
     stop,
   ]);
@@ -385,7 +362,7 @@ export const CatalogProvider = ({
         categories,
         subCategories,
         brands,
-        specs,
+        attributes,
         categoryHierarchy,
         refreshProducts,
         refreshCategories,
@@ -393,14 +370,13 @@ export const CatalogProvider = ({
         updateCategoryHierarchy,
         refreshSubCategories,
         refreshBrands,
-        refreshSpecs,
+        refreshAttributes,
         createProduct,
         updateProduct,
         deleteProduct,
-        createVariant,
-        createSpec,
-        updateSpec,
-        deleteSpec,
+        createAttribute,
+        updateAttribute,
+        deleteAttribute,
         loading,
         error,
       }}

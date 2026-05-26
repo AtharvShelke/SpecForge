@@ -290,11 +290,11 @@ const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): Comp
     if (!rule.isActive) continue;
 
     // Find source components
-    const sourceComponents = ctx.items.filter(i => i.category?.id === rule.sourceCategoryId);
+    const sourceComponents = ctx.items.filter(i => i.category && typeof i.category !== 'string' && (i.category as any).id === rule.sourceCategoryId);
     if (sourceComponents.length === 0) continue;
 
     // Find target components
-    const targetComponents = ctx.items.filter(i => i.category?.id === rule.targetCategoryId);
+    const targetComponents = ctx.items.filter(i => i.category && typeof i.category !== 'string' && (i.category as any).id === rule.targetCategoryId);
     if (targetComponents.length === 0) continue;
 
     for (const source of sourceComponents) {
@@ -375,16 +375,22 @@ const evaluateDynamicRules = (ctx: ValidationContext, dynamicRules: any[]): Comp
 };
 
 export const validateBuild = (items: CartItem[], dynamicRules: any[] = []): CompatibilityReport => {
+  const matchesCategory = (item: CartItem, name: string) => {
+    if (!item.category) return false;
+    const catName = typeof item.category === 'string' ? item.category : (item.category as any).name;
+    return String(catName).toUpperCase() === name.toUpperCase();
+  };
+
   const context: ValidationContext = {
     items,
-    cpu: items.find(i => i.category?.name.toUpperCase() === 'PROCESSOR' || i.category?.name.toUpperCase() === 'CPU'),
-    mobo: items.find(i => i.category?.name.toUpperCase() === 'MOTHERBOARD'),
-    ramList: items.filter(i => i.category?.name.toUpperCase() === 'RAM'),
-    gpuList: items.filter(i => i.category?.name.toUpperCase() === 'GPU'),
-    storageList: items.filter(i => i.category?.name.toUpperCase() === 'STORAGE'),
-    psu: items.find(i => i.category?.name.toUpperCase() === 'PSU'),
-    cabinet: items.find(i => i.category?.name.toUpperCase() === 'CABINET'),
-    cooler: items.find(i => i.category?.name.toUpperCase() === 'COOLER'),
+    cpu: items.find(i => matchesCategory(i, 'PROCESSOR') || matchesCategory(i, 'CPU')),
+    mobo: items.find(i => matchesCategory(i, 'MOTHERBOARD')),
+    ramList: items.filter(i => matchesCategory(i, 'RAM')),
+    gpuList: items.filter(i => matchesCategory(i, 'GPU')),
+    storageList: items.filter(i => matchesCategory(i, 'STORAGE')),
+    psu: items.find(i => matchesCategory(i, 'PSU')),
+    cabinet: items.find(i => matchesCategory(i, 'CABINET')),
+    cooler: items.find(i => matchesCategory(i, 'COOLER')),
 
     cpuSpecs: {},
     moboSpecs: {},

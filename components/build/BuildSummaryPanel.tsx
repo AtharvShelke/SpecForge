@@ -153,8 +153,8 @@ const BuildSummaryPanel = memo(function BuildSummaryPanel({
             const item = slotId ? itemBySlot.get(slotId) : null;
             const isActive = step.id === activeStep;
             const isFilled = !!item;
-            const product = item?.variant?.product;
-            const price = item?.variant ? Number(item.variant.price ?? 0) : 0;
+            const product = item?.product;
+            const price = product ? Number(product.price ?? 0) : 0;
             const image = product?.media?.[0]?.url ?? (product as { image?: string })?.image;
 
             return (

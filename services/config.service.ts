@@ -1,33 +1,25 @@
-import { prisma } from '@/lib/prisma';
+const inMemorySettings = new Map<string, string>();
 
 export const configService = {
   async getTaxRate(country: string = 'India') {
-    const tax = await prisma.taxSettings.findFirst({
-      where: { enabled: true }
-    });
-    return tax ? Number(tax.taxRatePct) : 18; // fallback to 18%
+    return 18; // fallback to 18%
   },
 
   async getPaymentMethods() {
-    return await prisma.paymentMethod.findMany({
-      where: { enabled: true },
-      orderBy: { label: 'asc' }
-    });
+    return [
+      { id: 'upi', key: 'UPI', label: 'UPI', enabled: true },
+      { id: 'bank_transfer', key: 'BANK_TRANSFER', label: 'Bank Transfer', enabled: true },
+      { id: 'razorpay', key: 'RAZORPAY', label: 'Razorpay', enabled: true },
+    ];
   },
 
   async getSetting(key: string) {
-    const setting = await prisma.appSettings.findUnique({
-      where: { key }
-    });
-    return setting?.value;
+    return inMemorySettings.get(key);
   },
 
   async setSetting(key: string, value: string) {
-    return await prisma.appSettings.upsert({
-      where: { key },
-      create: { key, value },
-      update: { value }
-    });
+    inMemorySettings.set(key, value);
+    return { key, value };
   },
 
   async getDefaultCountry() {
@@ -38,3 +30,4 @@ export const configService = {
     return await this.getSetting('default_currency') || 'INR';
   }
 };
+

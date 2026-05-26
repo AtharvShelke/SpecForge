@@ -6,20 +6,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Lock, ShieldCheck, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/context/ShopContext";
-import { Product, ProductVariant, specsToFlat } from "@/types";
-import VariantSelector from "@/components/storefront/VariantSelector";
+import { Product, specsToFlat } from "@/types";
 
 interface ProductDetailClientProps {
   product: Product;
 }
 
-function getAvailableQuantity(variant?: ProductVariant) {
-  return (variant?.inventoryItems ?? []).reduce((total, item) => {
+function getAvailableQuantity(product: Product) {
+  return (product.inventoryItems ?? []).reduce((total, item) => {
     return (
       total +
       Math.max(
         0,
-        Number(item.quantityOnHand ?? 0) - Number(item.quantityReserved ?? 0),
+        Number(item.quantityOnHand ?? item.quantity ?? 0) -
+          Number(item.quantityReserved ?? item.reserved ?? 0),
       )
     );
   }, 0);
@@ -33,25 +33,19 @@ export default function ProductDetailClient({
     product.media?.map((media) => media.url) ??
     (product.image ? [product.image] : ["/placeholder.png"]);
   const flatSpecs = useMemo(() => specsToFlat(product.specs), [product.specs]);
-  const variants = product.variants ?? [];
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedVariantId, setSelectedVariantId] = useState(
-    variants[0]?.id ?? "",
-  );
   const [showStickyBar, setShowStickyBar] = useState(false);
   const galleryRef = useRef<HTMLDivElement | null>(null);
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const selectedVariant =
-    variants.find((variant) => variant.id === selectedVariantId) ?? variants[0];
-  const price = Number(selectedVariant?.price ?? 0);
-  const compareAtPrice = Number(selectedVariant?.compareAtPrice ?? 0);
+  const price = Number(product.price ?? 0);
+  const compareAtPrice = Number(product.compareAtPrice ?? 0);
   const hasDiscount = compareAtPrice > price;
-  const availableQuantity = getAvailableQuantity(selectedVariant);
+  const availableQuantity = getAvailableQuantity(product);
   const isOutOfStock =
-    selectedVariant?.status === "OUT_OF_STOCK" ||
+    product.stockStatus === "OUT_OF_STOCK" ||
     (availableQuantity === 0 &&
-      (selectedVariant?.inventoryItems?.length ?? 0) > 0);
+      (product.inventoryItems?.length ?? 0) > 0);
   const isLowStock = availableQuantity > 0 && availableQuantity < 5;
   const inCart = cart.some((item) => item.id === product.id);
 
@@ -71,8 +65,7 @@ export default function ProductDetailClient({
   }, []);
 
   const handleAddToCart = () => {
-    if (!selectedVariant) return;
-    addToCart(product, selectedVariant);
+    addToCart(product);
   };
 
   const handleMobileGalleryScroll = () => {
@@ -186,22 +179,14 @@ export default function ProductDetailClient({
               ) : null}
             </div>
 
+            {product.sku ? (
+              <p className="mt-2 text-sm text-gray-500">SKU: {product.sku}</p>
+            ) : null}
+
             {isLowStock ? (
               <p className="mt-3 text-sm text-red-600">
                 Only {availableQuantity} left in stock - order soon
               </p>
-            ) : null}
-
-            {variants.length > 1 ? (
-              <div className="mt-8 border-t border-gray-200 pt-8">
-                <VariantSelector
-                  variants={variants}
-                  selectedVariantId={selectedVariant?.id ?? ""}
-                  onVariantChange={(variant) =>
-                    setSelectedVariantId(variant.id)
-                  }
-                />
-              </div>
             ) : null}
 
             <div className="mt-8 border-t border-gray-200 pt-8">

@@ -34,7 +34,7 @@ export async function GET(
       );
     }
 
-    let html = generateInvoiceHTML(order);
+    let html = generateInvoiceHTML(order as any);
     html = html.replace(
       "</body></html>",
       "<script>window.onload=function(){window.print();}</script></body></html>"

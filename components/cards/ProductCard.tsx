@@ -23,14 +23,13 @@ export default function ProductCard({
     product.media?.[0]?.url ?? product.image ?? "/placeholder.png";
   const secondaryImage = product.media?.[1]?.url;
   const brand = product.brand?.name;
-  const variant = product.variants?.[0];
-  const price = Number(variant?.price ?? 0);
-  const compareAtPrice = Number(variant?.compareAtPrice ?? 0);
+  const price = Number(product.price ?? 0);
+  const compareAtPrice = Number(product.compareAtPrice ?? 0);
   const hasDiscount = compareAtPrice > price;
   const discountPercent = hasDiscount
     ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
     : 0;
-  const isOutOfStock = variant?.status === "OUT_OF_STOCK";
+  const isOutOfStock = product.stockStatus === "OUT_OF_STOCK";
   const href = `/products/${product.slug || product.id}`;
 
   return (

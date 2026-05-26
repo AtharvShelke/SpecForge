@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
         payments: {
-          include: { paymentProofs: true },
           orderBy: { createdAt: "desc" },
         },
       },
@@ -125,7 +124,6 @@ export async function POST(req: NextRequest) {
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
         payments: {
-          include: { paymentProofs: true },
           orderBy: { createdAt: "desc" },
         },
         shipments: { orderBy: { createdAt: "desc" } },
@@ -133,7 +131,6 @@ export async function POST(req: NextRequest) {
           include: { lineItems: true },
           orderBy: { createdAt: "desc" },
         },
-        reservations: true,
       },
     });
 

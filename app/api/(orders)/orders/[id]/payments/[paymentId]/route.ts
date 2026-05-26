@@ -24,7 +24,6 @@ export async function PATCH(
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
         payments: {
-          include: { paymentProofs: true },
           orderBy: { createdAt: "desc" },
         },
         shipments: { orderBy: { createdAt: "desc" } },
@@ -32,7 +31,6 @@ export async function PATCH(
           include: { lineItems: true },
           orderBy: { createdAt: "desc" },
         },
-        reservations: true,
       },
     });
     if (!order) {
@@ -91,7 +89,6 @@ export async function PATCH(
         items: true,
         logs: { orderBy: { timestamp: "desc" } },
         payments: {
-          include: { paymentProofs: true },
           orderBy: { createdAt: "desc" },
         },
         shipments: { orderBy: { createdAt: "desc" } },
@@ -99,7 +96,6 @@ export async function PATCH(
           include: { lineItems: true },
           orderBy: { createdAt: "desc" },
         },
-        reservations: true,
       },
     });
 

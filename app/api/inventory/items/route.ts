@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getInventoryItems,
   createInventoryItem,
-  adjustStockByVariant,
+  adjustStockBySku,
 } from "@/services/inventory.service";
 import { ServiceError } from "@/lib/errors";
 import { serializeInventoryItems } from "@/lib/adminSerializers";
@@ -11,8 +11,7 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const items = await getInventoryItems({
-      variantId: searchParams.get("variantId") || undefined,
-      status: searchParams.get("status") || undefined,
+      productId: searchParams.get("variantId") || searchParams.get("productId") || undefined,
     });
     return NextResponse.json(serializeInventoryItems(items as any[]));
   } catch (error: any) {
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest) {
           400,
         );
       }
-      const item = await adjustStockByVariant(variantId, quantity, type);
+      const item = await adjustStockBySku(variantId, quantity, type);
       return NextResponse.json(item, { status: 200 });
     }
 

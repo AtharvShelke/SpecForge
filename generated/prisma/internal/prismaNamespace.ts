@@ -421,7 +421,8 @@ export const ModelName = {
   PaymentAttempt: 'PaymentAttempt',
   CreditNote: 'CreditNote',
   CreditNoteLineItem: 'CreditNoteLineItem',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  TaxSettings: 'TaxSettings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -437,7 +438,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "buildSequence" | "categoryRelationship" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "compatibilityRule" | "compatibilityRuleClause" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog"
+    modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "buildSequence" | "categoryRelationship" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "compatibilityRule" | "compatibilityRuleClause" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog" | "taxSettings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3253,6 +3254,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TaxSettings: {
+      payload: Prisma.$TaxSettingsPayload<ExtArgs>
+      fields: Prisma.TaxSettingsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TaxSettingsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TaxSettingsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+        }
+        findFirst: {
+          args: Prisma.TaxSettingsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TaxSettingsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+        }
+        findMany: {
+          args: Prisma.TaxSettingsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>[]
+        }
+        create: {
+          args: Prisma.TaxSettingsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+        }
+        createMany: {
+          args: Prisma.TaxSettingsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TaxSettingsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>[]
+        }
+        delete: {
+          args: Prisma.TaxSettingsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+        }
+        update: {
+          args: Prisma.TaxSettingsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+        }
+        deleteMany: {
+          args: Prisma.TaxSettingsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TaxSettingsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TaxSettingsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>[]
+        }
+        upsert: {
+          args: Prisma.TaxSettingsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+        }
+        aggregate: {
+          args: Prisma.TaxSettingsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTaxSettings>
+        }
+        groupBy: {
+          args: Prisma.TaxSettingsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TaxSettingsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TaxSettingsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TaxSettingsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3864,6 +3939,19 @@ export const AuditLogScalarFieldEnum = {
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
 
 
+export const TaxSettingsScalarFieldEnum = {
+  id: 'id',
+  taxRatePct: 'taxRatePct',
+  taxName: 'taxName',
+  taxDescription: 'taxDescription',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -4302,6 +4390,7 @@ export type GlobalOmitConfig = {
   creditNote?: Prisma.CreditNoteOmit
   creditNoteLineItem?: Prisma.CreditNoteLineItemOmit
   auditLog?: Prisma.AuditLogOmit
+  taxSettings?: Prisma.TaxSettingsOmit
 }
 
 /* Types for Logging */

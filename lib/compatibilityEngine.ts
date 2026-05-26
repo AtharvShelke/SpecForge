@@ -64,31 +64,49 @@ export function buildCompatibilityContextSync(items: any[]): BuildContext {
   };
 
   for (const item of items) {
-    const subCat = item.variant?.product?.subCategory;
+    const product = item.product || item.variant?.product || item;
+    if (!product) continue;
+
+    const subCat = product.subcategory || product.subCategory;
     const categoryName = (subCat?.name || "UNKNOWN")
       .toUpperCase()
       .replace(/\s+/g, "_");
     const specs: Record<string, any> = {};
 
-    for (const vs of item.variant?.variantSpecs || []) {
-      const specName = vs.spec?.name;
-      if (!specName) continue;
-      const value =
-        vs.option?.value ?? vs.valueString ?? vs.valueNumber ?? vs.valueBool;
-      specs[specName] = value;
+    // 1. Read specs directly from the single-product flat specs
+    if (Array.isArray(product.specs)) {
+      for (const spec of product.specs) {
+        const specName = spec.name || spec.key;
+        if (specName) {
+          specs[specName] = spec.value;
+        }
+      }
     }
 
+    // 2. Fallback to legacy variantSpecs if present
+    const variantSpecs = item.variant?.variantSpecs || product.variants?.[0]?.variantSpecs;
+    if (Array.isArray(variantSpecs)) {
+      for (const vs of variantSpecs) {
+        const specName = vs.spec?.name;
+        if (!specName) continue;
+        const value = vs.option?.value ?? vs.valueString ?? vs.valueNumber ?? vs.valueBool;
+        specs[specName] = value;
+      }
+    }
+
+    const price = Number(product.price || item.variant?.price || 0);
+
     context.components[categoryName] = {
-      name: item.variant?.product?.name || "Unknown",
-      price: Number(item.variant?.price || 0),
-      variantId: item.variantId || item.variant?.id,
+      name: product.name || "Unknown",
+      price: price,
+      productId: product.id,
       ...specs,
     };
 
     // Aggregate totals
-    const tdp = specs["TDP (W)"] || specs.TDP || 0;
+    const tdp = specs["TDP (W)"] || specs.TDP || specs["TDP"] || 0;
     if (tdp) context.totals.totalTDP += Number(tdp);
-    context.totals.totalPrice += Number(item.variant?.price || 0);
+    context.totals.totalPrice += price;
     if (categoryName.includes("STORAGE")) context.totals.storageSlotsUsed += 1;
     if (categoryName.includes("RAM") || categoryName.includes("DDR"))
       context.totals.ramSlotsUsed += 1;
@@ -156,7 +174,6 @@ export function validateBuildSync(items: any[]): CompatibilityReport {
 
   if (psuComp && context.totals.totalTDP > 0) {
     const psuWattage = Number(psuComp.Wattage || 0);
-    // Recommended: PSU should be ≥ 1.2× total TDP
     const recommendedWattage = Math.ceil(context.totals.totalTDP * 1.2);
 
     if (psuWattage > 0 && psuWattage < context.totals.totalTDP) {
@@ -243,18 +260,14 @@ function findComponent(
  * Evaluates a derived specification formula against the build context
  */
 export function evaluateDerivedSpec(formula: string, context: BuildContext): any {
-  // Parse formula like "SUM(CPU.TDP, GPU.TDP)" or "SUBTRACT(totals.totalTDP, 100)"
   const parts = formula.match(/(\w+)\(([^)]+)\)/);
   if (!parts) return null;
 
   const [, func, args] = parts;
   const argList = args.split(',').map((a: string) => a.trim());
 
-  // Resolve each argument against the context
   const resolvedArgs = argList.map(arg => {
-    // Check if it's a number literal
     if (!isNaN(Number(arg))) return Number(arg);
-    // Otherwise resolve as a path
     return resolveContextPath(arg, context);
   });
 
@@ -284,14 +297,10 @@ export function evaluateDerivedSpec(formula: string, context: BuildContext): any
 
 /**
  * Resolves a dot-notation path against the BuildContext.
- * e.g., "CPU.TDP" → context.components.CPU.TDP
- *        "totals.totalTDP" → context.totals.totalTDP
- *        "derived.Total_TDP" → context.derived.Total_TDP
  */
 export function resolveContextPath(path: string, context: BuildContext): any {
   const parts = path.split(".");
 
-  // Direct top-level keys
   if (parts[0] === "totals" && parts.length === 2) {
     return context.totals[parts[1]];
   }
@@ -302,12 +311,10 @@ export function resolveContextPath(path: string, context: BuildContext): any {
     return context.derived[parts[1]];
   }
 
-  // Component reference: "CPU.TDP"
   if (parts.length === 2) {
     return context.components[parts[0]]?.[parts[1]];
   }
 
-  // Fallback: walk entire context
   let current: any = context;
   for (const part of parts) {
     if (current === undefined || current === null) return undefined;
@@ -318,7 +325,6 @@ export function resolveContextPath(path: string, context: BuildContext): any {
 
 /**
  * Evaluates a message template with context variables.
- * Replaces {CPU.TDP}, {totals.totalTDP}, {derived.Total_TDP}, etc.
  */
 export function formatCompatibilityMessage(
   template: string,

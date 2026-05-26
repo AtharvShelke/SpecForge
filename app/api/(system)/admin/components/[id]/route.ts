@@ -46,68 +46,62 @@ export async function PUT(
     } = body;
 
     const updated = await prisma.$transaction(async (tx) => {
+      let categoryIdUpdate: number | undefined;
+      if (subCategoryId !== undefined) {
+        const subCat = await tx.subcategory.findUnique({
+          where: { id: subCategoryId },
+        });
+        if (subCat) {
+          categoryIdUpdate = subCat.categoryId;
+        }
+      }
+
       // Update product
       await tx.product.update({
         where: { id },
         data: {
           ...(name !== undefined && { name }),
           ...(description !== undefined && { description }),
-          ...(subCategoryId !== undefined && { subCategoryId }),
+          ...(subCategoryId !== undefined && { subcategoryId: subCategoryId, categoryId: categoryIdUpdate }),
           ...(brandId !== undefined && { brandId }),
           ...(status !== undefined && { status: status as any }),
+          ...(sku !== undefined && { sku }),
+          ...(price !== undefined && { price }),
+          ...(compareAtPrice !== undefined && { compareAtPrice }),
         },
       });
 
-      // Update variant price/sku if provided
-      if (sku !== undefined || price !== undefined || compareAtPrice !== undefined) {
-        const variant = await tx.productVariant.findFirst({
-          where: { productId: id, deletedAt: null },
-        });
+      // Update specs if provided
+      if (specs && Array.isArray(specs)) {
+        const subCatId = subCategoryId || existing.subcategoryId;
 
-        if (variant) {
-          await tx.productVariant.update({
-            where: { id: variant.id },
-            data: {
-              ...(sku !== undefined && { sku }),
-              ...(price !== undefined && { price }),
-              ...(compareAtPrice !== undefined && { compareAtPrice }),
-            },
+        // Delete existing product specs to refresh
+        await tx.productSpec.deleteMany({ where: { productId: id } });
+
+        for (const spec of specs) {
+          const specDef = await tx.categoryAttribute.findFirst({
+            where: { subcategoryId: subCatId, key: spec.specName },
+            include: { options: true },
           });
 
-          // Update specs if provided
-          if (specs && Array.isArray(specs)) {
-            const subCatId = subCategoryId || existing.subCategoryId;
+          if (!specDef) continue;
 
-            for (const spec of specs) {
-              const specDef = await tx.specDefinition.findFirst({
-                where: { subCategoryId: subCatId, name: spec.specName },
-                include: { options: true },
-              });
+          const specData: any = {
+            productId: id,
+            attributeId: specDef.id,
+            value: spec.valueString || spec.optionValue || "",
+          };
 
-              if (!specDef) continue;
-
-              const specData: any = {};
-              if (spec.optionValue) {
-                const option = specDef.options.find((o) => o.value === spec.optionValue);
-                if (option) specData.optionId = option.id;
-              }
-              if (spec.valueString !== undefined) specData.valueString = spec.valueString;
-              if (spec.valueNumber !== undefined) specData.valueNumber = spec.valueNumber;
-              if (spec.valueBool !== undefined) specData.valueBool = spec.valueBool;
-
-              await tx.variantSpec.upsert({
-                where: {
-                  variantId_specId: { variantId: variant.id, specId: specDef.id },
-                },
-                update: specData,
-                create: {
-                  variantId: variant.id,
-                  specId: specDef.id,
-                  ...specData,
-                },
-              });
-            }
+          if (spec.optionValue) {
+            const option = specDef.options.find((o: { value: string; id: string }) => o.value === spec.optionValue);
+            if (option) specData.optionId = option.id;
           }
+          if (spec.valueNumber !== undefined) specData.valueNumber = Number(spec.valueNumber);
+          if (spec.valueBool !== undefined) specData.valueBoolean = spec.valueBool;
+
+          await tx.productSpec.create({
+            data: specData,
+          });
         }
       }
 
@@ -129,13 +123,10 @@ export async function PUT(
         where: { id },
         include: {
           brand: true,
-          subCategory: true,
+          subcategory: true,
           media: true,
-          variants: {
-            where: { deletedAt: null },
-            include: {
-              variantSpecs: { include: { spec: true, option: true } },
-            },
+          specs: {
+            include: { attribute: true, option: true },
           },
         },
       });
@@ -179,12 +170,6 @@ export async function DELETE(
     await prisma.product.update({
       where: { id },
       data: { deletedAt: new Date(), status: "ARCHIVED" },
-    });
-
-    // Also soft delete variants
-    await prisma.productVariant.updateMany({
-      where: { productId: id },
-      data: { deletedAt: new Date() },
     });
 
     return new NextResponse(null, { status: 204 });

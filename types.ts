@@ -84,28 +84,23 @@ export enum FilterType {
   dropdown = "dropdown",
 }
 
+export enum AttributeInputType {
+  text = "text",
+  number = "number",
+  boolean = "boolean",
+  select = "select",
+  multi_select = "multi_select",
+}
+
 export enum ProductStatus {
   DRAFT = "DRAFT",
   ACTIVE = "ACTIVE",
   ARCHIVED = "ARCHIVED",
 }
 
-export enum VariantStatus {
-  IN_STOCK = "IN_STOCK",
-  OUT_OF_STOCK = "OUT_OF_STOCK",
-  DISCONTINUED = "DISCONTINUED",
-  PREORDER = "PREORDER",
-}
-
 export enum Role {
   ADMIN = "ADMIN",
   USER = "USER",
-}
-
-export enum SpecValueType {
-  STRING = "STRING",
-  NUMBER = "NUMBER",
-  BOOLEAN = "BOOLEAN",
 }
 
 export enum CompatibilityOperator {
@@ -167,20 +162,29 @@ export interface User {
 
 export interface Category {
   id: string;
+  code: string;
   name: string;
   label?: string;
+  slug?: string;
   description?: string | null;
+  image?: string | null;
+  icon?: string | null;
+  displayOrder?: number;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
 
   subCategories?: SubCategory[];
+  subcategories?: SubCategory[];
   categoryHierarchies?: CategoryHierarchy[];
+  attributes?: CategoryAttribute[];
 }
 
 export interface SubCategory {
   id: string;
   name: string;
+  slug?: string;
   description?: string | null;
 
   categoryId: string;
@@ -190,21 +194,11 @@ export interface SubCategory {
   updatedAt: string;
   deletedAt?: string | null;
 
-  isBuilderEnabled?: boolean;
-  isCore?: boolean;
-  isRequired?: boolean;
-  allowMultiple?: boolean;
-  builderOrder?: number;
-  icon?: string | null;
-  shortLabel?: string | null;
+  isActive?: boolean;
+  image?: string | null;
 
   products?: Product[];
-
-  sourceCompatibilityScopes?: CompatibilityScope[];
-  targetCompatibilityScopes?: CompatibilityScope[];
-
-  subCategorySlots?: SubCategorySlot[];
-  specDefinitions?: SpecDefinition[];
+  attributes?: CategoryAttribute[];
 }
 
 export interface CategoryHierarchy {
@@ -221,6 +215,54 @@ export interface CategoryHierarchy {
   category?: Category | null;
 }
 
+// =====================================================
+// CATEGORY ATTRIBUTES (Dynamic Specification System)
+// =====================================================
+
+export interface CategoryAttribute {
+  id: string;
+  categoryId: number;
+  subcategoryId?: number | null;
+  key: string;
+  label: string;
+  type: AttributeInputType | `${AttributeInputType}`;
+  isRequired: boolean;
+  isFilterable: boolean;
+  isComparable: boolean;
+  filterType?: FilterType | `${FilterType}` | null;
+  unit?: string | null;
+  helpText?: string | null;
+  dependencyAttributeId?: string | null;
+  dependencyOptionId?: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+
+  category?: Category;
+  subcategory?: SubCategory | null;
+  dependencyAttribute?: CategoryAttribute | null;
+  dependentAttributes?: CategoryAttribute[];
+  dependencyOption?: AttributeOption | null;
+  options?: AttributeOption[];
+}
+
+export interface AttributeOption {
+  id: string;
+  attributeId: string;
+  value: string;
+  slug: string;
+  sortOrder: number;
+  metadata?: Record<string, any> | null;
+  createdAt: string;
+  updatedAt: string;
+
+  attribute?: CategoryAttribute;
+}
+
+// =====================================================
+// PRODUCT SPECS (linking products to attributes)
+// =====================================================
+
 export interface ProductSpec {
   key: string;
   value: string | number | boolean | string[] | null | undefined;
@@ -228,6 +270,25 @@ export interface ProductSpec {
 }
 
 export type ProductSpecsFlat = Record<string, ProductSpec["value"]>;
+
+export interface ProductSpecRecord {
+  id: string;
+  productId: string;
+  attributeId: string;
+  optionId?: string | null;
+  value: string;
+  valueNumber?: number | null;
+  valueBoolean?: boolean | null;
+  isHighlighted: boolean;
+
+  product?: Product;
+  attribute?: CategoryAttribute;
+  option?: AttributeOption | null;
+}
+
+// =====================================================
+// FILTER DEFINITIONS
+// =====================================================
 
 export interface FilterDefinition {
   key: string;
@@ -257,104 +318,53 @@ export interface CategoryFilterConfig {
 }
 
 export interface CategoryNode {
+  id?: string;
   label: string;
   children?: CategoryNode[];
-  category?: string;
+  category?: Category | string | null;
   brand?: string;
   query?: string;
   subCategoryId?: string;
   isOpen?: boolean;
 }
 
-// =====================================================
-// SPECS SYSTEM
-// =====================================================
-
-export interface SpecDefinition {
-  id: string;
-  subCategoryId: string;
-  subCategory?: SubCategory;
-
-  name: string;
-  valueType: SpecValueType;
-
-  isFilterable: boolean;
-  isRange: boolean;
-  isMulti: boolean;
-
-  filterGroup?: string | null;
-  filterOrder?: number | null;
-
-  options?: SpecOption[];
-  variantSpecs?: VariantSpec[];
-
-  parentOptionDeps?: SpecOptionDependency[];
-  childOptionDeps?: SpecOptionDependency[];
-  sourceRules?: CompatibilityRule[];
-  targetRules?: CompatibilityRule[];
-
-  derivedSpecs?: DerivedSpec[];
+export interface DynamicFilterDependency {
+  filterId: string;
+  values: string[];
 }
 
-export interface SpecOptionDependency {
-  id: string;
-
-  parentSpecId: string;
-  parentOptionId: string;
-  childSpecId: string;
-  childOptionId?: string | null;
-
-  parentSpec?: SpecDefinition;
-  parentOption?: SpecOption;
-  childSpec?: SpecDefinition;
-  childOption?: SpecOption | null;
-}
-
-export interface SpecOption {
-  id: string;
-  specId: string;
-  spec?: SpecDefinition;
-
+export interface DynamicFilterOption {
   value: string;
-  label?: string | null;
+  label: string;
+  count: number;
+  selected?: boolean;
+  enabled?: boolean;
+  dependencies?: DynamicFilterDependency[];
+}
+
+export interface DynamicCatalogFilter {
+  id: string;
+  key: string;
+  label: string;
+  type: FilterType | `${FilterType}`;
+  group?: string | null;
   order?: number | null;
-
-  parentOptionId?: string | null;
-  parentOption?: SpecOption | null;
-  children?: SpecOption[];
-
-  variantSpecs?: VariantSpec[];
-
-  parentOptionDeps?: SpecOptionDependency[];
-  childOptionDeps?: SpecOptionDependency[];
+  options: DynamicFilterOption[];
+  min?: number;
+  max?: number;
+  dependencies?: DynamicFilterDependency[];
 }
 
-export interface VariantSpec {
-  id: string;
-  variantId: string;
-  specId: string;
-  optionId?: string | null;
-
-  valueString?: string | null;
-  valueNumber?: number | null;
-  valueBool?: boolean | null;
-
-  variant?: ProductVariant;
-  spec?: SpecDefinition;
-  option?: SpecOption | null;
-}
-
-export interface DerivedSpec {
-  id: string;
-  name: string;
-  resultSpecId: string;
-  formula: string;
-
-  resultSpec?: SpecDefinition;
+export interface CatalogListingResult {
+  products: Product[];
+  total: number;
+  filters: DynamicCatalogFilter[];
+  priceRange?: { min: number; max: number };
+  nextCursor?: string | null;
 }
 
 // =====================================================
-// PRODUCT SYSTEM
+// PRODUCT SYSTEM (Single-product, no variants)
 // =====================================================
 
 export interface Brand {
@@ -379,31 +389,6 @@ export interface ProductMedia {
   product?: Product;
 }
 
-export interface ProductVariant {
-  id: string;
-  productId: string;
-  sku: string;
-
-  price: number;
-  compareAtPrice?: number | null;
-
-  attributes?: Record<string, any> | null;
-
-  status: VariantStatus;
-  deletedAt?: string | null;
-
-  createdAt: string;
-  updatedAt: string;
-
-  product?: Product;
-
-  variantSpecs?: VariantSpec[];
-  orderItems?: OrderItem[];
-  buildGuideItems?: BuildGuideItem[];
-  buildItems?: BuildItem[];
-  inventoryItems?: InventoryItem[];
-}
-
 export interface Product {
   id: string;
   slug: string;
@@ -416,13 +401,18 @@ export interface Product {
   status: ProductStatus;
   deletedAt?: string | null;
 
+  categoryId?: number;
   subCategoryId: string;
+  subcategoryId?: number | null;
   subCategory?: SubCategory;
+  subcategory?: SubCategory;
 
   brandId?: string | null;
   brand?: Brand | null;
 
   category?: Category | string;
+
+  // Product-level pricing and stock (no variants)
   price?: number | null;
   compareAtPrice?: number | null;
   stockStatus?: string | null;
@@ -435,24 +425,25 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
 
-  variants?: ProductVariant[];
   media?: ProductMedia[];
+  inventoryItems?: InventoryItem[];
 }
+
 export interface CartItem {
   productId?: string;
-  variantId?: string;
   id: string;
   name: string;
   category: string;
   quantity: number;
   specs?: ProductSpec[];
   product?: Product;
-  variant?: ProductVariant;
-  selectedVariant?: ProductVariant;
-  variants?: ProductVariant[];
   image?: string | null;
   images?: string[];
+  price?: number;
+  brand?: Brand | null;
+  media?: ProductMedia[];
 }
+
 // =====================================================
 // CUSTOMER + ORDER
 // =====================================================
@@ -479,26 +470,26 @@ export interface Customer {
 
 export interface OrderItem {
   id: string;
-  lineReference: string;
+  lineReference?: string;
   orderId: string;
-  variantId: string;
+  productId: string;
   inventoryItemId?: string | null;
-  productNumber: string;
-  partNumber: string;
-  serialNumber: string;
+  productNumber?: string;
+  partNumber?: string;
+  serialNumber?: string;
 
   name: string;
   category: string;
+  categoryId?: number;
 
   price: number;
   quantity: number;
 
   sku?: string | null;
   image?: string | null;
-  variantSnapshot?: Record<string, any> | null;
 
   order?: Order;
-  variant?: ProductVariant;
+  product?: Product;
   inventoryItem?: InventoryItem | null;
 }
 
@@ -584,11 +575,11 @@ export interface BuildGuide {
 export interface BuildGuideItem {
   id: string;
   buildGuideId: string;
-  variantId: string;
+  productId: string;
   quantity: number;
 
   buildGuide?: BuildGuide;
-  variant?: ProductVariant;
+  product?: Product;
 }
 
 // =====================================================
@@ -597,29 +588,32 @@ export interface BuildGuideItem {
 
 export interface InventoryItem {
   id: string;
-  variantId: string;
+  productId: string;
 
-  trackingType: InventoryTrackingType;
+  trackingType?: InventoryTrackingType;
 
   serialNumber?: string | null;
   partNumber?: string | null;
 
-  quantityOnHand: number;
-  quantityReserved: number;
+  quantity: number;
+  reserved?: number;
+  quantityOnHand?: number;
+  quantityReserved?: number;
+  reorderLevel?: number;
 
-  status: InventoryStatus;
+  status?: InventoryStatus;
 
   costPrice?: number | null;
   batchNumber?: string | null;
   receivedAt?: string | null;
   notes?: string | null;
+  location?: string;
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 
-  variant?: ProductVariant & { product?: Product };
+  product?: Product;
   orderItems?: OrderItem[];
-  reservations?: Reservation[];
 }
 
 export interface InventoryUnitInput {
@@ -630,7 +624,7 @@ export interface InventoryUnitInput {
 
 export interface InventorySkuSummary {
   id: string;
-  variantId: string;
+  productId: string;
   sku?: string;
 
   quantityOnHand?: number;
@@ -641,7 +635,7 @@ export interface InventorySkuSummary {
   reorderLevel: number;
   costPrice: number;
 
-  variant?: ProductVariant & { product?: Product };
+  product?: Product;
 }
 
 export type PurchaseOrderStatus =
@@ -661,11 +655,11 @@ export interface Supplier {
 }
 
 export interface PurchaseOrderItem {
-  variantId: string;
+  productId: string;
   quantityOrdered: number;
   quantityReceived: number;
   unitCost: number;
-  variant?: ProductVariant & { product?: Product };
+  product?: Product;
 }
 
 export interface PurchaseOrder {
@@ -856,11 +850,11 @@ export interface Build {
 export interface BuildItem {
   id: string;
   buildId: string;
-  variantId: string;
+  productId: string;
   slotId: string;
 
   build?: Build;
-  variant?: ProductVariant;
+  product?: Product;
   slot?: PartSlot;
 }
 
@@ -915,45 +909,60 @@ export interface CompatibilityRule {
   name: string;
   description?: string | null;
 
-  type: RuleType;
+  type?: RuleType;
 
-  // PAIR rule fields (optional for COMPONENT/GLOBAL)
-  sourceSpecId?: string | null;
-  targetSpecId?: string | null;
-  operator?: CompatibilityOperator | null;
+  sourceCategoryId?: number;
+  targetCategoryId?: number;
+  sourceAttributeId?: string | null;
+  targetAttributeId?: string | null;
+  operator?: CompatibilityOperator | string | null;
   scopeId?: string | null;
 
   message: string;
   messageTemplate?: string | null;
-  severity: CompatibilitySeverity;
+  severity: CompatibilitySeverity | CompatibilityLevel;
 
-  // Dynamic logic for COMPONENT/GLOBAL rules
   logic?: Record<string, any> | null;
 
-  // Execution control
-  priority: number;
-  enabled: boolean;
+  priority?: number;
+  enabled?: boolean;
+  isActive?: boolean;
+  sortOrder?: number;
 
   createdAt: string;
   updatedAt: string;
 
-  sourceSpec?: SpecDefinition | null;
-  targetSpec?: SpecDefinition | null;
+  sourceAttribute?: CategoryAttribute | null;
+  targetAttribute?: CategoryAttribute | null;
   scope?: CompatibilityScope | null;
 
+  clauses?: CompatibilityRuleClause[];
   compatibilityChecks?: CompatibilityCheck[];
+}
+
+export interface CompatibilityRuleClause {
+  id: string;
+  ruleId: string;
+  sourceAttributeId: string;
+  targetAttributeId: string;
+  operator: string;
+  sourceValue?: string | null;
+  targetValue?: string | null;
+  sortOrder: number;
+
+  rule?: CompatibilityRule;
+  sourceAttribute?: CategoryAttribute;
+  targetAttribute?: CategoryAttribute;
 }
 
 // Condition node for the visual rule builder
 export interface RuleCondition {
   id: string;
   type: "condition" | "group";
-  // Condition fields
-  specRef?: string;        // e.g. "CPU.TDP" or "totals.totalTDP"
-  operator?: string;       // EQUAL, GREATER_THAN, etc.
+  specRef?: string;
+  operator?: string;
   value?: string | number | boolean;
-  compareRef?: string;     // Reference to another spec instead of static value
-  // Group fields
+  compareRef?: string;
   groupOperator?: "AND" | "OR";
   children?: RuleCondition[];
 }
@@ -972,8 +981,8 @@ export interface CompatibilityCheck {
   id: string;
   resultId: string;
   ruleId: string;
-  sourceVariantId?: string | null;
-  targetVariantId?: string | null;
+  sourceProductId?: string | null;
+  targetProductId?: string | null;
   passed: boolean;
   message: string;
   severity: CompatibilitySeverity;
@@ -998,26 +1007,16 @@ export interface CompatibilityResult {
   details?: Array<{
     ruleId: string;
     ruleName: string;
-    sourceVariantId: string;
-    targetVariantId: string;
+    sourceProductId: string;
+    targetProductId: string;
     passed: boolean;
     message: string;
     severity: string;
-    sourceSpecName: string;
-    targetSpecName: string;
+    sourceAttributeName: string;
+    targetAttributeName: string;
     sourceValue: any;
     targetValue: any;
   }>;
-}
-
-export interface VariantCompatibilityCache {
-  id: string;
-  variantAId: string;
-  variantBId: string;
-  compatible: boolean;
-  message?: string | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 // =====================================================
@@ -1031,8 +1030,7 @@ export interface BuilderSettings {
   showWarnings: boolean;
   allowIncompatibleCheckout: boolean;
   powerCalculationMode: "static" | "spec_based" | "rule_based";
-  
-  // Power calculation defaults
+
   powerDefaults: {
     baseWattage: number;
     cpuDefaultWattage: number;
@@ -1040,15 +1038,13 @@ export interface BuilderSettings {
     ramWattagePerStick: number;
     storageWattagePerDrive: number;
   };
-  
-  // TDP band configuration
+
   tdpBands: {
     low: { max: number; label: string };
     balanced: { min: number; max: number; label: string };
     high: { min: number; label: string };
   };
-  
-  // Price presets
+
   pricePresets: Array<{
     id: string;
     label: string;
@@ -1131,132 +1127,108 @@ export interface BuilderUIRule {
 
 export interface FilterOverrideItem {
   id: string;
-  specDefinitionId: string;
+  attributeId: string;
+  specDefinitionId?: string;
   categoryName: string;
   labelOverride: string | null;
   hidden: boolean;
   displayOrder: number;
   groupOverride: string | null;
-  specDefinition?: SpecDefinition;
+  attribute?: CategoryAttribute;
   createdAt: string;
   updatedAt: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  — typed inputs for deep relational creates
+//  — typed inputs for product creation
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface CreateVariantSpec {
-  specId: string;
+export interface CreateProductSpec {
+  attributeId: string;
   optionId?: string;
-  valueString?: string;
+  value: string;
   valueNumber?: number;
-  valueBool?: boolean;
-}
-
-export interface CreateVariant {
-  sku: string;
-  price: number;
-  compareAtPrice?: number;
-  attributes?: any;
-  status?: string;
-  specs?: CreateVariantSpec[];
+  valueBoolean?: boolean;
 }
 
 export interface CreateProduct {
   name: string;
-  subCategoryId: string;
+  subCategoryId?: string;
+  categoryId?: number;
+  subcategoryId?: number;
   slug?: string;
   brandId?: string;
   metaTitle?: string;
   metaDescription?: string;
   description?: string;
   status?: string;
-  variants?: CreateVariant[];
+  price?: number;
+  compareAtPrice?: number;
+  sku?: string;
+  stockStatus?: string;
+  specs?: CreateProductSpec[];
   images?: string[];
 }
 
-export interface CreateSpecWithOptions {
-  subCategoryId: string;
-  name: string;
-  valueType: string;
+export interface CreateCategoryAttribute {
+  categoryId: number;
+  subcategoryId?: number | null;
+  key: string;
+  label: string;
+  type: AttributeInputType | string;
+  isRequired?: boolean;
   isFilterable?: boolean;
-  isRange?: boolean;
-  isMulti?: boolean;
-  filterGroup?: string;
-  filterOrder?: number;
+  isComparable?: boolean;
+  filterType?: FilterType | string | null;
+  unit?: string | null;
+  helpText?: string | null;
+  dependencyAttributeId?: string | null;
+  dependencyOptionId?: string | null;
+  sortOrder?: number;
   options?: Array<{
     value: string;
-    label?: string;
-    order?: number;
+    slug?: string;
+    sortOrder?: number;
+    metadata?: Record<string, any>;
+  }>;
+}
+
+export interface UpdateCategoryAttribute {
+  key?: string;
+  label?: string;
+  type?: AttributeInputType | string;
+  isRequired?: boolean;
+  isFilterable?: boolean;
+  isComparable?: boolean;
+  filterType?: FilterType | string | null;
+  unit?: string | null;
+  helpText?: string | null;
+  dependencyAttributeId?: string | null;
+  dependencyOptionId?: string | null;
+  sortOrder?: number;
+  options?: Array<{
+    id?: string;
+    value: string;
+    slug?: string;
+    sortOrder?: number;
+    metadata?: Record<string, any>;
   }>;
 }
 
 export interface AdvancedFilter {
-  subCategoryId: string;
+  categoryId?: number;
+  subcategoryId?: number;
+  subCategoryId?: string;
   filters: Array<{
-    specId: string;
+    attributeId: string;
     values: string[];
   }>;
   priceMin?: number;
   priceMax?: number;
   brandId?: string;
   status?: string;
-}
-
-export interface DynamicFilterDependency {
-  filterId: string;
-  values: string[];
-}
-
-export interface DynamicFilterOption {
-  value: string;
-  label: string;
-  count: number;
-  selected?: boolean;
-  enabled?: boolean;
-  dependencies?: DynamicFilterDependency[];
-}
-
-export interface DynamicCatalogFilter {
-  id: string;
-  key: string;
-  label: string;
-  type: FilterType | `${FilterType}`;
-  group?: string | null;
-  order?: number | null;
-  options: DynamicFilterOption[];
-  dependencies?: DynamicFilterDependency[];
-}
-
-export interface CatalogListingResult {
-  products: Product[];
-  total: number;
-  filters: DynamicCatalogFilter[];
-  nextCursor?: string | null;
-}
-
-export interface SpecDependencyInput {
-  parentSpecId: string;
-  parentOptionValue: string;
-  childOptionValue?: string | null;
-}
-
-export interface UpdateSpecInput {
-  name?: string;
-  valueType?: string;
-  isFilterable?: boolean;
-  isRange?: boolean;
-  isMulti?: boolean;
-  filterGroup?: string | null;
-  filterOrder?: number | null;
-  options?: Array<{
-    id?: string;
-    value: string;
-    label?: string;
-    order?: number;
-  }>;
-  dependencies?: SpecDependencyInput[];
+  stockStatus?: string;
+  q?: string;
 }
 
 export function specsToFlat(specs?: ProductSpec[] | null): ProductSpecsFlat {
@@ -1340,11 +1312,12 @@ export interface CreateCreditNoteInput {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CreateOrderItem {
-  variantId: string;
+  productId: string;
   inventoryItemId?: string;
   productNumber?: string;
   name: string;
   category?: string;
+  categoryId?: number;
   price: number;
   quantity: number;
   image?: string;
@@ -1398,5 +1371,69 @@ export interface BillingProfilePayload {
   country: string;
   gstin?: string;
   logoUrl?: string;
+}
+
+// =====================================================
+// MISSING SYSTEM DTO & ENGINE TYPES
+// =====================================================
+
+export enum Currency {
+  INR = "INR",
+  USD = "USD",
+  EUR = "EUR",
+  GBP = "GBP",
+}
+
+export type CategoryDefinition = Category;
+
+export interface BuildSequenceItem {
+  id?: string;
+  categoryId: number;
+  stepOrder: number;
+  category: CategoryDefinition;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface CompatibilityIssue {
+  level: CompatibilityLevel;
+  message: string;
+  reason?: string;
+  resolution?: string;
+  componentIds: string[];
+}
+
+export interface CompatibilityReport {
+  status: CompatibilityLevel;
+  issues: CompatibilityIssue[];
+}
+
+export interface CategoryAttributeDefinition {
+  id?: string;
+  key: string;
+  label: string;
+  type: AttributeInputType | string;
+  options: string[];
+  required: boolean;
+  unit?: string;
+  sortOrder?: number;
+  categoryId?: number;
+  categoryCode?: string;
+  dependencyKey?: string;
+  dependencyValue?: string;
+  isFilterable: boolean;
+  isComparable: boolean;
+  filterType?: FilterType | string | null;
+  helpText?: string | null;
+}
+
+export interface CategoryAttributesConfig {
+  id?: string;
+  categoryCode: string;
+  category: Category | string;
+  categoryDefinition?: Category;
+  attributes: CategoryAttributeDefinition[];
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 

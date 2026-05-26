@@ -23,9 +23,9 @@ export async function getCategoryDefinitions(
     orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
   });
 
-  return categories
-    .map(mapCategoryWithSequence)
-    .sort((left, right) => {
+  const mapped = (categories as any[])
+    .map(mapCategoryWithSequence as any);
+  return (mapped as CategoryDefinition[]).sort((left, right) => {
       if (left.stepOrder != null && right.stepOrder != null) {
         return left.stepOrder - right.stepOrder;
       }
@@ -60,7 +60,7 @@ export async function getCategoryDefinitionByCode(code: string) {
     return null;
   }
 
-  return mapCategoryDefinition(category, category.buildSequence?.stepOrder ?? null);
+  return mapCategoryDefinition(category as any, (category as any).buildSequence?.stepOrder ?? null);
 }
 
 export async function getBuildSequence(): Promise<CategoryDefinition[]> {
@@ -75,7 +75,7 @@ export async function getBuildSequence(): Promise<CategoryDefinition[]> {
   });
 
   return sequence.map((entry) =>
-    mapCategoryDefinition(entry.category, entry.stepOrder)
+    mapCategoryDefinition(entry.category as any, entry.stepOrder)
   );
 }
 

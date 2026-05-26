@@ -492,9 +492,10 @@ const InventoryManager = () => {
       {};
     const arr = Array.isArray(inventory) ? inventory : [];
     for (const i of arr) {
-      const cat = i.variant?.product?.category || 
-                  i.variant?.product?.subCategory?.category?.name ||
-                  i.variant?.product?.subCategory?.name ||
+      const rawCat = i.product?.category;
+      const cat = (typeof rawCat === "string" ? rawCat : rawCat?.name) || 
+                  i.product?.subCategory?.category?.name ||
+                  i.product?.subCategory?.name ||
                   "Other";
       if (!map[cat]) map[cat] = { units: 0, value: 0, count: 0 };
       map[cat].units += i.quantity;
@@ -651,7 +652,7 @@ const InventoryManager = () => {
                 const pct = Math.round(
                   (item.quantity / Math.max(item.reorderLevel, 1)) * 100,
                 );
-                const name = item.variant?.product?.name || item.variantId;
+                const name = item.product?.name || item.sku || item.productId;
                 return (
                   <div key={idx} className="p-3">
                     <div className="mb-2 flex items-center justify-between gap-3">
@@ -895,8 +896,7 @@ const InventoryManager = () => {
                 </tr>
               ) : (
                 paginatedInventory.map((item: InventorySkuSummary) => {
-                  const variant = item.variant;
-                  const product = variant?.product;
+                  const product = item.product;
                   const costValue = item.quantity * item.costPrice;
                   return (
                     <tr
@@ -911,7 +911,7 @@ const InventoryManager = () => {
                               src={
                                 product?.media?.[0]?.url || "/placeholder.png"
                               }
-                              alt={product?.name || variant?.sku}
+                              alt={product?.name || item.sku || product?.sku || ""}
                               onError={handleImgError}
                             />
                           </div>
@@ -923,13 +923,13 @@ const InventoryManager = () => {
                               {product?.name || "Undefined Product"}
                             </p>
                             <span className="mt-0.5 inline-block rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                              {product?.category || "Standard"}
+                              {typeof product?.category === "string" ? product.category : product?.category?.name || "Standard"}
                             </span>
                           </div>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-5 py-3 font-mono text-sm font-medium text-slate-600">
-                        {variant?.sku || "N/A"}
+                        {item.sku || product?.sku || "N/A"}
                       </td>
                       <td className="whitespace-nowrap px-5 py-3 text-right">
                         <span
@@ -966,7 +966,7 @@ const InventoryManager = () => {
                           onClick={() =>
                             setAdjustmentModal({
                               isOpen: true,
-                              sku: variant?.sku || item.variantId,
+                              sku: item.sku || product?.sku || item.productId,
                               currentQty: item.quantity,
                             })
                           }
@@ -1001,8 +1001,7 @@ const InventoryManager = () => {
             </div>
           ) : (
             paginatedInventory.map((item: InventorySkuSummary) => {
-              const variant = item.variant;
-              const product = variant?.product;
+              const product = item.product;
               const isLow =
                 item.quantity > 0 && item.quantity <= item.reorderLevel;
               const isOut = item.quantity === 0;
@@ -1013,7 +1012,7 @@ const InventoryManager = () => {
                       <img
                         className="h-full w-full object-contain p-1"
                         src={product?.media?.[0]?.url || "/placeholder.png"}
-                        alt={product?.name || variant?.sku}
+                        alt={product?.name || item.sku || product?.sku || ""}
                         onError={handleImgError}
                       />
                     </div>
@@ -1023,7 +1022,7 @@ const InventoryManager = () => {
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs text-slate-500">
-                          {variant?.sku || "N/A"}
+                          {item.sku || product?.sku || "N/A"}
                         </span>
                         <StockBadge
                           qty={item.quantity}
@@ -1055,7 +1054,7 @@ const InventoryManager = () => {
                       onClick={() =>
                         setAdjustmentModal({
                           isOpen: true,
-                          sku: variant?.sku || item.variantId,
+                          sku: item.sku || product?.sku || item.productId,
                           currentQty: item.quantity,
                         })
                       }

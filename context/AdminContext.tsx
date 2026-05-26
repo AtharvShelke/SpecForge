@@ -61,7 +61,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         catalog.refreshCategories(),
         catalog.refreshCategoryHierarchy(),
         catalog.refreshBrands(),
-        catalog.refreshSpecs(),
+        catalog.refreshAttributes(),
         inventory.refreshInventory(),
         inventory.refreshReservations(),
         orders.refreshOrders(),
@@ -92,7 +92,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         catalog.refreshCategories,
         catalog.refreshSubCategories,
         catalog.refreshCategoryHierarchy,
-        catalog.refreshSpecs,
+        catalog.refreshAttributes,
       ],
       brands: [catalog.refreshBrands, catalog.refreshCategories],
       "saved-builds": [builds.refreshBuildGuides],
@@ -184,13 +184,9 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
             brandId: brand?.id,
             description: data.description,
             status: data.status || "ACTIVE",
-            variants: [
-              {
-                sku: data.sku,
-                price: data.price || 0,
-                status: "IN_STOCK",
-              },
-            ],
+            sku: data.sku,
+            price: Number(data.price || 0),
+            stockStatus: "IN_STOCK",
             images: data.images,
           }),
         });
@@ -221,7 +217,6 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
         const existingProduct = catalog.products.find(
           (entry) => entry.id === data.id,
         );
-        const firstVariant = existingProduct?.variants?.[0];
         const brandName =
           data?.specs?.brand ||
           data?.brand?.name ||
@@ -250,22 +245,10 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
             description: data.description,
             status: data.status || existingProduct?.status,
             images: data.images,
+            sku: data.sku,
+            price: data.price !== undefined ? Number(data.price) : undefined,
           }),
         });
-
-        if (firstVariant) {
-          await apiFetch(`/api/catalog/variants/${firstVariant.id}`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              sku: data.sku || firstVariant.sku,
-              price: data.price ?? firstVariant.price,
-              status:
-                data.status === "ARCHIVED"
-                  ? "DISCONTINUED"
-                  : firstVariant.status,
-            }),
-          });
-        }
 
         await Promise.all([
           catalog.refreshProducts(),
@@ -310,7 +293,7 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       categoryHierarchy: catalog.categoryHierarchy,
       subCategories: catalog.subCategories,
       brands: catalog.brands,
-      specs: catalog.specs,
+      attributes: catalog.attributes,
       schemas: [],
       addProduct: addProduct,
       updateProduct: updateProduct,
@@ -319,9 +302,9 @@ const AdminInnerProvider = ({ children }: { children: ReactNode }) => {
       refreshCategories: catalog.refreshCategories,
       refreshCategoryHierarchy: catalog.refreshCategoryHierarchy,
       refreshBrands: catalog.refreshBrands,
-      refreshSpecs: catalog.refreshSpecs,
-      updateSpec: catalog.updateSpec,
-      deleteSpec: catalog.deleteSpec,
+      refreshAttributes: catalog.refreshAttributes,
+      updateAttribute: catalog.updateAttribute,
+      deleteAttribute: catalog.deleteAttribute,
       addBrand,
       deleteBrand,
       updateCategories,

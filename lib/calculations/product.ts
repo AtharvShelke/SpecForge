@@ -23,7 +23,10 @@ export function getProductScore(product: Product) {
  */
 export function filterGpuTier(products: Product[], tier: GpuTier) {
   return products.filter(p => {
-    if (p.category?.name !== 'GPU') return false;
+    const categoryName = p.category
+      ? (typeof p.category === 'string' ? p.category : p.category.name)
+      : undefined;
+    if (categoryName !== 'GPU') return false;
 
     const price = p.price || 0;
 
@@ -39,7 +42,9 @@ export function getFeaturedProducts(products: Product[]) {
   const categoryMap = new Map<string, Product>();
 
   products.forEach(product => {
-    const categoryName = product.category?.name;
+    const categoryName = product.category
+      ? (typeof product.category === 'string' ? product.category : product.category.name)
+      : undefined;
     const createdAt = product.createdAt;
 
     if (!categoryName || !createdAt) return;
