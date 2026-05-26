@@ -12,6 +12,7 @@ interface ProductCardProps {
   isSelected?: boolean;
 }
 
+<<<<<<< HEAD
 export default function ProductCard({
   product,
   priority = false,
@@ -32,6 +33,15 @@ export default function ProductCard({
     : 0;
   const isOutOfStock = variant?.status === "OUT_OF_STOCK";
   const href = `/products/${product.slug || product.id}`;
+=======
+export default function ProductCard({ product, rating, onAddToCart }: Props) {
+    const price = product.price || 0
+    const compareAt = product.compareAtPrice
+    const image = product.media?.[0]?.url
+    const brand = product.brand?.name
+    const hasDiscount = compareAt && compareAt > price
+    const discountPct = hasDiscount ? Math.round(((compareAt - price) / compareAt) * 100) : 0
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
   return (
     <Link

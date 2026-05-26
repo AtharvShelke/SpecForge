@@ -1,4 +1,16 @@
+<<<<<<< HEAD
 "use client";
+=======
+'use client';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useShop } from '@/context/ShopContext';
+import { useToast } from '@/hooks/use-toast';
+import { X, Trash2, AlertOctagon, CheckCircle2, AlertTriangle, CreditCard, Save, ShoppingBag } from 'lucide-react';
+import { CompatibilityLevel, CompatibilityIssue } from '@/types';
+import Link from 'next/link';
+import { validateBuild } from '@/lib/calculations/compatibility';
+import { getBaseUrl } from '@/lib/utils';
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 import Image from "next/image";
 import Link from "next/link";
@@ -25,7 +37,77 @@ export default function CartDrawer() {
     setCartOpen,
     updateQuantity,
   } = useShop();
+  const { toast } = useToast();
 
+<<<<<<< HEAD
+=======
+  // Compute compatibility report locally from cart
+  const compatibilityReport = useMemo(() => validateBuild(cart), [cart]);
+
+  // Save current build via direct API call
+  const saveCurrentBuild = useCallback(async (title: string, description = '') => {
+    if (cart.length === 0) return;
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/build-guides`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: title,
+          total: cartTotal,
+          items: cart.map(i => ({
+            productId: i.id,
+            quantity: i.quantity,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        toast({ title: 'Build Guide saved successfully' });
+      } else {
+        const errData = await res.json();
+        console.error('Failed to save build guide API:', errData);
+        toast({
+          title: 'Failed to save build guide',
+          description: JSON.stringify(errData.error ?? errData),
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save build guide:', err);
+      toast({ title: 'Error', description: 'Network error while saving build guide', variant: 'destructive' });
+    }
+  }, [cart, cartTotal, toast]);
+
+  const [isNaming, setIsNaming] = useState(false);
+  const [buildName, setBuildName] = useState('');
+
+  useEffect(() => {
+    if (isCartOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isCartOpen]);
+
+  if (!isCartOpen) return null;
+
+  const isCompatible = compatibilityReport.status === CompatibilityLevel.COMPATIBLE;
+  const isFatal = compatibilityReport.status === CompatibilityLevel.INCOMPATIBLE;
+
+  const handleSaveBuild = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (buildName.trim()) {
+      saveCurrentBuild(buildName);
+      setIsNaming(false);
+      setBuildName('');
+      alert('Build Saved Successfully!');
+    }
+  };
+
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
   return (
     <Sheet open={isCartOpen} onOpenChange={setCartOpen}>
       <SheetContent side="right" className="w-full max-w-md border-gray-200">
@@ -55,6 +137,7 @@ export default function CartDrawer() {
                 );
                 const lineTotal = unitPrice * item.quantity;
 
+<<<<<<< HEAD
                 return (
                   <li key={item.id} className="flex gap-3 border-b border-gray-200 pb-4">
                     <div className="relative size-20 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
@@ -77,6 +160,42 @@ export default function CartDrawer() {
                         </div>
                         <p className="text-sm font-semibold text-gray-900">
                           Rs. {lineTotal.toLocaleString("en-IN")}
+=======
+            {/* Cart Items */}
+            <div className="flex-1 py-4 overflow-y-auto px-4 sm:px-6">
+              {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center">
+                  <div className="bg-gray-100 p-4 rounded-full mb-4">
+                    <CreditCard className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">Your cart is empty.</p>
+                  <button onClick={() => setCartOpen(false)} className="mt-4 text-blue-600 text-sm font-semibold hover:text-blue-500">
+                    Continue Shopping &rarr;
+                  </button>
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {cart.map((product) => (
+                    <li key={product.id} className="py-4 flex gap-3">
+                      <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 border border-gray-100 rounded-lg overflow-hidden bg-gray-50">
+                        <img
+                          src={product.media?.[0]?.url || '/placeholder.png'}
+                          alt={product.name}
+                          className="w-full h-full object-center object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 truncate pr-2 leading-tight">
+                            {product.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap">
+                            ₹{((product.price || 0) * product.quantity).toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                        <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mt-0.5">
+                          {product.category?.name || 'Uncategorized'}
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                         </p>
                       </div>
 
@@ -120,6 +239,7 @@ export default function CartDrawer() {
           )}
         </div>
 
+<<<<<<< HEAD
         {cart.length > 0 ? (
           <SheetFooter className="sticky bottom-0 border-t border-gray-200 bg-white px-6 py-4">
             <div className="mb-4 flex items-center justify-between text-sm">
@@ -146,3 +266,6 @@ export default function CartDrawer() {
     </Sheet>
   );
 }
+=======
+export default CartDrawer;
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50

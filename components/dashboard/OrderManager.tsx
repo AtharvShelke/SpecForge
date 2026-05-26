@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import {
@@ -10,6 +11,11 @@ import {
   OrderStatus,
   PaymentStatus,
 } from "@/types";
+=======
+import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
+import { Order, OrderStatus, InventoryItem } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 import {
   ArrowLeft,
   Clock,
@@ -31,9 +37,14 @@ import {
   Phone,
   CreditCard,
   AlertCircle,
+<<<<<<< HEAD
   CalendarRange,
   FilterX,
 } from "lucide-react";
+=======
+  Edit2,
+} from 'lucide-react';
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 import {
   Select,
   SelectContent,
@@ -56,6 +67,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+<<<<<<< HEAD
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -71,6 +83,15 @@ import {
   ConfirmStatusDialog,
   DeleteOrderDialog,
 } from "../helper-components/OrderManagerDialogs";
+=======
+} from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { NEXT_STATUS_BUTTON, STATUS_CONFIG, STATUS_FLOW } from '@/data/constants';
+import { generateInvoiceHTML } from '@/lib/invoice';
+import { MetaItem, StatsBar, StatusBadge } from '../helper-components/OrderManagerHelper';
+import { ConfirmStatusDialog, DeleteOrderDialog, EditSerialPartDialog } from '../helper-components/OrderManagerDialogs';
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
 /* ─────────────────────────────────────────────────────────────
    MODULE-LEVEL CONSTANTS
@@ -384,6 +405,7 @@ OrderRow.displayName = "OrderRow";
    MAIN ORDER MANAGER
 ───────────────────────────────────────────────────────────────*/
 const OrderManager = () => {
+<<<<<<< HEAD
   const {
     orders,
     updateOrderStatus,
@@ -409,10 +431,98 @@ const OrderManager = () => {
       string,
       { quantity: number; reserved: number; reorderLevel: number; sku?: string }
     >();
+=======
+  const { toast } = useToast();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch orders
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/orders');
+      const data = await res.json();
+      if (data.orders) setOrders(data.orders);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+    }
+  }, []);
+
+  // Fetch inventory
+  const fetchInventory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/inventory?limit=3000');
+      const data = await res.json();
+      setInventory(data.items ?? (Array.isArray(data) ? data : []));
+    } catch (err) {
+      console.error('Failed to fetch inventory:', err);
+    }
+  }, []);
+
+  // Sync data (refresh both orders and inventory)
+  const syncData = useCallback(async () => {
+    setIsLoading(true);
+    await Promise.all([fetchOrders(), fetchInventory()]);
+    setIsLoading(false);
+  }, [fetchOrders, fetchInventory]);
+
+  // Update order status
+  const updateOrderStatus = useCallback(async (orderId: string, newStatus: OrderStatus, note?: string) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, note }),
+      });
+      if (res.ok) {
+        toast({ title: 'Order status updated' });
+        await Promise.all([fetchOrders(), fetchInventory()]);
+      } else {
+        const data = await res.json();
+        toast({ title: 'Update Failed', description: data.error || 'Could not update order status', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [fetchOrders, fetchInventory, toast]);
+
+  // Delete order
+  const deleteOrder = useCallback(async (orderId: string) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast({ title: 'Order deleted' });
+        await Promise.all([fetchOrders(), fetchInventory()]);
+      } else {
+        const data = await res.json();
+        toast({ title: 'Delete Failed', description: data.error || 'Could not delete order', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [fetchOrders, fetchInventory, toast]);
+
+  // Initial data fetch
+  useEffect(() => {
+    syncData();
+  }, [syncData]);
+
+  // Poll orders every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
+
+  // Aggregate inventory by productId across all warehouses
+  const aggregatedInventory = useMemo(() => {
+    const productTotals = new Map<string, { quantity: number; reserved: number; reorderLevel: number; sku?: string }>();
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
     const arr = Array.isArray(inventory) ? inventory : [];
 
     for (const item of arr) {
-      const existing = variantTotals.get(item.variantId);
+      const existing = productTotals.get(item.productId);
       if (existing) {
         existing.quantity += item.quantity;
         existing.reserved += item.reserved || 0;
@@ -421,21 +531,27 @@ const OrderManager = () => {
           item.reorderLevel || 0,
         );
       } else {
-        variantTotals.set(item.variantId, {
+        productTotals.set(item.productId, {
           quantity: item.quantity,
           reserved: item.reserved || 0,
           reorderLevel: item.reorderLevel || 0,
-          sku: item.variant?.sku,
+          sku: item.product?.sku ?? undefined,
         });
       }
     }
 
+<<<<<<< HEAD
     const lookupMap = new Map<
       string,
       { quantity: number; reserved: number; reorderLevel: number }
     >();
     variantTotals.forEach((data, vid) => {
       lookupMap.set(vid, data);
+=======
+    const lookupMap = new Map<string, { quantity: number; reserved: number; reorderLevel: number }>();
+    productTotals.forEach((data, pid) => {
+      lookupMap.set(pid, data);
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
       if (data.sku) lookupMap.set(data.sku, data);
     });
     return lookupMap;
@@ -463,6 +579,15 @@ const OrderManager = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Serial/Part number edit dialog state
+  const [editSerialDialog, setEditSerialDialog] = useState<{
+    open: boolean;
+    unit: any;
+    orderId: string;
+    itemId: string;
+  }>({ open: false, unit: null, orderId: '', itemId: '' });
+  const [isSavingSerial, setIsSavingSerial] = useState(false);
 
   const sortedOrders = useMemo(
     () =>
@@ -567,6 +692,11 @@ const OrderManager = () => {
     const { orderId, newStatus } = confirmDialog;
     setIsUpdating(true);
     try {
+<<<<<<< HEAD
+=======
+      // Removed the pointless constructor.name async check — updateOrderStatus is
+      // always async; just await it directly
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
       await updateOrderStatus(orderId, newStatus);
       setConfirmDialog((d) => ({ ...d, open: false }));
     } catch (error) {
@@ -601,6 +731,32 @@ const OrderManager = () => {
       setTimeout(() => win.print(), 500);
     }
   }, [selectedOrder]);
+
+  // Update serial/part number for a unit
+  const updateSerialPartNumber = useCallback(async (unitId: string, serialNumber: string, partNumber: string) => {
+    if (!selectedOrder) return;
+    setIsSavingSerial(true);
+    try {
+      const res = await fetch(`/api/orders/${selectedOrder.id}/items/${editSerialDialog.itemId}/units/${unitId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serialNumber, partNumber }),
+      });
+      if (res.ok) {
+        toast({ title: 'Serial/Part numbers updated' });
+        // Refresh both orders and inventory to ensure consistency
+        await Promise.all([fetchOrders(), fetchInventory()]);
+      } else {
+        const data = await res.json();
+        toast({ title: 'Update Failed', description: data.error || 'Could not update serial/part numbers', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error('Failed to update serial/part numbers:', err);
+      toast({ title: 'Update Failed', description: 'An error occurred while updating', variant: 'destructive' });
+    } finally {
+      setIsSavingSerial(false);
+    }
+  }, [selectedOrder, editSerialDialog.itemId, fetchOrders, fetchInventory, toast]);
 
   const handleRowClick = useCallback((id: string) => {
     setSelectedId(id);
@@ -1019,6 +1175,7 @@ const OrderManager = () => {
                               </th>
                             </tr>
                           </thead>
+<<<<<<< HEAD
                           <tbody className="divide-y divide-slate-100">
                             {selectedOrderItems.map((item: OrderItem) => {
                               const inv =
@@ -1028,6 +1185,12 @@ const OrderManager = () => {
                                   : undefined);
                               const isLow =
                                 inv && inv.quantity <= inv.reorderLevel;
+=======
+                          <tbody className="divide-y divide-stone-50">
+                            {selectedOrder.items.map(item => {
+                              const inv = aggregatedInventory.get(item.productId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
+                              const isLow = inv && inv.quantity <= inv.reorderLevel;
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                               return (
                                 <tr
                                   key={item.id}
@@ -1037,13 +1200,18 @@ const OrderManager = () => {
                                     <div className="flex items-center gap-3">
                                       <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
                                         <img
+<<<<<<< HEAD
                                           src={item.image ?? FALLBACK_IMG}
+=======
+                                          src={item.image ?? '/placeholder.png'}
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                                           alt={item.name}
                                           className="h-full w-full object-contain"
                                           onError={handleImgError}
                                         />
                                       </div>
                                       <div className="min-w-0">
+<<<<<<< HEAD
                                         <p className="line-clamp-1 text-sm font-semibold text-slate-900">
                                           {item.name}
                                         </p>
@@ -1054,6 +1222,33 @@ const OrderManager = () => {
                                           {item.category} · Ref{" "}
                                           {item.lineReference}
                                         </p>
+=======
+                                        <p className="font-semibold text-stone-800 text-xs leading-tight line-clamp-1 tracking-tight">{item.name}</p>
+                                        <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                                        {(item.assignedUnits?.length ?? 0) > 0 && (
+                                          <div className="mt-1 space-y-0.5">
+                                            {item.assignedUnits?.map((unit) => (
+                                              <div key={unit.id} className="flex items-center gap-1.5 group">
+                                                <p className="text-[10px] text-stone-500 font-mono">
+                                                  {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
+                                                </p>
+                                                <button
+                                                  onClick={() => setEditSerialDialog({
+                                                    open: true,
+                                                    unit,
+                                                    orderId: selectedOrder.id,
+                                                    itemId: item.id,
+                                                  })}
+                                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-stone-100 rounded"
+                                                  title="Edit serial/part numbers"
+                                                >
+                                                  <Edit2 size={10} className="text-stone-400 hover:text-indigo-600" />
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                                         {isLow && (
                                           <span className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-600">
                                             <AlertTriangle size={12} /> Low:{" "}
@@ -1111,12 +1306,17 @@ const OrderManager = () => {
                           <div key={item.id} className="flex gap-3 p-4">
                             <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
                               <img
+<<<<<<< HEAD
                                 src={item.image ?? FALLBACK_IMG}
+=======
+                                src={item.image ?? '/placeholder.png'}
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                                 alt={item.name}
                                 className="h-full w-full object-contain"
                                 onError={handleImgError}
                               />
                             </div>
+<<<<<<< HEAD
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-semibold leading-tight tracking-tight text-slate-900">
                                 {item.name}
@@ -1154,6 +1354,37 @@ const OrderManager = () => {
                                     "en-IN",
                                   )}
                                 </span>
+=======
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-stone-800 text-xs tracking-tight leading-tight">{item.name}</p>
+                              <p className="text-[10px] text-stone-400 font-mono mt-0.5">{item.sku}</p>
+                              {(item.assignedUnits?.length ?? 0) > 0 && (
+                                <div className="mt-1 space-y-0.5">
+                                  {item.assignedUnits?.map((unit) => (
+                                    <div key={unit.id} className="flex items-center gap-1.5 group">
+                                      <p className="text-[10px] text-stone-500 font-mono truncate">
+                                        {unit.partNumber || 'No part'} · {unit.serialNumber || 'No serial'}
+                                      </p>
+                                      <button
+                                        onClick={() => setEditSerialDialog({
+                                          open: true,
+                                          unit,
+                                          orderId: selectedOrder.id,
+                                          itemId: item.id,
+                                        })}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-stone-100 rounded flex-shrink-0"
+                                        title="Edit serial/part numbers"
+                                      >
+                                        <Edit2 size={10} className="text-stone-400 hover:text-indigo-600" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between mt-1.5">
+                                <span className="text-xs text-stone-400">×<strong className="text-stone-700">{item.quantity}</strong> · ₹{item.price.toLocaleString('en-IN')}</span>
+                                <span className="font-bold text-stone-900 text-sm font-mono">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                               </div>
                             </div>
                           </div>
@@ -1252,6 +1483,7 @@ const OrderManager = () => {
                   </CollapsibleSection>
 
                   {/* Inventory Snapshot */}
+<<<<<<< HEAD
                   <CollapsibleSection
                     icon={<Warehouse size={16} />}
                     title="Inventory Snapshot"
@@ -1263,10 +1495,17 @@ const OrderManager = () => {
                           (item.sku
                             ? aggregatedInventory.get(item.sku)
                             : undefined);
+=======
+                  <CollapsibleSection icon={<Warehouse size={12} />} title="Inventory">
+                    <div className="px-4 py-3 space-y-2.5">
+                      {selectedOrder.items.map(item => {
+                        const inv = aggregatedInventory.get(item.productId) || (item.sku ? aggregatedInventory.get(item.sku) : undefined);
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                         const available = inv?.quantity ?? 0;
                         const reserved = inv?.reserved ?? 0;
                         const isLow = available <= (inv?.reorderLevel ?? 5);
                         return (
+<<<<<<< HEAD
                           <div
                             key={item.id}
                             className="flex items-center justify-between gap-4 rounded-md border border-slate-200 p-3 hover:bg-slate-50"
@@ -1278,6 +1517,17 @@ const OrderManager = () => {
                               <p className="mt-0.5 font-mono text-xs text-slate-500">
                                 {item.sku}
                               </p>
+=======
+                          <div key={item.id} className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-stone-700 truncate tracking-tight">{item.name}</p>
+                              <p className="text-[10px] text-stone-400 font-mono">{item.sku}</p>
+                              {(item.assignedUnits?.length ?? 0) > 0 && (
+                                <p className="text-[10px] text-stone-500 font-mono mt-0.5 truncate">
+                                  {(item.assignedUnits || []).map((unit) => `${unit.partNumber || 'No part'} · ${unit.serialNumber || 'No serial'}`).join(' | ')}
+                                </p>
+                              )}
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
                             </div>
                             <div className="flex flex-shrink-0 items-center gap-2">
                               <Tooltip>
@@ -1428,6 +1678,16 @@ const OrderManager = () => {
           isDeleting={isDeleting}
         />
       )}
+
+      <EditSerialPartDialog
+        open={editSerialDialog.open}
+        onOpenChange={(open) => setEditSerialDialog(d => ({ ...d, open }))}
+        unit={editSerialDialog.unit}
+        orderId={editSerialDialog.orderId}
+        itemId={editSerialDialog.itemId}
+        onSave={updateSerialPartNumber}
+        isSaving={isSavingSerial}
+      />
     </TooltipProvider>
   );
 };

@@ -1,13 +1,22 @@
+<<<<<<< HEAD
 // app/admin/page.tsx
 "use client";
 
 import { lazy, Suspense, memo, type ReactNode } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
+=======
+import { Suspense } from 'react';
+import AdminDashboardClient from './AdminDashboardClient';
 
-// ── Lazy-loaded tab components ────────────────────────────────────────────────
-// Each tab becomes its own JS chunk — only downloaded when first visited.
+export const dynamic = 'force-dynamic';
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
 
+function AdminFallback() {
+  return <div className="min-h-screen bg-stone-50" />;
+}
+
+<<<<<<< HEAD
 const Overview = lazy(() => import("@/components/dashboard/Overview"));
 const OrderManager = lazy(() => import("@/components/dashboard/OrderManager"));
 const ProductManager = lazy(
@@ -140,3 +149,12 @@ const AdminDashboard = memo(function AdminDashboard() {
 });
 
 export default AdminDashboard;
+=======
+export default function AdminDashboardPage() {
+  return (
+    <Suspense fallback={<AdminFallback />}>
+      <AdminDashboardClient />
+    </Suspense>
+  );
+}
+>>>>>>> dd4c02613217d0bf4ad2ee1f754233dd452b1b50
