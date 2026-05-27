@@ -230,7 +230,16 @@ export async function GET(request: NextRequest) {
     });
 
     // 3. Add Custom Specs Filters
-    for (const attr of attributeSchema) {
+    // Deduplicate attributes by key — the same attribute key can appear in multiple
+    // categories/subcategories, producing duplicate filter ids when no category is selected.
+    const seenAttrKeys = new Set<string>();
+    const uniqueAttributeSchema = attributeSchema.filter((attr) => {
+      if (seenAttrKeys.has(attr.key)) return false;
+      seenAttrKeys.add(attr.key);
+      return true;
+    });
+
+    for (const attr of uniqueAttributeSchema) {
       const subsetForAttr = candidateProducts.filter((p) => matchesAllFiltersExcept(p, attr.key));
       const optionsMap = new Map<string, { value: string; label: string; count: number }>();
 

@@ -1,7 +1,8 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client";
+
 import { Pool } from "pg";
+import { PrismaClient } from "@/generated/prisma";
 
 // Prevent this file from being bundled in the client
 if (typeof window !== "undefined") {
@@ -52,10 +53,10 @@ const prismaClientSingleton = () => {
     log:
       process.env.NODE_ENV === "development"
         ? [
-            { emit: "event", level: "query" }, // subscribe below for timing
-            { emit: "stdout", level: "warn" },
-            { emit: "stdout", level: "error" },
-          ]
+          { emit: "event", level: "query" }, // subscribe below for timing
+          { emit: "stdout", level: "warn" },
+          { emit: "stdout", level: "error" },
+        ]
         : [{ emit: "stdout", level: "error" }], // only errors in production
   });
 };

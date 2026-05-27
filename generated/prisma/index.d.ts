@@ -203,6 +203,11 @@ export type CreditNoteLineItem = $Result.DefaultSelection<Prisma.$CreditNoteLine
  * 
  */
 export type AuditLog = $Result.DefaultSelection<Prisma.$AuditLogPayload>
+/**
+ * Model TaxSettings
+ * 
+ */
+export type TaxSettings = $Result.DefaultSelection<Prisma.$TaxSettingsPayload>
 
 /**
  * Enums
@@ -898,6 +903,16 @@ export class PrismaClient<
     * ```
     */
   get auditLog(): Prisma.AuditLogDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.taxSettings`: Exposes CRUD operations for the **TaxSettings** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more TaxSettings
+    * const taxSettings = await prisma.taxSettings.findMany()
+    * ```
+    */
+  get taxSettings(): Prisma.TaxSettingsDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1369,7 +1384,8 @@ export namespace Prisma {
     PaymentAttempt: 'PaymentAttempt',
     CreditNote: 'CreditNote',
     CreditNoteLineItem: 'CreditNoteLineItem',
-    AuditLog: 'AuditLog'
+    AuditLog: 'AuditLog',
+    TaxSettings: 'TaxSettings'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1385,7 +1401,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "buildSequence" | "categoryRelationship" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "compatibilityRule" | "compatibilityRuleClause" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog"
+      modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "buildSequence" | "categoryRelationship" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "compatibilityRule" | "compatibilityRuleClause" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog" | "taxSettings"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4201,6 +4217,80 @@ export namespace Prisma {
           }
         }
       }
+      TaxSettings: {
+        payload: Prisma.$TaxSettingsPayload<ExtArgs>
+        fields: Prisma.TaxSettingsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.TaxSettingsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.TaxSettingsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+          }
+          findFirst: {
+            args: Prisma.TaxSettingsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.TaxSettingsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+          }
+          findMany: {
+            args: Prisma.TaxSettingsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>[]
+          }
+          create: {
+            args: Prisma.TaxSettingsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+          }
+          createMany: {
+            args: Prisma.TaxSettingsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.TaxSettingsCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>[]
+          }
+          delete: {
+            args: Prisma.TaxSettingsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+          }
+          update: {
+            args: Prisma.TaxSettingsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+          }
+          deleteMany: {
+            args: Prisma.TaxSettingsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.TaxSettingsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.TaxSettingsUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>[]
+          }
+          upsert: {
+            args: Prisma.TaxSettingsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TaxSettingsPayload>
+          }
+          aggregate: {
+            args: Prisma.TaxSettingsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTaxSettings>
+          }
+          groupBy: {
+            args: Prisma.TaxSettingsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<TaxSettingsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.TaxSettingsCountArgs<ExtArgs>
+            result: $Utils.Optional<TaxSettingsCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4347,6 +4437,7 @@ export namespace Prisma {
     creditNote?: CreditNoteOmit
     creditNoteLineItem?: CreditNoteLineItemOmit
     auditLog?: AuditLogOmit
+    taxSettings?: TaxSettingsOmit
   }
 
   /* Types for Logging */
@@ -49761,6 +49852,1061 @@ export namespace Prisma {
 
 
   /**
+   * Model TaxSettings
+   */
+
+  export type AggregateTaxSettings = {
+    _count: TaxSettingsCountAggregateOutputType | null
+    _avg: TaxSettingsAvgAggregateOutputType | null
+    _sum: TaxSettingsSumAggregateOutputType | null
+    _min: TaxSettingsMinAggregateOutputType | null
+    _max: TaxSettingsMaxAggregateOutputType | null
+  }
+
+  export type TaxSettingsAvgAggregateOutputType = {
+    taxRatePct: number | null
+  }
+
+  export type TaxSettingsSumAggregateOutputType = {
+    taxRatePct: number | null
+  }
+
+  export type TaxSettingsMinAggregateOutputType = {
+    id: string | null
+    taxRatePct: number | null
+    taxName: string | null
+    taxDescription: string | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TaxSettingsMaxAggregateOutputType = {
+    id: string | null
+    taxRatePct: number | null
+    taxName: string | null
+    taxDescription: string | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TaxSettingsCountAggregateOutputType = {
+    id: number
+    taxRatePct: number
+    taxName: number
+    taxDescription: number
+    enabled: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type TaxSettingsAvgAggregateInputType = {
+    taxRatePct?: true
+  }
+
+  export type TaxSettingsSumAggregateInputType = {
+    taxRatePct?: true
+  }
+
+  export type TaxSettingsMinAggregateInputType = {
+    id?: true
+    taxRatePct?: true
+    taxName?: true
+    taxDescription?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TaxSettingsMaxAggregateInputType = {
+    id?: true
+    taxRatePct?: true
+    taxName?: true
+    taxDescription?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TaxSettingsCountAggregateInputType = {
+    id?: true
+    taxRatePct?: true
+    taxName?: true
+    taxDescription?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type TaxSettingsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TaxSettings to aggregate.
+     */
+    where?: TaxSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TaxSettings to fetch.
+     */
+    orderBy?: TaxSettingsOrderByWithRelationInput | TaxSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: TaxSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TaxSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TaxSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned TaxSettings
+    **/
+    _count?: true | TaxSettingsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: TaxSettingsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TaxSettingsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: TaxSettingsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: TaxSettingsMaxAggregateInputType
+  }
+
+  export type GetTaxSettingsAggregateType<T extends TaxSettingsAggregateArgs> = {
+        [P in keyof T & keyof AggregateTaxSettings]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateTaxSettings[P]>
+      : GetScalarType<T[P], AggregateTaxSettings[P]>
+  }
+
+
+
+
+  export type TaxSettingsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TaxSettingsWhereInput
+    orderBy?: TaxSettingsOrderByWithAggregationInput | TaxSettingsOrderByWithAggregationInput[]
+    by: TaxSettingsScalarFieldEnum[] | TaxSettingsScalarFieldEnum
+    having?: TaxSettingsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: TaxSettingsCountAggregateInputType | true
+    _avg?: TaxSettingsAvgAggregateInputType
+    _sum?: TaxSettingsSumAggregateInputType
+    _min?: TaxSettingsMinAggregateInputType
+    _max?: TaxSettingsMaxAggregateInputType
+  }
+
+  export type TaxSettingsGroupByOutputType = {
+    id: string
+    taxRatePct: number
+    taxName: string
+    taxDescription: string | null
+    enabled: boolean
+    createdAt: Date
+    updatedAt: Date
+    _count: TaxSettingsCountAggregateOutputType | null
+    _avg: TaxSettingsAvgAggregateOutputType | null
+    _sum: TaxSettingsSumAggregateOutputType | null
+    _min: TaxSettingsMinAggregateOutputType | null
+    _max: TaxSettingsMaxAggregateOutputType | null
+  }
+
+  type GetTaxSettingsGroupByPayload<T extends TaxSettingsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<TaxSettingsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof TaxSettingsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], TaxSettingsGroupByOutputType[P]>
+            : GetScalarType<T[P], TaxSettingsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type TaxSettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    taxRatePct?: boolean
+    taxName?: boolean
+    taxDescription?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["taxSettings"]>
+
+  export type TaxSettingsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    taxRatePct?: boolean
+    taxName?: boolean
+    taxDescription?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["taxSettings"]>
+
+  export type TaxSettingsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    taxRatePct?: boolean
+    taxName?: boolean
+    taxDescription?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["taxSettings"]>
+
+  export type TaxSettingsSelectScalar = {
+    id?: boolean
+    taxRatePct?: boolean
+    taxName?: boolean
+    taxDescription?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type TaxSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "taxRatePct" | "taxName" | "taxDescription" | "enabled" | "createdAt" | "updatedAt", ExtArgs["result"]["taxSettings"]>
+
+  export type $TaxSettingsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "TaxSettings"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      taxRatePct: number
+      taxName: string
+      taxDescription: string | null
+      enabled: boolean
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["taxSettings"]>
+    composites: {}
+  }
+
+  type TaxSettingsGetPayload<S extends boolean | null | undefined | TaxSettingsDefaultArgs> = $Result.GetResult<Prisma.$TaxSettingsPayload, S>
+
+  type TaxSettingsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<TaxSettingsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: TaxSettingsCountAggregateInputType | true
+    }
+
+  export interface TaxSettingsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TaxSettings'], meta: { name: 'TaxSettings' } }
+    /**
+     * Find zero or one TaxSettings that matches the filter.
+     * @param {TaxSettingsFindUniqueArgs} args - Arguments to find a TaxSettings
+     * @example
+     * // Get one TaxSettings
+     * const taxSettings = await prisma.taxSettings.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends TaxSettingsFindUniqueArgs>(args: SelectSubset<T, TaxSettingsFindUniqueArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one TaxSettings that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {TaxSettingsFindUniqueOrThrowArgs} args - Arguments to find a TaxSettings
+     * @example
+     * // Get one TaxSettings
+     * const taxSettings = await prisma.taxSettings.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends TaxSettingsFindUniqueOrThrowArgs>(args: SelectSubset<T, TaxSettingsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TaxSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TaxSettingsFindFirstArgs} args - Arguments to find a TaxSettings
+     * @example
+     * // Get one TaxSettings
+     * const taxSettings = await prisma.taxSettings.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends TaxSettingsFindFirstArgs>(args?: SelectSubset<T, TaxSettingsFindFirstArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TaxSettings that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TaxSettingsFindFirstOrThrowArgs} args - Arguments to find a TaxSettings
+     * @example
+     * // Get one TaxSettings
+     * const taxSettings = await prisma.taxSettings.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends TaxSettingsFindFirstOrThrowArgs>(args?: SelectSubset<T, TaxSettingsFindFirstOrThrowArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more TaxSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TaxSettingsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all TaxSettings
+     * const taxSettings = await prisma.taxSettings.findMany()
+     * 
+     * // Get first 10 TaxSettings
+     * const taxSettings = await prisma.taxSettings.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const taxSettingsWithIdOnly = await prisma.taxSettings.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends TaxSettingsFindManyArgs>(args?: SelectSubset<T, TaxSettingsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a TaxSettings.
+     * @param {TaxSettingsCreateArgs} args - Arguments to create a TaxSettings.
+     * @example
+     * // Create one TaxSettings
+     * const TaxSettings = await prisma.taxSettings.create({
+     *   data: {
+     *     // ... data to create a TaxSettings
+     *   }
+     * })
+     * 
+     */
+    create<T extends TaxSettingsCreateArgs>(args: SelectSubset<T, TaxSettingsCreateArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many TaxSettings.
+     * @param {TaxSettingsCreateManyArgs} args - Arguments to create many TaxSettings.
+     * @example
+     * // Create many TaxSettings
+     * const taxSettings = await prisma.taxSettings.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends TaxSettingsCreateManyArgs>(args?: SelectSubset<T, TaxSettingsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many TaxSettings and returns the data saved in the database.
+     * @param {TaxSettingsCreateManyAndReturnArgs} args - Arguments to create many TaxSettings.
+     * @example
+     * // Create many TaxSettings
+     * const taxSettings = await prisma.taxSettings.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many TaxSettings and only return the `id`
+     * const taxSettingsWithIdOnly = await prisma.taxSettings.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends TaxSettingsCreateManyAndReturnArgs>(args?: SelectSubset<T, TaxSettingsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a TaxSettings.
+     * @param {TaxSettingsDeleteArgs} args - Arguments to delete one TaxSettings.
+     * @example
+     * // Delete one TaxSettings
+     * const TaxSettings = await prisma.taxSettings.delete({
+     *   where: {
+     *     // ... filter to delete one TaxSettings
+     *   }
+     * })
+     * 
+     */
+    delete<T extends TaxSettingsDeleteArgs>(args: SelectSubset<T, TaxSettingsDeleteArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one TaxSettings.
+     * @param {TaxSettingsUpdateArgs} args - Arguments to update one TaxSettings.
+     * @example
+     * // Update one TaxSettings
+     * const taxSettings = await prisma.taxSettings.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends TaxSettingsUpdateArgs>(args: SelectSubset<T, TaxSettingsUpdateArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more TaxSettings.
+     * @param {TaxSettingsDeleteManyArgs} args - Arguments to filter TaxSettings to delete.
+     * @example
+     * // Delete a few TaxSettings
+     * const { count } = await prisma.taxSettings.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends TaxSettingsDeleteManyArgs>(args?: SelectSubset<T, TaxSettingsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more TaxSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TaxSettingsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many TaxSettings
+     * const taxSettings = await prisma.taxSettings.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends TaxSettingsUpdateManyArgs>(args: SelectSubset<T, TaxSettingsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more TaxSettings and returns the data updated in the database.
+     * @param {TaxSettingsUpdateManyAndReturnArgs} args - Arguments to update many TaxSettings.
+     * @example
+     * // Update many TaxSettings
+     * const taxSettings = await prisma.taxSettings.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more TaxSettings and only return the `id`
+     * const taxSettingsWithIdOnly = await prisma.taxSettings.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends TaxSettingsUpdateManyAndReturnArgs>(args: SelectSubset<T, TaxSettingsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one TaxSettings.
+     * @param {TaxSettingsUpsertArgs} args - Arguments to update or create a TaxSettings.
+     * @example
+     * // Update or create a TaxSettings
+     * const taxSettings = await prisma.taxSettings.upsert({
+     *   create: {
+     *     // ... data to create a TaxSettings
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the TaxSettings we want to update
+     *   }
+     * })
+     */
+    upsert<T extends TaxSettingsUpsertArgs>(args: SelectSubset<T, TaxSettingsUpsertArgs<ExtArgs>>): Prisma__TaxSettingsClient<$Result.GetResult<Prisma.$TaxSettingsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of TaxSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TaxSettingsCountArgs} args - Arguments to filter TaxSettings to count.
+     * @example
+     * // Count the number of TaxSettings
+     * const count = await prisma.taxSettings.count({
+     *   where: {
+     *     // ... the filter for the TaxSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends TaxSettingsCountArgs>(
+      args?: Subset<T, TaxSettingsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], TaxSettingsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a TaxSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TaxSettingsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends TaxSettingsAggregateArgs>(args: Subset<T, TaxSettingsAggregateArgs>): Prisma.PrismaPromise<GetTaxSettingsAggregateType<T>>
+
+    /**
+     * Group by TaxSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TaxSettingsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends TaxSettingsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: TaxSettingsGroupByArgs['orderBy'] }
+        : { orderBy?: TaxSettingsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, TaxSettingsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTaxSettingsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the TaxSettings model
+   */
+  readonly fields: TaxSettingsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for TaxSettings.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__TaxSettingsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the TaxSettings model
+   */
+  interface TaxSettingsFieldRefs {
+    readonly id: FieldRef<"TaxSettings", 'String'>
+    readonly taxRatePct: FieldRef<"TaxSettings", 'Float'>
+    readonly taxName: FieldRef<"TaxSettings", 'String'>
+    readonly taxDescription: FieldRef<"TaxSettings", 'String'>
+    readonly enabled: FieldRef<"TaxSettings", 'Boolean'>
+    readonly createdAt: FieldRef<"TaxSettings", 'DateTime'>
+    readonly updatedAt: FieldRef<"TaxSettings", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * TaxSettings findUnique
+   */
+  export type TaxSettingsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which TaxSettings to fetch.
+     */
+    where: TaxSettingsWhereUniqueInput
+  }
+
+  /**
+   * TaxSettings findUniqueOrThrow
+   */
+  export type TaxSettingsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which TaxSettings to fetch.
+     */
+    where: TaxSettingsWhereUniqueInput
+  }
+
+  /**
+   * TaxSettings findFirst
+   */
+  export type TaxSettingsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which TaxSettings to fetch.
+     */
+    where?: TaxSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TaxSettings to fetch.
+     */
+    orderBy?: TaxSettingsOrderByWithRelationInput | TaxSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TaxSettings.
+     */
+    cursor?: TaxSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TaxSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TaxSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TaxSettings.
+     */
+    distinct?: TaxSettingsScalarFieldEnum | TaxSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * TaxSettings findFirstOrThrow
+   */
+  export type TaxSettingsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which TaxSettings to fetch.
+     */
+    where?: TaxSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TaxSettings to fetch.
+     */
+    orderBy?: TaxSettingsOrderByWithRelationInput | TaxSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TaxSettings.
+     */
+    cursor?: TaxSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TaxSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TaxSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TaxSettings.
+     */
+    distinct?: TaxSettingsScalarFieldEnum | TaxSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * TaxSettings findMany
+   */
+  export type TaxSettingsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which TaxSettings to fetch.
+     */
+    where?: TaxSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TaxSettings to fetch.
+     */
+    orderBy?: TaxSettingsOrderByWithRelationInput | TaxSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing TaxSettings.
+     */
+    cursor?: TaxSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TaxSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TaxSettings.
+     */
+    skip?: number
+    distinct?: TaxSettingsScalarFieldEnum | TaxSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * TaxSettings create
+   */
+  export type TaxSettingsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * The data needed to create a TaxSettings.
+     */
+    data: XOR<TaxSettingsCreateInput, TaxSettingsUncheckedCreateInput>
+  }
+
+  /**
+   * TaxSettings createMany
+   */
+  export type TaxSettingsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many TaxSettings.
+     */
+    data: TaxSettingsCreateManyInput | TaxSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TaxSettings createManyAndReturn
+   */
+  export type TaxSettingsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * The data used to create many TaxSettings.
+     */
+    data: TaxSettingsCreateManyInput | TaxSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TaxSettings update
+   */
+  export type TaxSettingsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * The data needed to update a TaxSettings.
+     */
+    data: XOR<TaxSettingsUpdateInput, TaxSettingsUncheckedUpdateInput>
+    /**
+     * Choose, which TaxSettings to update.
+     */
+    where: TaxSettingsWhereUniqueInput
+  }
+
+  /**
+   * TaxSettings updateMany
+   */
+  export type TaxSettingsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update TaxSettings.
+     */
+    data: XOR<TaxSettingsUpdateManyMutationInput, TaxSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which TaxSettings to update
+     */
+    where?: TaxSettingsWhereInput
+    /**
+     * Limit how many TaxSettings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * TaxSettings updateManyAndReturn
+   */
+  export type TaxSettingsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * The data used to update TaxSettings.
+     */
+    data: XOR<TaxSettingsUpdateManyMutationInput, TaxSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which TaxSettings to update
+     */
+    where?: TaxSettingsWhereInput
+    /**
+     * Limit how many TaxSettings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * TaxSettings upsert
+   */
+  export type TaxSettingsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * The filter to search for the TaxSettings to update in case it exists.
+     */
+    where: TaxSettingsWhereUniqueInput
+    /**
+     * In case the TaxSettings found by the `where` argument doesn't exist, create a new TaxSettings with this data.
+     */
+    create: XOR<TaxSettingsCreateInput, TaxSettingsUncheckedCreateInput>
+    /**
+     * In case the TaxSettings was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<TaxSettingsUpdateInput, TaxSettingsUncheckedUpdateInput>
+  }
+
+  /**
+   * TaxSettings delete
+   */
+  export type TaxSettingsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+    /**
+     * Filter which TaxSettings to delete.
+     */
+    where: TaxSettingsWhereUniqueInput
+  }
+
+  /**
+   * TaxSettings deleteMany
+   */
+  export type TaxSettingsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TaxSettings to delete
+     */
+    where?: TaxSettingsWhereInput
+    /**
+     * Limit how many TaxSettings to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * TaxSettings without action
+   */
+  export type TaxSettingsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TaxSettings
+     */
+    select?: TaxSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TaxSettings
+     */
+    omit?: TaxSettingsOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -50344,6 +51490,19 @@ export namespace Prisma {
   };
 
   export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
+  export const TaxSettingsScalarFieldEnum: {
+    id: 'id',
+    taxRatePct: 'taxRatePct',
+    taxName: 'taxName',
+    taxDescription: 'taxDescription',
+    enabled: 'enabled',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -53746,6 +54905,70 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"AuditLog"> | Date | string
   }
 
+  export type TaxSettingsWhereInput = {
+    AND?: TaxSettingsWhereInput | TaxSettingsWhereInput[]
+    OR?: TaxSettingsWhereInput[]
+    NOT?: TaxSettingsWhereInput | TaxSettingsWhereInput[]
+    id?: StringFilter<"TaxSettings"> | string
+    taxRatePct?: FloatFilter<"TaxSettings"> | number
+    taxName?: StringFilter<"TaxSettings"> | string
+    taxDescription?: StringNullableFilter<"TaxSettings"> | string | null
+    enabled?: BoolFilter<"TaxSettings"> | boolean
+    createdAt?: DateTimeFilter<"TaxSettings"> | Date | string
+    updatedAt?: DateTimeFilter<"TaxSettings"> | Date | string
+  }
+
+  export type TaxSettingsOrderByWithRelationInput = {
+    id?: SortOrder
+    taxRatePct?: SortOrder
+    taxName?: SortOrder
+    taxDescription?: SortOrderInput | SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TaxSettingsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: TaxSettingsWhereInput | TaxSettingsWhereInput[]
+    OR?: TaxSettingsWhereInput[]
+    NOT?: TaxSettingsWhereInput | TaxSettingsWhereInput[]
+    taxRatePct?: FloatFilter<"TaxSettings"> | number
+    taxName?: StringFilter<"TaxSettings"> | string
+    taxDescription?: StringNullableFilter<"TaxSettings"> | string | null
+    enabled?: BoolFilter<"TaxSettings"> | boolean
+    createdAt?: DateTimeFilter<"TaxSettings"> | Date | string
+    updatedAt?: DateTimeFilter<"TaxSettings"> | Date | string
+  }, "id">
+
+  export type TaxSettingsOrderByWithAggregationInput = {
+    id?: SortOrder
+    taxRatePct?: SortOrder
+    taxName?: SortOrder
+    taxDescription?: SortOrderInput | SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: TaxSettingsCountOrderByAggregateInput
+    _avg?: TaxSettingsAvgOrderByAggregateInput
+    _max?: TaxSettingsMaxOrderByAggregateInput
+    _min?: TaxSettingsMinOrderByAggregateInput
+    _sum?: TaxSettingsSumOrderByAggregateInput
+  }
+
+  export type TaxSettingsScalarWhereWithAggregatesInput = {
+    AND?: TaxSettingsScalarWhereWithAggregatesInput | TaxSettingsScalarWhereWithAggregatesInput[]
+    OR?: TaxSettingsScalarWhereWithAggregatesInput[]
+    NOT?: TaxSettingsScalarWhereWithAggregatesInput | TaxSettingsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"TaxSettings"> | string
+    taxRatePct?: FloatWithAggregatesFilter<"TaxSettings"> | number
+    taxName?: StringWithAggregatesFilter<"TaxSettings"> | string
+    taxDescription?: StringNullableWithAggregatesFilter<"TaxSettings"> | string | null
+    enabled?: BoolWithAggregatesFilter<"TaxSettings"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"TaxSettings"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"TaxSettings"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     email: string
@@ -57093,6 +58316,76 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type TaxSettingsCreateInput = {
+    id?: string
+    taxRatePct?: number
+    taxName?: string
+    taxDescription?: string | null
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TaxSettingsUncheckedCreateInput = {
+    id?: string
+    taxRatePct?: number
+    taxName?: string
+    taxDescription?: string | null
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TaxSettingsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    taxRatePct?: FloatFieldUpdateOperationsInput | number
+    taxName?: StringFieldUpdateOperationsInput | string
+    taxDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TaxSettingsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    taxRatePct?: FloatFieldUpdateOperationsInput | number
+    taxName?: StringFieldUpdateOperationsInput | string
+    taxDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TaxSettingsCreateManyInput = {
+    id?: string
+    taxRatePct?: number
+    taxName?: string
+    taxDescription?: string | null
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TaxSettingsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    taxRatePct?: FloatFieldUpdateOperationsInput | number
+    taxName?: StringFieldUpdateOperationsInput | string
+    taxDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TaxSettingsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    taxRatePct?: FloatFieldUpdateOperationsInput | number
+    taxName?: StringFieldUpdateOperationsInput | string
+    taxDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -59701,6 +60994,44 @@ export namespace Prisma {
     ipAddress?: SortOrder
     userAgent?: SortOrder
     createdAt?: SortOrder
+  }
+
+  export type TaxSettingsCountOrderByAggregateInput = {
+    id?: SortOrder
+    taxRatePct?: SortOrder
+    taxName?: SortOrder
+    taxDescription?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TaxSettingsAvgOrderByAggregateInput = {
+    taxRatePct?: SortOrder
+  }
+
+  export type TaxSettingsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    taxRatePct?: SortOrder
+    taxName?: SortOrder
+    taxDescription?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TaxSettingsMinOrderByAggregateInput = {
+    id?: SortOrder
+    taxRatePct?: SortOrder
+    taxName?: SortOrder
+    taxDescription?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TaxSettingsSumOrderByAggregateInput = {
+    taxRatePct?: SortOrder
   }
 
   export type StringFieldUpdateOperationsInput = {

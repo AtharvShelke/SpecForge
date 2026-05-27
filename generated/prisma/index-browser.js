@@ -578,6 +578,16 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.TaxSettingsScalarFieldEnum = {
+  id: 'id',
+  taxRatePct: 'taxRatePct',
+  taxName: 'taxName',
+  taxDescription: 'taxDescription',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -739,7 +749,8 @@ exports.Prisma.ModelName = {
   PaymentAttempt: 'PaymentAttempt',
   CreditNote: 'CreditNote',
   CreditNoteLineItem: 'CreditNoteLineItem',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  TaxSettings: 'TaxSettings'
 };
 
 /**
