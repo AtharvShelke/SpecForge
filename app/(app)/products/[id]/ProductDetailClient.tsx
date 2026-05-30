@@ -100,14 +100,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     <div className="bg-white pb-28 lg:pb-16">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
-        {/* Breadcrumb */}
-        <Link
-          href="/products"
-          className="inline-flex items-center gap-1.5 text-sm text-stone-400 hover:text-stone-900 transition-colors"
-        >
-          <ArrowLeft className="size-3.5" aria-hidden />
-          Back to products
-        </Link>
+       
 
         {/* Main grid */}
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
@@ -220,29 +213,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   {brandOrCategory}
                 </p>
               )}
-              <div className="flex items-center gap-1.5 ml-auto">
-                <button
-                  type="button"
-                  onClick={() => setWishlisted((v) => !v)}
-                  className={cn(
-                    "inline-flex size-8 items-center justify-center rounded-lg border transition-colors",
-                    wishlisted
-                      ? "border-red-200 bg-red-50 text-red-500"
-                      : "border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-700"
-                  )}
-                  aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-                  aria-pressed={wishlisted}
-                >
-                  <Heart className={cn("size-3.5", wishlisted && "fill-current")} />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex size-8 items-center justify-center rounded-lg border border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-700 transition-colors"
-                  aria-label="Share product"
-                >
-                  <Share2 className="size-3.5" />
-                </button>
-              </div>
+              
             </div>
 
             {/* Name */}
@@ -311,14 +282,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   ? "Add another to cart"
                   : "Add to cart"}
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-12 w-full rounded-xl border-stone-200 text-stone-700 text-sm font-semibold hover:bg-stone-50 transition-colors"
-                asChild
-              >
-                <Link href="/checkout">Buy now</Link>
-              </Button>
+              
             </div>
 
             {/* Trust indicators */}

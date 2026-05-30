@@ -39,12 +39,18 @@ function FilterGroup({
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAll, setShowAll] = useState(false);
-  const options = showAll ? filter.options : filter.options.slice(0, 6);
 
-  if (filter.options.length === 0) {
+  const visibleOptions = useMemo(() => {
+    return filter.options.filter(
+      (option) => option.count > 0 || selectedValues.includes(option.value)
+    );
+  }, [filter.options, selectedValues]);
+
+  if (visibleOptions.length === 0) {
     return null;
   }
 
+  const options = showAll ? visibleOptions : visibleOptions.slice(0, 6);
   const selectedCount = selectedValues.length;
 
   return (
@@ -106,13 +112,13 @@ function FilterGroup({
         </div>
       )}
 
-      {filter.options.length > 6 && (
+      {visibleOptions.length > 6 && (
         <button
           type="button"
           onClick={() => setShowAll(!showAll)}
           className="mt-3 text-xs font-medium text-gray-500 hover:text-gray-900"
         >
-          {showAll ? "Show less" : `Show ${filter.options.length - 6} more`}
+          {showAll ? "Show less" : `Show ${visibleOptions.length - 6} more`}
         </button>
       )}
     </div>
