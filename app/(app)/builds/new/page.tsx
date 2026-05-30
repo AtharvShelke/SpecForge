@@ -2,9 +2,18 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useBuilderCategories } from "@/hooks/useCategories";
-import { useBuild } from "@/context/BuildContext";
 import { useProductFilters } from "@/hooks/useProductFilters";
 import { useCatalogListing } from "@/hooks/useCatalogListing";
+import { apiFetch } from "@/lib/helpers";
+import {
+  DEFAULT_BUILDER_SETTINGS,
+  BuilderSettings,
+  Build,
+  BuildItem,
+  CompatibilityResult,
+  OverallCompatibilityStatus,
+  CompatibilityCheck,
+} from "@/types";
 
 import CatalogFiltersSidebar from "@/app/(app)/products/components/CatalogFiltersSidebar";
 import CatalogTopBar from "@/app/(app)/products/components/CatalogCategoryTabs";
@@ -32,22 +41,146 @@ function PCBuilderContent() {
 
   const { subCategories } = useBuilderCategories();
 
-  const {
-    build,
-    itemBySlot,
-    addItem,
-    removeItem,
-    isBuildMode,
-    toggleBuildMode,
-    createBuild,
-    checkCompatibility,
-    compatibilityResult,
-    overallStatus,
-    compatibilityErrors,
-    compatibilityWarnings,
-    generateShareLink,
-    loading: buildLoading,
-  } = useBuild();
+  const [build, setBuild] = useState<Build | null>(null);
+  const [compatibilityResult, setCompatibilityResult] = useState<CompatibilityResult | null>(null);
+  const [buildLoading, setBuildLoading] = useState(false);
+  const [builderSettings, setBuilderSettings] = useState<BuilderSettings>(DEFAULT_BUILDER_SETTINGS);
+  const [isBuildMode, setIsBuildMode] = useState(true);
+
+  const toggleBuildMode = useCallback(() => {
+    setIsBuildMode((v) => !v);
+  }, []);
+
+  const createBuild = useCallback(async (name?: string) => {
+    setBuildLoading(true);
+    try {
+      const data = await apiFetch<Build>("/api/builds", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      });
+      setBuild(data);
+      setCompatibilityResult(null);
+    } catch (err) {
+      console.error("Failed to create build:", err);
+    } finally {
+      setBuildLoading(false);
+    }
+  }, []);
+
+  const addItem = useCallback(async (variantId: string, slotId: string) => {
+    if (!build) return;
+    setBuildLoading(true);
+    try {
+      await apiFetch(`/api/builds/${build.id}/items`, {
+        method: "POST",
+        body: JSON.stringify({ variantId, slotId }),
+      });
+      const refreshed = await apiFetch<Build>(`/api/builds/${build.id}`);
+      setBuild(refreshed);
+      setCompatibilityResult(null);
+    } catch (err) {
+      console.error("Failed to add item to build:", err);
+    } finally {
+      setBuildLoading(false);
+    }
+  }, [build]);
+
+  const removeItem = useCallback(async (slotId: string) => {
+    if (!build) return;
+    const item = build.items?.find((i: any) => i.slotId === slotId);
+    if (!item) return;
+    setBuildLoading(true);
+    try {
+      await apiFetch(`/api/builds/${build.id}/items/${item.id}`, {
+        method: "DELETE",
+      });
+      const refreshed = await apiFetch<Build>(`/api/builds/${build.id}`);
+      setBuild(refreshed);
+      setCompatibilityResult(null);
+    } catch (err) {
+      console.error("Failed to remove item from build:", err);
+    } finally {
+      setBuildLoading(false);
+    }
+  }, [build]);
+
+  const checkCompatibility = useCallback(async (): Promise<CompatibilityResult | null> => {
+    if (!build) return null;
+
+    if (!builderSettings.enforceCompatibility) {
+      const skipped: CompatibilityResult = {
+        id: "skipped",
+        buildId: build.id,
+        isCompatible: true,
+        createdAt: new Date().toISOString(),
+        checks: [],
+        summary: { totalChecks: 0, passed: 0, failed: 0, errors: 0, warnings: 0 },
+      };
+      setCompatibilityResult(skipped);
+      return skipped;
+    }
+
+    setBuildLoading(true);
+    try {
+      const result = await apiFetch<CompatibilityResult>("/api/compatibility/check", {
+        method: "POST",
+        body: JSON.stringify({ buildId: build.id }),
+      });
+      setCompatibilityResult(result);
+      return result;
+    } catch (err) {
+      console.error("Failed to check compatibility:", err);
+      return null;
+    } finally {
+      setBuildLoading(false);
+    }
+  }, [build, builderSettings.enforceCompatibility]);
+
+  const generateShareLink = useCallback(() => {
+    if (!build?.id || typeof window === "undefined") return null;
+    return `${window.location.origin}/builds/${build.id}`;
+  }, [build?.id]);
+
+  const itemBySlot = useMemo(() => {
+    const map = new Map<string, BuildItem>();
+    if (build?.items) {
+      build.items.forEach((item: BuildItem) => {
+        map.set(item.slotId, item);
+      });
+    }
+    return map;
+  }, [build]);
+
+  const overallStatus = useMemo<OverallCompatibilityStatus>(() => {
+    if (!compatibilityResult) return "UNCHECKED";
+    if (compatibilityResult.isCompatible) {
+      const hasWarnings = compatibilityResult.checks?.some(
+        (c) => !c.passed && c.severity === "WARNING",
+      );
+      return hasWarnings ? "WARNING" : "COMPATIBLE";
+    }
+    return "INCOMPATIBLE";
+  }, [compatibilityResult]);
+
+  const compatibilityErrors = useMemo(() => {
+    if (!compatibilityResult?.checks) return [];
+    return compatibilityResult.checks.filter(
+      (c) => !c.passed && c.severity === "ERROR",
+    );
+  }, [compatibilityResult]);
+
+  const compatibilityWarnings = useMemo(() => {
+    if (!compatibilityResult?.checks) return [];
+    return compatibilityResult.checks.filter(
+      (c) => !c.passed && c.severity === "WARNING",
+    );
+  }, [compatibilityResult]);
+
+  useEffect(() => {
+    apiFetch<BuilderSettings>("/api/builder-settings")
+      .then((s) => setBuilderSettings({ ...DEFAULT_BUILDER_SETTINGS, ...s }))
+      .catch(() => {});
+  }, []);
 
   const cart = build?.items ?? [];
 

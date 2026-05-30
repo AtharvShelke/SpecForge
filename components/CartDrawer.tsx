@@ -13,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useShop } from "@/context/ShopContext";
+import { useCart } from "@/context/ShopCartContext";
 
 export default function CartDrawer() {
   const {
@@ -24,7 +24,7 @@ export default function CartDrawer() {
     removeFromCart,
     setCartOpen,
     updateQuantity,
-  } = useShop();
+  } = useCart();
 
   return (
     <Sheet open={isCartOpen} onOpenChange={setCartOpen}>

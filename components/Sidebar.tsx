@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { ChevronDown, ChevronRight, X, Wrench, Check, Filter, SlidersHorizontal, Search } from 'lucide-react';
-import { useShop } from '../context/ShopContext';
+
 import { Product, CategoryAttributeDefinition, CategoryAttributesConfig, CategoryNode } from '../types';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -170,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarSearchTerm,
   onSidebarSearchChange,
 }) => {
-  const { cart } = useShop();
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const isBuildMode = searchParams.get('mode') === 'build';

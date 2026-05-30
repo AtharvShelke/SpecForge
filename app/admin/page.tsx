@@ -2,7 +2,7 @@
 "use client";
 
 import { lazy, Suspense, memo, type ReactNode } from "react";
-import { useAdmin } from "@/context/AdminContext";
+import { useSearchParams } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ── Lazy-loaded tab components ────────────────────────────────────────────────
@@ -76,7 +76,8 @@ const TabViewport = memo(function TabViewport({
 // ── AdminDashboardContent ─────────────────────────────────────────────────────
 
 const AdminDashboardContent = memo(function AdminDashboardContent() {
-  const { activeTab } = useAdmin();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "overview";
 
   return (
     <div className="h-full min-h-0">

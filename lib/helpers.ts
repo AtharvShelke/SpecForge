@@ -62,13 +62,3 @@ export async function apiFetch<T>(
   return res.json();
 }
 
-export const refreshAndSyncDetail = async (
-  id: string,
-  refresh: () => Promise<void>,
-  selectedId: string | undefined,
-  loadDetail: (id: string) => Promise<void>,
-) => {
-  await refresh();
-  if (selectedId === id) await loadDetail(id);
-};
-

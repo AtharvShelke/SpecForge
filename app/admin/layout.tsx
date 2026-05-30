@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useCallback, memo, type ReactNode } from "react";
-import { AdminProvider, useAdmin } from "@/context/AdminContext";
 import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { AdminHeader } from "@/components/dashboard/AdminHeader";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const TAB_LABELS: Record<string, string> = {
   overview: "Overview",
@@ -26,9 +25,15 @@ export const AdminShell = memo(function AdminShell({
 }: {
   children: ReactNode;
 }) {
-  const { activeTab, setActiveTab } = useAdmin();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const activeTab = searchParams.get("tab") || "overview";
+
+  const setActiveTab = useCallback((tab: string) => {
+    router.push(`/admin?tab=${tab}`);
+  }, [router]);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = useCallback(async () => {
     await fetch("/api/logout", { method: "POST" });
@@ -71,9 +76,5 @@ export const AdminShell = memo(function AdminShell({
 AdminShell.displayName = "AdminShell";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <AdminProvider>
-      <AdminShell>{children}</AdminShell>
-    </AdminProvider>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

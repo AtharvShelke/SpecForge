@@ -21,8 +21,7 @@ import {
   ShieldX,
   Loader2,
 } from "lucide-react";
-import type { BuildItem } from "@/types";
-import type { CompatibilityResult, OverallCompatibilityStatus } from "@/context/BuildContext";
+import type { BuildItem, CompatibilityResult, OverallCompatibilityStatus } from "@/types";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────

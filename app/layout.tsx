@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import CartDrawer from "@/components/CartDrawer";
 import { Toaster } from "@/components/ui/toaster";
-import { BuildProvider } from "@/context/BuildContext";
-import { OrderProvider } from "@/context/OrderContext";
-import { ShopProvider } from "@/context/ShopContext";
+import { ShopCartProvider } from "@/context/ShopCartContext";
 import { ReactNode } from "react";
 
 export const metadata: Metadata = {
@@ -38,15 +36,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="app-shell antialiased">
-        <ShopProvider autoLoad={false}>
-          <OrderProvider autoLoad={false}>
-            <BuildProvider autoLoad={false}>
-              <main className="min-h-screen">{children}</main>
-              <CartDrawer />
-              <Toaster />
-            </BuildProvider>
-          </OrderProvider>
-        </ShopProvider>
+        <ShopCartProvider>
+          <main className="min-h-screen">{children}</main>
+          <CartDrawer />
+          <Toaster />
+        </ShopCartProvider>
       </body>
     </html>
   );

@@ -12,7 +12,6 @@ import {
 import type { BuilderUIRule } from "@/types";
 import { BuilderRuleAction } from "@/types";
 import { apiFetch } from "@/lib/helpers";
-import { useAdmin } from "@/context/AdminContext";
 import { cn } from "@/lib/utils";
 
 const OPERATORS = [
@@ -53,8 +52,20 @@ const EMPTY_FORM: RuleFormData = {
 };
 
 const BuilderRulesTab = memo(function BuilderRulesTab() {
-  const { subCategories } = useAdmin();
+  const [subCategories, setSubCategories] = useState<any[]>([]);
   const [rules, setRules] = useState<BuilderUIRule[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<any[]>("/api/catalog/subcategories")
+      .then((data) => {
+        if (!cancelled) setSubCategories(data);
+      })
+      .catch((err) => console.error("Failed to load subcategories:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<RuleFormData>(EMPTY_FORM);

@@ -11,10 +11,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useShop } from "@/context/ShopContext";
+import { useCategories, Category } from "@/hooks/useCategories";
 import { useProductFilters } from "@/hooks/useProductFilters";
 import { useCatalogListing } from "@/hooks/useCatalogListing";
-import { Category } from "@/types";
 
 import CatalogEmptyState from "@/components/storefront/catalog/CatalogEmptyState";
 import CatalogLoadingGrid from "@/components/storefront/catalog/CatalogLoadingGrid";
@@ -45,7 +44,7 @@ function getActiveCategory(
   return (
     categories.find((category) =>
       (category.subCategories ?? []).some(
-        (subCategory) => subCategory.id === selectedSubCategoryId,
+        (subCategory: any) => subCategory.id === selectedSubCategoryId,
       ),
     ) ?? null
   );
@@ -53,13 +52,7 @@ function getActiveCategory(
 
 export default function ProductsClient() {
   const searchParams = useSearchParams();
-  const { categories, refreshCategories } = useShop();
-
-  useEffect(() => {
-    if (categories.length === 0) {
-      refreshCategories();
-    }
-  }, [categories.length, refreshCategories]);
+  const { categories } = useCategories();
 
   const {
     activeFilterCount,

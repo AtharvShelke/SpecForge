@@ -1,7 +1,8 @@
 "use client";
 
-import { memo, useCallback, useMemo } from "react";
-import { useAdmin } from "@/context/AdminContext";
+import { memo, useCallback, useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/helpers";
 import { InventorySkuSummary, Order, OrderStatus } from "@/types";
 import {
   ArrowDownRight,
@@ -223,14 +224,38 @@ const DesktopOrderRow = memo(({ order }: { order: OverviewOrderRow }) => (
 DesktopOrderRow.displayName = "DesktopOrderRow";
 
 const Overview = () => {
-  const { orders, inventory, syncData, isLoading, setActiveTab } =
-    useAdmin() as unknown as {
-      orders: Order[];
-      inventory: InventorySkuSummary[];
-      syncData: () => Promise<void>;
-      isLoading: boolean;
-      setActiveTab: (tab: string) => void;
-    };
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inventory, setInventory] = useState<InventorySkuSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const setActiveTab = useCallback((tab: string) => {
+    router.push(`/admin?tab=${tab}`);
+  }, [router]);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [ordersData, inventoryData] = await Promise.all([
+        apiFetch<Order[]>("/api/orders?limit=1000&page=1"),
+        apiFetch<any>("/api/inventory?limit=1000&page=1"),
+      ]);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setInventory(Array.isArray(inventoryData?.items) ? inventoryData.items : Array.isArray(inventoryData) ? inventoryData : []);
+    } catch (err) {
+      console.error("Overview load failed", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const syncData = useCallback(async () => {
+    await loadData();
+  }, [loadData]);
 
   const {
     totalRevenue,

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useMemo, memo } from "react";
+import { useState, useCallback, useMemo, memo, useEffect } from "react";
 
-import { useAdmin } from "@/context/AdminContext";
+import { apiFetch } from "@/lib/helpers";
 import {
   Trash,
   Plus,
@@ -260,12 +260,56 @@ DesktopCategoryRow.displayName = "DesktopCategoryRow";
 const EMPTY_CATEGORIES: string[] = [];
 
 const BrandManager = () => {
-  const admin = useAdmin() as any;
-  const { syncData, isLoading } = admin;
-  const brands: Brand[] = admin.catalog?.brands ?? admin.brands ?? [];
-  const catalogCategories: Category[] = admin.catalog?.categories ?? [];
-  const addBrand = admin.addBrand ?? (() => undefined);
-  const deleteBrand = admin.deleteBrand ?? (() => undefined);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [catalogCategories, setCatalogCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadDependencies = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [brandsData, catsData] = await Promise.all([
+        apiFetch<Brand[]>("/api/catalog/brands"),
+        apiFetch<Category[]>("/api/catalog/categories"),
+      ]);
+      setBrands(Array.isArray(brandsData) ? brandsData : []);
+      setCatalogCategories(Array.isArray(catsData) ? catsData : []);
+    } catch (err) {
+      console.error("Failed to load BrandManager dependencies", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDependencies();
+  }, [loadDependencies]);
+
+  const addBrand = useCallback(async (data: any) => {
+    try {
+      await apiFetch("/api/catalog/brands", {
+        method: "POST",
+        body: JSON.stringify({ name: data.name }),
+      });
+      const brandsData = await apiFetch<Brand[]>("/api/catalog/brands");
+      setBrands(Array.isArray(brandsData) ? brandsData : []);
+    } catch (err) {
+      console.error("Failed to add brand", err);
+    }
+  }, []);
+
+  const deleteBrand = useCallback(async (id: string) => {
+    try {
+      await apiFetch(`/api/catalog/brands/${id}`, { method: "DELETE" });
+      const brandsData = await apiFetch<Brand[]>("/api/catalog/brands");
+      setBrands(Array.isArray(brandsData) ? brandsData : []);
+    } catch (err) {
+      console.error("Failed to delete brand", err);
+    }
+  }, []);
+
+  const syncData = useCallback(async () => {
+    await loadDependencies();
+  }, [loadDependencies]);
 
   const [newBrandName, setNewBrandName] = useState("");
   const [selectedCats, setSelectedCats] = useState<string[]>([]);

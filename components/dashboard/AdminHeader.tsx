@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { useAdmin } from "@/context/AdminContext";
+
 import { Bell, Menu, LogOut, ChevronDown, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,7 +21,10 @@ interface AdminHeaderProps {
 
 export const AdminHeader = memo<AdminHeaderProps>(
   ({ onLogout, onMenuClick, title }) => {
-    const { syncData, isLoading } = useAdmin();
+    const syncData = () => {
+      window.location.reload();
+    };
+    const isLoading = false;
 
     return (
       <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">

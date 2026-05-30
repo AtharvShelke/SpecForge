@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, memo } from "react";
-import { useAdmin } from "@/context/AdminContext";
+import { apiFetch } from "@/lib/helpers";
 import {
   InventorySkuSummary,
   Order,
@@ -384,25 +384,47 @@ OrderRow.displayName = "OrderRow";
    MAIN ORDER MANAGER
 ───────────────────────────────────────────────────────────────*/
 const OrderManager = () => {
-  const {
-    orders,
-    updateOrderStatus,
-    deleteOrder,
-    inventory,
-    syncData,
-    isLoading,
-  } = useAdmin() as unknown as {
-    orders: Order[];
-    updateOrderStatus: (
-      id: string,
-      status: OrderStatus,
-      note?: string,
-    ) => Promise<void>;
-    deleteOrder: (id: string) => Promise<void>;
-    inventory: InventorySkuSummary[];
-    syncData: () => Promise<void>;
-    isLoading: boolean;
-  };
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inventory, setInventory] = useState<InventorySkuSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [ordersData, inventoryData] = await Promise.all([
+        apiFetch<Order[]>("/api/orders?limit=1000&page=1"),
+        apiFetch<any>("/api/inventory?limit=1000&page=1"),
+      ]);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setInventory(Array.isArray(inventoryData?.items) ? inventoryData.items : Array.isArray(inventoryData) ? inventoryData : []);
+    } catch (err) {
+      console.error("OrderManager load failed", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const syncData = useCallback(async () => {
+    await loadData();
+  }, [loadData]);
+
+  const updateOrderStatus = useCallback(async (id: string, status: OrderStatus, note?: string) => {
+    await apiFetch(`/api/orders/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, note }),
+    });
+    await loadData();
+  }, [loadData]);
+
+  const deleteOrder = useCallback(async (id: string) => {
+    await apiFetch(`/api/orders/${id}`, { method: "DELETE" });
+    await loadData();
+  }, [loadData]);
 
   const aggregatedInventory = useMemo(() => {
     const productTotals = new Map<

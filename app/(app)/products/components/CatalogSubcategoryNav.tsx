@@ -1,6 +1,6 @@
 "use client";
 
-import { Category, SubCategory } from "@/types";
+import { Category, SubCategory } from "@/hooks/useCategories";
 import { cn } from "@/lib/utils";
 import {
   Select,

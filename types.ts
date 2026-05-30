@@ -991,6 +991,12 @@ export interface CompatibilityCheck {
   rule?: CompatibilityRule;
 }
 
+export type OverallCompatibilityStatus =
+  | "COMPATIBLE"
+  | "WARNING"
+  | "INCOMPATIBLE"
+  | "UNCHECKED";
+
 export interface CompatibilityResult {
   id: string;
   buildId: string;

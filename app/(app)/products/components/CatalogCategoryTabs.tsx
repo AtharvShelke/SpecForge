@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Category } from "@/types";
+import { Category } from "@/hooks/useCategories";
 
 interface Props {
   categories: Category[];

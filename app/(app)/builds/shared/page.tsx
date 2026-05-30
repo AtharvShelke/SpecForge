@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useShop } from "@/context/ShopContext";
+import { useCart } from "@/context/ShopCartContext";
 import { CartItem, Product } from "@/types";
 import { toast } from "@/hooks/use-toast";
 import { normalizeCatalogProduct } from "@/lib/catalogFrontend";
@@ -18,7 +18,7 @@ interface SharedBuildData {
 
 export default function SharedBuildPage() {
   const searchParams = useSearchParams();
-  const { addToCart, cart } = useShop();
+  const { addToCart, cart } = useCart();
   const [buildData, setBuildData] = useState<SharedBuildData[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);

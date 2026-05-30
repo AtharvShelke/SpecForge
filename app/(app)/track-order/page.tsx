@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useMemo, memo, Fragment } from 'react';
 import Image from 'next/image';
-import { useShop } from '@/context/ShopContext';
-import { useOrder } from '@/context/OrderContext';
+import { useCart } from '@/context/ShopCartContext';
 
 type CompatibilityIssue = { message: string };
 
@@ -238,8 +237,7 @@ const TimelineStep = memo(function TimelineStep({
 });
 
 export default function TrackOrderPage() {
-    const { addToCart, clearCart, setCartOpen } = useShop();
-    const { trackOrder } = useOrder();
+    const { addToCart, clearCart, setCartOpen } = useCart();
 
     const [orderId, setOrderId] = useState('');
     const [contact, setContact] = useState('');
@@ -251,7 +249,9 @@ export default function TrackOrderPage() {
         event.preventDefault();
         setSearched(false);
         try {
-            const order = await trackOrder(orderId, contact);
+            const res = await fetch(`/api/storefront/track-order?orderId=${encodeURIComponent(orderId)}&contact=${encodeURIComponent(contact)}`);
+            if (!res.ok) throw new Error('Order not found');
+            const order = await res.json();
             setFoundOrder(order);
         } catch (error) {
             console.error('Track order error:', error);
@@ -259,7 +259,7 @@ export default function TrackOrderPage() {
         } finally {
             setSearched(true);
         }
-    }, [orderId, contact, trackOrder]);
+    }, [orderId, contact]);
 
     const handleReorder = useCallback(() => {
         if (!foundOrder) return;

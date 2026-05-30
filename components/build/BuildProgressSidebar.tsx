@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useShop } from '../../context/ShopContext';
+import { useCart } from '../../context/ShopCartContext';
 import { Check, XCircle, AlertTriangle, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { validateBuild } from '@/lib/calculations/compatibility';
@@ -15,8 +15,9 @@ interface BuildProgressSidebarProps {
 }
 
 import { motion, AnimatePresence } from 'framer-motion';
+
 const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCategory, onStepClick }) => {
-    const { cart } = useShop();
+    const { cart } = useCart();
     const searchParams = useSearchParams();
     const isBuildMode = searchParams.get('mode') === 'build';
     const { buildSequence } = useBuildSequence();
@@ -29,11 +30,11 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
     }, [categories]);
 
     // Compute compatibility report locally from cart
-    const compatibilityReport = useMemo(() => validateBuild(cart), [cart]);
+    const compatibilityReport = useMemo(() => validateBuild(cart as any), [cart]);
 
     const buildSteps = useMemo(() => {
         return buildSequenceCodes.map((cat, index) => {
-            const item = cart.find(i => (typeof i.category === 'string' ? i.category : i.category?.code ?? i.category?.slug) === cat);
+            const item = cart.find(i => (typeof i.category === 'string' ? i.category : (i.category as any)?.code ?? (i.category as any)?.slug) === cat);
             return {
                 category: cat,
                 label: getLabel(cat),
@@ -89,33 +90,33 @@ const BuildProgressSidebar: React.FC<BuildProgressSidebarProps> = ({ activeCateg
                                         key={step.category}
                                         onClick={() => onStepClick(step.category)}
                                         className={`
-                            w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all relative
-                            ${isActive
+                             w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all relative
+                             ${isActive
                                                 ? 'border-blue-300 bg-blue-50/50 shadow-sm ring-1 ring-blue-100'
                                                 : isCompleted
                                                     ? 'border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm'
                                                     : 'border-zinc-200 border-dashed bg-zinc-50/50 hover:bg-zinc-100'
                                             }
-                          `}
+                           `}
                                     >
                                         {/* Step indicator */}
                                         <div className={`
-                            w-6 h-6 mt-0.5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold transition-colors z-10
-                            ${isCompleted
+                             w-6 h-6 mt-0.5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold transition-colors z-10
+                             ${isCompleted
                                                 ? 'bg-zinc-900 text-white'
                                                 : isActive
                                                     ? 'bg-blue-600 text-white'
                                                     : 'bg-zinc-200 text-zinc-500'
                                             }
-                          `}>
+                           `}>
                                             {isCompleted ? <Check size={12} strokeWidth={3} /> : step.step}
                                         </div>
 
                                         {/* Connecting line (if not last) */}
                                         {idx < buildSteps.length - 1 && (
                                             <div className={`absolute top-9 left-[1.125rem] w-px h-[calc(100%-8px)] rounded-full -translate-x-1/2 z-0
-                                ${isCompleted ? 'bg-zinc-300' : 'bg-zinc-200 border-dashed border-l'}
-                              `} />
+                                 ${isCompleted ? 'bg-zinc-300' : 'bg-zinc-200 border-dashed border-l'}
+                               `} />
                                         )}
 
                                         {/* Content */}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Lock, ShieldCheck, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useShop } from "@/context/ShopContext";
+import { useCart } from "@/context/ShopCartContext";
 import { Product, specsToFlat } from "@/types";
 
 interface ProductDetailClientProps {
@@ -28,7 +28,7 @@ function getAvailableQuantity(product: Product) {
 export default function ProductDetailClient({
   product,
 }: ProductDetailClientProps) {
-  const { addToCart, cart } = useShop();
+  const { addToCart, cart } = useCart();
   const images =
     product.media?.map((media) => media.url) ??
     (product.image ? [product.image] : ["/placeholder.png"]);

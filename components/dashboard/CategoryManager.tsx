@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useCallback, memo } from "react";
-import { useAdmin } from "@/context/AdminContext";
+
 import { useToast } from "@/hooks/use-toast";
 import {
   CategoryFilterConfig,
@@ -480,50 +480,93 @@ const EMPTY_SPEC_FORM: UpdateSpecInput = {
 
 const CategoryManager = () => {
   const { toast } = useToast();
-  const admin = useAdmin() as unknown as {
-    categoryHierarchy: CategoryNode[];
-    refreshCategoryHierarchy: () => Promise<void>;
-    updateCategories: (categories: CategoryNode[]) => Promise<void>;
-    syncData: () => Promise<void>;
-    isLoading: boolean;
-    subCategories: SubCategory[];
-    specs: SpecDefinition[];
-    refreshSpecs: (subCategoryId?: string) => Promise<void>;
-    createSpec: (data: any) => Promise<void>;
-    updateSpec: (id: string, data: UpdateSpecInput) => Promise<void>;
-    deleteSpec: (id: string, subCategoryId?: string) => Promise<void>;
-  } & {
-    filterConfigs?: CategoryFilterConfig[];
-    updateFilterConfig?: (
-      category: string,
-      filters: FilterDefinition[],
-    ) => Promise<void>;
-  };
-  const {
-    categoryHierarchy,
-    refreshCategoryHierarchy,
-    updateCategories,
-    syncData,
-    isLoading,
-    subCategories,
-    specs,
-    refreshSpecs,
-    updateSpec,
-    deleteSpec,
-  } = admin;
-  const filterConfigs = Array.isArray(admin.filterConfigs)
-    ? admin.filterConfigs
-    : [];
-  const updateFilterConfig = admin.updateFilterConfig ?? (async () => { });
+  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryNode[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [specs, setSpecs] = useState<SpecDefinition[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const filterConfigs: CategoryFilterConfig[] = [];
+  const updateFilterConfig = useCallback(async (category: string, filters: FilterDefinition[]) => {
+    // No-op or custom override endpoint updates if needed.
+  }, []);
+
+  const loadDependencies = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [hierarchyData, subCatsData] = await Promise.all([
+        apiFetch<CategoryNode[]>("/api/catalog/categories/hierarchy"),
+        apiFetch<SubCategory[]>("/api/catalog/subcategories"),
+      ]);
+      setCategoryHierarchy(Array.isArray(hierarchyData) ? hierarchyData : []);
+      setSubCategories(Array.isArray(subCatsData) ? subCatsData : []);
+    } catch (err) {
+      console.error("Failed to load CategoryManager dependencies", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDependencies();
+  }, [loadDependencies]);
+
+  const refreshCategoryHierarchy = useCallback(async () => {
+    try {
+      const data = await apiFetch<CategoryNode[]>("/api/catalog/categories/hierarchy");
+      setCategoryHierarchy(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to refresh category hierarchy:", err);
+    }
+  }, []);
+
+  const updateCategories = useCallback(async (categoriesList: CategoryNode[]) => {
+    const data = await apiFetch<CategoryNode[]>("/api/catalog/categories/hierarchy", {
+      method: "PUT",
+      body: JSON.stringify(categoriesList),
+    });
+    const next = Array.isArray(data) ? data : [];
+    setCategoryHierarchy(next);
+  }, []);
+
+  const refreshSpecs = useCallback(async (subCategoryId?: string) => {
+    if (!subCategoryId) return;
+    const data = await apiFetch<any[]>(`/api/catalog/specs?subCategoryId=${subCategoryId}`);
+    setSpecs(
+      (Array.isArray(data) ? data : []).map((s) => ({
+        id: s.id,
+        name: s.label || s.name,
+        subCategoryId: String(s.subcategoryId),
+        valueType: s.type,
+        isFilterable: s.isFilterable,
+        isRange: s.isRange,
+        isMulti: s.isMulti,
+        filterGroup: s.filterGroup,
+        filterOrder: s.filterOrder,
+        options: s.options,
+        childOptionDeps: s.childOptionDeps,
+      }))
+    );
+  }, []);
+
+  const updateSpec = useCallback(async (id: string, payload: any) => {
+    await apiFetch(`/api/catalog/attributes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }, []);
+
+  const deleteSpec = useCallback(async (id: string, subCategoryId?: string) => {
+    await apiFetch(`/api/catalog/attributes/${id}`, {
+      method: "DELETE",
+    });
+  }, []);
+
+  const syncData = useCallback(async () => {
+    await loadDependencies();
+  }, [loadDependencies]);
+
   const categories = Array.isArray(categoryHierarchy) ? categoryHierarchy : [];
   const [selectedSubCategoryId, setSelectedSubCategoryId] =
     useState<string>("");
-
-  useEffect(() => {
-    refreshCategoryHierarchy().catch((error) => {
-      console.error("Failed to load category hierarchy", error);
-    });
-  }, [refreshCategoryHierarchy]);
 
   useEffect(() => {
     if (!selectedSubCategoryId && subCategories.length > 0) {
@@ -782,7 +825,7 @@ const CategoryManager = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to save builder config");
       }
-      await admin.syncData();
+      await syncData();
       toast({
         title: "Settings saved",
         description: "PC Builder configuration updated.",
@@ -797,7 +840,7 @@ const CategoryManager = () => {
     } finally {
       setIsSavingBuilder(false);
     }
-  }, [selectedSubCategoryId, builderForm, admin, toast]);
+  }, [selectedSubCategoryId, builderForm, syncData, toast]);
 
   const activeSpecs = useMemo(
     () => specs.filter((spec) => spec.subCategoryId === selectedSubCategoryId),

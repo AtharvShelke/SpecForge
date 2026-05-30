@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useShop } from '@/context/ShopContext';
+import { useCart } from '@/context/ShopCartContext';
 import { specsToFlat } from '@/types';
 import Link from 'next/link';
 import { ArrowLeft, XCircle, ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function ComparePage() {
-    const { compareItems, removeFromCompare, addToCart, cart } = useShop();
+    const { compareItems, removeFromCompare, addToCart, cart } = useCart();
     const router = useRouter();
 
     const allSpecKeys = useMemo(() => {

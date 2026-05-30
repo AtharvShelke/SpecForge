@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAdmin } from "@/context/AdminContext";
+import { apiFetch } from "@/lib/helpers";
 import {
   Brand,
   Category,
@@ -479,29 +479,127 @@ const ProductMediaUploader = React.memo(function ProductMediaUploader({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 const ProductManager = () => {
-  const {
-    products,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    categories,
-    subCategories,
-    brands,
-    schemas,
-    syncData,
-    isLoading,
-  } = useAdmin() as unknown as {
-    products: Product[];
-    addProduct: (...args: any[]) => Promise<void>;
-    updateProduct: (...args: any[]) => Promise<void>;
-    deleteProduct: (id: string) => Promise<void>;
-    categories: Array<Category | string>;
-    subCategories: any[];
-    brands: Brand[];
-    schemas: ProductSchema[];
-    syncData: () => Promise<void>;
-    isLoading: boolean;
-  };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const schemas: ProductSchema[] = [];
+
+  const loadDependencies = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [catsData, subsData, brandsData] = await Promise.all([
+        apiFetch<Category[]>("/api/catalog/categories"),
+        apiFetch<any[]>("/api/catalog/subcategories"),
+        apiFetch<Brand[]>("/api/catalog/brands"),
+      ]);
+      setCategories(catsData);
+      setSubCategories(subsData);
+      setBrands(brandsData);
+    } catch (err) {
+      console.error("Failed to load ProductManager dependencies", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDependencies();
+  }, [loadDependencies]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAllProducts = async () => {
+      try {
+        const data = await apiFetch<any>("/api/catalog/products");
+        if (!cancelled) {
+          const prodList = Array.isArray(data) ? data : (data?.products ?? []);
+          setProducts(prodList);
+        }
+      } catch (err) {
+        console.error("Failed to fetch all products:", err);
+      }
+    };
+    fetchAllProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTrigger]);
+
+  const addProduct = useCallback(async (data: any, stock: number, costPrice: number) => {
+    const brandName = data?.specs?.brand || data?.brand?.name || data?.brandName;
+    const brand = brands.find((entry) => entry.name === brandName);
+    const directSubCategory = subCategories.find(
+      (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+    );
+    const categoryMatch = categories.find((entry) => entry.name === data?.category);
+    const subCategoryId = directSubCategory?.id || categoryMatch?.subcategories?.[0]?.id || categoryMatch?.subCategories?.[0]?.id;
+
+    if (!subCategoryId) {
+      throw new Error(`Unable to resolve a sub-category for "${data?.category ?? "this product"}".`);
+    }
+
+    await apiFetch("/api/catalog/products", {
+      method: "POST",
+      body: JSON.stringify({
+        name: data.name,
+        slug: data.slug,
+        subCategoryId,
+        brandId: brand?.id,
+        description: data.description,
+        status: data.status || "ACTIVE",
+        sku: data.sku,
+        price: Number(data.price || 0),
+        stockStatus: "IN_STOCK",
+        images: data.images,
+        stock,
+        costPrice,
+      }),
+    });
+  }, [brands, subCategories, categories]);
+
+  const updateProduct = useCallback(async (idOrData: any, maybeData?: any) => {
+    const data = typeof idOrData === "string" ? { ...(maybeData || {}), id: idOrData } : idOrData;
+    if (!data?.id) return;
+    const existingProduct = paginatedProducts.find((entry) => entry.id === data.id);
+    const brandName = data?.specs?.brand || data?.brand?.name || existingProduct?.brand?.name;
+    const brand = brands.find((entry) => entry.name === brandName);
+    const directSubCategory = subCategories.find(
+      (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+    );
+    const categoryMatch = categories.find((entry) => entry.name === data?.category);
+    const subCategoryId = data?.subCategoryId || directSubCategory?.id || categoryMatch?.subcategories?.[0]?.id || categoryMatch?.subCategories?.[0]?.id || existingProduct?.subCategoryId;
+
+    await apiFetch(`/api/catalog/products/${data.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        name: data.name,
+        slug: data.slug,
+        subCategoryId,
+        brandId: brand?.id,
+        description: data.description,
+        status: data.status || existingProduct?.status,
+        images: data.images,
+        sku: data.sku,
+        price: data.price !== undefined ? Number(data.price) : undefined,
+        stock: data.stock !== undefined ? Number(data.stock) : undefined,
+        costPrice: data.costPrice !== undefined ? Number(data.costPrice) : undefined,
+      }),
+    });
+  }, [brands, subCategories, categories, paginatedProducts]);
+
+  const deleteProduct = useCallback(async (id: string) => {
+    await apiFetch(`/api/catalog/products/${id}`, { method: "DELETE" });
+  }, []);
+
+  const syncData = useCallback(async () => {
+    await loadDependencies();
+  }, [loadDependencies]);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -516,10 +614,7 @@ const ProductManager = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(false);
+
 
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
   const currentLimit = parseInt(searchParams.get("limit") || "0", 10);

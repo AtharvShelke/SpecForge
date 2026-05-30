@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, User, Search, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { useShop } from "@/context/ShopContext";
+import { useCart } from "@/context/ShopCartContext";
 
 export default function Header() {
   const pathname = usePathname();
-  const { cart, setCartOpen } = useShop();
+  const { cart, setCartOpen, cartCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -20,7 +20,7 @@ export default function Header() {
 
   if (pathname === "/checkout") return null;
 
-  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+
 
   return (
     <>

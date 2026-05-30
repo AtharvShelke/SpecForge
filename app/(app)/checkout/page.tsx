@@ -14,7 +14,7 @@ import {
 import { processCheckout } from "@/app/actions/checkout";
 import ImageUploader from "@/components/uploadthing/ImageUploader";
 import { Button } from "@/components/ui/button";
-import { useShop } from "@/context/ShopContext";
+import { useCart } from "@/context/ShopCartContext";
 
 import { PaymentMethodType, PaymentStatus } from "@/types";
 import { calculateOrderFinancials } from "@/lib/tax-engine";
@@ -144,7 +144,7 @@ function Field({
 }
 
 export default function CheckoutPage() {
-  const { cart, clearCart, setCartOpen } = useShop();
+  const { cart, clearCart, setCartOpen } = useCart();
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     PaymentMethodType.RAZORPAY,

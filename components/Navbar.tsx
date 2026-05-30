@@ -15,7 +15,7 @@ import {
   Search,
   Disc
 } from "lucide-react";
-import { useShop } from "@/context/ShopContext";
+import { useCart } from "@/context/ShopCartContext";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -28,7 +28,7 @@ const NAV_LINKS = [
 
 
 export default function Navbar() {
-  const { cart, setCartOpen } = useShop();
+  const { cart, setCartOpen } = useCart();
   const pathname = usePathname();
   const { scrollY } = useScroll();
 

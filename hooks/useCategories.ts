@@ -7,6 +7,8 @@ export interface Category {
   name: string;
   description?: string;
   slug: string;
+  subCategories?: SubCategory[];
+  subcategories?: SubCategory[];
 }
 
 export interface SubCategory {

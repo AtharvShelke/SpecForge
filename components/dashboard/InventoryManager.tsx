@@ -8,7 +8,7 @@ import {
   FormEvent,
   memo,
 } from "react";
-import { useAdmin } from "@/context/AdminContext";
+import { apiFetch } from "@/lib/helpers";
 import { StockMovementType } from "@/types";
 import {
   AlertTriangle,
@@ -232,39 +232,64 @@ CollapsibleSection.displayName = "CollapsibleSection";
    MAIN
 ───────────────────────────────────────────────────────────────*/
 const InventoryManager = () => {
-  const {
-    inventory,
-    stockMovements,
-    adjustStock,
-    refreshInventory,
-    refreshAuditLogs,
-    fetchInventoryPage,
-    syncData,
-    isLoading,
-    categories,
-  } = useAdmin() as unknown as {
-    inventory: InventorySkuSummary[];
-    stockMovements: StockMovementRecord[];
-    adjustStock: (
-      sku: string,
-      quantity: number,
-      type: StockMovementType,
-      reason?: string,
-    ) => Promise<void>;
-    refreshInventory: () => Promise<void>;
-    refreshAuditLogs: () => Promise<AuditLogRecord[]>;
-    fetchInventoryPage: (
-      query?: URLSearchParams | string,
-    ) => Promise<{
-      items: InventorySkuSummary[];
-      total: number;
-      page: number;
-      limit: number;
-    }>;
-    syncData: () => Promise<void>;
-    isLoading: boolean;
-    categories: any[];
-  };
+  const [inventory, setInventory] = useState<InventorySkuSummary[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stockMovements, setStockMovements] = useState<StockMovementRecord[]>([]);
+
+  const loadDependencies = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [catsData, inventoryData, movementsData] = await Promise.all([
+        apiFetch<any[]>("/api/catalog/categories"),
+        apiFetch<any>("/api/inventory?limit=1000&page=1"),
+        apiFetch<any[]>("/api/inventory/movements?limit=50&page=1"),
+      ]);
+      setCategories(catsData);
+      setInventory(Array.isArray(inventoryData?.items) ? inventoryData.items : Array.isArray(inventoryData) ? inventoryData : []);
+      setStockMovements(Array.isArray(movementsData) ? movementsData : []);
+    } catch (err) {
+      console.error("Failed to load InventoryManager dependencies", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDependencies();
+  }, [loadDependencies]);
+
+  const syncData = useCallback(async () => {
+    await loadDependencies();
+  }, [loadDependencies]);
+
+  const refreshInventory = useCallback(async () => {
+    await loadDependencies();
+  }, [loadDependencies]);
+
+  const refreshAuditLogs = useCallback(async () => {
+    const data = await apiFetch<AuditLogRecord[]>("/api/audit-logs");
+    return Array.isArray(data) ? data : [];
+  }, []);
+
+  const fetchInventoryPage = useCallback(async (query?: URLSearchParams | string) => {
+    const qs = query?.toString();
+    const data = await apiFetch<any>(qs ? `/api/inventory?${qs}` : "/api/inventory");
+    return {
+      items: Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [],
+      total: Number(data?.total ?? 0),
+      page: Number(data?.page ?? 1),
+      limit: Number(data?.limit ?? 10),
+    };
+  }, []);
+
+  const adjustStock = useCallback(async (sku: string, quantity: number, type: StockMovementType, reason?: string) => {
+    await apiFetch("/api/inventory/items", {
+      method: "POST",
+      body: JSON.stringify({ variantId: sku, quantity, type, action: "ADJUST", reason }),
+    });
+    void loadDependencies();
+  }, [loadDependencies]);
 
   const [adjustmentModal, setAdjustmentModal] = useState<{
     isOpen: boolean;
@@ -1143,7 +1168,7 @@ const InventoryManager = () => {
                   </td>
                 </tr>
               ) : (
-                stockMovements.slice(0, 20).map((mov) => (
+                stockMovements.slice(0, 20).map((mov: any) => (
                   <tr
                     key={mov.id}
                     className="transition-colors hover:bg-slate-50/50"
@@ -1180,7 +1205,7 @@ const InventoryManager = () => {
               No stock movements recorded
             </div>
           ) : (
-            stockMovements.slice(0, 20).map((mov) => (
+            stockMovements.slice(0, 20).map((mov: any) => (
               <div key={mov.id} className="flex items-center gap-4 p-4">
                 <MovTypeBadge type={mov.type} />
                 <div className="min-w-0 flex-1">
