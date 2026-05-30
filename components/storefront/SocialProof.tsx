@@ -58,7 +58,7 @@ export function SocialProof() {
 
         {/* Left: heading + summary stat */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">
             Reviews
           </p>
           <h2 className="mt-1.5 text-xl font-bold text-stone-900 tracking-tight leading-tight">
@@ -66,22 +66,25 @@ export function SocialProof() {
           </h2>
 
           {/* Aggregate rating */}
-          <div className="mt-6 rounded-xl border border-stone-200 bg-stone-50 p-5">
+          <div className="mt-6 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/40 via-violet-50/20 to-transparent p-5">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-stone-900">4.8</span>
-              <span className="text-sm text-stone-500">/ 5</span>
+              <span className="text-3xl font-extrabold text-indigo-900">4.8</span>
+              <span className="text-sm text-indigo-500 font-semibold">/ 5</span>
             </div>
             <StarRating rating={5} />
-            <p className="mt-1.5 text-xs text-stone-500">Based on 2,400+ verified orders</p>
+            <p className="mt-1.5 text-xs text-indigo-700/85 font-medium">Based on 2,400+ verified orders</p>
           </div>
 
           {/* Live activity */}
           <div className="mt-6">
             <p className="text-xs font-semibold text-stone-500 mb-3">Recent purchases</p>
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {ACTIVITY.map((item) => (
                 <div key={item.product} className="flex items-start gap-2.5">
-                  <div className="size-1.5 mt-1.5 rounded-full bg-emerald-400 shrink-0" aria-hidden />
+                  <span className="relative flex h-2 w-2 mt-1.5 shrink-0" aria-hidden>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
                   <div>
                     <p className="text-xs font-medium text-stone-700 line-clamp-1">{item.product}</p>
                     <p className="text-[11px] text-stone-400">
@@ -99,15 +102,21 @@ export function SocialProof() {
           {REVIEWS.map((review) => (
             <article
               key={review.id}
-              className="rounded-xl border border-stone-200 bg-white p-5"
+              className="rounded-xl border border-stone-200 bg-white p-5 hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-50/10 transition-all duration-300 group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="size-8 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center text-xs font-bold text-stone-600">
+                  <div className={`size-8 rounded-full bg-gradient-to-tr border flex items-center justify-center text-xs font-bold ${
+                    review.id % 3 === 0
+                      ? "from-indigo-50 to-violet-50 text-indigo-600 border-indigo-100"
+                      : review.id % 3 === 1
+                      ? "from-emerald-50 to-teal-50 text-emerald-600 border-emerald-100"
+                      : "from-amber-50 to-orange-50 text-amber-600 border-amber-100"
+                  }`}>
                     {review.name[0]}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-stone-900">{review.name}</p>
+                    <p className="text-sm font-semibold text-stone-900 group-hover:text-indigo-600 transition-colors">{review.name}</p>
                     <p className="text-xs text-stone-400">{review.location} · {review.timeAgo}</p>
                   </div>
                 </div>
@@ -118,7 +127,7 @@ export function SocialProof() {
                 "{review.text}"
               </blockquote>
 
-              <p className="mt-3 text-[11px] font-medium text-stone-400">
+              <p className="mt-3 text-[11px] font-medium text-indigo-600/80 bg-indigo-50/50 px-2 py-0.5 rounded w-fit">
                 Verified purchase: {review.product}
               </p>
             </article>

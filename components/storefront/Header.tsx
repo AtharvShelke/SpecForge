@@ -33,10 +33,10 @@ export default function Header() {
               className="shrink-0 flex items-center gap-2.5 group"
               aria-label="Computer Store home"
             >
-              <div className="size-7 rounded-lg bg-stone-900 flex items-center justify-center">
-                <span className="text-white text-xs font-bold tracking-tight">CS</span>
+              <div className="size-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-sm shadow-indigo-200 group-hover:scale-105 transition-transform duration-200">
+                <span className="text-white text-xs font-black tracking-wider">CS</span>
               </div>
-              <span className="text-sm font-semibold text-stone-900 tracking-tight hidden sm:block">
+              <span className="text-sm font-bold bg-gradient-to-r from-stone-900 to-stone-700 bg-clip-text text-transparent group-hover:from-indigo-600 group-hover:to-indigo-500 transition-colors tracking-tight hidden sm:block">
                 Computer Store
               </span>
             </Link>
@@ -51,10 +51,10 @@ export default function Header() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`relative px-3.5 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    className={`relative px-3.5 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${
                       isActive
-                        ? "text-stone-900 bg-stone-100"
-                        : "text-stone-500 hover:text-stone-900 hover:bg-stone-50"
+                        ? "text-indigo-600 bg-indigo-50"
+                        : "text-stone-600 hover:text-indigo-600 hover:bg-indigo-50/30"
                     }`}
                   >
                     {link.label}
@@ -67,9 +67,9 @@ export default function Header() {
             <div className="hidden md:flex flex-1 max-w-xs">
               <Link
                 href="/products"
-                className="flex w-full items-center gap-2.5 px-3.5 py-2 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-400 hover:border-stone-300 hover:bg-white transition-colors group"
+                className="flex w-full items-center gap-2.5 px-3.5 py-2 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-400 hover:border-indigo-300 hover:bg-white hover:text-indigo-600 transition-all duration-300 group"
               >
-                <Search className="size-3.5 shrink-0" aria-hidden />
+                <Search className="size-3.5 shrink-0 group-hover:text-indigo-500 transition-colors" aria-hidden />
                 <span className="flex-1">Search components…</span>
                 <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-stone-400 border border-stone-200 bg-white font-mono">
                   /
@@ -91,7 +91,7 @@ export default function Header() {
 
               <Link
                 href="/admin"
-                className="hidden sm:inline-flex size-10 items-center justify-center rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-50 transition-colors"
+                className="hidden sm:inline-flex size-10 items-center justify-center rounded-lg text-stone-600 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all duration-300"
                 aria-label="Account"
               >
                 <User className="size-4" />
@@ -100,12 +100,12 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setCartOpen(true)}
-                className="relative inline-flex size-10 items-center justify-center rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-50 transition-colors"
+                className="relative inline-flex size-10 items-center justify-center rounded-lg text-stone-600 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all duration-300"
                 aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
               >
                 <ShoppingCart className="size-4" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 size-4 flex items-center justify-center rounded-full bg-stone-900 text-white text-[9px] font-semibold leading-none">
+                  <span className="absolute -top-0.5 -right-0.5 size-4 flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[9px] font-bold leading-none shadow-sm shadow-indigo-200">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}

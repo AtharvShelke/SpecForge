@@ -17,15 +17,15 @@ export function ProductSection({
   }
 
   return (
-    <section className="border-t border-gray-200 py-12 sm:py-16">
+    <section className="border-t border-stone-100 py-12 sm:py-16">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">
             {title}
           </p>
-          <p className="mt-2 text-sm text-gray-500">{description}</p>
+          <p className="mt-2 text-sm text-stone-500">{description}</p>
         </div>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="hover:text-indigo-600 hover:border-indigo-200 transition-colors">
           <Link href="/products">Shop all products</Link>
         </Button>
       </div>

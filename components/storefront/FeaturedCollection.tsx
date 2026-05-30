@@ -44,7 +44,7 @@ function ProductTile({
     <Link
       href={`/products/${product.slug || product.id}`}
       className={cn(
-        "group flex flex-col rounded-xl border border-stone-200 bg-white overflow-hidden hover:border-stone-300 hover:shadow-sm transition-all",
+        "group flex flex-col rounded-xl border border-stone-200 bg-white overflow-hidden hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-50/20 transition-all duration-300",
         size === "lg" && "h-full"
       )}
     >
@@ -72,12 +72,12 @@ function ProductTile({
       </div>
       <div className={cn("flex flex-col p-4", size === "lg" ? "p-5" : "p-4")}>
         {product.brand?.name && (
-          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600/80">
             {product.brand.name}
           </p>
         )}
         <h3 className={cn(
-          "mt-1 font-semibold text-stone-900 line-clamp-2 group-hover:text-stone-600 transition-colors leading-snug",
+          "mt-1 font-semibold text-stone-900 line-clamp-2 group-hover:text-indigo-600 transition-colors leading-snug",
           size === "lg" ? "text-base" : "text-sm"
         )}>
           {product.name}
@@ -100,7 +100,7 @@ export function FeaturedCollection({ products }: { products: Product[] }) {
       {/* Header */}
       <div className="flex items-end justify-between mb-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">
             New Arrivals
           </p>
           <h2 className="mt-1.5 text-xl font-bold text-stone-900 tracking-tight">
@@ -109,10 +109,10 @@ export function FeaturedCollection({ products }: { products: Product[] }) {
         </div>
         <Link
           href="/products?sort=newest"
-          className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors"
+          className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group/link"
         >
           View all
-          <ArrowRight className="size-3.5" aria-hidden />
+          <ArrowRight className="size-3.5 group-hover/link:translate-x-0.5 transition-transform duration-200" aria-hidden />
         </Link>
       </div>
 

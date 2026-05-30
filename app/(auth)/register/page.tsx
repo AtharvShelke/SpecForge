@@ -70,10 +70,30 @@ export default function RegisterPage() {
                 }),
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || "Registration failed");
+            let errorMessage = "Registration failed";
+            try {
+                const data = await response.json();
+                if (!response.ok) {
+                    if (data && typeof data.error === "object" && data.error !== null) {
+                        if (data.error.message) {
+                            errorMessage = data.error.message;
+                        } else if (data.error.code) {
+                            errorMessage = data.error.code.replace(/_/g, " ");
+                        } else {
+                            errorMessage = JSON.stringify(data.error);
+                        }
+                    } else if (data && typeof data.error === "string") {
+                        errorMessage = data.error;
+                    } else if (data && typeof data.message === "string") {
+                        errorMessage = data.message;
+                    }
+                    throw new Error(errorMessage);
+                }
+            } catch (jsonErr) {
+                if (!response.ok) {
+                    throw new Error(errorMessage);
+                }
+                throw jsonErr;
             }
 
             router.push("/login");

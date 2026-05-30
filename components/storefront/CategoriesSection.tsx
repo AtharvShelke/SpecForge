@@ -22,19 +22,19 @@ export default function CategoriesSection({
   const visibleCategories = showAll ? categories : categories.slice(0, 3);
 
   return (
-    <section className="border-t border-gray-200 py-12 sm:py-16">
+    <section className="border-t border-stone-100 py-12 sm:py-16">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">
             Categories
           </p>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-stone-500">
             Explore the catalog by category and jump directly into relevant product filters.
           </p>
         </div>
 
         <div className="flex gap-2">
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="hover:text-indigo-600 hover:border-indigo-200 transition-colors">
             <Link href="/products">Browse all</Link>
           </Button>
 
@@ -42,6 +42,7 @@ export default function CategoriesSection({
             <Button
               variant="ghost"
               onClick={() => setShowAll((prev) => !prev)}
+              className="hover:text-indigo-600 transition-colors"
             >
               {showAll ? "Show less" : "View all"}
             </Button>
@@ -53,28 +54,28 @@ export default function CategoriesSection({
         {visibleCategories.map((category) => (
           <div
             key={category.id}
-            className="group rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300 hover:shadow-sm"
+            className="group rounded-xl border border-stone-200 bg-white p-5 hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-50/20 transition-all duration-300"
           >
             <Link
               href={`/products?category=${encodeURIComponent(category.name)}`}
-              className="text-lg font-semibold text-gray-900 transition group-hover:text-black"
+              className="text-lg font-bold text-stone-900 transition-colors group-hover:text-indigo-600"
             >
               {category.displayName}
             </Link>
 
-            <p className="mt-1 text-sm text-gray-500">
-              {category.subCategories.length} subcategories
+            <p className="mt-1 text-sm text-stone-400">
+              {category.subCategories.length} subcategories to explore
             </p>
 
             {category.subCategories.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2 opacity-100 transition duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+              <div className="mt-4 flex flex-wrap gap-2 opacity-100 transition duration-250 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                 {category.subCategories.map((subCategory) => (
                   <Link
                     key={subCategory.id}
                     href={`/products?category=${encodeURIComponent(
                       category.name
                     )}&subCategoryId=${encodeURIComponent(subCategory.id)}`}
-                    className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700 transition hover:bg-gray-100"
+                    className="rounded-full border border-indigo-100 bg-indigo-50/30 px-3 py-1 text-xs text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 transition-all"
                   >
                     {subCategory.name}
                   </Link>
