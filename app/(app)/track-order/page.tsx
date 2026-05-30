@@ -451,7 +451,7 @@ export default function TrackOrderPage() {
                                         <div className="flex items-center gap-4">
                                             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
                                                 <Image
-                                                    src={item.image ?? '/placeholder.png'}
+                                                    src={(item.image && typeof item.image === 'string' && item.image.trim() !== '') ? item.image : '/placeholder.png'}
                                                     alt={item.name}
                                                     fill
                                                     sizes="64px"

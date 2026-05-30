@@ -10,6 +10,8 @@ interface ProductCardProps {
   onClick?: () => void;
   onAdd?: () => void;
   isSelected?: boolean;
+  isCompatible?: boolean;
+  compatibilityMessage?: string;
 }
 
 export default function ProductCard({
@@ -18,6 +20,8 @@ export default function ProductCard({
   onClick,
   onAdd,
   isSelected = false,
+  isCompatible,
+  compatibilityMessage,
 }: ProductCardProps) {
   const primaryImage =
     product.media?.[0]?.url ?? product.image ?? "/placeholder.png";
@@ -109,11 +113,35 @@ export default function ProductCard({
             {brand}
           </p>
         )}
+
+        {/* Compatibility badge */}
+        {isCompatible !== undefined && (
+          <div className="mt-1 flex items-center gap-1.5">
+            {isCompatible ? (
+              <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700 border border-emerald-100">
+                <span className="size-1.25 rounded-full bg-emerald-500" />
+                Compatible
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-700 border border-rose-100">
+                <span className="size-1.25 rounded-full bg-rose-500" />
+                Incompatible
+              </span>
+            )}
+          </div>
+        )}
+
         <Link href={href} onClick={onClick}>
           <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-stone-900 leading-snug hover:text-stone-600 transition-colors">
             {product.name}
           </h3>
         </Link>
+
+        {isCompatible === false && compatibilityMessage && (
+          <p className="mt-1.5 text-[10px] font-bold text-rose-600 bg-rose-50/50 border border-rose-100/50 rounded-lg px-2.5 py-1 leading-snug">
+            {compatibilityMessage}
+          </p>
+        )}
 
         {/* Mock star rating */}
         <div className="mt-1.5 flex items-center gap-1.5">

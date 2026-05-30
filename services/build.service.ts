@@ -22,8 +22,10 @@ interface Build {
   updatedAt: Date;
 }
 
-// Global in-memory builds store
-const buildsStore = new Map<string, Build>();
+// Global in-memory builds store using singleton pattern to prevent module isolation issues in Next.js
+const globalForBuilds = global as unknown as { buildsStore: Map<string, Build> };
+const buildsStore = globalForBuilds.buildsStore || new Map<string, Build>();
+if (process.env.NODE_ENV !== "production") globalForBuilds.buildsStore = buildsStore;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BUILDS
@@ -93,6 +95,7 @@ export async function listBuilds() {
 
           return {
             ...item,
+            product,
             variant: mockVariant,
           };
         }),
@@ -143,6 +146,7 @@ export async function getBuildById(id: string) {
 
       return {
         ...item,
+        product,
         variant: mockVariant,
       };
     }),
@@ -224,6 +228,7 @@ export async function addBuildItem(
 
   return {
     ...newItem,
+    product,
     variant: mockVariant,
   };
 }

@@ -204,7 +204,7 @@ export async function checkBuildCompatibility(buildId: string) {
   if (!buildId) throw new ServiceError("buildId is required");
 
   // Load build items from in-memory service
-  const { getBuildById } = require("./build.service");
+  const { getBuildById } = await import("./build.service");
   const build = await getBuildById(buildId);
 
   const buildItems = build.items;

@@ -1,6 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export async function GET(req: NextRequest) {
+  try {
+    const searchParams = req.nextUrl.searchParams;
+    const orderId = searchParams.get("orderId");
+    const contact = searchParams.get("contact");
+
+    if (!orderId || !contact) {
+      return NextResponse.json(
+        { error: "Order ID and contact detail are required" },
+        { status: 400 },
+      );
+    }
+
+    const trimId = orderId.trim().toUpperCase();
+    const trimContact = contact.trim().toLowerCase();
+
+    const order = await prisma.order.findUnique({
+      where: { id: trimId, deletedAt: null },
+      include: {
+        items: true,
+        logs: { orderBy: { timestamp: "desc" } },
+      },
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    const emailMatch = order.email.toLowerCase() === trimContact;
+    const phoneMatch = order.phone?.toLowerCase() === trimContact;
+
+    if (!emailMatch && !phoneMatch) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(order);
+  } catch (error: any) {
+    console.error("[TRACK_ORDER_API_GET]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { orderId, contact } = await req.json();
