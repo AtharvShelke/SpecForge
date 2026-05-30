@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Lock, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, Lock, ShieldCheck, Truck, Heart, Share2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/ShopCartContext";
 import { Product, specsToFlat } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -25,248 +26,397 @@ function getAvailableQuantity(product: Product) {
   }, 0);
 }
 
-export default function ProductDetailClient({
-  product,
-}: ProductDetailClientProps) {
+function StarRating({ count = 124, rating = 4 }: { count?: number; rating?: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            className={cn(
+              "size-3.5",
+              i < rating ? "fill-amber-400 text-amber-400" : "text-stone-200"
+            )}
+            aria-hidden
+          />
+        ))}
+      </div>
+      <span className="text-xs text-stone-400">{count} reviews</span>
+    </div>
+  );
+}
+
+export default function ProductDetailClient({ product }: ProductDetailClientProps) {
   const { addToCart, cart } = useCart();
   const images =
-    product.media?.map((media) => media.url) ??
+    product.media?.map((m) => m.url) ??
     (product.image ? [product.image] : ["/placeholder.png"]);
   const flatSpecs = useMemo(() => specsToFlat(product.specs), [product.specs]);
+
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [wishlisted, setWishlisted] = useState(false);
+  const [specsOpen, setSpecsOpen] = useState(true);
+
   const galleryRef = useRef<HTMLDivElement | null>(null);
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const price = Number(product.price ?? 0);
   const compareAtPrice = Number(product.compareAtPrice ?? 0);
   const hasDiscount = compareAtPrice > price;
+  const discountPercent = hasDiscount
+    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
+    : 0;
   const availableQuantity = getAvailableQuantity(product);
   const isOutOfStock =
     product.stockStatus === "OUT_OF_STOCK" ||
-    (availableQuantity === 0 &&
-      (product.inventoryItems?.length ?? 0) > 0);
+    (availableQuantity === 0 && (product.inventoryItems?.length ?? 0) > 0);
   const isLowStock = availableQuantity > 0 && availableQuantity < 5;
   const inCart = cart.some((item) => item.id === product.id);
+  const brandOrCategory =
+    product.brand?.name ??
+    (typeof product.category === "string" ? product.category : product.category?.name);
 
   useEffect(() => {
     const button = primaryButtonRef.current;
     if (!button) return;
-
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowStickyBar(!entry.isIntersecting);
-      },
-      { threshold: 0.2 },
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0.2 }
     );
-
     observer.observe(button);
     return () => observer.disconnect();
   }, []);
 
-  const handleAddToCart = () => {
-    addToCart(product);
-  };
-
   const handleMobileGalleryScroll = () => {
     const gallery = galleryRef.current;
     if (!gallery) return;
-    const nextIndex = Math.round(gallery.scrollLeft / gallery.clientWidth);
-    setSelectedImageIndex(nextIndex);
+    setSelectedImageIndex(Math.round(gallery.scrollLeft / gallery.clientWidth));
   };
 
+  const specEntries = Object.entries(flatSpecs);
+
   return (
-    <div className="bg-white pb-24">
+    <div className="bg-white pb-28 lg:pb-16">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+
+        {/* Breadcrumb */}
         <Link
           href="/products"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-900"
+          className="inline-flex items-center gap-1.5 text-sm text-stone-400 hover:text-stone-900 transition-colors"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-3.5" aria-hidden />
           Back to products
         </Link>
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(380px,480px)] lg:items-start">
-          <div className="space-y-4">
+        {/* Main grid */}
+        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
+
+          {/* ── Gallery column ── */}
+          <div>
+            {/* Mobile: swipeable */}
             <div
               ref={galleryRef}
               onScroll={handleMobileGalleryScroll}
-              className="flex snap-x snap-mandatory gap-4 overflow-x-auto lg:hidden"
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto lg:hidden"
+              style={{ scrollbarWidth: "none" }}
             >
-              {images.map((image, index) => (
+              {images.map((src, i) => (
                 <div
-                  key={`${image}-${index}`}
-                  className="relative aspect-square min-w-full snap-center border border-gray-200 bg-gray-50"
+                  key={`${src}-${i}`}
+                  className="relative aspect-square min-w-full snap-center rounded-xl border border-stone-200 bg-stone-50 overflow-hidden"
                 >
                   <Image
-                    src={image}
+                    src={src}
                     alt={product.name}
                     fill
-                    priority={index === 0}
+                    priority={i === 0}
                     sizes="100vw"
-                    className="object-contain p-6"
+                    className="object-contain p-8"
                   />
                 </div>
               ))}
             </div>
 
-            <div className="flex items-center justify-center gap-2 lg:hidden">
-              {images.map((_, index) => (
-                <span
-                  key={index}
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    index === selectedImageIndex ? "bg-gray-900" : "bg-gray-300"
-                  }`}
-                />
-              ))}
-            </div>
-
-            <div className="hidden lg:sticky lg:top-24 lg:block">
-              <div className="border border-gray-200 bg-gray-50">
-                <div className="relative aspect-square">
-                  <Image
-                    src={images[selectedImageIndex] ?? "/placeholder.png"}
-                    alt={product.name}
-                    fill
-                    priority
-                    sizes="50vw"
-                    className="object-contain p-10"
+            {/* Mobile dots */}
+            {images.length > 1 && (
+              <div className="mt-3 flex items-center justify-center gap-1.5 lg:hidden">
+                {images.map((_, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "rounded-full transition-all",
+                      i === selectedImageIndex
+                        ? "size-1.5 bg-stone-900"
+                        : "size-1.5 bg-stone-300"
+                    )}
                   />
-                </div>
+                ))}
               </div>
-              {images.length > 1 ? (
-                <div className="mt-4 grid grid-cols-5 gap-3">
-                  {images.map((image, index) => (
+            )}
+
+            {/* Desktop: sticky gallery */}
+            <div className="hidden lg:sticky lg:top-24 lg:block">
+              {/* Main image */}
+              <div className="relative aspect-square rounded-xl border border-stone-200 bg-stone-50 overflow-hidden">
+                <Image
+                  src={images[selectedImageIndex] ?? "/placeholder.png"}
+                  alt={product.name}
+                  fill
+                  priority
+                  sizes="50vw"
+                  className="object-contain p-12"
+                />
+                {isOutOfStock && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                    <span className="rounded-full bg-stone-800/80 px-4 py-1.5 text-xs font-semibold text-white">
+                      Out of stock
+                    </span>
+                  </div>
+                )}
+                {hasDiscount && !isOutOfStock && (
+                  <div className="absolute left-3 top-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-bold text-white">
+                    -{discountPercent}%
+                  </div>
+                )}
+              </div>
+
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                  {images.map((src, i) => (
                     <button
-                      key={`${image}-${index}`}
+                      key={`thumb-${i}`}
                       type="button"
-                      onClick={() => setSelectedImageIndex(index)}
-                      className={`relative aspect-square overflow-hidden border bg-gray-50 ${
-                        index === selectedImageIndex
-                          ? "border-gray-900"
-                          : "border-gray-200"
-                      }`}
+                      onClick={() => setSelectedImageIndex(i)}
+                      className={cn(
+                        "relative aspect-square rounded-lg border overflow-hidden bg-stone-50 transition-all",
+                        i === selectedImageIndex
+                          ? "border-stone-900 ring-1 ring-stone-900"
+                          : "border-stone-200 hover:border-stone-400"
+                      )}
+                      aria-label={`View image ${i + 1}`}
                     >
                       <Image
-                        src={image}
-                        alt={product.name}
+                        src={src}
+                        alt=""
                         fill
-                        sizes="96px"
-                        className="object-contain p-3"
+                        sizes="80px"
+                        className="object-contain p-2"
                       />
                     </button>
                   ))}
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
 
+          {/* ── Info column ── */}
           <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
-              {product.brand?.name ?? (typeof product.category === "string" ? product.category : product.category?.name)}
-            </p>
-            <h1 className="mt-3 text-2xl font-semibold text-gray-900 sm:text-4xl">
-              {product.name}
-            </h1>
-            <div className="mt-4 flex items-end gap-3">
-              <p className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                Rs. {price.toLocaleString("en-IN")}
-              </p>
-              {hasDiscount ? (
-                <p className="pb-1 text-sm text-gray-400 line-through">
-                  Rs. {compareAtPrice.toLocaleString("en-IN")}
+            {/* Brand + actions row */}
+            <div className="flex items-center justify-between">
+              {brandOrCategory && (
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">
+                  {brandOrCategory}
                 </p>
-              ) : null}
+              )}
+              <div className="flex items-center gap-1.5 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => setWishlisted((v) => !v)}
+                  className={cn(
+                    "inline-flex size-8 items-center justify-center rounded-lg border transition-colors",
+                    wishlisted
+                      ? "border-red-200 bg-red-50 text-red-500"
+                      : "border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-700"
+                  )}
+                  aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
+                  aria-pressed={wishlisted}
+                >
+                  <Heart className={cn("size-3.5", wishlisted && "fill-current")} />
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex size-8 items-center justify-center rounded-lg border border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-700 transition-colors"
+                  aria-label="Share product"
+                >
+                  <Share2 className="size-3.5" />
+                </button>
+              </div>
             </div>
 
-            {product.sku ? (
-              <p className="mt-2 text-sm text-gray-500">SKU: {product.sku}</p>
-            ) : null}
+            {/* Name */}
+            <h1 className="mt-2 text-2xl font-bold text-stone-900 tracking-tight sm:text-3xl leading-tight">
+              {product.name}
+            </h1>
 
-            {isLowStock ? (
-              <p className="mt-3 text-sm text-red-600">
-                Only {availableQuantity} left in stock - order soon
-              </p>
-            ) : null}
+            {/* Rating */}
+            <div className="mt-3">
+              <StarRating />
+            </div>
 
-            <div className="mt-8 border-t border-gray-200 pt-8">
+            {/* SKU */}
+            {product.sku && (
+              <p className="mt-2 text-xs text-stone-400">SKU: {product.sku}</p>
+            )}
+
+            {/* Price */}
+            <div className="mt-5 flex items-baseline gap-3">
+              <span className="text-3xl font-bold text-stone-900 tracking-tight">
+                ₹{price.toLocaleString("en-IN")}
+              </span>
+              {hasDiscount && (
+                <span className="text-base text-stone-400 line-through">
+                  ₹{compareAtPrice.toLocaleString("en-IN")}
+                </span>
+              )}
+              {hasDiscount && (
+                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                  Save {discountPercent}%
+                </span>
+              )}
+            </div>
+
+            {/* Stock status */}
+            <div className="mt-3">
+              {isLowStock ? (
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" aria-hidden />
+                  Only {availableQuantity} left — order soon
+                </p>
+              ) : isOutOfStock ? (
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 bg-stone-100 rounded-full px-3 py-1">
+                  Currently out of stock
+                </p>
+              ) : (
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                  <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+                  In stock
+                </p>
+              )}
+            </div>
+
+            {/* CTA */}
+            <div className="mt-6 space-y-3">
               <Button
                 ref={primaryButtonRef}
                 size="lg"
-                className="h-12 w-full"
-                onClick={handleAddToCart}
+                className="h-12 w-full rounded-xl bg-stone-900 text-white hover:bg-stone-700 text-sm font-semibold transition-colors disabled:opacity-50"
+                onClick={() => addToCart(product)}
                 disabled={isOutOfStock}
               >
                 {isOutOfStock
                   ? "Out of stock"
                   : inCart
-                    ? "Add another to cart"
-                    : "Add to cart"}
+                  ? "Add another to cart"
+                  : "Add to cart"}
               </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 w-full rounded-xl border-stone-200 text-stone-700 text-sm font-semibold hover:bg-stone-50 transition-colors"
+                asChild
+              >
+                <Link href="/checkout">Buy now</Link>
+              </Button>
+            </div>
 
-              <div className="mt-4 grid gap-3 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <Lock className="size-4" />
-                  Secure checkout
+            {/* Trust indicators */}
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[
+                { icon: Lock, label: "Secure checkout" },
+                { icon: Truck, label: "Free delivery" },
+                { icon: ShieldCheck, label: "1 year warranty" },
+              ].map(({ icon: Icon, label }) => (
+                <div
+                  key={label}
+                  className="flex flex-col items-center gap-1.5 rounded-lg bg-stone-50 border border-stone-100 px-2 py-3 text-center"
+                >
+                  <Icon className="size-4 text-stone-500" aria-hidden />
+                  <span className="text-[11px] font-medium text-stone-500 leading-tight">{label}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Truck className="size-4" />
-                  Free delivery
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="size-4" />1 year warranty
-                </div>
+              ))}
+            </div>
+
+            {/* Description */}
+            {product.description && (
+              <div className="mt-8 border-t border-stone-100 pt-6">
+                <h2 className="text-sm font-semibold text-stone-900 mb-3">Overview</h2>
+                <p className="text-sm leading-relaxed text-stone-500">
+                  {product.description}
+                </p>
               </div>
-            </div>
+            )}
 
-            <div className="mt-8 border-t border-gray-200 pt-8">
-              <h2 className="text-sm font-medium text-gray-900">Overview</h2>
-              <p className="mt-3 text-sm leading-7 text-gray-600">
-                {product.description || "Product details will be updated soon."}
-              </p>
-            </div>
-
-            <div className="mt-8 border-t border-gray-200 pt-8">
-              <h2 className="text-sm font-medium text-gray-900">
-                Specifications
-              </h2>
-              <div className="mt-4 divide-y divide-gray-200 border border-gray-200">
-                {Object.entries(flatSpecs).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="grid grid-cols-[140px_minmax(0,1fr)] gap-4 px-4 py-3 text-sm"
+            {/* Specs */}
+            {specEntries.length > 0 && (
+              <div className="mt-6 border-t border-stone-100 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setSpecsOpen((v) => !v)}
+                  className="flex w-full items-center justify-between text-sm font-semibold text-stone-900 hover:text-stone-600 transition-colors"
+                  aria-expanded={specsOpen}
+                >
+                  Specifications
+                  <span
+                    className={cn(
+                      "text-stone-400 transition-transform duration-200",
+                      specsOpen ? "rotate-180" : ""
+                    )}
+                    aria-hidden
                   >
-                    <span className="text-gray-500">
-                      {key
-                        .replace(/([A-Z])/g, " $1")
-                        .replace(/^./, (entry) => entry.toUpperCase())}
-                    </span>
-                    <span className="text-gray-900">{String(value)}</span>
+                    ▾
+                  </span>
+                </button>
+
+                {specsOpen && (
+                  <div className="mt-4 rounded-xl border border-stone-200 overflow-hidden">
+                    {specEntries.map(([key, value], i) => (
+                      <div
+                        key={key}
+                        className={cn(
+                          "grid grid-cols-[160px_minmax(0,1fr)] text-sm",
+                          i % 2 === 0 ? "bg-white" : "bg-stone-50/50",
+                          i !== 0 && "border-t border-stone-100"
+                        )}
+                      >
+                        <span className="px-4 py-3 text-stone-400 font-medium">
+                          {key
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (c) => c.toUpperCase())}
+                        </span>
+                        <span className="px-4 py-3 text-stone-900">{String(value)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {showStickyBar && !isOutOfStock ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white p-4 lg:hidden">
+      {/* Mobile sticky bar */}
+      {showStickyBar && !isOutOfStock && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur-sm px-4 py-3 lg:hidden">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-900">
+              <p className="truncate text-sm font-semibold text-stone-900 leading-tight">
                 {product.name}
               </p>
-              <p className="text-sm text-gray-500">
-                Rs. {price.toLocaleString("en-IN")}
+              <p className="text-sm font-bold text-stone-900">
+                ₹{price.toLocaleString("en-IN")}
               </p>
             </div>
-            <Button className="h-12 min-w-36" onClick={handleAddToCart}>
-              Add to cart
+            <Button
+              className="h-11 min-w-36 rounded-xl bg-stone-900 text-white hover:bg-stone-700 text-sm font-semibold transition-colors shrink-0"
+              onClick={() => addToCart(product)}
+            >
+              {inCart ? "Add another" : "Add to cart"}
             </Button>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

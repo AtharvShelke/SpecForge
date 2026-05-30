@@ -7,10 +7,26 @@ export async function GET() {
     
     // Transform categories into the format expected by the frontend
     const transformedCategories = categories.map(category => ({
-      id: category.id,
+      id: String(category.id),
       name: category.name,
       description: category.description,
-      slug: category.name.toLowerCase().replace(/\s+/g, '-'),
+      slug: category.slug || category.name.toLowerCase().replace(/\s+/g, '-'),
+      subCategories: ((category as any).subcategories ?? []).map((sub: any) => ({
+        id: String(sub.id),
+        name: sub.name,
+        slug: sub.slug,
+        description: sub.description,
+        categoryId: String(sub.categoryId),
+        isActive: sub.isActive,
+      })),
+      subcategories: ((category as any).subcategories ?? []).map((sub: any) => ({
+        id: String(sub.id),
+        name: sub.name,
+        slug: sub.slug,
+        description: sub.description,
+        categoryId: String(sub.categoryId),
+        isActive: sub.isActive,
+      })),
     }));
 
     return NextResponse.json(transformedCategories);

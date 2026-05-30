@@ -16,7 +16,6 @@ import {
 } from "@/types";
 
 import CatalogFiltersSidebar from "@/app/(app)/products/components/CatalogFiltersSidebar";
-import CatalogTopBar from "@/app/(app)/products/components/CatalogCategoryTabs";
 import CatalogLoadingGrid from "@/components/storefront/catalog/CatalogLoadingGrid";
 import CatalogEmptyState from "@/components/storefront/catalog/CatalogEmptyState";
 import CatalogPagination from "@/components/storefront/catalog/CatalogPagination";
@@ -31,6 +30,7 @@ import {
   Share2,
   Save,
   Loader2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -355,117 +355,7 @@ function PCBuilderContent() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ───────── HEADER ───────── */}
-      <div className="border-b border-slate-100 bg-white">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900">
-                <Cpu size={18} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900">PC Builder</h1>
-                <p className="text-xs text-slate-500">
-                  Select components to build your perfect PC
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Mobile Summary Toggle */}
-              <button
-                onClick={() => setShowMobileSummary(!showMobileSummary)}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 lg:hidden"
-              >
-                <Wrench size={14} />
-                Build ({cart.length})
-                {totalPrice > 0 && (
-                  <span className="font-semibold text-slate-900">
-                    ₹{totalPrice.toLocaleString("en-IN")}
-                  </span>
-                )}
-              </button>
-
-              {/* Actions */}
-              {cart.length > 0 && (
-                <>
-                  <button
-                    onClick={handleShare}
-                    className="hidden sm:flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
-                  >
-                    <Share2 size={13} />
-                    Share
-                  </button>
-                  <button
-                    onClick={handleSaveBuild}
-                    disabled={savingBuild}
-                    className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
-                  >
-                    {savingBuild ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <Save size={13} />
-                    )}
-                    Save Build
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* ───────── BUILDER STEP TABS ───────── */}
-          <div className="flex items-center gap-1.5 overflow-x-auto py-3 -mb-px scrollbar-none">
-            {steps.map((step, idx) => {
-              const isActive = step.id === activeStep;
-              const slotId = step.subCategorySlots?.[0]?.slotId;
-              const isCompleted = slotId && itemBySlot.has(slotId);
-
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => setActiveStep(step.id)}
-                  className={cn(
-                    "group relative flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200",
-                    isActive
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : isCompleted
-                        ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                        : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700",
-                  )}
-                >
-                  {/* Step number / check */}
-                  <span
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : isCompleted
-                          ? "bg-emerald-500 text-white"
-                          : "bg-slate-200 text-slate-500",
-                    )}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 size={12} />
-                    ) : (
-                      idx + 1
-                    )}
-                  </span>
-                  {step.shortLabel || step.name}
-                  {idx < steps.length - 1 && (
-                    <ChevronRight
-                      size={12}
-                      className={cn(
-                        "ml-1 opacity-30",
-                        isActive ? "text-white" : "text-slate-400",
-                      )}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+    
 
       {/* ───────── MAIN CONTENT ───────── */}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-6">
@@ -489,23 +379,47 @@ function PCBuilderContent() {
 
           {/* ─── PRODUCTS ─── */}
           <main className="min-w-0">
-            {/* Search & Sort Bar */}
-            <CatalogTopBar
-              categories={[]}
-              selectedCategory={null}
-              selectedCategoryLabel={
-                steps.find((s) => s.id === activeStep)?.name ?? "Build"
-              }
-              total={total}
-              searchInput={query}
-              sort={sort}
-              activeFilterCount={activeFilterCount}
-              onSearchChange={setSearchQuery}
-              onSearchClear={() => setSearchQuery("")}
-              onSortChange={setSort}
-              onOpenMobileFilters={() => setShowMobileFilters(true)}
-              onCategoryChange={() => {}}
-            />
+            {/* Controls bar */}
+            <div className="flex items-center justify-between gap-3 mb-2 border-b border-zinc-100 pb-3">
+              {/* Mobile Filter Button */}
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="flex lg:hidden items-center gap-1.5 text-sm border border-zinc-200 bg-white px-3 h-9 rounded-lg hover:bg-zinc-50 transition-colors"
+              >
+                <SlidersHorizontal size={14} />
+                <span>Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="text-xs bg-indigo-600 text-white px-1.5 rounded-full font-semibold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Step name / Product count */}
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-sm font-bold text-zinc-900">
+                  {steps.find((s) => s.id === activeStep)?.name ?? "Build"}
+                </h2>
+                <span className="hidden lg:inline text-xs text-zinc-400">
+                  ({total.toLocaleString()} products)
+                </span>
+              </div>
+
+              {/* Sort dropdown */}
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs sm:text-sm text-zinc-500 font-medium">Sort By:</span>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="h-9 text-xs sm:text-sm border border-zinc-200 rounded-lg px-2 sm:px-3 bg-white hover:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
+                >
+                  <option value="featured">Featured</option>
+                  <option value="newest">Newest</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                </select>
+              </div>
+            </div>
 
             {/* Navigation between steps */}
             <div className="flex items-center justify-between py-3">

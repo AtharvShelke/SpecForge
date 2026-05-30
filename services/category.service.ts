@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma';
 export const categoryService = {
   async getAll() {
     return await prisma.category.findMany({
+      include: {
+        subcategories: {
+          orderBy: { name: 'asc' }
+        }
+      },
       orderBy: { name: 'asc' }
     });
   },

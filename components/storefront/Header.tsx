@@ -1,16 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ShoppingCart, User, Search, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ShoppingCart, User, Search, Menu, X, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/context/ShopCartContext";
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { cart, setCartOpen, cartCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const query = searchParams.get("q") || "";
+  const [searchValue, setSearchValue] = useState(query);
+
+  useEffect(() => {
+    setSearchValue(query);
+  }, [query]);
+
+  const handleSearchChange = (val: string) => {
+    setSearchValue(val);
+    const params = new URLSearchParams(searchParams.toString());
+    if (val.trim()) {
+      params.set("q", val.trim());
+    } else {
+      params.delete("q");
+    }
+
+    if (pathname === "/products" || pathname === "/builds/new") {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    } else {
+      router.push(`/products?${params.toString()}`);
+    }
+  };
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(pathname.startsWith("/builds") ? "/" : "/products");
+    }
+  };
 
   const navLinks = [
     { href: "/products", label: "Products" },
@@ -20,13 +53,23 @@ export default function Header() {
 
   if (pathname === "/checkout") return null;
 
-
-
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-stone-100">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-6">
+            {/* Contextual Back Button */}
+            {(pathname.startsWith("/products") || pathname.startsWith("/builds")) && (
+              <button
+                onClick={handleBack}
+                className="shrink-0 flex items-center gap-1.5 text-sm font-semibold text-stone-600 hover:text-indigo-600 transition-colors group"
+                aria-label="Go back"
+              >
+                <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+            )}
+
             {/* Logo */}
             <Link
               href="/"
@@ -64,17 +107,38 @@ export default function Header() {
             </nav>
 
             {/* Search bar – desktop */}
-            <div className="hidden md:flex flex-1 max-w-xs">
-              <Link
-                href="/products"
-                className="flex w-full items-center gap-2.5 px-3.5 py-2 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-400 hover:border-indigo-300 hover:bg-white hover:text-indigo-600 transition-all duration-300 group"
-              >
-                <Search className="size-3.5 shrink-0 group-hover:text-indigo-500 transition-colors" aria-hidden />
-                <span className="flex-1">Search components…</span>
-                <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-stone-400 border border-stone-200 bg-white font-mono">
-                  /
-                </kbd>
-              </Link>
+            <div className="hidden md:flex flex-1 max-w-xs relative">
+              {(pathname.startsWith("/products") || pathname.startsWith("/builds")) ? (
+                <>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-stone-400" aria-hidden />
+                  <input
+                    type="text"
+                    value={searchValue}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Search components…"
+                    className="w-full pl-9 pr-8 py-2 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-indigo-300 focus:bg-white focus:ring-1 focus:ring-indigo-300 transition-all duration-300"
+                  />
+                  {searchValue && (
+                    <button
+                      onClick={() => handleSearchChange("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <Link
+                  href="/products"
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-400 hover:border-indigo-300 hover:bg-white hover:text-indigo-600 transition-all duration-300 group"
+                >
+                  <Search className="size-3.5 shrink-0 group-hover:text-indigo-500 transition-colors" aria-hidden />
+                  <span className="flex-1">Search components…</span>
+                  <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-stone-400 border border-stone-200 bg-white font-mono">
+                    /
+                  </kbd>
+                </Link>
+              )}
             </div>
 
             {/* Right actions */}
@@ -131,13 +195,34 @@ export default function Header() {
           {/* Mobile search bar */}
           {searchOpen && (
             <div className="md:hidden pb-3">
-              <Link
-                href="/products"
-                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-400"
-              >
-                <Search className="size-3.5 shrink-0" aria-hidden />
-                <span>Search components…</span>
-              </Link>
+              {(pathname.startsWith("/products") || pathname.startsWith("/builds")) ? (
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-stone-400" aria-hidden />
+                  <input
+                    type="text"
+                    value={searchValue}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Search components…"
+                    className="w-full pl-9 pr-8 py-2.5 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-indigo-300 focus:bg-white focus:ring-1 focus:ring-indigo-300 transition-all duration-300"
+                  />
+                  {searchValue && (
+                    <button
+                      onClick={() => handleSearchChange("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/products"
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-400"
+                >
+                  <Search className="size-3.5 shrink-0" aria-hidden />
+                  <span>Search components…</span>
+                </Link>
+              )}
             </div>
           )}
         </div>

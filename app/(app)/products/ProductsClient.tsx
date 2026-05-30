@@ -75,14 +75,12 @@ export default function ProductsClient() {
 
   const [page, setPage] = useState(1);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState(query);
 
   const searchKey = searchParams.toString();
   const activeCategory = useMemo(
     () => getActiveCategory(categories, category, selectedSubCategoryId),
     [categories, category, selectedSubCategoryId],
   );
-  const activeCategoryLabel = activeCategory?.name ?? "All products";
 
   const { products, filters, total, isLoading, totalPages } = useCatalogListing(
     {
@@ -97,10 +95,6 @@ export default function ProductsClient() {
   }, [searchKey]);
 
   useEffect(() => {
-    setSearchInput(query);
-  }, [query]);
-
-  useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
     }
@@ -112,21 +106,6 @@ export default function ProductsClient() {
         <CatalogCategoryTabs
           categories={categories}
           selectedCategory={activeCategory?.name ?? null}
-          selectedCategoryLabel={activeCategoryLabel}
-          total={total}
-          searchInput={searchInput}
-          sort={sort}
-          activeFilterCount={activeFilterCount}
-          onSearchChange={(value) => {
-            setSearchInput(value);
-            setSearchQuery(value);
-          }}
-          onSearchClear={() => {
-            setSearchInput("");
-            setSearchQuery("");
-          }}
-          onSortChange={setSort}
-          onOpenMobileFilters={() => setIsMobileFiltersOpen(true)}
           onCategoryChange={setCategory}
         />
 
@@ -136,8 +115,8 @@ export default function ProductsClient() {
           onSubCategoryChange={setSubCategoryId}
         />
 
-        <div className="mt-3 lg:mt-4">
-          <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="mt-4 lg:mt-6">
+          <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
             {/* Desktop Filters Sidebar */}
             <aside className="hidden lg:block">
               <div className="sticky top-20">
@@ -157,6 +136,43 @@ export default function ProductsClient() {
 
             {/* Main Content */}
             <main className="min-w-0">
+              {/* Controls bar */}
+              <div className="flex items-center justify-between gap-3 mb-4">
+                {/* Mobile Filter Button */}
+                <button
+                  onClick={() => setIsMobileFiltersOpen(true)}
+                  className="flex lg:hidden items-center gap-1.5 text-sm border border-zinc-200 bg-white px-3 h-9 rounded-lg hover:bg-zinc-50 transition-colors"
+                >
+                  <SlidersHorizontal size={14} />
+                  <span>Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="text-xs bg-indigo-600 text-white px-1.5 rounded-full font-semibold">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Total Count */}
+                <span className="hidden lg:inline text-sm font-medium text-zinc-500">
+                  {total.toLocaleString()} products found
+                </span>
+
+                {/* Sort dropdown */}
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-xs sm:text-sm text-zinc-500 font-medium">Sort By:</span>
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                    className="h-9 text-xs sm:text-sm border border-zinc-200 rounded-lg px-2 sm:px-3 bg-white hover:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
+                  >
+                    <option value="featured">Featured</option>
+                    <option value="newest">Newest</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Products Grid */}
               {isLoading ? (
                 <CatalogLoadingGrid />
@@ -197,7 +213,7 @@ export default function ProductsClient() {
               <SlidersHorizontal className="size-4" />
               Filters
               {activeFilterCount > 0 && (
-                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                <span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">
                   {activeFilterCount}
                 </span>
               )}

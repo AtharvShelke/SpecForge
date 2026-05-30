@@ -28,71 +28,66 @@ export default function CatalogSubcategoryNav({
   }
 
   return (
-    <div className="mt-3 border border-slate-200 bg-white">
-      <div className="px-4 py-2.5 sm:px-5 lg:px-6">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Browse within {category.name}
-          </p>
-        </div>
+    <div className="mt-3">
+      {/* Mobile Select */}
+      <div className="sm:hidden">
+        <Select
+          value={selectedSubCategoryId ?? "all"}
+          onValueChange={(value) => onSubCategoryChange(value === "all" ? null : value)}
+        >
+          <SelectTrigger className="h-9 rounded-lg border-zinc-200 bg-white text-left text-sm">
+            <SelectValue placeholder="Select subcategory" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All {category.name}</SelectItem>
+            {subCategories.map((subCategory) => (
+              <SelectItem key={subCategory.id} value={subCategory.id}>
+                {subCategory.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-        <div className="sm:hidden">
-          <Select
-            value={selectedSubCategoryId ?? "all"}
-            onValueChange={(value) => onSubCategoryChange(value === "all" ? null : value)}
-          >
-            <SelectTrigger className="h-10 rounded-lg border-slate-200 bg-white text-left">
-              <SelectValue placeholder="Select subcategory" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All {category.name}</SelectItem>
-              {subCategories.map((subCategory) => (
-                <SelectItem key={subCategory.id} value={subCategory.id}>
-                  {subCategory.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Desktop/Tablet Horizontal Scrollable Row */}
+      <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-hide">
+        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mr-2">
+          Subcategories:
+        </span>
+        <button
+          type="button"
+          onClick={() => onSubCategoryChange(null)}
+          className={cn(
+            "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200",
+            !selectedSubCategoryId
+              ? "bg-indigo-600 text-white shadow-sm shadow-indigo-100"
+              : "text-zinc-600 hover:text-indigo-600 hover:bg-indigo-50/30",
+          )}
+        >
+          All {category.name}
+        </button>
+        {subCategories.map((subCategory: SubCategory) => {
+          const isActive = selectedSubCategoryId === subCategory.id;
 
-        <div className="hidden overflow-x-auto sm:block">
-          <div className="flex min-w-max items-center gap-1.5">
+          return (
             <button
+              key={subCategory.id}
               type="button"
-              onClick={() => onSubCategoryChange(null)}
+              onClick={() =>
+                onSubCategoryChange(isActive ? null : subCategory.id)
+              }
               className={cn(
-                "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                !selectedSubCategoryId
-                  ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200"
-                  : "text-slate-600 hover:bg-white hover:text-slate-950",
+                "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200",
+                isActive
+                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-100"
+                  : "text-zinc-600 hover:text-indigo-600 hover:bg-indigo-50/30",
               )}
+              aria-pressed={isActive}
             >
-              All {category.name}
+              {subCategory.name}
             </button>
-            {subCategories.map((subCategory: SubCategory) => {
-              const isActive = selectedSubCategoryId === subCategory.id;
-
-              return (
-                <button
-                  key={subCategory.id}
-                  type="button"
-                  onClick={() =>
-                    onSubCategoryChange(isActive ? null : subCategory.id)
-                  }
-                  className={cn(
-                    "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200"
-                      : "text-slate-600 hover:bg-white hover:text-slate-950",
-                  )}
-                  aria-pressed={isActive}
-                >
-                  {subCategory.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
