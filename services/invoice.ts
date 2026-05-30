@@ -9,7 +9,7 @@
  * - Idempotent invoice generation (won't duplicate)
  */
 
-import type { PrismaClient } from '@/generated/prisma/client';
+import type { PrismaClient } from '@/generated/prisma';
 import { calculateTax, roundCurrency, type TaxLineInput } from '@/lib/tax-engine';
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;

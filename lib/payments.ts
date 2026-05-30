@@ -1,4 +1,4 @@
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "@/generated/prisma";
 import { CreatePaymentInput } from "@/types";
 import { createHmac } from "crypto";
 

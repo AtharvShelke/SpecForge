@@ -12,7 +12,7 @@ import {
   Role as PrismaRole,
   SalesChannel as PrismaSalesChannel,
   StockMovementType as PrismaStockMovementType,
-} from "@/generated/prisma/client";
+} from "@/generated/prisma";
 
 function enumValues<TEnum extends Record<string, string>>(enumObject: TEnum) {
   return Object.values(enumObject) as [TEnum[keyof TEnum], ...TEnum[keyof TEnum][]];

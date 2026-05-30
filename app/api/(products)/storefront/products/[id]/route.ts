@@ -9,10 +9,14 @@ const PRODUCT_SELECT = {
   metaTitle: true,
   metaDescription: true,
   status: true,
+  price: true,
+  compareAtPrice: true,
+  sku: true,
+  stockStatus: true,
   createdAt: true,
   updatedAt: true,
-  subCategoryId: true,
-  subCategory: {
+  subcategoryId: true,
+  subcategory: {
     select: {
       name: true,
       category: {
@@ -26,7 +30,6 @@ const PRODUCT_SELECT = {
     select: {
       id: true,
       name: true,
-      slug: true,
     },
   },
   media: {
@@ -41,44 +44,16 @@ const PRODUCT_SELECT = {
       sortOrder: "asc" as const,
     },
   },
-  variants: {
-    where: {
-      deletedAt: null,
+  specs: {
+    include: {
+      attribute: true,
+      option: true,
     },
+  },
+  inventoryItems: {
     select: {
-      id: true,
-      productId: true,
-      sku: true,
-      price: true,
-      compareAtPrice: true,
-      attributes: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      inventoryItems: {
-        select: {
-          quantityOnHand: true,
-          quantityReserved: true,
-        },
-      },
-      variantSpecs: {
-        select: {
-          valueString: true,
-          valueNumber: true,
-          valueBool: true,
-          option: {
-            select: {
-              label: true,
-              value: true,
-            },
-          },
-          spec: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
+      quantity: true,
+      reserved: true,
     },
   },
 } as const;

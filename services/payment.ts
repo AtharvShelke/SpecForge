@@ -7,8 +7,8 @@
  * - Refund recording
  */
 
-import type { PrismaClient } from '@/generated/prisma/client';
-import type { PaymentMethodType, PaymentStatus, Currency } from '@/generated/prisma/client';
+import type { PrismaClient } from '@/generated/prisma';
+import type { PaymentMethodType, PaymentStatus, Currency } from '@/generated/prisma';
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 

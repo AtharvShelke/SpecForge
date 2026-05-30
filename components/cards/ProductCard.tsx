@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-
+import { Heart, ShoppingCart, Star } from "lucide-react";
 import { Product } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -33,34 +33,38 @@ export default function ProductCard({
   const href = `/products/${product.slug || product.id}`;
 
   return (
-    <Link
-      href={href}
-      onClick={onClick}
+    <div
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden border bg-white transition-all duration-300 hover:shadow-md",
-        isSelected 
-          ? "border-blue-500 ring-1 ring-blue-500" 
-          : "border-gray-200 hover:border-gray-300"
+        "group relative flex flex-col rounded-xl border bg-white overflow-hidden transition-all duration-200 hover:shadow-md",
+        isSelected
+          ? "border-blue-400 ring-1 ring-blue-400"
+          : "border-stone-200 hover:border-stone-300"
       )}
     >
-      {/* Discount Badge */}
-      {hasDiscount && !isOutOfStock && (
-        <div className="absolute left-2.5 top-2.5 z-10 rounded-sm bg-emerald-500 px-1.5 py-0.5 text-xs font-semibold text-white shadow-sm">
-          -{discountPercent}%
-        </div>
-      )}
+      {/* Image area */}
+      <Link
+        href={href}
+        onClick={onClick}
+        className="relative aspect-square bg-stone-50 overflow-hidden block"
+        tabIndex={0}
+        aria-label={`View ${product.name}`}
+      >
+        {/* Discount badge */}
+        {hasDiscount && !isOutOfStock && (
+          <div className="absolute left-2.5 top-2.5 z-10 rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+            -{discountPercent}%
+          </div>
+        )}
 
-      {/* Out of Stock Overlay */}
-      {isOutOfStock && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-          <span className="rounded-full bg-black/80 px-3 py-1 text-xs font-medium text-white">
-            Out of Stock
-          </span>
-        </div>
-      )}
+        {/* Out of stock overlay */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
+            <span className="rounded-full bg-stone-800/80 px-3 py-1 text-xs font-semibold text-white">
+              Out of stock
+            </span>
+          </div>
+        )}
 
-      {/* Image Container */}
-      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
         <Image
           src={primaryImage}
           alt={product.name}
@@ -71,7 +75,7 @@ export default function ProductCard({
             "object-contain p-4 transition-all duration-500",
             secondaryImage
               ? "group-hover:opacity-0 group-hover:scale-105"
-              : "group-hover:scale-105",
+              : "group-hover:scale-[1.03]"
           )}
         />
         {secondaryImage && (
@@ -83,53 +87,112 @@ export default function ProductCard({
             className="object-contain p-4 opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105"
           />
         )}
-      </div>
 
-      {/* Product Info */}
-      <div className="flex flex-1 flex-col p-3.5">
+        {/* Wishlist button */}
+        <button
+          type="button"
+          className="absolute right-2.5 top-2.5 z-10 size-7 flex items-center justify-center rounded-full bg-white/80 border border-stone-200 text-stone-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:border-red-200 transition-all"
+          aria-label="Save to wishlist"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <Heart className="size-3.5" />
+        </button>
+      </Link>
+
+      {/* Info */}
+      <div className="flex flex-col flex-1 p-3.5">
         {brand && (
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
             {brand}
           </p>
         )}
-        <h3 className="mt-1 line-clamp-2 text-sm font-medium text-gray-900 group-hover:text-gray-700">
-          {product.name}
-        </h3>
+        <Link href={href} onClick={onClick}>
+          <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-stone-900 leading-snug hover:text-stone-600 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
 
-        {/* Price Section */}
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-base font-semibold text-gray-900">
+        {/* Mock star rating */}
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={cn(
+                  "size-2.5",
+                  i < 4 ? "fill-amber-400 text-amber-400" : "text-stone-200"
+                )}
+                aria-hidden
+              />
+            ))}
+          </div>
+          <span className="text-[11px] text-stone-400">(124)</span>
+        </div>
+
+        {/* Price */}
+        <div className="mt-2 flex items-baseline gap-1.5">
+          <span className="text-sm font-bold text-stone-900">
             ₹{price.toLocaleString("en-IN")}
           </span>
           {hasDiscount && (
-            <span className="text-xs text-gray-400 line-through">
+            <span className="text-xs text-stone-400 line-through">
               ₹{compareAtPrice.toLocaleString("en-IN")}
             </span>
           )}
         </div>
 
-        {/* Quick Action Hint */}
-        <div className="mt-2.5 flex items-center justify-between">
-          <span className="text-xs text-gray-400">Click to view details →</span>
-          {onAdd && (
+        {/* CTA */}
+        <div className="mt-3">
+          {onAdd ? (
             <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onAdd();
               }}
+              disabled={isOutOfStock}
               className={cn(
-                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                "w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
                 isSelected
-                  ? "bg-blue-50 text-blue-700"
-                  : "bg-black text-white hover:bg-gray-800"
+                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                  : isOutOfStock
+                  ? "bg-stone-100 text-stone-400 cursor-not-allowed"
+                  : "bg-stone-900 text-white hover:bg-stone-700"
               )}
             >
-              {isSelected ? "Selected" : "Add to Build"}
+              {isSelected ? (
+                "Selected"
+              ) : isOutOfStock ? (
+                "Unavailable"
+              ) : (
+                <>
+                  <ShoppingCart className="size-3.5" aria-hidden />
+                  Add to build
+                </>
+              )}
             </button>
+          ) : (
+            <Link
+              href={href}
+              onClick={onClick}
+              className={cn(
+                "w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold border transition-colors",
+                isOutOfStock
+                  ? "border-stone-200 text-stone-400 cursor-not-allowed pointer-events-none"
+                  : "border-stone-200 text-stone-700 hover:border-stone-900 hover:text-stone-900"
+              )}
+              aria-disabled={isOutOfStock}
+              tabIndex={isOutOfStock ? -1 : 0}
+            >
+              View details
+            </Link>
           )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
