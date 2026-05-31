@@ -8,7 +8,7 @@ import {
   getBestSellers,
   getHomepageCategories,
   getNewArrivals,
-} from "@/lib/helpers";
+} from "@/lib/storefront-queries";
 import { DiscoveryNav } from "@/components/storefront/DiscoveryNav";
 
 export default async function StorefrontPage() {

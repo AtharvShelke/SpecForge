@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import Footer from "@/components/Footer";
 import Header from "@/components/storefront/Header";
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 
 export const metadata: Metadata = {
   title: {
@@ -51,7 +51,9 @@ export default function Layout({
 }>) {
   return (
     <>
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-white border-b border-stone-100" />}>
+        <Header />
+      </Suspense>
       {children}
       <Footer />
     </>

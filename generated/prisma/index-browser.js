@@ -588,6 +588,18 @@ exports.Prisma.TaxSettingsScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ReservationScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  cartId: 'cartId',
+  inventoryItemId: 'inventoryItemId',
+  quantity: 'quantity',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -750,7 +762,8 @@ exports.Prisma.ModelName = {
   CreditNote: 'CreditNote',
   CreditNoteLineItem: 'CreditNoteLineItem',
   AuditLog: 'AuditLog',
-  TaxSettings: 'TaxSettings'
+  TaxSettings: 'TaxSettings',
+  Reservation: 'Reservation'
 };
 
 /**

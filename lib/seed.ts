@@ -15,6 +15,7 @@ import {
   Role,
 } from "@/generated/prisma";
 import { prisma } from "./prisma";
+import bcrypt from "bcryptjs";
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -41,6 +42,7 @@ async function main() {
   
   // ── CLEANUP (To allow repeatable seeding) ─────────────────
   console.log("  🧹 Cleaning up existing transactional data…");
+  await prisma.reservation.deleteMany({});
   await prisma.auditLog.deleteMany({});
   await prisma.stockMovement.deleteMany({});
   await prisma.shipmentTracking.deleteMany({});
@@ -63,7 +65,7 @@ async function main() {
     create: {
       email: "admin@pcparts.in",
       name: "Admin User",
-      password: "$2b$10$hashedpassword_placeholder",
+      password: bcrypt.hashSync("admin123", 12),
       role: Role.ADMIN,
     },
   });

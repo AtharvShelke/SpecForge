@@ -288,31 +288,151 @@ export async function adjustStockBySku(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RESERVATIONS (MOCK)
+// RESERVATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getReservations(orderId?: string): Promise<any[]> {
-  return [];
+  // Auto-expire active reservations whose expiresAt is past now
+  await prisma.reservation.updateMany({
+    where: {
+      status: "ACTIVE",
+      expiresAt: { lt: new Date() }
+    },
+    data: {
+      status: "EXPIRED"
+    }
+  });
+
+  const where: any = {};
+  if (orderId) where.orderId = orderId;
+
+  return prisma.reservation.findMany({
+    where,
+    include: {
+      inventoryItem: {
+        include: {
+          product: true
+        }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
 }
 
-export async function createReservation(data: any) {
-  return {
-    id: `res-${Date.now()}`,
-    orderId: data.orderId || "",
-    inventoryItemId: data.inventoryItemId || "",
-    quantity: data.quantity || 1,
-    status: "ACTIVE",
-    expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+export async function createReservation(data: {
+  orderId?: string;
+  cartId?: string;
+  inventoryItemId: string;
+  quantity?: number;
+  expiresAt?: string | Date;
+  ttlMinutes?: number;
+}) {
+  if (!data.inventoryItemId) throw new ServiceError("inventoryItemId is required", 400);
+  const qty = data.quantity ?? 1;
+
+  return prisma.$transaction(async (tx) => {
+    const inventoryItem = await tx.inventoryItem.findUnique({
+      where: { id: data.inventoryItemId },
+    });
+
+    if (!inventoryItem) throw new ServiceError("Inventory item not found", 404);
+
+    const available = inventoryItem.quantity - inventoryItem.reserved;
+    if (available < qty) {
+      throw new ServiceError(`Insufficient stock available. Requested: ${qty}, Available: ${available}`, 409);
+    }
+
+    // Update reserved quantity on the inventory item
+    await tx.inventoryItem.update({
+      where: { id: data.inventoryItemId },
+      data: {
+        reserved: { increment: qty },
+        lastUpdated: new Date(),
+      },
+    });
+
+    let expiresAt: Date | null = null;
+    if (data.expiresAt) {
+      expiresAt = new Date(data.expiresAt);
+    } else {
+      const ttl = data.ttlMinutes ?? 15; // standard 15 min TTL
+      expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + ttl);
+    }
+
+    return tx.reservation.create({
+      data: {
+        orderId: data.orderId || null,
+        cartId: data.cartId || null,
+        inventoryItemId: data.inventoryItemId,
+        quantity: qty,
+        status: "ACTIVE",
+        expiresAt,
+      },
+    });
+  });
 }
 
-export async function updateReservation(id: string, data: any) {
-  return {
-    id,
-    status: data.status || "RELEASED",
-    expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-    updatedAt: new Date(),
-  };
+export async function updateReservation(id: string, data: { status?: string; expiresAt?: string | Date }) {
+  return prisma.$transaction(async (tx) => {
+    const reservation = await tx.reservation.findUnique({
+      where: { id },
+      include: { inventoryItem: true },
+    });
+
+    if (!reservation) throw new ServiceError("Reservation not found", 404);
+
+    const patch: any = {};
+    if (data.expiresAt !== undefined) {
+      patch.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
+    }
+
+    if (data.status !== undefined && data.status !== reservation.status) {
+      patch.status = data.status;
+
+      // If transitioning from ACTIVE to a non-active state, adjust the reserved stock
+      if (reservation.status === "ACTIVE") {
+        if (data.status === "RELEASED" || data.status === "EXPIRED") {
+          // Return reserved stock back to available
+          await tx.inventoryItem.update({
+            where: { id: reservation.inventoryItemId },
+            data: {
+              reserved: { decrement: reservation.quantity },
+              lastUpdated: new Date(),
+            },
+          });
+        } else if (data.status === "COMPLETED") {
+          // Complete the sale: subtract from both total quantity and reserved quantity
+          await tx.inventoryItem.update({
+            where: { id: reservation.inventoryItemId },
+            data: {
+              quantity: { decrement: reservation.quantity },
+              reserved: { decrement: reservation.quantity },
+              lastUpdated: new Date(),
+            },
+          });
+        }
+      } else {
+        // If transitioning back to ACTIVE from a non-active state
+        if (data.status === "ACTIVE") {
+          const available = reservation.inventoryItem.quantity - reservation.inventoryItem.reserved;
+          if (available < reservation.quantity) {
+            throw new ServiceError("Insufficient stock to re-activate reservation", 409);
+          }
+          await tx.inventoryItem.update({
+            where: { id: reservation.inventoryItemId },
+            data: {
+              reserved: { increment: reservation.quantity },
+              lastUpdated: new Date(),
+            },
+          });
+        }
+      }
+    }
+
+    return tx.reservation.update({
+      where: { id },
+      data: patch,
+    });
+  });
 }

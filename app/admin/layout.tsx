@@ -75,6 +75,12 @@ export const AdminShell = memo(function AdminShell({
 
 AdminShell.displayName = "AdminShell";
 
+import { Suspense } from "react";
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-slate-50">Loading admin workspace...</div>}>
+      <AdminShell>{children}</AdminShell>
+    </Suspense>
+  );
 }
