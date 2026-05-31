@@ -1,11 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { getBuildSequenceItems } from '@/services/categoryService';
+import type { BuildSequenceItem } from '@/lib/contracts/dtos';
+import { categorySelect, mapBuildSequenceItem } from '@/lib/contracts/server-mappers';
 
 const reorderSchema = z.object({
   categoryIds: z.array(z.number().int().positive()),
 });
+
+async function getBuildSequenceItems(): Promise<BuildSequenceItem[]> {
+  const sequence = await prisma.buildSequence.findMany({
+    orderBy: { stepOrder: 'asc' },
+    select: {
+      id: true,
+      categoryId: true,
+      stepOrder: true,
+      createdAt: true,
+      updatedAt: true,
+      category: {
+        select: categorySelect,
+      },
+    },
+  });
+
+  return sequence.map(mapBuildSequenceItem);
+}
 
 export async function GET() {
   const buildSequence = await getBuildSequenceItems();

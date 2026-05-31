@@ -11,7 +11,7 @@
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/errors";
 import { Order, CreateOrder, CreateOrderItem, OrderStatus } from "@/types";
-import { createPaymentTransaction } from "../lib/payments";
+import { createPaymentTransaction } from "@/services/payment";
 import { assertOrderTransition } from "@/lib/orderTransitions";
 
 type PrismaTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];

@@ -39,24 +39,6 @@ export function getAllowedImageHosts() {
   return hosts;
 }
 
-export function getMailConfig() {
-  return {
-    host: process.env.SMTP_HOST?.trim() || null,
-    port: process.env.SMTP_PORT?.trim() || null,
-    user: process.env.SMTP_USER?.trim() || null,
-    pass: process.env.SMTP_PASS?.trim() || null,
-    from: process.env.SMTP_FROM?.trim() || null,
-  };
-}
-
-export function isMailConfigured() {
-  const config = getMailConfig();
-
-  return Boolean(
-    config.host && config.port && config.user && config.pass && config.from
-  );
-}
-
 export function getBaseUrl() {
   return process.env.NEXT_PUBLIC_BASE_URL?.trim() || null;
 }

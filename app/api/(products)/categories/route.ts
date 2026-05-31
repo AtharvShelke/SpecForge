@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
-import { categoryService } from "@/services/category.service";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const categories = await categoryService.getAll();
+    const categories = await prisma.category.findMany({
+      include: {
+        subcategories: {
+          orderBy: { name: "asc" },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
     
     // Transform categories into the format expected by the frontend
     const transformedCategories = categories.map(category => ({

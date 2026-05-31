@@ -1,5 +1,3 @@
-import { PrismaClient } from "@/generated/prisma";
-import { CreatePaymentInput } from "@/types";
 import { createHmac } from "crypto";
 
 // Prevent this file from being bundled in the client
@@ -61,30 +59,3 @@ export function verifyRazorpaySignature({
   return expectedSignature === razorpaySignature;
 }
 
-type PrismaTx = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
->;
-
-export async function createPaymentTransaction(
-  tx: PrismaTx,
-  input: CreatePaymentInput,
-) {
-  // Idempotency check
-  const existing = await tx.paymentTransaction.findUnique({
-    where: { idempotencyKey: input.idempotencyKey },
-  });
-  if (existing) return existing;
-
-  return tx.paymentTransaction.create({
-    data: {
-      orderId: input.orderId,
-      method: input.method,
-      amount: input.amount,
-      gatewayTxnId: input.gatewayTxnId,
-      status: input.status ?? "COMPLETED",
-      idempotencyKey: input.idempotencyKey,
-      metadata: input.metadata,
-    },
-  });
-}

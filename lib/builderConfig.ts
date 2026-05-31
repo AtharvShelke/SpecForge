@@ -4,7 +4,7 @@
  * Used by:
  *  - API routes that need to enforce compatibility rules
  *  - Server components rendering the builder storefront
- *  - The public /api/builder-settings endpoint consumed by BuildContext
+ *  - The admin builder-config API
  *
  * This is the single read path for BuilderConfig.settings at runtime.
  * Falls back to DEFAULT_BUILDER_SETTINGS if no DB row exists yet.
