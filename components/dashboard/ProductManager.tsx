@@ -642,7 +642,7 @@ const ProductManager = () => {
 
 
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
-  const currentLimit = parseInt(searchParams.get("limit") || "0", 10);
+  const currentLimit = parseInt(searchParams.get("limit") || "15", 10);
   const currentCategory = searchParams.get("category") || "all";
   const currentSearchQuery = searchParams.get("q") || "";
   const [searchTerm, setSearchTerm] = useState(currentSearchQuery);

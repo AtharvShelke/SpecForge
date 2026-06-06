@@ -40,7 +40,11 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get("sort") ?? "featured";
     const limitParam = searchParams.get("limit");
     const limit = limitParam ? Math.min(60, Math.max(1, Number(limitParam))) : 15;
-    const cursor = Math.max(0, Number(searchParams.get("cursor") ?? 0));
+    const pageParam = searchParams.get("page");
+    const page = pageParam ? Math.max(1, Number(pageParam)) : 1;
+    const cursor = searchParams.get("cursor")
+      ? Math.max(0, Number(searchParams.get("cursor")))
+      : (page - 1) * limit;
 
     const where: any = { deletedAt: null };
     const andClauses: any[] = [];

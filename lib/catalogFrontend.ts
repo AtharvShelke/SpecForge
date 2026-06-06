@@ -353,35 +353,9 @@ export async function fetchCatalogProducts(
   const rawProducts = Array.isArray(data) ? data : (data?.products ?? []);
   const normalizedProducts: Product[] = rawProducts.map(normalizeCatalogProduct);
 
-  const filtered = normalizedProducts.filter((product: Product) => {
-    return (
-      matchesCategory(product, params.get("category")) &&
-      matchesSubCategory(product, params.get("subCategoryId")) &&
-      matchesNodeBrand(product, params.get("nodeBrand")) &&
-      matchesNodeQuery(product, params.get("nodeQuery")) &&
-      matchesSearch(product, params.get("q") || params.get("sq") || "") &&
-      matchesStock(product, params.get("f_stock_status")) &&
-      matchesPrice(product, params.get("minPrice"), params.get("maxPrice")) &&
-      matchesSpecFilters(product, params)
-    );
-  });
-
-  const sorted = sortProducts(filtered, params.get("sort"));
-  const total = sorted.length;
-  const filters = buildFilterOptions(filtered);
-
-  const limitValue = params.get("limit");
-  const limit = Number(limitValue ?? total ?? 0);
-  const page = Number(params.get("page") ?? 1);
-
-  const paginated =
-    limit > 0
-      ? sorted.slice((Math.max(page, 1) - 1) * limit, Math.max(page, 1) * limit)
-      : sorted;
-
   return {
-    products: paginated,
-    total,
-    filters,
+    products: normalizedProducts,
+    total: data.total ?? normalizedProducts.length,
+    filters: data.filters ?? [],
   };
 }
