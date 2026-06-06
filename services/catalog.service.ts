@@ -145,6 +145,12 @@ export class CatalogService {
         productSlug = `${productSlug}-${Math.random().toString(36).substring(2, 7)}`;
       }
 
+      // Determine initial stock status
+      let stockStatus = data.stockStatus || "IN_STOCK";
+      if (data.stock !== undefined) {
+        stockStatus = Number(data.stock) > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
+      }
+
       // Create Product
       const product = await tx.product.create({
         data: {
@@ -160,7 +166,7 @@ export class CatalogService {
           price: data.price || null,
           compareAtPrice: data.compareAtPrice || null,
           sku: data.sku || null,
-          stockStatus: data.stockStatus || "IN_STOCK",
+          stockStatus: stockStatus,
           media:
             data.images && data.images.length > 0
               ? {
@@ -170,6 +176,17 @@ export class CatalogService {
                   })),
                 }
               : undefined,
+        },
+      });
+
+      // Create default bulk inventory item
+      await tx.inventoryItem.create({
+        data: {
+          productId: product.id,
+          quantity: data.stock !== undefined ? Number(data.stock) : 0,
+          costPrice: data.costPrice !== undefined ? Number(data.costPrice) : 0,
+          location: "",
+          lastUpdated: new Date(),
         },
       });
 
@@ -214,6 +231,11 @@ export class CatalogService {
         if (sub) categoryId = sub.categoryId;
       }
 
+      let stockStatus = data.stockStatus;
+      if (data.stock !== undefined) {
+        stockStatus = Number(data.stock) > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
+      }
+
       const product = await tx.product.update({
         where: { id },
         data: {
@@ -229,9 +251,36 @@ export class CatalogService {
           price: data.price,
           compareAtPrice: data.compareAtPrice,
           sku: data.sku,
-          stockStatus: data.stockStatus,
+          stockStatus: stockStatus,
         },
       });
+
+      if (data.stock !== undefined || data.costPrice !== undefined) {
+        const bulkItem = await tx.inventoryItem.findFirst({
+          where: { productId: id, serialNumber: null },
+        });
+
+        if (bulkItem) {
+          await tx.inventoryItem.update({
+            where: { id: bulkItem.id },
+            data: {
+              quantity: data.stock !== undefined ? Number(data.stock) : undefined,
+              costPrice: data.costPrice !== undefined ? Number(data.costPrice) : undefined,
+              lastUpdated: new Date(),
+            },
+          });
+        } else {
+          await tx.inventoryItem.create({
+            data: {
+              productId: id,
+              quantity: data.stock !== undefined ? Number(data.stock) : 0,
+              costPrice: data.costPrice !== undefined ? Number(data.costPrice) : 0,
+              location: "",
+              lastUpdated: new Date(),
+            },
+          });
+        }
+      }
 
       if (data.images !== undefined) {
         await tx.productMedia.deleteMany({
@@ -469,6 +518,13 @@ export class CatalogService {
 
   static async getBrands() {
     return prisma.brand.findMany({
+      include: {
+        brandCategories: {
+          include: {
+            category: true,
+          },
+        },
+      },
       orderBy: { name: "asc" },
     });
   }

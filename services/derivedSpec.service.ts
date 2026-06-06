@@ -71,7 +71,7 @@ export const createDerivedSpec = derivedSpecService.create;
 export const updateDerivedSpec = derivedSpecService.update;
 export const deleteDerivedSpec = derivedSpecService.delete;
 
-async function evaluateFormula(formula: string, buildId: string): Promise<any> {
+async function evaluateFormula(formula: string, _buildId: string): Promise<any> {
   const parts = formula.match(/(\w+)\(([^)]+)\)/);
   if (!parts) return null;
 

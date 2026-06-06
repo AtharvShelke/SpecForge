@@ -162,7 +162,7 @@
     padding: var(--admin-shell-padding);
   }
 
-  .admin-module > * {
+  .admin-module>* {
     min-width: 0;
   }
 

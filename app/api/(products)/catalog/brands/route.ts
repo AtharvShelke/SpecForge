@@ -25,7 +25,16 @@ export async function POST(request: Request) {
       throw new ServiceError("Brand name is required", 400);
     }
     const brand = await prisma.brand.create({
-      data: { name: body.name },
+      data: {
+        name: body.name,
+        brandCategories: body.categoryId
+          ? {
+              create: {
+                categoryId: Number(body.categoryId),
+              },
+            }
+          : undefined,
+      },
     });
     return NextResponse.json(serializeBrand(brand), { status: 201 });
   } catch (error: any) {

@@ -20,7 +20,7 @@ function getAvailableQuantity(product: Product) {
       Math.max(
         0,
         Number(item.quantityOnHand ?? item.quantity ?? 0) -
-          Number(item.quantityReserved ?? item.reserved ?? 0),
+        Number(item.quantityReserved ?? item.reserved ?? 0),
       )
     );
   }, 0);
@@ -100,7 +100,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     <div className="bg-white pb-28 lg:pb-16">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
-       
+
 
         {/* Main grid */}
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
@@ -213,7 +213,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   {brandOrCategory}
                 </p>
               )}
-              
+
             </div>
 
             {/* Name */}
@@ -279,10 +279,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 {isOutOfStock
                   ? "Out of stock"
                   : inCart
-                  ? "Add another to cart"
-                  : "Add to cart"}
+                    ? "Add another to cart"
+                    : "Add to cart"}
               </Button>
-              
+
             </div>
 
             {/* Trust indicators */}

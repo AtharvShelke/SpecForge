@@ -1,7 +1,7 @@
 const inMemorySettings = new Map<string, string>();
 
 export const configService = {
-  async getTaxRate(country: string = 'India') {
+  async getTaxRate(_country: string = 'India') {
     return 18; // fallback to 18%
   },
 

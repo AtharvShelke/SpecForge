@@ -189,7 +189,7 @@ export default function PCBuilderClient() {
     setBuildLoading(true);
     try {
       const removePromises = build.items?.map((item: any) =>
-        apiFetch(`/api/builds/${build.id}/items/${item.id}`, { method: "DELETE" }).catch(() => {})
+        apiFetch(`/api/builds/${build.id}/items/${item.id}`, { method: "DELETE" }).catch(() => { })
       ) || [];
       await Promise.all(removePromises);
       const refreshed = await apiFetch<Build>(`/api/builds/${build.id}`);
@@ -584,7 +584,7 @@ export default function PCBuilderClient() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 selection:bg-indigo-500 selection:text-white antialiased font-sans">
-      
+
       {/* TOP HEADER CONTROLS */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -625,11 +625,10 @@ export default function PCBuilderClient() {
             <button
               onClick={handleAddToCartAll}
               disabled={!checkoutValidation.ready}
-              className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white px-5 h-9 rounded-xl shadow-md transition-all ${
-                checkoutValidation.ready
+              className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white px-5 h-9 rounded-xl shadow-md transition-all ${checkoutValidation.ready
                   ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/15"
                   : "bg-slate-300 cursor-not-allowed shadow-none"
-              }`}
+                }`}
             >
               <ShoppingCart size={13} />
               Add All to Cart
@@ -641,10 +640,10 @@ export default function PCBuilderClient() {
       {/* DASHBOARD PANEL GRID */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* LEFT PANEL (40% width on large screens) */}
           <section className="lg:col-span-5 space-y-6">
-            
+
             {/* BUILD METRICS COMPACT DISPLAY */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
@@ -698,15 +697,14 @@ export default function PCBuilderClient() {
                   {/* Headroom status badge */}
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-slate-400 font-medium">PSU Headroom:</span>
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-                      powerAnalytics.headroomStatus === "danger"
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${powerAnalytics.headroomStatus === "danger"
                         ? "bg-rose-50 border border-rose-200 text-rose-600"
                         : powerAnalytics.headroomStatus === "warning"
-                        ? "bg-amber-50 border border-amber-200 text-amber-600"
-                        : powerAnalytics.headroomStatus === "safe" && powerAnalytics.psuCapacity
-                        ? "bg-emerald-50 border border-emerald-200 text-emerald-600"
-                        : "bg-slate-50 border border-slate-200 text-slate-500"
-                    }`}>
+                          ? "bg-amber-50 border border-amber-200 text-amber-600"
+                          : powerAnalytics.headroomStatus === "safe" && powerAnalytics.psuCapacity
+                            ? "bg-emerald-50 border border-emerald-200 text-emerald-600"
+                            : "bg-slate-50 border border-slate-200 text-slate-500"
+                      }`}>
                       {powerAnalytics.psuCapacity ? powerAnalytics.headroomStatus.toUpperCase() : "N/A"}
                     </span>
                   </div>
@@ -716,13 +714,12 @@ export default function PCBuilderClient() {
                   <div className="space-y-1">
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          powerAnalytics.headroomStatus === "danger"
+                        className={`h-full rounded-full transition-all duration-300 ${powerAnalytics.headroomStatus === "danger"
                             ? "bg-rose-500"
                             : powerAnalytics.headroomStatus === "warning"
-                            ? "bg-amber-500"
-                            : "bg-emerald-500"
-                        }`}
+                              ? "bg-amber-500"
+                              : "bg-emerald-500"
+                          }`}
                         style={{ width: `${powerAnalytics.utilizationPercentage}%` }}
                       />
                     </div>
@@ -784,21 +781,19 @@ export default function PCBuilderClient() {
                     <div
                       key={step.id}
                       onClick={() => setActiveStep(step.id)}
-                      className={`flex-shrink-0 lg:flex-shrink-1 w-[260px] lg:w-auto p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer select-none transition-all ${
-                        isActive
+                      className={`flex-shrink-0 lg:flex-shrink-1 w-[260px] lg:w-auto p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer select-none transition-all ${isActive
                           ? "bg-indigo-50/50 border-l-4 border-indigo-600 lg:translate-x-0.5"
                           : "hover:bg-slate-50/40 border-l-4 border-transparent"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         {/* Step Icon */}
-                        <div className={`size-8 rounded-lg flex items-center justify-center ${
-                          isActive
+                        <div className={`size-8 rounded-lg flex items-center justify-center ${isActive
                             ? "bg-indigo-100 text-indigo-700"
                             : product
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
-                        }`}>
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-100 text-slate-500"
+                          }`}>
                           {renderStepIcon(step.icon, 16)}
                         </div>
 
@@ -858,7 +853,7 @@ export default function PCBuilderClient() {
 
           {/* RIGHT PANEL (60% width on large screens) */}
           <section className="lg:col-span-7 space-y-6">
-            
+
             {/* STEP PICKER HEADER */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -881,14 +876,12 @@ export default function PCBuilderClient() {
                   <span className="text-xs font-bold text-slate-500">Filter Compatible:</span>
                   <button
                     onClick={() => setOnlyCompatible(prev => !prev)}
-                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      onlyCompatible ? "bg-indigo-600" : "bg-slate-200"
-                    }`}
+                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${onlyCompatible ? "bg-indigo-600" : "bg-slate-200"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        onlyCompatible ? "translate-x-5" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${onlyCompatible ? "translate-x-5" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -952,13 +945,12 @@ export default function PCBuilderClient() {
                     return (
                       <div
                         key={product.id}
-                        className={`relative bg-white rounded-xl shadow-sm border overflow-hidden p-4 hover:shadow-md transition-all flex flex-col justify-between ${
-                          isSelected
+                        className={`relative bg-white rounded-xl shadow-sm border overflow-hidden p-4 hover:shadow-md transition-all flex flex-col justify-between ${isSelected
                             ? "ring-2 ring-indigo-600 border-transparent bg-indigo-50/10"
                             : !simStatus.compatible
-                            ? "border-rose-200 bg-rose-50/5"
-                            : "border-slate-200"
-                        }`}
+                              ? "border-rose-200 bg-rose-50/5"
+                              : "border-slate-200"
+                          }`}
                       >
                         {/* CARD BANNER OVERLAYS FOR COMPATIBILITY STATUS */}
                         {!simStatus.compatible && (
@@ -1022,13 +1014,12 @@ export default function PCBuilderClient() {
                           <button
                             onClick={() => handleSelect(product)}
                             disabled={buildLoading}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                              isSelected
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${isSelected
                                 ? "bg-emerald-600 text-white shadow-sm"
                                 : !simStatus.compatible
-                                ? "bg-rose-100 hover:bg-rose-200 text-rose-700"
-                                : "bg-indigo-50 hover:bg-indigo-100 text-indigo-600"
-                            }`}
+                                  ? "bg-rose-100 hover:bg-rose-200 text-rose-700"
+                                  : "bg-indigo-50 hover:bg-indigo-100 text-indigo-600"
+                              }`}
                           >
                             {isSelected ? "Selected" : "Select Product"}
                           </button>
@@ -1040,7 +1031,7 @@ export default function PCBuilderClient() {
                             {simStatus.message}
                           </div>
                         )}
-                        
+
                         {simStatus.compatible && simStatus.message && (
                           <div className="mt-2.5 bg-amber-50 border border-amber-200/50 p-2 rounded-lg text-[9px] font-semibold text-amber-700 leading-snug">
                             {simStatus.message}
@@ -1072,21 +1063,20 @@ export default function PCBuilderClient() {
 
             {/* DYNAMIC COMPATIBILITY PANEL (Always visible below product picker) */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-              
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
                   Live System Compatibility Check
                 </h3>
 
-                <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full border ${
-                  overallStatusText === "COMPATIBLE"
+                <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full border ${overallStatusText === "COMPATIBLE"
                     ? "bg-emerald-50 border-emerald-200 text-emerald-700"
                     : overallStatusText === "INCOMPATIBLE"
-                    ? "bg-rose-50 border-rose-200 text-rose-700"
-                    : overallStatusText === "WARNING"
-                    ? "bg-amber-50 border-amber-200 text-amber-700"
-                    : "bg-slate-50 border-slate-200 text-slate-500"
-                }`}>
+                      ? "bg-rose-50 border-rose-200 text-rose-700"
+                      : overallStatusText === "WARNING"
+                        ? "bg-amber-50 border-amber-200 text-amber-700"
+                        : "bg-slate-50 border-slate-200 text-slate-500"
+                  }`}>
                   status: {overallStatusText}
                 </span>
               </div>
@@ -1108,15 +1098,14 @@ export default function PCBuilderClient() {
                         <td className="py-3 px-3 font-bold text-slate-800">{rule.name}</td>
                         <td className="py-3 px-3 text-slate-400 font-medium">{rule.components}</td>
                         <td className="py-3 px-3">
-                          <span className={`inline-flex items-center gap-1 font-bold text-[10px] px-2 py-0.5 rounded ${
-                            rule.status === "PASS"
+                          <span className={`inline-flex items-center gap-1 font-bold text-[10px] px-2 py-0.5 rounded ${rule.status === "PASS"
                               ? "bg-emerald-50 text-emerald-600"
                               : rule.status === "FAIL"
-                              ? "bg-rose-50 text-rose-600"
-                              : rule.status === "WARN"
-                              ? "bg-amber-50 text-amber-600"
-                              : "bg-slate-100 text-slate-400"
-                          }`}>
+                                ? "bg-rose-50 text-rose-600"
+                                : rule.status === "WARN"
+                                  ? "bg-amber-50 text-amber-600"
+                                  : "bg-slate-100 text-slate-400"
+                            }`}>
                             {rule.status === "PASS" && "✅ Pass"}
                             {rule.status === "FAIL" && "❌ Fail"}
                             {rule.status === "WARN" && "⚠️ Warn"}

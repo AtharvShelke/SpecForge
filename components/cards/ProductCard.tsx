@@ -188,8 +188,8 @@ export default function ProductCard({
                 isSelected
                   ? "bg-blue-50 text-blue-700 border border-blue-200"
                   : isOutOfStock
-                  ? "bg-stone-100 text-stone-400 cursor-not-allowed"
-                  : "bg-stone-900 text-white hover:bg-stone-700"
+                    ? "bg-stone-100 text-stone-400 cursor-not-allowed"
+                    : "bg-stone-900 text-white hover:bg-stone-700"
               )}
             >
               {isSelected ? (

@@ -50,14 +50,14 @@ export async function GET(req: NextRequest) {
 
     const filtered = grouped.filter((item: any) => {
       const productCategory =
-        item?.variant?.product?.subCategory?.category?.name ??
-        item?.variant?.product?.category ??
+        item?.product?.subcategory?.category?.name ??
+        item?.product?.category ??
         "";
 
       const haystack = [
         item?.sku,
-        item?.variant?.sku,
-        item?.variant?.product?.name,
+        item?.product?.sku,
+        item?.product?.name,
         productCategory,
       ]
         .filter(Boolean)

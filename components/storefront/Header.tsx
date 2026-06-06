@@ -94,11 +94,10 @@ export default function Header() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`relative px-3.5 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${
-                      isActive
+                    className={`relative px-3.5 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${isActive
                         ? "text-indigo-600 bg-indigo-50"
                         : "text-stone-600 hover:text-indigo-600 hover:bg-indigo-50/30"
-                    }`}
+                      }`}
                   >
                     {link.label}
                   </Link>
@@ -240,11 +239,10 @@ export default function Header() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3.5 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                      isActive
+                    className={`px-3.5 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive
                         ? "text-stone-900 bg-stone-100"
                         : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
-                    }`}
+                      }`}
                   >
                     {link.label}
                   </Link>

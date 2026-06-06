@@ -61,8 +61,10 @@ function toSearchParams(input?: CatalogQueryInput): URLSearchParams {
 
 function normalizeCategory(product: RawProduct) {
   return (
+    product.subcategory?.category?.name ||
     product.subCategory?.category?.name ||
     product.category ||
+    product.subcategory?.name ||
     product.subCategory?.name ||
     "Uncategorized"
   );
@@ -128,7 +130,7 @@ export function normalizeCatalogProduct(product: RawProduct): Product {
 
 function matchesSearch(product: Product, query: string) {
   if (!query) return true;
-  const q = query.toLowerCase();
+  const q = query.trim().toLowerCase();
   const specs = (product as Product & { specs?: SpecEntry[] }).specs ?? [];
   const brand =
     (product as Product & { brand?: { name?: string } }).brand?.name ?? "";
@@ -150,8 +152,11 @@ function matchesCategory(product: Product, category?: string | null) {
     (product as Product & { category?: string }).category ?? ""
   ).toLowerCase();
   const subCategory = (
-    (product as Product & { subCategory?: { name?: string | null } })
-      .subCategory?.name ?? ""
+    (product as Product & { subCategory?: { name?: string | null }; subcategory?: { name?: string | null } })
+      .subcategory?.name ??
+    (product as Product & { subCategory?: { name?: string | null }; subcategory?: { name?: string | null } })
+      .subCategory?.name ??
+    ""
   ).toLowerCase();
   const expected = category.toLowerCase();
   return productCategory === expected || subCategory === expected;

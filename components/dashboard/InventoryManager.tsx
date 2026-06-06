@@ -519,7 +519,9 @@ const InventoryManager = () => {
     for (const i of arr) {
       const rawCat = i.product?.category;
       const cat = (typeof rawCat === "string" ? rawCat : rawCat?.name) || 
+                  i.product?.subcategory?.category?.name ||
                   i.product?.subCategory?.category?.name ||
+                  i.product?.subcategory?.name ||
                   i.product?.subCategory?.name ||
                   "Other";
       if (!map[cat]) map[cat] = { units: 0, value: 0, count: 0 };

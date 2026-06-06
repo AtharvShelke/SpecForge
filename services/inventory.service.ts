@@ -6,8 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/errors";
 import {
   InventoryItem,
-  StockMovementType,
 } from "@/types";
+import { PrismaClient } from "@/generated/prisma";
+
+type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INVENTORY ITEMS
@@ -435,4 +437,59 @@ export async function updateReservation(id: string, data: { status?: string; exp
       data: patch,
     });
   });
+}
+
+async function refreshProductStockStatus(tx: PrismaTx, productId: string) {
+  const aggregate = await tx.inventoryItem.aggregate({
+    where: { productId, quantity: { gt: 0 } },
+    _count: { id: true },
+  });
+
+  await tx.product.update({
+    where: { id: productId },
+    data: { stockStatus: (aggregate._count.id ?? 0) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK' },
+  });
+}
+
+export async function createInventoryUnits(
+  tx: PrismaTx,
+  productId: string,
+  units: Array<{
+    partNumber: string;
+    serialNumber: string;
+    costPrice?: number;
+    location?: string;
+    reorderLevel?: number;
+  }>,
+  note: string,
+) {
+  if (units.length === 0) return;
+
+  for (const unit of units) {
+    const created = await tx.inventoryItem.create({
+      data: {
+        productId,
+        partNumber: unit.partNumber,
+        serialNumber: unit.serialNumber,
+        quantity: 1,
+        reserved: 0,
+        costPrice: unit.costPrice ?? 0,
+        location: unit.location ?? '',
+        reorderLevel: unit.reorderLevel ?? 5,
+        lastUpdated: new Date(),
+      },
+    });
+
+    await tx.stockMovement.create({
+      data: {
+        productId,
+        inventoryItemId: created.id,
+        type: 'INWARD',
+        quantity: 1,
+        note: `${note} (${unit.serialNumber})`,
+      },
+    });
+  }
+
+  await refreshProductStockStatus(tx, productId);
 }

@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/errors";
 import {
   buildCompatibilityContext,
-  formatCompatibilityMessage,
   validateBuildSync,
   type BuildContext,
 } from "@/lib/compatibilityEngine";
@@ -21,7 +20,7 @@ export async function listScopes() {
   return [];
 }
 
-export async function createScope(data: {
+export async function createScope(_data: {
   sourceSubCategoryId: string;
   targetSubCategoryId: string;
 }) {
@@ -435,7 +434,7 @@ function evaluateClause(
   const sourceValue = resolveSpecValue(sourceSpecs, clause.sourceAttributeId);
   const targetValue = resolveSpecValue(targetSpecs, clause.targetAttributeId);
 
-  let left = sourceValue;
+  const left = sourceValue;
   let right = targetValue;
 
   if (clause.sourceValue !== null && clause.sourceValue !== undefined && clause.sourceValue !== "") {
@@ -491,7 +490,7 @@ function evaluateClause(
   return { passed, sourceValue: left, targetValue: right };
 }
 
-async function evaluateAllRules(buildItems: any[], context: BuildContext): Promise<CheckResult[]> {
+async function evaluateAllRules(buildItems: any[], _context: BuildContext): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
 
   const allRules = await prisma.compatibilityRule.findMany({

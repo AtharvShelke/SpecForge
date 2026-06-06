@@ -3,7 +3,7 @@ import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
-import { createInventoryUnits } from "@/services/inventory";
+import { createInventoryUnits } from "@/services/inventory.service";
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import { enforceRateLimit, withRateLimitHeaders } from "@/lib/security/rate-limit";
 import { assertTrustedOrigin } from "@/lib/security/request";

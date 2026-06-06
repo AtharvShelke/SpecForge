@@ -22,23 +22,28 @@ const prismaClientSingleton = () => {
     // Serverless: each lambda has its own process, so keep max low
     // to avoid overwhelming Postgres with connections across instances.
     // For a long-running server, raise this to 10–20.
-    max: process.env.NODE_ENV === "production" ? 5 : 10,
+    // In dev, cap it at 4 to prevent exhausting Neon's 20-connection free tier.
+    max: process.env.NODE_ENV === "production" ? 5 : 4,
 
     // ── Timeouts ──────────────────────────────────────────────────
     // Release idle connections quickly — critical in serverless where
     // the process may stay warm but idle between requests.
     idleTimeoutMillis: 10_000,
 
-    // Fail fast if the pool is exhausted rather than queuing forever.
-    connectionTimeoutMillis: 3_000,
+    // Increase timeout to 15 seconds to allow Neon compute containers
+    // time to cold-start without throwing timeout connection errors.
+    connectionTimeoutMillis: 15_000,
 
     // ── SSL ───────────────────────────────────────────────────────
     // rejectUnauthorized: false accepts self-signed certs (e.g. Supabase, RDS).
     // Set to true + supply a CA cert in production if your provider supports it.
+    // In development, do not force ssl to false if connecting to a remote db (like Neon).
     ssl:
       process.env.NODE_ENV === "production"
         ? { rejectUnauthorized: false }
-        : false,
+        : (connectionString.includes("localhost") || connectionString.includes("127.0.0.1")
+            ? false
+            : undefined),
   });
 
   // Surface pool-level errors so they don't become silent failures

@@ -574,18 +574,16 @@ export default function CheckoutPage() {
                         setFormError("");
                       }}
                       disabled={disabled || isSubmitting}
-                      className={`flex w-full items-start gap-4 border p-4 text-left transition-colors ${
-                        active
+                      className={`flex w-full items-start gap-4 border p-4 text-left transition-colors ${active
                           ? "border-black bg-black text-white"
                           : "border-gray-200 bg-white text-gray-900 hover:border-gray-900"
-                      } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                        } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
                     >
                       <span
-                        className={`inline-flex size-10 items-center justify-center border ${
-                          active
+                        className={`inline-flex size-10 items-center justify-center border ${active
                             ? "border-white/20 bg-white/10 text-white"
                             : "border-gray-200 bg-gray-50 text-gray-700"
-                        }`}
+                          }`}
                       >
                         <Icon className="size-4" />
                       </span>

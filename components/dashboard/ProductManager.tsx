@@ -63,6 +63,13 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -112,15 +119,14 @@ function getVariantStock(variant: unknown): number {
   const items: Array<{
     quantityOnHand?: number | null;
     quantityReserved?: number | null;
+    quantity?: number | null;
+    reserved?: number | null;
   }> = Array.isArray(rawInventoryItems)
-      ? (rawInventoryItems as Array<{
-        quantityOnHand?: number | null;
-        quantityReserved?: number | null;
-      }>)
+      ? (rawInventoryItems as any)
       : [];
   return items.reduce((sum: number, item) => {
-    const onHand = Number(item?.quantityOnHand ?? 0);
-    const reserved = Number(item?.quantityReserved ?? 0);
+    const onHand = Number(item?.quantityOnHand ?? item?.quantity ?? 0);
+    const reserved = Number(item?.quantityReserved ?? item?.reserved ?? 0);
     return sum + Math.max(0, onHand - reserved);
   }, 0);
 }
@@ -447,7 +453,7 @@ const EMPTY_FORM: ProductFormState = {
   name: "",
   price: 0,
   stock: 0,
-  category: CATEGORY_NAMES.PROCESSOR,
+  category: "",
   images: ["https://picsum.photos/300/300"],
   specs: { brand: "" },
   description: "",
@@ -488,6 +494,7 @@ const ProductManager = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const schemas: ProductSchema[] = [];
 
   const loadDependencies = useCallback(async () => {
@@ -534,14 +541,15 @@ const ProductManager = () => {
   const addProduct = useCallback(async (data: any, stock: number, costPrice: number) => {
     const brandName = data?.specs?.brand || data?.brand?.name || data?.brandName;
     const brand = brands.find((entry) => entry.name === brandName);
+    const categoryName = typeof data?.category === "string" ? data.category : data?.category?.name;
     const directSubCategory = subCategories.find(
-      (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+      (entry) => Number(entry.id) === Number(data?.subCategoryId) || entry.name === categoryName,
     );
-    const categoryMatch = categories.find((entry) => entry.name === data?.category);
+    const categoryMatch = categories.find((entry) => entry.name === categoryName);
     const subCategoryId = directSubCategory?.id || categoryMatch?.subcategories?.[0]?.id || categoryMatch?.subCategories?.[0]?.id;
 
     if (!subCategoryId) {
-      throw new Error(`Unable to resolve a sub-category for "${data?.category ?? "this product"}".`);
+      throw new Error(`Unable to resolve a sub-category for "${categoryName ?? "this product"}".`);
     }
 
     await apiFetch("/api/catalog/products", {
@@ -569,11 +577,12 @@ const ProductManager = () => {
     const existingProduct = paginatedProducts.find((entry) => entry.id === data.id);
     const brandName = data?.specs?.brand || data?.brand?.name || existingProduct?.brand?.name;
     const brand = brands.find((entry) => entry.name === brandName);
+    const categoryName = typeof data?.category === "string" ? data.category : data?.category?.name;
     const directSubCategory = subCategories.find(
-      (entry) => entry.id === data?.subCategoryId || entry.name === data?.category,
+      (entry) => Number(entry.id) === Number(data?.subCategoryId) || entry.name === categoryName,
     );
-    const categoryMatch = categories.find((entry) => entry.name === data?.category);
-    const subCategoryId = data?.subCategoryId || directSubCategory?.id || categoryMatch?.subcategories?.[0]?.id || categoryMatch?.subCategories?.[0]?.id || existingProduct?.subCategoryId;
+    const categoryMatch = categories.find((entry) => entry.name === categoryName);
+    const subCategoryId = data?.subCategoryId || directSubCategory?.id || categoryMatch?.subcategories?.[0]?.id || categoryMatch?.subCategories?.[0]?.id || existingProduct?.subcategoryId || existingProduct?.subCategoryId;
 
     await apiFetch(`/api/catalog/products/${data.id}`, {
       method: "PATCH",
@@ -609,6 +618,22 @@ const ProductManager = () => {
   const [showFilters, setShowFilters] = useState(true);
   const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const [quickAdd, setQuickAdd] = useState<{
+    type: "brand" | "category" | "subcategory" | null;
+    name: string;
+    code?: string;
+    categoryId?: string;
+    isSaving: boolean;
+    error: string | null;
+  }>({
+    type: null,
+    name: "",
+    code: "",
+    categoryId: "",
+    isSaving: false,
+    error: null,
+  });
 
   const router = useRouter();
   const pathname = usePathname();
@@ -696,8 +721,14 @@ const ProductManager = () => {
     useState<ProductFormState>(EMPTY_FORM);
   const [newProductCost, setNewProductCost] = useState(0);
 
+  const activeCategoryName = useMemo(() => {
+    if (!currentProduct.category) return "";
+    if (typeof currentProduct.category === "string") return currentProduct.category;
+    return currentProduct.category.name || "";
+  }, [currentProduct.category]);
+
   const currentSchema = useMemo(() => {
-    const schema = schemas.find((s) => s.category === currentProduct.category);
+    const schema = schemas.find((s) => s.category === activeCategoryName);
     if (!schema) return [];
     return schema.attributes.filter((attr) => {
       if (!attr.dependencyKey) return true;
@@ -709,26 +740,22 @@ const ProductManager = () => {
         ? depVal.includes(attr.dependencyValue || "")
         : depVal === attr.dependencyValue;
     });
-  }, [currentProduct.category, currentProduct.specs, schemas]);
+  }, [activeCategoryName, currentProduct.specs, schemas]);
 
   const availableBrands = useMemo(
     () =>
       brands.filter((b) =>
-        b.categories?.includes(
-          typeof currentProduct.category === "string"
-            ? currentProduct.category
-            : currentProduct.category?.name || ""
-        ),
+        b.categories?.includes(activeCategoryName),
       ),
-    [currentProduct.category, brands],
+    [activeCategoryName, brands],
   );
 
   const availableSubCategories = useMemo(
     () =>
       (subCategories ?? []).filter(
-        (sub) => sub.category?.name === currentProduct.category,
+        (sub) => sub.category?.name === activeCategoryName,
       ),
-    [subCategories, currentProduct.category],
+    [subCategories, activeCategoryName],
   );
 
   const handleUploadComplete = useCallback((url: string) => {
@@ -759,6 +786,15 @@ const ProductManager = () => {
     return `${catPrefix}-${brandPrefix}-${Date.now().toString().slice(-6)}`;
   }, []);
 
+  const resetForm = useCallback(() => {
+    setCurrentProduct(EMPTY_FORM);
+    setNewProductCost(0);
+    setPreviewUrl(null);
+    setNewSpecKey("");
+    setNewSpecValue("");
+    setSaveError(null);
+  }, []);
+
   const handleSave = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -770,47 +806,56 @@ const ProductManager = () => {
         alert("Brand is required");
         return;
       }
-      const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
-      const parsedStock = Math.max(0, Number(currentProduct.stock ?? 0));
-      if (
-        currentProduct.id &&
-        products.find((p) => p.id === currentProduct.id)
-      ) {
-        await updateProduct({
-          ...currentProduct,
-          specs: apiSpecs,
-          price: currentProduct.price,
-          stock: parsedStock,
-          images: currentProduct.images,
-          costPrice: newProductCost,
-          subCategoryId: currentProduct.subCategoryId,
-        } as any);
-      } else {
-        const newProduct: Product = {
-          ...currentProduct,
-          id: `prod-${Date.now()}`,
-          sku: generateSKU(currentProduct),
-          name: currentProduct.name || "",
-          price: currentProduct.price || 0,
-          stock: parsedStock,
-          category:
-            currentProduct.category ||
-            categoryOptions[0] ||
-            CATEGORY_NAMES.PROCESSOR,
-          images:
-            currentProduct.images.length > 0
-              ? currentProduct.images
-              : ["https://picsum.photos/300/300"],
-          description: currentProduct.description || "",
-          specs: apiSpecs,
-          costPrice: newProductCost,
-          subCategoryId: currentProduct.subCategoryId,
-        } as Product;
-        await addProduct(newProduct, parsedStock, newProductCost);
+      setSaveError(null);
+      try {
+        const apiSpecs = flatToSpecs(currentProduct.specs) as ProductSpec[];
+        const parsedStock = Math.max(0, Number(currentProduct.stock ?? 0));
+        if (currentProduct.id) {
+          await updateProduct({
+            ...currentProduct,
+            specs: apiSpecs,
+            price: currentProduct.price,
+            stock: parsedStock,
+            images: currentProduct.images,
+            costPrice: newProductCost,
+            subCategoryId: currentProduct.subCategoryId,
+          } as any);
+        } else {
+          const newProduct: Product = {
+            ...currentProduct,
+            id: `prod-${Date.now()}`,
+            sku: generateSKU(currentProduct),
+            name: currentProduct.name || "",
+            price: currentProduct.price || 0,
+            stock: parsedStock,
+            category:
+              currentProduct.category ||
+              categoryOptions[0] ||
+              CATEGORY_NAMES.PROCESSOR,
+            images:
+              currentProduct.images.length > 0
+                ? currentProduct.images
+                : ["https://picsum.photos/300/300"],
+            description: currentProduct.description || "",
+            specs: apiSpecs,
+            costPrice: newProductCost,
+            subCategoryId: currentProduct.subCategoryId,
+          } as Product;
+          await addProduct(newProduct, parsedStock, newProductCost);
+        }
+        setRefreshTrigger((p) => !p);
+        setIsEditing(false);
+        resetForm();
+      } catch (err: any) {
+        console.error("Save product failed:", err);
+        let msg = err.message || "Failed to save product. Please try again.";
+        if (msg.includes("Unique constraint failed") && msg.includes("sku")) {
+          msg = "A product with this SKU already exists. Please enter a unique SKU.";
+        } else if (msg.includes("Unique constraint failed") && msg.includes("slug")) {
+          msg = "A product with this name or slug already exists. Please choose a unique name.";
+        }
+        setSaveError(msg);
       }
-      setRefreshTrigger((p) => !p);
-      setIsEditing(false);
-      resetForm();
     },
     [
       currentProduct,
@@ -820,6 +865,7 @@ const ProductManager = () => {
       newProductCost,
       generateSKU,
       categoryOptions,
+      resetForm,
     ],
   );
 
@@ -834,7 +880,7 @@ const ProductManager = () => {
         ? product.media.map((m: any) => m.url)
         : [product.image || "https://picsum.photos/300/300"],
       specs: specsToFlat(product.specs),
-      subCategoryId: product.subCategoryId || "",
+      subCategoryId: product.subcategoryId ? String(product.subcategoryId) : (product.subCategoryId ? String(product.subCategoryId) : ""),
     });
     setPreviewUrl(product.media?.[0]?.url || product.image || null);
     setIsEditing(true);
@@ -847,14 +893,6 @@ const ProductManager = () => {
     },
     [deleteProduct],
   );
-
-  const resetForm = useCallback(() => {
-    setCurrentProduct(EMPTY_FORM);
-    setNewProductCost(0);
-    setPreviewUrl(null);
-    setNewSpecKey("");
-    setNewSpecValue("");
-  }, []);
 
   const handleCancel = useCallback(() => {
     setIsEditing(false);
@@ -906,6 +944,66 @@ const ProductManager = () => {
       return { ...prev, specs: { ...prev.specs, [key]: next } };
     });
   }, []);
+
+  const handleQuickAddSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAdd.name.trim()) return;
+
+    setQuickAdd((prev) => ({ ...prev, isSaving: true, error: null }));
+    try {
+      if (quickAdd.type === "brand") {
+        const res = await apiFetch<any>("/api/catalog/brands", {
+          method: "POST",
+          body: JSON.stringify({
+            name: quickAdd.name.trim(),
+            categoryId: quickAdd.categoryId || undefined,
+          }),
+        });
+        await loadDependencies();
+        handleSpecChange("brand", res.name);
+      } else if (quickAdd.type === "category") {
+        const res = await apiFetch<any>("/api/catalog/categories", {
+          method: "POST",
+          body: JSON.stringify({
+            name: quickAdd.name.trim(),
+            code: (quickAdd.code || quickAdd.name.substring(0, 4)).trim().toUpperCase(),
+          }),
+        });
+        await loadDependencies();
+        handleCategoryChange(res.name);
+      } else if (quickAdd.type === "subcategory") {
+        const catId = Number(quickAdd.categoryId || categories.find(c => c.name === activeCategoryName)?.id);
+        if (!catId) throw new Error("Please select a parent category first.");
+        const res = await apiFetch<any>("/api/catalog/subcategories", {
+          method: "POST",
+          body: JSON.stringify({
+            name: quickAdd.name.trim(),
+            categoryId: catId,
+          }),
+        });
+        await loadDependencies();
+        setCurrentProduct((prev) => ({
+          ...prev,
+          subCategoryId: String(res.id),
+        }));
+      }
+      setQuickAdd({
+        type: null,
+        name: "",
+        code: "",
+        categoryId: "",
+        isSaving: false,
+        error: null,
+      });
+    } catch (err: any) {
+      console.error("Quick add failed:", err);
+      setQuickAdd((prev) => ({
+        ...prev,
+        isSaving: false,
+        error: err.message || "Something went wrong",
+      }));
+    }
+  }, [quickAdd, categories, currentProduct.category, loadDependencies, handleSpecChange, handleCategoryChange]);
 
   const addCustomSpec = useCallback(() => {
     if (newSpecKey.trim() && newSpecValue.trim()) {
@@ -1071,6 +1169,13 @@ const ProductManager = () => {
           </div>
         </div>
 
+        {saveError && (
+          <div className="rounded-md bg-rose-50 p-4 text-sm text-rose-600 border border-rose-100 flex items-center gap-2 mx-6">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{saveError}</span>
+          </div>
+        )}
+
         {/* ─── MAIN FORM GRID ─── */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* ── LEFT: General + Specs ── */}
@@ -1114,63 +1219,130 @@ const ProductManager = () => {
                     </div>
                     <div>
                       <FieldLabel required>Category</FieldLabel>
-                      <Select
-                        value={typeof currentProduct.category === 'string' ? currentProduct.category : currentProduct.category?.name}
-                        onValueChange={handleCategoryChange}
-                      >
-                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="border-slate-200 bg-white">
-                          {categoryOptions.map((cat: string) => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Select
+                            value={currentProduct.category ? (typeof currentProduct.category === 'string' ? currentProduct.category : currentProduct.category?.name) : ""}
+                            onValueChange={handleCategoryChange}
+                          >
+                            <SelectTrigger className="h-10 w-full rounded-md border-slate-200 bg-white text-sm">
+                              <SelectValue placeholder="Select category..." />
+                            </SelectTrigger>
+                            <SelectContent className="border-slate-200 bg-white">
+                              {categoryOptions.map((cat: string) => (
+                                <SelectItem key={cat} value={cat}>
+                                  {cat}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 shrink-0 border-slate-200 hover:bg-slate-50"
+                          onClick={() => setQuickAdd({
+                            type: "category",
+                            name: "",
+                            code: "",
+                            categoryId: "",
+                            isSaving: false,
+                            error: null,
+                          })}
+                        >
+                          <Plus size={16} />
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <FieldLabel required>Subcategory</FieldLabel>
-                      <Select
-                        value={currentProduct.subCategoryId || ""}
-                        onValueChange={(val) =>
-                          setCurrentProduct((prev) => ({
-                            ...prev,
-                            subCategoryId: val,
-                          }))
-                        }
-                        disabled={!currentProduct.category}
-                      >
-                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
-                          <SelectValue placeholder="Select subcategory..." />
-                        </SelectTrigger>
-                        <SelectContent className="border-slate-200 bg-white">
-                          {availableSubCategories.map((sub: any) => (
-                            <SelectItem key={sub.id} value={sub.id}>
-                              {sub.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Select
+                            value={currentProduct.subCategoryId ? String(currentProduct.subCategoryId) : ""}
+                            onValueChange={(val) =>
+                              setCurrentProduct((prev) => ({
+                                ...prev,
+                                subCategoryId: val,
+                              }))
+                            }
+                            disabled={!activeCategoryName}
+                          >
+                            <SelectTrigger className="h-10 w-full rounded-md border-slate-200 bg-white text-sm">
+                              <SelectValue placeholder="Select subcategory..." />
+                            </SelectTrigger>
+                            <SelectContent className="border-slate-200 bg-white">
+                              {availableSubCategories.map((sub: any) => (
+                                <SelectItem key={sub.id} value={String(sub.id)}>
+                                  {sub.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 shrink-0 border-slate-200 hover:bg-slate-50"
+                          disabled={!activeCategoryName}
+                          onClick={() => {
+                            const catObj = categories.find(c => c.name === activeCategoryName);
+                            setQuickAdd({
+                              type: "subcategory",
+                              name: "",
+                              code: "",
+                              categoryId: catObj ? String(catObj.id) : "",
+                              isSaving: false,
+                              error: null,
+                            });
+                          }}
+                        >
+                          <Plus size={16} />
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <FieldLabel required>Brand</FieldLabel>
-                      <Select
-                        value={(currentProduct.specs?.brand as string) || ""}
-                        onValueChange={(val) => handleSpecChange("brand", val)}
-                      >
-                        <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
-                          <SelectValue placeholder="Select brand..." />
-                        </SelectTrigger>
-                        <SelectContent className="border-slate-200 bg-white">
-                          {availableBrands.map((brand: Brand) => (
-                            <SelectItem key={brand.id} value={brand.name}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Select
+                            value={(currentProduct.specs?.brand as string) || ""}
+                            onValueChange={(val) => handleSpecChange("brand", val)}
+                          >
+                            <SelectTrigger className="h-10 w-full rounded-md border-slate-200 bg-white text-sm">
+                              <SelectValue placeholder="Select brand..." />
+                            </SelectTrigger>
+                            <SelectContent className="border-slate-200 bg-white">
+                              {availableBrands.map((brand: Brand) => (
+                                <SelectItem key={brand.id} value={brand.name}>
+                                  {brand.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 shrink-0 border-slate-200 hover:bg-slate-50"
+                          onClick={() => {
+                            const catObj = categories.find(c => c.name === activeCategoryName);
+                            setQuickAdd({
+                              type: "brand",
+                              name: "",
+                              code: "",
+                              categoryId: catObj ? String(catObj.id) : "",
+                              isSaving: false,
+                              error: null,
+                            });
+                          }}
+                        >
+                          <Plus size={16} />
+                        </Button>
+                      </div>
                     </div>
                     <div className="sm:col-span-2">
                       <FieldLabel>Description</FieldLabel>
@@ -2030,6 +2202,119 @@ const ProductManager = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={quickAdd.type !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQuickAdd({ type: null, name: "", code: "", categoryId: "", isSaving: false, error: null });
+          }
+        }}
+      >
+        <DialogContent className="max-w-md bg-white border-slate-200 shadow-lg p-6 rounded-lg">
+          <DialogHeader className="pb-4 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-900 capitalize">
+              Quick Add {quickAdd.type}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleQuickAddSubmit} className="space-y-4 pt-4">
+            {quickAdd.error && (
+              <div className="rounded-md bg-rose-50 p-3 text-xs text-rose-600 border border-rose-100 flex items-center gap-2">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>{quickAdd.error}</span>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-700">Name</label>
+              <Input
+                required
+                placeholder={`New ${quickAdd.type} name...`}
+                value={quickAdd.name}
+                onChange={(e) => setQuickAdd(prev => ({ ...prev, name: e.target.value }))}
+                className="h-10 rounded-md border-slate-200 text-sm"
+              />
+            </div>
+
+            {quickAdd.type === "category" && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700 flex justify-between">
+                  <span>Unique Code</span>
+                  <span className="text-[10px] text-slate-400 font-normal">e.g. RAM, GPU, PROC</span>
+                </label>
+                <Input
+                  required
+                  placeholder="CODE"
+                  value={quickAdd.code}
+                  onChange={(e) => setQuickAdd(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                  className="h-10 rounded-md border-slate-200 text-sm font-mono"
+                />
+              </div>
+            )}
+
+            {quickAdd.type === "subcategory" && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700">Parent Category</label>
+                <Select
+                  value={quickAdd.categoryId}
+                  onValueChange={(val) => setQuickAdd(prev => ({ ...prev, categoryId: val }))}
+                >
+                  <SelectTrigger className="h-10 w-full rounded-md border-slate-200 bg-white text-sm">
+                    <SelectValue placeholder="Select parent category..." />
+                  </SelectTrigger>
+                  <SelectContent className="border-slate-200 bg-white">
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={String(cat.id)}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {quickAdd.type === "brand" && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700">Associate Category (Optional)</label>
+                <Select
+                  value={quickAdd.categoryId}
+                  onValueChange={(val) => setQuickAdd(prev => ({ ...prev, categoryId: val }))}
+                >
+                  <SelectTrigger className="h-10 w-full rounded-md border-slate-200 bg-white text-sm">
+                    <SelectValue placeholder="Select category..." />
+                  </SelectTrigger>
+                  <SelectContent className="border-slate-200 bg-white">
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={String(cat.id)}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <DialogFooter className="pt-4 border-t border-slate-100 bg-slate-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg flex flex-row justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
+                onClick={() => setQuickAdd({ type: null, name: "", code: "", categoryId: "", isSaving: false, error: null })}
+                disabled={quickAdd.isSaving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="rounded-md bg-slate-900 font-medium text-white hover:bg-slate-800"
+                disabled={quickAdd.isSaving}
+              >
+                {quickAdd.isSaving ? "Saving..." : `Add ${quickAdd.type}`}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -127,15 +127,21 @@ export function serializeBuildGuides(guides: any[]) {
 
 export function serializeBrand(brand: any) {
   const categoryNames = Array.from(
-    new Set(
-      Array.isArray(brand?.products)
+    new Set([
+      ...(Array.isArray(brand?.products)
         ? brand.products
-            .map((product: any) => product?.subCategory?.category?.name)
+            .map((product: any) => product?.subcategory?.category?.name || product?.subCategory?.category?.name)
             .filter(Boolean)
-        : Array.isArray(brand?.categories)
-          ? brand.categories.filter(Boolean)
-          : [],
-    ),
+        : []),
+      ...(Array.isArray(brand?.brandCategories)
+        ? brand.brandCategories
+            .map((bc: any) => bc.category?.name)
+            .filter(Boolean)
+        : []),
+      ...(Array.isArray(brand?.categories)
+        ? brand.categories.filter(Boolean)
+        : []),
+    ]),
   );
 
   return {

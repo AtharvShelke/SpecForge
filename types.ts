@@ -1,4 +1,3 @@
-import type React from "react";
 import { ReactNode } from "react";
 
 // =====================================================
@@ -1174,6 +1173,8 @@ export interface CreateProduct {
   stockStatus?: string;
   specs?: CreateProductSpec[];
   images?: string[];
+  stock?: number;
+  costPrice?: number;
 }
 
 export interface CreateCategoryAttribute {
