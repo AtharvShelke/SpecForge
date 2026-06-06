@@ -228,7 +228,7 @@ export default function CheckoutPage() {
   }, [formData, isManualPayment, paymentProofUrl]);
 
   const handleManualCheckout = useCallback(async () => {
-    const response = await processCheckout({
+    const payload = {
       ...formData,
       paymentMethod,
       paymentStatus: PaymentStatus.PENDING,
@@ -240,7 +240,9 @@ export default function CheckoutPage() {
         variantId: item.id,
         quantity: item.quantity,
       })),
-    });
+    };
+    console.log("[CheckoutPage] Initiating manual checkout for email:", formData.email);
+    const response = await processCheckout(payload);
 
     if (!response.success) {
       throw new Error(response.error ?? "We could not place your order.");
@@ -266,17 +268,19 @@ export default function CheckoutPage() {
       throw new Error("Online payment is unavailable right now.");
     }
 
+    const payload = {
+      ...formData,
+      items: cart.map((item) => ({
+        productId: item.id,
+        variantId: item.id,
+        quantity: item.quantity,
+      })),
+    };
+    console.log("[CheckoutPage] Initiating Razorpay checkout order creation");
     const createRes = await fetch("/api/payments/razorpay/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...formData,
-        items: cart.map((item) => ({
-          productId: item.id,
-          variantId: item.id,
-          quantity: item.quantity,
-        })),
-      }),
+      body: JSON.stringify(payload),
     });
 
     const createPayload = await createRes.json();
@@ -302,15 +306,17 @@ export default function CheckoutPage() {
         },
         handler: async (response: Record<string, string>) => {
           try {
+            const verifyPayloadObj = {
+              orderId: createPayload.orderId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            };
+            console.log("[CheckoutPage] Verifying Razorpay payment signature");
             const verifyRes = await fetch("/api/payments/razorpay/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                orderId: createPayload.orderId,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              }),
+              body: JSON.stringify(verifyPayloadObj),
             });
 
             const verifyPayload = await verifyRes.json();
@@ -344,6 +350,7 @@ export default function CheckoutPage() {
     event.preventDefault();
     const validationError = validateCheckoutForm();
     if (validationError) {
+      console.warn("[CheckoutPage] Validation error:", validationError);
       setFormError(validationError);
       return;
     }
@@ -358,6 +365,7 @@ export default function CheckoutPage() {
         await handleRazorpayCheckout();
       }
     } catch (error: unknown) {
+      console.error("[CheckoutPage] handleSubmit caught error:", error);
       setFormError(
         error instanceof Error
           ? error.message

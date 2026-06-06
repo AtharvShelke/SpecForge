@@ -14,7 +14,6 @@ import {
   calculatePSUHeadroom,
   getCompatibilitySummary,
   getNextRecommendedStep,
-  generateSharePayload,
   validateBuildForCheckout,
   getSpecValue
 } from "@/lib/calculations/pcBuilderUtils";
@@ -26,7 +25,6 @@ import {
   Sliders,
   SlidersHorizontal,
   Trash2,
-  Share2,
   ShoppingCart,
   Check,
   Info,
@@ -40,8 +38,30 @@ import {
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Slot step configurations
+// Slot step configurations & specifications prioritizer maps
 // ─────────────────────────────────────────────────────────────────────────────
+
+const SLOT_PRIORITY_SPECS: Record<string, string[]> = {
+  CPU:  ["cores", "threads", "base clock", "socket", "tdp"],
+  GPU:  ["vram", "memory type", "boost clock", "tdp", "length"],
+  RAM:  ["capacity", "speed", "type", "form factor"],
+  MB:   ["socket", "chipset", "memory type", "form factor"],
+  SSD:  ["capacity", "interface", "read speed", "write speed"],
+  PSU:  ["wattage", "efficiency", "modular"],
+  COOL: ["socket support", "tdp rating", "type"],
+  CASE: ["form factor", "max gpu length", "radiator support"],
+};
+
+const SLOT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  CPU: { bg: "bg-indigo-600", text: "text-indigo-600", dot: "bg-indigo-600" },
+  GPU: { bg: "bg-violet-600", text: "text-violet-600", dot: "bg-violet-600" },
+  RAM: { bg: "bg-sky-500", text: "text-sky-500", dot: "bg-sky-500" },
+  SSD: { bg: "bg-teal-500", text: "text-teal-500", dot: "bg-teal-500" },
+  PSU: { bg: "bg-amber-500", text: "text-amber-500", dot: "bg-amber-500" },
+  CASE: { bg: "bg-slate-500", text: "text-slate-500", dot: "bg-slate-500" },
+  COOL: { bg: "bg-emerald-500", text: "text-emerald-500", dot: "bg-emerald-500" },
+  MB: { bg: "bg-rose-500", text: "text-rose-500", dot: "bg-rose-500" },
+};
 
 const BUILDER_STEPS = [
   { id: "CPU", name: "Processor", shortLabel: "CPU", isRequired: true, icon: "cpu", categoryCode: "CPU" },
@@ -75,6 +95,11 @@ export default function PCBuilderClient() {
       storageWattagePerDrive: 5,
     }
   });
+
+  // UI state variables for mobile layouts, drawer, and checklist expansion
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [checkoutDrawerOpen, setCheckoutDrawerOpen] = useState(false);
+  const [compatibilityExpanded, setCompatibilityExpanded] = useState(false);
 
   // activeStep synced with URL Query params
   const activeStep = useMemo(() => {
@@ -128,6 +153,18 @@ export default function PCBuilderClient() {
         createBuild("My Live Custom Build");
       }
     }
+  }, []);
+
+  // Listen to screen size changes (max-width: 1024px) for mobile progress layout
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(max-width: 1024px)");
+    setIsSmallScreen(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsSmallScreen(e.matches);
+    };
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
   // API Mutators
@@ -289,13 +326,44 @@ export default function PCBuilderClient() {
     return calculateBuildCompletion(build?.items || [], steps);
   }, [build?.items, steps]);
 
+  // Computes the proportional cost segments for slot cost breakdown
+  // Dependency inline comment: build?.items
+  const slotCostBreakdown = useMemo(() => {
+    if (!build?.items || build.items.length === 0) return [];
+    const itemsWithProduct = build.items.filter(item => item.product);
+    const total = itemsWithProduct.reduce((sum, item) => sum + Number(item.product?.price ?? 0), 0);
+    if (total === 0) return [];
+    return itemsWithProduct.map(item => {
+      const price = Number(item.product?.price ?? 0);
+      const step = BUILDER_STEPS.find(s => s.categoryCode === item.slotId);
+      return {
+        slotId: item.slotId,
+        name: step ? step.name : item.slotId,
+        price,
+        percentage: (price / total) * 100
+      };
+    });
+  }, [build?.items]);
+
+  // Validator summary containing warnings and readiness flags
+  // Dependency inline comment: build?.items, steps, compatibilityReport, powerAnalytics
   const checkoutValidation = useMemo(() => {
-    return validateBuildForCheckout(
+    const base = validateBuildForCheckout(
       build?.items || [],
       steps,
       compatibilityReport,
       powerAnalytics
     );
+    const warnings = compatibilityReport.issues
+      .filter(issue => issue.severity === "WARNING")
+      .map(issue => issue.message);
+    if (powerAnalytics.psuCapacity && powerAnalytics.headroomStatus === "warning") {
+      warnings.push(`Estimated wattage (${powerAnalytics.estimatedWattage}W) is close to PSU capacity (${powerAnalytics.psuCapacity}W). Recommended overhead is 20%.`);
+    }
+    return {
+      ...base,
+      warnings
+    };
   }, [build?.items, steps, compatibilityReport, powerAnalytics]);
 
   const recommendedStep = useMemo(() => {
@@ -344,39 +412,14 @@ export default function PCBuilderClient() {
 
   // Rules checklist mapper
   const rulesTableData = useMemo(() => {
-    const items = build?.items || [];
-    const hasCPU = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("CPU") || cat.includes("PROCESSOR");
-    });
-    const hasMB = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("MOTHERBOARD") || cat.includes("MB");
-    });
-    const hasRAM = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("RAM") || cat.includes("MEMORY");
-    });
-    const hasSSD = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("STORAGE") || cat.includes("SSD") || cat.includes("HDD");
-    });
-    const hasGPU = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("GRAPHICS") || cat.includes("GPU");
-    });
-    const hasPSU = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("POWER_SUPPLY") || cat.includes("PSU");
-    });
-    const hasCOOL = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("COOLER") || cat.includes("FAN");
-    });
-    const hasCASE = items.some(item => {
-      const cat = (item.product?.subcategory?.name || item.product?.subCategory?.name || "").toUpperCase();
-      return cat.includes("CASE") || cat.includes("CABINET");
-    });
+    const hasCPU = itemBySlot.has("CPU");
+    const hasMB = itemBySlot.has("MB");
+    const hasRAM = itemBySlot.has("RAM");
+    const hasSSD = itemBySlot.has("SSD");
+    const hasGPU = itemBySlot.has("GPU");
+    const hasPSU = itemBySlot.has("PSU");
+    const hasCOOL = itemBySlot.has("COOL");
+    const hasCASE = itemBySlot.has("CASE");
 
     const issues = compatibilityReport.issues;
     const findIssue = (keywords: string[]) => {
@@ -505,26 +548,6 @@ export default function PCBuilderClient() {
     await removeItem(slotId);
   }, [steps, removeItem]);
 
-  const handleShare = useCallback(() => {
-    if (!build?.items || build.items.length === 0) {
-      appToast({
-        title: "Build Empty",
-        description: "Add some components before generating a share link.",
-        variant: "destructive",
-      });
-      return;
-    }
-    const payload = generateSharePayload(build.items);
-    if (payload && typeof window !== "undefined") {
-      const link = `${window.location.origin}/builds/shared?data=${payload}`;
-      navigator.clipboard.writeText(link);
-      appToast({
-        title: "Link Copied!",
-        description: "Shared PC build link copied to clipboard.",
-      });
-    }
-  }, [build?.items, appToast]);
-
   const handleAddToCartAll = useCallback(() => {
     if (!build?.items || build.items.length === 0) return;
     let count = 0;
@@ -583,10 +606,10 @@ export default function PCBuilderClient() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 selection:bg-indigo-500 selection:text-white antialiased font-sans">
+    <div className="min-h-screen lg:h-[calc(100vh-64px)] lg:overflow-hidden bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white antialiased font-sans flex flex-col">
 
       {/* TOP HEADER CONTROLS */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm py-4 px-6">
+      <header className="flex-shrink-0 z-40 bg-white border-b border-slate-200/60 shadow-sm py-3 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/20">
@@ -615,15 +638,7 @@ export default function PCBuilderClient() {
               Clear Configuration
             </button>
             <button
-              onClick={handleShare}
-              disabled={!build?.items?.length}
-              className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100/80 px-4 h-9 rounded-xl transition-all disabled:opacity-50"
-            >
-              <Share2 size={13} />
-              Share Link
-            </button>
-            <button
-              onClick={handleAddToCartAll}
+              onClick={() => setCheckoutDrawerOpen(true)}
               disabled={!checkoutValidation.ready}
               className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white px-5 h-9 rounded-xl shadow-md transition-all ${checkoutValidation.ready
                   ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/15"
@@ -638,66 +653,231 @@ export default function PCBuilderClient() {
       </header>
 
       {/* DASHBOARD PANEL GRID */}
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        <div className="grid lg:grid-cols-12 gap-8 items-start">
+      <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto px-4 md:px-6 py-4 overflow-hidden">
+        <div className="grid lg:grid-cols-12 gap-6 items-stretch h-full overflow-hidden">
 
           {/* LEFT PANEL (40% width on large screens) */}
-          <section className="lg:col-span-5 space-y-6">
+          <section className="lg:col-span-5 flex flex-col gap-4 h-full overflow-y-auto pr-1 pb-4">
 
-            {/* BUILD METRICS COMPACT DISPLAY */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
-                <span>System Configuration Analytics</span>
-                <span className="text-[10px] lowercase text-slate-400 font-medium">real-time updates</span>
-              </h2>
+            {/* PC Component Blueprint Slots / Mobile Sticky Progress Pills */}
+            {isSmallScreen ? (
+              <div className="sticky top-[73px] z-30 bg-white border border-slate-200/80 shadow-md rounded-2xl p-2.5 flex justify-between items-center gap-1.5 flex-shrink-0">
+                {steps.map(step => {
+                  const item = itemBySlot.get(step.categoryCode);
+                  const product = item?.product;
+                  const isActive = activeStep === step.id;
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Build Price */}
-                <div>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    Estimated Cost
-                  </span>
-                  <span className="text-2xl font-black text-slate-900 tracking-tight mt-1 block tabular-nums">
-                    ₹{totalPrice.toLocaleString("en-IN")}
-                  </span>
+                  let circleClass = "";
+                  if (isActive) {
+                    circleClass = "bg-indigo-600 text-white ring-2 ring-indigo-600 ring-offset-2 shadow-sm shadow-indigo-600/20";
+                  } else if (product) {
+                    circleClass = "bg-emerald-600 text-white shadow-sm shadow-emerald-600/10";
+                  } else {
+                    circleClass = "bg-slate-100 text-slate-400 hover:bg-slate-200/80";
+                  }
+
+                  return (
+                    <button
+                      key={step.id}
+                      onClick={() => setActiveStep(step.id)}
+                      className={`relative size-9 rounded-full flex items-center justify-center transition-all ${circleClass}`}
+                      title={step.name}
+                    >
+                      {renderStepIcon(step.icon, 14)}
+                      {product && !isActive && (
+                        <span className="absolute -top-1 -right-1 size-3.5 bg-white border border-emerald-600 text-emerald-600 rounded-full flex items-center justify-center shadow-sm">
+                          <Check size={8} className="stroke-[3]" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-shrink-0">
+                <div className="p-3 bg-slate-50/60 border-b border-slate-200/60 flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    PC Component Blueprint Slots
+                  </h3>
+                  <span className="text-[10px] font-bold text-slate-400">8 total components</span>
                 </div>
 
-                {/* Progress Circle or Meter */}
-                <div>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    Core Completeness
-                  </span>
-                  <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {completionMetrics.percentage}%
-                    </span>
-                    <span className="text-xs text-slate-400 font-bold">
-                      ({6 - missingRequiredList.length}/6 required)
-                    </span>
-                  </div>
+                <div className="divide-y divide-slate-100 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+                  {steps.map(step => {
+                    const item = itemBySlot.get(step.categoryCode);
+                    const product = item?.product;
+                    const isActive = activeStep === step.id;
+
+                    return (
+                      <div
+                        key={step.id}
+                        onClick={() => setActiveStep(step.id)}
+                        className={`flex-shrink-0 lg:flex-shrink-1 w-[260px] lg:w-auto py-2.5 px-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 cursor-pointer select-none transition-all ${isActive
+                            ? "bg-indigo-50/50 border-l-4 border-indigo-600 lg:translate-x-0.5"
+                            : "hover:bg-slate-50/40 border-l-4 border-transparent"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {/* Step Icon */}
+                          <div className={`size-7 rounded-lg flex items-center justify-center ${isActive
+                              ? "bg-indigo-100 text-indigo-700"
+                              : product
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-500"
+                            }`}>
+                            {renderStepIcon(step.icon, 14)}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="text-[11px] font-extrabold text-slate-800 leading-tight">{step.name}</h4>
+                              {step.isRequired && (
+                                <span className="text-[8px] uppercase font-black text-rose-500 bg-rose-50 px-1 py-0.2 rounded">
+                                  req
+                                </span>
+                              )}
+                            </div>
+
+                            {product ? (
+                              <p className="text-[10px] font-bold text-indigo-600 truncate max-w-[150px] lg:max-w-[190px] mt-0.5">
+                                {product.name}
+                              </p>
+                            ) : (
+                              <p className="text-[9px] font-medium text-slate-400 mt-0.5">
+                                Click to select product spec
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right Detail (Price or Action) */}
+                        <div className="flex items-center justify-between lg:justify-end gap-2.5 mt-1 lg:mt-0 pt-1 lg:pt-0 border-t lg:border-t-0 border-slate-100/50">
+                          {product ? (
+                            <>
+                              <span className="text-[11px] font-extrabold text-slate-700 tabular-nums">
+                                ₹{Number(product.price ?? 0).toLocaleString("en-IN")}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemove(step.id);
+                                }}
+                                className="size-5 rounded flex items-center justify-center hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors text-xs"
+                                title="Delete component selection"
+                              >
+                                ✕
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.2">
+                              config
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
-              {/* Progress bar */}
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-indigo-600 h-full rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${completionMetrics.percentage}%` }}
-                />
+            {/* BUILD METRICS COMPACT DISPLAY */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4 flex-shrink-0">
+              <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center justify-between">
+                <span>System Configuration Analytics</span>
+                <span className="text-[9px] lowercase text-slate-400 font-medium">real-time updates</span>
+              </h2>
+
+              <div className="space-y-3.5">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Build Price */}
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Estimated Cost
+                    </span>
+                    <span className="text-xl font-black text-slate-900 tracking-tight mt-0.5 block tabular-nums">
+                      ₹{totalPrice.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+
+                  {/* Progress Circle or Meter */}
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Core Completeness
+                    </span>
+                    <div className="flex items-baseline gap-1 mt-0.5">
+                      <span className="text-xl font-black text-slate-900 tracking-tight">
+                        {completionMetrics.percentage}%
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-bold">
+                        ({6 - missingRequiredList.length}/6 required)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Proportional Cost Breakdown stacked horizontal bar */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Cost Breakdown by Slot
+                  </span>
+                  {slotCostBreakdown.length > 0 ? (
+                    <div>
+                      <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden flex shadow-inner">
+                        {slotCostBreakdown.map((item) => {
+                          const color = SLOT_COLORS[item.slotId] || { bg: "bg-slate-400" };
+                          return (
+                            <div
+                              key={item.slotId}
+                              className={`${color.bg} h-full transition-all`}
+                              style={{ width: `${item.percentage}%` }}
+                              title={`${item.name}: ₹${item.price.toLocaleString("en-IN")} (${item.percentage.toFixed(1)}%)`}
+                            />
+                          );
+                        })}
+                      </div>
+                      {/* Legend */}
+                      <div className="flex flex-wrap gap-x-2.5 gap-y-1 mt-1.5 text-[9px] font-semibold text-slate-500">
+                        {slotCostBreakdown.map((item) => {
+                          const color = SLOT_COLORS[item.slotId] || { dot: "bg-slate-400" };
+                          return (
+                            <div key={item.slotId} className="flex items-center gap-0.5">
+                              <span className={`size-1.5 rounded-full ${color.dot}`} />
+                              <span>{item.name}</span>
+                              <span className="text-slate-800 font-bold">₹{item.price.toLocaleString("en-IN")}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[9px] text-slate-400 italic font-medium">
+                      Add items to slot blueprints to view proportional cost breakdown.
+                    </p>
+                  )}
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-indigo-600 h-full rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${completionMetrics.percentage}%` }}
+                  />
+                </div>
               </div>
 
               {/* ESTIMATED WATTAGE & BUFFER STATUS */}
-              <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
+              <div className="border-t border-slate-100 pt-3 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="size-4 text-amber-500" />
-                    <span className="text-xs font-bold text-slate-600">Estimated Load:</span>
-                    <span className="text-xs font-black text-slate-900">{powerAnalytics.estimatedWattage}W</span>
+                  <div className="flex items-center gap-1">
+                    <Zap className="size-3.5 text-amber-500" />
+                    <span className="text-[11px] font-bold text-slate-600">Estimated Load:</span>
+                    <span className="text-[11px] font-black text-slate-900">{powerAnalytics.estimatedWattage}W</span>
                   </div>
                   {/* Headroom status badge */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400 font-medium">PSU Headroom:</span>
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${powerAnalytics.headroomStatus === "danger"
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] text-slate-400 font-medium">PSU Headroom:</span>
+                    <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded ${powerAnalytics.headroomStatus === "danger"
                         ? "bg-rose-50 border border-rose-200 text-rose-600"
                         : powerAnalytics.headroomStatus === "warning"
                           ? "bg-amber-50 border border-amber-200 text-amber-600"
@@ -723,13 +903,13 @@ export default function PCBuilderClient() {
                         style={{ width: `${powerAnalytics.utilizationPercentage}%` }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-[9px] font-bold text-slate-400">
+                    <div className="flex items-center justify-between text-[8px] font-bold text-slate-400">
                       <span>{powerAnalytics.utilizationPercentage}% Power capacity utilized</span>
                       <span>Recommended buffer: {powerAnalytics.recommendedBuffer}W</span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[10px] text-slate-400 font-medium italic">
+                  <p className="text-[9px] text-slate-400 font-medium italic">
                     💡 Select a Power Supply (PSU) to compute total buffer margin headroom status.
                   </p>
                 )}
@@ -737,17 +917,17 @@ export default function PCBuilderClient() {
 
               {/* Missing requirements listing */}
               {missingRequiredList.length > 0 ? (
-                <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-3.5 space-y-2">
-                  <div className="flex items-center gap-1.5 text-amber-700">
-                    <AlertTriangle size={14} className="stroke-[2.5]" />
-                    <span className="text-xs font-bold">Unfinished System Requirements</span>
+                <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-2.5 space-y-1">
+                  <div className="flex items-center gap-1 text-amber-700">
+                    <AlertTriangle size={12} className="stroke-[2.5]" />
+                    <span className="text-[10px] font-bold">Unfinished System Requirements</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {missingRequiredList.map(step => (
                       <button
                         key={step.id}
                         onClick={() => setActiveStep(step.id)}
-                        className="text-[9px] font-bold bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 px-2 py-0.5 rounded transition-colors"
+                        className="text-[8px] font-bold bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 px-1.5 py-0.2 rounded transition-colors"
                       >
                         + Add {step.name}
                       </button>
@@ -755,107 +935,91 @@ export default function PCBuilderClient() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-emerald-50/50 border border-emerald-200/50 rounded-xl p-3.5 flex items-center gap-2 text-emerald-800">
-                  <CheckCircle2 size={16} className="text-emerald-600" />
-                  <span className="text-xs font-bold">Core hardware components are ready for checkout!</span>
+                <div className="bg-emerald-50/50 border border-emerald-200/50 rounded-xl p-2.5 flex items-center gap-1.5 text-emerald-800">
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                  <span className="text-[10px] font-bold">Core hardware components are ready for checkout!</span>
                 </div>
               )}
             </div>
 
-            {/* INTERACTIVE BUILD STEP SEPARATOR ROW LIST */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-4 bg-slate-50/60 border-b border-slate-200/60 flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  PC Component Blueprint Slots
-                </h3>
-                <span className="text-[10px] font-bold text-slate-400">8 total components</span>
-              </div>
+            {/* COLLAPSIBLE COMPATIBILITY CHECK WIDGET */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200">
+              {/* Header */}
+              <button
+                onClick={() => setCompatibilityExpanded(!compatibilityExpanded)}
+                className="w-full p-4 bg-slate-50/60 border-b border-slate-200/60 flex items-center justify-between text-left focus:outline-none"
+              >
+                <div className="space-y-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Live Compatibility Rules
+                  </h3>
+                  <p className="text-[10px] font-semibold text-slate-500">
+                    {rulesTableData.filter(r => r.status === "PASS").length} rules passing · {rulesTableData.filter(r => r.status === "FAIL" || r.status === "WARN").length} rules failing · {rulesTableData.filter(r => r.status === "N/A").length} unchecked
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                    overallStatusText === "COMPATIBLE"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                      : overallStatusText === "INCOMPATIBLE"
+                        ? "bg-rose-50 border-rose-200 text-rose-700"
+                        : overallStatusText === "WARNING"
+                          ? "bg-amber-50 border-amber-200 text-amber-700"
+                          : "bg-slate-50 border-slate-200 text-slate-500"
+                  }`}>
+                    {overallStatusText}
+                  </span>
+                  <span className="text-slate-400 text-xs font-bold">
+                    {compatibilityExpanded ? "▲" : "▼"}
+                  </span>
+                </div>
+              </button>
 
-              <div className="divide-y divide-slate-100 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-                {steps.map(step => {
-                  const item = itemBySlot.get(step.categoryCode);
-                  const product = item?.product;
-                  const isActive = activeStep === step.id;
-
-                  return (
-                    <div
-                      key={step.id}
-                      onClick={() => setActiveStep(step.id)}
-                      className={`flex-shrink-0 lg:flex-shrink-1 w-[260px] lg:w-auto p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer select-none transition-all ${isActive
-                          ? "bg-indigo-50/50 border-l-4 border-indigo-600 lg:translate-x-0.5"
-                          : "hover:bg-slate-50/40 border-l-4 border-transparent"
-                        }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* Step Icon */}
-                        <div className={`size-8 rounded-lg flex items-center justify-center ${isActive
-                            ? "bg-indigo-100 text-indigo-700"
-                            : product
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-100 text-slate-500"
-                          }`}>
-                          {renderStepIcon(step.icon, 16)}
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="text-xs font-bold text-slate-800">{step.name}</h4>
-                            {step.isRequired && (
-                              <span className="text-[9px] uppercase font-black text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded">
-                                required
-                              </span>
-                            )}
-                          </div>
-
-                          {product ? (
-                            <p className="text-xs font-bold text-indigo-600 truncate max-w-[180px] lg:max-w-[220px] mt-0.5">
-                              {product.name}
-                            </p>
-                          ) : (
-                            <p className="text-[10px] font-medium text-slate-400 mt-0.5">
-                              Click to select product spec
-                            </p>
-                          )}
-                        </div>
+              {/* Rules checklist list with transition-all */}
+              <div
+                className={`transition-all duration-200 overflow-hidden ${
+                  compatibilityExpanded ? "max-h-[500px] border-t border-slate-100 overflow-y-auto" : "max-h-0"
+                }`}
+              >
+                <div className="p-4 space-y-3">
+                  {rulesTableData.map(rule => (
+                    <div key={rule.id} className="p-3 bg-slate-50/50 border border-slate-100 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-800">{rule.name}</span>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${
+                          rule.status === "PASS"
+                            ? "bg-emerald-50 text-emerald-600"
+                            : rule.status === "FAIL"
+                              ? "bg-rose-50 text-rose-600"
+                              : rule.status === "WARN"
+                                ? "bg-amber-50 text-amber-600"
+                                : "bg-slate-100 text-slate-400"
+                        }`}>
+                          {rule.status === "PASS" && "PASS"}
+                          {rule.status === "FAIL" && "FAIL"}
+                          {rule.status === "WARN" && "WARN"}
+                          {rule.status === "N/A" && "N/A"}
+                        </span>
                       </div>
-
-                      {/* Right Detail (Price or Action) */}
-                      <div className="flex items-center justify-between lg:justify-end gap-3 mt-2 lg:mt-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100/50">
-                        {product ? (
-                          <>
-                            <span className="text-xs font-extrabold text-slate-700 tabular-nums">
-                              ₹{Number(product.price ?? 0).toLocaleString("en-IN")}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemove(step.id);
-                              }}
-                              className="size-6 rounded flex items-center justify-center hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"
-                              title="Delete component selection"
-                            >
-                              ✕
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
-                            configure
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                        Components: {rule.components}
+                      </p>
+                      <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                        {rule.message}
+                      </p>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
 
           </section>
 
           {/* RIGHT PANEL (60% width on large screens) */}
-          <section className="lg:col-span-7 space-y-6">
+          <section className="lg:col-span-7 flex flex-col gap-4 lg:h-full lg:overflow-hidden pb-4">
 
             {/* STEP PICKER HEADER */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 flex-shrink-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="size-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
@@ -921,9 +1085,11 @@ export default function PCBuilderClient() {
               </div>
             </div>
 
-            {/* PRODUCT GRID DISPLAY */}
-            <div className="relative">
-              {buildLoading && (
+            {/* PRODUCT GRID & HINT CONTAINER (SCROLLABLE) */}
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-4 space-y-4">
+              {/* PRODUCT GRID DISPLAY */}
+              <div className="relative">
+                {buildLoading && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-30 flex items-center justify-center rounded-2xl">
                   <Loader2 className="animate-spin text-indigo-600 size-8" />
                 </div>
@@ -987,18 +1153,31 @@ export default function PCBuilderClient() {
                             </div>
                           </div>
 
-                          {/* Specs grid */}
+                          {/* Specs grid sorted by priority specs map */}
                           <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-wrap gap-x-3 gap-y-1.5">
-                            {product.specs && product.specs.length > 0 ? (
-                              product.specs.slice(0, 4).map((spec: any, index: number) => (
-                                <div key={index} className="text-[10px] font-medium flex gap-1">
-                                  <span className="text-slate-400">{spec.name || spec.attribute?.label || spec.key}:</span>
-                                  <span className="text-slate-700 font-bold">{String(spec.value)}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-[10px] text-slate-400 italic">No explicit spec markers found.</div>
-                            )}
+                            {(() => {
+                              const priorityList = SLOT_PRIORITY_SPECS[activeStep] || [];
+                              const matchedSpecs = priorityList
+                                .map(pName => {
+                                  const pNameLower = pName.toLowerCase();
+                                  return product.specs?.find((spec: any) => {
+                                    const label = (spec.name || spec.attribute?.label || spec.key || "").toLowerCase();
+                                    return label.includes(pNameLower);
+                                  });
+                                })
+                                .filter((spec): spec is any => !!spec);
+
+                              return matchedSpecs.length > 0 ? (
+                                matchedSpecs.map((spec: any, index: number) => (
+                                  <div key={index} className="text-[10px] font-medium flex gap-1">
+                                    <span className="text-slate-400">{spec.name || spec.attribute?.label || spec.key}:</span>
+                                    <span className="text-slate-700 font-bold">{String(spec.value)}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-[10px] text-slate-400 italic">No priority specs match this product.</div>
+                              );
+                            })()}
                           </div>
                         </div>
 
@@ -1061,68 +1240,9 @@ export default function PCBuilderClient() {
               </div>
             </div>
 
-            {/* DYNAMIC COMPATIBILITY PANEL (Always visible below product picker) */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                  Live System Compatibility Check
-                </h3>
-
-                <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full border ${overallStatusText === "COMPATIBLE"
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                    : overallStatusText === "INCOMPATIBLE"
-                      ? "bg-rose-50 border-rose-200 text-rose-700"
-                      : overallStatusText === "WARNING"
-                        ? "bg-amber-50 border-amber-200 text-amber-700"
-                        : "bg-slate-50 border-slate-200 text-slate-500"
-                  }`}>
-                  status: {overallStatusText}
-                </span>
-              </div>
-
-              {/* RULES TABLE */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      <th className="py-2.5 px-3">Rule Constraint</th>
-                      <th className="py-2.5 px-3">Components Checked</th>
-                      <th className="py-2.5 px-3">Status</th>
-                      <th className="py-2.5 px-3">Live Validation Details</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {rulesTableData.map(rule => (
-                      <tr key={rule.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-3 px-3 font-bold text-slate-800">{rule.name}</td>
-                        <td className="py-3 px-3 text-slate-400 font-medium">{rule.components}</td>
-                        <td className="py-3 px-3">
-                          <span className={`inline-flex items-center gap-1 font-bold text-[10px] px-2 py-0.5 rounded ${rule.status === "PASS"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : rule.status === "FAIL"
-                                ? "bg-rose-50 text-rose-600"
-                                : rule.status === "WARN"
-                                  ? "bg-amber-50 text-amber-600"
-                                  : "bg-slate-100 text-slate-400"
-                            }`}>
-                            {rule.status === "PASS" && "✅ Pass"}
-                            {rule.status === "FAIL" && "❌ Fail"}
-                            {rule.status === "WARN" && "⚠️ Warn"}
-                            {rule.status === "N/A" && "⬜ N/A"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-slate-500 font-medium leading-relaxed max-w-xs md:max-w-md">
-                          {rule.message}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* NEXT RECOMMENDED STEP HINT CARD */}
-              {recommendedStep && (
+            {/* NEXT RECOMMENDED STEP HINT CARD (retained below the product grid) */}
+            {recommendedStep && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="bg-indigo-50/40 border border-indigo-100 rounded-xl p-4 flex items-start gap-3">
                   <div className="p-1 rounded bg-indigo-100 text-indigo-700 mt-0.5">
                     <Info size={14} className="stroke-[2.5]" />
@@ -1146,13 +1266,105 @@ export default function PCBuilderClient() {
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
             </div>
-
           </section>
 
         </div>
       </main>
+
+      {/* Checkout Confirmation Drawer */}
+      <div className={`fixed inset-0 z-50 overflow-hidden flex items-end justify-center transition-all duration-300 ${checkoutDrawerOpen ? "pointer-events-auto" : "pointer-events-none opacity-0"}`}>
+        <div 
+          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${checkoutDrawerOpen ? "opacity-100" : "opacity-0"}`}
+          onClick={() => setCheckoutDrawerOpen(false)}
+        />
+        <div 
+          className={`relative w-full max-w-2xl bg-white rounded-t-3xl shadow-2xl z-10 max-h-[85vh] flex flex-col transform transition-transform duration-300 ${
+            checkoutDrawerOpen ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-base font-extrabold text-slate-900">
+              Review Your Build Before Adding to Cart
+            </h3>
+            <button 
+              onClick={() => setCheckoutDrawerOpen(false)}
+              className="text-slate-400 hover:text-slate-600 p-1 text-base font-bold"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <div className="space-y-2.5">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Blueprint Items</h4>
+              <div className="divide-y divide-slate-100 border border-slate-150 rounded-xl bg-slate-50/50 px-4">
+                {build?.items?.map((item: any) => {
+                  const step = BUILDER_STEPS.find(s => s.categoryCode === item.slotId);
+                  return (
+                    <div key={item.id} className="py-3 flex items-center justify-between text-xs gap-4">
+                      <div className="min-w-0 flex-1">
+                        <span className="font-bold text-slate-500 uppercase text-[9px] block">
+                          {step?.name || item.slotId}
+                        </span>
+                        <span className="font-bold text-slate-800 truncate block mt-0.5">
+                          {item.product?.name}
+                        </span>
+                      </div>
+                      <span className="font-extrabold text-slate-950 tabular-nums">
+                        ₹{Number(item.product?.price ?? 0).toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {checkoutValidation.warnings && checkoutValidation.warnings.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Compatibility Warnings</h4>
+                <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3.5 space-y-2">
+                  {checkoutValidation.warnings.map((warning, index) => (
+                    <div key={index} className="flex items-start gap-2 text-xs font-semibold text-amber-800">
+                      <AlertTriangle size={14} className="stroke-[2.5] text-amber-600 shrink-0 mt-0.5" />
+                      <span>{warning}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="px-6 py-5 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Build Price</span>
+              <span className="text-lg font-black text-slate-900 tabular-nums">
+                ₹{totalPrice.toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => setCheckoutDrawerOpen(false)}
+                className="flex-1 sm:flex-none text-xs font-bold text-slate-500 hover:text-slate-700 px-4 py-2.5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleAddToCartAll();
+                  setCheckoutDrawerOpen(false);
+                }}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-6 py-2.5 rounded-xl shadow-md shadow-indigo-600/15 transition-all"
+              >
+                <ShoppingCart size={14} />
+                Confirm — Add All to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
     </div>
   );

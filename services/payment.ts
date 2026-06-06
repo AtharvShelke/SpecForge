@@ -7,8 +7,10 @@
  * - Refund recording
  */
 
+import { Prisma } from '@/generated/prisma';
 import type { PrismaClient } from '@/generated/prisma';
 import type { PaymentMethodType, PaymentStatus, Currency } from '@/generated/prisma';
+import { ServiceError } from '@/lib/errors';
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -38,18 +40,40 @@ export async function createPaymentTransaction(tx: PrismaTx, input: CreatePaymen
     });
     if (existing) return existing;
 
-    return tx.paymentTransaction.create({
-        data: {
-            orderId: input.orderId,
-            method: input.method,
-            amount: input.amount,
-            currency: input.currency ?? 'INR',
-            gatewayTxnId: input.gatewayTxnId,
-            status: input.status ?? 'COMPLETED',
-            idempotencyKey: input.idempotencyKey,
-            metadata: input.metadata,
-        },
-    });
+    try {
+        return await tx.paymentTransaction.create({
+            data: {
+                orderId: input.orderId,
+                method: input.method,
+                amount: input.amount,
+                currency: input.currency ?? 'INR',
+                gatewayTxnId: input.gatewayTxnId,
+                status: input.status ?? 'COMPLETED',
+                idempotencyKey: input.idempotencyKey,
+                metadata: input.metadata,
+            },
+        });
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+            const message = error.message || '';
+            const targets = (error.meta as any)?.target || [];
+            const targetsStr = Array.isArray(targets) ? targets.join(',') : String(targets);
+            
+            if (targetsStr.includes('gatewayTxnId') || message.includes('gatewayTxnId')) {
+                throw new ServiceError(
+                    'This payment reference or UTR has already been used for another order. Please check the reference number and try again.',
+                    409
+                );
+            }
+            if (targetsStr.includes('idempotencyKey') || message.includes('idempotencyKey')) {
+                throw new ServiceError(
+                    'This order is already being processed.',
+                    409
+                );
+            }
+        }
+        throw error;
+    }
 }
 
 // ─────────────────────────────────────────────────

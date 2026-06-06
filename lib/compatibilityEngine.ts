@@ -67,16 +67,39 @@ export function buildCompatibilityContextSync(items: any[]): BuildContext {
     const product = item.product || item.variant?.product || item;
     if (!product) continue;
 
-    const subCat = product.subcategory || product.subCategory;
-    const categoryName = (subCat?.name || "UNKNOWN")
-      .toUpperCase()
-      .replace(/\s+/g, "_");
+    let categoryName = "";
+    const slotId = item.slotId || (typeof product.category === "string" ? product.category : product.category?.code);
+    if (slotId) {
+      const slotMap: Record<string, string> = {
+        CPU: "DESKTOP_CPU",
+        MB: "ATX_MOTHERBOARD",
+        RAM: "DDR4_RAM",
+        SSD: "NVME_SSD",
+        GPU: "NVIDIA_GPU",
+        PSU: "ATX_PSU",
+        COOL: "AIR_COOLER",
+        CASE: "MID_TOWER_CASE",
+      };
+      categoryName = slotMap[slotId.toUpperCase()] || "";
+    }
+
+    if (!categoryName) {
+      const subCat = product.subcategory || product.subCategory;
+      categoryName = (subCat?.name || "")
+        .toUpperCase()
+        .replace(/\s+/g, "_");
+    }
+
+    if (!categoryName) {
+      categoryName = "UNKNOWN";
+    }
+
     const specs: Record<string, any> = {};
 
-    // 1. Read specs directly from the single-product flat specs
+    // 1. Read specs directly from the single-product flat specs, with fallback key properties
     if (Array.isArray(product.specs)) {
       for (const spec of product.specs) {
-        const specName = spec.name || spec.key;
+        const specName = spec.name || spec.key || spec.attribute?.key || spec.attribute?.label;
         if (specName) {
           specs[specName] = spec.value;
         }
@@ -104,10 +127,10 @@ export function buildCompatibilityContextSync(items: any[]): BuildContext {
     };
 
     // Aggregate totals
-    const tdp = specs["TDP (W)"] || specs.TDP || specs["TDP"] || 0;
+    const tdp = specs["TDP (W)"] || specs.TDP || specs.tdp || specs["TDP"] || 0;
     if (tdp) context.totals.totalTDP += Number(tdp);
     context.totals.totalPrice += price;
-    if (categoryName.includes("STORAGE")) context.totals.storageSlotsUsed += 1;
+    if (categoryName.includes("STORAGE") || categoryName.includes("SSD")) context.totals.storageSlotsUsed += 1;
     if (categoryName.includes("RAM") || categoryName.includes("DDR"))
       context.totals.ramSlotsUsed += 1;
   }
@@ -246,10 +269,88 @@ function findComponent(
   context: BuildContext,
   categoryNames: string[],
 ): Record<string, any> | null {
+  // 1. Exact match search
   for (const name of categoryNames) {
-    if (context.components[name]) return context.components[name];
+    if (context.components[name]) {
+      return wrapWithProxy(context.components[name]);
+    }
   }
+
+  // 2. Substring/Alias match fallback
+  const compKeys = Object.keys(context.components);
+  for (const name of categoryNames) {
+    const nameLower = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const matchingKey = compKeys.find(key => {
+      const keyLower = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+      return keyLower.includes(nameLower) || nameLower.includes(keyLower) ||
+             (nameLower.includes("cpu") && keyLower.includes("processor")) ||
+             (nameLower.includes("motherboard") && keyLower.includes("mb")) ||
+             (nameLower.includes("gpu") && keyLower.includes("graphics")) ||
+             (nameLower.includes("cooler") && keyLower.includes("cool"));
+    });
+    if (matchingKey) {
+      return wrapWithProxy(context.components[matchingKey]);
+    }
+  }
+
   return null;
+}
+
+function wrapWithProxy(comp: any): Record<string, any> {
+  return new Proxy(comp, {
+    get(target, prop) {
+      if (typeof prop === "string") {
+        const lowerProp = prop.toLowerCase();
+        
+        // Property key normalization aliases
+        const propMap: Record<string, string[]> = {
+          "socket": ["socket"],
+          "memory type": ["type", "ddr_gen", "memory_type"],
+          "wattage": ["wattage"],
+          "card length (mm)": ["length", "card_length"],
+          "max gpu length (mm)": ["max_gpu_length", "gpu_clearance"],
+          "socket compatibility": ["socket_compat", "socket_compatibility"]
+        };
+
+        let targetKey: string | undefined;
+
+        // A. Match defined aliases
+        const aliases = propMap[lowerProp];
+        if (aliases) {
+          targetKey = Object.keys(target).find(k => aliases.includes(k.toLowerCase()));
+        }
+
+        // B. Exact case-insensitive match
+        if (!targetKey) {
+          targetKey = Object.keys(target).find(k => k.toLowerCase() === lowerProp);
+        }
+
+        // C. Substring matching
+        if (!targetKey) {
+          targetKey = Object.keys(target).find(k => {
+            const lowerK = k.toLowerCase();
+            return lowerK.includes(lowerProp) || lowerProp.includes(lowerK);
+          });
+        }
+
+        if (targetKey) {
+          const value = target[targetKey];
+
+          // If numeric lookup, normalize values like "650W" or "320mm" to floats
+          if (typeof value === "string" && ["wattage", "card length (mm)", "max gpu length (mm)"].includes(lowerProp)) {
+            const parsed = parseFloat(value.replace(/[^0-9.]/g, ""));
+            if (!isNaN(parsed)) return parsed;
+          }
+
+          if (value === "true") return true;
+          if (value === "false") return false;
+
+          return value;
+        }
+      }
+      return target[prop as keyof typeof target];
+    }
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

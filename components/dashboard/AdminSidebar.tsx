@@ -28,7 +28,6 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Overview", icon: LayoutDashboard, key: "overview", group: "primary" },
   { label: "Orders", icon: ShoppingBag, key: "orders", group: "primary" },
-  { label: "Billing", icon: Receipt, key: "billing", group: "primary" },
   { label: "Products", icon: Package, key: "products", group: "primary" },
   { label: "Inventory", icon: Layers, key: "inventory", group: "primary" },
   { label: "Categories", icon: Tag, key: "categories", group: "secondary" },

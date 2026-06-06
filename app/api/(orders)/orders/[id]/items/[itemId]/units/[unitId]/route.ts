@@ -16,6 +16,7 @@ import { parseJsonBody } from "@/lib/security/validation";
 const updateUnitSchema = z.object({
   serialNumber: z.string().optional(),
   partNumber: z.string().optional(),
+  inventoryItemId: z.string().optional(),
 });
 
 export async function PATCH(
@@ -43,7 +44,11 @@ export async function PATCH(
         },
       },
       include: {
-        orderItem: true,
+        orderItem: {
+          include: {
+            order: true,
+          },
+        },
         inventoryItem: true,
       },
     });
@@ -55,6 +60,106 @@ export async function PATCH(
       );
     }
 
+    // Handle swapping to a different inventory item
+    if (data.inventoryItemId && data.inventoryItemId !== unit.inventoryItemId) {
+      const newInvItem = await prisma.inventoryItem.findUnique({
+        where: { id: data.inventoryItemId },
+      });
+
+      if (!newInvItem) {
+        return withRateLimitHeaders(
+          jsonError(404, "New inventory item not found", "NEW_INVENTORY_ITEM_NOT_FOUND"),
+          rateLimit
+        );
+      }
+
+      if (newInvItem.productId !== unit.orderItem.productId) {
+        return withRateLimitHeaders(
+          jsonError(400, "New inventory item belongs to a different product", "PRODUCT_MISMATCH"),
+          rateLimit
+        );
+      }
+
+      const orderStatus = unit.orderItem.order.status;
+
+      // Swap stock count / reservation
+      if (orderStatus === "PENDING") {
+        const available = newInvItem.quantity - newInvItem.reserved;
+        if (available < 1) {
+          return withRateLimitHeaders(
+            jsonError(409, "Selected inventory item is already reserved or unavailable", "INSUFFICIENT_STOCK"),
+            rateLimit
+          );
+        }
+
+        await prisma.$transaction([
+          prisma.inventoryItem.update({
+            where: { id: unit.inventoryItemId },
+            data: { reserved: { decrement: 1 }, lastUpdated: new Date() },
+          }),
+          prisma.inventoryItem.update({
+            where: { id: data.inventoryItemId },
+            data: { reserved: { increment: 1 }, lastUpdated: new Date() },
+          }),
+        ]);
+      } else if (["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(orderStatus)) {
+        if (newInvItem.quantity < 1) {
+          return withRateLimitHeaders(
+            jsonError(409, "Selected inventory item is out of stock", "OUT_OF_STOCK"),
+            rateLimit
+          );
+        }
+
+        await prisma.$transaction([
+          prisma.inventoryItem.update({
+            where: { id: unit.inventoryItemId },
+            data: { quantity: { increment: 1 }, lastUpdated: new Date() },
+          }),
+          prisma.inventoryItem.update({
+            where: { id: data.inventoryItemId },
+            data: { quantity: { decrement: 1 }, lastUpdated: new Date() },
+          }),
+        ]);
+      }
+
+      const updatedUnit = await prisma.orderItemUnit.update({
+        where: { id: unitId },
+        data: {
+          inventoryItemId: data.inventoryItemId,
+          serialNumber: newInvItem.serialNumber,
+          partNumber: newInvItem.partNumber,
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          entityType: "OrderItemUnit",
+          entityId: unitId,
+          action: "swapped_inventory_item",
+          actor: auditContext.actor,
+          before: {
+            inventoryItemId: unit.inventoryItemId,
+            serialNumber: unit.serialNumber,
+            partNumber: unit.partNumber,
+          },
+          after: {
+            inventoryItemId: data.inventoryItemId,
+            serialNumber: newInvItem.serialNumber,
+            partNumber: newInvItem.partNumber,
+          },
+          metadata: auditContext.metadata,
+          ipAddress: auditContext.ipAddress,
+          userAgent: auditContext.userAgent,
+        },
+      });
+
+      return withRateLimitHeaders(
+        NextResponse.json({ unit: updatedUnit }),
+        rateLimit
+      );
+    }
+
+    // Otherwise directly edit serial and part number of the current inventory item
     const updatedInventoryItem = await prisma.inventoryItem.update({
       where: { id: unit.inventoryItemId },
       data: {

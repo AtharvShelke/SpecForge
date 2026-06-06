@@ -261,21 +261,6 @@ export function getNextRecommendedStep(
   };
 }
 
-// 6. generateSharePayload(items)
-export function generateSharePayload(items: Array<{ productId: string }>) {
-  if (!items || items.length === 0) return "";
-  const sharedData = items.map(item => ({
-    id: item.productId,
-    quantity: 1
-  }));
-  try {
-    return btoa(JSON.stringify(sharedData));
-  } catch (e) {
-    console.error("Failed to generate share payload:", e);
-    return "";
-  }
-}
-
 // 7. validateBuildForCheckout(items, steps, compatibilityResult, estimatedPower)
 export function validateBuildForCheckout(
   items: any[],

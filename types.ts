@@ -490,6 +490,7 @@ export interface OrderItem {
   order?: Order;
   product?: Product;
   inventoryItem?: InventoryItem | null;
+  assignedUnits?: any[];
 }
 
 export interface OrderLog {

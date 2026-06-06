@@ -228,7 +228,6 @@ export async function listOrders(filters?: {
       createdAt: true,
       updatedAt: true,
       items: {
-        take: 3,
         orderBy: { id: "asc" },
         select: {
           id: true,
@@ -304,171 +303,201 @@ export async function getOrderById(id: string): Promise<Order> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function createOrder(data: CreateOrder): Promise<Order> {
-  if (!data.customerName || !data.email || data.total === undefined)
-    throw new ServiceError("customerName, email, and total are required");
-
   const orderId =
     data.id || `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
 
-  const order = await prisma.$transaction(async (tx) => {
-    let customerId = data.customerId;
-    if (!customerId) {
-      const existingCustomer = await tx.customer.findFirst({
-        where: { email: data.email },
-        orderBy: { createdAt: "asc" },
-      });
+  console.log(`[order.service.ts] createOrder called for customer: ${data.email}, calculated orderId: ${orderId}`);
 
-      if (existingCustomer) {
-        const updatedCustomer = await tx.customer.update({
-          where: { id: existingCustomer.id },
-          data: {
-            name: data.customerName,
-            phone: data.phone,
-            addressLine1: data.shippingStreet,
-            city: data.shippingCity,
-            state: data.shippingState,
-            postalCode: data.shippingZip,
-            country: data.shippingCountry,
-          },
-        });
-        customerId = updatedCustomer.id;
-      } else {
-        const createdCustomer = await tx.customer.create({
-          data: {
-            name: data.customerName,
-            email: data.email,
-            phone: data.phone,
-            addressLine1: data.shippingStreet,
-            city: data.shippingCity,
-            state: data.shippingState,
-            postalCode: data.shippingZip,
-            country: data.shippingCountry,
-          },
-        });
-        customerId = createdCustomer.id;
-      }
-    }
+  if (!data.customerName || !data.email || data.total === undefined) {
+    console.error("[order.service.ts] Validation failed: customerName, email, or total is missing");
+    throw new ServiceError("customerName, email, and total are required");
+  }
 
-    const normalizedItems = data.items ?? [];
-    const reservedInventory: Array<{
-      inventoryItemId: string;
-      quantity: number;
-      productNumber: string;
-      partNumber: string;
-      serialNumber: string;
-    }> = [];
-    const orderLineItems: Array<any> = [];
-
-    for (const item of normalizedItems) {
-      const allocations = await allocateInventoryForOrderItem(tx, item);
-
-      const assignedUnits = allocations.map((a) => ({
-        inventoryItemId: a.inventoryItemId,
-        serialNumber: a.serialNumber || null,
-        partNumber: a.partNumber || null,
-      }));
-
-      for (const allocation of allocations) {
-        reservedInventory.push(allocation);
-      }
-
-      orderLineItems.push({
-        productId: item.productId,
-        name: item.name,
-        categoryId: item.categoryId || 1,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image,
-        sku: item.sku,
-        assignedUnits: assignedUnits.length > 0 ? {
-          create: assignedUnits,
-        } : undefined,
-      });
-    }
-
-    const orderData: any = {
-      id: orderId,
-      customerName: data.customerName,
-      email: data.email,
-      phone: data.phone,
-      customerId,
-      subtotal: data.subtotal ?? 0,
-      gstAmount: data.gstAmount ?? 0,
-      taxAmount: data.taxAmount ?? 0,
-      discountAmount: data.discountAmount ?? 0,
-      total: data.total,
-      shippingStreet: data.shippingStreet,
-      shippingCity: data.shippingCity,
-      shippingState: data.shippingState,
-      shippingZip: data.shippingZip,
-      shippingCountry: data.shippingCountry,
-      paymentMethod: data.paymentMethod,
-      paymentTransactionId: data.paymentTransactionId,
-      paymentStatus: data.paymentStatus,
-      idempotencyKey: data.paymentIdempotencyKey,
-      source: data.source,
-      status: "PENDING",
-    };
-
-    if (orderLineItems.length > 0) {
-      orderData.items = {
-        create: orderLineItems,
-      };
-    }
-
-    const newOrder = await tx.order.create({
-      data: orderData,
-      include: { items: true },
-    });
-
-    if (data.paymentMethod) {
-      await createPaymentTransaction(tx as any, {
-        orderId: newOrder.id,
-        method: data.paymentMethod,
-        amount: data.total,
-        gatewayTxnId: data.paymentTransactionId || undefined,
-        idempotencyKey:
-          data.paymentIdempotencyKey ||
-          `${newOrder.id}-${data.paymentMethod}-${Date.now()}`,
-        metadata: {
-          ...data.paymentMetadata,
-          proofUrl: data.paymentProofUrl,
-        },
-        status: data.paymentStatus,
-      });
-    }
-
-    // Update reserved inventory
-    if (reservedInventory.length > 0) {
-      for (const item of reservedInventory) {
-        const updated = await tx.inventoryItem.update({
-          where: { id: item.inventoryItemId },
-          data: {
-            reserved: { increment: item.quantity },
-          },
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      console.log("[order.service.ts] Inside transaction block. Resolving customerId...");
+      let customerId = data.customerId;
+      if (!customerId) {
+        const existingCustomer = await tx.customer.findFirst({
+          where: { email: data.email },
+          orderBy: { createdAt: "asc" },
         });
 
-        if ((updated.quantity ?? 0) < (updated.reserved ?? 0)) {
-          throw new ServiceError(
-            "One or more inventory units became unavailable during checkout.",
-            409,
-          );
+        if (existingCustomer) {
+          console.log("[order.service.ts] Found existing customer:", existingCustomer.id);
+          const updatedCustomer = await tx.customer.update({
+            where: { id: existingCustomer.id },
+            data: {
+              name: data.customerName,
+              phone: data.phone,
+              addressLine1: data.shippingStreet,
+              city: data.shippingCity,
+              state: data.shippingState,
+              postalCode: data.shippingZip,
+              country: data.shippingCountry,
+            },
+          });
+          customerId = updatedCustomer.id;
+        } else {
+          console.log("[order.service.ts] Creating new customer record...");
+          const createdCustomer = await tx.customer.create({
+            data: {
+              name: data.customerName,
+              email: data.email,
+              phone: data.phone,
+              addressLine1: data.shippingStreet,
+              city: data.shippingCity,
+              state: data.shippingState,
+              postalCode: data.shippingZip,
+              country: data.shippingCountry,
+            },
+          });
+          customerId = createdCustomer.id;
         }
       }
-    }
+      console.log("[order.service.ts] Resolved customerId:", customerId);
 
-    await tx.orderLog.create({
-      data: {
-        orderId: newOrder.id,
+      const normalizedItems = data.items ?? [];
+      console.log("[order.service.ts] Processing order items, count:", normalizedItems.length);
+      const reservedInventory: Array<{
+        inventoryItemId: string;
+        quantity: number;
+        productNumber: string;
+        partNumber: string;
+        serialNumber: string;
+      }> = [];
+      const orderLineItems: Array<any> = [];
+
+      for (const item of normalizedItems) {
+        console.log(`[order.service.ts] Allocating inventory for product: ${item.productId}, quantity: ${item.quantity}`);
+        const allocations = await allocateInventoryForOrderItem(tx, item);
+        console.log(`[order.service.ts] Allocated ${allocations.length} unit(s)`);
+
+        const assignedUnits = allocations.map((a) => ({
+          inventoryItemId: a.inventoryItemId,
+          serialNumber: a.serialNumber || null,
+          partNumber: a.partNumber || null,
+        }));
+
+        for (const allocation of allocations) {
+          reservedInventory.push(allocation);
+        }
+
+        orderLineItems.push({
+          productId: item.productId,
+          name: item.name,
+          categoryId: item.categoryId || 1,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+          sku: item.sku,
+          assignedUnits: assignedUnits.length > 0 ? {
+            create: assignedUnits,
+          } : undefined,
+        });
+      }
+
+      const orderData: any = {
+        id: orderId,
+        customerName: data.customerName,
+        email: data.email,
+        phone: data.phone,
+        customerId,
+        subtotal: data.subtotal ?? 0,
+        gstAmount: data.gstAmount ?? 0,
+        taxAmount: data.taxAmount ?? 0,
+        discountAmount: data.discountAmount ?? 0,
+        total: data.total,
+        shippingStreet: data.shippingStreet,
+        shippingCity: data.shippingCity,
+        shippingState: data.shippingState,
+        shippingZip: data.shippingZip,
+        shippingCountry: data.shippingCountry,
+        paymentMethod: data.paymentMethod,
+        paymentTransactionId: data.paymentTransactionId,
+        paymentStatus: data.paymentStatus,
+        idempotencyKey: data.paymentIdempotencyKey,
+        source: data.source,
         status: "PENDING",
-        note: "Order created and items reserved",
-      },
+      };
+
+      if (orderLineItems.length > 0) {
+        orderData.items = {
+          create: orderLineItems,
+        };
+      }
+
+      console.log(`[order.service.ts] Invoking tx.order.create for order ID: ${orderId}`);
+
+      const newOrder = await tx.order.create({
+        data: orderData,
+        include: { items: true },
+      });
+
+      console.log(`[order.service.ts] tx.order.create succeeded for order: ${newOrder.id}`);
+
+      if (data.paymentMethod) {
+        console.log("[order.service.ts] Creating payment transaction record...");
+        await createPaymentTransaction(tx as any, {
+          orderId: newOrder.id,
+          method: data.paymentMethod,
+          amount: data.total,
+          gatewayTxnId: data.paymentTransactionId || undefined,
+          idempotencyKey:
+            data.paymentIdempotencyKey ||
+            `${newOrder.id}-${data.paymentMethod}-${Date.now()}`,
+          metadata: {
+            ...data.paymentMetadata,
+            proofUrl: data.paymentProofUrl,
+          },
+          status: data.paymentStatus,
+        });
+      }
+
+      // Update reserved inventory
+      if (reservedInventory.length > 0) {
+        console.log("[order.service.ts] Updating reserved inventory items...");
+        for (const item of reservedInventory) {
+          const updated = await tx.inventoryItem.update({
+            where: { id: item.inventoryItemId },
+            data: {
+              reserved: { increment: item.quantity },
+            },
+          });
+
+          if ((updated.quantity ?? 0) < (updated.reserved ?? 0)) {
+            throw new ServiceError(
+              "One or more inventory units became unavailable during checkout.",
+              409,
+            );
+          }
+        }
+      }
+
+      console.log("[order.service.ts] Creating order log entry...");
+      await tx.orderLog.create({
+        data: {
+          orderId: newOrder.id,
+          status: "PENDING",
+          note: "Order created and items reserved",
+        },
+      });
+
+      return newOrder as any as Order;
+    }, {
+      maxWait: 15000,
+      timeout: 30000,
     });
 
-    return newOrder as any as Order;
-  });
-
-  return order as any as Order;
+    console.log("[order.service.ts] Transaction committed successfully.");
+    return order as any as Order;
+  } catch (error) {
+    console.error("[order.service.ts] ERROR inside createOrder transaction:", error);
+    if (error instanceof Error) {
+      console.error("[order.service.ts] Error stack trace:\n", error.stack);
+    }
+    throw error;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -670,5 +699,64 @@ export async function cancelOrder(id: string, note?: string) {
     }
 
     return updatedOrder as any as Order;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE (soft-delete with inventory release)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function deleteOrder(id: string) {
+  const order = await prisma.order.findUnique({
+    where: { id, deletedAt: null },
+    include: {
+      items: {
+        include: {
+          assignedUnits: true,
+        },
+      },
+    },
+  });
+  if (!order) throw new ServiceError("Order not found", 404);
+
+  return prisma.$transaction(async (tx) => {
+    // Release inventory based on current order status
+    if (order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED") {
+      // Restore inventory quantity (reserved was already decremented at PAID transition)
+      for (const item of order.items) {
+        for (const unit of item.assignedUnits) {
+          await tx.inventoryItem.update({
+            where: { id: unit.inventoryItemId },
+            data: { quantity: { increment: 1 } },
+          });
+        }
+      }
+    } else if (order.status === "PENDING") {
+      // Release reservation only
+      for (const item of order.items) {
+        for (const unit of item.assignedUnits) {
+          await tx.inventoryItem.update({
+            where: { id: unit.inventoryItemId },
+            data: { reserved: { decrement: 1 } },
+          });
+        }
+      }
+    }
+
+    // Soft-delete the order
+    const deleted = await tx.order.update({
+      where: { id },
+      data: { deletedAt: new Date(), version: { increment: 1 } },
+    });
+
+    await tx.orderLog.create({
+      data: {
+        orderId: id,
+        status: order.status as any,
+        note: "Order soft-deleted by admin",
+      },
+    });
+
+    return deleted;
   });
 }

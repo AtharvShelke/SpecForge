@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrder } from "@/services/order.service";
+import { getOrderById, updateOrder, deleteOrder } from "@/services/order.service";
 import { ServiceError } from "@/lib/errors";
 import { serializeOrder } from "@/lib/adminSerializers";
 import { getSessionUser } from "@/lib/auth";
@@ -57,6 +57,35 @@ export async function PATCH(
       );
     }
     console.error("[PATCH_ORDER_ID]", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const user = await getSessionUser();
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (user.role !== Role.ADMIN)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  try {
+    const { id } = await params;
+    await deleteOrder(id);
+    return new NextResponse(null, { status: 204 });
+  } catch (error: any) {
+    if (error instanceof ServiceError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
+    }
+    console.error("[DELETE_ORDER_ID]", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
       { status: 500 },

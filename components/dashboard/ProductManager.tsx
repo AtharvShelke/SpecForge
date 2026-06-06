@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useEffect, memo, useCallback } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { apiFetch } from "@/lib/helpers";
 import {
@@ -24,26 +24,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
-  X,
   LayoutGrid,
   Settings2,
   Save,
   ArrowLeft,
-  Tag,
   TrendingUp,
-  BarChart3,
-  Star,
-  RefreshCw,
   ChevronDown,
-  SlidersHorizontal,
   Loader2,
-  Warehouse,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ImageUploader from "../uploadthing/ImageUploader";
 import { cn } from "@/lib/utils";
 import { fetchCatalogProducts } from "@/lib/catalogFrontend";
-import { Badge } from "@/components/ui/badge";
+
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -71,7 +64,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Button } from "@/components/ui/button";
 
 // ─────────────────────────────────────────────────────────────
@@ -132,7 +125,7 @@ function getVariantStock(variant: unknown): number {
 }
 
 const StockPill = memo(
-  ({ product, variant }: { product: Product; variant: any }) => {
+  ({ variant }: { variant: any }) => {
     const totalStock = getVariantStock(variant);
     if (totalStock <= 0)
       return (
@@ -271,7 +264,7 @@ const DesktopProductRow = memo(
         </td>
         <td className="whitespace-nowrap px-5 py-3 text-right">
           <div className="flex flex-col items-end gap-1">
-            <StockPill product={product} variant={product} />
+            <StockPill variant={product} />
             <span className="font-mono text-xs text-slate-500 tabular-nums">
               {totalStock} units
             </span>
@@ -366,7 +359,7 @@ const MobileProductCard = memo(
             <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
               {typeof product.category === "string" ? product.category : product.category?.name}
             </span>
-            <StockPill product={product} variant={product} />
+            <StockPill variant={product} />
           </div>
           <div className="mt-1.5 flex items-center gap-2">
             <span className="font-mono text-sm font-medium text-slate-900 tabular-nums">
@@ -488,8 +481,6 @@ const ProductManager = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [products, setProducts] = useState<Product[]>([]);
   const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -498,7 +489,6 @@ const ProductManager = () => {
   const schemas: ProductSchema[] = [];
 
   const loadDependencies = useCallback(async () => {
-    setIsLoading(true);
     try {
       const [catsData, subsData, brandsData] = await Promise.all([
         apiFetch<Category[]>("/api/catalog/categories"),
@@ -510,33 +500,12 @@ const ProductManager = () => {
       setBrands(brandsData);
     } catch (err) {
       console.error("Failed to load ProductManager dependencies", err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadDependencies();
   }, [loadDependencies]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchAllProducts = async () => {
-      try {
-        const data = await apiFetch<any>("/api/catalog/products");
-        if (!cancelled) {
-          const prodList = Array.isArray(data) ? data : (data?.products ?? []);
-          setProducts(prodList);
-        }
-      } catch (err) {
-        console.error("Failed to fetch all products:", err);
-      }
-    };
-    fetchAllProducts();
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshTrigger]);
 
   const addProduct = useCallback(async (data: any, stock: number, costPrice: number) => {
     const brandName = data?.specs?.brand || data?.brand?.name || data?.brandName;
@@ -606,16 +575,10 @@ const ProductManager = () => {
     await apiFetch(`/api/catalog/products/${id}`, { method: "DELETE" });
   }, []);
 
-  const syncData = useCallback(async () => {
-    await loadDependencies();
-  }, [loadDependencies]);
-
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [newSpecKey, setNewSpecKey] = useState("");
   const [newSpecValue, setNewSpecValue] = useState("");
-  const [showFilters, setShowFilters] = useState(true);
+  const showFilters = true;
   const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -659,8 +622,6 @@ const ProductManager = () => {
         .filter(Boolean),
     [categories],
   );
-
-  const [showDetail, setShowDetail] = useState(false);
 
   const searchParamsStr = searchParams.toString();
 
@@ -759,7 +720,6 @@ const ProductManager = () => {
   );
 
   const handleUploadComplete = useCallback((url: string) => {
-    setPreviewUrl(url);
     setTimeout(() => {
       setCurrentProduct((prev) => ({
         ...prev,
@@ -789,7 +749,6 @@ const ProductManager = () => {
   const resetForm = useCallback(() => {
     setCurrentProduct(EMPTY_FORM);
     setNewProductCost(0);
-    setPreviewUrl(null);
     setNewSpecKey("");
     setNewSpecValue("");
     setSaveError(null);
@@ -859,7 +818,6 @@ const ProductManager = () => {
     },
     [
       currentProduct,
-      products,
       updateProduct,
       addProduct,
       newProductCost,
@@ -882,7 +840,6 @@ const ProductManager = () => {
       specs: specsToFlat(product.specs),
       subCategoryId: product.subcategoryId ? String(product.subcategoryId) : (product.subCategoryId ? String(product.subCategoryId) : ""),
     });
-    setPreviewUrl(product.media?.[0]?.url || product.image || null);
     setIsEditing(true);
   }, []);
 
@@ -1022,9 +979,6 @@ const ProductManager = () => {
   }, []);
 
   
-  const handleSyncData = useCallback(() => syncData(), [syncData]);
-  const handleCloseDetail = useCallback(() => setShowDetail(false), []);
-  const handleOpenDetail = useCallback(() => setShowDetail(true), []);
   const handleClearFilters = useCallback(
     () => router.push(pathname),
     [router, pathname],
@@ -1052,75 +1006,7 @@ const ProductManager = () => {
     [currentProduct.specs, schemaKeys],
   );
 
-  const {
-    totalCatalogValue,
-    outOfStockCount,
-    categoryCount,
-    brandCount,
-    categoryBreakdown,
-    brandBreakdown,
-    priceRange,
-  } = useMemo(() => {
-    let totalVal = 0;
-    let outOfStock = 0;
-    const catMap: Record<string, { count: number; value: number }> = {};
-    const brandMap: Record<string, number> = {};
-    const catSet = new Set<string>();
-    const brandSet = new Set<string>();
-    const prices: number[] = [];
 
-    for (const p of products ?? []) {
-      const price = p.price || 0;
-      totalVal += price;
-      if (price > 0) prices.push(price);
-
-      const stock = getVariantStock(p);
-      if (stock <= 0) outOfStock++;
-
-      const cat = p.category
-        ? (typeof p.category === "string" ? p.category : p.category.name)
-        : "Other";
-      catSet.add(cat);
-      if (!catMap[cat]) catMap[cat] = { count: 0, value: 0 };
-      catMap[cat].count++;
-      catMap[cat].value += price;
-
-      const b = p.brand?.name || "Generic";
-      if (p.brand?.name) brandSet.add(p.brand.name);
-      brandMap[b] = (brandMap[b] || 0) + 1;
-    }
-
-    const sortedCats = Object.entries(catMap).sort(
-      (a, b) => b[1].count - a[1].count,
-    );
-    const sortedBrands = Object.entries(brandMap).sort((a, b) => b[1] - a[1]);
-
-    const priceMin = prices.length ? Math.min(...prices) : 0;
-    const priceMax = prices.length ? Math.max(...prices) : 0;
-    const priceAvg = prices.length
-      ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
-      : 0;
-
-    return {
-      totalCatalogValue: totalVal,
-      outOfStockCount: outOfStock,
-      categoryCount: catSet.size,
-      brandCount: brandSet.size,
-      categoryBreakdown: sortedCats,
-      brandBreakdown: sortedBrands,
-      priceRange: { min: priceMin, max: priceMax, avg: priceAvg },
-    };
-  }, [products]);
-
-  const avgPriceFormatted =
-    priceRange.avg > 999999
-      ? `₹${(priceRange.avg / 100000).toFixed(1)}L`
-      : `₹${priceRange.avg.toLocaleString("en-IN")}`;
-  const totalValueFormatted =
-    totalCatalogValue > 999999
-      ? `₹${(totalCatalogValue / 100000).toFixed(1)}L`
-      : `₹${totalCatalogValue.toLocaleString("en-IN")}`;
-  const minPriceFormatted = `₹${priceRange.min.toLocaleString("en-IN")}`;
 
   const profitMargin = useMemo(() => {
     if (newProductCost <= 0 || !currentProduct.price) return null;
@@ -1657,180 +1543,8 @@ const ProductManager = () => {
   // LIST VIEW
   // ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-    
-      {/* ─── KPI CARDS ─── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[
-          {
-            label: "Total Catalogue",
-            value: products.length,
-            sub: (
-              <button
-                onClick={handleOpenDetail}
-                className="flex items-center gap-1 hover:text-slate-900 transition-colors"
-              >
-                <span>
-                  {categoryCount} cat · {brandCount} brands
-                </span>
-                <ChevronRight size={12} />
-              </button>
-            ),
-            icon: <Package size={16} />,
-          },
-          {
-            label: "Average Price",
-            value: avgPriceFormatted,
-            sub: `Min ${minPriceFormatted}`,
-            icon: <DollarSign size={16} />,
-          },
-          {
-            label: "Out of Stock",
-            value: outOfStockCount,
-            sub: "Requires attention",
-            icon: <AlertCircle size={16} />,
-            alert: outOfStockCount > 0,
-          },
-          {
-            label: "Total Value",
-            value: totalValueFormatted,
-            sub: "Catalogue Sum",
-            icon: <TrendingUp size={16} />,
-          },
-        ].map((card, idx) => (
-          <div
-            key={idx}
-            className="flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  {card.label}
-                </p>
-                <p className="mt-1.5 text-2xl font-semibold text-slate-900">
-                  {card.value}
-                </p>
-                <div className="mt-1 text-xs text-slate-500">
-                  {card.sub}
-                </div>
-              </div>
-              <div
-                className={cn(
-                  "rounded-md p-2",
-                  (card as any).alert
-                    ? "bg-rose-50 text-rose-600"
-                    : "bg-slate-50 text-slate-500",
-                )}
-              >
-                {card.icon}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ─── INSIGHTS ROW ─── */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Category Breakdown */}
-        <div className="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <SectionLabel icon={<Tag size={16} />}>SKUs by Category</SectionLabel>
-            <button
-              onClick={handleOpenDetail}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
-            >
-              View All
-            </button>
-          </div>
-          <ScrollArea className="h-[220px]">
-            <div className="p-5">
-              {categoryBreakdown.length === 0 ? (
-                <div className="py-8 text-center text-sm text-slate-500">
-                  No data available
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {categoryBreakdown.map(([cat, data], idx) => {
-                    const pct =
-                      products.length > 0
-                        ? Math.round((data.count / products.length) * 100)
-                        : 0;
-                    return (
-                      <div key={idx} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-slate-700">
-                            {cat}
-                          </span>
-                          <span className="font-medium text-slate-900">
-                            {data.count} <span className="text-slate-400 font-normal ml-1">({pct}%)</span>
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full bg-slate-800"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-
-        {/* Brand Breakdown */}
-        <div className="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <SectionLabel icon={<Star size={16} />}>Top Brands</SectionLabel>
-            <button
-              onClick={handleOpenDetail}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
-            >
-              View All
-            </button>
-          </div>
-          <ScrollArea className="h-[220px]">
-            <div className="p-5">
-              {brandBreakdown.length === 0 ? (
-                <div className="py-8 text-center text-sm text-slate-500">
-                  No data available
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {brandBreakdown.slice(0, 10).map(([brand, count], idx) => {
-                    const pct =
-                      products.length > 0
-                        ? Math.round((count / products.length) * 100)
-                        : 0;
-                    return (
-                      <div key={idx} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-slate-700">
-                            {brand}
-                          </span>
-                          <span className="font-medium text-slate-900">
-                            {count} <span className="text-slate-400 font-normal ml-1">({pct}%)</span>
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full bg-slate-800"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      </div>
-
-      {/* ─── PRODUCT TABLE ─── */}
+    <div className="">
+          {/* ─── PRODUCT TABLE ─── */}
       <div className="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
         {/* Filters */}
         <div className="border-b border-slate-200 bg-white p-4 space-y-4">
@@ -2073,135 +1787,6 @@ const ProductManager = () => {
         )}
       </div>
 
-      {/* ─── Breakdown Dialog ─── */}
-      <AlertDialog open={showDetail} onOpenChange={setShowDetail}>
-        <AlertDialogContent className="flex max-h-[90vh] w-[95vw] max-w-4xl flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
-          <AlertDialogHeader className="shrink-0 flex-row items-center justify-between border-b border-slate-200 px-6 py-4 space-y-0">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600">
-                <BarChart3 size={18} />
-              </div>
-              <div className="text-left">
-                <AlertDialogTitle className="text-lg font-semibold text-slate-900">
-                  Catalogue Intelligence
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-sm text-slate-500">
-                  {products.length} SKUs · {categoryCount} categories ·{" "}
-                  {brandCount} brands
-                </AlertDialogDescription>
-              </div>
-            </div>
-          </AlertDialogHeader>
-
-          <div className="flex-1 min-h-0 overflow-y-auto bg-slate-50/50 p-6">
-            <div className="mb-6 grid grid-cols-3 gap-4">
-              {[
-                { label: "Total SKUs", value: products.length },
-                { label: "Categories", value: categoryCount },
-                { label: "Brands", value: brandCount },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-md border border-slate-200 bg-white p-4 text-center shadow-sm"
-                >
-                  <p className="mb-1 text-xs font-medium uppercase tracking-wider text-slate-500">
-                    {item.label}
-                  </p>
-                  <p className="font-mono text-2xl font-bold text-slate-900">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <SectionLabel icon={<Tag size={16} />}>By Category</SectionLabel>
-                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                    {categoryCount} total
-                  </span>
-                </div>
-                <div className="space-y-4">
-                  {categoryBreakdown.map(([cat, data], i) => (
-                    <div key={i}>
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-700">
-                          {cat}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500">
-                            {Math.round((data.count / products.length) * 100)}%
-                          </span>
-                          <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-700">
-                            {data.count}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-slate-800"
-                          style={{
-                            width: `${(data.count / products.length) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <SectionLabel icon={<Star size={16} />}>By Brand</SectionLabel>
-                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                    {brandCount} total
-                  </span>
-                </div>
-                <div className="space-y-4">
-                  {brandBreakdown.map(([brand, count], i) => (
-                    <div key={i}>
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-700">
-                          {brand}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500">
-                            {Math.round((count / products.length) * 100)}%
-                          </span>
-                          <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-700">
-                            {count}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-slate-800"
-                          style={{
-                            width: `${(count / products.length) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <AlertDialogFooter className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4">
-            <AlertDialogCancel asChild>
-              <Button
-                variant="outline"
-                className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
-                onClick={handleCloseDetail}
-              >
-                Close
-              </Button>
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <Dialog
         open={quickAdd.type !== null}

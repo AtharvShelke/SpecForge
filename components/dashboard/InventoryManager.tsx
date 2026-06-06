@@ -11,24 +11,20 @@ import {
 import { apiFetch } from "@/lib/helpers";
 import { StockMovementType } from "@/types";
 import {
-  AlertTriangle,
+  
   ArrowDownRight,
   ArrowUpRight,
-  DollarSign,
+
   Package,
   Search,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
   History,
-  Warehouse,
-  BarChart3,
-  ShieldAlert,
-  Zap,
-  Clock,
-  Tag,
+  
   ChevronDown,
   SlidersHorizontal,
+  Plus,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { InventorySkuSummary } from "@/types";
@@ -236,6 +232,26 @@ const InventoryManager = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stockMovements, setStockMovements] = useState<StockMovementRecord[]>([]);
+ const [adjQty, setAdjQty] = useState(0);
+  const [adjReason, setAdjReason] = useState("");
+
+  const [auditLogModal, setAuditLogModal] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const [addStockOpen, setAddStockOpen] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [serialNumber, setSerialNumber] = useState("");
+  const [partNumber, setPartNumber] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [costPrice, setCostPrice] = useState(0);
+  const [location, setLocation] = useState("");
+  const [isSubmittingStock, setIsSubmittingStock] = useState(false);
+  const [addStockError, setAddStockError] = useState("");
 
   const loadDependencies = useCallback(async () => {
     setIsLoading(true);
@@ -267,10 +283,7 @@ const InventoryManager = () => {
     await loadDependencies();
   }, [loadDependencies]);
 
-  const refreshAuditLogs = useCallback(async () => {
-    const data = await apiFetch<AuditLogRecord[]>("/api/audit-logs");
-    return Array.isArray(data) ? data : [];
-  }, []);
+  
 
   const fetchInventoryPage = useCallback(async (query?: URLSearchParams | string) => {
     const qs = query?.toString();
@@ -300,25 +313,84 @@ const InventoryManager = () => {
   const [adjType, setAdjType] = useState<StockMovementType>(
     StockMovementType.INWARD,
   );
-  const [adjQty, setAdjQty] = useState(0);
-  const [adjReason, setAdjReason] = useState("");
+ 
 
-  const [auditLogModal, setAuditLogModal] = useState(false);
-  const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
-  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-
-  const openAuditLog = useCallback(async () => {
-    setAuditLogModal(true);
-    setIsLoadingAudit(true);
+  const openAddStock = useCallback(async () => {
+    setAddStockOpen(true);
+    setIsLoadingProducts(true);
+    setAddStockError("");
     try {
-      setAuditLogs(await refreshAuditLogs());
+      const data = await apiFetch<any>("/api/catalog/products?limit=1000");
+      setProducts(Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error(e);
+      console.error("Failed to fetch products for stock entry", e);
     } finally {
-      setIsLoadingAudit(false);
+      setIsLoadingProducts(false);
     }
-  }, [refreshAuditLogs]);
+  }, []);
+
+  const handleProductSelect = useCallback((product: any) => {
+    setSelectedProduct(product);
+    setProductSearch("");
+  }, []);
+
+  const handleSerialNumberChange = useCallback((val: string) => {
+    setSerialNumber(val);
+    if (val.trim()) {
+      setQuantity(1);
+    }
+  }, []);
+
+  const handleAddStockSubmit = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) {
+      setAddStockError("Please select a product");
+      return;
+    }
+    
+    setIsSubmittingStock(true);
+    setAddStockError("");
+    try {
+      const payload = {
+        productId: selectedProduct.id,
+        serialNumber: serialNumber.trim() ? serialNumber.trim() : null,
+        partNumber: partNumber.trim() ? partNumber.trim() : null,
+        quantity: serialNumber.trim() ? 1 : quantity,
+        costPrice: Number(costPrice),
+        location: location.trim() ? location.trim() : null,
+      };
+
+      await apiFetch<any>("/api/inventory/items", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setSelectedProduct(null);
+      setSerialNumber("");
+      setPartNumber("");
+      setQuantity(1);
+      setCostPrice(0);
+      setLocation("");
+      setAddStockOpen(false);
+      setRefreshTrigger((prev) => !prev);
+    } catch (err: any) {
+      console.error("Failed to add stock:", err);
+      setAddStockError(err.message || "Failed to add stock. Please try again.");
+    } finally {
+      setIsSubmittingStock(false);
+    }
+  }, [selectedProduct, serialNumber, partNumber, quantity, costPrice, location]);
+
+  const filteredProducts = useMemo(() => {
+    if (!productSearch) return products;
+    const lower = productSearch.toLowerCase();
+    return products.filter((p) => 
+      p.name?.toLowerCase().includes(lower) || 
+      p.sku?.toLowerCase().includes(lower)
+    );
+  }, [products, productSearch]);
+
+  
 
   const router = useRouter();
   const pathname = usePathname();
@@ -426,10 +498,6 @@ const InventoryManager = () => {
   const handleCloseAdjustment = useCallback(() => setAdjustmentModal(null), []);
   const handleToggleFilters = useCallback(() => setShowFilters((f) => !f), []);
 
-  const handleRefreshSync = useCallback(async () => {
-    await refreshInventory();
-    setRefreshTrigger((prev) => !prev);
-  }, [refreshInventory]);
 
   const handlePrevPage = useCallback(() => {
     updateQueryParams({ page: String(currentPage - 1) });
@@ -453,86 +521,6 @@ const InventoryManager = () => {
     [updateQueryParams],
   );
 
-  const kpis = useMemo(() => {
-    let lowStockCount = 0;
-    let outOfStockCount = 0;
-    let totalStockValue = 0;
-    let totalAvailable = 0;
-    let totalReserved = 0;
-    let healthyCount = 0;
-
-    const arr = Array.isArray(inventory) ? inventory : [];
-    for (const i of arr) {
-      const qty = i.quantity;
-      const reserved = i.reserved || 0;
-      totalStockValue += qty * i.costPrice;
-      totalAvailable += qty;
-      totalReserved += reserved;
-      if (qty === 0) outOfStockCount++;
-      else if (qty <= i.reorderLevel) lowStockCount++;
-      else healthyCount++;
-    }
-
-    const totalOnHand = totalAvailable + totalReserved;
-    const healthPct =
-      arr.length > 0 ? Math.round((healthyCount / arr.length) * 100) : 0;
-
-    return {
-      lowStockCount,
-      outOfStockCount,
-      totalStockValue,
-      totalAvailable,
-      totalReserved,
-      totalOnHand,
-      healthyCount,
-      healthPct,
-    };
-  }, [inventory]);
-
-  const {
-    lowStockCount,
-    outOfStockCount,
-    totalStockValue,
-    totalAvailable,
-    totalReserved,
-    totalOnHand,
-    healthyCount,
-    healthPct,
-  } = kpis;
-
-  const criticalItems = useMemo(() => {
-    const arr = Array.isArray(inventory) ? inventory : [];
-    return [...arr]
-      .filter((i) => i.quantity <= i.reorderLevel)
-      .sort(
-        (a, b) =>
-          a.quantity / Math.max(a.reorderLevel, 1) -
-          b.quantity / Math.max(b.reorderLevel, 1),
-      )
-      .slice(0, 5);
-  }, [inventory]);
-
-  const categoryBreakdown = useMemo(() => {
-    const map: Record<string, { units: number; value: number; count: number }> =
-      {};
-    const arr = Array.isArray(inventory) ? inventory : [];
-    for (const i of arr) {
-      const rawCat = i.product?.category;
-      const cat = (typeof rawCat === "string" ? rawCat : rawCat?.name) || 
-                  i.product?.subcategory?.category?.name ||
-                  i.product?.subCategory?.category?.name ||
-                  i.product?.subcategory?.name ||
-                  i.product?.subCategory?.name ||
-                  "Other";
-      if (!map[cat]) map[cat] = { units: 0, value: 0, count: 0 };
-      map[cat].units += i.quantity;
-      map[cat].value += i.quantity * i.costPrice;
-      map[cat].count += 1;
-    }
-    return Object.entries(map)
-      .sort((a, b) => b[1].value - a[1].value)
-      .slice(0, 5);
-  }, [inventory]);
   const inventoryCategories = useMemo(
     () =>
       (categories ?? [])
@@ -543,254 +531,13 @@ const InventoryManager = () => {
     [categories],
   );
 
-  const kpiCards = useMemo(
-    () => [
-      {
-        label: "Stock Valuation",
-        value:
-          totalStockValue > 999999
-            ? `₹${(totalStockValue / 100000).toFixed(1)}L`
-            : `₹${totalStockValue.toLocaleString("en-IN")}`,
-        sub: `${Array.isArray(inventory) ? inventory.length : 0} SKUs tracking`,
-        icon: <DollarSign size={16} />,
-        alert: false,
-      },
-      {
-        label: "Low Stock",
-        value: lowStockCount,
-        sub: "Needs reorder soon",
-        icon: <AlertTriangle size={16} />,
-        alert: lowStockCount > 0,
-      },
-      {
-        label: "Out of Stock",
-        value: outOfStockCount,
-        sub: "Zero availability",
-        icon: <ShieldAlert size={16} />,
-        alert: outOfStockCount > 0,
-      },
-      {
-        label: "Inventory Health",
-        value: `${healthPct}%`,
-        sub: `${healthyCount} items optimal`,
-        icon: <BarChart3 size={16} />,
-        alert: false,
-      },
-    ],
-    [
-      totalStockValue,
-      inventory,
-      lowStockCount,
-      outOfStockCount,
-      healthPct,
-      healthyCount,
-    ],
-  );
-
-  const utilisationRows = useMemo(
-    () => [
-      {
-        label: "Total On Hand",
-        value: totalOnHand.toLocaleString("en-IN"),
-        sub: "Physical stock count",
-        icon: <Package size={16} />,
-        color: "text-slate-900",
-      },
-      {
-        label: "Reserved Stock",
-        value: totalReserved.toLocaleString("en-IN"),
-        sub: "Allocated to active orders",
-        icon: <Clock size={16} />,
-        color: "text-amber-600",
-      },
-      {
-        label: "Available to Sell",
-        value: totalAvailable.toLocaleString("en-IN"),
-        sub: "Free for new orders",
-        icon: <Zap size={16} />,
-        color: "text-emerald-600",
-      },
-      {
-        label: "Avg Cost / Unit",
-        value:
-          Array.isArray(inventory) && inventory.length > 0
-            ? `₹${Math.round(totalStockValue / Math.max(totalOnHand, 1)).toLocaleString("en-IN")}`
-            : "—",
-        sub: "Weighted average value",
-        icon: <DollarSign size={16} />,
-        color: "text-blue-600",
-      },
-    ],
-    [totalOnHand, totalReserved, totalAvailable, totalStockValue, inventory],
-  );
+ 
 
   const totalPages = Math.max(1, Math.ceil(totalItems / currentLimit));
 
   return (
     <div className="space-y-6">
-      {/* ─── KPI CARDS ─── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {kpiCards.map((card, idx) => (
-          <div
-            key={idx}
-            className="flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-all"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  {card.label}
-                </p>
-                <p className="mt-1.5 text-2xl font-semibold text-slate-900">
-                  {card.value}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {card.sub}
-                </p>
-              </div>
-              <div
-                className={cn(
-                  "rounded-md p-2",
-                  card.alert
-                    ? "bg-rose-50 text-rose-600"
-                    : "bg-slate-50 text-slate-500",
-                )}
-              >
-                {card.icon}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ─── SECONDARY STATS ROW ─── */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Critical Alerts */}
-        <CollapsibleSection
-          icon={<AlertTriangle size={16} />}
-          title="Critical Alerts"
-        >
-          <div className="divide-y divide-slate-100 p-2">
-            {criticalItems.length === 0 ? (
-              <div className="p-4 text-center text-sm text-slate-500">
-                All inventory levels healthy.
-              </div>
-            ) : (
-              criticalItems.map((item, idx) => {
-                const pct = Math.round(
-                  (item.quantity / Math.max(item.reorderLevel, 1)) * 100,
-                );
-                const name = item.product?.name || item.sku || item.productId;
-                return (
-                  <div key={idx} className="p-3">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="truncate text-sm font-medium text-slate-900">
-                        {name}
-                      </span>
-                      {item.quantity === 0 ? (
-                        <span className="flex-shrink-0 rounded-md bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">
-                          Empty
-                        </span>
-                      ) : (
-                        <span className="flex-shrink-0 font-mono text-xs font-medium text-amber-700">
-                          {item.quantity} / {item.reorderLevel}
-                        </span>
-                      )}
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all",
-                          item.quantity === 0 ? "bg-rose-500" : "bg-amber-500",
-                        )}
-                        style={{ width: `${Math.min(pct, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </CollapsibleSection>
-
-        {/* Category Breakdown */}
-        <CollapsibleSection
-          icon={<Tag size={16} />}
-          title="Value by Category"
-        >
-          <div className="divide-y divide-slate-100 p-2">
-            {categoryBreakdown.length === 0 ? (
-              <div className="p-4 text-center text-sm text-slate-500">
-                No data available
-              </div>
-            ) : (
-              categoryBreakdown.map(([cat, data], idx) => {
-                const pct =
-                  totalStockValue > 0
-                    ? Math.round((data.value / totalStockValue) * 100)
-                    : 0;
-                return (
-                  <div key={idx} className="p-3">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="truncate text-sm font-medium text-slate-900">
-                        {cat}
-                      </span>
-                      <span className="flex-shrink-0 font-mono text-xs font-medium text-slate-700">
-                        ₹{data.value.toLocaleString("en-IN")} ({pct}%)
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full bg-blue-500 transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-xs text-slate-500">
-                      {data.units} physical units · {data.count} SKUs
-                    </p>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </CollapsibleSection>
-
-        {/* Stock Utilisation */}
-        <CollapsibleSection
-          icon={<Warehouse size={16} />}
-          title="Stock Utilisation"
-        >
-          <div className="space-y-4 p-5">
-            {utilisationRows.map(({ label, value, sub, icon, color }) => (
-              <div
-                key={label}
-                className="flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className={cn("flex-shrink-0", color)}>{icon}</span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-900">
-                      {label}
-                    </p>
-                    <p className="hidden truncate text-xs text-slate-500 sm:block">
-                      {sub}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={cn(
-                    "flex-shrink-0 font-mono text-base font-semibold",
-                    color,
-                  )}
-                >
-                  {value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CollapsibleSection>
-      </div>
-
-      {/* ─── STOCK TABLE ─── */}
+     {/* ─── STOCK TABLE ─── */}
       <div className="flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         {/* Filters header */}
         <div className="border-b border-slate-200 bg-white p-4 space-y-4">
@@ -808,6 +555,13 @@ const InventoryManager = () => {
                   size={14}
                   className={cn(isLoading && "animate-spin")}
                 />
+              </button>
+              <button
+                onClick={openAddStock}
+                className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+              >
+                <Plus size={14} />
+                <span className="hidden sm:inline">Add Stock</span>
               </button>
               <button
                 onClick={handleToggleFilters}
@@ -924,7 +678,8 @@ const InventoryManager = () => {
               ) : (
                 paginatedInventory.map((item: InventorySkuSummary) => {
                   const product = item.product;
-                  const costValue = item.quantity * item.costPrice;
+                  const physicalQty = item.quantityOnHand ?? (item.quantity + (item.reserved || 0));
+                  const costValue = physicalQty * item.costPrice;
                   return (
                     <tr
                       key={item.id}
@@ -1380,6 +1135,174 @@ const InventoryManager = () => {
               Close
             </button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── ADD STOCK DIALOG ─── */}
+      <Dialog open={addStockOpen} onOpenChange={setAddStockOpen}>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-md flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+          <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
+            <DialogTitle className="text-lg font-semibold text-slate-900">
+              Add New Inventory Stock
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              Create a new physical stock unit or increase bulk inventory
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleAddStockSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+            {addStockError && (
+              <div className="rounded-md bg-rose-50 p-3 text-sm text-rose-700 border border-rose-200">
+                {addStockError}
+              </div>
+            )}
+
+            {/* Product Selector */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-slate-700">
+                Select Product <span className="text-rose-500">*</span>
+              </label>
+              {selectedProduct ? (
+                <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-slate-900 truncate">{selectedProduct.name}</div>
+                    <div className="text-xs text-slate-500 font-mono">{selectedProduct.sku || "No SKU"}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProduct(null)}
+                    className="text-xs font-medium text-indigo-600 hover:text-indigo-500 transition-colors ml-4 shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <Input
+                      placeholder="Type to search product name/SKU..."
+                      className="h-10 rounded-md border-slate-200 pl-8 text-sm"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                    />
+                  </div>
+                  <ScrollArea className="h-[140px] rounded-md border border-slate-200 bg-white p-2">
+                    {isLoadingProducts ? (
+                      <div className="p-4 text-center text-xs text-slate-500">Loading products...</div>
+                    ) : filteredProducts.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-500">No products found</div>
+                    ) : (
+                      filteredProducts.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleProductSelect(p)}
+                          className="w-full text-left rounded px-2 py-1.5 text-xs transition-colors hover:bg-slate-100 flex flex-col gap-0.5"
+                        >
+                          <div className="font-medium text-slate-950 truncate w-full">{p.name}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">{p.sku || "No SKU"}</div>
+                        </button>
+                      ))
+                    )}
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+
+            {/* Serial Number & Part Number */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  Serial Number <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <Input
+                  className="h-10 rounded-md border-slate-200 text-sm"
+                  placeholder="e.g. SN12345"
+                  value={serialNumber}
+                  onChange={(e) => handleSerialNumberChange(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  Part Number <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <Input
+                  className="h-10 rounded-md border-slate-200 text-sm"
+                  placeholder="e.g. PN98765"
+                  value={partNumber}
+                  onChange={(e) => setPartNumber(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Quantity & Cost Price */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  Quantity
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  className="h-10 rounded-md border-slate-200 text-sm"
+                  value={quantity}
+                  disabled={!!serialNumber.trim()}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                />
+                {serialNumber.trim() && (
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    Locked to 1 for serial items.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  Cost Price (₹)
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-10 rounded-md border-slate-200 text-sm"
+                  value={costPrice}
+                  onChange={(e) => setCostPrice(Math.max(0, Number(e.target.value)))}
+                />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                Storage Location <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              <Input
+                className="h-10 rounded-md border-slate-200 text-sm"
+                placeholder="e.g. Aisle 3, Shelf B"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+
+            <DialogFooter className="pt-4 shrink-0 border-t border-slate-100 bg-slate-50 -mx-6 -mb-6 px-6 py-4 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setAddStockOpen(false)}
+                className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingStock || !selectedProduct}
+                className="flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmittingStock ? "Saving..." : "Add Stock"}
+              </button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -55,6 +55,10 @@ const prismaClientSingleton = () => {
 
   return new PrismaClient({
     adapter,
+    transactionOptions: {
+      maxWait: 15000,
+      timeout: 30000,
+    },
     log:
       process.env.NODE_ENV === "development"
         ? [

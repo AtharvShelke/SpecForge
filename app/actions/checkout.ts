@@ -38,6 +38,7 @@ const checkoutSchema = z.object({
 });
 
 export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
+  console.log(`[processCheckout] Entered server action for email: ${payload.email}`);
   try {
     const data = checkoutSchema.parse(payload);
 
@@ -78,6 +79,7 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         variantId: product.id, // Using product.id as variantId since variant system is removed
         name: product.name,
         category: product.subcategory?.name || "Uncategorized",
+        categoryId: product.categoryId,
         price: Number(price),
         quantity: item.quantity,
         image: product.media?.[0]?.url || "",
@@ -136,8 +138,12 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
       items: orderItemsPayload,
     };
 
+    console.log(`[processCheckout] Calling createOrder for orderId: ${orderId}`);
+
     // 4. Call Service directly (Avoiding internal HTTP hop)
     const order = await createOrder(apiPayload as any);
+
+    console.log(`[processCheckout] createOrder successfully returned order: ${order.id}`);
 
     // 5. MOCK EXTERNAL NOTIFICATIONS
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -156,7 +162,10 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
     return { success: true, orderId, order: order };
   } catch (error: unknown) {
-    console.error("Checkout action error:", error);
+    console.error("[processCheckout] ERROR occurred:", error);
+    if (error instanceof Error) {
+      console.error("[processCheckout] Error details:", error.message, "\nStack trace:\n", error.stack);
+    }
 
     if (error instanceof z.ZodError) {
       return {

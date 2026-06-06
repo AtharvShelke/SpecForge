@@ -26,10 +26,13 @@ const razorpayCheckoutSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const data = razorpayCheckoutSchema.parse(await req.json());
+    const rawBody = await req.json();
+    const data = razorpayCheckoutSchema.parse(rawBody);
+    console.log(`[RAZORPAY_CREATE_ORDER] POST entered for customer: ${data.email}`);
     const { keyId, keySecret } = getRazorpayConfig();
 
     if (!keyId || !keySecret) {
+      console.error("[RAZORPAY_CREATE_ORDER] Razorpay keys not configured.");
       return NextResponse.json(
         { error: "Razorpay keys are not configured." },
         { status: 500 },
@@ -51,6 +54,7 @@ export async function POST(req: NextRequest) {
     for (const item of data.items) {
       const product = productMap.get(item.productId);
       if (!product) {
+        console.error("[RAZORPAY_CREATE_ORDER] Product not found:", item.productId);
         return NextResponse.json(
           { error: `Product not found: ${item.productId}` },
           { status: 404 },
@@ -66,6 +70,7 @@ export async function POST(req: NextRequest) {
         variantId: product.id,
         name: product.name,
         category: product.subcategory?.name || "Uncategorized",
+        categoryId: product.categoryId,
         price: Number(product.price || 0),
         quantity: item.quantity,
         image: product.media?.[0]?.url || "",
@@ -76,6 +81,8 @@ export async function POST(req: NextRequest) {
     const { subtotal, gstAmount, total } =
       calculateOrderFinancials(calculationItems);
     const localOrderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
+    console.log("[RAZORPAY_CREATE_ORDER] Preparing to fetch razorpay order with total:", total);
 
     const gatewayResponse = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
@@ -97,6 +104,8 @@ export async function POST(req: NextRequest) {
     });
 
     const gatewayPayload = await gatewayResponse.json();
+    console.log("[RAZORPAY_CREATE_ORDER] Razorpay gateway response:", JSON.stringify(gatewayPayload, null, 2));
+
     if (!gatewayResponse.ok) {
       return NextResponse.json(
         {
@@ -108,7 +117,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await createOrder({
+    const apiPayload = {
       id: localOrderId,
       customerName: data.customerName,
       email: data.email,
@@ -135,7 +144,13 @@ export async function POST(req: NextRequest) {
         paymentType: PaymentMethodType.RAZORPAY,
       },
       items: orderItemsPayload,
-    });
+    };
+
+    console.log(`[RAZORPAY_CREATE_ORDER] Calling createOrder for orderId: ${localOrderId}`);
+
+    await createOrder(apiPayload);
+
+    console.log(`[RAZORPAY_CREATE_ORDER] createOrder succeeded for order: ${localOrderId}`);
 
     return NextResponse.json({
       orderId: localOrderId,
@@ -148,7 +163,10 @@ export async function POST(req: NextRequest) {
       phone: data.phone,
     });
   } catch (error: unknown) {
-    console.error("[RAZORPAY_CREATE_ORDER]", error);
+    console.error("[RAZORPAY_CREATE_ORDER] ERROR caught in route handler:", error);
+    if (error instanceof Error) {
+      console.error("[RAZORPAY_CREATE_ORDER] Error message:", error.message, "\nStack trace:\n", error.stack);
+    }
     return NextResponse.json(
       {
         error:

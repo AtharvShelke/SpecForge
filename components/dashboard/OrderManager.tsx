@@ -70,6 +70,7 @@ import InvoiceSequenceTab from "@/components/orders/InvoiceSequenceTab";
 import {
   ConfirmStatusDialog,
   DeleteOrderDialog,
+  ChangeUnitDialog,
 } from "../helper-components/OrderManagerDialogs";
 
 /* ─────────────────────────────────────────────────────────────
@@ -413,11 +414,19 @@ const OrderManager = () => {
   }, [loadData]);
 
   const updateOrderStatus = useCallback(async (id: string, status: OrderStatus, note?: string) => {
-    await apiFetch(`/api/orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, note }),
-    });
+    if (status === OrderStatus.CANCELLED) {
+      await apiFetch(`/api/orders/${id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+    } else {
+      await apiFetch(`/api/orders/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, note }),
+      });
+    }
     await loadData();
   }, [loadData]);
 
@@ -486,6 +495,20 @@ const OrderManager = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const [changeUnitModal, setChangeUnitModal] = useState<{
+    isOpen: boolean;
+    orderItem: OrderItem | null;
+    unit: any | null;
+  }>({ isOpen: false, orderItem: null, unit: null });
+
+  const openChangeUnitModal = useCallback((item: OrderItem, unit: any) => {
+    setChangeUnitModal({ isOpen: true, orderItem: item, unit });
+  }, []);
+
+  const handleChangeUnitSuccess = useCallback(async () => {
+    await syncData();
+  }, [syncData]);
 
   const sortedOrders = useMemo(
     () =>
@@ -1087,24 +1110,39 @@ const OrderManager = () => {
                                     </div>
                                   </td>
                                   <td className="px-5 py-4">
-                                    <div className="space-y-1.5">
-                                      {[
-                                        ["Product", item.productNumber],
-                                        ["Part", item.partNumber],
-                                        ["Serial", item.serialNumber],
-                                      ].map(([label, value]) => (
-                                        <div
-                                          key={label}
-                                          className="flex items-center gap-2 text-xs"
-                                        >
-                                          <span className="w-14 font-medium text-slate-500">
-                                            {label}
-                                          </span>
-                                          <span className="truncate font-mono text-slate-900">
-                                            {value || "-"}
-                                          </span>
-                                        </div>
-                                      ))}
+                                    <div className="space-y-3">
+                                      {item.assignedUnits && item.assignedUnits.length > 0 ? (
+                                        item.assignedUnits.map((unit: any, index: number) => (
+                                          <div key={unit.id} className="flex flex-col gap-1 border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className="text-[10px] font-semibold text-slate-400 uppercase">Unit #{index + 1}</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => openChangeUnitModal(item, unit)}
+                                                className="text-[10px] font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
+                                              >
+                                                Change
+                                              </button>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="font-medium text-slate-500">SN:</span>
+                                                <span className="font-mono text-slate-900 truncate max-w-[120px]" title={unit.serialNumber || 'N/A'}>
+                                                  {unit.serialNumber || "-"}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="font-medium text-slate-500">PN:</span>
+                                                <span className="font-mono text-slate-900 truncate max-w-[120px]" title={unit.partNumber || 'N/A'}>
+                                                  {unit.partNumber || "-"}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-xs text-slate-500 italic">No units assigned</div>
+                                      )}
                                     </div>
                                   </td>
                                   <td className="px-5 py-4 text-center">
@@ -1147,24 +1185,33 @@ const OrderManager = () => {
                               <p className="mt-0.5 font-mono text-xs text-slate-500">
                                 {item.sku}
                               </p>
-                              <div className="mt-3 space-y-1.5 rounded-md border border-slate-100 bg-slate-50 p-3">
-                                {[
-                                  ["Product", item.productNumber],
-                                  ["Part", item.partNumber],
-                                  ["Serial", item.serialNumber],
-                                ].map(([label, value]) => (
-                                  <div
-                                    key={label}
-                                    className="flex items-center justify-between gap-2 text-xs"
-                                  >
-                                    <span className="font-medium text-slate-500">
-                                      {label}
-                                    </span>
-                                    <span className="truncate font-mono text-slate-900">
-                                      {value || "-"}
-                                    </span>
-                                  </div>
-                                ))}
+                              <div className="mt-3 space-y-3 rounded-md border border-slate-100 bg-slate-50 p-3">
+                                {item.assignedUnits && item.assignedUnits.length > 0 ? (
+                                  item.assignedUnits.map((unit: any, index: number) => (
+                                    <div key={unit.id} className="space-y-1 border-b border-slate-200 last:border-0 pb-2 last:pb-0 font-sans">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-semibold text-slate-400 uppercase">Unit #{index + 1}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => openChangeUnitModal(item, unit)}
+                                          className="text-[10px] font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
+                                        >
+                                          Change
+                                        </button>
+                                      </div>
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="font-medium text-slate-500">SN</span>
+                                        <span className="font-mono text-slate-900">{unit.serialNumber || "-"}</span>
+                                      </div>
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="font-medium text-slate-500">PN</span>
+                                        <span className="font-mono text-slate-900">{unit.partNumber || "-"}</span>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-slate-500 italic text-center">No units assigned</div>
+                                )}
                               </div>
                               <div className="mt-3 flex items-center justify-between">
                                 <span className="text-sm text-slate-500">
@@ -1449,6 +1496,21 @@ const OrderManager = () => {
           orderId={selectedOrder.id}
           orderStatus={selectedOrder.status}
           isDeleting={isDeleting}
+        />
+      )}
+      {changeUnitModal.isOpen && changeUnitModal.orderItem && changeUnitModal.unit && selectedOrder && (
+        <ChangeUnitDialog
+          open={changeUnitModal.isOpen}
+          onOpenChange={(val) => setChangeUnitModal((prev) => ({ ...prev, isOpen: val }))}
+          productId={changeUnitModal.orderItem.productId}
+          productName={changeUnitModal.orderItem.name}
+          unitId={changeUnitModal.unit.id}
+          currentInventoryItemId={changeUnitModal.unit.inventoryItemId}
+          currentSerialNumber={changeUnitModal.unit.serialNumber}
+          currentPartNumber={changeUnitModal.unit.partNumber}
+          orderId={selectedOrder.id}
+          orderItemId={changeUnitModal.orderItem.id}
+          onSuccess={handleChangeUnitSuccess}
         />
       )}
     </TooltipProvider>

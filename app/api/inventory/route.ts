@@ -7,10 +7,10 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-    const limit = Math.min(
-      100,
-      Math.max(1, Number(searchParams.get("limit") ?? 10)),
-    );
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam
+      ? Math.min(10000, Math.max(1, Number(limitParam)))
+      : 10;
     const category = searchParams.get("category");
     const query = searchParams.get("q")?.trim().toLowerCase();
     const stockStatus = searchParams.get("f_stock_status");

@@ -13,6 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, RefreshCw, Trash2, AlertTriangle, Warehouse } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { apiFetch } from '@/lib/helpers';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ConfirmStatusDialogProps {
   confirmDialog: {
@@ -312,6 +315,279 @@ export const DeleteOrderDialog = ({
             {isDeleting ? 'Deleting...' : 'Delete Permanently'}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+interface ChangeUnitDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  productId: string;
+  productName: string;
+  unitId: string;
+  currentInventoryItemId?: string | null;
+  currentSerialNumber?: string | null;
+  currentPartNumber?: string | null;
+  orderId: string;
+  orderItemId: string;
+  onSuccess: () => void;
+}
+
+export const ChangeUnitDialog = ({
+  open,
+  onOpenChange,
+  productId,
+  productName,
+  unitId,
+  currentInventoryItemId,
+  currentSerialNumber,
+  currentPartNumber,
+  orderId,
+  orderItemId,
+  onSuccess,
+}: ChangeUnitDialogProps) => {
+  const [mode, setMode] = React.useState<'select' | 'edit'>('select');
+  const [inventoryItems, setInventoryItems] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Edit fields
+  const [customSerialNumber, setCustomSerialNumber] = React.useState('');
+  const [customPartNumber, setCustomPartNumber] = React.useState('');
+
+  // Selected existing inventory item ID
+  const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null);
+
+  // Reset states when opening
+  React.useEffect(() => {
+    if (open) {
+      setMode('select');
+      setInventoryItems([]);
+      setError('');
+      setIsSubmitting(false);
+      setSelectedItemId(null);
+      setCustomSerialNumber(currentSerialNumber || '');
+      setCustomPartNumber(currentPartNumber || '');
+
+      const fetchStock = async () => {
+        setIsLoading(true);
+        try {
+          const data = await apiFetch<any[]>(`/api/inventory/items?productId=${productId}`);
+          const list = Array.isArray(data) ? data : [];
+          setInventoryItems(list.filter(item => item.id !== currentInventoryItemId));
+        } catch (err: any) {
+          console.error('Failed to load inventory stock:', err);
+          setError('Failed to load available inventory items.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchStock();
+    }
+  }, [open, productId, currentInventoryItemId, currentSerialNumber, currentPartNumber]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      let body: any = {};
+      if (mode === 'select') {
+        if (!selectedItemId) {
+          setError('Please select an inventory item.');
+          setIsSubmitting(false);
+          return;
+        }
+        body = { inventoryItemId: selectedItemId };
+      } else {
+        body = {
+          serialNumber: customSerialNumber.trim() || null,
+          partNumber: customPartNumber.trim() || null,
+        };
+      }
+
+      await apiFetch(`/api/orders/${orderId}/items/${orderItemId}/units/${unitId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+
+      onSuccess();
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error('Failed to update order unit:', err);
+      setError(err.message || 'Failed to update order unit. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const activeStock = inventoryItems.filter(item => item.serialNumber);
+
+  return (
+    <Dialog open={open} onOpenChange={(val) => !isSubmitting && onOpenChange(val)}>
+      <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-md flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+        <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
+          <DialogTitle className="text-lg font-semibold text-slate-900">
+            Reallocate Unit
+          </DialogTitle>
+          <DialogDescription className="text-sm text-slate-500 truncate" title={productName}>
+            Product: <span className="font-medium text-slate-900">{productName}</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+          {error && (
+            <div className="rounded-md bg-rose-50 p-3 text-xs text-rose-700 border border-rose-200">
+              {error}
+            </div>
+          )}
+
+          {/* Mode Switcher */}
+          <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setMode('select')}
+              className={cn(
+                'rounded-md py-1.5 text-xs font-medium transition-all',
+                mode === 'select'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              )}
+            >
+              Select from Stock
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('edit')}
+              className={cn(
+                'rounded-md py-1.5 text-xs font-medium transition-all',
+                mode === 'edit'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              )}
+            >
+              Directly Edit Details
+            </button>
+          </div>
+
+          {mode === 'select' ? (
+            <div className="space-y-3">
+              <label className="block text-xs font-medium text-slate-700">
+                Available Serial Numbers in Stock
+              </label>
+
+              {isLoading ? (
+                <div className="py-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                  <RefreshCw size={14} className="animate-spin" />
+                  Loading available stock...
+                </div>
+              ) : activeStock.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
+                  No other serialized stock items found for this product.
+                </div>
+              ) : (
+                <ScrollArea className="h-[200px] rounded-md border border-slate-200 bg-white p-2">
+                  <div className="space-y-1">
+                    {activeStock.map((item) => {
+                      const isAvailable = item.quantity > 0;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          disabled={!isAvailable && item.id !== selectedItemId}
+                          onClick={() => setSelectedItemId(item.id)}
+                          className={cn(
+                            'w-full rounded px-3 py-2 text-left text-xs transition-colors flex items-center justify-between',
+                            selectedItemId === item.id
+                              ? 'bg-slate-900 text-white'
+                              : 'hover:bg-slate-100 text-slate-700',
+                            !isAvailable && item.id !== selectedItemId && 'opacity-40 cursor-not-allowed'
+                          )}
+                        >
+                          <div>
+                            <div className={cn('font-mono font-medium', selectedItemId === item.id ? 'text-white' : 'text-slate-900')}>
+                              SN: {item.serialNumber}
+                            </div>
+                            <div className={cn('text-[10px] mt-0.5', selectedItemId === item.id ? 'text-slate-300' : 'text-slate-500')}>
+                              {item.partNumber ? `PN: ${item.partNumber}` : 'No Part Number'}
+                              {item.location ? ` · Loc: ${item.location}` : ''}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className={cn(
+                              'inline-block px-1.5 py-0.5 rounded text-[10px] font-medium',
+                              selectedItemId === item.id
+                                ? 'bg-white/20 text-white'
+                                : isAvailable
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                  : 'bg-rose-50 text-rose-700 border border-rose-100'
+                            )}>
+                              {isAvailable ? 'Available' : 'Reserved'}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  Serial Number
+                </label>
+                <Input
+                  className="h-10 rounded-md border-slate-200 text-sm"
+                  placeholder="e.g. SN12345"
+                  value={customSerialNumber}
+                  onChange={(e) => setCustomSerialNumber(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  Part Number
+                </label>
+                <Input
+                  className="h-10 rounded-md border-slate-200 text-sm"
+                  placeholder="e.g. PN98765"
+                  value={customPartNumber}
+                  onChange={(e) => setCustomPartNumber(e.target.value)}
+                />
+              </div>
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                Directly editing details will overwrite the current inventory item details associated with this unit.
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="pt-4 shrink-0 border-t border-slate-100 bg-slate-50 -mx-6 -mb-6 px-6 py-4 flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+              className="rounded-md border-slate-200 text-slate-700 hover:bg-slate-100"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitting || (mode === 'select' && !selectedItemId)}
+              className="bg-slate-900 text-white hover:bg-slate-800 rounded-md gap-2"
+            >
+              {isSubmitting && <RefreshCw size={14} className="animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
