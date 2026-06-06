@@ -6,28 +6,24 @@ import {
   useEffect,
   useCallback,
   FormEvent,
-  memo,
 } from "react";
 import { apiFetch } from "@/lib/helpers";
-import { StockMovementType } from "@/types";
 import {
-  
-  ArrowDownRight,
-  ArrowUpRight,
-
   Package,
   Search,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
   History,
-  
-  ChevronDown,
   SlidersHorizontal,
   Plus,
+  Trash2,
+  Edit,
+  Eye,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { InventorySkuSummary } from "@/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,319 +44,235 @@ import {
 } from "@/components/ui/dialog";
 import { useDebounce } from "@/hooks/useDebounce";
 
-/* ─────────────────────────────────────────────────────────────
-   MODULE-LEVEL CONSTANTS
-───────────────────────────────────────────────────────────────*/
-
-const MOV_TYPE_MAP: Record<
-  string,
-  { label: string; cls: string; icon: React.ReactNode }
-> = {
-  INWARD: {
-    label: "Inward",
-    cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    icon: <ArrowDownRight size={12} />,
-  },
-  OUTWARD: {
-    label: "Outward",
-    cls: "bg-rose-50 text-rose-700 border-rose-200",
-    icon: <ArrowUpRight size={12} />,
-  },
-  ADJUSTMENT: {
-    label: "Adjustment",
-    cls: "bg-blue-50 text-blue-700 border-blue-200",
-    icon: <RefreshCw size={12} />,
-  },
+type InventoryUnit = {
+  id: string;
+  productId: string;
+  partNumber: string | null;
+  serialNumber: string;
+  status: "AVAILABLE" | "RESERVED" | "ALLOCATED" | "SHIPPED" | "RETURNED" | "DAMAGED";
+  costPrice: number;
+  location: string;
+  lastUpdated: string | null;
+  product?: {
+    id: string;
+    name: string;
+    sku: string | null;
+    price: number | null;
+    media?: { url: string }[];
+    subcategory?: {
+      name: string;
+      category?: { name: string };
+    };
+  };
+  orderItemUnits?: {
+    orderId: string;
+    orderItem?: {
+      order?: {
+        customerName: string;
+        status: string;
+      };
+    };
+  }[];
 };
 
 type StockMovementRecord = {
   id: string;
-  date: string;
-  sku: string;
-  type: StockMovementType | string;
-  quantity: number;
-  reason?: string | null;
-};
-
-type AuditLogRecord = {
-  id: string;
-  action?: string | null;
-  actor?: string | null;
-  entityType?: string | null;
-  entityId?: string | null;
   createdAt: string;
-  metadata?: unknown;
+  productId: string;
+  inventoryItemId: string | null;
+  type: "INWARD" | "OUTWARD" | "ADJUSTMENT";
+  quantity: number;
+  note: string | null;
+  product?: { name: string; sku: string | null };
+  inventoryItem?: { serialNumber: string };
 };
 
-const MOV_TYPE_FALLBACK = {
-  label: "",
-  cls: "bg-slate-100 text-slate-700 border-slate-200",
-  icon: null,
+const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
+  AVAILABLE: {
+    label: "Available",
+    cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  RESERVED: {
+    label: "Reserved",
+    cls: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  ALLOCATED: {
+    label: "Allocated",
+    cls: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  },
+  SHIPPED: {
+    label: "Shipped",
+    cls: "bg-purple-50 text-purple-700 border-purple-200",
+  },
+  RETURNED: {
+    label: "Returned",
+    cls: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  DAMAGED: {
+    label: "Damaged",
+    cls: "bg-rose-50 text-rose-700 border-rose-200",
+  },
 };
 
 const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
   (e.target as HTMLImageElement).src = "https://picsum.photos/300/300";
 };
 
-const DATE_OPTS_MOV: Intl.DateTimeFormatOptions = {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-};
-const DATE_OPTS_MOV_MOBILE: Intl.DateTimeFormatOptions = {
-  month: "short",
-  day: "numeric",
-};
-const DATE_OPTS_AUDIT: Intl.DateTimeFormatOptions = {
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-};
+export default function InventoryManager() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-/* ─────────────────────────────────────────────────────────────
-   SHARED PRIMITIVES
-───────────────────────────────────────────────────────────────*/
+  // Route Params
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
+  const currentStatusFilter = searchParams.get("status") || "all";
+  const currentSearch = searchParams.get("q") || "";
 
-const SectionLabel = memo(
-  ({
-    icon,
-    children,
-  }: {
-    icon: React.ReactNode;
-    children: React.ReactNode;
-  }) => (
-    <div className="flex items-center gap-2">
-      <span className="text-slate-400">{icon}</span>
-      <span className="text-sm font-medium text-slate-900">
-        {children}
-      </span>
-    </div>
-  ),
-);
-SectionLabel.displayName = "SectionLabel";
-
-const StockBadge = memo(
-  ({ qty, reorderLevel }: { qty: number; reorderLevel: number }) => {
-    if (qty === 0)
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 whitespace-nowrap">
-          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" /> Out of stock
-        </span>
-      );
-    if (qty <= reorderLevel)
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 whitespace-nowrap">
-          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" /> Low stock
-        </span>
-      );
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 whitespace-nowrap">
-        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" /> Healthy
-      </span>
-    );
-  },
-);
-StockBadge.displayName = "StockBadge";
-
-const MovTypeBadge = memo(({ type }: { type: string }) => {
-  const cfg = MOV_TYPE_MAP[type] ?? { ...MOV_TYPE_FALLBACK, label: type };
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-        cfg.cls,
-      )}
-    >
-      {cfg.icon} {cfg.label}
-    </span>
-  );
-});
-MovTypeBadge.displayName = "MovTypeBadge";
-
-const CollapsibleSection = memo(
-  ({
-    icon,
-    title,
-    badge,
-    children,
-    defaultOpen = true,
-  }: {
-    icon: React.ReactNode;
-    title: string;
-    badge?: React.ReactNode;
-    children: React.ReactNode;
-    defaultOpen?: boolean;
-  }) => {
-    const [open, setOpen] = useState(defaultOpen);
-    const toggle = useCallback(() => setOpen((o) => !o), []);
-
-    return (
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <button
-          type="button"
-          className={cn(
-            "flex w-full items-center justify-between bg-white px-5 py-3 transition-colors hover:bg-slate-50",
-            open && "border-b border-slate-200",
-          )}
-          onClick={toggle}
-        >
-          <div className="flex items-center gap-3">
-            <SectionLabel icon={icon}>{title}</SectionLabel>
-            {badge}
-          </div>
-          <ChevronDown
-            size={16}
-            className={cn(
-              "flex-shrink-0 text-slate-400 transition-transform duration-200",
-              open && "rotate-180",
-            )}
-          />
-        </button>
-        {open && <div>{children}</div>}
-      </div>
-    );
-  },
-);
-CollapsibleSection.displayName = "CollapsibleSection";
-
-/* ─────────────────────────────────────────────────────────────
-   MAIN
-───────────────────────────────────────────────────────────────*/
-const InventoryManager = () => {
-  const [inventory, setInventory] = useState<InventorySkuSummary[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  // Local State
+  const [units, setUnits] = useState<InventoryUnit[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(currentSearch);
+  const [showFilters, setShowFilters] = useState(true);
+  
+  // Stock Movements State
   const [stockMovements, setStockMovements] = useState<StockMovementRecord[]>([]);
- const [adjQty, setAdjQty] = useState(0);
-  const [adjReason, setAdjReason] = useState("");
+  const [isLoadingMovements, setIsLoadingMovements] = useState(false);
 
-  const [auditLogModal, setAuditLogModal] = useState(false);
-  const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
-  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-
+  // Dialog State
   const [addStockOpen, setAddStockOpen] = useState(false);
+  const [editUnitOpen, setEditUnitOpen] = useState(false);
+  const [viewUnitOpen, setViewUnitOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // Form State
   const [products, setProducts] = useState<any[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [productSearch, setProductSearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  
   const [serialNumber, setSerialNumber] = useState("");
   const [partNumber, setPartNumber] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [costPrice, setCostPrice] = useState(0);
   const [location, setLocation] = useState("");
-  const [isSubmittingStock, setIsSubmittingStock] = useState(false);
-  const [addStockError, setAddStockError] = useState("");
+  const [unitStatus, setUnitStatus] = useState<InventoryUnit["status"]>("AVAILABLE");
 
-  const loadDependencies = useCallback(async () => {
+  const [activeUnit, setActiveUnit] = useState<InventoryUnit | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  // Load Inventory data
+  const loadInventory = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [catsData, inventoryData, movementsData] = await Promise.all([
-        apiFetch<any[]>("/api/catalog/categories"),
-        apiFetch<any>("/api/inventory?limit=1000&page=1"),
-        apiFetch<any[]>("/api/inventory/movements?limit=50&page=1"),
-      ]);
-      setCategories(catsData);
-      setInventory(Array.isArray(inventoryData?.items) ? inventoryData.items : Array.isArray(inventoryData) ? inventoryData : []);
-      setStockMovements(Array.isArray(movementsData) ? movementsData : []);
+      const query = new URLSearchParams();
+      query.set("page", String(currentPage));
+      query.set("limit", String(currentLimit));
+      if (currentStatusFilter !== "all") query.set("status", currentStatusFilter);
+      if (currentSearch) query.set("q", currentSearch);
+
+      const res = await apiFetch<any>(`/api/inventory?${query.toString()}`);
+      setUnits(res.items || []);
+      setTotalItems(res.total || 0);
     } catch (err) {
-      console.error("Failed to load InventoryManager dependencies", err);
+      console.error("Failed to load inventory:", err);
     } finally {
       setIsLoading(false);
+    }
+  }, [currentPage, currentLimit, currentStatusFilter, currentSearch]);
+
+  // Load Recent Movements
+  const loadMovements = useCallback(async () => {
+    setIsLoadingMovements(true);
+    try {
+      const res = await apiFetch<any>("/api/inventory/movements?limit=15&page=1");
+      setStockMovements(Array.isArray(res) ? res : res.items || []);
+    } catch (err) {
+      console.error("Failed to load stock movements:", err);
+    } finally {
+      setIsLoadingMovements(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDependencies();
-  }, [loadDependencies]);
+    loadInventory();
+  }, [loadInventory, refreshTrigger]);
 
-  const syncData = useCallback(async () => {
-    await loadDependencies();
-  }, [loadDependencies]);
+  useEffect(() => {
+    loadMovements();
+  }, [loadMovements, refreshTrigger]);
 
-  const refreshInventory = useCallback(async () => {
-    await loadDependencies();
-  }, [loadDependencies]);
+  useEffect(() => {
+    if (debouncedSearch !== currentSearch) {
+      updateQueryParams({ q: debouncedSearch });
+    }
+  }, [debouncedSearch]);
 
-  
-
-  const fetchInventoryPage = useCallback(async (query?: URLSearchParams | string) => {
-    const qs = query?.toString();
-    const data = await apiFetch<any>(qs ? `/api/inventory?${qs}` : "/api/inventory");
-    return {
-      items: Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [],
-      total: Number(data?.total ?? 0),
-      page: Number(data?.page ?? 1),
-      limit: Number(data?.limit ?? 10),
-    };
-  }, []);
-
-  const adjustStock = useCallback(async (sku: string, quantity: number, type: StockMovementType, reason?: string) => {
-    await apiFetch("/api/inventory/items", {
-      method: "POST",
-      body: JSON.stringify({ variantId: sku, quantity, type, action: "ADJUST", reason }),
-    });
-    void loadDependencies();
-  }, [loadDependencies]);
-
-  const [adjustmentModal, setAdjustmentModal] = useState<{
-    isOpen: boolean;
-    sku: string;
-    currentQty: number;
-  } | null>(null);
-
-  const [adjType, setAdjType] = useState<StockMovementType>(
-    StockMovementType.INWARD,
+  const updateQueryParams = useCallback(
+    (newParams: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (!newParams.page && (newParams.status !== undefined || newParams.q !== undefined)) {
+        params.set("page", "1");
+      }
+      Object.entries(newParams).forEach(([key, value]) => {
+        if (value === null || value === "all" || value === "") {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [searchParams, router, pathname]
   );
- 
 
-  const openAddStock = useCallback(async () => {
+  const syncData = () => {
+    setRefreshTrigger((prev) => !prev);
+  };
+
+  const openAddStock = async () => {
     setAddStockOpen(true);
     setIsLoadingProducts(true);
-    setAddStockError("");
+    setErrorMsg("");
     try {
       const data = await apiFetch<any>("/api/catalog/products?limit=1000");
       setProducts(Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error("Failed to fetch products for stock entry", e);
+      console.error("Failed to fetch products", e);
     } finally {
       setIsLoadingProducts(false);
     }
-  }, []);
+  };
 
-  const handleProductSelect = useCallback((product: any) => {
+  const handleProductSelect = (product: any) => {
     setSelectedProduct(product);
     setProductSearch("");
-  }, []);
+  };
 
-  const handleSerialNumberChange = useCallback((val: string) => {
-    setSerialNumber(val);
-    if (val.trim()) {
-      setQuantity(1);
-    }
-  }, []);
-
-  const handleAddStockSubmit = useCallback(async (e: FormEvent) => {
+  const handleAddStockSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) {
-      setAddStockError("Please select a product");
+      setErrorMsg("Please select a product");
       return;
     }
-    
-    setIsSubmittingStock(true);
-    setAddStockError("");
+    setIsSubmitting(true);
+    setErrorMsg("");
     try {
       const payload = {
         productId: selectedProduct.id,
-        serialNumber: serialNumber.trim() ? serialNumber.trim() : null,
-        partNumber: partNumber.trim() ? partNumber.trim() : null,
+        serialNumber: serialNumber.trim() || null,
+        partNumber: partNumber.trim() || null,
         quantity: serialNumber.trim() ? 1 : quantity,
         costPrice: Number(costPrice),
-        location: location.trim() ? location.trim() : null,
+        location: location.trim() || null,
       };
 
-      await apiFetch<any>("/api/inventory/items", {
+      await apiFetch("/api/inventory", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -372,214 +284,120 @@ const InventoryManager = () => {
       setCostPrice(0);
       setLocation("");
       setAddStockOpen(false);
-      setRefreshTrigger((prev) => !prev);
+      syncData();
     } catch (err: any) {
-      console.error("Failed to add stock:", err);
-      setAddStockError(err.message || "Failed to add stock. Please try again.");
+      setErrorMsg(err.message || "Failed to add stock.");
     } finally {
-      setIsSubmittingStock(false);
+      setIsSubmitting(false);
     }
-  }, [selectedProduct, serialNumber, partNumber, quantity, costPrice, location]);
+  };
+
+  const openEditUnit = (unit: InventoryUnit) => {
+    setActiveUnit(unit);
+    setSerialNumber(unit.serialNumber);
+    setPartNumber(unit.partNumber || "");
+    setCostPrice(unit.costPrice);
+    setLocation(unit.location);
+    setUnitStatus(unit.status);
+    setErrorMsg("");
+    setEditUnitOpen(true);
+  };
+
+  const handleEditUnitSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!activeUnit) return;
+    setIsSubmitting(true);
+    setErrorMsg("");
+    try {
+      await apiFetch(`/api/inventory/${activeUnit.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          serialNumber: serialNumber.trim(),
+          partNumber: partNumber.trim() || null,
+          costPrice: Number(costPrice),
+          location: location.trim(),
+          status: unitStatus,
+        }),
+      });
+
+      setEditUnitOpen(false);
+      setActiveUnit(null);
+      syncData();
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to update unit.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openViewUnit = (unit: InventoryUnit) => {
+    setActiveUnit(unit);
+    setViewUnitOpen(true);
+  };
+
+  const openDeleteConfirm = (unit: InventoryUnit) => {
+    setActiveUnit(unit);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteUnit = async () => {
+    if (!activeUnit) return;
+    setIsSubmitting(true);
+    setErrorMsg("");
+    try {
+      await apiFetch(`/api/inventory/${activeUnit.id}`, {
+        method: "DELETE",
+      });
+      setDeleteConfirmOpen(false);
+      setActiveUnit(null);
+      syncData();
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to delete unit.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const filteredProducts = useMemo(() => {
     if (!productSearch) return products;
     const lower = productSearch.toLowerCase();
-    return products.filter((p) => 
-      p.name?.toLowerCase().includes(lower) || 
-      p.sku?.toLowerCase().includes(lower)
+    return products.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(lower) || p.sku?.toLowerCase().includes(lower)
     );
   }, [products, productSearch]);
-
-  
-
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const [paginatedInventory, setPaginatedInventory] = useState<
-    InventorySkuSummary[]
-  >([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [isLoadingInventory, setIsLoadingInventory] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(false);
-
-  const currentPage = parseInt(searchParams.get("page") || "1", 10);
-  const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
-  const currentCategory = searchParams.get("category") || "all";
-  const currentSearch = searchParams.get("q") || "";
-  const currentStockStatus = searchParams.get("f_stock_status") || "all";
-
-  const [searchTerm, setSearchTerm] = useState(currentSearch);
-  useEffect(() => {
-    setSearchTerm(currentSearch);
-  }, [currentSearch]);
-
-  const debouncedSearch = useDebounce(searchTerm, 500);
-
-  const updateQueryParams = useCallback(
-    (newParams: Record<string, string | null>) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (
-        !newParams.page &&
-        (newParams.category !== undefined ||
-          newParams.q !== undefined ||
-          newParams.f_stock_status !== undefined)
-      ) {
-        params.set("page", "1");
-      }
-      Object.entries(newParams).forEach(([key, value]) => {
-        if (value === null || value === "all" || value === "")
-          params.delete(key);
-        else params.set(key, value);
-      });
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [searchParams, router, pathname],
-  );
-
-  useEffect(() => {
-    if (debouncedSearch !== currentSearch)
-      updateQueryParams({ q: debouncedSearch });
-  }, [debouncedSearch]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    const fetchPaginatedInventory = async () => {
-      setIsLoadingInventory(true);
-      try {
-        const query = new URLSearchParams(searchParams.toString());
-        if (!query.has("limit")) query.set("limit", "10");
-        if (!query.has("page")) query.set("page", "1");
-        const data = await fetchInventoryPage(query);
-        if (signal.aborted) return;
-        setPaginatedInventory(data.items);
-        setTotalItems(data.total || 0);
-      } catch (err) {
-        if (
-          err instanceof Error &&
-          (err as { name?: string }).name !== "AbortError"
-        ) {
-          console.error("Failed to fetch paginated inventory:", err);
-          setPaginatedInventory([]);
-          setTotalItems(0);
-        }
-      } finally {
-        if (!signal.aborted) setIsLoadingInventory(false);
-      }
-    };
-
-    fetchPaginatedInventory();
-
-    const interval = setInterval(fetchPaginatedInventory, 30000);
-
-    return () => {
-      controller.abort();
-      clearInterval(interval);
-    };
-  }, [searchParams, refreshTrigger, fetchInventoryPage]);
-
-  const handleAdjustment = useCallback(
-    (e: FormEvent) => {
-      e.preventDefault();
-      if (adjustmentModal && adjQty > 0) {
-        adjustStock(adjustmentModal.sku, adjQty, adjType, adjReason);
-        setAdjustmentModal(null);
-        setAdjQty(0);
-        setAdjReason("");
-        setAdjType(StockMovementType.INWARD);
-        setRefreshTrigger((prev) => !prev);
-      }
-    },
-    [adjustmentModal, adjQty, adjType, adjReason, adjustStock],
-  );
-
-  const handleCloseAdjustment = useCallback(() => setAdjustmentModal(null), []);
-  const handleToggleFilters = useCallback(() => setShowFilters((f) => !f), []);
-
-
-  const handlePrevPage = useCallback(() => {
-    updateQueryParams({ page: String(currentPage - 1) });
-  }, [updateQueryParams, currentPage]);
-
-  const handleNextPage = useCallback(() => {
-    updateQueryParams({ page: String(currentPage + 1) });
-  }, [updateQueryParams, currentPage]);
-
-  const handleCategoryChange = useCallback(
-    (val: string) => {
-      updateQueryParams({ category: val });
-    },
-    [updateQueryParams],
-  );
-
-  const handleStockStatusChange = useCallback(
-    (val: string) => {
-      updateQueryParams({ f_stock_status: val });
-    },
-    [updateQueryParams],
-  );
-
-  const inventoryCategories = useMemo(
-    () =>
-      (categories ?? [])
-        .map((category) =>
-          typeof category === "string" ? category : category.name,
-        )
-        .filter(Boolean),
-    [categories],
-  );
-
- 
 
   const totalPages = Math.max(1, Math.ceil(totalItems / currentLimit));
 
   return (
     <div className="space-y-6">
-     {/* ─── STOCK TABLE ─── */}
+      {/* Stock Levels Panel */}
       <div className="flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        {/* Filters header */}
         <div className="border-b border-slate-200 bg-white p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <SectionLabel icon={<Package size={16} />}>
-              Stock Levels <span className="ml-2 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{totalItems}</span>
-            </SectionLabel>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Package size={18} className="text-slate-500" />
+              <span className="text-base font-semibold text-slate-900">
+                Serialized Units
+              </span>
+              <span className="ml-2 rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                {totalItems} total
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
               <button
                 onClick={syncData}
                 disabled={isLoading}
-                className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
-                <RefreshCw
-                  size={14}
-                  className={cn(isLoading && "animate-spin")}
-                />
+                <RefreshCw size={14} className={cn(isLoading && "animate-spin")} />
               </button>
               <button
                 onClick={openAddStock}
-                className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                className="flex h-9 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
               >
                 <Plus size={14} />
-                <span className="hidden sm:inline">Add Stock</span>
-              </button>
-              <button
-                onClick={handleToggleFilters}
-                className={cn(
-                  "hidden h-9 items-center gap-2 rounded-md border px-4 text-sm font-medium transition-colors sm:flex",
-                  showFilters
-                    ? "border-slate-300 bg-slate-100 text-slate-900"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                )}
-              >
-                <SlidersHorizontal size={14} />
-                Filters
-              </button>
-              <button
-                onClick={handleToggleFilters}
-                className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 sm:hidden"
-              >
-                <SlidersHorizontal size={16} />
+                <span>Add Units</span>
               </button>
             </div>
           </div>
@@ -591,7 +409,7 @@ const InventoryManager = () => {
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <Input
-                placeholder="Search SKU, name…"
+                placeholder="Search by serial number, part number, name or SKU..."
                 className="h-10 rounded-md border-slate-200 pl-9 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -599,35 +417,22 @@ const InventoryManager = () => {
             </div>
 
             {showFilters && (
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3">
                 <Select
-                  value={currentCategory}
-                  onValueChange={handleCategoryChange}
+                  value={currentStatusFilter}
+                  onValueChange={(val) => updateQueryParams({ status: val })}
                 >
-                  <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-md border-slate-200 text-sm">
-                    <SelectValue placeholder="Category" />
+                  <SelectTrigger className="h-10 w-full sm:w-[180px] rounded-md border-slate-200 text-sm">
+                    <SelectValue placeholder="Filter by Status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {inventoryCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={currentStockStatus}
-                  onValueChange={handleStockStatusChange}
-                >
-                  <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-md border-slate-200 text-sm">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="border-slate-200 bg-white">
                     <SelectItem value="all">Any Status</SelectItem>
-                    <SelectItem value="in">In Stock</SelectItem>
-                    <SelectItem value="low">Low Stock</SelectItem>
-                    <SelectItem value="out">Out of Stock</SelectItem>
+                    <SelectItem value="AVAILABLE">Available</SelectItem>
+                    <SelectItem value="RESERVED">Reserved</SelectItem>
+                    <SelectItem value="ALLOCATED">Allocated</SelectItem>
+                    <SelectItem value="SHIPPED">Shipped</SelectItem>
+                    <SelectItem value="RETURNED">Returned</SelectItem>
+                    <SelectItem value="DAMAGED">Damaged</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -635,126 +440,102 @@ const InventoryManager = () => {
           </div>
         </div>
 
-        {/* Desktop Table */}
-        <div className="hidden overflow-x-auto sm:block">
+        {/* Units Table */}
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50/50 text-xs text-slate-500">
+            <thead className="bg-slate-50/50 text-xs text-slate-500 uppercase tracking-wider">
               <tr className="border-b border-slate-200">
                 <th className="px-5 py-3 font-medium">Product</th>
-                <th className="px-5 py-3 font-medium">SKU</th>
-                <th className="px-5 py-3 text-right font-medium">Available</th>
-                <th className="hidden px-5 py-3 text-right font-medium md:table-cell">Reserved</th>
-                <th className="hidden px-5 py-3 text-right font-medium lg:table-cell">Cost Value</th>
-                <th className="px-5 py-3 text-right font-medium">Status</th>
+                <th className="px-5 py-3 font-medium">Part Number</th>
+                <th className="px-5 py-3 font-medium">Serial Number</th>
+                <th className="px-5 py-3 font-medium">Location</th>
+                <th className="px-5 py-3 text-right font-medium">Cost Price</th>
+                <th className="px-5 py-3 text-center font-medium">Status</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {isLoadingInventory ? (
+              {isLoading ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-5 py-12 text-center text-slate-500"
-                  >
-                    Loading inventory…
+                  <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                    <RefreshCw size={20} className="mx-auto mb-2 animate-spin text-slate-400" />
+                    Loading inventory units...
                   </td>
                 </tr>
-              ) : paginatedInventory.length === 0 ? (
+              ) : units.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center">
-                    <Package
-                      size={24}
-                      className="mx-auto mb-3 text-slate-400"
-                    />
-                    <p className="text-sm text-slate-500">
-                      {currentSearch ||
-                        currentStockStatus !== "all" ||
-                        currentCategory !== "all"
-                        ? "No items match current filters"
-                        : "Inventory is empty"}
-                    </p>
+                  <td colSpan={7} className="px-5 py-16 text-center text-slate-500">
+                    <Package size={28} className="mx-auto mb-2 text-slate-300" />
+                    No units match the search or filter criteria.
                   </td>
                 </tr>
               ) : (
-                paginatedInventory.map((item: InventorySkuSummary) => {
-                  const product = item.product;
-                  const physicalQty = item.quantityOnHand ?? (item.quantity + (item.reserved || 0));
-                  const costValue = physicalQty * item.costPrice;
+                units.map((unit) => {
+                  const badge = STATUS_BADGES[unit.status] || { label: unit.status, cls: "bg-slate-50 text-slate-700" };
                   return (
-                    <tr
-                      key={item.id}
-                      className="transition-colors hover:bg-slate-50/50"
-                    >
+                    <tr key={unit.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
+                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
                             <img
                               className="h-full w-full object-contain p-1"
-                              src={
-                                product?.media?.[0]?.url || "/placeholder.png"
-                              }
-                              alt={product?.name || item.sku || product?.sku || ""}
+                              src={unit.product?.media?.[0]?.url || "/placeholder.png"}
+                              alt={unit.product?.name}
                               onError={handleImgError}
                             />
                           </div>
                           <div className="min-w-0">
-                            <p
-                              className="truncate text-sm font-medium text-slate-900"
-                              title={product?.name}
-                            >
-                              {product?.name || "Undefined Product"}
+                            <p className="truncate text-sm font-semibold text-slate-900" title={unit.product?.name}>
+                              {unit.product?.name || "Unknown Product"}
                             </p>
-                            <span className="mt-0.5 inline-block rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                              {typeof product?.category === "string" ? product.category : product?.category?.name || "Standard"}
+                            <span className="text-[11px] font-mono text-slate-400">
+                              SKU: {unit.product?.sku || "N/A"}
                             </span>
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-3 font-mono text-sm font-medium text-slate-600">
-                        {item.sku || product?.sku || "N/A"}
+                      <td className="px-5 py-3 font-mono text-sm text-slate-600">
+                        {unit.partNumber || "—"}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-3 text-right">
-                        <span
-                          className={cn(
-                            "font-mono text-base font-semibold tabular-nums",
-                            item.quantity === 0
-                              ? "text-rose-600"
-                              : item.quantity <= item.reorderLevel
-                                ? "text-amber-600"
-                                : "text-slate-900",
-                          )}
-                        >
-                          {item.quantity}
+                      <td className="px-5 py-3 font-mono text-sm font-semibold text-slate-800">
+                        {unit.serialNumber}
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-600">
+                        {unit.location || "—"}
+                      </td>
+                      <td className="px-5 py-3 text-right font-mono text-sm font-medium text-slate-900">
+                        ₹{unit.costPrice.toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-5 py-3 text-center whitespace-nowrap">
+                        <span className={cn("inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold", badge.cls)}>
+                          {badge.label}
                         </span>
-                        <p className="font-mono text-xs text-slate-400">
-                          /{item.reorderLevel} min
-                        </p>
                       </td>
-                      <td className="hidden whitespace-nowrap px-5 py-3 text-right font-mono text-sm font-medium text-amber-600 md:table-cell">
-                        {item.reserved || 0}
-                      </td>
-                      <td className="hidden whitespace-nowrap px-5 py-3 text-right font-mono text-sm font-medium text-slate-900 lg:table-cell">
-                        ₹{costValue.toLocaleString("en-IN")}
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-3 text-right">
-                        <StockBadge
-                          qty={item.quantity}
-                          reorderLevel={item.reorderLevel}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-3 text-right">
-                        <button
-                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                          onClick={() =>
-                            setAdjustmentModal({
-                              isOpen: true,
-                              sku: item.sku || product?.sku || item.productId,
-                              currentQty: item.quantity,
-                            })
-                          }
-                        >
-                          <RefreshCw size={14} className="text-slate-400" /> Adjust
-                        </button>
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            onClick={() => openViewUnit(unit)}
+                            title="View Unit Details"
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            onClick={() => openEditUnit(unit)}
+                            title="Edit Unit Details / Status"
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => openDeleteConfirm(unit)}
+                            disabled={unit.status === "RESERVED" || unit.status === "ALLOCATED" || unit.status === "SHIPPED"}
+                            title="Delete Unit"
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-rose-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -764,125 +545,35 @@ const InventoryManager = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
-        <div className="divide-y divide-slate-100 sm:hidden">
-          {isLoadingInventory ? (
-            <div className="p-8 text-center text-sm text-slate-500">
-              Loading inventory…
-            </div>
-          ) : paginatedInventory.length === 0 ? (
-            <div className="p-12 text-center">
-              <Package size={24} className="mx-auto mb-3 text-slate-400" />
-              <p className="text-sm text-slate-500">
-                {currentSearch ||
-                  currentStockStatus !== "all" ||
-                  currentCategory !== "all"
-                  ? "No items match filters"
-                  : "Inventory is empty"}
-              </p>
-            </div>
-          ) : (
-            paginatedInventory.map((item: InventorySkuSummary) => {
-              const product = item.product;
-              const isLow =
-                item.quantity > 0 && item.quantity <= item.reorderLevel;
-              const isOut = item.quantity === 0;
-              return (
-                <div key={item.id} className="p-4">
-                  <div className="flex items-start gap-4">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
-                      <img
-                        className="h-full w-full object-contain p-1"
-                        src={product?.media?.[0]?.url || "/placeholder.png"}
-                        alt={product?.name || item.sku || product?.sku || ""}
-                        onError={handleImgError}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-900">
-                        {product?.name || "Undefined Product"}
-                      </p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs text-slate-500">
-                          {item.sku || product?.sku || "N/A"}
-                        </span>
-                        <StockBadge
-                          qty={item.quantity}
-                          reorderLevel={item.reorderLevel}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <span
-                        className={cn(
-                          "font-mono text-lg font-bold leading-none tabular-nums",
-                          isOut
-                            ? "text-rose-600"
-                            : isLow
-                              ? "text-amber-600"
-                              : "text-slate-900",
-                        )}
-                      >
-                        {item.quantity}
-                      </span>
-                      <p className="font-mono text-xs text-slate-400">
-                        /{item.reorderLevel} min
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <button
-                      className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                      onClick={() =>
-                        setAdjustmentModal({
-                          isOpen: true,
-                          sku: item.sku || product?.sku || item.productId,
-                          currentQty: item.quantity,
-                        })
-                      }
-                    >
-                      <RefreshCw size={14} className="text-slate-400" /> Adjust Stock
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Pagination */}
-        {!isLoadingInventory && totalItems > 0 && (
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
+        {/* Pagination controls */}
+        {!isLoading && totalItems > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/50 px-5 py-3">
             <p className="text-sm text-slate-600">
-              <span className="font-medium text-slate-900">
+              Showing{" "}
+              <span className="font-semibold text-slate-900">
                 {(currentPage - 1) * currentLimit + 1}
-              </span>
-              {" - "}
-              <span className="font-medium text-slate-900">
+              </span>{" "}
+              to{" "}
+              <span className="font-semibold text-slate-900">
                 {Math.min(currentPage * currentLimit, totalItems)}
-              </span>
-              <span className="hidden sm:inline">
-                {" "}of{" "}
-                <span className="font-medium text-slate-900">
-                  {totalItems}
-                </span>
-              </span>
+              </span>{" "}
+              of <span className="font-semibold text-slate-900">{totalItems}</span> units
             </p>
             <div className="flex items-center gap-2">
               <button
                 disabled={currentPage <= 1}
-                onClick={handlePrevPage}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => updateQueryParams({ page: String(currentPage - 1) })}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
               >
                 <ChevronLeft size={14} />
               </button>
-              <span className="flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700">
+              <span className="flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700">
                 {currentPage} / {totalPages}
               </span>
               <button
                 disabled={currentPage >= totalPages}
-                onClick={handleNextPage}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => updateQueryParams({ page: String(currentPage + 1) })}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
               >
                 <ChevronRight size={14} />
               </button>
@@ -891,62 +582,70 @@ const InventoryManager = () => {
         )}
       </div>
 
-      {/* ─── STOCK MOVEMENT HISTORY ─── */}
-      <CollapsibleSection
-        icon={<History size={16} />}
-        title="Movement History"
-        badge={
-          <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs font-medium text-slate-600">
-            {Math.min(stockMovements.length, 20)} recent
-          </span>
-        }
-        defaultOpen={false}
-      >
-        {/* Desktop table */}
-        <div className="hidden max-h-[400px] overflow-y-auto sm:block">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="sticky top-0 z-10 bg-slate-50/90 text-xs text-slate-500 backdrop-blur-sm">
-              <tr className="border-b border-slate-200">
-                <th className="px-5 py-3 font-medium">Date</th>
-                <th className="px-5 py-3 font-medium">SKU</th>
-                <th className="px-5 py-3 font-medium">Type</th>
-                <th className="px-5 py-3 text-right font-medium">Qty</th>
-                <th className="hidden px-5 py-3 font-medium md:table-cell">Reason</th>
+      {/* Movement History Section */}
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History size={16} className="text-slate-500" />
+            <span className="text-sm font-semibold text-slate-900">Recent Stock Movements</span>
+          </div>
+          <button
+            onClick={loadMovements}
+            className="text-xs font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1"
+          >
+            <RefreshCw size={12} className={cn(isLoadingMovements && "animate-spin")} />
+            Refresh History
+          </button>
+        </div>
+
+        <div className="max-h-[300px] overflow-y-auto rounded-md border border-slate-100">
+          <table className="w-full text-left text-xs text-slate-600">
+            <thead className="bg-slate-50 text-slate-500 sticky top-0 uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-2 font-medium">Timestamp</th>
+                <th className="px-4 py-2 font-medium">Product Name</th>
+                <th className="px-4 py-2 font-medium">Serial Number</th>
+                <th className="px-4 py-2 font-medium">Type</th>
+                <th className="px-4 py-2 font-medium">Note</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {stockMovements.length === 0 ? (
+              {isLoadingMovements ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-5 py-12 text-center text-slate-500"
-                  >
-                    No stock movements recorded
-                  </td>
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">Loading movements...</td>
+                </tr>
+              ) : stockMovements.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">No stock movements recorded</td>
                 </tr>
               ) : (
-                stockMovements.slice(0, 20).map((mov: any) => (
-                  <tr
-                    key={mov.id}
-                    className="transition-colors hover:bg-slate-50/50"
-                  >
-                    <td className="whitespace-nowrap px-5 py-3 font-mono text-xs text-slate-500">
-                      {new Date(mov.date).toLocaleDateString(
-                        "en-IN",
-                        DATE_OPTS_MOV,
-                      )}
+                stockMovements.map((mov) => (
+                  <tr key={mov.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-2 font-mono text-slate-400 whitespace-nowrap">
+                      {new Date(mov.createdAt).toLocaleString("en-IN", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-3 font-mono text-sm font-medium text-slate-900">
-                      {mov.sku}
+                    <td className="px-4 py-2 font-medium text-slate-900 max-w-[200px] truncate">
+                      {mov.product?.name || "Deleted Product"}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-3">
-                      <MovTypeBadge type={mov.type} />
+                    <td className="px-4 py-2 font-mono text-slate-700">
+                      {mov.inventoryItem?.serialNumber || "—"}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-3 text-right font-mono text-sm font-semibold text-slate-900 tabular-nums">
-                      {mov.quantity}
+                    <td className="px-4 py-2">
+                      <span className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                        mov.type === "INWARD" ? "bg-emerald-50 text-emerald-700" :
+                        mov.type === "OUTWARD" ? "bg-rose-50 text-rose-700" : "bg-blue-50 text-blue-700"
+                      )}>
+                        {mov.type}
+                      </span>
                     </td>
-                    <td className="hidden max-w-[200px] px-5 py-3 text-slate-500 md:table-cell">
-                      <span className="line-clamp-1">{mov.reason || "—"}</span>
+                    <td className="px-4 py-2 text-slate-500 max-w-[250px] truncate" title={mov.note || ""}>
+                      {mov.note || "—"}
                     </td>
                   </tr>
                 ))
@@ -954,224 +653,42 @@ const InventoryManager = () => {
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* Mobile movement cards */}
-        <div className="divide-y divide-slate-100 sm:hidden max-h-[400px] overflow-y-auto">
-          {stockMovements.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-500">
-              No stock movements recorded
-            </div>
-          ) : (
-            stockMovements.slice(0, 20).map((mov: any) => (
-              <div key={mov.id} className="flex items-center gap-4 p-4">
-                <MovTypeBadge type={mov.type} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-mono text-sm font-medium text-slate-900">
-                    {mov.sku}
-                  </p>
-                  <p className="font-mono text-xs text-slate-500">
-                    {new Date(mov.date).toLocaleDateString(
-                      "en-IN",
-                      DATE_OPTS_MOV_MOBILE,
-                    )}
-                    {mov.reason && <span> · {mov.reason}</span>}
-                  </p>
-                </div>
-                <span className="flex-shrink-0 font-mono text-base font-semibold text-slate-900 tabular-nums">
-                  {mov.quantity}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      </CollapsibleSection>
-
-      {/* ─── ADJUSTMENT DIALOG ─── */}
-      <Dialog open={!!adjustmentModal} onOpenChange={handleCloseAdjustment}>
-        <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-md flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
-          <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
-            <DialogTitle className="text-lg font-semibold text-slate-900">
-              Stock Adjustment
-            </DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">
-              SKU:{" "}
-              <span className="font-mono font-medium text-slate-900">
-                {adjustmentModal?.sku}
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
-            <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
-              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                Current Stock
-              </span>
-              <span className="font-mono text-base font-semibold text-slate-900">
-                {adjustmentModal?.currentQty} units
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                  Adjustment Type
-                </label>
-                <Select
-                  value={adjType}
-                  onValueChange={(val) => setAdjType(val as StockMovementType)}
-                >
-                  <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="border-slate-200 bg-white">
-                    <SelectItem value="INWARD">Inward (Replenishment)</SelectItem>
-                    <SelectItem value="ADJUSTMENT">Manual Correction</SelectItem>
-                    <SelectItem value="OUTWARD">Outward (Loss / Damage)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                  Quantity
-                </label>
-                <Input
-                  type="number"
-                  className="h-10 rounded-md border-slate-200 text-sm"
-                  value={adjQty}
-                  onChange={(e) => setAdjQty(Number(e.target.value))}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                  Reason
-                </label>
-                <textarea
-                  className="min-h-[100px] w-full resize-none rounded-md border border-slate-200 bg-white p-3 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-0"
-                  value={adjReason}
-                  onChange={(e) => setAdjReason(e.target.value)}
-                  placeholder="Brief explanation…"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
-            <button
-              onClick={handleCloseAdjustment}
-              className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAdjustment}
-              className="flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-            >
-              Save Adjustment
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ─── AUDIT LOG DIALOG ─── */}
-      <Dialog open={auditLogModal} onOpenChange={setAuditLogModal}>
-        <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-2xl flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
-          <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
-            <DialogTitle className="text-lg font-semibold text-slate-900">
-              Audit Log
-            </DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">
-              Recent system actions
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 min-h-0 overflow-y-auto bg-slate-50/50 p-6">
-            <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden h-full">
-              {isLoadingAudit ? (
-                <div className="p-12 text-center text-sm text-slate-500">
-                  Loading logs…
-                </div>
-              ) : auditLogs.length === 0 ? (
-                <div className="p-12 text-center text-sm text-slate-500">
-                  No audit logs found.
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 h-full overflow-y-auto">
-                  {auditLogs.map((log) => (
-                    <div key={log.id} className="p-4 transition-colors hover:bg-slate-50/50">
-                      <div className="mb-1 flex items-start justify-between gap-4">
-                        <span className="text-sm font-semibold text-slate-900">
-                          {log.action || "Action"}
-                        </span>
-                        <span className="flex-shrink-0 font-mono text-xs text-slate-500">
-                          {new Date(log.createdAt).toLocaleDateString(
-                            "en-IN",
-                            DATE_OPTS_AUDIT,
-                          )}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-600">
-                        by <span className="font-medium text-slate-900">{log.actor}</span> · {log.entityType}{" "}
-                        <span className="font-mono text-xs text-slate-400">({log.entityId})</span>
-                      </p>
-                      {Boolean(log.metadata) && (
-                        <pre className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-600 whitespace-pre-wrap break-words">
-                          {JSON.stringify(log.metadata, null, 2)}
-                        </pre>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
-            <button
-              onClick={() => setAuditLogModal(false)}
-              className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-            >
-              Close
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ─── ADD STOCK DIALOG ─── */}
+      {/* Add Stock Dialog */}
       <Dialog open={addStockOpen} onOpenChange={setAddStockOpen}>
         <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-md flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
-          <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
+          <DialogHeader className="shrink-0 border-b border-slate-100 p-6 pb-4">
             <DialogTitle className="text-lg font-semibold text-slate-900">
-              Add New Inventory Stock
+              Add New Serialized Units
             </DialogTitle>
             <DialogDescription className="text-sm text-slate-500">
-              Create a new physical stock unit or increase bulk inventory
+              Insert a single unit with a custom serial number, or auto-generate multiple units.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleAddStockSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
-            {addStockError && (
+          <form onSubmit={handleAddStockSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 py-4 space-y-4">
+            {errorMsg && (
               <div className="rounded-md bg-rose-50 p-3 text-sm text-rose-700 border border-rose-200">
-                {addStockError}
+                {errorMsg}
               </div>
             )}
 
-            {/* Product Selector */}
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-slate-700">
+            {/* Select Product */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
                 Select Product <span className="text-rose-500">*</span>
               </label>
               {selectedProduct ? (
                 <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium text-slate-900 truncate">{selectedProduct.name}</div>
-                    <div className="text-xs text-slate-500 font-mono">{selectedProduct.sku || "No SKU"}</div>
+                    <div className="font-semibold text-slate-900 truncate">{selectedProduct.name}</div>
+                    <div className="text-xs text-slate-400 font-mono">SKU: {selectedProduct.sku || "N/A"}</div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSelectedProduct(null)}
-                    className="text-xs font-medium text-indigo-600 hover:text-indigo-500 transition-colors ml-4 shrink-0"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-500 transition-colors ml-4 shrink-0"
                   >
                     Change
                   </button>
@@ -1179,13 +696,10 @@ const InventoryManager = () => {
               ) : (
                 <div className="space-y-2">
                   <div className="relative">
-                    <Search
-                      size={14}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <Input
-                      placeholder="Type to search product name/SKU..."
-                      className="h-10 rounded-md border-slate-200 pl-8 text-sm"
+                      placeholder="Type product name/SKU..."
+                      className="h-10 rounded-md border-slate-200 pl-8 text-sm bg-white"
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                     />
@@ -1201,10 +715,10 @@ const InventoryManager = () => {
                           key={p.id}
                           type="button"
                           onClick={() => handleProductSelect(p)}
-                          className="w-full text-left rounded px-2 py-1.5 text-xs transition-colors hover:bg-slate-100 flex flex-col gap-0.5"
+                          className="w-full text-left rounded px-2.5 py-2 text-xs transition-colors hover:bg-slate-100 flex flex-col gap-0.5 border-b border-slate-50 last:border-0"
                         >
-                          <div className="font-medium text-slate-950 truncate w-full">{p.name}</div>
-                          <div className="text-[10px] text-slate-500 font-mono">{p.sku || "No SKU"}</div>
+                          <div className="font-semibold text-slate-900 truncate w-full">{p.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">SKU: {p.sku || "N/A"}</div>
                         </button>
                       ))
                     )}
@@ -1213,54 +727,53 @@ const InventoryManager = () => {
               )}
             </div>
 
-            {/* Serial Number & Part Number */}
+            {/* Serial & Part numbers */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                  Serial Number <span className="text-slate-400 font-normal">(Optional)</span>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Serial Number
                 </label>
                 <Input
                   className="h-10 rounded-md border-slate-200 text-sm"
-                  placeholder="e.g. SN12345"
+                  placeholder="e.g. SN-XYZ-01"
                   value={serialNumber}
-                  onChange={(e) => handleSerialNumberChange(e.target.value)}
+                  onChange={(e) => setSerialNumber(e.target.value)}
                 />
+                <p className="text-[10px] text-slate-400">Leave blank to auto-generate</p>
               </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                  Part Number <span className="text-slate-400 font-normal">(Optional)</span>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Part Number
                 </label>
                 <Input
                   className="h-10 rounded-md border-slate-200 text-sm"
-                  placeholder="e.g. PN98765"
+                  placeholder="e.g. PN-990-PRO"
                   value={partNumber}
                   onChange={(e) => setPartNumber(e.target.value)}
                 />
               </div>
             </div>
 
-            {/* Quantity & Cost Price */}
+            {/* Qty & Cost */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
                   Quantity
                 </label>
                 <Input
                   type="number"
                   min={1}
-                  className="h-10 rounded-md border-slate-200 text-sm"
-                  value={quantity}
                   disabled={!!serialNumber.trim()}
+                  className="h-10 rounded-md border-slate-200 text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                  value={serialNumber.trim() ? 1 : quantity}
                   onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
                 />
                 {serialNumber.trim() && (
-                  <p className="mt-1 text-[10px] text-slate-500">
-                    Locked to 1 for serial items.
-                  </p>
+                  <p className="text-[9px] text-amber-600 font-medium">Locked to 1 for custom serials</p>
                 )}
               </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
                   Cost Price (₹)
                 </label>
                 <Input
@@ -1273,14 +786,14 @@ const InventoryManager = () => {
               </div>
             </div>
 
-            {/* Location */}
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                Storage Location <span className="text-slate-400 font-normal">(Optional)</span>
+            {/* Storage Location */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                Storage Location
               </label>
               <Input
                 className="h-10 rounded-md border-slate-200 text-sm"
-                placeholder="e.g. Aisle 3, Shelf B"
+                placeholder="e.g. Rack A, Shelf 2"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               />
@@ -1290,23 +803,296 @@ const InventoryManager = () => {
               <button
                 type="button"
                 onClick={() => setAddStockOpen(false)}
-                className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={isSubmittingStock || !selectedProduct}
-                className="flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting || !selectedProduct}
+                className="flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSubmittingStock ? "Saving..." : "Add Stock"}
+                {isSubmitting ? "Creating..." : "Add Units"}
               </button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Unit Dialog */}
+      <Dialog open={editUnitOpen} onOpenChange={setEditUnitOpen}>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-md flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+          <DialogHeader className="shrink-0 border-b border-slate-100 p-6 pb-4">
+            <DialogTitle className="text-lg font-semibold text-slate-900">
+              Edit Unit Details
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              Update serial number, location, cost, or physical status.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleEditUnitSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 py-4 space-y-4">
+            {errorMsg && (
+              <div className="rounded-md bg-rose-50 p-3 text-sm text-rose-700 border border-rose-200">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700">Product</label>
+              <div className="rounded-md border border-slate-100 bg-slate-50/50 p-2.5 text-sm">
+                <span className="font-semibold text-slate-950 block">{activeUnit?.product?.name}</span>
+                <span className="text-xs text-slate-400 font-mono">SKU: {activeUnit?.product?.sku || "N/A"}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Serial Number *</label>
+                <Input
+                  required
+                  className="h-10 rounded-md border-slate-200 text-sm font-mono"
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Part Number</label>
+                <Input
+                  className="h-10 rounded-md border-slate-200 text-sm font-mono"
+                  value={partNumber}
+                  onChange={(e) => setPartNumber(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Cost Price (₹)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-10 rounded-md border-slate-200 text-sm font-mono"
+                  value={costPrice}
+                  onChange={(e) => setCostPrice(Math.max(0, Number(e.target.value)))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Storage Location</label>
+                <Input
+                  className="h-10 rounded-md border-slate-200 text-sm"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700">Status</label>
+              <Select
+                value={unitStatus}
+                onValueChange={(val) => setUnitStatus(val as InventoryUnit["status"])}
+                disabled={activeUnit?.status === "SHIPPED"}
+              >
+                <SelectTrigger className="h-10 rounded-md border-slate-200 bg-white text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-slate-200 bg-white">
+                  <SelectItem value="AVAILABLE">Available</SelectItem>
+                  <SelectItem value="RESERVED">Reserved</SelectItem>
+                  <SelectItem value="ALLOCATED">Allocated</SelectItem>
+                  <SelectItem value="SHIPPED" disabled>Shipped</SelectItem>
+                  <SelectItem value="RETURNED">Returned</SelectItem>
+                  <SelectItem value="DAMAGED">Damaged</SelectItem>
+                </SelectContent>
+              </Select>
+              {activeUnit?.status === "SHIPPED" && (
+                <p className="text-[10px] text-amber-600 font-medium">Shipped units cannot change status directly here.</p>
+              )}
+            </div>
+
+            <DialogFooter className="pt-4 shrink-0 border-t border-slate-100 bg-slate-50 -mx-6 -mb-6 px-6 py-4 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setEditUnitOpen(false)}
+                className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              >
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Unit Details Dialog */}
+      <Dialog open={viewUnitOpen} onOpenChange={setViewUnitOpen}>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-md flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+          <DialogHeader className="shrink-0 border-b border-slate-100 p-6 pb-4">
+            <DialogTitle className="text-lg font-semibold text-slate-900">
+              Unit Specification
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4 text-sm">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
+                <img
+                  className="h-full w-full object-contain p-1"
+                  src={activeUnit?.product?.media?.[0]?.url || "/placeholder.png"}
+                  alt={activeUnit?.product?.name}
+                  onError={handleImgError}
+                />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-semibold text-slate-900 text-sm truncate">{activeUnit?.product?.name}</h4>
+                <p className="text-xs text-slate-400 font-mono">SKU: {activeUnit?.product?.sku || "N/A"}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 py-2 border-b border-slate-50">
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Serial Number</span>
+                <span className="font-mono text-slate-800 font-semibold">{activeUnit?.serialNumber}</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Part Number</span>
+                <span className="font-mono text-slate-800">{activeUnit?.partNumber || "—"}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 py-2 border-b border-slate-50">
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Cost Price</span>
+                <span className="font-mono text-slate-800">₹{activeUnit?.costPrice.toLocaleString("en-IN")}</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Storage Location</span>
+                <span className="text-slate-800 font-medium">{activeUnit?.location || "—"}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 py-2 border-b border-slate-50">
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Status</span>
+                <span className={cn(
+                  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold mt-0.5",
+                  activeUnit ? STATUS_BADGES[activeUnit.status].cls : ""
+                )}>
+                  {activeUnit ? STATUS_BADGES[activeUnit.status].label : ""}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Last Updated</span>
+                <span className="text-slate-500 text-xs">
+                  {activeUnit?.lastUpdated
+                    ? new Date(activeUnit.lastUpdated).toLocaleString("en-IN", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* Associated Order details */}
+            {activeUnit?.orderItemUnits && activeUnit.orderItemUnits.length > 0 && (
+              <div className="rounded-md bg-slate-50 border border-slate-200 p-3 mt-4">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  Active Allocation Link
+                </span>
+                <div className="text-xs text-slate-700 space-y-1">
+                  <p>
+                    Order ID:{" "}
+                    <span className="font-mono font-medium text-slate-900">
+                      {activeUnit.orderItemUnits[0].orderId}
+                    </span>
+                  </p>
+                  <p>
+                    Customer:{" "}
+                    <span className="font-semibold text-slate-900">
+                      {activeUnit.orderItemUnits[0].orderItem?.order?.customerName || "Guest"}
+                    </span>
+                  </p>
+                  <p>
+                    Order Status:{" "}
+                    <span className="font-semibold uppercase text-indigo-600">
+                      {activeUnit.orderItemUnits[0].orderItem?.order?.status || "PENDING"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 p-6 py-4 flex justify-end">
+            <button
+              onClick={() => setViewUnitOpen(false)}
+              className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+            >
+              Close Details
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Unit Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] sm:max-w-md flex-col overflow-hidden p-0 rounded-lg border-slate-200 bg-white shadow-lg">
+          <DialogHeader className="shrink-0 border-b border-slate-100 p-6 pb-4">
+            <div className="flex items-center gap-2 text-rose-600">
+              <AlertTriangle size={20} />
+              <DialogTitle className="text-lg font-semibold text-slate-900">
+                Confirm Unit Delete
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-sm text-slate-500 mt-1">
+              Are you sure you want to permanently delete this inventory unit? This action will generate an outward stock movement.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-3 text-sm">
+            {errorMsg && (
+              <div className="rounded-md bg-rose-50 p-3 text-sm text-rose-700 border border-rose-200">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="rounded-md border border-slate-100 bg-slate-50/50 p-3">
+              <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Unit to Delete</p>
+              <p className="text-slate-800 font-medium text-sm mt-1">{activeUnit?.product?.name}</p>
+              <p className="text-xs font-mono text-slate-500 mt-0.5">
+                Serial Number: <span className="font-semibold text-slate-800">{activeUnit?.serialNumber}</span>
+              </p>
+            </div>
+            <p className="text-xs text-rose-600 font-medium">Warning: This cannot be undone.</p>
+          </div>
+
+          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50 p-6 py-4 flex gap-2 justify-end">
+            <button
+              onClick={() => setDeleteConfirmOpen(false)}
+              className="flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteUnit}
+              disabled={isSubmitting}
+              className="flex h-9 items-center justify-center rounded-md bg-rose-600 px-4 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50 transition-colors"
+            >
+              {isSubmitting ? "Deleting..." : "Permanently Delete"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
-
-export default InventoryManager;
+}

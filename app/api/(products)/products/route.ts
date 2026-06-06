@@ -3,7 +3,7 @@ import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
-import { createInventoryUnits } from "@/services/inventory.service";
+import { bulkCreateInventoryUnits } from "@/services/inventory.service";
 import { handleApiError, jsonError } from "@/lib/security/errors";
 import { enforceRateLimit, withRateLimitHeaders } from "@/lib/security/rate-limit";
 import { assertTrustedOrigin } from "@/lib/security/request";
@@ -174,9 +174,9 @@ function buildWhereClause(
             const outOfStock = values.includes("Out of Stock");
 
             if (inStock && !outOfStock) {
-                where.stockStatus = "IN_STOCK";
+                where.inventoryItems = { some: { status: "AVAILABLE" } };
             } else if (!inStock && outOfStock) {
-                where.stockStatus = "OUT_OF_STOCK";
+                where.inventoryItems = { none: { status: "AVAILABLE" } };
             }
         } else if (key === "f_brand") {
             const values = searchParams.getAll(key);
@@ -510,7 +510,6 @@ export async function POST(req: NextRequest) {
                     name: data.name,
                     sku: data.sku,
                     price: data.price,
-                    stockStatus: data.inventoryUnits.length > 0 ? "IN_STOCK" : "OUT_OF_STOCK",
                     description: data.description ?? null,
                     categoryId,
                     brandId: data.brandId ?? null,
@@ -524,17 +523,16 @@ export async function POST(req: NextRequest) {
                 include: fullProductInclude,
             });
 
-            await createInventoryUnits(
-                tx,
+            await bulkCreateInventoryUnits(
                 created.id,
                 data.inventoryUnits.map((unit) => ({
                     partNumber: unit.partNumber,
                     serialNumber: unit.serialNumber,
                     costPrice: unit.costPrice ?? data.costPrice,
                     location: unit.location ?? data.location,
-                    reorderLevel: unit.reorderLevel ?? data.reorderLevel,
                 })),
                 "Initial stock entry",
+                tx,
             );
 
             const categoryAttributes = await tx.categoryAttribute.findMany({

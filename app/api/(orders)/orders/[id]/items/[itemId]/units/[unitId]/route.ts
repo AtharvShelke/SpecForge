@@ -83,11 +83,10 @@ export async function PATCH(
       const orderStatus = unit.orderItem.order.status;
 
       // Swap stock count / reservation
-      if (orderStatus === "PENDING") {
-        const available = newInvItem.quantity - newInvItem.reserved;
-        if (available < 1) {
+      if (["PENDING", "PAID", "PROCESSING"].includes(orderStatus)) {
+        if (newInvItem.status !== "AVAILABLE") {
           return withRateLimitHeaders(
-            jsonError(409, "Selected inventory item is already reserved or unavailable", "INSUFFICIENT_STOCK"),
+            jsonError(409, "Selected inventory item is not available", "ITEM_NOT_AVAILABLE"),
             rateLimit
           );
         }
@@ -95,17 +94,37 @@ export async function PATCH(
         await prisma.$transaction([
           prisma.inventoryItem.update({
             where: { id: unit.inventoryItemId },
-            data: { reserved: { decrement: 1 }, lastUpdated: new Date() },
+            data: { status: "AVAILABLE", lastUpdated: new Date() },
           }),
           prisma.inventoryItem.update({
             where: { id: data.inventoryItemId },
-            data: { reserved: { increment: 1 }, lastUpdated: new Date() },
+            data: { status: "RESERVED", lastUpdated: new Date() },
+          }),
+          prisma.stockMovement.create({
+            data: {
+              productId: unit.orderItem.productId,
+              inventoryItemId: unit.inventoryItemId,
+              orderId: id,
+              type: "ADJUSTMENT",
+              quantity: 1,
+              note: `Swapped out of order ${id} (released reservation)`,
+            },
+          }),
+          prisma.stockMovement.create({
+            data: {
+              productId: newInvItem.productId,
+              inventoryItemId: newInvItem.id,
+              orderId: id,
+              type: "RESERVE",
+              quantity: 1,
+              note: `Swapped into order ${id} (reserved unit)`,
+            },
           }),
         ]);
-      } else if (["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(orderStatus)) {
-        if (newInvItem.quantity < 1) {
+      } else if (["SHIPPED", "DELIVERED"].includes(orderStatus)) {
+        if (newInvItem.status !== "AVAILABLE") {
           return withRateLimitHeaders(
-            jsonError(409, "Selected inventory item is out of stock", "OUT_OF_STOCK"),
+            jsonError(409, "Selected inventory item is not available", "ITEM_NOT_AVAILABLE"),
             rateLimit
           );
         }
@@ -113,14 +132,35 @@ export async function PATCH(
         await prisma.$transaction([
           prisma.inventoryItem.update({
             where: { id: unit.inventoryItemId },
-            data: { quantity: { increment: 1 }, lastUpdated: new Date() },
+            data: { status: "AVAILABLE", lastUpdated: new Date() },
           }),
           prisma.inventoryItem.update({
             where: { id: data.inventoryItemId },
-            data: { quantity: { decrement: 1 }, lastUpdated: new Date() },
+            data: { status: "SHIPPED", lastUpdated: new Date() },
+          }),
+          prisma.stockMovement.create({
+            data: {
+              productId: unit.orderItem.productId,
+              inventoryItemId: unit.inventoryItemId,
+              orderId: id,
+              type: "RETURN",
+              quantity: 1,
+              note: `Swapped out of shipped order ${id}`,
+            },
+          }),
+          prisma.stockMovement.create({
+            data: {
+              productId: newInvItem.productId,
+              inventoryItemId: newInvItem.id,
+              orderId: id,
+              type: "SALE",
+              quantity: 1,
+              note: `Swapped into shipped order ${id}`,
+            },
           }),
         ]);
       }
+
 
       const updatedUnit = await prisma.orderItemUnit.update({
         where: { id: unitId },

@@ -23,11 +23,6 @@ enum OrderStatus {
   RETURNED
 }
 
-enum CompatibilityLevel {
-  COMPATIBLE
-  WARNING
-  INCOMPATIBLE
-}
 
 enum StockMovementType {
   PURCHASE
@@ -150,11 +145,8 @@ model Category {
   brandCategories BrandCategory[]
   orderItems      OrderItem[]
   buildGuides     BuildGuide[]
-  buildSequence   BuildSequence?
   hierarchyNodes  CategoryHierarchy[]
   attributes      CategoryAttribute[]
-  outgoingRules   CompatibilityRule[] @relation("CompatibilityRuleSource")
-  incomingRules   CompatibilityRule[] @relation("CompatibilityRuleTarget")
 
   @@index([isActive, displayOrder])
   @@index([showInFeatured, featuredOrder])
@@ -208,30 +200,7 @@ model Brand {
 // CATALOG ΓÇö Category Hierarchy, Attributes & Compatibility
 // ===============================================================================================
 
-model BuildSequence {
-  id         String   @id @default(cuid())
-  categoryId Int      @unique @map("category_id")
-  stepOrder  Int      @unique
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
 
-  @@index([stepOrder])
-}
-
-model CategoryRelationship {
-  id               String   @id @default(uuid())
-  fromCategoryCode String?
-  toCategoryCode   String?
-  relationshipType String
-  sortOrder        Int      @default(0)
-  metadata         Json?
-  createdAt        DateTime @default(now())
-
-  @@index([relationshipType, sortOrder])
-  @@index([fromCategoryCode])
-  @@index([toCategoryCode])
-}
 
 model CategoryHierarchy {
   id         String  @id @default(uuid())
@@ -277,8 +246,6 @@ model CategoryAttribute {
   dependencyOption           AttributeOption?          @relation("AttributeOptionDependency", fields: [dependencyOptionId], references: [id], onDelete: SetNull)
   options                    AttributeOption[]
   productSpecs               ProductSpec[]
-  sourceCompatibilityClauses CompatibilityRuleClause[] @relation("CompatibilityClauseSourceAttribute")
-  targetCompatibilityClauses CompatibilityRuleClause[] @relation("CompatibilityClauseTargetAttribute")
 
   @@unique([categoryId, subcategoryId, key])
   @@index([categoryId, sortOrder])
@@ -308,45 +275,7 @@ model AttributeOption {
   @@map("attribute_options")
 }
 
-model CompatibilityRule {
-  id               String             @id @default(uuid())
-  sourceCategoryId Int                @map("source_category_id")
-  targetCategoryId Int                @map("target_category_id")
-  name             String             @db.VarChar(150)
-  message          String?            @db.Text
-  severity         CompatibilityLevel @default(INCOMPATIBLE)
-  isActive         Boolean            @default(true) @map("is_active")
-  sortOrder        Int                @default(0) @map("sort_order")
-  createdAt        DateTime           @default(now()) @map("created_at")
-  updatedAt        DateTime           @updatedAt @map("updated_at")
 
-  sourceCategory Category                  @relation("CompatibilityRuleSource", fields: [sourceCategoryId], references: [id], onDelete: Cascade)
-  targetCategory Category                  @relation("CompatibilityRuleTarget", fields: [targetCategoryId], references: [id], onDelete: Cascade)
-  clauses        CompatibilityRuleClause[]
-
-  @@index([sourceCategoryId, targetCategoryId, isActive])
-  @@map("compatibility_rules")
-}
-
-model CompatibilityRuleClause {
-  id                String  @id @default(uuid())
-  ruleId            String  @map("rule_id")
-  sourceAttributeId String  @map("source_attribute_id")
-  targetAttributeId String  @map("target_attribute_id")
-  operator          String  @db.VarChar(50)
-  sourceValue       String? @map("source_value") @db.VarChar(200)
-  targetValue       String? @map("target_value") @db.VarChar(200)
-  sortOrder         Int     @default(0) @map("sort_order")
-
-  rule            CompatibilityRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  sourceAttribute CategoryAttribute @relation("CompatibilityClauseSourceAttribute", fields: [sourceAttributeId], references: [id], onDelete: Cascade)
-  targetAttribute CategoryAttribute @relation("CompatibilityClauseTargetAttribute", fields: [targetAttributeId], references: [id], onDelete: Cascade)
-
-  @@index([ruleId, sortOrder])
-  @@index([sourceAttributeId])
-  @@index([targetAttributeId])
-  @@map("compatibility_rule_clauses")
-}
 
 // ===============================================================================================
 // CATALOG ΓÇö Product, Variants, Media, Tags
@@ -389,7 +318,6 @@ model Product {
   sku            String? @unique
   price          Float?
   compareAtPrice Float?
-  stockStatus    String  @default("IN_STOCK") @map("stock_status")
 
   brandId String?
   brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
@@ -472,29 +400,33 @@ model SearchSuggestion {
 // WAREHOUSING & INVENTORY
 // ===============================================================================================
 
+enum InventoryUnitStatus {
+  AVAILABLE
+  RESERVED
+  ALLOCATED
+  SHIPPED
+  RETURNED
+  DAMAGED
+}
+
 model InventoryItem {
-  id           String    @id @default(uuid())
+  id           String              @id @default(uuid())
   productId    String
   partNumber   String?
-  serialNumber String?
-  quantity     Int       @default(1)
-  reserved     Int       @default(0)
-  reorderLevel Int       @default(5)
-  costPrice    Float     @default(0)
-  location     String    @default("")
+  serialNumber String              @unique
+  status       InventoryUnitStatus @default(AVAILABLE)
+  costPrice    Float               @default(0)
+  location     String              @default("")
   lastUpdated  DateTime?
 
   product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItemUnits OrderItemUnit[]
   stockMovements StockMovement[]
-  reservations   Reservation[]
 
-  @@unique([productId, partNumber])
-  @@unique([productId, serialNumber])
-  @@index([quantity])
+  @@index([status])
   @@index([productId])
-  @@index([productId, location])
-  @@index([location, quantity])
+  @@index([productId, status])
+  @@index([location])
   @@index([lastUpdated])
 }
 
@@ -565,12 +497,13 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items      OrderItem[]
-  logs       OrderLog[]
-  invoices   Invoice[]
-  shipments  ShipmentTracking[]
-  payments   PaymentTransaction[]
-  stockMoves StockMovement[]
+  items          OrderItem[]
+  logs           OrderLog[]
+  invoices       Invoice[]
+  shipments      ShipmentTracking[]
+  payments       PaymentTransaction[]
+  stockMoves     StockMovement[]
+  assignedUnits  OrderItemUnit[]
 
   @@index([email])
   @@index([status])
@@ -609,13 +542,16 @@ model OrderItemUnit {
   inventoryItemId String   @map("inventory_item_id")
   serialNumber    String?  @map("serial_number")
   partNumber      String?  @map("part_number")
+  orderId         String?  @map("order_id")
   createdAt       DateTime @default(now()) @map("created_at")
 
   orderItem     OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  order         Order?        @relation(fields: [orderId], references: [id])
 
   @@index([orderItemId])
   @@index([inventoryItemId])
+  @@index([orderId])
   @@map("order_item_units")
 }
 
@@ -914,22 +850,4 @@ model TaxSettings {
   @@map("tax_settings")
 }
 
-model Reservation {
-  id              String        @id @default(uuid())
-  orderId         String?       @map("order_id")
-  cartId          String?       @map("cart_id")
-  inventoryItemId String        @map("inventory_item_id")
-  quantity        Int           @default(1)
-  status          String        @default("ACTIVE") // ACTIVE, EXPIRED, COMPLETED, RELEASED
-  expiresAt       DateTime?     @map("expires_at")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-
-  @@index([inventoryItemId])
-  @@index([orderId])
-  @@index([cartId])
-  @@index([status, expiresAt])
-  @@map("inventory_reservations")
-}

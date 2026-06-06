@@ -78,6 +78,7 @@ export async function listBuilds() {
                   attribute: true,
                 },
               },
+              inventoryItems: true,
             },
           });
 
@@ -88,7 +89,7 @@ export async function listBuilds() {
                 sku: product.sku || "",
                 price: product.price || 0,
                 compareAtPrice: product.compareAtPrice || null,
-                status: product.stockStatus,
+                status: product.inventoryItems?.some(item => item.status === "AVAILABLE") ? "IN_STOCK" : "OUT_OF_STOCK",
                 product,
               }
             : null;
@@ -129,6 +130,7 @@ export async function getBuildById(id: string) {
               attribute: true,
             },
           },
+          inventoryItems: true,
         },
       });
 
@@ -139,7 +141,7 @@ export async function getBuildById(id: string) {
             sku: product.sku || "",
             price: product.price || 0,
             compareAtPrice: product.compareAtPrice || null,
-            status: product.stockStatus,
+            status: product.inventoryItems?.some(item => item.status === "AVAILABLE") ? "IN_STOCK" : "OUT_OF_STOCK",
             product,
           }
         : null;
@@ -211,6 +213,7 @@ export async function addBuildItem(
           attribute: true,
         },
       },
+      inventoryItems: true,
     },
   });
 
@@ -221,7 +224,7 @@ export async function addBuildItem(
         sku: product.sku || "",
         price: product.price || 0,
         compareAtPrice: product.compareAtPrice || null,
-        status: product.stockStatus,
+        status: product.inventoryItems?.some(item => item.status === "AVAILABLE") ? "IN_STOCK" : "OUT_OF_STOCK",
         product,
       }
     : null;

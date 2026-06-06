@@ -56,7 +56,7 @@ const INITIAL_FORM = {
   shippingCountry: "India",
 };
 
-const MANUAL_DISCOUNT_RATE = 0.02;
+
 
 const PAYMENT_METHODS = [
   {
@@ -184,10 +184,8 @@ export default function CheckoutPage() {
   const isManualPayment =
     paymentMethod === PaymentMethodType.UPI ||
     paymentMethod === PaymentMethodType.BANK_TRANSFER;
-  const discountAmount = isManualPayment
-    ? Number((financials.total * MANUAL_DISCOUNT_RATE).toFixed(2))
-    : 0;
-  const payableTotal = Number((financials.total - discountAmount).toFixed(2));
+  const discountAmount = 0;
+  const payableTotal = financials.total;
 
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -646,13 +644,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  <div className="border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                    Pay manually to unlock a 2% discount. Your payable total is{" "}
-                    <span className="font-medium text-gray-900">
-                      Rs. {payableTotal.toLocaleString("en-IN")}
-                    </span>
-                    .
-                  </div>
+
 
                   <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
                     <div>
@@ -754,14 +746,7 @@ export default function CheckoutPage() {
                     <span>Shipping</span>
                     <span className="text-gray-900">Free</span>
                   </div>
-                  {discountAmount > 0 ? (
-                    <div className="flex items-center justify-between text-gray-600">
-                      <span>Manual payment discount</span>
-                      <span className="text-gray-900">
-                        - Rs. {discountAmount.toLocaleString("en-IN")}
-                      </span>
-                    </div>
-                  ) : null}
+
                 </div>
 
                 <div className="mt-5 border-t border-gray-200 pt-5">

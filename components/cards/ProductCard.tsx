@@ -28,11 +28,6 @@ export default function ProductCard({
   const secondaryImage = product.media?.[1]?.url;
   const brand = product.brand?.name;
   const price = Number(product.price ?? 0);
-  const compareAtPrice = Number(product.compareAtPrice ?? 0);
-  const hasDiscount = compareAtPrice > price;
-  const discountPercent = hasDiscount
-    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
-    : 0;
   const isOutOfStock = product.stockStatus === "OUT_OF_STOCK";
   const href = `/products/${product.slug || product.id}`;
 
@@ -53,13 +48,6 @@ export default function ProductCard({
         tabIndex={0}
         aria-label={`View ${product.name}`}
       >
-        {/* Discount badge */}
-        {hasDiscount && !isOutOfStock && (
-          <div className="absolute left-2.5 top-2.5 z-10 rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-semibold text-white">
-            -{discountPercent}%
-          </div>
-        )}
-
         {/* Out of stock overlay */}
         {isOutOfStock && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
@@ -165,11 +153,6 @@ export default function ProductCard({
           <span className="text-sm font-bold text-stone-900">
             ₹{price.toLocaleString("en-IN")}
           </span>
-          {hasDiscount && (
-            <span className="text-xs text-stone-400 line-through">
-              ₹{compareAtPrice.toLocaleString("en-IN")}
-            </span>
-          )}
         </div>
 
         {/* CTA */}

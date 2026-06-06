@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
 
     const matchesStock = (product: any) => {
       if (selectedStockStatus.length === 0) return true;
-      const isAvailable = product.stockStatus === "IN_STOCK";
+      const isAvailable = product.inventoryItems?.some((item: any) => item.status === "AVAILABLE") ?? false;
       if (selectedStockStatus.includes("In Stock") && isAvailable) return true;
       if (selectedStockStatus.includes("Out of Stock") && !isAvailable) return true;
       return false;
@@ -205,8 +205,8 @@ export async function GET(request: NextRequest) {
 
     // 2. Add Stock Status Filter
     const stockSubset = candidateProducts.filter((p) => matchesAllFiltersExcept(p, "stock_status"));
-    const inStockCount = stockSubset.filter((p) => p.stockStatus === "IN_STOCK").length;
-    const outOfStockCount = stockSubset.filter((p) => p.stockStatus !== "IN_STOCK").length;
+    const inStockCount = stockSubset.filter((p) => p.inventoryItems?.some((item: any) => item.status === "AVAILABLE")).length;
+    const outOfStockCount = stockSubset.length - inStockCount;
 
     filters.push({
       id: "stock_status",

@@ -49,11 +49,45 @@ function SocialProofChip({ index }: { product: Product; index: number }) {
   );
 }
 
+function getProductImage(product: Product) {
+  if (product.media?.[0]?.url) return product.media[0].url;
+  if (product.image) return product.image;
+
+  const subcategory = product.subcategory || (product as any).subCategory;
+  const category = subcategory?.category || product.category;
+  const catName = typeof category === "object" ? category?.name : typeof product.category === "string" ? product.category : "";
+  const catCode = typeof category === "object" ? category?.code : "";
+
+  const nameOrCode = (catCode || catName || "").toLowerCase();
+
+  if (nameOrCode.includes("cpu") || nameOrCode.includes("processor")) {
+    return "/images/category_section/proc.avif";
+  }
+  if (nameOrCode.includes("mb") || nameOrCode.includes("motherboard")) {
+    return "/images/category_section/mobo.avif";
+  }
+  if (nameOrCode.includes("ram") || nameOrCode.includes("memory")) {
+    return "/images/category_section/ram.webp";
+  }
+  if (nameOrCode.includes("gpu") || nameOrCode.includes("graphics") || nameOrCode.includes("nvidia") || nameOrCode.includes("radeon")) {
+    return "/images/category_section/gpu.avif";
+  }
+  if (nameOrCode.includes("ssd") || nameOrCode.includes("storage") || nameOrCode.includes("drive") || nameOrCode.includes("hdd")) {
+    return "/images/category_section/drive.avif";
+  }
+  if (nameOrCode.includes("case") || nameOrCode.includes("chassis") || nameOrCode.includes("cab")) {
+    return "/images/category_section/cab.avif";
+  }
+  if (nameOrCode.includes("monitor") || nameOrCode.includes("screen")) {
+    return "/images/category_section/mon.webp";
+  }
+
+  return "/placeholder.png";
+}
+
 function BestSellerRow({ product, rank }: { product: Product; rank: number }) {
-  const img = product.media?.[0]?.url ?? product.image ?? "/placeholder.png";
+  const img = getProductImage(product);
   const price = Number(product.price ?? 0);
-  const compareAtPrice = Number(product.compareAtPrice ?? 0);
-  const hasDiscount = compareAtPrice > price;
   const isOOS = product.stockStatus === "OUT_OF_STOCK";
 
   return (
@@ -84,7 +118,7 @@ function BestSellerRow({ product, rank }: { product: Product; rank: number }) {
               {product.brand.name}
             </p>
           )}
-          <p className="text-sm font-bold text-stone-800 group-hover:text-indigo-600 transition-colors line-clamp-1">
+          <p className="text-sm font-bold text-stone-850 group-hover:text-indigo-600 transition-colors line-clamp-1">
             {product.name}
           </p>
           <SocialProofChip product={product} index={rank - 1} />
@@ -94,11 +128,6 @@ function BestSellerRow({ product, rank }: { product: Product; rank: number }) {
           <p className="text-sm font-black text-stone-900">
             ₹{price.toLocaleString("en-IN")}
           </p>
-          {hasDiscount && (
-            <p className="text-xs text-stone-400 line-through">
-              ₹{compareAtPrice.toLocaleString("en-IN")}
-            </p>
-          )}
           {isOOS ? (
             <span className="inline-block text-[9px] font-bold text-stone-400 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded">Out of stock</span>
           ) : (

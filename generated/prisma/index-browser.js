@@ -171,24 +171,6 @@ exports.Prisma.BrandScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.BuildSequenceScalarFieldEnum = {
-  id: 'id',
-  categoryId: 'categoryId',
-  stepOrder: 'stepOrder',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.CategoryRelationshipScalarFieldEnum = {
-  id: 'id',
-  fromCategoryCode: 'fromCategoryCode',
-  toCategoryCode: 'toCategoryCode',
-  relationshipType: 'relationshipType',
-  sortOrder: 'sortOrder',
-  metadata: 'metadata',
-  createdAt: 'createdAt'
-};
-
 exports.Prisma.CategoryHierarchyScalarFieldEnum = {
   id: 'id',
   label: 'label',
@@ -230,30 +212,6 @@ exports.Prisma.AttributeOptionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.CompatibilityRuleScalarFieldEnum = {
-  id: 'id',
-  sourceCategoryId: 'sourceCategoryId',
-  targetCategoryId: 'targetCategoryId',
-  name: 'name',
-  message: 'message',
-  severity: 'severity',
-  isActive: 'isActive',
-  sortOrder: 'sortOrder',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.CompatibilityRuleClauseScalarFieldEnum = {
-  id: 'id',
-  ruleId: 'ruleId',
-  sourceAttributeId: 'sourceAttributeId',
-  targetAttributeId: 'targetAttributeId',
-  operator: 'operator',
-  sourceValue: 'sourceValue',
-  targetValue: 'targetValue',
-  sortOrder: 'sortOrder'
-};
-
 exports.Prisma.TagScalarFieldEnum = {
   id: 'id',
   name: 'name'
@@ -282,7 +240,6 @@ exports.Prisma.ProductScalarFieldEnum = {
   sku: 'sku',
   price: 'price',
   compareAtPrice: 'compareAtPrice',
-  stockStatus: 'stockStatus',
   brandId: 'brandId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -323,9 +280,7 @@ exports.Prisma.InventoryItemScalarFieldEnum = {
   productId: 'productId',
   partNumber: 'partNumber',
   serialNumber: 'serialNumber',
-  quantity: 'quantity',
-  reserved: 'reserved',
-  reorderLevel: 'reorderLevel',
+  status: 'status',
   costPrice: 'costPrice',
   location: 'location',
   lastUpdated: 'lastUpdated'
@@ -397,6 +352,7 @@ exports.Prisma.OrderItemUnitScalarFieldEnum = {
   inventoryItemId: 'inventoryItemId',
   serialNumber: 'serialNumber',
   partNumber: 'partNumber',
+  orderId: 'orderId',
   createdAt: 'createdAt'
 };
 
@@ -588,18 +544,6 @@ exports.Prisma.TaxSettingsScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.ReservationScalarFieldEnum = {
-  id: 'id',
-  orderId: 'orderId',
-  cartId: 'cartId',
-  inventoryItemId: 'inventoryItemId',
-  quantity: 'quantity',
-  status: 'status',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -646,16 +590,19 @@ exports.FilterType = exports.$Enums.FilterType = {
   dropdown: 'dropdown'
 };
 
-exports.CompatibilityLevel = exports.$Enums.CompatibilityLevel = {
-  COMPATIBLE: 'COMPATIBLE',
-  WARNING: 'WARNING',
-  INCOMPATIBLE: 'INCOMPATIBLE'
-};
-
 exports.ProductStatus = exports.$Enums.ProductStatus = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
   ARCHIVED: 'ARCHIVED'
+};
+
+exports.InventoryUnitStatus = exports.$Enums.InventoryUnitStatus = {
+  AVAILABLE: 'AVAILABLE',
+  RESERVED: 'RESERVED',
+  ALLOCATED: 'ALLOCATED',
+  SHIPPED: 'SHIPPED',
+  RETURNED: 'RETURNED',
+  DAMAGED: 'DAMAGED'
 };
 
 exports.SalesChannel = exports.$Enums.SalesChannel = {
@@ -729,13 +676,9 @@ exports.Prisma.ModelName = {
   Subcategory: 'Subcategory',
   BrandCategory: 'BrandCategory',
   Brand: 'Brand',
-  BuildSequence: 'BuildSequence',
-  CategoryRelationship: 'CategoryRelationship',
   CategoryHierarchy: 'CategoryHierarchy',
   CategoryAttribute: 'CategoryAttribute',
   AttributeOption: 'AttributeOption',
-  CompatibilityRule: 'CompatibilityRule',
-  CompatibilityRuleClause: 'CompatibilityRuleClause',
   Tag: 'Tag',
   ProductMedia: 'ProductMedia',
   Product: 'Product',
@@ -762,8 +705,7 @@ exports.Prisma.ModelName = {
   CreditNote: 'CreditNote',
   CreditNoteLineItem: 'CreditNoteLineItem',
   AuditLog: 'AuditLog',
-  TaxSettings: 'TaxSettings',
-  Reservation: 'Reservation'
+  TaxSettings: 'TaxSettings'
 };
 
 /**

@@ -39,18 +39,19 @@ export function serializeProducts(products: any[]) {
 }
 
 export function serializeInventoryItem(item: any) {
-  const quantity = Number(item?.quantity ?? 0);
-  const reserved = Number(item?.reserved ?? 0);
-  const availableQuantity = Math.max(0, quantity - reserved);
+  const isAvailable = item?.status === "AVAILABLE";
+  const isReserved = item?.status === "RESERVED";
+  const quantity = isAvailable ? 1 : 0;
+  const reserved = isReserved ? 1 : 0;
 
   return {
     ...item,
     quantityOnHand: quantity,
     quantityReserved: reserved,
     costPrice: item?.costPrice == null ? null : toNumber(item.costPrice),
-    quantity: availableQuantity,
+    quantity: quantity,
     reserved: reserved,
-    reorderLevel: item?.reorderLevel ?? 5,
+    reorderLevel: 5,
     sku: item?.product?.sku ?? item?.productId ?? "",
   };
 }

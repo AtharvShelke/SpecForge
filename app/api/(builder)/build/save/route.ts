@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBuildById, updateBuild } from "@/services/build.service";
-import { checkBuildCompatibility } from "@/services/compatibility.service";
+import { validateBuildSync } from "@/lib/compatibilityEngine";
 import { ServiceError } from "@/lib/errors";
 
 export async function POST(req: NextRequest) {
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     // Run compatibility check if requested
     let compatibilityResult = null;
     if (runCheck && build.items.length >= 2) {
-      compatibilityResult = await checkBuildCompatibility(buildId);
+      compatibilityResult = validateBuildSync(build.items);
     }
 
     return NextResponse.json({

@@ -62,11 +62,6 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const price = Number(product.price ?? 0);
-  const compareAtPrice = Number(product.compareAtPrice ?? 0);
-  const hasDiscount = compareAtPrice > price;
-  const discountPercent = hasDiscount
-    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
-    : 0;
   const availableQuantity = getAvailableQuantity(product);
   const isOutOfStock =
     product.stockStatus === "OUT_OF_STOCK" ||
@@ -167,11 +162,6 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     </span>
                   </div>
                 )}
-                {hasDiscount && !isOutOfStock && (
-                  <div className="absolute left-3 top-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-bold text-white">
-                    -{discountPercent}%
-                  </div>
-                )}
               </div>
 
               {/* Thumbnails */}
@@ -236,16 +226,6 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               <span className="text-3xl font-bold text-stone-900 tracking-tight">
                 ₹{price.toLocaleString("en-IN")}
               </span>
-              {hasDiscount && (
-                <span className="text-base text-stone-400 line-through">
-                  ₹{compareAtPrice.toLocaleString("en-IN")}
-                </span>
-              )}
-              {hasDiscount && (
-                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
-                  Save {discountPercent}%
-                </span>
-              )}
             </div>
 
             {/* Stock status */}

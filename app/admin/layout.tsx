@@ -12,9 +12,6 @@ const TAB_LABELS: Record<string, string> = {
   inventory: "Inventory",
   categories: "Categories",
   brands: "Brands",
-
-  "builder-config": "Builder Config",
-  compatibility: "Compatibility Rules",
 } as const;
 
 

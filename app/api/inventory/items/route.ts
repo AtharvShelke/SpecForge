@@ -1,49 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getInventoryItems,
-  createInventoryItem,
-  adjustStockBySku,
-} from "@/services/inventory.service";
+import { prisma } from "@/lib/prisma";
+import { createInventoryUnit } from "@/services/inventory.service";
 import { ServiceError } from "@/lib/errors";
-import { serializeInventoryItems } from "@/lib/adminSerializers";
 
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
-    const items = await getInventoryItems({
-      productId: searchParams.get("variantId") || searchParams.get("productId") || undefined,
+    const productId = searchParams.get("productId") || searchParams.get("variantId") || undefined;
+
+    const where: any = {};
+    if (productId) where.productId = productId;
+
+    const items = await prisma.inventoryItem.groupBy({
+      by: ["productId"],
+      where,
+      _count: { id: true },
     });
-    return NextResponse.json(serializeInventoryItems(items as any[]));
+
+    const res = await Promise.all(
+      items.map(async (group) => {
+        const available = await prisma.inventoryItem.count({
+          where: { productId: group.productId, status: "AVAILABLE" },
+        });
+        const reserved = await prisma.inventoryItem.count({
+          where: { productId: group.productId, status: "RESERVED" },
+        });
+        return {
+          productId: group.productId,
+          quantity: available,
+          reserved: reserved,
+          total: group._count.id,
+        };
+      })
+    );
+
+    return NextResponse.json(res);
   } catch (error: any) {
-    if (error instanceof ServiceError)
-      return new NextResponse(error.message, { status: error.statusCode });
-    console.error("[GET_INVENTORY_ITEMS]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const { productId, serialNumber, partNumber, costPrice, location } = body;
 
-    if (body.action === "ADJUST" || body.type) {
-      const { variantId, quantity, type } = body;
-      if (!variantId || typeof quantity !== "number" || !type) {
-        throw new ServiceError(
-          "variantId, quantity, and type are required for adjustment",
-          400,
-        );
-      }
-      const item = await adjustStockBySku(variantId, quantity, type);
-      return NextResponse.json(item, { status: 200 });
+    if (!productId) {
+      return NextResponse.json({ error: "productId is required" }, { status: 400 });
     }
 
-    const item = await createInventoryItem(body);
-    return NextResponse.json(item, { status: 201 });
+    const genSerial = serialNumber || `SN-AUTO-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    const created = await createInventoryUnit({
+      productId,
+      serialNumber: genSerial,
+      partNumber: partNumber || undefined,
+      costPrice: Number(costPrice ?? 0),
+      location: location || undefined,
+    });
+
+    return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
-    if (error instanceof ServiceError)
-      return new NextResponse(error.message, { status: error.statusCode });
-    console.error("[POST_INVENTORY_ITEMS]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -5,8 +5,6 @@ if (typeof window !== "undefined") {
   throw new Error("This module can only be used on the server side");
 }
 
-export const MANUAL_PAYMENT_DISCOUNT_RATE = 0.02;
-
 export function getRazorpayConfig() {
   return {
     keyId:
@@ -29,18 +27,6 @@ export function getManualPaymentDetails() {
   };
 }
 
-export function computeManualPaymentDiscount(total: number) {
-  const discountAmount = Number(
-    (total * MANUAL_PAYMENT_DISCOUNT_RATE).toFixed(2),
-  );
-  const payableTotal = Number((total - discountAmount).toFixed(2));
-
-  return {
-    discountAmount,
-    payableTotal,
-  };
-}
-
 export function verifyRazorpaySignature({
   razorpayOrderId,
   razorpayPaymentId,
@@ -58,4 +44,3 @@ export function verifyRazorpaySignature({
 
   return expectedSignature === razorpaySignature;
 }
-

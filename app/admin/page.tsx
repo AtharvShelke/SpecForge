@@ -21,12 +21,7 @@ const CategoryManager = lazy(
 );
 const BrandManager = lazy(() => import("@/components/dashboard/BrandManager"));
 
-const BuilderConfigManager = lazy(
-  () => import("@/components/dashboard/builder-config/BuilderConfigManager"),
-);
-const CompatibilityManager = lazy(
-  () => import("@/components/dashboard/CompatibilityManager"),
-);
+
 const TaxSettingsTab = lazy(
   () => import("@/components/dashboard/TaxSettingsTab"),
 );
@@ -111,16 +106,7 @@ const AdminDashboardContent = memo(function AdminDashboardContent() {
           <BrandManager />
         </TabViewport>
       )}
-            {activeTab === "builder-config" && (
-        <TabViewport>
-          <BuilderConfigManager />
-        </TabViewport>
-      )}
-      {activeTab === "compatibility" && (
-        <TabViewport>
-          <CompatibilityManager />
-        </TabViewport>
-      )}
+
       {activeTab === "tax-settings" && (
         <TabViewport>
           <TaxSettingsTab />

@@ -13,171 +13,16 @@ import { ServiceError } from "@/lib/errors";
 import { Order, CreateOrder, CreateOrderItem, OrderStatus } from "@/types";
 import { createPaymentTransaction } from "@/services/payment";
 import { assertOrderTransition } from "@/lib/orderTransitions";
+import {
+  reserveUnitsForOrder,
+  shipOrderUnits,
+  cancelOrderReservation,
+  returnOrderUnits
+} from "./inventory.service";
 
 type PrismaTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-async function allocateInventoryForOrderItem(tx: PrismaTx, item: CreateOrderItem) {
-  if (item.inventoryItemId) {
-    if (item.quantity !== 1) {
-      throw new ServiceError(
-        "Serialized inventory items must be ordered with quantity 1 per unit.",
-        400,
-      );
-    }
 
-    const inventoryItem = await tx.inventoryItem.findUnique({
-      where: { id: item.inventoryItemId },
-      include: {
-        product: {
-          select: {
-            sku: true,
-          },
-        },
-      },
-    });
-
-    if (!inventoryItem || inventoryItem.productId !== item.productId) {
-      throw new ServiceError(
-        "Requested inventory item is not available for this product.",
-        400,
-      );
-    }
-    if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
-      throw new ServiceError(
-        "Serialized inventory item is missing part or serial number.",
-        400,
-      );
-    }
-
-    const available = Number(inventoryItem.quantity ?? 0) - Number(inventoryItem.reserved ?? 0);
-    if (available < 1) {
-      throw new ServiceError(
-        "Requested inventory item is no longer available.",
-        409,
-      );
-    }
-
-    return [
-      {
-        inventoryItemId: inventoryItem.id,
-        quantity: 1,
-        productNumber:
-          inventoryItem.product?.sku ||
-          item.productNumber ||
-          item.sku ||
-          item.productId,
-        partNumber: inventoryItem.partNumber,
-        serialNumber: inventoryItem.serialNumber,
-      },
-    ];
-  }
-
-  // Find serialized inventory items first
-  const serializedItems = await tx.inventoryItem.findMany({
-    where: {
-      productId: item.productId,
-      serialNumber: { not: null },
-      quantity: { gt: 0 },
-      reserved: 0,
-    },
-    include: {
-      product: {
-        select: {
-          sku: true,
-        },
-      },
-    },
-    orderBy: [{ lastUpdated: "asc" }],
-    take: item.quantity,
-  });
-
-  if (serializedItems.length === item.quantity) {
-    const seenSerial = new Set<string>();
-    const seenPart = new Set<string>();
-
-    return serializedItems.map((inventoryItem: any) => {
-      if (!inventoryItem.serialNumber || !inventoryItem.partNumber) {
-        throw new ServiceError(
-          "Serialized inventory item is missing part or serial number.",
-          400,
-        );
-      }
-      if (
-        seenSerial.has(inventoryItem.serialNumber) ||
-        seenPart.has(inventoryItem.partNumber)
-      ) {
-        throw new ServiceError(
-          `Inventory allocation conflict detected for product ${item.productId}.`,
-          409,
-        );
-      }
-
-      seenSerial.add(inventoryItem.serialNumber);
-      seenPart.add(inventoryItem.partNumber);
-
-      return {
-        inventoryItemId: inventoryItem.id,
-        quantity: 1,
-        productNumber:
-          inventoryItem.product?.sku ||
-          item.productNumber ||
-          item.sku ||
-          item.productId,
-        partNumber: inventoryItem.partNumber,
-        serialNumber: inventoryItem.serialNumber,
-      };
-    });
-  }
-
-  // Fallback to bulk inventory items
-  const bulkItems = await tx.inventoryItem.findMany({
-    where: {
-      productId: item.productId,
-      serialNumber: null,
-    },
-    include: {
-      product: {
-        select: {
-          sku: true,
-        },
-      },
-    },
-  });
-
-  let totalAvailableBulk = 0;
-  for (const b of bulkItems) {
-    totalAvailableBulk += (b.quantity ?? 0) - (b.reserved ?? 0);
-  }
-
-  if (totalAvailableBulk >= item.quantity) {
-    let remainingToAllocate = item.quantity;
-    const allocations = [];
-
-    for (const b of bulkItems) {
-      const avail = (b.quantity ?? 0) - (b.reserved ?? 0);
-      if (avail <= 0) continue;
-
-      const take = Math.min(avail, remainingToAllocate);
-      allocations.push({
-        inventoryItemId: b.id,
-        quantity: take,
-        productNumber: b.product?.sku || item.sku || item.productId,
-        partNumber: b.partNumber || "",
-        serialNumber: b.serialNumber || "",
-      });
-
-      remainingToAllocate -= take;
-      if (remainingToAllocate === 0) break;
-    }
-
-    return allocations;
-  }
-
-  throw new ServiceError(
-    `Insufficient stock for product ${item.productId}. Each ordered unit must map to unique serial/part numbers or bulk stock.`,
-    409,
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIST / GET
@@ -358,31 +203,10 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
       console.log("[order.service.ts] Resolved customerId:", customerId);
 
       const normalizedItems = data.items ?? [];
-      console.log("[order.service.ts] Processing order items, count:", normalizedItems.length);
-      const reservedInventory: Array<{
-        inventoryItemId: string;
-        quantity: number;
-        productNumber: string;
-        partNumber: string;
-        serialNumber: string;
-      }> = [];
+      console.log("[order.service.ts] Creating order lines, count:", normalizedItems.length);
       const orderLineItems: Array<any> = [];
 
       for (const item of normalizedItems) {
-        console.log(`[order.service.ts] Allocating inventory for product: ${item.productId}, quantity: ${item.quantity}`);
-        const allocations = await allocateInventoryForOrderItem(tx, item);
-        console.log(`[order.service.ts] Allocated ${allocations.length} unit(s)`);
-
-        const assignedUnits = allocations.map((a) => ({
-          inventoryItemId: a.inventoryItemId,
-          serialNumber: a.serialNumber || null,
-          partNumber: a.partNumber || null,
-        }));
-
-        for (const allocation of allocations) {
-          reservedInventory.push(allocation);
-        }
-
         orderLineItems.push({
           productId: item.productId,
           name: item.name,
@@ -391,9 +215,6 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
           quantity: item.quantity,
           image: item.image,
           sku: item.sku,
-          assignedUnits: assignedUnits.length > 0 ? {
-            create: assignedUnits,
-          } : undefined,
         });
       }
 
@@ -454,24 +275,10 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
         });
       }
 
-      // Update reserved inventory
-      if (reservedInventory.length > 0) {
-        console.log("[order.service.ts] Updating reserved inventory items...");
-        for (const item of reservedInventory) {
-          const updated = await tx.inventoryItem.update({
-            where: { id: item.inventoryItemId },
-            data: {
-              reserved: { increment: item.quantity },
-            },
-          });
-
-          if ((updated.quantity ?? 0) < (updated.reserved ?? 0)) {
-            throw new ServiceError(
-              "One or more inventory units became unavailable during checkout.",
-              409,
-            );
-          }
-        }
+      // Atomically reserve inventory units for each created order line
+      console.log("[order.service.ts] Reserving serialized inventory units...");
+      for (const item of newOrder.items) {
+        await reserveUnitsForOrder(tx, item.productId, item.quantity, newOrder.id, item.id);
       }
 
       console.log("[order.service.ts] Creating order log entry...");
@@ -479,7 +286,7 @@ export async function createOrder(data: CreateOrder): Promise<Order> {
         data: {
           orderId: newOrder.id,
           status: "PENDING",
-          note: "Order created and items reserved",
+          note: "Order created and units reserved",
         },
       });
 
@@ -578,41 +385,19 @@ export async function updateOrderStatus(
 
     // ── SIDE EFFECTS ──────────────────────────────────────────────
 
-    // PAID: Convert reservations: decrement reserved and decrement quantity
-    if (status === "PAID") {
-      for (const item of order.items) {
-        for (const unit of item.assignedUnits) {
-          await tx.inventoryItem.update({
-            where: { id: unit.inventoryItemId },
-            data: {
-              reserved: { decrement: 1 },
-              quantity: { decrement: 1 },
-            },
-          });
-        }
-      }
+    // PROCESSING → SHIPPED: ship units
+    if (status === "SHIPPED") {
+      await shipOrderUnits(tx, id);
     }
 
-    // RETURNED: Restore inventory
-    if (status === "RETURNED") {
-      for (const item of order.items) {
-        for (const unit of item.assignedUnits) {
-          await tx.inventoryItem.update({
-            where: { id: unit.inventoryItemId },
-            data: {
-              quantity: { increment: 1 },
-            },
-          });
-        }
-      }
+    // CANCELLED: cancel reservation
+    if (status === "CANCELLED") {
+      await cancelOrderReservation(tx, id);
+    }
 
-      await tx.orderLog.create({
-        data: {
-          orderId: id,
-          status: "RETURNED" as any,
-          note: "Inventory restored for returned items",
-        },
-      });
+    // RETURNED: return units to inventory
+    if (status === "RETURNED") {
+      await returnOrderUnits(tx, id);
     }
 
     return updatedOrder;
@@ -659,44 +444,17 @@ export async function cancelOrder(id: string, note?: string) {
       },
     });
 
-    // 3. Release reservations and restore inventory
-    if (order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED") {
-      // Restore inventory quantity (reserved was already decremented when transitioned to PAID)
-      for (const item of order.items) {
-        for (const unit of item.assignedUnits) {
-          await tx.inventoryItem.update({
-            where: { id: unit.inventoryItemId },
-            data: {
-              quantity: { increment: 1 },
-            },
-          });
-        }
-      }
-    } else if (order.status === "PENDING") {
-      // Release reservation: decrement reserved (quantity remains unchanged)
-      for (const item of order.items) {
-        for (const unit of item.assignedUnits) {
-          await tx.inventoryItem.update({
-            where: { id: unit.inventoryItemId },
-            data: {
-              reserved: { decrement: 1 },
-            },
-          });
-        }
-      }
-    }
+    // 3. Release reservations in inventory
+    await cancelOrderReservation(tx, id);
 
     // 4. Log reservation release
-    const totalReleased = order.items.reduce((acc, item) => acc + item.assignedUnits.length, 0);
-    if (totalReleased > 0) {
-      await tx.orderLog.create({
-        data: {
-          orderId: id,
-          status: "CANCELLED",
-          note: `Released ${totalReleased} allocated inventory unit(s)`,
-        },
-      });
-    }
+    await tx.orderLog.create({
+      data: {
+        orderId: id,
+        status: "CANCELLED",
+        note: `Released allocated inventory unit(s) for order ${id}`,
+      },
+    });
 
     return updatedOrder as any as Order;
   });
@@ -720,27 +478,9 @@ export async function deleteOrder(id: string) {
   if (!order) throw new ServiceError("Order not found", 404);
 
   return prisma.$transaction(async (tx) => {
-    // Release inventory based on current order status
-    if (order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED") {
-      // Restore inventory quantity (reserved was already decremented at PAID transition)
-      for (const item of order.items) {
-        for (const unit of item.assignedUnits) {
-          await tx.inventoryItem.update({
-            where: { id: unit.inventoryItemId },
-            data: { quantity: { increment: 1 } },
-          });
-        }
-      }
-    } else if (order.status === "PENDING") {
-      // Release reservation only
-      for (const item of order.items) {
-        for (const unit of item.assignedUnits) {
-          await tx.inventoryItem.update({
-            where: { id: unit.inventoryItemId },
-            data: { reserved: { decrement: 1 } },
-          });
-        }
-      }
+    // Release inventory reservation if order is pending/paid/processing
+    if (["PENDING", "PAID", "PROCESSING"].includes(order.status)) {
+      await cancelOrderReservation(tx, id);
     }
 
     // Soft-delete the order

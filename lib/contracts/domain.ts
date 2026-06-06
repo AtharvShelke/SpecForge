@@ -1,6 +1,5 @@
 import {
   AttributeInputType as PrismaAttributeInputType,
-  CompatibilityLevel as PrismaCompatibilityLevel,
   Currency as PrismaCurrency,
   FilterType as PrismaFilterType,
   InvoiceStatus as PrismaInvoiceStatus,
@@ -22,10 +21,14 @@ export const OrderStatus = PrismaOrderStatus;
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 export const ORDER_STATUS_VALUES = enumValues(OrderStatus);
 
-export const CompatibilityLevel = PrismaCompatibilityLevel;
+export const CompatibilityLevel = {
+  INCOMPATIBLE: "INCOMPATIBLE",
+  WARNING: "WARNING",
+  COMPATIBLE: "COMPATIBLE",
+} as const;
 export type CompatibilityLevel =
   (typeof CompatibilityLevel)[keyof typeof CompatibilityLevel];
-export const COMPATIBILITY_LEVEL_VALUES = enumValues(CompatibilityLevel);
+export const COMPATIBILITY_LEVEL_VALUES = ["INCOMPATIBLE", "WARNING", "COMPATIBLE"];
 
 export const StockMovementType = PrismaStockMovementType;
 export type StockMovementType =

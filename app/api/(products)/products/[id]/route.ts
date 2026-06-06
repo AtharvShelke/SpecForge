@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { createInventoryUnits } from "@/services/inventory.service";
+import { bulkCreateInventoryUnits } from "@/services/inventory.service";
 import {
     fullProductInclude,
     mapProduct,
@@ -117,10 +117,6 @@ export async function PUT(
                 }
                 updateData.categoryId = categoryId;
             }
-            if (stock !== undefined) {
-                updateData.stockStatus = stock > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
-            }
-
             const p = await tx.product.update({
                 where: { id },
                 data: updateData,
@@ -202,17 +198,16 @@ export async function PUT(
                     },
                 });
 
-                await createInventoryUnits(
-                    tx,
+                await bulkCreateInventoryUnits(
                     id,
                     inventoryUnits.map((unit) => ({
                         partNumber: unit.partNumber,
                         serialNumber: unit.serialNumber,
                         costPrice: unit.costPrice ?? ((price ?? p.price ?? 0) as number) * 0.8,
                         location: unit.location ?? "WAREHOUSE-A",
-                        reorderLevel: unit.reorderLevel ?? 5,
                     })),
                     "Inventory units refreshed",
+                    tx
                 );
             }
 

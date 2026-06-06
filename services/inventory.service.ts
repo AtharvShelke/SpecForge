@@ -1,40 +1,33 @@
 /**
- * inventory.service.ts — Business logic for InventoryItems.
+ * inventory.service.ts — Business logic for InventoryItems with serialized tracking.
  */
 
 import { prisma } from "@/lib/prisma";
 import { ServiceError } from "@/lib/errors";
-import {
-  InventoryItem,
-} from "@/types";
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient, InventoryUnitStatus } from "@/generated/prisma";
 
 type PrismaTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// INVENTORY ITEMS
-// ─────────────────────────────────────────────────────────────────────────────
+const getClient = (tx?: PrismaTx) => tx || prisma;
 
 export async function getInventoryItems(filters?: {
   productId?: string;
-}): Promise<InventoryItem[]> {
+  status?: InventoryUnitStatus;
+  serialNumber?: string;
+  partNumber?: string;
+  location?: string;
+}) {
   const where: any = {};
   if (filters?.productId) where.productId = filters.productId;
+  if (filters?.status) where.status = filters.status;
+  if (filters?.serialNumber) where.serialNumber = { contains: filters.serialNumber, mode: "insensitive" };
+  if (filters?.partNumber) where.partNumber = { contains: filters.partNumber, mode: "insensitive" };
+  if (filters?.location) where.location = { contains: filters.location, mode: "insensitive" };
 
-  const items = await prisma.inventoryItem.findMany({
+  return prisma.inventoryItem.findMany({
     where,
     orderBy: { lastUpdated: "desc" },
-    select: {
-      id: true,
-      productId: true,
-      serialNumber: true,
-      partNumber: true,
-      quantity: true,
-      reserved: true,
-      reorderLevel: true,
-      costPrice: true,
-      location: true,
-      lastUpdated: true,
+    include: {
       product: {
         select: {
           id: true,
@@ -70,12 +63,29 @@ export async function getInventoryItems(filters?: {
           },
         },
       },
+      orderItemUnits: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          orderId: true,
+          orderItem: {
+            select: {
+              orderId: true,
+              order: {
+                select: {
+                  customerName: true,
+                  status: true,
+                }
+              }
+            }
+          }
+        }
+      }
     },
   });
-  return items as unknown as InventoryItem[];
 }
 
-export async function getInventoryItem(id: string): Promise<InventoryItem> {
+export async function getInventoryItem(id: string) {
   const item = await prisma.inventoryItem.findUnique({
     where: { id },
     include: {
@@ -83,151 +93,121 @@ export async function getInventoryItem(id: string): Promise<InventoryItem> {
     },
   });
   if (!item) throw new ServiceError("Inventory item not found", 404);
-  return item as unknown as InventoryItem;
+  return item;
 }
 
-export function getAvailableQuantity(item: InventoryItem): number {
-  return (item.quantity || 0) - (item.reserved || 0);
+export async function getAvailableCount(productId: string, tx?: PrismaTx): Promise<number> {
+  const client = getClient(tx);
+  return client.inventoryItem.count({
+    where: {
+      productId,
+      status: "AVAILABLE",
+    },
+  });
 }
 
-export async function createInventoryItem(data: {
-  productId: string;
-  serialNumber?: string;
-  partNumber?: string;
-  units?: Array<{
+export async function createInventoryUnit(
+  data: {
+    productId: string;
     serialNumber: string;
-    partNumber: string;
-  }>;
-  quantity?: number;
-  costPrice?: number;
-  location?: string;
-}) {
-  if (!data.productId) throw new ServiceError("productId is required");
+    partNumber?: string;
+    costPrice?: number;
+    location?: string;
+  },
+  tx?: PrismaTx
+) {
+  const client = getClient(tx);
 
-  if (Array.isArray(data.units) && data.units.length > 0) {
-    const normalizedUnits = data.units.map((unit) => ({
-      serialNumber: unit.serialNumber?.trim(),
-      partNumber: unit.partNumber?.trim(),
-    }));
+  const existing = await client.inventoryItem.findUnique({
+    where: { serialNumber: data.serialNumber },
+  });
+  if (existing) throw new ServiceError(`Serial number already exists: ${data.serialNumber}`, 409);
 
-    const hasMissingValues = normalizedUnits.some(
-      (unit) => !unit.serialNumber || !unit.partNumber,
-    );
-    if (hasMissingValues) {
-      throw new ServiceError(
-        "Each unit must include serialNumber and partNumber",
-        400,
-      );
-    }
-
-    const duplicateSerials = normalizedUnits.filter(
-      (unit, index) =>
-        normalizedUnits.findIndex(
-          (candidate) => candidate.serialNumber === unit.serialNumber,
-        ) !== index,
-    );
-    if (duplicateSerials.length > 0) {
-      throw new ServiceError(
-        `Duplicate serial number(s) in request: ${duplicateSerials
-          .map((unit) => unit.serialNumber)
-          .join(", ")}`,
-        409,
-      );
-    }
-
-    const existing = await prisma.inventoryItem.findMany({
-      where: {
-        serialNumber: {
-          in: normalizedUnits.map((unit) => unit.serialNumber!),
-        },
-      },
-      select: { serialNumber: true },
-    });
-
-    if (existing.length > 0) {
-      throw new ServiceError(
-        `Serial number(s) already exist: ${existing
-          .map((item) => item.serialNumber)
-          .filter(Boolean)
-          .join(", ")}`,
-        409,
-      );
-    }
-
-    return prisma.$transaction(
-      normalizedUnits.map((unit) =>
-        prisma.inventoryItem.create({
-          data: {
-            productId: data.productId,
-            serialNumber: unit.serialNumber,
-            partNumber: unit.partNumber,
-            quantity: 1,
-            reserved: 0,
-            costPrice: data.costPrice ?? 0,
-            location: data.location ?? "",
-            lastUpdated: new Date(),
-          },
-        }),
-      ),
-    );
-  }
-
-  if (data.serialNumber) {
-    const existing = await prisma.inventoryItem.findFirst({
-      where: { serialNumber: data.serialNumber },
-    });
-    if (existing) throw new ServiceError("Serial number already exists", 409);
-  }
-
-  return prisma.inventoryItem.create({
+  const created = await client.inventoryItem.create({
     data: {
       productId: data.productId,
       serialNumber: data.serialNumber,
-      partNumber: data.partNumber,
-      quantity: data.quantity ?? (data.serialNumber || data.partNumber ? 1 : 0),
-      reserved: 0,
+      partNumber: data.partNumber || null,
+      status: "AVAILABLE",
       costPrice: data.costPrice ?? 0,
       location: data.location ?? "",
       lastUpdated: new Date(),
     },
   });
-}
 
-export async function adjustStockByProduct(
-  productId: string,
-  quantity: number,
-  type: string,
-) {
-  // Find bulk items first
-  let item = await prisma.inventoryItem.findFirst({
-    where: { productId, serialNumber: null },
+  await client.stockMovement.create({
+    data: {
+      productId: data.productId,
+      inventoryItemId: created.id,
+      type: "INWARD",
+      quantity: 1,
+      note: `Unit created manually (Serial: ${data.serialNumber})`,
+    },
   });
 
-  if (!item) {
-    item = await prisma.inventoryItem.create({
+  return created;
+}
+
+export async function bulkCreateInventoryUnits(
+  productId: string,
+  units: Array<{
+    partNumber: string;
+    serialNumber: string;
+    costPrice?: number;
+    location?: string;
+  }>,
+  note: string,
+  tx?: PrismaTx
+) {
+  const client = getClient(tx);
+  if (units.length === 0) return;
+
+  // Validate internal uniqueness of serial numbers in the request
+  const serials = units.map(u => u.serialNumber.trim());
+  const uniqueSerials = new Set(serials);
+  if (uniqueSerials.size !== serials.length) {
+    throw new ServiceError("Duplicate serial numbers found in the request", 400);
+  }
+
+  // Check if any serial numbers already exist in the database
+  const existing = await client.inventoryItem.findMany({
+    where: {
+      serialNumber: { in: serials },
+    },
+    select: { serialNumber: true },
+  });
+
+  if (existing.length > 0) {
+    throw new ServiceError(
+      `Serial number(s) already exist: ${existing.map(e => e.serialNumber).join(", ")}`,
+      409
+    );
+  }
+
+  // Create units
+  for (const unit of units) {
+    const created = await client.inventoryItem.create({
       data: {
         productId,
-        quantity: 0,
-        reserved: 0,
-        location: "",
+        partNumber: unit.partNumber || null,
+        serialNumber: unit.serialNumber,
+        status: "AVAILABLE",
+        costPrice: unit.costPrice ?? 0,
+        location: unit.location ?? "",
         lastUpdated: new Date(),
       },
     });
-  }
 
-  let increment = 0;
-  if (type === "INWARD" || type === "RETURN") {
-    increment = quantity;
-  } else if (type === "OUTWARD" || type === "SALE") {
-    increment = -quantity;
-  } else if (type === "ADJUSTMENT") {
-    increment = quantity;
+    await client.stockMovement.create({
+      data: {
+        productId,
+        inventoryItemId: created.id,
+        type: "INWARD",
+        quantity: 1,
+        note: `${note} (Serial: ${unit.serialNumber})`,
+      },
+    });
   }
-
-  return prisma.inventoryItem.update({
-    where: { id: item.id },
-    data: { quantity: { increment }, lastUpdated: new Date() },
-  });
 }
 
 export async function updateInventoryItem(
@@ -235,261 +215,306 @@ export async function updateInventoryItem(
   data: {
     serialNumber?: string;
     partNumber?: string;
-    quantity?: number;
-    reserved?: number;
     costPrice?: number;
     location?: string;
+    status?: InventoryUnitStatus;
   },
+  tx?: PrismaTx
 ) {
+  const client = getClient(tx);
+
   if (data.serialNumber) {
-    const existing = await prisma.inventoryItem.findFirst({
+    const existing = await client.inventoryItem.findUnique({
       where: { serialNumber: data.serialNumber },
     });
-    if (existing && existing.id !== id)
+    if (existing && existing.id !== id) {
       throw new ServiceError("Serial number already in use", 409);
+    }
   }
 
   const patch: any = {};
   if (data.serialNumber !== undefined) patch.serialNumber = data.serialNumber;
   if (data.partNumber !== undefined) patch.partNumber = data.partNumber;
-  if (data.quantity !== undefined) patch.quantity = data.quantity;
-  if (data.reserved !== undefined) patch.reserved = data.reserved;
   if (data.costPrice !== undefined) patch.costPrice = data.costPrice;
   if (data.location !== undefined) patch.location = data.location;
+  if (data.status !== undefined) patch.status = data.status;
   patch.lastUpdated = new Date();
 
   try {
-    return await prisma.inventoryItem.update({ where: { id }, data: patch });
+    return await client.inventoryItem.update({
+      where: { id },
+      data: patch,
+    });
   } catch (err: any) {
-    if (err.code === "P2025")
+    if (err.code === "P2025") {
       throw new ServiceError("Inventory Item not found", 404);
+    }
     throw err;
   }
 }
 
-export async function adjustStockBySku(
-  skuOrProductId: string,
-  quantity: number,
-  type: string,
-) {
-  // Try to find the product by SKU first, fall back to treating input as productId
-  const product = await prisma.product.findFirst({
-    where: {
-      OR: [
-        { id: skuOrProductId },
-        { sku: skuOrProductId },
-      ],
-    },
-    select: { id: true },
-  });
-  
-  const productId = product?.id;
-  if (!productId) throw new ServiceError(`Product not found: ${skuOrProductId}`, 404);
-  
-  return adjustStockByProduct(productId, quantity, type);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RESERVATIONS
-// ─────────────────────────────────────────────────────────────────────────────
-
-export async function getReservations(orderId?: string): Promise<any[]> {
-  // Auto-expire active reservations whose expiresAt is past now
-  await prisma.reservation.updateMany({
-    where: {
-      status: "ACTIVE",
-      expiresAt: { lt: new Date() }
-    },
-    data: {
-      status: "EXPIRED"
-    }
-  });
-
-  const where: any = {};
-  if (orderId) where.orderId = orderId;
-
-  return prisma.reservation.findMany({
-    where,
-    include: {
-      inventoryItem: {
-        include: {
-          product: true
-        }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-}
-
-export async function createReservation(data: {
-  orderId?: string;
-  cartId?: string;
-  inventoryItemId: string;
-  quantity?: number;
-  expiresAt?: string | Date;
-  ttlMinutes?: number;
-}) {
-  if (!data.inventoryItemId) throw new ServiceError("inventoryItemId is required", 400);
-  const qty = data.quantity ?? 1;
-
-  return prisma.$transaction(async (tx) => {
-    const inventoryItem = await tx.inventoryItem.findUnique({
-      where: { id: data.inventoryItemId },
-    });
-
-    if (!inventoryItem) throw new ServiceError("Inventory item not found", 404);
-
-    const available = inventoryItem.quantity - inventoryItem.reserved;
-    if (available < qty) {
-      throw new ServiceError(`Insufficient stock available. Requested: ${qty}, Available: ${available}`, 409);
-    }
-
-    // Update reserved quantity on the inventory item
-    await tx.inventoryItem.update({
-      where: { id: data.inventoryItemId },
-      data: {
-        reserved: { increment: qty },
-        lastUpdated: new Date(),
-      },
-    });
-
-    let expiresAt: Date | null = null;
-    if (data.expiresAt) {
-      expiresAt = new Date(data.expiresAt);
-    } else {
-      const ttl = data.ttlMinutes ?? 15; // standard 15 min TTL
-      expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + ttl);
-    }
-
-    return tx.reservation.create({
-      data: {
-        orderId: data.orderId || null,
-        cartId: data.cartId || null,
-        inventoryItemId: data.inventoryItemId,
-        quantity: qty,
-        status: "ACTIVE",
-        expiresAt,
-      },
-    });
-  });
-}
-
-export async function updateReservation(id: string, data: { status?: string; expiresAt?: string | Date }) {
-  return prisma.$transaction(async (tx) => {
-    const reservation = await tx.reservation.findUnique({
-      where: { id },
-      include: { inventoryItem: true },
-    });
-
-    if (!reservation) throw new ServiceError("Reservation not found", 404);
-
-    const patch: any = {};
-    if (data.expiresAt !== undefined) {
-      patch.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
-    }
-
-    if (data.status !== undefined && data.status !== reservation.status) {
-      patch.status = data.status;
-
-      // If transitioning from ACTIVE to a non-active state, adjust the reserved stock
-      if (reservation.status === "ACTIVE") {
-        if (data.status === "RELEASED" || data.status === "EXPIRED") {
-          // Return reserved stock back to available
-          await tx.inventoryItem.update({
-            where: { id: reservation.inventoryItemId },
-            data: {
-              reserved: { decrement: reservation.quantity },
-              lastUpdated: new Date(),
-            },
-          });
-        } else if (data.status === "COMPLETED") {
-          // Complete the sale: subtract from both total quantity and reserved quantity
-          await tx.inventoryItem.update({
-            where: { id: reservation.inventoryItemId },
-            data: {
-              quantity: { decrement: reservation.quantity },
-              reserved: { decrement: reservation.quantity },
-              lastUpdated: new Date(),
-            },
-          });
-        }
-      } else {
-        // If transitioning back to ACTIVE from a non-active state
-        if (data.status === "ACTIVE") {
-          const available = reservation.inventoryItem.quantity - reservation.inventoryItem.reserved;
-          if (available < reservation.quantity) {
-            throw new ServiceError("Insufficient stock to re-activate reservation", 409);
-          }
-          await tx.inventoryItem.update({
-            where: { id: reservation.inventoryItemId },
-            data: {
-              reserved: { increment: reservation.quantity },
-              lastUpdated: new Date(),
-            },
-          });
-        }
-      }
-    }
-
-    return tx.reservation.update({
-      where: { id },
-      data: patch,
-    });
-  });
-}
-
-async function refreshProductStockStatus(tx: PrismaTx, productId: string) {
-  const aggregate = await tx.inventoryItem.aggregate({
-    where: { productId, quantity: { gt: 0 } },
-    _count: { id: true },
-  });
-
-  await tx.product.update({
-    where: { id: productId },
-    data: { stockStatus: (aggregate._count.id ?? 0) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK' },
-  });
-}
-
-export async function createInventoryUnits(
+export async function reserveUnitsForOrder(
   tx: PrismaTx,
   productId: string,
-  units: Array<{
-    partNumber: string;
-    serialNumber: string;
-    costPrice?: number;
-    location?: string;
-    reorderLevel?: number;
-  }>,
-  note: string,
+  quantity: number,
+  orderId: string,
+  orderItemId: string
 ) {
-  if (units.length === 0) return;
+  // Find available units
+  const availableUnits = await tx.inventoryItem.findMany({
+    where: {
+      productId,
+      status: "AVAILABLE",
+    },
+    take: quantity,
+  });
 
-  for (const unit of units) {
-    const created = await tx.inventoryItem.create({
+  if (availableUnits.length < quantity) {
+    throw new ServiceError(
+      `Insufficient stock available for product. Requested: ${quantity}, Available: ${availableUnits.length}`,
+      409
+    );
+  }
+
+  const reservedUnits = [];
+  for (const unit of availableUnits) {
+    // Transition status to RESERVED
+    const updated = await tx.inventoryItem.update({
+      where: { id: unit.id },
       data: {
-        productId,
-        partNumber: unit.partNumber,
-        serialNumber: unit.serialNumber,
-        quantity: 1,
-        reserved: 0,
-        costPrice: unit.costPrice ?? 0,
-        location: unit.location ?? '',
-        reorderLevel: unit.reorderLevel ?? 5,
+        status: "RESERVED",
         lastUpdated: new Date(),
       },
     });
 
+    // Create OrderItemUnit record
+    await tx.orderItemUnit.create({
+      data: {
+        orderItemId,
+        inventoryItemId: unit.id,
+        serialNumber: unit.serialNumber,
+        partNumber: unit.partNumber,
+        orderId,
+      },
+    });
+
+    // Log stock movement
     await tx.stockMovement.create({
       data: {
         productId,
-        inventoryItemId: created.id,
-        type: 'INWARD',
+        inventoryItemId: unit.id,
+        orderId,
+        type: "RESERVE",
         quantity: 1,
-        note: `${note} (${unit.serialNumber})`,
+        note: `Reserved unit for order ${orderId} (Serial: ${unit.serialNumber})`,
       },
     });
+
+    reservedUnits.push(updated);
   }
 
-  await refreshProductStockStatus(tx, productId);
+  return reservedUnits;
+}
+
+export async function shipOrderUnits(tx: PrismaTx, orderId: string) {
+  const linkedUnits = await tx.orderItemUnit.findMany({
+    where: { orderId },
+    include: { inventoryItem: true },
+  });
+
+  for (const link of linkedUnits) {
+    if (link.inventoryItem.status === "RESERVED") {
+      await tx.inventoryItem.update({
+        where: { id: link.inventoryItemId },
+        data: {
+          status: "SHIPPED",
+          lastUpdated: new Date(),
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          productId: link.inventoryItem.productId,
+          inventoryItemId: link.inventoryItemId,
+          orderId,
+          type: "SALE",
+          quantity: 1,
+          note: `Shipped unit for order ${orderId} (Serial: ${link.serialNumber})`,
+        },
+      });
+    }
+  }
+}
+
+export async function cancelOrderReservation(tx: PrismaTx, orderId: string) {
+  const linkedUnits = await tx.orderItemUnit.findMany({
+    where: { orderId },
+    include: { inventoryItem: true },
+  });
+
+  for (const link of linkedUnits) {
+    // Only return reserved units to available
+    if (link.inventoryItem.status === "RESERVED") {
+      await tx.inventoryItem.update({
+        where: { id: link.inventoryItemId },
+        data: {
+          status: "AVAILABLE",
+          lastUpdated: new Date(),
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          productId: link.inventoryItem.productId,
+          inventoryItemId: link.inventoryItemId,
+          orderId,
+          type: "ADJUSTMENT",
+          quantity: 1,
+          note: `Cancelled reservation for order ${orderId} (Serial: ${link.serialNumber})`,
+        },
+      });
+    }
+  }
+
+  // Delete the OrderItemUnit records since reservation is cancelled
+  await tx.orderItemUnit.deleteMany({
+    where: { orderId },
+  });
+}
+
+export async function returnOrderUnits(tx: PrismaTx, orderId: string, unitIds?: string[]) {
+  const whereClause: any = { orderId };
+  if (unitIds && unitIds.length > 0) {
+    whereClause.inventoryItemId = { in: unitIds };
+  }
+
+  const linkedUnits = await tx.orderItemUnit.findMany({
+    where: whereClause,
+    include: { inventoryItem: true },
+  });
+
+  for (const link of linkedUnits) {
+    if (link.inventoryItem.status === "SHIPPED") {
+      await tx.inventoryItem.update({
+        where: { id: link.inventoryItemId },
+        data: {
+          status: "RETURNED",
+          lastUpdated: new Date(),
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          productId: link.inventoryItem.productId,
+          inventoryItemId: link.inventoryItemId,
+          orderId,
+          type: "RETURN",
+          quantity: 1,
+          note: `Returned unit for order ${orderId} (Serial: ${link.serialNumber})`,
+        },
+      });
+    }
+  }
+}
+
+export async function markDamaged(unitId: string, tx?: PrismaTx) {
+  const client = getClient(tx);
+
+  const item = await client.inventoryItem.findUnique({ where: { id: unitId } });
+  if (!item) throw new ServiceError("Inventory item not found", 404);
+
+  const updated = await client.inventoryItem.update({
+    where: { id: unitId },
+    data: {
+      status: "DAMAGED",
+      lastUpdated: new Date(),
+    },
+  });
+
+  await client.stockMovement.create({
+    data: {
+      productId: item.productId,
+      inventoryItemId: unitId,
+      type: "ADJUSTMENT",
+      quantity: 1,
+      note: `Unit marked as DAMAGED (Serial: ${item.serialNumber})`,
+    },
+  });
+
+  return updated;
+}
+
+export async function restockUnit(unitId: string, tx?: PrismaTx) {
+  const client = getClient(tx);
+
+  const item = await client.inventoryItem.findUnique({ where: { id: unitId } });
+  if (!item) throw new ServiceError("Inventory item not found", 404);
+
+  const updated = await client.inventoryItem.update({
+    where: { id: unitId },
+    data: {
+      status: "AVAILABLE",
+      lastUpdated: new Date(),
+    },
+  });
+
+  await client.stockMovement.create({
+    data: {
+      productId: item.productId,
+      inventoryItemId: unitId,
+      type: "INWARD",
+      quantity: 1,
+      note: `Unit restocked to AVAILABLE (Serial: ${item.serialNumber})`,
+    },
+  });
+
+  return updated;
+}
+
+export async function getProductStockStatus(productId: string, tx?: PrismaTx) {
+  const client = getClient(tx);
+
+  const groups = await client.inventoryItem.groupBy({
+    by: ["status"],
+    where: { productId },
+    _count: { id: true },
+  });
+
+  const statusCounts = {
+    available: 0,
+    reserved: 0,
+    allocated: 0,
+    shipped: 0,
+    returned: 0,
+    damaged: 0,
+    total: 0,
+  };
+
+  for (const group of groups) {
+    const count = group._count.id;
+    statusCounts.total += count;
+
+    switch (group.status) {
+      case "AVAILABLE":
+        statusCounts.available = count;
+        break;
+      case "RESERVED":
+        statusCounts.reserved = count;
+        break;
+      case "ALLOCATED":
+        statusCounts.allocated = count;
+        break;
+      case "SHIPPED":
+        statusCounts.shipped = count;
+        break;
+      case "RETURNED":
+        statusCounts.returned = count;
+        break;
+      case "DAMAGED":
+        statusCounts.damaged = count;
+        break;
+    }
+  }
+
+  return statusCounts;
 }

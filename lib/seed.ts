@@ -3,7 +3,6 @@ import {
   ProductStatus,
   FilterType,
   AttributeInputType,
-  CompatibilityLevel,
   StockMovementType,
   SalesChannel,
   OrderStatus,
@@ -42,7 +41,6 @@ async function main() {
   
   // ── CLEANUP (To allow repeatable seeding) ─────────────────
   console.log("  🧹 Cleaning up existing transactional data…");
-  await prisma.reservation.deleteMany({});
   await prisma.auditLog.deleteMany({});
   await prisma.stockMovement.deleteMany({});
   await prisma.shipmentTracking.deleteMany({});
@@ -210,18 +208,7 @@ async function main() {
     });
   }
 
-  // ── 6. BUILD SEQUENCE ────────────────────────────────────
-  console.log("  🔧 Build sequence…");
-
-  const buildSteps = ["CPU", "MB", "RAM", "GPU", "SSD", "COOL", "PSU", "CASE"];
-  for (let i = 0; i < buildSteps.length; i++) {
-    const cat = categories[buildSteps[i]];
-    await prisma.buildSequence.upsert({
-      where: { categoryId: cat.id },
-      update: { stepOrder: i + 1 },
-      create: { categoryId: cat.id, stepOrder: i + 1 },
-    });
-  }
+  // ── 6. BUILD SEQUENCE (Removed) ──────────────────────────
 
   // ── 7. CATEGORY ATTRIBUTES (for dynamic filtering) ───────
   console.log("  🔍 Category attributes…");
@@ -344,74 +331,7 @@ async function main() {
   const monHzAttr = await createAttr({ categoryCode: "MON", key: "refresh_rate", label: "Refresh Rate", type: AttributeInputType.select, filterType: FilterType.checkbox, sortOrder: 2, unit: "Hz", options: ["60Hz", "75Hz", "144Hz", "165Hz", "240Hz", "360Hz"] });
   const monPanelAttr = await createAttr({ categoryCode: "MON", key: "panel_type", label: "Panel Type", type: AttributeInputType.select, sortOrder: 3, options: ["IPS", "VA", "TN", "OLED", "Mini LED"] });
 
-  // ── 8. COMPATIBILITY RULES ───────────────────────────────
-  console.log("  🔗 Compatibility rules…");
-
-  // CPU socket must match Motherboard socket
-  const cpuMbRule = await prisma.compatibilityRule.create({
-    data: {
-      sourceCategoryId: categories["CPU"].id,
-      targetCategoryId: categories["MB"].id,
-      name: "CPU–Motherboard Socket Match",
-      message: "The CPU socket must match the motherboard socket.",
-      severity: CompatibilityLevel.INCOMPATIBLE,
-      isActive: true,
-      sortOrder: 1,
-    },
-  });
-  await prisma.compatibilityRuleClause.create({
-    data: {
-      ruleId: cpuMbRule.id,
-      sourceAttributeId: cpuSocketAttr.id,
-      targetAttributeId: mbSocketAttr.id,
-      operator: "equals",
-      sortOrder: 0,
-    },
-  });
-
-  // RAM DDR gen must match Motherboard DDR gen
-  const ramMbRule = await prisma.compatibilityRule.create({
-    data: {
-      sourceCategoryId: categories["RAM"].id,
-      targetCategoryId: categories["MB"].id,
-      name: "RAM–Motherboard DDR Generation Match",
-      message: "RAM DDR generation must match the motherboard's supported DDR generation.",
-      severity: CompatibilityLevel.INCOMPATIBLE,
-      isActive: true,
-      sortOrder: 2,
-    },
-  });
-  await prisma.compatibilityRuleClause.create({
-    data: {
-      ruleId: ramMbRule.id,
-      sourceAttributeId: ramTypeAttr.id,
-      targetAttributeId: mbDdrAttr.id,
-      operator: "equals",
-      sortOrder: 0,
-    },
-  });
-
-  // Cooler socket compat warning
-  const coolCpuRule = await prisma.compatibilityRule.create({
-    data: {
-      sourceCategoryId: categories["COOL"].id,
-      targetCategoryId: categories["CPU"].id,
-      name: "Cooler–CPU Socket Compatibility",
-      message: "Ensure your cooler supports the CPU socket.",
-      severity: CompatibilityLevel.WARNING,
-      isActive: true,
-      sortOrder: 3,
-    },
-  });
-  await prisma.compatibilityRuleClause.create({
-    data: {
-      ruleId: coolCpuRule.id,
-      sourceAttributeId: coolSocketAttr.id,
-      targetAttributeId: cpuSocketAttr.id,
-      operator: "contains",
-      sortOrder: 0,
-    },
-  });
+  // ── 8. COMPATIBILITY RULES (Removed) ─────────────────────
 
   // ── 9. BUILD GUIDE (PC Builder) ──────────────────────────
   // Products must exist first, so we'll create guides after products.
@@ -455,23 +375,24 @@ async function main() {
         categoryId: cat.id,
         subcategoryId: subcat?.id,
         brandId: brand?.id,
-        stockStatus: "IN_STOCK",
       },
     });
 
     // Create inventory
-    await prisma.inventoryItem.create({
-      data: {
-        productId: product.id,
-        partNumber: params.partNumber ?? params.sku,
-        quantity: params.stock ?? rand(5, 50),
-        reserved: 0,
-        reorderLevel: 3,
-        costPrice: params.price * 0.75,
-        location: pick(["SHELF-A1", "SHELF-A2", "SHELF-B1", "SHELF-B2", "SHELF-C1"]),
-        lastUpdated: new Date(),
-      },
-    });
+    const stockQty = params.stock ?? rand(5, 20);
+    for (let i = 0; i < stockQty; i++) {
+      await prisma.inventoryItem.create({
+        data: {
+          productId: product.id,
+          partNumber: params.partNumber ?? params.sku,
+          serialNumber: `${params.sku}-SN-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${i + 1}`,
+          status: "AVAILABLE",
+          costPrice: params.price * 0.75,
+          location: pick(["SHELF-A1", "SHELF-A2", "SHELF-B1", "SHELF-B2", "SHELF-C1"]),
+          lastUpdated: new Date(),
+        },
+      });
+    }
 
     // Create specs
     if (params.specs) {
@@ -494,7 +415,7 @@ async function main() {
       data: {
         productId: product.id,
         type: StockMovementType.INWARD,
-        quantity: params.stock ?? rand(5, 50),
+        quantity: stockQty,
         note: "Initial stock inward",
       },
     });

@@ -17,7 +17,7 @@ function normalizeBuildGuide(guide: any) {
             sku: item.product.sku || "",
             price: item.product.price || 0,
             compareAtPrice: item.product.compareAtPrice || null,
-            status: item.product.stockStatus,
+            status: item.product.inventoryItems?.some((i: any) => i.status === "AVAILABLE") ? "IN_STOCK" : "OUT_OF_STOCK",
             product: item.product,
           }
         : null;
@@ -120,6 +120,7 @@ export async function createBuildGuide(data: {
           product: {
             include: {
               media: true,
+              inventoryItems: true,
             },
           },
         },
@@ -139,6 +140,7 @@ export async function listBuildGuides() {
           product: {
             include: {
               media: true,
+              inventoryItems: true,
             },
           },
         },
@@ -157,6 +159,7 @@ export async function getBuildGuideById(id: string) {
           product: {
             include: {
               media: true,
+              inventoryItems: true,
             },
           },
         },
@@ -208,6 +211,7 @@ export async function updateBuildGuide(
             product: {
               include: {
                 media: true,
+                inventoryItems: true,
               },
             },
           },

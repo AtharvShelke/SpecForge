@@ -39,16 +39,6 @@ export type BrandCategory = $Result.DefaultSelection<Prisma.$BrandCategoryPayloa
  */
 export type Brand = $Result.DefaultSelection<Prisma.$BrandPayload>
 /**
- * Model BuildSequence
- * 
- */
-export type BuildSequence = $Result.DefaultSelection<Prisma.$BuildSequencePayload>
-/**
- * Model CategoryRelationship
- * 
- */
-export type CategoryRelationship = $Result.DefaultSelection<Prisma.$CategoryRelationshipPayload>
-/**
  * Model CategoryHierarchy
  * 
  */
@@ -63,16 +53,6 @@ export type CategoryAttribute = $Result.DefaultSelection<Prisma.$CategoryAttribu
  * 
  */
 export type AttributeOption = $Result.DefaultSelection<Prisma.$AttributeOptionPayload>
-/**
- * Model CompatibilityRule
- * 
- */
-export type CompatibilityRule = $Result.DefaultSelection<Prisma.$CompatibilityRulePayload>
-/**
- * Model CompatibilityRuleClause
- * 
- */
-export type CompatibilityRuleClause = $Result.DefaultSelection<Prisma.$CompatibilityRuleClausePayload>
 /**
  * Model Tag
  * 
@@ -208,11 +188,6 @@ export type AuditLog = $Result.DefaultSelection<Prisma.$AuditLogPayload>
  * 
  */
 export type TaxSettings = $Result.DefaultSelection<Prisma.$TaxSettingsPayload>
-/**
- * Model Reservation
- * 
- */
-export type Reservation = $Result.DefaultSelection<Prisma.$ReservationPayload>
 
 /**
  * Enums
@@ -229,15 +204,6 @@ export namespace $Enums {
 };
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
-
-
-export const CompatibilityLevel: {
-  COMPATIBLE: 'COMPATIBLE',
-  WARNING: 'WARNING',
-  INCOMPATIBLE: 'INCOMPATIBLE'
-};
-
-export type CompatibilityLevel = (typeof CompatibilityLevel)[keyof typeof CompatibilityLevel]
 
 
 export const StockMovementType: {
@@ -354,15 +320,23 @@ export const Role: {
 
 export type Role = (typeof Role)[keyof typeof Role]
 
+
+export const InventoryUnitStatus: {
+  AVAILABLE: 'AVAILABLE',
+  RESERVED: 'RESERVED',
+  ALLOCATED: 'ALLOCATED',
+  SHIPPED: 'SHIPPED',
+  RETURNED: 'RETURNED',
+  DAMAGED: 'DAMAGED'
+};
+
+export type InventoryUnitStatus = (typeof InventoryUnitStatus)[keyof typeof InventoryUnitStatus]
+
 }
 
 export type OrderStatus = $Enums.OrderStatus
 
 export const OrderStatus: typeof $Enums.OrderStatus
-
-export type CompatibilityLevel = $Enums.CompatibilityLevel
-
-export const CompatibilityLevel: typeof $Enums.CompatibilityLevel
 
 export type StockMovementType = $Enums.StockMovementType
 
@@ -407,6 +381,10 @@ export const ProductStatus: typeof $Enums.ProductStatus
 export type Role = $Enums.Role
 
 export const Role: typeof $Enums.Role
+
+export type InventoryUnitStatus = $Enums.InventoryUnitStatus
+
+export const InventoryUnitStatus: typeof $Enums.InventoryUnitStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -580,26 +558,6 @@ export class PrismaClient<
   get brand(): Prisma.BrandDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `prisma.buildSequence`: Exposes CRUD operations for the **BuildSequence** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more BuildSequences
-    * const buildSequences = await prisma.buildSequence.findMany()
-    * ```
-    */
-  get buildSequence(): Prisma.BuildSequenceDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.categoryRelationship`: Exposes CRUD operations for the **CategoryRelationship** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more CategoryRelationships
-    * const categoryRelationships = await prisma.categoryRelationship.findMany()
-    * ```
-    */
-  get categoryRelationship(): Prisma.CategoryRelationshipDelegate<ExtArgs, ClientOptions>;
-
-  /**
    * `prisma.categoryHierarchy`: Exposes CRUD operations for the **CategoryHierarchy** model.
     * Example usage:
     * ```ts
@@ -628,26 +586,6 @@ export class PrismaClient<
     * ```
     */
   get attributeOption(): Prisma.AttributeOptionDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.compatibilityRule`: Exposes CRUD operations for the **CompatibilityRule** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more CompatibilityRules
-    * const compatibilityRules = await prisma.compatibilityRule.findMany()
-    * ```
-    */
-  get compatibilityRule(): Prisma.CompatibilityRuleDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.compatibilityRuleClause`: Exposes CRUD operations for the **CompatibilityRuleClause** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more CompatibilityRuleClauses
-    * const compatibilityRuleClauses = await prisma.compatibilityRuleClause.findMany()
-    * ```
-    */
-  get compatibilityRuleClause(): Prisma.CompatibilityRuleClauseDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.tag`: Exposes CRUD operations for the **Tag** model.
@@ -918,16 +856,6 @@ export class PrismaClient<
     * ```
     */
   get taxSettings(): Prisma.TaxSettingsDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.reservation`: Exposes CRUD operations for the **Reservation** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more Reservations
-    * const reservations = await prisma.reservation.findMany()
-    * ```
-    */
-  get reservation(): Prisma.ReservationDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1367,13 +1295,9 @@ export namespace Prisma {
     Subcategory: 'Subcategory',
     BrandCategory: 'BrandCategory',
     Brand: 'Brand',
-    BuildSequence: 'BuildSequence',
-    CategoryRelationship: 'CategoryRelationship',
     CategoryHierarchy: 'CategoryHierarchy',
     CategoryAttribute: 'CategoryAttribute',
     AttributeOption: 'AttributeOption',
-    CompatibilityRule: 'CompatibilityRule',
-    CompatibilityRuleClause: 'CompatibilityRuleClause',
     Tag: 'Tag',
     ProductMedia: 'ProductMedia',
     Product: 'Product',
@@ -1400,8 +1324,7 @@ export namespace Prisma {
     CreditNote: 'CreditNote',
     CreditNoteLineItem: 'CreditNoteLineItem',
     AuditLog: 'AuditLog',
-    TaxSettings: 'TaxSettings',
-    Reservation: 'Reservation'
+    TaxSettings: 'TaxSettings'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1417,7 +1340,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "buildSequence" | "categoryRelationship" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "compatibilityRule" | "compatibilityRuleClause" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog" | "taxSettings" | "reservation"
+      modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog" | "taxSettings"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1791,154 +1714,6 @@ export namespace Prisma {
           }
         }
       }
-      BuildSequence: {
-        payload: Prisma.$BuildSequencePayload<ExtArgs>
-        fields: Prisma.BuildSequenceFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.BuildSequenceFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.BuildSequenceFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>
-          }
-          findFirst: {
-            args: Prisma.BuildSequenceFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.BuildSequenceFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>
-          }
-          findMany: {
-            args: Prisma.BuildSequenceFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>[]
-          }
-          create: {
-            args: Prisma.BuildSequenceCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>
-          }
-          createMany: {
-            args: Prisma.BuildSequenceCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.BuildSequenceCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>[]
-          }
-          delete: {
-            args: Prisma.BuildSequenceDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>
-          }
-          update: {
-            args: Prisma.BuildSequenceUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>
-          }
-          deleteMany: {
-            args: Prisma.BuildSequenceDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.BuildSequenceUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.BuildSequenceUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>[]
-          }
-          upsert: {
-            args: Prisma.BuildSequenceUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$BuildSequencePayload>
-          }
-          aggregate: {
-            args: Prisma.BuildSequenceAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateBuildSequence>
-          }
-          groupBy: {
-            args: Prisma.BuildSequenceGroupByArgs<ExtArgs>
-            result: $Utils.Optional<BuildSequenceGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.BuildSequenceCountArgs<ExtArgs>
-            result: $Utils.Optional<BuildSequenceCountAggregateOutputType> | number
-          }
-        }
-      }
-      CategoryRelationship: {
-        payload: Prisma.$CategoryRelationshipPayload<ExtArgs>
-        fields: Prisma.CategoryRelationshipFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.CategoryRelationshipFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.CategoryRelationshipFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>
-          }
-          findFirst: {
-            args: Prisma.CategoryRelationshipFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.CategoryRelationshipFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>
-          }
-          findMany: {
-            args: Prisma.CategoryRelationshipFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>[]
-          }
-          create: {
-            args: Prisma.CategoryRelationshipCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>
-          }
-          createMany: {
-            args: Prisma.CategoryRelationshipCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.CategoryRelationshipCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>[]
-          }
-          delete: {
-            args: Prisma.CategoryRelationshipDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>
-          }
-          update: {
-            args: Prisma.CategoryRelationshipUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>
-          }
-          deleteMany: {
-            args: Prisma.CategoryRelationshipDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.CategoryRelationshipUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.CategoryRelationshipUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>[]
-          }
-          upsert: {
-            args: Prisma.CategoryRelationshipUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CategoryRelationshipPayload>
-          }
-          aggregate: {
-            args: Prisma.CategoryRelationshipAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateCategoryRelationship>
-          }
-          groupBy: {
-            args: Prisma.CategoryRelationshipGroupByArgs<ExtArgs>
-            result: $Utils.Optional<CategoryRelationshipGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.CategoryRelationshipCountArgs<ExtArgs>
-            result: $Utils.Optional<CategoryRelationshipCountAggregateOutputType> | number
-          }
-        }
-      }
       CategoryHierarchy: {
         payload: Prisma.$CategoryHierarchyPayload<ExtArgs>
         fields: Prisma.CategoryHierarchyFieldRefs
@@ -2158,154 +1933,6 @@ export namespace Prisma {
           count: {
             args: Prisma.AttributeOptionCountArgs<ExtArgs>
             result: $Utils.Optional<AttributeOptionCountAggregateOutputType> | number
-          }
-        }
-      }
-      CompatibilityRule: {
-        payload: Prisma.$CompatibilityRulePayload<ExtArgs>
-        fields: Prisma.CompatibilityRuleFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.CompatibilityRuleFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.CompatibilityRuleFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>
-          }
-          findFirst: {
-            args: Prisma.CompatibilityRuleFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.CompatibilityRuleFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>
-          }
-          findMany: {
-            args: Prisma.CompatibilityRuleFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>[]
-          }
-          create: {
-            args: Prisma.CompatibilityRuleCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>
-          }
-          createMany: {
-            args: Prisma.CompatibilityRuleCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.CompatibilityRuleCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>[]
-          }
-          delete: {
-            args: Prisma.CompatibilityRuleDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>
-          }
-          update: {
-            args: Prisma.CompatibilityRuleUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>
-          }
-          deleteMany: {
-            args: Prisma.CompatibilityRuleDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.CompatibilityRuleUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.CompatibilityRuleUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>[]
-          }
-          upsert: {
-            args: Prisma.CompatibilityRuleUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRulePayload>
-          }
-          aggregate: {
-            args: Prisma.CompatibilityRuleAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateCompatibilityRule>
-          }
-          groupBy: {
-            args: Prisma.CompatibilityRuleGroupByArgs<ExtArgs>
-            result: $Utils.Optional<CompatibilityRuleGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.CompatibilityRuleCountArgs<ExtArgs>
-            result: $Utils.Optional<CompatibilityRuleCountAggregateOutputType> | number
-          }
-        }
-      }
-      CompatibilityRuleClause: {
-        payload: Prisma.$CompatibilityRuleClausePayload<ExtArgs>
-        fields: Prisma.CompatibilityRuleClauseFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.CompatibilityRuleClauseFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.CompatibilityRuleClauseFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>
-          }
-          findFirst: {
-            args: Prisma.CompatibilityRuleClauseFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.CompatibilityRuleClauseFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>
-          }
-          findMany: {
-            args: Prisma.CompatibilityRuleClauseFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>[]
-          }
-          create: {
-            args: Prisma.CompatibilityRuleClauseCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>
-          }
-          createMany: {
-            args: Prisma.CompatibilityRuleClauseCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.CompatibilityRuleClauseCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>[]
-          }
-          delete: {
-            args: Prisma.CompatibilityRuleClauseDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>
-          }
-          update: {
-            args: Prisma.CompatibilityRuleClauseUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>
-          }
-          deleteMany: {
-            args: Prisma.CompatibilityRuleClauseDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.CompatibilityRuleClauseUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.CompatibilityRuleClauseUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>[]
-          }
-          upsert: {
-            args: Prisma.CompatibilityRuleClauseUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$CompatibilityRuleClausePayload>
-          }
-          aggregate: {
-            args: Prisma.CompatibilityRuleClauseAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateCompatibilityRuleClause>
-          }
-          groupBy: {
-            args: Prisma.CompatibilityRuleClauseGroupByArgs<ExtArgs>
-            result: $Utils.Optional<CompatibilityRuleClauseGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.CompatibilityRuleClauseCountArgs<ExtArgs>
-            result: $Utils.Optional<CompatibilityRuleClauseCountAggregateOutputType> | number
           }
         }
       }
@@ -4307,80 +3934,6 @@ export namespace Prisma {
           }
         }
       }
-      Reservation: {
-        payload: Prisma.$ReservationPayload<ExtArgs>
-        fields: Prisma.ReservationFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.ReservationFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.ReservationFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>
-          }
-          findFirst: {
-            args: Prisma.ReservationFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.ReservationFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>
-          }
-          findMany: {
-            args: Prisma.ReservationFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>[]
-          }
-          create: {
-            args: Prisma.ReservationCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>
-          }
-          createMany: {
-            args: Prisma.ReservationCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.ReservationCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>[]
-          }
-          delete: {
-            args: Prisma.ReservationDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>
-          }
-          update: {
-            args: Prisma.ReservationUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>
-          }
-          deleteMany: {
-            args: Prisma.ReservationDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.ReservationUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.ReservationUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>[]
-          }
-          upsert: {
-            args: Prisma.ReservationUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReservationPayload>
-          }
-          aggregate: {
-            args: Prisma.ReservationAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateReservation>
-          }
-          groupBy: {
-            args: Prisma.ReservationGroupByArgs<ExtArgs>
-            result: $Utils.Optional<ReservationGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.ReservationCountArgs<ExtArgs>
-            result: $Utils.Optional<ReservationCountAggregateOutputType> | number
-          }
-        }
-      }
     }
   } & {
     other: {
@@ -4494,13 +4047,9 @@ export namespace Prisma {
     subcategory?: SubcategoryOmit
     brandCategory?: BrandCategoryOmit
     brand?: BrandOmit
-    buildSequence?: BuildSequenceOmit
-    categoryRelationship?: CategoryRelationshipOmit
     categoryHierarchy?: CategoryHierarchyOmit
     categoryAttribute?: CategoryAttributeOmit
     attributeOption?: AttributeOptionOmit
-    compatibilityRule?: CompatibilityRuleOmit
-    compatibilityRuleClause?: CompatibilityRuleClauseOmit
     tag?: TagOmit
     productMedia?: ProductMediaOmit
     product?: ProductOmit
@@ -4528,7 +4077,6 @@ export namespace Prisma {
     creditNoteLineItem?: CreditNoteLineItemOmit
     auditLog?: AuditLogOmit
     taxSettings?: TaxSettingsOmit
-    reservation?: ReservationOmit
   }
 
   /* Types for Logging */
@@ -4616,8 +4164,6 @@ export namespace Prisma {
     buildGuides: number
     hierarchyNodes: number
     attributes: number
-    outgoingRules: number
-    incomingRules: number
   }
 
   export type CategoryCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4628,8 +4174,6 @@ export namespace Prisma {
     buildGuides?: boolean | CategoryCountOutputTypeCountBuildGuidesArgs
     hierarchyNodes?: boolean | CategoryCountOutputTypeCountHierarchyNodesArgs
     attributes?: boolean | CategoryCountOutputTypeCountAttributesArgs
-    outgoingRules?: boolean | CategoryCountOutputTypeCountOutgoingRulesArgs
-    incomingRules?: boolean | CategoryCountOutputTypeCountIncomingRulesArgs
   }
 
   // Custom InputTypes
@@ -4690,20 +4234,6 @@ export namespace Prisma {
    */
   export type CategoryCountOutputTypeCountAttributesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CategoryAttributeWhereInput
-  }
-
-  /**
-   * CategoryCountOutputType without action
-   */
-  export type CategoryCountOutputTypeCountOutgoingRulesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CompatibilityRuleWhereInput
-  }
-
-  /**
-   * CategoryCountOutputType without action
-   */
-  export type CategoryCountOutputTypeCountIncomingRulesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CompatibilityRuleWhereInput
   }
 
 
@@ -4826,16 +4356,12 @@ export namespace Prisma {
     dependentAttributes: number
     options: number
     productSpecs: number
-    sourceCompatibilityClauses: number
-    targetCompatibilityClauses: number
   }
 
   export type CategoryAttributeCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     dependentAttributes?: boolean | CategoryAttributeCountOutputTypeCountDependentAttributesArgs
     options?: boolean | CategoryAttributeCountOutputTypeCountOptionsArgs
     productSpecs?: boolean | CategoryAttributeCountOutputTypeCountProductSpecsArgs
-    sourceCompatibilityClauses?: boolean | CategoryAttributeCountOutputTypeCountSourceCompatibilityClausesArgs
-    targetCompatibilityClauses?: boolean | CategoryAttributeCountOutputTypeCountTargetCompatibilityClausesArgs
   }
 
   // Custom InputTypes
@@ -4868,20 +4394,6 @@ export namespace Prisma {
    */
   export type CategoryAttributeCountOutputTypeCountProductSpecsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ProductSpecWhereInput
-  }
-
-  /**
-   * CategoryAttributeCountOutputType without action
-   */
-  export type CategoryAttributeCountOutputTypeCountSourceCompatibilityClausesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CompatibilityRuleClauseWhereInput
-  }
-
-  /**
-   * CategoryAttributeCountOutputType without action
-   */
-  export type CategoryAttributeCountOutputTypeCountTargetCompatibilityClausesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CompatibilityRuleClauseWhereInput
   }
 
 
@@ -4922,37 +4434,6 @@ export namespace Prisma {
    */
   export type AttributeOptionCountOutputTypeCountProductSpecsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ProductSpecWhereInput
-  }
-
-
-  /**
-   * Count Type CompatibilityRuleCountOutputType
-   */
-
-  export type CompatibilityRuleCountOutputType = {
-    clauses: number
-  }
-
-  export type CompatibilityRuleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    clauses?: boolean | CompatibilityRuleCountOutputTypeCountClausesArgs
-  }
-
-  // Custom InputTypes
-  /**
-   * CompatibilityRuleCountOutputType without action
-   */
-  export type CompatibilityRuleCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleCountOutputType
-     */
-    select?: CompatibilityRuleCountOutputTypeSelect<ExtArgs> | null
-  }
-
-  /**
-   * CompatibilityRuleCountOutputType without action
-   */
-  export type CompatibilityRuleCountOutputTypeCountClausesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CompatibilityRuleClauseWhereInput
   }
 
 
@@ -5079,13 +4560,11 @@ export namespace Prisma {
   export type InventoryItemCountOutputType = {
     orderItemUnits: number
     stockMovements: number
-    reservations: number
   }
 
   export type InventoryItemCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     orderItemUnits?: boolean | InventoryItemCountOutputTypeCountOrderItemUnitsArgs
     stockMovements?: boolean | InventoryItemCountOutputTypeCountStockMovementsArgs
-    reservations?: boolean | InventoryItemCountOutputTypeCountReservationsArgs
   }
 
   // Custom InputTypes
@@ -5111,13 +4590,6 @@ export namespace Prisma {
    */
   export type InventoryItemCountOutputTypeCountStockMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: StockMovementWhereInput
-  }
-
-  /**
-   * InventoryItemCountOutputType without action
-   */
-  export type InventoryItemCountOutputTypeCountReservationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ReservationWhereInput
   }
 
 
@@ -5172,6 +4644,7 @@ export namespace Prisma {
     shipments: number
     payments: number
     stockMoves: number
+    assignedUnits: number
   }
 
   export type OrderCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5181,6 +4654,7 @@ export namespace Prisma {
     shipments?: boolean | OrderCountOutputTypeCountShipmentsArgs
     payments?: boolean | OrderCountOutputTypeCountPaymentsArgs
     stockMoves?: boolean | OrderCountOutputTypeCountStockMovesArgs
+    assignedUnits?: boolean | OrderCountOutputTypeCountAssignedUnitsArgs
   }
 
   // Custom InputTypes
@@ -5234,6 +4708,13 @@ export namespace Prisma {
    */
   export type OrderCountOutputTypeCountStockMovesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: StockMovementWhereInput
+  }
+
+  /**
+   * OrderCountOutputType without action
+   */
+  export type OrderCountOutputTypeCountAssignedUnitsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OrderItemUnitWhereInput
   }
 
 
@@ -6718,11 +6199,8 @@ export namespace Prisma {
     brandCategories?: boolean | Category$brandCategoriesArgs<ExtArgs>
     orderItems?: boolean | Category$orderItemsArgs<ExtArgs>
     buildGuides?: boolean | Category$buildGuidesArgs<ExtArgs>
-    buildSequence?: boolean | Category$buildSequenceArgs<ExtArgs>
     hierarchyNodes?: boolean | Category$hierarchyNodesArgs<ExtArgs>
     attributes?: boolean | Category$attributesArgs<ExtArgs>
-    outgoingRules?: boolean | Category$outgoingRulesArgs<ExtArgs>
-    incomingRules?: boolean | Category$incomingRulesArgs<ExtArgs>
     _count?: boolean | CategoryCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["category"]>
 
@@ -6784,11 +6262,8 @@ export namespace Prisma {
     brandCategories?: boolean | Category$brandCategoriesArgs<ExtArgs>
     orderItems?: boolean | Category$orderItemsArgs<ExtArgs>
     buildGuides?: boolean | Category$buildGuidesArgs<ExtArgs>
-    buildSequence?: boolean | Category$buildSequenceArgs<ExtArgs>
     hierarchyNodes?: boolean | Category$hierarchyNodesArgs<ExtArgs>
     attributes?: boolean | Category$attributesArgs<ExtArgs>
-    outgoingRules?: boolean | Category$outgoingRulesArgs<ExtArgs>
-    incomingRules?: boolean | Category$incomingRulesArgs<ExtArgs>
     _count?: boolean | CategoryCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type CategoryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -6802,11 +6277,8 @@ export namespace Prisma {
       brandCategories: Prisma.$BrandCategoryPayload<ExtArgs>[]
       orderItems: Prisma.$OrderItemPayload<ExtArgs>[]
       buildGuides: Prisma.$BuildGuidePayload<ExtArgs>[]
-      buildSequence: Prisma.$BuildSequencePayload<ExtArgs> | null
       hierarchyNodes: Prisma.$CategoryHierarchyPayload<ExtArgs>[]
       attributes: Prisma.$CategoryAttributePayload<ExtArgs>[]
-      outgoingRules: Prisma.$CompatibilityRulePayload<ExtArgs>[]
-      incomingRules: Prisma.$CompatibilityRulePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -7222,11 +6694,8 @@ export namespace Prisma {
     brandCategories<T extends Category$brandCategoriesArgs<ExtArgs> = {}>(args?: Subset<T, Category$brandCategoriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BrandCategoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orderItems<T extends Category$orderItemsArgs<ExtArgs> = {}>(args?: Subset<T, Category$orderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     buildGuides<T extends Category$buildGuidesArgs<ExtArgs> = {}>(args?: Subset<T, Category$buildGuidesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BuildGuidePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    buildSequence<T extends Category$buildSequenceArgs<ExtArgs> = {}>(args?: Subset<T, Category$buildSequenceArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     hierarchyNodes<T extends Category$hierarchyNodesArgs<ExtArgs> = {}>(args?: Subset<T, Category$hierarchyNodesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryHierarchyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     attributes<T extends Category$attributesArgs<ExtArgs> = {}>(args?: Subset<T, Category$attributesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryAttributePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    outgoingRules<T extends Category$outgoingRulesArgs<ExtArgs> = {}>(args?: Subset<T, Category$outgoingRulesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    incomingRules<T extends Category$incomingRulesArgs<ExtArgs> = {}>(args?: Subset<T, Category$incomingRulesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -7778,25 +7247,6 @@ export namespace Prisma {
   }
 
   /**
-   * Category.buildSequence
-   */
-  export type Category$buildSequenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    where?: BuildSequenceWhereInput
-  }
-
-  /**
    * Category.hierarchyNodes
    */
   export type Category$hierarchyNodesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7842,54 +7292,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CategoryAttributeScalarFieldEnum | CategoryAttributeScalarFieldEnum[]
-  }
-
-  /**
-   * Category.outgoingRules
-   */
-  export type Category$outgoingRulesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    where?: CompatibilityRuleWhereInput
-    orderBy?: CompatibilityRuleOrderByWithRelationInput | CompatibilityRuleOrderByWithRelationInput[]
-    cursor?: CompatibilityRuleWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: CompatibilityRuleScalarFieldEnum | CompatibilityRuleScalarFieldEnum[]
-  }
-
-  /**
-   * Category.incomingRules
-   */
-  export type Category$incomingRulesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    where?: CompatibilityRuleWhereInput
-    orderBy?: CompatibilityRuleOrderByWithRelationInput | CompatibilityRuleOrderByWithRelationInput[]
-    cursor?: CompatibilityRuleWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: CompatibilityRuleScalarFieldEnum | CompatibilityRuleScalarFieldEnum[]
   }
 
   /**
@@ -11264,2153 +10666,6 @@ export namespace Prisma {
 
 
   /**
-   * Model BuildSequence
-   */
-
-  export type AggregateBuildSequence = {
-    _count: BuildSequenceCountAggregateOutputType | null
-    _avg: BuildSequenceAvgAggregateOutputType | null
-    _sum: BuildSequenceSumAggregateOutputType | null
-    _min: BuildSequenceMinAggregateOutputType | null
-    _max: BuildSequenceMaxAggregateOutputType | null
-  }
-
-  export type BuildSequenceAvgAggregateOutputType = {
-    categoryId: number | null
-    stepOrder: number | null
-  }
-
-  export type BuildSequenceSumAggregateOutputType = {
-    categoryId: number | null
-    stepOrder: number | null
-  }
-
-  export type BuildSequenceMinAggregateOutputType = {
-    id: string | null
-    categoryId: number | null
-    stepOrder: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type BuildSequenceMaxAggregateOutputType = {
-    id: string | null
-    categoryId: number | null
-    stepOrder: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type BuildSequenceCountAggregateOutputType = {
-    id: number
-    categoryId: number
-    stepOrder: number
-    createdAt: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type BuildSequenceAvgAggregateInputType = {
-    categoryId?: true
-    stepOrder?: true
-  }
-
-  export type BuildSequenceSumAggregateInputType = {
-    categoryId?: true
-    stepOrder?: true
-  }
-
-  export type BuildSequenceMinAggregateInputType = {
-    id?: true
-    categoryId?: true
-    stepOrder?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type BuildSequenceMaxAggregateInputType = {
-    id?: true
-    categoryId?: true
-    stepOrder?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type BuildSequenceCountAggregateInputType = {
-    id?: true
-    categoryId?: true
-    stepOrder?: true
-    createdAt?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type BuildSequenceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which BuildSequence to aggregate.
-     */
-    where?: BuildSequenceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of BuildSequences to fetch.
-     */
-    orderBy?: BuildSequenceOrderByWithRelationInput | BuildSequenceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: BuildSequenceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` BuildSequences from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` BuildSequences.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned BuildSequences
-    **/
-    _count?: true | BuildSequenceCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: BuildSequenceAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: BuildSequenceSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: BuildSequenceMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: BuildSequenceMaxAggregateInputType
-  }
-
-  export type GetBuildSequenceAggregateType<T extends BuildSequenceAggregateArgs> = {
-        [P in keyof T & keyof AggregateBuildSequence]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateBuildSequence[P]>
-      : GetScalarType<T[P], AggregateBuildSequence[P]>
-  }
-
-
-
-
-  export type BuildSequenceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: BuildSequenceWhereInput
-    orderBy?: BuildSequenceOrderByWithAggregationInput | BuildSequenceOrderByWithAggregationInput[]
-    by: BuildSequenceScalarFieldEnum[] | BuildSequenceScalarFieldEnum
-    having?: BuildSequenceScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: BuildSequenceCountAggregateInputType | true
-    _avg?: BuildSequenceAvgAggregateInputType
-    _sum?: BuildSequenceSumAggregateInputType
-    _min?: BuildSequenceMinAggregateInputType
-    _max?: BuildSequenceMaxAggregateInputType
-  }
-
-  export type BuildSequenceGroupByOutputType = {
-    id: string
-    categoryId: number
-    stepOrder: number
-    createdAt: Date
-    updatedAt: Date
-    _count: BuildSequenceCountAggregateOutputType | null
-    _avg: BuildSequenceAvgAggregateOutputType | null
-    _sum: BuildSequenceSumAggregateOutputType | null
-    _min: BuildSequenceMinAggregateOutputType | null
-    _max: BuildSequenceMaxAggregateOutputType | null
-  }
-
-  type GetBuildSequenceGroupByPayload<T extends BuildSequenceGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<BuildSequenceGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof BuildSequenceGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], BuildSequenceGroupByOutputType[P]>
-            : GetScalarType<T[P], BuildSequenceGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type BuildSequenceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    categoryId?: boolean
-    stepOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    category?: boolean | CategoryDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["buildSequence"]>
-
-  export type BuildSequenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    categoryId?: boolean
-    stepOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    category?: boolean | CategoryDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["buildSequence"]>
-
-  export type BuildSequenceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    categoryId?: boolean
-    stepOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    category?: boolean | CategoryDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["buildSequence"]>
-
-  export type BuildSequenceSelectScalar = {
-    id?: boolean
-    categoryId?: boolean
-    stepOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }
-
-  export type BuildSequenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "categoryId" | "stepOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["buildSequence"]>
-  export type BuildSequenceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    category?: boolean | CategoryDefaultArgs<ExtArgs>
-  }
-  export type BuildSequenceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    category?: boolean | CategoryDefaultArgs<ExtArgs>
-  }
-  export type BuildSequenceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    category?: boolean | CategoryDefaultArgs<ExtArgs>
-  }
-
-  export type $BuildSequencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "BuildSequence"
-    objects: {
-      category: Prisma.$CategoryPayload<ExtArgs>
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      categoryId: number
-      stepOrder: number
-      createdAt: Date
-      updatedAt: Date
-    }, ExtArgs["result"]["buildSequence"]>
-    composites: {}
-  }
-
-  type BuildSequenceGetPayload<S extends boolean | null | undefined | BuildSequenceDefaultArgs> = $Result.GetResult<Prisma.$BuildSequencePayload, S>
-
-  type BuildSequenceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<BuildSequenceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: BuildSequenceCountAggregateInputType | true
-    }
-
-  export interface BuildSequenceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BuildSequence'], meta: { name: 'BuildSequence' } }
-    /**
-     * Find zero or one BuildSequence that matches the filter.
-     * @param {BuildSequenceFindUniqueArgs} args - Arguments to find a BuildSequence
-     * @example
-     * // Get one BuildSequence
-     * const buildSequence = await prisma.buildSequence.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends BuildSequenceFindUniqueArgs>(args: SelectSubset<T, BuildSequenceFindUniqueArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one BuildSequence that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {BuildSequenceFindUniqueOrThrowArgs} args - Arguments to find a BuildSequence
-     * @example
-     * // Get one BuildSequence
-     * const buildSequence = await prisma.buildSequence.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends BuildSequenceFindUniqueOrThrowArgs>(args: SelectSubset<T, BuildSequenceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first BuildSequence that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {BuildSequenceFindFirstArgs} args - Arguments to find a BuildSequence
-     * @example
-     * // Get one BuildSequence
-     * const buildSequence = await prisma.buildSequence.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends BuildSequenceFindFirstArgs>(args?: SelectSubset<T, BuildSequenceFindFirstArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first BuildSequence that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {BuildSequenceFindFirstOrThrowArgs} args - Arguments to find a BuildSequence
-     * @example
-     * // Get one BuildSequence
-     * const buildSequence = await prisma.buildSequence.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends BuildSequenceFindFirstOrThrowArgs>(args?: SelectSubset<T, BuildSequenceFindFirstOrThrowArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more BuildSequences that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {BuildSequenceFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all BuildSequences
-     * const buildSequences = await prisma.buildSequence.findMany()
-     * 
-     * // Get first 10 BuildSequences
-     * const buildSequences = await prisma.buildSequence.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const buildSequenceWithIdOnly = await prisma.buildSequence.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends BuildSequenceFindManyArgs>(args?: SelectSubset<T, BuildSequenceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a BuildSequence.
-     * @param {BuildSequenceCreateArgs} args - Arguments to create a BuildSequence.
-     * @example
-     * // Create one BuildSequence
-     * const BuildSequence = await prisma.buildSequence.create({
-     *   data: {
-     *     // ... data to create a BuildSequence
-     *   }
-     * })
-     * 
-     */
-    create<T extends BuildSequenceCreateArgs>(args: SelectSubset<T, BuildSequenceCreateArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many BuildSequences.
-     * @param {BuildSequenceCreateManyArgs} args - Arguments to create many BuildSequences.
-     * @example
-     * // Create many BuildSequences
-     * const buildSequence = await prisma.buildSequence.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends BuildSequenceCreateManyArgs>(args?: SelectSubset<T, BuildSequenceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many BuildSequences and returns the data saved in the database.
-     * @param {BuildSequenceCreateManyAndReturnArgs} args - Arguments to create many BuildSequences.
-     * @example
-     * // Create many BuildSequences
-     * const buildSequence = await prisma.buildSequence.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many BuildSequences and only return the `id`
-     * const buildSequenceWithIdOnly = await prisma.buildSequence.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends BuildSequenceCreateManyAndReturnArgs>(args?: SelectSubset<T, BuildSequenceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Delete a BuildSequence.
-     * @param {BuildSequenceDeleteArgs} args - Arguments to delete one BuildSequence.
-     * @example
-     * // Delete one BuildSequence
-     * const BuildSequence = await prisma.buildSequence.delete({
-     *   where: {
-     *     // ... filter to delete one BuildSequence
-     *   }
-     * })
-     * 
-     */
-    delete<T extends BuildSequenceDeleteArgs>(args: SelectSubset<T, BuildSequenceDeleteArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one BuildSequence.
-     * @param {BuildSequenceUpdateArgs} args - Arguments to update one BuildSequence.
-     * @example
-     * // Update one BuildSequence
-     * const buildSequence = await prisma.buildSequence.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends BuildSequenceUpdateArgs>(args: SelectSubset<T, BuildSequenceUpdateArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more BuildSequences.
-     * @param {BuildSequenceDeleteManyArgs} args - Arguments to filter BuildSequences to delete.
-     * @example
-     * // Delete a few BuildSequences
-     * const { count } = await prisma.buildSequence.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends BuildSequenceDeleteManyArgs>(args?: SelectSubset<T, BuildSequenceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more BuildSequences.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {BuildSequenceUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many BuildSequences
-     * const buildSequence = await prisma.buildSequence.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends BuildSequenceUpdateManyArgs>(args: SelectSubset<T, BuildSequenceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more BuildSequences and returns the data updated in the database.
-     * @param {BuildSequenceUpdateManyAndReturnArgs} args - Arguments to update many BuildSequences.
-     * @example
-     * // Update many BuildSequences
-     * const buildSequence = await prisma.buildSequence.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more BuildSequences and only return the `id`
-     * const buildSequenceWithIdOnly = await prisma.buildSequence.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends BuildSequenceUpdateManyAndReturnArgs>(args: SelectSubset<T, BuildSequenceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Create or update one BuildSequence.
-     * @param {BuildSequenceUpsertArgs} args - Arguments to update or create a BuildSequence.
-     * @example
-     * // Update or create a BuildSequence
-     * const buildSequence = await prisma.buildSequence.upsert({
-     *   create: {
-     *     // ... data to create a BuildSequence
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the BuildSequence we want to update
-     *   }
-     * })
-     */
-    upsert<T extends BuildSequenceUpsertArgs>(args: SelectSubset<T, BuildSequenceUpsertArgs<ExtArgs>>): Prisma__BuildSequenceClient<$Result.GetResult<Prisma.$BuildSequencePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of BuildSequences.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {BuildSequenceCountArgs} args - Arguments to filter BuildSequences to count.
-     * @example
-     * // Count the number of BuildSequences
-     * const count = await prisma.buildSequence.count({
-     *   where: {
-     *     // ... the filter for the BuildSequences we want to count
-     *   }
-     * })
-    **/
-    count<T extends BuildSequenceCountArgs>(
-      args?: Subset<T, BuildSequenceCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], BuildSequenceCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a BuildSequence.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {BuildSequenceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends BuildSequenceAggregateArgs>(args: Subset<T, BuildSequenceAggregateArgs>): Prisma.PrismaPromise<GetBuildSequenceAggregateType<T>>
-
-    /**
-     * Group by BuildSequence.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {BuildSequenceGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends BuildSequenceGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: BuildSequenceGroupByArgs['orderBy'] }
-        : { orderBy?: BuildSequenceGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, BuildSequenceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBuildSequenceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the BuildSequence model
-   */
-  readonly fields: BuildSequenceFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for BuildSequence.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__BuildSequenceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    category<T extends CategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CategoryDefaultArgs<ExtArgs>>): Prisma__CategoryClient<$Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the BuildSequence model
-   */
-  interface BuildSequenceFieldRefs {
-    readonly id: FieldRef<"BuildSequence", 'String'>
-    readonly categoryId: FieldRef<"BuildSequence", 'Int'>
-    readonly stepOrder: FieldRef<"BuildSequence", 'Int'>
-    readonly createdAt: FieldRef<"BuildSequence", 'DateTime'>
-    readonly updatedAt: FieldRef<"BuildSequence", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * BuildSequence findUnique
-   */
-  export type BuildSequenceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * Filter, which BuildSequence to fetch.
-     */
-    where: BuildSequenceWhereUniqueInput
-  }
-
-  /**
-   * BuildSequence findUniqueOrThrow
-   */
-  export type BuildSequenceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * Filter, which BuildSequence to fetch.
-     */
-    where: BuildSequenceWhereUniqueInput
-  }
-
-  /**
-   * BuildSequence findFirst
-   */
-  export type BuildSequenceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * Filter, which BuildSequence to fetch.
-     */
-    where?: BuildSequenceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of BuildSequences to fetch.
-     */
-    orderBy?: BuildSequenceOrderByWithRelationInput | BuildSequenceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for BuildSequences.
-     */
-    cursor?: BuildSequenceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` BuildSequences from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` BuildSequences.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of BuildSequences.
-     */
-    distinct?: BuildSequenceScalarFieldEnum | BuildSequenceScalarFieldEnum[]
-  }
-
-  /**
-   * BuildSequence findFirstOrThrow
-   */
-  export type BuildSequenceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * Filter, which BuildSequence to fetch.
-     */
-    where?: BuildSequenceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of BuildSequences to fetch.
-     */
-    orderBy?: BuildSequenceOrderByWithRelationInput | BuildSequenceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for BuildSequences.
-     */
-    cursor?: BuildSequenceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` BuildSequences from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` BuildSequences.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of BuildSequences.
-     */
-    distinct?: BuildSequenceScalarFieldEnum | BuildSequenceScalarFieldEnum[]
-  }
-
-  /**
-   * BuildSequence findMany
-   */
-  export type BuildSequenceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * Filter, which BuildSequences to fetch.
-     */
-    where?: BuildSequenceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of BuildSequences to fetch.
-     */
-    orderBy?: BuildSequenceOrderByWithRelationInput | BuildSequenceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing BuildSequences.
-     */
-    cursor?: BuildSequenceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` BuildSequences from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` BuildSequences.
-     */
-    skip?: number
-    distinct?: BuildSequenceScalarFieldEnum | BuildSequenceScalarFieldEnum[]
-  }
-
-  /**
-   * BuildSequence create
-   */
-  export type BuildSequenceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * The data needed to create a BuildSequence.
-     */
-    data: XOR<BuildSequenceCreateInput, BuildSequenceUncheckedCreateInput>
-  }
-
-  /**
-   * BuildSequence createMany
-   */
-  export type BuildSequenceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many BuildSequences.
-     */
-    data: BuildSequenceCreateManyInput | BuildSequenceCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * BuildSequence createManyAndReturn
-   */
-  export type BuildSequenceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * The data used to create many BuildSequences.
-     */
-    data: BuildSequenceCreateManyInput | BuildSequenceCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceIncludeCreateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * BuildSequence update
-   */
-  export type BuildSequenceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * The data needed to update a BuildSequence.
-     */
-    data: XOR<BuildSequenceUpdateInput, BuildSequenceUncheckedUpdateInput>
-    /**
-     * Choose, which BuildSequence to update.
-     */
-    where: BuildSequenceWhereUniqueInput
-  }
-
-  /**
-   * BuildSequence updateMany
-   */
-  export type BuildSequenceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update BuildSequences.
-     */
-    data: XOR<BuildSequenceUpdateManyMutationInput, BuildSequenceUncheckedUpdateManyInput>
-    /**
-     * Filter which BuildSequences to update
-     */
-    where?: BuildSequenceWhereInput
-    /**
-     * Limit how many BuildSequences to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * BuildSequence updateManyAndReturn
-   */
-  export type BuildSequenceUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * The data used to update BuildSequences.
-     */
-    data: XOR<BuildSequenceUpdateManyMutationInput, BuildSequenceUncheckedUpdateManyInput>
-    /**
-     * Filter which BuildSequences to update
-     */
-    where?: BuildSequenceWhereInput
-    /**
-     * Limit how many BuildSequences to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceIncludeUpdateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * BuildSequence upsert
-   */
-  export type BuildSequenceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * The filter to search for the BuildSequence to update in case it exists.
-     */
-    where: BuildSequenceWhereUniqueInput
-    /**
-     * In case the BuildSequence found by the `where` argument doesn't exist, create a new BuildSequence with this data.
-     */
-    create: XOR<BuildSequenceCreateInput, BuildSequenceUncheckedCreateInput>
-    /**
-     * In case the BuildSequence was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<BuildSequenceUpdateInput, BuildSequenceUncheckedUpdateInput>
-  }
-
-  /**
-   * BuildSequence delete
-   */
-  export type BuildSequenceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-    /**
-     * Filter which BuildSequence to delete.
-     */
-    where: BuildSequenceWhereUniqueInput
-  }
-
-  /**
-   * BuildSequence deleteMany
-   */
-  export type BuildSequenceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which BuildSequences to delete
-     */
-    where?: BuildSequenceWhereInput
-    /**
-     * Limit how many BuildSequences to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * BuildSequence without action
-   */
-  export type BuildSequenceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BuildSequence
-     */
-    select?: BuildSequenceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the BuildSequence
-     */
-    omit?: BuildSequenceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BuildSequenceInclude<ExtArgs> | null
-  }
-
-
-  /**
-   * Model CategoryRelationship
-   */
-
-  export type AggregateCategoryRelationship = {
-    _count: CategoryRelationshipCountAggregateOutputType | null
-    _avg: CategoryRelationshipAvgAggregateOutputType | null
-    _sum: CategoryRelationshipSumAggregateOutputType | null
-    _min: CategoryRelationshipMinAggregateOutputType | null
-    _max: CategoryRelationshipMaxAggregateOutputType | null
-  }
-
-  export type CategoryRelationshipAvgAggregateOutputType = {
-    sortOrder: number | null
-  }
-
-  export type CategoryRelationshipSumAggregateOutputType = {
-    sortOrder: number | null
-  }
-
-  export type CategoryRelationshipMinAggregateOutputType = {
-    id: string | null
-    fromCategoryCode: string | null
-    toCategoryCode: string | null
-    relationshipType: string | null
-    sortOrder: number | null
-    createdAt: Date | null
-  }
-
-  export type CategoryRelationshipMaxAggregateOutputType = {
-    id: string | null
-    fromCategoryCode: string | null
-    toCategoryCode: string | null
-    relationshipType: string | null
-    sortOrder: number | null
-    createdAt: Date | null
-  }
-
-  export type CategoryRelationshipCountAggregateOutputType = {
-    id: number
-    fromCategoryCode: number
-    toCategoryCode: number
-    relationshipType: number
-    sortOrder: number
-    metadata: number
-    createdAt: number
-    _all: number
-  }
-
-
-  export type CategoryRelationshipAvgAggregateInputType = {
-    sortOrder?: true
-  }
-
-  export type CategoryRelationshipSumAggregateInputType = {
-    sortOrder?: true
-  }
-
-  export type CategoryRelationshipMinAggregateInputType = {
-    id?: true
-    fromCategoryCode?: true
-    toCategoryCode?: true
-    relationshipType?: true
-    sortOrder?: true
-    createdAt?: true
-  }
-
-  export type CategoryRelationshipMaxAggregateInputType = {
-    id?: true
-    fromCategoryCode?: true
-    toCategoryCode?: true
-    relationshipType?: true
-    sortOrder?: true
-    createdAt?: true
-  }
-
-  export type CategoryRelationshipCountAggregateInputType = {
-    id?: true
-    fromCategoryCode?: true
-    toCategoryCode?: true
-    relationshipType?: true
-    sortOrder?: true
-    metadata?: true
-    createdAt?: true
-    _all?: true
-  }
-
-  export type CategoryRelationshipAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which CategoryRelationship to aggregate.
-     */
-    where?: CategoryRelationshipWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CategoryRelationships to fetch.
-     */
-    orderBy?: CategoryRelationshipOrderByWithRelationInput | CategoryRelationshipOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: CategoryRelationshipWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CategoryRelationships from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CategoryRelationships.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned CategoryRelationships
-    **/
-    _count?: true | CategoryRelationshipCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: CategoryRelationshipAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: CategoryRelationshipSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: CategoryRelationshipMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: CategoryRelationshipMaxAggregateInputType
-  }
-
-  export type GetCategoryRelationshipAggregateType<T extends CategoryRelationshipAggregateArgs> = {
-        [P in keyof T & keyof AggregateCategoryRelationship]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateCategoryRelationship[P]>
-      : GetScalarType<T[P], AggregateCategoryRelationship[P]>
-  }
-
-
-
-
-  export type CategoryRelationshipGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CategoryRelationshipWhereInput
-    orderBy?: CategoryRelationshipOrderByWithAggregationInput | CategoryRelationshipOrderByWithAggregationInput[]
-    by: CategoryRelationshipScalarFieldEnum[] | CategoryRelationshipScalarFieldEnum
-    having?: CategoryRelationshipScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: CategoryRelationshipCountAggregateInputType | true
-    _avg?: CategoryRelationshipAvgAggregateInputType
-    _sum?: CategoryRelationshipSumAggregateInputType
-    _min?: CategoryRelationshipMinAggregateInputType
-    _max?: CategoryRelationshipMaxAggregateInputType
-  }
-
-  export type CategoryRelationshipGroupByOutputType = {
-    id: string
-    fromCategoryCode: string | null
-    toCategoryCode: string | null
-    relationshipType: string
-    sortOrder: number
-    metadata: JsonValue | null
-    createdAt: Date
-    _count: CategoryRelationshipCountAggregateOutputType | null
-    _avg: CategoryRelationshipAvgAggregateOutputType | null
-    _sum: CategoryRelationshipSumAggregateOutputType | null
-    _min: CategoryRelationshipMinAggregateOutputType | null
-    _max: CategoryRelationshipMaxAggregateOutputType | null
-  }
-
-  type GetCategoryRelationshipGroupByPayload<T extends CategoryRelationshipGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<CategoryRelationshipGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof CategoryRelationshipGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], CategoryRelationshipGroupByOutputType[P]>
-            : GetScalarType<T[P], CategoryRelationshipGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type CategoryRelationshipSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    fromCategoryCode?: boolean
-    toCategoryCode?: boolean
-    relationshipType?: boolean
-    sortOrder?: boolean
-    metadata?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["categoryRelationship"]>
-
-  export type CategoryRelationshipSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    fromCategoryCode?: boolean
-    toCategoryCode?: boolean
-    relationshipType?: boolean
-    sortOrder?: boolean
-    metadata?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["categoryRelationship"]>
-
-  export type CategoryRelationshipSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    fromCategoryCode?: boolean
-    toCategoryCode?: boolean
-    relationshipType?: boolean
-    sortOrder?: boolean
-    metadata?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["categoryRelationship"]>
-
-  export type CategoryRelationshipSelectScalar = {
-    id?: boolean
-    fromCategoryCode?: boolean
-    toCategoryCode?: boolean
-    relationshipType?: boolean
-    sortOrder?: boolean
-    metadata?: boolean
-    createdAt?: boolean
-  }
-
-  export type CategoryRelationshipOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "fromCategoryCode" | "toCategoryCode" | "relationshipType" | "sortOrder" | "metadata" | "createdAt", ExtArgs["result"]["categoryRelationship"]>
-
-  export type $CategoryRelationshipPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "CategoryRelationship"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      fromCategoryCode: string | null
-      toCategoryCode: string | null
-      relationshipType: string
-      sortOrder: number
-      metadata: Prisma.JsonValue | null
-      createdAt: Date
-    }, ExtArgs["result"]["categoryRelationship"]>
-    composites: {}
-  }
-
-  type CategoryRelationshipGetPayload<S extends boolean | null | undefined | CategoryRelationshipDefaultArgs> = $Result.GetResult<Prisma.$CategoryRelationshipPayload, S>
-
-  type CategoryRelationshipCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<CategoryRelationshipFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: CategoryRelationshipCountAggregateInputType | true
-    }
-
-  export interface CategoryRelationshipDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CategoryRelationship'], meta: { name: 'CategoryRelationship' } }
-    /**
-     * Find zero or one CategoryRelationship that matches the filter.
-     * @param {CategoryRelationshipFindUniqueArgs} args - Arguments to find a CategoryRelationship
-     * @example
-     * // Get one CategoryRelationship
-     * const categoryRelationship = await prisma.categoryRelationship.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends CategoryRelationshipFindUniqueArgs>(args: SelectSubset<T, CategoryRelationshipFindUniqueArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one CategoryRelationship that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {CategoryRelationshipFindUniqueOrThrowArgs} args - Arguments to find a CategoryRelationship
-     * @example
-     * // Get one CategoryRelationship
-     * const categoryRelationship = await prisma.categoryRelationship.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends CategoryRelationshipFindUniqueOrThrowArgs>(args: SelectSubset<T, CategoryRelationshipFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first CategoryRelationship that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CategoryRelationshipFindFirstArgs} args - Arguments to find a CategoryRelationship
-     * @example
-     * // Get one CategoryRelationship
-     * const categoryRelationship = await prisma.categoryRelationship.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends CategoryRelationshipFindFirstArgs>(args?: SelectSubset<T, CategoryRelationshipFindFirstArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first CategoryRelationship that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CategoryRelationshipFindFirstOrThrowArgs} args - Arguments to find a CategoryRelationship
-     * @example
-     * // Get one CategoryRelationship
-     * const categoryRelationship = await prisma.categoryRelationship.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends CategoryRelationshipFindFirstOrThrowArgs>(args?: SelectSubset<T, CategoryRelationshipFindFirstOrThrowArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more CategoryRelationships that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CategoryRelationshipFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all CategoryRelationships
-     * const categoryRelationships = await prisma.categoryRelationship.findMany()
-     * 
-     * // Get first 10 CategoryRelationships
-     * const categoryRelationships = await prisma.categoryRelationship.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const categoryRelationshipWithIdOnly = await prisma.categoryRelationship.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends CategoryRelationshipFindManyArgs>(args?: SelectSubset<T, CategoryRelationshipFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a CategoryRelationship.
-     * @param {CategoryRelationshipCreateArgs} args - Arguments to create a CategoryRelationship.
-     * @example
-     * // Create one CategoryRelationship
-     * const CategoryRelationship = await prisma.categoryRelationship.create({
-     *   data: {
-     *     // ... data to create a CategoryRelationship
-     *   }
-     * })
-     * 
-     */
-    create<T extends CategoryRelationshipCreateArgs>(args: SelectSubset<T, CategoryRelationshipCreateArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many CategoryRelationships.
-     * @param {CategoryRelationshipCreateManyArgs} args - Arguments to create many CategoryRelationships.
-     * @example
-     * // Create many CategoryRelationships
-     * const categoryRelationship = await prisma.categoryRelationship.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends CategoryRelationshipCreateManyArgs>(args?: SelectSubset<T, CategoryRelationshipCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many CategoryRelationships and returns the data saved in the database.
-     * @param {CategoryRelationshipCreateManyAndReturnArgs} args - Arguments to create many CategoryRelationships.
-     * @example
-     * // Create many CategoryRelationships
-     * const categoryRelationship = await prisma.categoryRelationship.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many CategoryRelationships and only return the `id`
-     * const categoryRelationshipWithIdOnly = await prisma.categoryRelationship.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends CategoryRelationshipCreateManyAndReturnArgs>(args?: SelectSubset<T, CategoryRelationshipCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Delete a CategoryRelationship.
-     * @param {CategoryRelationshipDeleteArgs} args - Arguments to delete one CategoryRelationship.
-     * @example
-     * // Delete one CategoryRelationship
-     * const CategoryRelationship = await prisma.categoryRelationship.delete({
-     *   where: {
-     *     // ... filter to delete one CategoryRelationship
-     *   }
-     * })
-     * 
-     */
-    delete<T extends CategoryRelationshipDeleteArgs>(args: SelectSubset<T, CategoryRelationshipDeleteArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one CategoryRelationship.
-     * @param {CategoryRelationshipUpdateArgs} args - Arguments to update one CategoryRelationship.
-     * @example
-     * // Update one CategoryRelationship
-     * const categoryRelationship = await prisma.categoryRelationship.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends CategoryRelationshipUpdateArgs>(args: SelectSubset<T, CategoryRelationshipUpdateArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more CategoryRelationships.
-     * @param {CategoryRelationshipDeleteManyArgs} args - Arguments to filter CategoryRelationships to delete.
-     * @example
-     * // Delete a few CategoryRelationships
-     * const { count } = await prisma.categoryRelationship.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends CategoryRelationshipDeleteManyArgs>(args?: SelectSubset<T, CategoryRelationshipDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more CategoryRelationships.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CategoryRelationshipUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many CategoryRelationships
-     * const categoryRelationship = await prisma.categoryRelationship.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends CategoryRelationshipUpdateManyArgs>(args: SelectSubset<T, CategoryRelationshipUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more CategoryRelationships and returns the data updated in the database.
-     * @param {CategoryRelationshipUpdateManyAndReturnArgs} args - Arguments to update many CategoryRelationships.
-     * @example
-     * // Update many CategoryRelationships
-     * const categoryRelationship = await prisma.categoryRelationship.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more CategoryRelationships and only return the `id`
-     * const categoryRelationshipWithIdOnly = await prisma.categoryRelationship.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends CategoryRelationshipUpdateManyAndReturnArgs>(args: SelectSubset<T, CategoryRelationshipUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Create or update one CategoryRelationship.
-     * @param {CategoryRelationshipUpsertArgs} args - Arguments to update or create a CategoryRelationship.
-     * @example
-     * // Update or create a CategoryRelationship
-     * const categoryRelationship = await prisma.categoryRelationship.upsert({
-     *   create: {
-     *     // ... data to create a CategoryRelationship
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the CategoryRelationship we want to update
-     *   }
-     * })
-     */
-    upsert<T extends CategoryRelationshipUpsertArgs>(args: SelectSubset<T, CategoryRelationshipUpsertArgs<ExtArgs>>): Prisma__CategoryRelationshipClient<$Result.GetResult<Prisma.$CategoryRelationshipPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of CategoryRelationships.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CategoryRelationshipCountArgs} args - Arguments to filter CategoryRelationships to count.
-     * @example
-     * // Count the number of CategoryRelationships
-     * const count = await prisma.categoryRelationship.count({
-     *   where: {
-     *     // ... the filter for the CategoryRelationships we want to count
-     *   }
-     * })
-    **/
-    count<T extends CategoryRelationshipCountArgs>(
-      args?: Subset<T, CategoryRelationshipCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], CategoryRelationshipCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a CategoryRelationship.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CategoryRelationshipAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends CategoryRelationshipAggregateArgs>(args: Subset<T, CategoryRelationshipAggregateArgs>): Prisma.PrismaPromise<GetCategoryRelationshipAggregateType<T>>
-
-    /**
-     * Group by CategoryRelationship.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CategoryRelationshipGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends CategoryRelationshipGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: CategoryRelationshipGroupByArgs['orderBy'] }
-        : { orderBy?: CategoryRelationshipGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, CategoryRelationshipGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCategoryRelationshipGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the CategoryRelationship model
-   */
-  readonly fields: CategoryRelationshipFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for CategoryRelationship.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__CategoryRelationshipClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the CategoryRelationship model
-   */
-  interface CategoryRelationshipFieldRefs {
-    readonly id: FieldRef<"CategoryRelationship", 'String'>
-    readonly fromCategoryCode: FieldRef<"CategoryRelationship", 'String'>
-    readonly toCategoryCode: FieldRef<"CategoryRelationship", 'String'>
-    readonly relationshipType: FieldRef<"CategoryRelationship", 'String'>
-    readonly sortOrder: FieldRef<"CategoryRelationship", 'Int'>
-    readonly metadata: FieldRef<"CategoryRelationship", 'Json'>
-    readonly createdAt: FieldRef<"CategoryRelationship", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * CategoryRelationship findUnique
-   */
-  export type CategoryRelationshipFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * Filter, which CategoryRelationship to fetch.
-     */
-    where: CategoryRelationshipWhereUniqueInput
-  }
-
-  /**
-   * CategoryRelationship findUniqueOrThrow
-   */
-  export type CategoryRelationshipFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * Filter, which CategoryRelationship to fetch.
-     */
-    where: CategoryRelationshipWhereUniqueInput
-  }
-
-  /**
-   * CategoryRelationship findFirst
-   */
-  export type CategoryRelationshipFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * Filter, which CategoryRelationship to fetch.
-     */
-    where?: CategoryRelationshipWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CategoryRelationships to fetch.
-     */
-    orderBy?: CategoryRelationshipOrderByWithRelationInput | CategoryRelationshipOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for CategoryRelationships.
-     */
-    cursor?: CategoryRelationshipWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CategoryRelationships from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CategoryRelationships.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of CategoryRelationships.
-     */
-    distinct?: CategoryRelationshipScalarFieldEnum | CategoryRelationshipScalarFieldEnum[]
-  }
-
-  /**
-   * CategoryRelationship findFirstOrThrow
-   */
-  export type CategoryRelationshipFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * Filter, which CategoryRelationship to fetch.
-     */
-    where?: CategoryRelationshipWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CategoryRelationships to fetch.
-     */
-    orderBy?: CategoryRelationshipOrderByWithRelationInput | CategoryRelationshipOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for CategoryRelationships.
-     */
-    cursor?: CategoryRelationshipWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CategoryRelationships from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CategoryRelationships.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of CategoryRelationships.
-     */
-    distinct?: CategoryRelationshipScalarFieldEnum | CategoryRelationshipScalarFieldEnum[]
-  }
-
-  /**
-   * CategoryRelationship findMany
-   */
-  export type CategoryRelationshipFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * Filter, which CategoryRelationships to fetch.
-     */
-    where?: CategoryRelationshipWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CategoryRelationships to fetch.
-     */
-    orderBy?: CategoryRelationshipOrderByWithRelationInput | CategoryRelationshipOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing CategoryRelationships.
-     */
-    cursor?: CategoryRelationshipWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CategoryRelationships from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CategoryRelationships.
-     */
-    skip?: number
-    distinct?: CategoryRelationshipScalarFieldEnum | CategoryRelationshipScalarFieldEnum[]
-  }
-
-  /**
-   * CategoryRelationship create
-   */
-  export type CategoryRelationshipCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * The data needed to create a CategoryRelationship.
-     */
-    data: XOR<CategoryRelationshipCreateInput, CategoryRelationshipUncheckedCreateInput>
-  }
-
-  /**
-   * CategoryRelationship createMany
-   */
-  export type CategoryRelationshipCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many CategoryRelationships.
-     */
-    data: CategoryRelationshipCreateManyInput | CategoryRelationshipCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * CategoryRelationship createManyAndReturn
-   */
-  export type CategoryRelationshipCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * The data used to create many CategoryRelationships.
-     */
-    data: CategoryRelationshipCreateManyInput | CategoryRelationshipCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * CategoryRelationship update
-   */
-  export type CategoryRelationshipUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * The data needed to update a CategoryRelationship.
-     */
-    data: XOR<CategoryRelationshipUpdateInput, CategoryRelationshipUncheckedUpdateInput>
-    /**
-     * Choose, which CategoryRelationship to update.
-     */
-    where: CategoryRelationshipWhereUniqueInput
-  }
-
-  /**
-   * CategoryRelationship updateMany
-   */
-  export type CategoryRelationshipUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update CategoryRelationships.
-     */
-    data: XOR<CategoryRelationshipUpdateManyMutationInput, CategoryRelationshipUncheckedUpdateManyInput>
-    /**
-     * Filter which CategoryRelationships to update
-     */
-    where?: CategoryRelationshipWhereInput
-    /**
-     * Limit how many CategoryRelationships to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * CategoryRelationship updateManyAndReturn
-   */
-  export type CategoryRelationshipUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * The data used to update CategoryRelationships.
-     */
-    data: XOR<CategoryRelationshipUpdateManyMutationInput, CategoryRelationshipUncheckedUpdateManyInput>
-    /**
-     * Filter which CategoryRelationships to update
-     */
-    where?: CategoryRelationshipWhereInput
-    /**
-     * Limit how many CategoryRelationships to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * CategoryRelationship upsert
-   */
-  export type CategoryRelationshipUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * The filter to search for the CategoryRelationship to update in case it exists.
-     */
-    where: CategoryRelationshipWhereUniqueInput
-    /**
-     * In case the CategoryRelationship found by the `where` argument doesn't exist, create a new CategoryRelationship with this data.
-     */
-    create: XOR<CategoryRelationshipCreateInput, CategoryRelationshipUncheckedCreateInput>
-    /**
-     * In case the CategoryRelationship was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<CategoryRelationshipUpdateInput, CategoryRelationshipUncheckedUpdateInput>
-  }
-
-  /**
-   * CategoryRelationship delete
-   */
-  export type CategoryRelationshipDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-    /**
-     * Filter which CategoryRelationship to delete.
-     */
-    where: CategoryRelationshipWhereUniqueInput
-  }
-
-  /**
-   * CategoryRelationship deleteMany
-   */
-  export type CategoryRelationshipDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which CategoryRelationships to delete
-     */
-    where?: CategoryRelationshipWhereInput
-    /**
-     * Limit how many CategoryRelationships to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * CategoryRelationship without action
-   */
-  export type CategoryRelationshipDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CategoryRelationship
-     */
-    select?: CategoryRelationshipSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CategoryRelationship
-     */
-    omit?: CategoryRelationshipOmit<ExtArgs> | null
-  }
-
-
-  /**
    * Model CategoryHierarchy
    */
 
@@ -14917,8 +12172,6 @@ export namespace Prisma {
     dependencyOption?: boolean | CategoryAttribute$dependencyOptionArgs<ExtArgs>
     options?: boolean | CategoryAttribute$optionsArgs<ExtArgs>
     productSpecs?: boolean | CategoryAttribute$productSpecsArgs<ExtArgs>
-    sourceCompatibilityClauses?: boolean | CategoryAttribute$sourceCompatibilityClausesArgs<ExtArgs>
-    targetCompatibilityClauses?: boolean | CategoryAttribute$targetCompatibilityClausesArgs<ExtArgs>
     _count?: boolean | CategoryAttributeCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["categoryAttribute"]>
 
@@ -14999,8 +12252,6 @@ export namespace Prisma {
     dependencyOption?: boolean | CategoryAttribute$dependencyOptionArgs<ExtArgs>
     options?: boolean | CategoryAttribute$optionsArgs<ExtArgs>
     productSpecs?: boolean | CategoryAttribute$productSpecsArgs<ExtArgs>
-    sourceCompatibilityClauses?: boolean | CategoryAttribute$sourceCompatibilityClausesArgs<ExtArgs>
-    targetCompatibilityClauses?: boolean | CategoryAttribute$targetCompatibilityClausesArgs<ExtArgs>
     _count?: boolean | CategoryAttributeCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type CategoryAttributeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15026,8 +12277,6 @@ export namespace Prisma {
       dependencyOption: Prisma.$AttributeOptionPayload<ExtArgs> | null
       options: Prisma.$AttributeOptionPayload<ExtArgs>[]
       productSpecs: Prisma.$ProductSpecPayload<ExtArgs>[]
-      sourceCompatibilityClauses: Prisma.$CompatibilityRuleClausePayload<ExtArgs>[]
-      targetCompatibilityClauses: Prisma.$CompatibilityRuleClausePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -15448,8 +12697,6 @@ export namespace Prisma {
     dependencyOption<T extends CategoryAttribute$dependencyOptionArgs<ExtArgs> = {}>(args?: Subset<T, CategoryAttribute$dependencyOptionArgs<ExtArgs>>): Prisma__AttributeOptionClient<$Result.GetResult<Prisma.$AttributeOptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     options<T extends CategoryAttribute$optionsArgs<ExtArgs> = {}>(args?: Subset<T, CategoryAttribute$optionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AttributeOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     productSpecs<T extends CategoryAttribute$productSpecsArgs<ExtArgs> = {}>(args?: Subset<T, CategoryAttribute$productSpecsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductSpecPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    sourceCompatibilityClauses<T extends CategoryAttribute$sourceCompatibilityClausesArgs<ExtArgs> = {}>(args?: Subset<T, CategoryAttribute$sourceCompatibilityClausesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    targetCompatibilityClauses<T extends CategoryAttribute$targetCompatibilityClausesArgs<ExtArgs> = {}>(args?: Subset<T, CategoryAttribute$targetCompatibilityClausesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16018,54 +13265,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ProductSpecScalarFieldEnum | ProductSpecScalarFieldEnum[]
-  }
-
-  /**
-   * CategoryAttribute.sourceCompatibilityClauses
-   */
-  export type CategoryAttribute$sourceCompatibilityClausesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    where?: CompatibilityRuleClauseWhereInput
-    orderBy?: CompatibilityRuleClauseOrderByWithRelationInput | CompatibilityRuleClauseOrderByWithRelationInput[]
-    cursor?: CompatibilityRuleClauseWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: CompatibilityRuleClauseScalarFieldEnum | CompatibilityRuleClauseScalarFieldEnum[]
-  }
-
-  /**
-   * CategoryAttribute.targetCompatibilityClauses
-   */
-  export type CategoryAttribute$targetCompatibilityClausesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    where?: CompatibilityRuleClauseWhereInput
-    orderBy?: CompatibilityRuleClauseOrderByWithRelationInput | CompatibilityRuleClauseOrderByWithRelationInput[]
-    cursor?: CompatibilityRuleClauseWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: CompatibilityRuleClauseScalarFieldEnum | CompatibilityRuleClauseScalarFieldEnum[]
   }
 
   /**
@@ -17269,2356 +14468,6 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: AttributeOptionInclude<ExtArgs> | null
-  }
-
-
-  /**
-   * Model CompatibilityRule
-   */
-
-  export type AggregateCompatibilityRule = {
-    _count: CompatibilityRuleCountAggregateOutputType | null
-    _avg: CompatibilityRuleAvgAggregateOutputType | null
-    _sum: CompatibilityRuleSumAggregateOutputType | null
-    _min: CompatibilityRuleMinAggregateOutputType | null
-    _max: CompatibilityRuleMaxAggregateOutputType | null
-  }
-
-  export type CompatibilityRuleAvgAggregateOutputType = {
-    sourceCategoryId: number | null
-    targetCategoryId: number | null
-    sortOrder: number | null
-  }
-
-  export type CompatibilityRuleSumAggregateOutputType = {
-    sourceCategoryId: number | null
-    targetCategoryId: number | null
-    sortOrder: number | null
-  }
-
-  export type CompatibilityRuleMinAggregateOutputType = {
-    id: string | null
-    sourceCategoryId: number | null
-    targetCategoryId: number | null
-    name: string | null
-    message: string | null
-    severity: $Enums.CompatibilityLevel | null
-    isActive: boolean | null
-    sortOrder: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type CompatibilityRuleMaxAggregateOutputType = {
-    id: string | null
-    sourceCategoryId: number | null
-    targetCategoryId: number | null
-    name: string | null
-    message: string | null
-    severity: $Enums.CompatibilityLevel | null
-    isActive: boolean | null
-    sortOrder: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type CompatibilityRuleCountAggregateOutputType = {
-    id: number
-    sourceCategoryId: number
-    targetCategoryId: number
-    name: number
-    message: number
-    severity: number
-    isActive: number
-    sortOrder: number
-    createdAt: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type CompatibilityRuleAvgAggregateInputType = {
-    sourceCategoryId?: true
-    targetCategoryId?: true
-    sortOrder?: true
-  }
-
-  export type CompatibilityRuleSumAggregateInputType = {
-    sourceCategoryId?: true
-    targetCategoryId?: true
-    sortOrder?: true
-  }
-
-  export type CompatibilityRuleMinAggregateInputType = {
-    id?: true
-    sourceCategoryId?: true
-    targetCategoryId?: true
-    name?: true
-    message?: true
-    severity?: true
-    isActive?: true
-    sortOrder?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type CompatibilityRuleMaxAggregateInputType = {
-    id?: true
-    sourceCategoryId?: true
-    targetCategoryId?: true
-    name?: true
-    message?: true
-    severity?: true
-    isActive?: true
-    sortOrder?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type CompatibilityRuleCountAggregateInputType = {
-    id?: true
-    sourceCategoryId?: true
-    targetCategoryId?: true
-    name?: true
-    message?: true
-    severity?: true
-    isActive?: true
-    sortOrder?: true
-    createdAt?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type CompatibilityRuleAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which CompatibilityRule to aggregate.
-     */
-    where?: CompatibilityRuleWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRules to fetch.
-     */
-    orderBy?: CompatibilityRuleOrderByWithRelationInput | CompatibilityRuleOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: CompatibilityRuleWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRules from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRules.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned CompatibilityRules
-    **/
-    _count?: true | CompatibilityRuleCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: CompatibilityRuleAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: CompatibilityRuleSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: CompatibilityRuleMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: CompatibilityRuleMaxAggregateInputType
-  }
-
-  export type GetCompatibilityRuleAggregateType<T extends CompatibilityRuleAggregateArgs> = {
-        [P in keyof T & keyof AggregateCompatibilityRule]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateCompatibilityRule[P]>
-      : GetScalarType<T[P], AggregateCompatibilityRule[P]>
-  }
-
-
-
-
-  export type CompatibilityRuleGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CompatibilityRuleWhereInput
-    orderBy?: CompatibilityRuleOrderByWithAggregationInput | CompatibilityRuleOrderByWithAggregationInput[]
-    by: CompatibilityRuleScalarFieldEnum[] | CompatibilityRuleScalarFieldEnum
-    having?: CompatibilityRuleScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: CompatibilityRuleCountAggregateInputType | true
-    _avg?: CompatibilityRuleAvgAggregateInputType
-    _sum?: CompatibilityRuleSumAggregateInputType
-    _min?: CompatibilityRuleMinAggregateInputType
-    _max?: CompatibilityRuleMaxAggregateInputType
-  }
-
-  export type CompatibilityRuleGroupByOutputType = {
-    id: string
-    sourceCategoryId: number
-    targetCategoryId: number
-    name: string
-    message: string | null
-    severity: $Enums.CompatibilityLevel
-    isActive: boolean
-    sortOrder: number
-    createdAt: Date
-    updatedAt: Date
-    _count: CompatibilityRuleCountAggregateOutputType | null
-    _avg: CompatibilityRuleAvgAggregateOutputType | null
-    _sum: CompatibilityRuleSumAggregateOutputType | null
-    _min: CompatibilityRuleMinAggregateOutputType | null
-    _max: CompatibilityRuleMaxAggregateOutputType | null
-  }
-
-  type GetCompatibilityRuleGroupByPayload<T extends CompatibilityRuleGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<CompatibilityRuleGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof CompatibilityRuleGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], CompatibilityRuleGroupByOutputType[P]>
-            : GetScalarType<T[P], CompatibilityRuleGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type CompatibilityRuleSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    sourceCategoryId?: boolean
-    targetCategoryId?: boolean
-    name?: boolean
-    message?: boolean
-    severity?: boolean
-    isActive?: boolean
-    sortOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    sourceCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    targetCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    clauses?: boolean | CompatibilityRule$clausesArgs<ExtArgs>
-    _count?: boolean | CompatibilityRuleCountOutputTypeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["compatibilityRule"]>
-
-  export type CompatibilityRuleSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    sourceCategoryId?: boolean
-    targetCategoryId?: boolean
-    name?: boolean
-    message?: boolean
-    severity?: boolean
-    isActive?: boolean
-    sortOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    sourceCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    targetCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["compatibilityRule"]>
-
-  export type CompatibilityRuleSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    sourceCategoryId?: boolean
-    targetCategoryId?: boolean
-    name?: boolean
-    message?: boolean
-    severity?: boolean
-    isActive?: boolean
-    sortOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    sourceCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    targetCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["compatibilityRule"]>
-
-  export type CompatibilityRuleSelectScalar = {
-    id?: boolean
-    sourceCategoryId?: boolean
-    targetCategoryId?: boolean
-    name?: boolean
-    message?: boolean
-    severity?: boolean
-    isActive?: boolean
-    sortOrder?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }
-
-  export type CompatibilityRuleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "sourceCategoryId" | "targetCategoryId" | "name" | "message" | "severity" | "isActive" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["compatibilityRule"]>
-  export type CompatibilityRuleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    sourceCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    targetCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    clauses?: boolean | CompatibilityRule$clausesArgs<ExtArgs>
-    _count?: boolean | CompatibilityRuleCountOutputTypeDefaultArgs<ExtArgs>
-  }
-  export type CompatibilityRuleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    sourceCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    targetCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-  }
-  export type CompatibilityRuleIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    sourceCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-    targetCategory?: boolean | CategoryDefaultArgs<ExtArgs>
-  }
-
-  export type $CompatibilityRulePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "CompatibilityRule"
-    objects: {
-      sourceCategory: Prisma.$CategoryPayload<ExtArgs>
-      targetCategory: Prisma.$CategoryPayload<ExtArgs>
-      clauses: Prisma.$CompatibilityRuleClausePayload<ExtArgs>[]
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      sourceCategoryId: number
-      targetCategoryId: number
-      name: string
-      message: string | null
-      severity: $Enums.CompatibilityLevel
-      isActive: boolean
-      sortOrder: number
-      createdAt: Date
-      updatedAt: Date
-    }, ExtArgs["result"]["compatibilityRule"]>
-    composites: {}
-  }
-
-  type CompatibilityRuleGetPayload<S extends boolean | null | undefined | CompatibilityRuleDefaultArgs> = $Result.GetResult<Prisma.$CompatibilityRulePayload, S>
-
-  type CompatibilityRuleCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<CompatibilityRuleFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: CompatibilityRuleCountAggregateInputType | true
-    }
-
-  export interface CompatibilityRuleDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CompatibilityRule'], meta: { name: 'CompatibilityRule' } }
-    /**
-     * Find zero or one CompatibilityRule that matches the filter.
-     * @param {CompatibilityRuleFindUniqueArgs} args - Arguments to find a CompatibilityRule
-     * @example
-     * // Get one CompatibilityRule
-     * const compatibilityRule = await prisma.compatibilityRule.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends CompatibilityRuleFindUniqueArgs>(args: SelectSubset<T, CompatibilityRuleFindUniqueArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one CompatibilityRule that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {CompatibilityRuleFindUniqueOrThrowArgs} args - Arguments to find a CompatibilityRule
-     * @example
-     * // Get one CompatibilityRule
-     * const compatibilityRule = await prisma.compatibilityRule.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends CompatibilityRuleFindUniqueOrThrowArgs>(args: SelectSubset<T, CompatibilityRuleFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first CompatibilityRule that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleFindFirstArgs} args - Arguments to find a CompatibilityRule
-     * @example
-     * // Get one CompatibilityRule
-     * const compatibilityRule = await prisma.compatibilityRule.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends CompatibilityRuleFindFirstArgs>(args?: SelectSubset<T, CompatibilityRuleFindFirstArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first CompatibilityRule that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleFindFirstOrThrowArgs} args - Arguments to find a CompatibilityRule
-     * @example
-     * // Get one CompatibilityRule
-     * const compatibilityRule = await prisma.compatibilityRule.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends CompatibilityRuleFindFirstOrThrowArgs>(args?: SelectSubset<T, CompatibilityRuleFindFirstOrThrowArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more CompatibilityRules that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all CompatibilityRules
-     * const compatibilityRules = await prisma.compatibilityRule.findMany()
-     * 
-     * // Get first 10 CompatibilityRules
-     * const compatibilityRules = await prisma.compatibilityRule.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const compatibilityRuleWithIdOnly = await prisma.compatibilityRule.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends CompatibilityRuleFindManyArgs>(args?: SelectSubset<T, CompatibilityRuleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a CompatibilityRule.
-     * @param {CompatibilityRuleCreateArgs} args - Arguments to create a CompatibilityRule.
-     * @example
-     * // Create one CompatibilityRule
-     * const CompatibilityRule = await prisma.compatibilityRule.create({
-     *   data: {
-     *     // ... data to create a CompatibilityRule
-     *   }
-     * })
-     * 
-     */
-    create<T extends CompatibilityRuleCreateArgs>(args: SelectSubset<T, CompatibilityRuleCreateArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many CompatibilityRules.
-     * @param {CompatibilityRuleCreateManyArgs} args - Arguments to create many CompatibilityRules.
-     * @example
-     * // Create many CompatibilityRules
-     * const compatibilityRule = await prisma.compatibilityRule.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends CompatibilityRuleCreateManyArgs>(args?: SelectSubset<T, CompatibilityRuleCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many CompatibilityRules and returns the data saved in the database.
-     * @param {CompatibilityRuleCreateManyAndReturnArgs} args - Arguments to create many CompatibilityRules.
-     * @example
-     * // Create many CompatibilityRules
-     * const compatibilityRule = await prisma.compatibilityRule.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many CompatibilityRules and only return the `id`
-     * const compatibilityRuleWithIdOnly = await prisma.compatibilityRule.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends CompatibilityRuleCreateManyAndReturnArgs>(args?: SelectSubset<T, CompatibilityRuleCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Delete a CompatibilityRule.
-     * @param {CompatibilityRuleDeleteArgs} args - Arguments to delete one CompatibilityRule.
-     * @example
-     * // Delete one CompatibilityRule
-     * const CompatibilityRule = await prisma.compatibilityRule.delete({
-     *   where: {
-     *     // ... filter to delete one CompatibilityRule
-     *   }
-     * })
-     * 
-     */
-    delete<T extends CompatibilityRuleDeleteArgs>(args: SelectSubset<T, CompatibilityRuleDeleteArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one CompatibilityRule.
-     * @param {CompatibilityRuleUpdateArgs} args - Arguments to update one CompatibilityRule.
-     * @example
-     * // Update one CompatibilityRule
-     * const compatibilityRule = await prisma.compatibilityRule.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends CompatibilityRuleUpdateArgs>(args: SelectSubset<T, CompatibilityRuleUpdateArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more CompatibilityRules.
-     * @param {CompatibilityRuleDeleteManyArgs} args - Arguments to filter CompatibilityRules to delete.
-     * @example
-     * // Delete a few CompatibilityRules
-     * const { count } = await prisma.compatibilityRule.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends CompatibilityRuleDeleteManyArgs>(args?: SelectSubset<T, CompatibilityRuleDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more CompatibilityRules.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many CompatibilityRules
-     * const compatibilityRule = await prisma.compatibilityRule.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends CompatibilityRuleUpdateManyArgs>(args: SelectSubset<T, CompatibilityRuleUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more CompatibilityRules and returns the data updated in the database.
-     * @param {CompatibilityRuleUpdateManyAndReturnArgs} args - Arguments to update many CompatibilityRules.
-     * @example
-     * // Update many CompatibilityRules
-     * const compatibilityRule = await prisma.compatibilityRule.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more CompatibilityRules and only return the `id`
-     * const compatibilityRuleWithIdOnly = await prisma.compatibilityRule.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends CompatibilityRuleUpdateManyAndReturnArgs>(args: SelectSubset<T, CompatibilityRuleUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Create or update one CompatibilityRule.
-     * @param {CompatibilityRuleUpsertArgs} args - Arguments to update or create a CompatibilityRule.
-     * @example
-     * // Update or create a CompatibilityRule
-     * const compatibilityRule = await prisma.compatibilityRule.upsert({
-     *   create: {
-     *     // ... data to create a CompatibilityRule
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the CompatibilityRule we want to update
-     *   }
-     * })
-     */
-    upsert<T extends CompatibilityRuleUpsertArgs>(args: SelectSubset<T, CompatibilityRuleUpsertArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of CompatibilityRules.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleCountArgs} args - Arguments to filter CompatibilityRules to count.
-     * @example
-     * // Count the number of CompatibilityRules
-     * const count = await prisma.compatibilityRule.count({
-     *   where: {
-     *     // ... the filter for the CompatibilityRules we want to count
-     *   }
-     * })
-    **/
-    count<T extends CompatibilityRuleCountArgs>(
-      args?: Subset<T, CompatibilityRuleCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], CompatibilityRuleCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a CompatibilityRule.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends CompatibilityRuleAggregateArgs>(args: Subset<T, CompatibilityRuleAggregateArgs>): Prisma.PrismaPromise<GetCompatibilityRuleAggregateType<T>>
-
-    /**
-     * Group by CompatibilityRule.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends CompatibilityRuleGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: CompatibilityRuleGroupByArgs['orderBy'] }
-        : { orderBy?: CompatibilityRuleGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, CompatibilityRuleGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCompatibilityRuleGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the CompatibilityRule model
-   */
-  readonly fields: CompatibilityRuleFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for CompatibilityRule.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__CompatibilityRuleClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    sourceCategory<T extends CategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CategoryDefaultArgs<ExtArgs>>): Prisma__CategoryClient<$Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    targetCategory<T extends CategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CategoryDefaultArgs<ExtArgs>>): Prisma__CategoryClient<$Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    clauses<T extends CompatibilityRule$clausesArgs<ExtArgs> = {}>(args?: Subset<T, CompatibilityRule$clausesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the CompatibilityRule model
-   */
-  interface CompatibilityRuleFieldRefs {
-    readonly id: FieldRef<"CompatibilityRule", 'String'>
-    readonly sourceCategoryId: FieldRef<"CompatibilityRule", 'Int'>
-    readonly targetCategoryId: FieldRef<"CompatibilityRule", 'Int'>
-    readonly name: FieldRef<"CompatibilityRule", 'String'>
-    readonly message: FieldRef<"CompatibilityRule", 'String'>
-    readonly severity: FieldRef<"CompatibilityRule", 'CompatibilityLevel'>
-    readonly isActive: FieldRef<"CompatibilityRule", 'Boolean'>
-    readonly sortOrder: FieldRef<"CompatibilityRule", 'Int'>
-    readonly createdAt: FieldRef<"CompatibilityRule", 'DateTime'>
-    readonly updatedAt: FieldRef<"CompatibilityRule", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * CompatibilityRule findUnique
-   */
-  export type CompatibilityRuleFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRule to fetch.
-     */
-    where: CompatibilityRuleWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRule findUniqueOrThrow
-   */
-  export type CompatibilityRuleFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRule to fetch.
-     */
-    where: CompatibilityRuleWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRule findFirst
-   */
-  export type CompatibilityRuleFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRule to fetch.
-     */
-    where?: CompatibilityRuleWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRules to fetch.
-     */
-    orderBy?: CompatibilityRuleOrderByWithRelationInput | CompatibilityRuleOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for CompatibilityRules.
-     */
-    cursor?: CompatibilityRuleWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRules from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRules.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of CompatibilityRules.
-     */
-    distinct?: CompatibilityRuleScalarFieldEnum | CompatibilityRuleScalarFieldEnum[]
-  }
-
-  /**
-   * CompatibilityRule findFirstOrThrow
-   */
-  export type CompatibilityRuleFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRule to fetch.
-     */
-    where?: CompatibilityRuleWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRules to fetch.
-     */
-    orderBy?: CompatibilityRuleOrderByWithRelationInput | CompatibilityRuleOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for CompatibilityRules.
-     */
-    cursor?: CompatibilityRuleWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRules from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRules.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of CompatibilityRules.
-     */
-    distinct?: CompatibilityRuleScalarFieldEnum | CompatibilityRuleScalarFieldEnum[]
-  }
-
-  /**
-   * CompatibilityRule findMany
-   */
-  export type CompatibilityRuleFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRules to fetch.
-     */
-    where?: CompatibilityRuleWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRules to fetch.
-     */
-    orderBy?: CompatibilityRuleOrderByWithRelationInput | CompatibilityRuleOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing CompatibilityRules.
-     */
-    cursor?: CompatibilityRuleWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRules from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRules.
-     */
-    skip?: number
-    distinct?: CompatibilityRuleScalarFieldEnum | CompatibilityRuleScalarFieldEnum[]
-  }
-
-  /**
-   * CompatibilityRule create
-   */
-  export type CompatibilityRuleCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * The data needed to create a CompatibilityRule.
-     */
-    data: XOR<CompatibilityRuleCreateInput, CompatibilityRuleUncheckedCreateInput>
-  }
-
-  /**
-   * CompatibilityRule createMany
-   */
-  export type CompatibilityRuleCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many CompatibilityRules.
-     */
-    data: CompatibilityRuleCreateManyInput | CompatibilityRuleCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * CompatibilityRule createManyAndReturn
-   */
-  export type CompatibilityRuleCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * The data used to create many CompatibilityRules.
-     */
-    data: CompatibilityRuleCreateManyInput | CompatibilityRuleCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleIncludeCreateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * CompatibilityRule update
-   */
-  export type CompatibilityRuleUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * The data needed to update a CompatibilityRule.
-     */
-    data: XOR<CompatibilityRuleUpdateInput, CompatibilityRuleUncheckedUpdateInput>
-    /**
-     * Choose, which CompatibilityRule to update.
-     */
-    where: CompatibilityRuleWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRule updateMany
-   */
-  export type CompatibilityRuleUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update CompatibilityRules.
-     */
-    data: XOR<CompatibilityRuleUpdateManyMutationInput, CompatibilityRuleUncheckedUpdateManyInput>
-    /**
-     * Filter which CompatibilityRules to update
-     */
-    where?: CompatibilityRuleWhereInput
-    /**
-     * Limit how many CompatibilityRules to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * CompatibilityRule updateManyAndReturn
-   */
-  export type CompatibilityRuleUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * The data used to update CompatibilityRules.
-     */
-    data: XOR<CompatibilityRuleUpdateManyMutationInput, CompatibilityRuleUncheckedUpdateManyInput>
-    /**
-     * Filter which CompatibilityRules to update
-     */
-    where?: CompatibilityRuleWhereInput
-    /**
-     * Limit how many CompatibilityRules to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleIncludeUpdateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * CompatibilityRule upsert
-   */
-  export type CompatibilityRuleUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * The filter to search for the CompatibilityRule to update in case it exists.
-     */
-    where: CompatibilityRuleWhereUniqueInput
-    /**
-     * In case the CompatibilityRule found by the `where` argument doesn't exist, create a new CompatibilityRule with this data.
-     */
-    create: XOR<CompatibilityRuleCreateInput, CompatibilityRuleUncheckedCreateInput>
-    /**
-     * In case the CompatibilityRule was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<CompatibilityRuleUpdateInput, CompatibilityRuleUncheckedUpdateInput>
-  }
-
-  /**
-   * CompatibilityRule delete
-   */
-  export type CompatibilityRuleDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-    /**
-     * Filter which CompatibilityRule to delete.
-     */
-    where: CompatibilityRuleWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRule deleteMany
-   */
-  export type CompatibilityRuleDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which CompatibilityRules to delete
-     */
-    where?: CompatibilityRuleWhereInput
-    /**
-     * Limit how many CompatibilityRules to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * CompatibilityRule.clauses
-   */
-  export type CompatibilityRule$clausesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    where?: CompatibilityRuleClauseWhereInput
-    orderBy?: CompatibilityRuleClauseOrderByWithRelationInput | CompatibilityRuleClauseOrderByWithRelationInput[]
-    cursor?: CompatibilityRuleClauseWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: CompatibilityRuleClauseScalarFieldEnum | CompatibilityRuleClauseScalarFieldEnum[]
-  }
-
-  /**
-   * CompatibilityRule without action
-   */
-  export type CompatibilityRuleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRule
-     */
-    select?: CompatibilityRuleSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRule
-     */
-    omit?: CompatibilityRuleOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleInclude<ExtArgs> | null
-  }
-
-
-  /**
-   * Model CompatibilityRuleClause
-   */
-
-  export type AggregateCompatibilityRuleClause = {
-    _count: CompatibilityRuleClauseCountAggregateOutputType | null
-    _avg: CompatibilityRuleClauseAvgAggregateOutputType | null
-    _sum: CompatibilityRuleClauseSumAggregateOutputType | null
-    _min: CompatibilityRuleClauseMinAggregateOutputType | null
-    _max: CompatibilityRuleClauseMaxAggregateOutputType | null
-  }
-
-  export type CompatibilityRuleClauseAvgAggregateOutputType = {
-    sortOrder: number | null
-  }
-
-  export type CompatibilityRuleClauseSumAggregateOutputType = {
-    sortOrder: number | null
-  }
-
-  export type CompatibilityRuleClauseMinAggregateOutputType = {
-    id: string | null
-    ruleId: string | null
-    sourceAttributeId: string | null
-    targetAttributeId: string | null
-    operator: string | null
-    sourceValue: string | null
-    targetValue: string | null
-    sortOrder: number | null
-  }
-
-  export type CompatibilityRuleClauseMaxAggregateOutputType = {
-    id: string | null
-    ruleId: string | null
-    sourceAttributeId: string | null
-    targetAttributeId: string | null
-    operator: string | null
-    sourceValue: string | null
-    targetValue: string | null
-    sortOrder: number | null
-  }
-
-  export type CompatibilityRuleClauseCountAggregateOutputType = {
-    id: number
-    ruleId: number
-    sourceAttributeId: number
-    targetAttributeId: number
-    operator: number
-    sourceValue: number
-    targetValue: number
-    sortOrder: number
-    _all: number
-  }
-
-
-  export type CompatibilityRuleClauseAvgAggregateInputType = {
-    sortOrder?: true
-  }
-
-  export type CompatibilityRuleClauseSumAggregateInputType = {
-    sortOrder?: true
-  }
-
-  export type CompatibilityRuleClauseMinAggregateInputType = {
-    id?: true
-    ruleId?: true
-    sourceAttributeId?: true
-    targetAttributeId?: true
-    operator?: true
-    sourceValue?: true
-    targetValue?: true
-    sortOrder?: true
-  }
-
-  export type CompatibilityRuleClauseMaxAggregateInputType = {
-    id?: true
-    ruleId?: true
-    sourceAttributeId?: true
-    targetAttributeId?: true
-    operator?: true
-    sourceValue?: true
-    targetValue?: true
-    sortOrder?: true
-  }
-
-  export type CompatibilityRuleClauseCountAggregateInputType = {
-    id?: true
-    ruleId?: true
-    sourceAttributeId?: true
-    targetAttributeId?: true
-    operator?: true
-    sourceValue?: true
-    targetValue?: true
-    sortOrder?: true
-    _all?: true
-  }
-
-  export type CompatibilityRuleClauseAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which CompatibilityRuleClause to aggregate.
-     */
-    where?: CompatibilityRuleClauseWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRuleClauses to fetch.
-     */
-    orderBy?: CompatibilityRuleClauseOrderByWithRelationInput | CompatibilityRuleClauseOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: CompatibilityRuleClauseWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRuleClauses from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRuleClauses.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned CompatibilityRuleClauses
-    **/
-    _count?: true | CompatibilityRuleClauseCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: CompatibilityRuleClauseAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: CompatibilityRuleClauseSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: CompatibilityRuleClauseMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: CompatibilityRuleClauseMaxAggregateInputType
-  }
-
-  export type GetCompatibilityRuleClauseAggregateType<T extends CompatibilityRuleClauseAggregateArgs> = {
-        [P in keyof T & keyof AggregateCompatibilityRuleClause]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateCompatibilityRuleClause[P]>
-      : GetScalarType<T[P], AggregateCompatibilityRuleClause[P]>
-  }
-
-
-
-
-  export type CompatibilityRuleClauseGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CompatibilityRuleClauseWhereInput
-    orderBy?: CompatibilityRuleClauseOrderByWithAggregationInput | CompatibilityRuleClauseOrderByWithAggregationInput[]
-    by: CompatibilityRuleClauseScalarFieldEnum[] | CompatibilityRuleClauseScalarFieldEnum
-    having?: CompatibilityRuleClauseScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: CompatibilityRuleClauseCountAggregateInputType | true
-    _avg?: CompatibilityRuleClauseAvgAggregateInputType
-    _sum?: CompatibilityRuleClauseSumAggregateInputType
-    _min?: CompatibilityRuleClauseMinAggregateInputType
-    _max?: CompatibilityRuleClauseMaxAggregateInputType
-  }
-
-  export type CompatibilityRuleClauseGroupByOutputType = {
-    id: string
-    ruleId: string
-    sourceAttributeId: string
-    targetAttributeId: string
-    operator: string
-    sourceValue: string | null
-    targetValue: string | null
-    sortOrder: number
-    _count: CompatibilityRuleClauseCountAggregateOutputType | null
-    _avg: CompatibilityRuleClauseAvgAggregateOutputType | null
-    _sum: CompatibilityRuleClauseSumAggregateOutputType | null
-    _min: CompatibilityRuleClauseMinAggregateOutputType | null
-    _max: CompatibilityRuleClauseMaxAggregateOutputType | null
-  }
-
-  type GetCompatibilityRuleClauseGroupByPayload<T extends CompatibilityRuleClauseGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<CompatibilityRuleClauseGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof CompatibilityRuleClauseGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], CompatibilityRuleClauseGroupByOutputType[P]>
-            : GetScalarType<T[P], CompatibilityRuleClauseGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type CompatibilityRuleClauseSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    ruleId?: boolean
-    sourceAttributeId?: boolean
-    targetAttributeId?: boolean
-    operator?: boolean
-    sourceValue?: boolean
-    targetValue?: boolean
-    sortOrder?: boolean
-    rule?: boolean | CompatibilityRuleDefaultArgs<ExtArgs>
-    sourceAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-    targetAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["compatibilityRuleClause"]>
-
-  export type CompatibilityRuleClauseSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    ruleId?: boolean
-    sourceAttributeId?: boolean
-    targetAttributeId?: boolean
-    operator?: boolean
-    sourceValue?: boolean
-    targetValue?: boolean
-    sortOrder?: boolean
-    rule?: boolean | CompatibilityRuleDefaultArgs<ExtArgs>
-    sourceAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-    targetAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["compatibilityRuleClause"]>
-
-  export type CompatibilityRuleClauseSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    ruleId?: boolean
-    sourceAttributeId?: boolean
-    targetAttributeId?: boolean
-    operator?: boolean
-    sourceValue?: boolean
-    targetValue?: boolean
-    sortOrder?: boolean
-    rule?: boolean | CompatibilityRuleDefaultArgs<ExtArgs>
-    sourceAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-    targetAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["compatibilityRuleClause"]>
-
-  export type CompatibilityRuleClauseSelectScalar = {
-    id?: boolean
-    ruleId?: boolean
-    sourceAttributeId?: boolean
-    targetAttributeId?: boolean
-    operator?: boolean
-    sourceValue?: boolean
-    targetValue?: boolean
-    sortOrder?: boolean
-  }
-
-  export type CompatibilityRuleClauseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ruleId" | "sourceAttributeId" | "targetAttributeId" | "operator" | "sourceValue" | "targetValue" | "sortOrder", ExtArgs["result"]["compatibilityRuleClause"]>
-  export type CompatibilityRuleClauseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    rule?: boolean | CompatibilityRuleDefaultArgs<ExtArgs>
-    sourceAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-    targetAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-  }
-  export type CompatibilityRuleClauseIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    rule?: boolean | CompatibilityRuleDefaultArgs<ExtArgs>
-    sourceAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-    targetAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-  }
-  export type CompatibilityRuleClauseIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    rule?: boolean | CompatibilityRuleDefaultArgs<ExtArgs>
-    sourceAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-    targetAttribute?: boolean | CategoryAttributeDefaultArgs<ExtArgs>
-  }
-
-  export type $CompatibilityRuleClausePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "CompatibilityRuleClause"
-    objects: {
-      rule: Prisma.$CompatibilityRulePayload<ExtArgs>
-      sourceAttribute: Prisma.$CategoryAttributePayload<ExtArgs>
-      targetAttribute: Prisma.$CategoryAttributePayload<ExtArgs>
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      ruleId: string
-      sourceAttributeId: string
-      targetAttributeId: string
-      operator: string
-      sourceValue: string | null
-      targetValue: string | null
-      sortOrder: number
-    }, ExtArgs["result"]["compatibilityRuleClause"]>
-    composites: {}
-  }
-
-  type CompatibilityRuleClauseGetPayload<S extends boolean | null | undefined | CompatibilityRuleClauseDefaultArgs> = $Result.GetResult<Prisma.$CompatibilityRuleClausePayload, S>
-
-  type CompatibilityRuleClauseCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<CompatibilityRuleClauseFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: CompatibilityRuleClauseCountAggregateInputType | true
-    }
-
-  export interface CompatibilityRuleClauseDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CompatibilityRuleClause'], meta: { name: 'CompatibilityRuleClause' } }
-    /**
-     * Find zero or one CompatibilityRuleClause that matches the filter.
-     * @param {CompatibilityRuleClauseFindUniqueArgs} args - Arguments to find a CompatibilityRuleClause
-     * @example
-     * // Get one CompatibilityRuleClause
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends CompatibilityRuleClauseFindUniqueArgs>(args: SelectSubset<T, CompatibilityRuleClauseFindUniqueArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one CompatibilityRuleClause that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {CompatibilityRuleClauseFindUniqueOrThrowArgs} args - Arguments to find a CompatibilityRuleClause
-     * @example
-     * // Get one CompatibilityRuleClause
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends CompatibilityRuleClauseFindUniqueOrThrowArgs>(args: SelectSubset<T, CompatibilityRuleClauseFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first CompatibilityRuleClause that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleClauseFindFirstArgs} args - Arguments to find a CompatibilityRuleClause
-     * @example
-     * // Get one CompatibilityRuleClause
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends CompatibilityRuleClauseFindFirstArgs>(args?: SelectSubset<T, CompatibilityRuleClauseFindFirstArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first CompatibilityRuleClause that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleClauseFindFirstOrThrowArgs} args - Arguments to find a CompatibilityRuleClause
-     * @example
-     * // Get one CompatibilityRuleClause
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends CompatibilityRuleClauseFindFirstOrThrowArgs>(args?: SelectSubset<T, CompatibilityRuleClauseFindFirstOrThrowArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more CompatibilityRuleClauses that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleClauseFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all CompatibilityRuleClauses
-     * const compatibilityRuleClauses = await prisma.compatibilityRuleClause.findMany()
-     * 
-     * // Get first 10 CompatibilityRuleClauses
-     * const compatibilityRuleClauses = await prisma.compatibilityRuleClause.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const compatibilityRuleClauseWithIdOnly = await prisma.compatibilityRuleClause.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends CompatibilityRuleClauseFindManyArgs>(args?: SelectSubset<T, CompatibilityRuleClauseFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a CompatibilityRuleClause.
-     * @param {CompatibilityRuleClauseCreateArgs} args - Arguments to create a CompatibilityRuleClause.
-     * @example
-     * // Create one CompatibilityRuleClause
-     * const CompatibilityRuleClause = await prisma.compatibilityRuleClause.create({
-     *   data: {
-     *     // ... data to create a CompatibilityRuleClause
-     *   }
-     * })
-     * 
-     */
-    create<T extends CompatibilityRuleClauseCreateArgs>(args: SelectSubset<T, CompatibilityRuleClauseCreateArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many CompatibilityRuleClauses.
-     * @param {CompatibilityRuleClauseCreateManyArgs} args - Arguments to create many CompatibilityRuleClauses.
-     * @example
-     * // Create many CompatibilityRuleClauses
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends CompatibilityRuleClauseCreateManyArgs>(args?: SelectSubset<T, CompatibilityRuleClauseCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many CompatibilityRuleClauses and returns the data saved in the database.
-     * @param {CompatibilityRuleClauseCreateManyAndReturnArgs} args - Arguments to create many CompatibilityRuleClauses.
-     * @example
-     * // Create many CompatibilityRuleClauses
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many CompatibilityRuleClauses and only return the `id`
-     * const compatibilityRuleClauseWithIdOnly = await prisma.compatibilityRuleClause.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends CompatibilityRuleClauseCreateManyAndReturnArgs>(args?: SelectSubset<T, CompatibilityRuleClauseCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Delete a CompatibilityRuleClause.
-     * @param {CompatibilityRuleClauseDeleteArgs} args - Arguments to delete one CompatibilityRuleClause.
-     * @example
-     * // Delete one CompatibilityRuleClause
-     * const CompatibilityRuleClause = await prisma.compatibilityRuleClause.delete({
-     *   where: {
-     *     // ... filter to delete one CompatibilityRuleClause
-     *   }
-     * })
-     * 
-     */
-    delete<T extends CompatibilityRuleClauseDeleteArgs>(args: SelectSubset<T, CompatibilityRuleClauseDeleteArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one CompatibilityRuleClause.
-     * @param {CompatibilityRuleClauseUpdateArgs} args - Arguments to update one CompatibilityRuleClause.
-     * @example
-     * // Update one CompatibilityRuleClause
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends CompatibilityRuleClauseUpdateArgs>(args: SelectSubset<T, CompatibilityRuleClauseUpdateArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more CompatibilityRuleClauses.
-     * @param {CompatibilityRuleClauseDeleteManyArgs} args - Arguments to filter CompatibilityRuleClauses to delete.
-     * @example
-     * // Delete a few CompatibilityRuleClauses
-     * const { count } = await prisma.compatibilityRuleClause.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends CompatibilityRuleClauseDeleteManyArgs>(args?: SelectSubset<T, CompatibilityRuleClauseDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more CompatibilityRuleClauses.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleClauseUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many CompatibilityRuleClauses
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends CompatibilityRuleClauseUpdateManyArgs>(args: SelectSubset<T, CompatibilityRuleClauseUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more CompatibilityRuleClauses and returns the data updated in the database.
-     * @param {CompatibilityRuleClauseUpdateManyAndReturnArgs} args - Arguments to update many CompatibilityRuleClauses.
-     * @example
-     * // Update many CompatibilityRuleClauses
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more CompatibilityRuleClauses and only return the `id`
-     * const compatibilityRuleClauseWithIdOnly = await prisma.compatibilityRuleClause.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends CompatibilityRuleClauseUpdateManyAndReturnArgs>(args: SelectSubset<T, CompatibilityRuleClauseUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Create or update one CompatibilityRuleClause.
-     * @param {CompatibilityRuleClauseUpsertArgs} args - Arguments to update or create a CompatibilityRuleClause.
-     * @example
-     * // Update or create a CompatibilityRuleClause
-     * const compatibilityRuleClause = await prisma.compatibilityRuleClause.upsert({
-     *   create: {
-     *     // ... data to create a CompatibilityRuleClause
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the CompatibilityRuleClause we want to update
-     *   }
-     * })
-     */
-    upsert<T extends CompatibilityRuleClauseUpsertArgs>(args: SelectSubset<T, CompatibilityRuleClauseUpsertArgs<ExtArgs>>): Prisma__CompatibilityRuleClauseClient<$Result.GetResult<Prisma.$CompatibilityRuleClausePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of CompatibilityRuleClauses.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleClauseCountArgs} args - Arguments to filter CompatibilityRuleClauses to count.
-     * @example
-     * // Count the number of CompatibilityRuleClauses
-     * const count = await prisma.compatibilityRuleClause.count({
-     *   where: {
-     *     // ... the filter for the CompatibilityRuleClauses we want to count
-     *   }
-     * })
-    **/
-    count<T extends CompatibilityRuleClauseCountArgs>(
-      args?: Subset<T, CompatibilityRuleClauseCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], CompatibilityRuleClauseCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a CompatibilityRuleClause.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleClauseAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends CompatibilityRuleClauseAggregateArgs>(args: Subset<T, CompatibilityRuleClauseAggregateArgs>): Prisma.PrismaPromise<GetCompatibilityRuleClauseAggregateType<T>>
-
-    /**
-     * Group by CompatibilityRuleClause.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {CompatibilityRuleClauseGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends CompatibilityRuleClauseGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: CompatibilityRuleClauseGroupByArgs['orderBy'] }
-        : { orderBy?: CompatibilityRuleClauseGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, CompatibilityRuleClauseGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCompatibilityRuleClauseGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the CompatibilityRuleClause model
-   */
-  readonly fields: CompatibilityRuleClauseFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for CompatibilityRuleClause.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__CompatibilityRuleClauseClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    rule<T extends CompatibilityRuleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CompatibilityRuleDefaultArgs<ExtArgs>>): Prisma__CompatibilityRuleClient<$Result.GetResult<Prisma.$CompatibilityRulePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    sourceAttribute<T extends CategoryAttributeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CategoryAttributeDefaultArgs<ExtArgs>>): Prisma__CategoryAttributeClient<$Result.GetResult<Prisma.$CategoryAttributePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    targetAttribute<T extends CategoryAttributeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CategoryAttributeDefaultArgs<ExtArgs>>): Prisma__CategoryAttributeClient<$Result.GetResult<Prisma.$CategoryAttributePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the CompatibilityRuleClause model
-   */
-  interface CompatibilityRuleClauseFieldRefs {
-    readonly id: FieldRef<"CompatibilityRuleClause", 'String'>
-    readonly ruleId: FieldRef<"CompatibilityRuleClause", 'String'>
-    readonly sourceAttributeId: FieldRef<"CompatibilityRuleClause", 'String'>
-    readonly targetAttributeId: FieldRef<"CompatibilityRuleClause", 'String'>
-    readonly operator: FieldRef<"CompatibilityRuleClause", 'String'>
-    readonly sourceValue: FieldRef<"CompatibilityRuleClause", 'String'>
-    readonly targetValue: FieldRef<"CompatibilityRuleClause", 'String'>
-    readonly sortOrder: FieldRef<"CompatibilityRuleClause", 'Int'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * CompatibilityRuleClause findUnique
-   */
-  export type CompatibilityRuleClauseFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRuleClause to fetch.
-     */
-    where: CompatibilityRuleClauseWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRuleClause findUniqueOrThrow
-   */
-  export type CompatibilityRuleClauseFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRuleClause to fetch.
-     */
-    where: CompatibilityRuleClauseWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRuleClause findFirst
-   */
-  export type CompatibilityRuleClauseFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRuleClause to fetch.
-     */
-    where?: CompatibilityRuleClauseWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRuleClauses to fetch.
-     */
-    orderBy?: CompatibilityRuleClauseOrderByWithRelationInput | CompatibilityRuleClauseOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for CompatibilityRuleClauses.
-     */
-    cursor?: CompatibilityRuleClauseWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRuleClauses from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRuleClauses.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of CompatibilityRuleClauses.
-     */
-    distinct?: CompatibilityRuleClauseScalarFieldEnum | CompatibilityRuleClauseScalarFieldEnum[]
-  }
-
-  /**
-   * CompatibilityRuleClause findFirstOrThrow
-   */
-  export type CompatibilityRuleClauseFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRuleClause to fetch.
-     */
-    where?: CompatibilityRuleClauseWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRuleClauses to fetch.
-     */
-    orderBy?: CompatibilityRuleClauseOrderByWithRelationInput | CompatibilityRuleClauseOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for CompatibilityRuleClauses.
-     */
-    cursor?: CompatibilityRuleClauseWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRuleClauses from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRuleClauses.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of CompatibilityRuleClauses.
-     */
-    distinct?: CompatibilityRuleClauseScalarFieldEnum | CompatibilityRuleClauseScalarFieldEnum[]
-  }
-
-  /**
-   * CompatibilityRuleClause findMany
-   */
-  export type CompatibilityRuleClauseFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * Filter, which CompatibilityRuleClauses to fetch.
-     */
-    where?: CompatibilityRuleClauseWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of CompatibilityRuleClauses to fetch.
-     */
-    orderBy?: CompatibilityRuleClauseOrderByWithRelationInput | CompatibilityRuleClauseOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing CompatibilityRuleClauses.
-     */
-    cursor?: CompatibilityRuleClauseWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` CompatibilityRuleClauses from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` CompatibilityRuleClauses.
-     */
-    skip?: number
-    distinct?: CompatibilityRuleClauseScalarFieldEnum | CompatibilityRuleClauseScalarFieldEnum[]
-  }
-
-  /**
-   * CompatibilityRuleClause create
-   */
-  export type CompatibilityRuleClauseCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * The data needed to create a CompatibilityRuleClause.
-     */
-    data: XOR<CompatibilityRuleClauseCreateInput, CompatibilityRuleClauseUncheckedCreateInput>
-  }
-
-  /**
-   * CompatibilityRuleClause createMany
-   */
-  export type CompatibilityRuleClauseCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many CompatibilityRuleClauses.
-     */
-    data: CompatibilityRuleClauseCreateManyInput | CompatibilityRuleClauseCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * CompatibilityRuleClause createManyAndReturn
-   */
-  export type CompatibilityRuleClauseCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * The data used to create many CompatibilityRuleClauses.
-     */
-    data: CompatibilityRuleClauseCreateManyInput | CompatibilityRuleClauseCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseIncludeCreateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * CompatibilityRuleClause update
-   */
-  export type CompatibilityRuleClauseUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * The data needed to update a CompatibilityRuleClause.
-     */
-    data: XOR<CompatibilityRuleClauseUpdateInput, CompatibilityRuleClauseUncheckedUpdateInput>
-    /**
-     * Choose, which CompatibilityRuleClause to update.
-     */
-    where: CompatibilityRuleClauseWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRuleClause updateMany
-   */
-  export type CompatibilityRuleClauseUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update CompatibilityRuleClauses.
-     */
-    data: XOR<CompatibilityRuleClauseUpdateManyMutationInput, CompatibilityRuleClauseUncheckedUpdateManyInput>
-    /**
-     * Filter which CompatibilityRuleClauses to update
-     */
-    where?: CompatibilityRuleClauseWhereInput
-    /**
-     * Limit how many CompatibilityRuleClauses to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * CompatibilityRuleClause updateManyAndReturn
-   */
-  export type CompatibilityRuleClauseUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * The data used to update CompatibilityRuleClauses.
-     */
-    data: XOR<CompatibilityRuleClauseUpdateManyMutationInput, CompatibilityRuleClauseUncheckedUpdateManyInput>
-    /**
-     * Filter which CompatibilityRuleClauses to update
-     */
-    where?: CompatibilityRuleClauseWhereInput
-    /**
-     * Limit how many CompatibilityRuleClauses to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseIncludeUpdateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * CompatibilityRuleClause upsert
-   */
-  export type CompatibilityRuleClauseUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * The filter to search for the CompatibilityRuleClause to update in case it exists.
-     */
-    where: CompatibilityRuleClauseWhereUniqueInput
-    /**
-     * In case the CompatibilityRuleClause found by the `where` argument doesn't exist, create a new CompatibilityRuleClause with this data.
-     */
-    create: XOR<CompatibilityRuleClauseCreateInput, CompatibilityRuleClauseUncheckedCreateInput>
-    /**
-     * In case the CompatibilityRuleClause was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<CompatibilityRuleClauseUpdateInput, CompatibilityRuleClauseUncheckedUpdateInput>
-  }
-
-  /**
-   * CompatibilityRuleClause delete
-   */
-  export type CompatibilityRuleClauseDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
-    /**
-     * Filter which CompatibilityRuleClause to delete.
-     */
-    where: CompatibilityRuleClauseWhereUniqueInput
-  }
-
-  /**
-   * CompatibilityRuleClause deleteMany
-   */
-  export type CompatibilityRuleClauseDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which CompatibilityRuleClauses to delete
-     */
-    where?: CompatibilityRuleClauseWhereInput
-    /**
-     * Limit how many CompatibilityRuleClauses to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * CompatibilityRuleClause without action
-   */
-  export type CompatibilityRuleClauseDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the CompatibilityRuleClause
-     */
-    select?: CompatibilityRuleClauseSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the CompatibilityRuleClause
-     */
-    omit?: CompatibilityRuleClauseOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CompatibilityRuleClauseInclude<ExtArgs> | null
   }
 
 
@@ -21788,7 +16637,6 @@ export namespace Prisma {
     sku: string | null
     price: number | null
     compareAtPrice: number | null
-    stockStatus: string | null
     brandId: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -21809,7 +16657,6 @@ export namespace Prisma {
     sku: string | null
     price: number | null
     compareAtPrice: number | null
-    stockStatus: string | null
     brandId: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -21830,7 +16677,6 @@ export namespace Prisma {
     sku: number
     price: number
     compareAtPrice: number
-    stockStatus: number
     brandId: number
     createdAt: number
     updatedAt: number
@@ -21869,7 +16715,6 @@ export namespace Prisma {
     sku?: true
     price?: true
     compareAtPrice?: true
-    stockStatus?: true
     brandId?: true
     createdAt?: true
     updatedAt?: true
@@ -21890,7 +16735,6 @@ export namespace Prisma {
     sku?: true
     price?: true
     compareAtPrice?: true
-    stockStatus?: true
     brandId?: true
     createdAt?: true
     updatedAt?: true
@@ -21911,7 +16755,6 @@ export namespace Prisma {
     sku?: true
     price?: true
     compareAtPrice?: true
-    stockStatus?: true
     brandId?: true
     createdAt?: true
     updatedAt?: true
@@ -22019,7 +16862,6 @@ export namespace Prisma {
     sku: string | null
     price: number | null
     compareAtPrice: number | null
-    stockStatus: string
     brandId: string | null
     createdAt: Date
     updatedAt: Date
@@ -22059,7 +16901,6 @@ export namespace Prisma {
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
-    stockStatus?: boolean
     brandId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -22091,7 +16932,6 @@ export namespace Prisma {
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
-    stockStatus?: boolean
     brandId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -22115,7 +16955,6 @@ export namespace Prisma {
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
-    stockStatus?: boolean
     brandId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -22139,13 +16978,12 @@ export namespace Prisma {
     sku?: boolean
     price?: boolean
     compareAtPrice?: boolean
-    stockStatus?: boolean
     brandId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "slug" | "name" | "metaTitle" | "metaDescription" | "categoryId" | "subcategoryId" | "description" | "status" | "deletedAt" | "version" | "sku" | "price" | "compareAtPrice" | "stockStatus" | "brandId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "slug" | "name" | "metaTitle" | "metaDescription" | "categoryId" | "subcategoryId" | "description" | "status" | "deletedAt" | "version" | "sku" | "price" | "compareAtPrice" | "brandId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     brand?: boolean | Product$brandArgs<ExtArgs>
     category?: boolean | CategoryDefaultArgs<ExtArgs>
@@ -22199,7 +17037,6 @@ export namespace Prisma {
       sku: string | null
       price: number | null
       compareAtPrice: number | null
-      stockStatus: string
       brandId: string | null
       createdAt: Date
       updatedAt: Date
@@ -22650,7 +17487,6 @@ export namespace Prisma {
     readonly sku: FieldRef<"Product", 'String'>
     readonly price: FieldRef<"Product", 'Float'>
     readonly compareAtPrice: FieldRef<"Product", 'Float'>
-    readonly stockStatus: FieldRef<"Product", 'String'>
     readonly brandId: FieldRef<"Product", 'String'>
     readonly createdAt: FieldRef<"Product", 'DateTime'>
     readonly updatedAt: FieldRef<"Product", 'DateTime'>
@@ -26562,16 +21398,10 @@ export namespace Prisma {
   }
 
   export type InventoryItemAvgAggregateOutputType = {
-    quantity: number | null
-    reserved: number | null
-    reorderLevel: number | null
     costPrice: number | null
   }
 
   export type InventoryItemSumAggregateOutputType = {
-    quantity: number | null
-    reserved: number | null
-    reorderLevel: number | null
     costPrice: number | null
   }
 
@@ -26580,9 +21410,7 @@ export namespace Prisma {
     productId: string | null
     partNumber: string | null
     serialNumber: string | null
-    quantity: number | null
-    reserved: number | null
-    reorderLevel: number | null
+    status: $Enums.InventoryUnitStatus | null
     costPrice: number | null
     location: string | null
     lastUpdated: Date | null
@@ -26593,9 +21421,7 @@ export namespace Prisma {
     productId: string | null
     partNumber: string | null
     serialNumber: string | null
-    quantity: number | null
-    reserved: number | null
-    reorderLevel: number | null
+    status: $Enums.InventoryUnitStatus | null
     costPrice: number | null
     location: string | null
     lastUpdated: Date | null
@@ -26606,9 +21432,7 @@ export namespace Prisma {
     productId: number
     partNumber: number
     serialNumber: number
-    quantity: number
-    reserved: number
-    reorderLevel: number
+    status: number
     costPrice: number
     location: number
     lastUpdated: number
@@ -26617,16 +21441,10 @@ export namespace Prisma {
 
 
   export type InventoryItemAvgAggregateInputType = {
-    quantity?: true
-    reserved?: true
-    reorderLevel?: true
     costPrice?: true
   }
 
   export type InventoryItemSumAggregateInputType = {
-    quantity?: true
-    reserved?: true
-    reorderLevel?: true
     costPrice?: true
   }
 
@@ -26635,9 +21453,7 @@ export namespace Prisma {
     productId?: true
     partNumber?: true
     serialNumber?: true
-    quantity?: true
-    reserved?: true
-    reorderLevel?: true
+    status?: true
     costPrice?: true
     location?: true
     lastUpdated?: true
@@ -26648,9 +21464,7 @@ export namespace Prisma {
     productId?: true
     partNumber?: true
     serialNumber?: true
-    quantity?: true
-    reserved?: true
-    reorderLevel?: true
+    status?: true
     costPrice?: true
     location?: true
     lastUpdated?: true
@@ -26661,9 +21475,7 @@ export namespace Prisma {
     productId?: true
     partNumber?: true
     serialNumber?: true
-    quantity?: true
-    reserved?: true
-    reorderLevel?: true
+    status?: true
     costPrice?: true
     location?: true
     lastUpdated?: true
@@ -26760,10 +21572,8 @@ export namespace Prisma {
     id: string
     productId: string
     partNumber: string | null
-    serialNumber: string | null
-    quantity: number
-    reserved: number
-    reorderLevel: number
+    serialNumber: string
+    status: $Enums.InventoryUnitStatus
     costPrice: number
     location: string
     lastUpdated: Date | null
@@ -26793,16 +21603,13 @@ export namespace Prisma {
     productId?: boolean
     partNumber?: boolean
     serialNumber?: boolean
-    quantity?: boolean
-    reserved?: boolean
-    reorderLevel?: boolean
+    status?: boolean
     costPrice?: boolean
     location?: boolean
     lastUpdated?: boolean
     product?: boolean | ProductDefaultArgs<ExtArgs>
     orderItemUnits?: boolean | InventoryItem$orderItemUnitsArgs<ExtArgs>
     stockMovements?: boolean | InventoryItem$stockMovementsArgs<ExtArgs>
-    reservations?: boolean | InventoryItem$reservationsArgs<ExtArgs>
     _count?: boolean | InventoryItemCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["inventoryItem"]>
 
@@ -26811,9 +21618,7 @@ export namespace Prisma {
     productId?: boolean
     partNumber?: boolean
     serialNumber?: boolean
-    quantity?: boolean
-    reserved?: boolean
-    reorderLevel?: boolean
+    status?: boolean
     costPrice?: boolean
     location?: boolean
     lastUpdated?: boolean
@@ -26825,9 +21630,7 @@ export namespace Prisma {
     productId?: boolean
     partNumber?: boolean
     serialNumber?: boolean
-    quantity?: boolean
-    reserved?: boolean
-    reorderLevel?: boolean
+    status?: boolean
     costPrice?: boolean
     location?: boolean
     lastUpdated?: boolean
@@ -26839,20 +21642,17 @@ export namespace Prisma {
     productId?: boolean
     partNumber?: boolean
     serialNumber?: boolean
-    quantity?: boolean
-    reserved?: boolean
-    reorderLevel?: boolean
+    status?: boolean
     costPrice?: boolean
     location?: boolean
     lastUpdated?: boolean
   }
 
-  export type InventoryItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "productId" | "partNumber" | "serialNumber" | "quantity" | "reserved" | "reorderLevel" | "costPrice" | "location" | "lastUpdated", ExtArgs["result"]["inventoryItem"]>
+  export type InventoryItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "productId" | "partNumber" | "serialNumber" | "status" | "costPrice" | "location" | "lastUpdated", ExtArgs["result"]["inventoryItem"]>
   export type InventoryItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     product?: boolean | ProductDefaultArgs<ExtArgs>
     orderItemUnits?: boolean | InventoryItem$orderItemUnitsArgs<ExtArgs>
     stockMovements?: boolean | InventoryItem$stockMovementsArgs<ExtArgs>
-    reservations?: boolean | InventoryItem$reservationsArgs<ExtArgs>
     _count?: boolean | InventoryItemCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type InventoryItemIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -26868,16 +21668,13 @@ export namespace Prisma {
       product: Prisma.$ProductPayload<ExtArgs>
       orderItemUnits: Prisma.$OrderItemUnitPayload<ExtArgs>[]
       stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
-      reservations: Prisma.$ReservationPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       productId: string
       partNumber: string | null
-      serialNumber: string | null
-      quantity: number
-      reserved: number
-      reorderLevel: number
+      serialNumber: string
+      status: $Enums.InventoryUnitStatus
       costPrice: number
       location: string
       lastUpdated: Date | null
@@ -27278,7 +22075,6 @@ export namespace Prisma {
     product<T extends ProductDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProductDefaultArgs<ExtArgs>>): Prisma__ProductClient<$Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     orderItemUnits<T extends InventoryItem$orderItemUnitsArgs<ExtArgs> = {}>(args?: Subset<T, InventoryItem$orderItemUnitsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemUnitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     stockMovements<T extends InventoryItem$stockMovementsArgs<ExtArgs> = {}>(args?: Subset<T, InventoryItem$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    reservations<T extends InventoryItem$reservationsArgs<ExtArgs> = {}>(args?: Subset<T, InventoryItem$reservationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -27312,9 +22108,7 @@ export namespace Prisma {
     readonly productId: FieldRef<"InventoryItem", 'String'>
     readonly partNumber: FieldRef<"InventoryItem", 'String'>
     readonly serialNumber: FieldRef<"InventoryItem", 'String'>
-    readonly quantity: FieldRef<"InventoryItem", 'Int'>
-    readonly reserved: FieldRef<"InventoryItem", 'Int'>
-    readonly reorderLevel: FieldRef<"InventoryItem", 'Int'>
+    readonly status: FieldRef<"InventoryItem", 'InventoryUnitStatus'>
     readonly costPrice: FieldRef<"InventoryItem", 'Float'>
     readonly location: FieldRef<"InventoryItem", 'String'>
     readonly lastUpdated: FieldRef<"InventoryItem", 'DateTime'>
@@ -27759,30 +22553,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
-  }
-
-  /**
-   * InventoryItem.reservations
-   */
-  export type InventoryItem$reservationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    where?: ReservationWhereInput
-    orderBy?: ReservationOrderByWithRelationInput | ReservationOrderByWithRelationInput[]
-    cursor?: ReservationWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: ReservationScalarFieldEnum | ReservationScalarFieldEnum[]
   }
 
   /**
@@ -29414,6 +24184,7 @@ export namespace Prisma {
     shipments?: boolean | Order$shipmentsArgs<ExtArgs>
     payments?: boolean | Order$paymentsArgs<ExtArgs>
     stockMoves?: boolean | Order$stockMovesArgs<ExtArgs>
+    assignedUnits?: boolean | Order$assignedUnitsArgs<ExtArgs>
     _count?: boolean | OrderCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
@@ -29527,6 +24298,7 @@ export namespace Prisma {
     shipments?: boolean | Order$shipmentsArgs<ExtArgs>
     payments?: boolean | Order$paymentsArgs<ExtArgs>
     stockMoves?: boolean | Order$stockMovesArgs<ExtArgs>
+    assignedUnits?: boolean | Order$assignedUnitsArgs<ExtArgs>
     _count?: boolean | OrderCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type OrderIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -29546,6 +24318,7 @@ export namespace Prisma {
       shipments: Prisma.$ShipmentTrackingPayload<ExtArgs>[]
       payments: Prisma.$PaymentTransactionPayload<ExtArgs>[]
       stockMoves: Prisma.$StockMovementPayload<ExtArgs>[]
+      assignedUnits: Prisma.$OrderItemUnitPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -29979,6 +24752,7 @@ export namespace Prisma {
     shipments<T extends Order$shipmentsArgs<ExtArgs> = {}>(args?: Subset<T, Order$shipmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShipmentTrackingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     payments<T extends Order$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Order$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     stockMoves<T extends Order$stockMovesArgs<ExtArgs> = {}>(args?: Subset<T, Order$stockMovesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    assignedUnits<T extends Order$assignedUnitsArgs<ExtArgs> = {}>(args?: Subset<T, Order$assignedUnitsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemUnitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -30594,6 +25368,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
+  }
+
+  /**
+   * Order.assignedUnits
+   */
+  export type Order$assignedUnitsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderItemUnit
+     */
+    select?: OrderItemUnitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OrderItemUnit
+     */
+    omit?: OrderItemUnitOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OrderItemUnitInclude<ExtArgs> | null
+    where?: OrderItemUnitWhereInput
+    orderBy?: OrderItemUnitOrderByWithRelationInput | OrderItemUnitOrderByWithRelationInput[]
+    cursor?: OrderItemUnitWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: OrderItemUnitScalarFieldEnum | OrderItemUnitScalarFieldEnum[]
   }
 
   /**
@@ -31829,6 +26627,7 @@ export namespace Prisma {
     inventoryItemId: string | null
     serialNumber: string | null
     partNumber: string | null
+    orderId: string | null
     createdAt: Date | null
   }
 
@@ -31838,6 +26637,7 @@ export namespace Prisma {
     inventoryItemId: string | null
     serialNumber: string | null
     partNumber: string | null
+    orderId: string | null
     createdAt: Date | null
   }
 
@@ -31847,6 +26647,7 @@ export namespace Prisma {
     inventoryItemId: number
     serialNumber: number
     partNumber: number
+    orderId: number
     createdAt: number
     _all: number
   }
@@ -31858,6 +26659,7 @@ export namespace Prisma {
     inventoryItemId?: true
     serialNumber?: true
     partNumber?: true
+    orderId?: true
     createdAt?: true
   }
 
@@ -31867,6 +26669,7 @@ export namespace Prisma {
     inventoryItemId?: true
     serialNumber?: true
     partNumber?: true
+    orderId?: true
     createdAt?: true
   }
 
@@ -31876,6 +26679,7 @@ export namespace Prisma {
     inventoryItemId?: true
     serialNumber?: true
     partNumber?: true
+    orderId?: true
     createdAt?: true
     _all?: true
   }
@@ -31958,6 +26762,7 @@ export namespace Prisma {
     inventoryItemId: string
     serialNumber: string | null
     partNumber: string | null
+    orderId: string | null
     createdAt: Date
     _count: OrderItemUnitCountAggregateOutputType | null
     _min: OrderItemUnitMinAggregateOutputType | null
@@ -31984,9 +26789,11 @@ export namespace Prisma {
     inventoryItemId?: boolean
     serialNumber?: boolean
     partNumber?: boolean
+    orderId?: boolean
     createdAt?: boolean
     orderItem?: boolean | OrderItemDefaultArgs<ExtArgs>
     inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
+    order?: boolean | OrderItemUnit$orderArgs<ExtArgs>
   }, ExtArgs["result"]["orderItemUnit"]>
 
   export type OrderItemUnitSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -31995,9 +26802,11 @@ export namespace Prisma {
     inventoryItemId?: boolean
     serialNumber?: boolean
     partNumber?: boolean
+    orderId?: boolean
     createdAt?: boolean
     orderItem?: boolean | OrderItemDefaultArgs<ExtArgs>
     inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
+    order?: boolean | OrderItemUnit$orderArgs<ExtArgs>
   }, ExtArgs["result"]["orderItemUnit"]>
 
   export type OrderItemUnitSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -32006,9 +26815,11 @@ export namespace Prisma {
     inventoryItemId?: boolean
     serialNumber?: boolean
     partNumber?: boolean
+    orderId?: boolean
     createdAt?: boolean
     orderItem?: boolean | OrderItemDefaultArgs<ExtArgs>
     inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
+    order?: boolean | OrderItemUnit$orderArgs<ExtArgs>
   }, ExtArgs["result"]["orderItemUnit"]>
 
   export type OrderItemUnitSelectScalar = {
@@ -32017,21 +26828,25 @@ export namespace Prisma {
     inventoryItemId?: boolean
     serialNumber?: boolean
     partNumber?: boolean
+    orderId?: boolean
     createdAt?: boolean
   }
 
-  export type OrderItemUnitOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderItemId" | "inventoryItemId" | "serialNumber" | "partNumber" | "createdAt", ExtArgs["result"]["orderItemUnit"]>
+  export type OrderItemUnitOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderItemId" | "inventoryItemId" | "serialNumber" | "partNumber" | "orderId" | "createdAt", ExtArgs["result"]["orderItemUnit"]>
   export type OrderItemUnitInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     orderItem?: boolean | OrderItemDefaultArgs<ExtArgs>
     inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
+    order?: boolean | OrderItemUnit$orderArgs<ExtArgs>
   }
   export type OrderItemUnitIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     orderItem?: boolean | OrderItemDefaultArgs<ExtArgs>
     inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
+    order?: boolean | OrderItemUnit$orderArgs<ExtArgs>
   }
   export type OrderItemUnitIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     orderItem?: boolean | OrderItemDefaultArgs<ExtArgs>
     inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
+    order?: boolean | OrderItemUnit$orderArgs<ExtArgs>
   }
 
   export type $OrderItemUnitPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -32039,6 +26854,7 @@ export namespace Prisma {
     objects: {
       orderItem: Prisma.$OrderItemPayload<ExtArgs>
       inventoryItem: Prisma.$InventoryItemPayload<ExtArgs>
+      order: Prisma.$OrderPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -32046,6 +26862,7 @@ export namespace Prisma {
       inventoryItemId: string
       serialNumber: string | null
       partNumber: string | null
+      orderId: string | null
       createdAt: Date
     }, ExtArgs["result"]["orderItemUnit"]>
     composites: {}
@@ -32443,6 +27260,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     orderItem<T extends OrderItemDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OrderItemDefaultArgs<ExtArgs>>): Prisma__OrderItemClient<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     inventoryItem<T extends InventoryItemDefaultArgs<ExtArgs> = {}>(args?: Subset<T, InventoryItemDefaultArgs<ExtArgs>>): Prisma__InventoryItemClient<$Result.GetResult<Prisma.$InventoryItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    order<T extends OrderItemUnit$orderArgs<ExtArgs> = {}>(args?: Subset<T, OrderItemUnit$orderArgs<ExtArgs>>): Prisma__OrderClient<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -32477,6 +27295,7 @@ export namespace Prisma {
     readonly inventoryItemId: FieldRef<"OrderItemUnit", 'String'>
     readonly serialNumber: FieldRef<"OrderItemUnit", 'String'>
     readonly partNumber: FieldRef<"OrderItemUnit", 'String'>
+    readonly orderId: FieldRef<"OrderItemUnit", 'String'>
     readonly createdAt: FieldRef<"OrderItemUnit", 'DateTime'>
   }
     
@@ -32871,6 +27690,25 @@ export namespace Prisma {
      * Limit how many OrderItemUnits to delete.
      */
     limit?: number
+  }
+
+  /**
+   * OrderItemUnit.order
+   */
+  export type OrderItemUnit$orderArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Order
+     */
+    select?: OrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Order
+     */
+    omit?: OrderOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OrderInclude<ExtArgs> | null
+    where?: OrderWhereInput
   }
 
   /**
@@ -51035,1150 +45873,6 @@ export namespace Prisma {
 
 
   /**
-   * Model Reservation
-   */
-
-  export type AggregateReservation = {
-    _count: ReservationCountAggregateOutputType | null
-    _avg: ReservationAvgAggregateOutputType | null
-    _sum: ReservationSumAggregateOutputType | null
-    _min: ReservationMinAggregateOutputType | null
-    _max: ReservationMaxAggregateOutputType | null
-  }
-
-  export type ReservationAvgAggregateOutputType = {
-    quantity: number | null
-  }
-
-  export type ReservationSumAggregateOutputType = {
-    quantity: number | null
-  }
-
-  export type ReservationMinAggregateOutputType = {
-    id: string | null
-    orderId: string | null
-    cartId: string | null
-    inventoryItemId: string | null
-    quantity: number | null
-    status: string | null
-    expiresAt: Date | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type ReservationMaxAggregateOutputType = {
-    id: string | null
-    orderId: string | null
-    cartId: string | null
-    inventoryItemId: string | null
-    quantity: number | null
-    status: string | null
-    expiresAt: Date | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type ReservationCountAggregateOutputType = {
-    id: number
-    orderId: number
-    cartId: number
-    inventoryItemId: number
-    quantity: number
-    status: number
-    expiresAt: number
-    createdAt: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type ReservationAvgAggregateInputType = {
-    quantity?: true
-  }
-
-  export type ReservationSumAggregateInputType = {
-    quantity?: true
-  }
-
-  export type ReservationMinAggregateInputType = {
-    id?: true
-    orderId?: true
-    cartId?: true
-    inventoryItemId?: true
-    quantity?: true
-    status?: true
-    expiresAt?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type ReservationMaxAggregateInputType = {
-    id?: true
-    orderId?: true
-    cartId?: true
-    inventoryItemId?: true
-    quantity?: true
-    status?: true
-    expiresAt?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type ReservationCountAggregateInputType = {
-    id?: true
-    orderId?: true
-    cartId?: true
-    inventoryItemId?: true
-    quantity?: true
-    status?: true
-    expiresAt?: true
-    createdAt?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type ReservationAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which Reservation to aggregate.
-     */
-    where?: ReservationWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Reservations to fetch.
-     */
-    orderBy?: ReservationOrderByWithRelationInput | ReservationOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: ReservationWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Reservations from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Reservations.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned Reservations
-    **/
-    _count?: true | ReservationCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: ReservationAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: ReservationSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: ReservationMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: ReservationMaxAggregateInputType
-  }
-
-  export type GetReservationAggregateType<T extends ReservationAggregateArgs> = {
-        [P in keyof T & keyof AggregateReservation]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateReservation[P]>
-      : GetScalarType<T[P], AggregateReservation[P]>
-  }
-
-
-
-
-  export type ReservationGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ReservationWhereInput
-    orderBy?: ReservationOrderByWithAggregationInput | ReservationOrderByWithAggregationInput[]
-    by: ReservationScalarFieldEnum[] | ReservationScalarFieldEnum
-    having?: ReservationScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: ReservationCountAggregateInputType | true
-    _avg?: ReservationAvgAggregateInputType
-    _sum?: ReservationSumAggregateInputType
-    _min?: ReservationMinAggregateInputType
-    _max?: ReservationMaxAggregateInputType
-  }
-
-  export type ReservationGroupByOutputType = {
-    id: string
-    orderId: string | null
-    cartId: string | null
-    inventoryItemId: string
-    quantity: number
-    status: string
-    expiresAt: Date | null
-    createdAt: Date
-    updatedAt: Date
-    _count: ReservationCountAggregateOutputType | null
-    _avg: ReservationAvgAggregateOutputType | null
-    _sum: ReservationSumAggregateOutputType | null
-    _min: ReservationMinAggregateOutputType | null
-    _max: ReservationMaxAggregateOutputType | null
-  }
-
-  type GetReservationGroupByPayload<T extends ReservationGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<ReservationGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof ReservationGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], ReservationGroupByOutputType[P]>
-            : GetScalarType<T[P], ReservationGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type ReservationSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    orderId?: boolean
-    cartId?: boolean
-    inventoryItemId?: boolean
-    quantity?: boolean
-    status?: boolean
-    expiresAt?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["reservation"]>
-
-  export type ReservationSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    orderId?: boolean
-    cartId?: boolean
-    inventoryItemId?: boolean
-    quantity?: boolean
-    status?: boolean
-    expiresAt?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["reservation"]>
-
-  export type ReservationSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    orderId?: boolean
-    cartId?: boolean
-    inventoryItemId?: boolean
-    quantity?: boolean
-    status?: boolean
-    expiresAt?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["reservation"]>
-
-  export type ReservationSelectScalar = {
-    id?: boolean
-    orderId?: boolean
-    cartId?: boolean
-    inventoryItemId?: boolean
-    quantity?: boolean
-    status?: boolean
-    expiresAt?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }
-
-  export type ReservationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderId" | "cartId" | "inventoryItemId" | "quantity" | "status" | "expiresAt" | "createdAt" | "updatedAt", ExtArgs["result"]["reservation"]>
-  export type ReservationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
-  }
-  export type ReservationIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
-  }
-  export type ReservationIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    inventoryItem?: boolean | InventoryItemDefaultArgs<ExtArgs>
-  }
-
-  export type $ReservationPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "Reservation"
-    objects: {
-      inventoryItem: Prisma.$InventoryItemPayload<ExtArgs>
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      orderId: string | null
-      cartId: string | null
-      inventoryItemId: string
-      quantity: number
-      status: string
-      expiresAt: Date | null
-      createdAt: Date
-      updatedAt: Date
-    }, ExtArgs["result"]["reservation"]>
-    composites: {}
-  }
-
-  type ReservationGetPayload<S extends boolean | null | undefined | ReservationDefaultArgs> = $Result.GetResult<Prisma.$ReservationPayload, S>
-
-  type ReservationCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<ReservationFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: ReservationCountAggregateInputType | true
-    }
-
-  export interface ReservationDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Reservation'], meta: { name: 'Reservation' } }
-    /**
-     * Find zero or one Reservation that matches the filter.
-     * @param {ReservationFindUniqueArgs} args - Arguments to find a Reservation
-     * @example
-     * // Get one Reservation
-     * const reservation = await prisma.reservation.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends ReservationFindUniqueArgs>(args: SelectSubset<T, ReservationFindUniqueArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one Reservation that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {ReservationFindUniqueOrThrowArgs} args - Arguments to find a Reservation
-     * @example
-     * // Get one Reservation
-     * const reservation = await prisma.reservation.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends ReservationFindUniqueOrThrowArgs>(args: SelectSubset<T, ReservationFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first Reservation that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReservationFindFirstArgs} args - Arguments to find a Reservation
-     * @example
-     * // Get one Reservation
-     * const reservation = await prisma.reservation.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends ReservationFindFirstArgs>(args?: SelectSubset<T, ReservationFindFirstArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first Reservation that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReservationFindFirstOrThrowArgs} args - Arguments to find a Reservation
-     * @example
-     * // Get one Reservation
-     * const reservation = await prisma.reservation.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends ReservationFindFirstOrThrowArgs>(args?: SelectSubset<T, ReservationFindFirstOrThrowArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more Reservations that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReservationFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all Reservations
-     * const reservations = await prisma.reservation.findMany()
-     * 
-     * // Get first 10 Reservations
-     * const reservations = await prisma.reservation.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const reservationWithIdOnly = await prisma.reservation.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends ReservationFindManyArgs>(args?: SelectSubset<T, ReservationFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a Reservation.
-     * @param {ReservationCreateArgs} args - Arguments to create a Reservation.
-     * @example
-     * // Create one Reservation
-     * const Reservation = await prisma.reservation.create({
-     *   data: {
-     *     // ... data to create a Reservation
-     *   }
-     * })
-     * 
-     */
-    create<T extends ReservationCreateArgs>(args: SelectSubset<T, ReservationCreateArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many Reservations.
-     * @param {ReservationCreateManyArgs} args - Arguments to create many Reservations.
-     * @example
-     * // Create many Reservations
-     * const reservation = await prisma.reservation.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends ReservationCreateManyArgs>(args?: SelectSubset<T, ReservationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many Reservations and returns the data saved in the database.
-     * @param {ReservationCreateManyAndReturnArgs} args - Arguments to create many Reservations.
-     * @example
-     * // Create many Reservations
-     * const reservation = await prisma.reservation.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Reservations and only return the `id`
-     * const reservationWithIdOnly = await prisma.reservation.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends ReservationCreateManyAndReturnArgs>(args?: SelectSubset<T, ReservationCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Delete a Reservation.
-     * @param {ReservationDeleteArgs} args - Arguments to delete one Reservation.
-     * @example
-     * // Delete one Reservation
-     * const Reservation = await prisma.reservation.delete({
-     *   where: {
-     *     // ... filter to delete one Reservation
-     *   }
-     * })
-     * 
-     */
-    delete<T extends ReservationDeleteArgs>(args: SelectSubset<T, ReservationDeleteArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one Reservation.
-     * @param {ReservationUpdateArgs} args - Arguments to update one Reservation.
-     * @example
-     * // Update one Reservation
-     * const reservation = await prisma.reservation.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends ReservationUpdateArgs>(args: SelectSubset<T, ReservationUpdateArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more Reservations.
-     * @param {ReservationDeleteManyArgs} args - Arguments to filter Reservations to delete.
-     * @example
-     * // Delete a few Reservations
-     * const { count } = await prisma.reservation.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends ReservationDeleteManyArgs>(args?: SelectSubset<T, ReservationDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Reservations.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReservationUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many Reservations
-     * const reservation = await prisma.reservation.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends ReservationUpdateManyArgs>(args: SelectSubset<T, ReservationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Reservations and returns the data updated in the database.
-     * @param {ReservationUpdateManyAndReturnArgs} args - Arguments to update many Reservations.
-     * @example
-     * // Update many Reservations
-     * const reservation = await prisma.reservation.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Reservations and only return the `id`
-     * const reservationWithIdOnly = await prisma.reservation.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends ReservationUpdateManyAndReturnArgs>(args: SelectSubset<T, ReservationUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Create or update one Reservation.
-     * @param {ReservationUpsertArgs} args - Arguments to update or create a Reservation.
-     * @example
-     * // Update or create a Reservation
-     * const reservation = await prisma.reservation.upsert({
-     *   create: {
-     *     // ... data to create a Reservation
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the Reservation we want to update
-     *   }
-     * })
-     */
-    upsert<T extends ReservationUpsertArgs>(args: SelectSubset<T, ReservationUpsertArgs<ExtArgs>>): Prisma__ReservationClient<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of Reservations.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReservationCountArgs} args - Arguments to filter Reservations to count.
-     * @example
-     * // Count the number of Reservations
-     * const count = await prisma.reservation.count({
-     *   where: {
-     *     // ... the filter for the Reservations we want to count
-     *   }
-     * })
-    **/
-    count<T extends ReservationCountArgs>(
-      args?: Subset<T, ReservationCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], ReservationCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a Reservation.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReservationAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends ReservationAggregateArgs>(args: Subset<T, ReservationAggregateArgs>): Prisma.PrismaPromise<GetReservationAggregateType<T>>
-
-    /**
-     * Group by Reservation.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReservationGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends ReservationGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: ReservationGroupByArgs['orderBy'] }
-        : { orderBy?: ReservationGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, ReservationGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetReservationGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the Reservation model
-   */
-  readonly fields: ReservationFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for Reservation.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__ReservationClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    inventoryItem<T extends InventoryItemDefaultArgs<ExtArgs> = {}>(args?: Subset<T, InventoryItemDefaultArgs<ExtArgs>>): Prisma__InventoryItemClient<$Result.GetResult<Prisma.$InventoryItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the Reservation model
-   */
-  interface ReservationFieldRefs {
-    readonly id: FieldRef<"Reservation", 'String'>
-    readonly orderId: FieldRef<"Reservation", 'String'>
-    readonly cartId: FieldRef<"Reservation", 'String'>
-    readonly inventoryItemId: FieldRef<"Reservation", 'String'>
-    readonly quantity: FieldRef<"Reservation", 'Int'>
-    readonly status: FieldRef<"Reservation", 'String'>
-    readonly expiresAt: FieldRef<"Reservation", 'DateTime'>
-    readonly createdAt: FieldRef<"Reservation", 'DateTime'>
-    readonly updatedAt: FieldRef<"Reservation", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * Reservation findUnique
-   */
-  export type ReservationFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * Filter, which Reservation to fetch.
-     */
-    where: ReservationWhereUniqueInput
-  }
-
-  /**
-   * Reservation findUniqueOrThrow
-   */
-  export type ReservationFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * Filter, which Reservation to fetch.
-     */
-    where: ReservationWhereUniqueInput
-  }
-
-  /**
-   * Reservation findFirst
-   */
-  export type ReservationFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * Filter, which Reservation to fetch.
-     */
-    where?: ReservationWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Reservations to fetch.
-     */
-    orderBy?: ReservationOrderByWithRelationInput | ReservationOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for Reservations.
-     */
-    cursor?: ReservationWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Reservations from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Reservations.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of Reservations.
-     */
-    distinct?: ReservationScalarFieldEnum | ReservationScalarFieldEnum[]
-  }
-
-  /**
-   * Reservation findFirstOrThrow
-   */
-  export type ReservationFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * Filter, which Reservation to fetch.
-     */
-    where?: ReservationWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Reservations to fetch.
-     */
-    orderBy?: ReservationOrderByWithRelationInput | ReservationOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for Reservations.
-     */
-    cursor?: ReservationWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Reservations from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Reservations.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of Reservations.
-     */
-    distinct?: ReservationScalarFieldEnum | ReservationScalarFieldEnum[]
-  }
-
-  /**
-   * Reservation findMany
-   */
-  export type ReservationFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * Filter, which Reservations to fetch.
-     */
-    where?: ReservationWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Reservations to fetch.
-     */
-    orderBy?: ReservationOrderByWithRelationInput | ReservationOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing Reservations.
-     */
-    cursor?: ReservationWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Reservations from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Reservations.
-     */
-    skip?: number
-    distinct?: ReservationScalarFieldEnum | ReservationScalarFieldEnum[]
-  }
-
-  /**
-   * Reservation create
-   */
-  export type ReservationCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * The data needed to create a Reservation.
-     */
-    data: XOR<ReservationCreateInput, ReservationUncheckedCreateInput>
-  }
-
-  /**
-   * Reservation createMany
-   */
-  export type ReservationCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many Reservations.
-     */
-    data: ReservationCreateManyInput | ReservationCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * Reservation createManyAndReturn
-   */
-  export type ReservationCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * The data used to create many Reservations.
-     */
-    data: ReservationCreateManyInput | ReservationCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationIncludeCreateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * Reservation update
-   */
-  export type ReservationUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * The data needed to update a Reservation.
-     */
-    data: XOR<ReservationUpdateInput, ReservationUncheckedUpdateInput>
-    /**
-     * Choose, which Reservation to update.
-     */
-    where: ReservationWhereUniqueInput
-  }
-
-  /**
-   * Reservation updateMany
-   */
-  export type ReservationUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update Reservations.
-     */
-    data: XOR<ReservationUpdateManyMutationInput, ReservationUncheckedUpdateManyInput>
-    /**
-     * Filter which Reservations to update
-     */
-    where?: ReservationWhereInput
-    /**
-     * Limit how many Reservations to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * Reservation updateManyAndReturn
-   */
-  export type ReservationUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * The data used to update Reservations.
-     */
-    data: XOR<ReservationUpdateManyMutationInput, ReservationUncheckedUpdateManyInput>
-    /**
-     * Filter which Reservations to update
-     */
-    where?: ReservationWhereInput
-    /**
-     * Limit how many Reservations to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationIncludeUpdateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * Reservation upsert
-   */
-  export type ReservationUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * The filter to search for the Reservation to update in case it exists.
-     */
-    where: ReservationWhereUniqueInput
-    /**
-     * In case the Reservation found by the `where` argument doesn't exist, create a new Reservation with this data.
-     */
-    create: XOR<ReservationCreateInput, ReservationUncheckedCreateInput>
-    /**
-     * In case the Reservation was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<ReservationUpdateInput, ReservationUncheckedUpdateInput>
-  }
-
-  /**
-   * Reservation delete
-   */
-  export type ReservationDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-    /**
-     * Filter which Reservation to delete.
-     */
-    where: ReservationWhereUniqueInput
-  }
-
-  /**
-   * Reservation deleteMany
-   */
-  export type ReservationDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which Reservations to delete
-     */
-    where?: ReservationWhereInput
-    /**
-     * Limit how many Reservations to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * Reservation without action
-   */
-  export type ReservationDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Reservation
-     */
-    select?: ReservationSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Reservation
-     */
-    omit?: ReservationOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReservationInclude<ExtArgs> | null
-  }
-
-
-  /**
    * Enums
    */
 
@@ -52258,30 +45952,6 @@ export namespace Prisma {
   export type BrandScalarFieldEnum = (typeof BrandScalarFieldEnum)[keyof typeof BrandScalarFieldEnum]
 
 
-  export const BuildSequenceScalarFieldEnum: {
-    id: 'id',
-    categoryId: 'categoryId',
-    stepOrder: 'stepOrder',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
-  };
-
-  export type BuildSequenceScalarFieldEnum = (typeof BuildSequenceScalarFieldEnum)[keyof typeof BuildSequenceScalarFieldEnum]
-
-
-  export const CategoryRelationshipScalarFieldEnum: {
-    id: 'id',
-    fromCategoryCode: 'fromCategoryCode',
-    toCategoryCode: 'toCategoryCode',
-    relationshipType: 'relationshipType',
-    sortOrder: 'sortOrder',
-    metadata: 'metadata',
-    createdAt: 'createdAt'
-  };
-
-  export type CategoryRelationshipScalarFieldEnum = (typeof CategoryRelationshipScalarFieldEnum)[keyof typeof CategoryRelationshipScalarFieldEnum]
-
-
   export const CategoryHierarchyScalarFieldEnum: {
     id: 'id',
     label: 'label',
@@ -52332,36 +46002,6 @@ export namespace Prisma {
   export type AttributeOptionScalarFieldEnum = (typeof AttributeOptionScalarFieldEnum)[keyof typeof AttributeOptionScalarFieldEnum]
 
 
-  export const CompatibilityRuleScalarFieldEnum: {
-    id: 'id',
-    sourceCategoryId: 'sourceCategoryId',
-    targetCategoryId: 'targetCategoryId',
-    name: 'name',
-    message: 'message',
-    severity: 'severity',
-    isActive: 'isActive',
-    sortOrder: 'sortOrder',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
-  };
-
-  export type CompatibilityRuleScalarFieldEnum = (typeof CompatibilityRuleScalarFieldEnum)[keyof typeof CompatibilityRuleScalarFieldEnum]
-
-
-  export const CompatibilityRuleClauseScalarFieldEnum: {
-    id: 'id',
-    ruleId: 'ruleId',
-    sourceAttributeId: 'sourceAttributeId',
-    targetAttributeId: 'targetAttributeId',
-    operator: 'operator',
-    sourceValue: 'sourceValue',
-    targetValue: 'targetValue',
-    sortOrder: 'sortOrder'
-  };
-
-  export type CompatibilityRuleClauseScalarFieldEnum = (typeof CompatibilityRuleClauseScalarFieldEnum)[keyof typeof CompatibilityRuleClauseScalarFieldEnum]
-
-
   export const TagScalarFieldEnum: {
     id: 'id',
     name: 'name'
@@ -52396,7 +46036,6 @@ export namespace Prisma {
     sku: 'sku',
     price: 'price',
     compareAtPrice: 'compareAtPrice',
-    stockStatus: 'stockStatus',
     brandId: 'brandId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -52449,9 +46088,7 @@ export namespace Prisma {
     productId: 'productId',
     partNumber: 'partNumber',
     serialNumber: 'serialNumber',
-    quantity: 'quantity',
-    reserved: 'reserved',
-    reorderLevel: 'reorderLevel',
+    status: 'status',
     costPrice: 'costPrice',
     location: 'location',
     lastUpdated: 'lastUpdated'
@@ -52535,6 +46172,7 @@ export namespace Prisma {
     inventoryItemId: 'inventoryItemId',
     serialNumber: 'serialNumber',
     partNumber: 'partNumber',
+    orderId: 'orderId',
     createdAt: 'createdAt'
   };
 
@@ -52777,21 +46415,6 @@ export namespace Prisma {
   export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
 
 
-  export const ReservationScalarFieldEnum: {
-    id: 'id',
-    orderId: 'orderId',
-    cartId: 'cartId',
-    inventoryItemId: 'inventoryItemId',
-    quantity: 'quantity',
-    status: 'status',
-    expiresAt: 'expiresAt',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
-  };
-
-  export type ReservationScalarFieldEnum = (typeof ReservationScalarFieldEnum)[keyof typeof ReservationScalarFieldEnum]
-
-
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -52902,20 +46525,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-  /**
-   * Reference to a field of type 'QueryMode'
-   */
-  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
-    
-
-
-  /**
    * Reference to a field of type 'AttributeInputType'
    */
   export type EnumAttributeInputTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttributeInputType'>
@@ -52944,16 +46553,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'CompatibilityLevel'
+   * Reference to a field of type 'Json'
    */
-  export type EnumCompatibilityLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CompatibilityLevel'>
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
 
 
   /**
-   * Reference to a field of type 'CompatibilityLevel[]'
+   * Reference to a field of type 'QueryMode'
    */
-  export type ListEnumCompatibilityLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CompatibilityLevel[]'>
+  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -52982,6 +46591,20 @@ export namespace Prisma {
    * Reference to a field of type 'Float[]'
    */
   export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'InventoryUnitStatus'
+   */
+  export type EnumInventoryUnitStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryUnitStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'InventoryUnitStatus[]'
+   */
+  export type ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryUnitStatus[]'>
     
 
 
@@ -53185,11 +46808,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryListRelationFilter
     orderItems?: OrderItemListRelationFilter
     buildGuides?: BuildGuideListRelationFilter
-    buildSequence?: XOR<BuildSequenceNullableScalarRelationFilter, BuildSequenceWhereInput> | null
     hierarchyNodes?: CategoryHierarchyListRelationFilter
     attributes?: CategoryAttributeListRelationFilter
-    outgoingRules?: CompatibilityRuleListRelationFilter
-    incomingRules?: CompatibilityRuleListRelationFilter
   }
 
   export type CategoryOrderByWithRelationInput = {
@@ -53212,11 +46832,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryOrderByRelationAggregateInput
     orderItems?: OrderItemOrderByRelationAggregateInput
     buildGuides?: BuildGuideOrderByRelationAggregateInput
-    buildSequence?: BuildSequenceOrderByWithRelationInput
     hierarchyNodes?: CategoryHierarchyOrderByRelationAggregateInput
     attributes?: CategoryAttributeOrderByRelationAggregateInput
-    outgoingRules?: CompatibilityRuleOrderByRelationAggregateInput
-    incomingRules?: CompatibilityRuleOrderByRelationAggregateInput
   }
 
   export type CategoryWhereUniqueInput = Prisma.AtLeast<{
@@ -53242,11 +46859,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryListRelationFilter
     orderItems?: OrderItemListRelationFilter
     buildGuides?: BuildGuideListRelationFilter
-    buildSequence?: XOR<BuildSequenceNullableScalarRelationFilter, BuildSequenceWhereInput> | null
     hierarchyNodes?: CategoryHierarchyListRelationFilter
     attributes?: CategoryAttributeListRelationFilter
-    outgoingRules?: CompatibilityRuleListRelationFilter
-    incomingRules?: CompatibilityRuleListRelationFilter
   }, "id" | "code" | "name" | "slug">
 
   export type CategoryOrderByWithAggregationInput = {
@@ -53474,127 +47088,6 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"Brand"> | Date | string
   }
 
-  export type BuildSequenceWhereInput = {
-    AND?: BuildSequenceWhereInput | BuildSequenceWhereInput[]
-    OR?: BuildSequenceWhereInput[]
-    NOT?: BuildSequenceWhereInput | BuildSequenceWhereInput[]
-    id?: StringFilter<"BuildSequence"> | string
-    categoryId?: IntFilter<"BuildSequence"> | number
-    stepOrder?: IntFilter<"BuildSequence"> | number
-    createdAt?: DateTimeFilter<"BuildSequence"> | Date | string
-    updatedAt?: DateTimeFilter<"BuildSequence"> | Date | string
-    category?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
-  }
-
-  export type BuildSequenceOrderByWithRelationInput = {
-    id?: SortOrder
-    categoryId?: SortOrder
-    stepOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    category?: CategoryOrderByWithRelationInput
-  }
-
-  export type BuildSequenceWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    categoryId?: number
-    stepOrder?: number
-    AND?: BuildSequenceWhereInput | BuildSequenceWhereInput[]
-    OR?: BuildSequenceWhereInput[]
-    NOT?: BuildSequenceWhereInput | BuildSequenceWhereInput[]
-    createdAt?: DateTimeFilter<"BuildSequence"> | Date | string
-    updatedAt?: DateTimeFilter<"BuildSequence"> | Date | string
-    category?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
-  }, "id" | "categoryId" | "stepOrder">
-
-  export type BuildSequenceOrderByWithAggregationInput = {
-    id?: SortOrder
-    categoryId?: SortOrder
-    stepOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    _count?: BuildSequenceCountOrderByAggregateInput
-    _avg?: BuildSequenceAvgOrderByAggregateInput
-    _max?: BuildSequenceMaxOrderByAggregateInput
-    _min?: BuildSequenceMinOrderByAggregateInput
-    _sum?: BuildSequenceSumOrderByAggregateInput
-  }
-
-  export type BuildSequenceScalarWhereWithAggregatesInput = {
-    AND?: BuildSequenceScalarWhereWithAggregatesInput | BuildSequenceScalarWhereWithAggregatesInput[]
-    OR?: BuildSequenceScalarWhereWithAggregatesInput[]
-    NOT?: BuildSequenceScalarWhereWithAggregatesInput | BuildSequenceScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"BuildSequence"> | string
-    categoryId?: IntWithAggregatesFilter<"BuildSequence"> | number
-    stepOrder?: IntWithAggregatesFilter<"BuildSequence"> | number
-    createdAt?: DateTimeWithAggregatesFilter<"BuildSequence"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"BuildSequence"> | Date | string
-  }
-
-  export type CategoryRelationshipWhereInput = {
-    AND?: CategoryRelationshipWhereInput | CategoryRelationshipWhereInput[]
-    OR?: CategoryRelationshipWhereInput[]
-    NOT?: CategoryRelationshipWhereInput | CategoryRelationshipWhereInput[]
-    id?: StringFilter<"CategoryRelationship"> | string
-    fromCategoryCode?: StringNullableFilter<"CategoryRelationship"> | string | null
-    toCategoryCode?: StringNullableFilter<"CategoryRelationship"> | string | null
-    relationshipType?: StringFilter<"CategoryRelationship"> | string
-    sortOrder?: IntFilter<"CategoryRelationship"> | number
-    metadata?: JsonNullableFilter<"CategoryRelationship">
-    createdAt?: DateTimeFilter<"CategoryRelationship"> | Date | string
-  }
-
-  export type CategoryRelationshipOrderByWithRelationInput = {
-    id?: SortOrder
-    fromCategoryCode?: SortOrderInput | SortOrder
-    toCategoryCode?: SortOrderInput | SortOrder
-    relationshipType?: SortOrder
-    sortOrder?: SortOrder
-    metadata?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type CategoryRelationshipWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    AND?: CategoryRelationshipWhereInput | CategoryRelationshipWhereInput[]
-    OR?: CategoryRelationshipWhereInput[]
-    NOT?: CategoryRelationshipWhereInput | CategoryRelationshipWhereInput[]
-    fromCategoryCode?: StringNullableFilter<"CategoryRelationship"> | string | null
-    toCategoryCode?: StringNullableFilter<"CategoryRelationship"> | string | null
-    relationshipType?: StringFilter<"CategoryRelationship"> | string
-    sortOrder?: IntFilter<"CategoryRelationship"> | number
-    metadata?: JsonNullableFilter<"CategoryRelationship">
-    createdAt?: DateTimeFilter<"CategoryRelationship"> | Date | string
-  }, "id">
-
-  export type CategoryRelationshipOrderByWithAggregationInput = {
-    id?: SortOrder
-    fromCategoryCode?: SortOrderInput | SortOrder
-    toCategoryCode?: SortOrderInput | SortOrder
-    relationshipType?: SortOrder
-    sortOrder?: SortOrder
-    metadata?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    _count?: CategoryRelationshipCountOrderByAggregateInput
-    _avg?: CategoryRelationshipAvgOrderByAggregateInput
-    _max?: CategoryRelationshipMaxOrderByAggregateInput
-    _min?: CategoryRelationshipMinOrderByAggregateInput
-    _sum?: CategoryRelationshipSumOrderByAggregateInput
-  }
-
-  export type CategoryRelationshipScalarWhereWithAggregatesInput = {
-    AND?: CategoryRelationshipScalarWhereWithAggregatesInput | CategoryRelationshipScalarWhereWithAggregatesInput[]
-    OR?: CategoryRelationshipScalarWhereWithAggregatesInput[]
-    NOT?: CategoryRelationshipScalarWhereWithAggregatesInput | CategoryRelationshipScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"CategoryRelationship"> | string
-    fromCategoryCode?: StringNullableWithAggregatesFilter<"CategoryRelationship"> | string | null
-    toCategoryCode?: StringNullableWithAggregatesFilter<"CategoryRelationship"> | string | null
-    relationshipType?: StringWithAggregatesFilter<"CategoryRelationship"> | string
-    sortOrder?: IntWithAggregatesFilter<"CategoryRelationship"> | number
-    metadata?: JsonNullableWithAggregatesFilter<"CategoryRelationship">
-    createdAt?: DateTimeWithAggregatesFilter<"CategoryRelationship"> | Date | string
-  }
-
   export type CategoryHierarchyWhereInput = {
     AND?: CategoryHierarchyWhereInput | CategoryHierarchyWhereInput[]
     OR?: CategoryHierarchyWhereInput[]
@@ -53696,8 +47189,6 @@ export namespace Prisma {
     dependencyOption?: XOR<AttributeOptionNullableScalarRelationFilter, AttributeOptionWhereInput> | null
     options?: AttributeOptionListRelationFilter
     productSpecs?: ProductSpecListRelationFilter
-    sourceCompatibilityClauses?: CompatibilityRuleClauseListRelationFilter
-    targetCompatibilityClauses?: CompatibilityRuleClauseListRelationFilter
   }
 
   export type CategoryAttributeOrderByWithRelationInput = {
@@ -53725,8 +47216,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionOrderByWithRelationInput
     options?: AttributeOptionOrderByRelationAggregateInput
     productSpecs?: ProductSpecOrderByRelationAggregateInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseOrderByRelationAggregateInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseOrderByRelationAggregateInput
   }
 
   export type CategoryAttributeWhereUniqueInput = Prisma.AtLeast<{
@@ -53758,8 +47247,6 @@ export namespace Prisma {
     dependencyOption?: XOR<AttributeOptionNullableScalarRelationFilter, AttributeOptionWhereInput> | null
     options?: AttributeOptionListRelationFilter
     productSpecs?: ProductSpecListRelationFilter
-    sourceCompatibilityClauses?: CompatibilityRuleClauseListRelationFilter
-    targetCompatibilityClauses?: CompatibilityRuleClauseListRelationFilter
   }, "id" | "categoryId_subcategoryId_key">
 
   export type CategoryAttributeOrderByWithAggregationInput = {
@@ -53889,172 +47376,6 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"AttributeOption"> | Date | string
   }
 
-  export type CompatibilityRuleWhereInput = {
-    AND?: CompatibilityRuleWhereInput | CompatibilityRuleWhereInput[]
-    OR?: CompatibilityRuleWhereInput[]
-    NOT?: CompatibilityRuleWhereInput | CompatibilityRuleWhereInput[]
-    id?: StringFilter<"CompatibilityRule"> | string
-    sourceCategoryId?: IntFilter<"CompatibilityRule"> | number
-    targetCategoryId?: IntFilter<"CompatibilityRule"> | number
-    name?: StringFilter<"CompatibilityRule"> | string
-    message?: StringNullableFilter<"CompatibilityRule"> | string | null
-    severity?: EnumCompatibilityLevelFilter<"CompatibilityRule"> | $Enums.CompatibilityLevel
-    isActive?: BoolFilter<"CompatibilityRule"> | boolean
-    sortOrder?: IntFilter<"CompatibilityRule"> | number
-    createdAt?: DateTimeFilter<"CompatibilityRule"> | Date | string
-    updatedAt?: DateTimeFilter<"CompatibilityRule"> | Date | string
-    sourceCategory?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
-    targetCategory?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
-    clauses?: CompatibilityRuleClauseListRelationFilter
-  }
-
-  export type CompatibilityRuleOrderByWithRelationInput = {
-    id?: SortOrder
-    sourceCategoryId?: SortOrder
-    targetCategoryId?: SortOrder
-    name?: SortOrder
-    message?: SortOrderInput | SortOrder
-    severity?: SortOrder
-    isActive?: SortOrder
-    sortOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    sourceCategory?: CategoryOrderByWithRelationInput
-    targetCategory?: CategoryOrderByWithRelationInput
-    clauses?: CompatibilityRuleClauseOrderByRelationAggregateInput
-  }
-
-  export type CompatibilityRuleWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    AND?: CompatibilityRuleWhereInput | CompatibilityRuleWhereInput[]
-    OR?: CompatibilityRuleWhereInput[]
-    NOT?: CompatibilityRuleWhereInput | CompatibilityRuleWhereInput[]
-    sourceCategoryId?: IntFilter<"CompatibilityRule"> | number
-    targetCategoryId?: IntFilter<"CompatibilityRule"> | number
-    name?: StringFilter<"CompatibilityRule"> | string
-    message?: StringNullableFilter<"CompatibilityRule"> | string | null
-    severity?: EnumCompatibilityLevelFilter<"CompatibilityRule"> | $Enums.CompatibilityLevel
-    isActive?: BoolFilter<"CompatibilityRule"> | boolean
-    sortOrder?: IntFilter<"CompatibilityRule"> | number
-    createdAt?: DateTimeFilter<"CompatibilityRule"> | Date | string
-    updatedAt?: DateTimeFilter<"CompatibilityRule"> | Date | string
-    sourceCategory?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
-    targetCategory?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
-    clauses?: CompatibilityRuleClauseListRelationFilter
-  }, "id">
-
-  export type CompatibilityRuleOrderByWithAggregationInput = {
-    id?: SortOrder
-    sourceCategoryId?: SortOrder
-    targetCategoryId?: SortOrder
-    name?: SortOrder
-    message?: SortOrderInput | SortOrder
-    severity?: SortOrder
-    isActive?: SortOrder
-    sortOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    _count?: CompatibilityRuleCountOrderByAggregateInput
-    _avg?: CompatibilityRuleAvgOrderByAggregateInput
-    _max?: CompatibilityRuleMaxOrderByAggregateInput
-    _min?: CompatibilityRuleMinOrderByAggregateInput
-    _sum?: CompatibilityRuleSumOrderByAggregateInput
-  }
-
-  export type CompatibilityRuleScalarWhereWithAggregatesInput = {
-    AND?: CompatibilityRuleScalarWhereWithAggregatesInput | CompatibilityRuleScalarWhereWithAggregatesInput[]
-    OR?: CompatibilityRuleScalarWhereWithAggregatesInput[]
-    NOT?: CompatibilityRuleScalarWhereWithAggregatesInput | CompatibilityRuleScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"CompatibilityRule"> | string
-    sourceCategoryId?: IntWithAggregatesFilter<"CompatibilityRule"> | number
-    targetCategoryId?: IntWithAggregatesFilter<"CompatibilityRule"> | number
-    name?: StringWithAggregatesFilter<"CompatibilityRule"> | string
-    message?: StringNullableWithAggregatesFilter<"CompatibilityRule"> | string | null
-    severity?: EnumCompatibilityLevelWithAggregatesFilter<"CompatibilityRule"> | $Enums.CompatibilityLevel
-    isActive?: BoolWithAggregatesFilter<"CompatibilityRule"> | boolean
-    sortOrder?: IntWithAggregatesFilter<"CompatibilityRule"> | number
-    createdAt?: DateTimeWithAggregatesFilter<"CompatibilityRule"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"CompatibilityRule"> | Date | string
-  }
-
-  export type CompatibilityRuleClauseWhereInput = {
-    AND?: CompatibilityRuleClauseWhereInput | CompatibilityRuleClauseWhereInput[]
-    OR?: CompatibilityRuleClauseWhereInput[]
-    NOT?: CompatibilityRuleClauseWhereInput | CompatibilityRuleClauseWhereInput[]
-    id?: StringFilter<"CompatibilityRuleClause"> | string
-    ruleId?: StringFilter<"CompatibilityRuleClause"> | string
-    sourceAttributeId?: StringFilter<"CompatibilityRuleClause"> | string
-    targetAttributeId?: StringFilter<"CompatibilityRuleClause"> | string
-    operator?: StringFilter<"CompatibilityRuleClause"> | string
-    sourceValue?: StringNullableFilter<"CompatibilityRuleClause"> | string | null
-    targetValue?: StringNullableFilter<"CompatibilityRuleClause"> | string | null
-    sortOrder?: IntFilter<"CompatibilityRuleClause"> | number
-    rule?: XOR<CompatibilityRuleScalarRelationFilter, CompatibilityRuleWhereInput>
-    sourceAttribute?: XOR<CategoryAttributeScalarRelationFilter, CategoryAttributeWhereInput>
-    targetAttribute?: XOR<CategoryAttributeScalarRelationFilter, CategoryAttributeWhereInput>
-  }
-
-  export type CompatibilityRuleClauseOrderByWithRelationInput = {
-    id?: SortOrder
-    ruleId?: SortOrder
-    sourceAttributeId?: SortOrder
-    targetAttributeId?: SortOrder
-    operator?: SortOrder
-    sourceValue?: SortOrderInput | SortOrder
-    targetValue?: SortOrderInput | SortOrder
-    sortOrder?: SortOrder
-    rule?: CompatibilityRuleOrderByWithRelationInput
-    sourceAttribute?: CategoryAttributeOrderByWithRelationInput
-    targetAttribute?: CategoryAttributeOrderByWithRelationInput
-  }
-
-  export type CompatibilityRuleClauseWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    AND?: CompatibilityRuleClauseWhereInput | CompatibilityRuleClauseWhereInput[]
-    OR?: CompatibilityRuleClauseWhereInput[]
-    NOT?: CompatibilityRuleClauseWhereInput | CompatibilityRuleClauseWhereInput[]
-    ruleId?: StringFilter<"CompatibilityRuleClause"> | string
-    sourceAttributeId?: StringFilter<"CompatibilityRuleClause"> | string
-    targetAttributeId?: StringFilter<"CompatibilityRuleClause"> | string
-    operator?: StringFilter<"CompatibilityRuleClause"> | string
-    sourceValue?: StringNullableFilter<"CompatibilityRuleClause"> | string | null
-    targetValue?: StringNullableFilter<"CompatibilityRuleClause"> | string | null
-    sortOrder?: IntFilter<"CompatibilityRuleClause"> | number
-    rule?: XOR<CompatibilityRuleScalarRelationFilter, CompatibilityRuleWhereInput>
-    sourceAttribute?: XOR<CategoryAttributeScalarRelationFilter, CategoryAttributeWhereInput>
-    targetAttribute?: XOR<CategoryAttributeScalarRelationFilter, CategoryAttributeWhereInput>
-  }, "id">
-
-  export type CompatibilityRuleClauseOrderByWithAggregationInput = {
-    id?: SortOrder
-    ruleId?: SortOrder
-    sourceAttributeId?: SortOrder
-    targetAttributeId?: SortOrder
-    operator?: SortOrder
-    sourceValue?: SortOrderInput | SortOrder
-    targetValue?: SortOrderInput | SortOrder
-    sortOrder?: SortOrder
-    _count?: CompatibilityRuleClauseCountOrderByAggregateInput
-    _avg?: CompatibilityRuleClauseAvgOrderByAggregateInput
-    _max?: CompatibilityRuleClauseMaxOrderByAggregateInput
-    _min?: CompatibilityRuleClauseMinOrderByAggregateInput
-    _sum?: CompatibilityRuleClauseSumOrderByAggregateInput
-  }
-
-  export type CompatibilityRuleClauseScalarWhereWithAggregatesInput = {
-    AND?: CompatibilityRuleClauseScalarWhereWithAggregatesInput | CompatibilityRuleClauseScalarWhereWithAggregatesInput[]
-    OR?: CompatibilityRuleClauseScalarWhereWithAggregatesInput[]
-    NOT?: CompatibilityRuleClauseScalarWhereWithAggregatesInput | CompatibilityRuleClauseScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"CompatibilityRuleClause"> | string
-    ruleId?: StringWithAggregatesFilter<"CompatibilityRuleClause"> | string
-    sourceAttributeId?: StringWithAggregatesFilter<"CompatibilityRuleClause"> | string
-    targetAttributeId?: StringWithAggregatesFilter<"CompatibilityRuleClause"> | string
-    operator?: StringWithAggregatesFilter<"CompatibilityRuleClause"> | string
-    sourceValue?: StringNullableWithAggregatesFilter<"CompatibilityRuleClause"> | string | null
-    targetValue?: StringNullableWithAggregatesFilter<"CompatibilityRuleClause"> | string | null
-    sortOrder?: IntWithAggregatesFilter<"CompatibilityRuleClause"> | number
-  }
-
   export type TagWhereInput = {
     AND?: TagWhereInput | TagWhereInput[]
     OR?: TagWhereInput[]
@@ -54170,7 +47491,6 @@ export namespace Prisma {
     sku?: StringNullableFilter<"Product"> | string | null
     price?: FloatNullableFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableFilter<"Product"> | number | null
-    stockStatus?: StringFilter<"Product"> | string
     brandId?: StringNullableFilter<"Product"> | string | null
     createdAt?: DateTimeFilter<"Product"> | Date | string
     updatedAt?: DateTimeFilter<"Product"> | Date | string
@@ -54201,7 +47521,6 @@ export namespace Prisma {
     sku?: SortOrderInput | SortOrder
     price?: SortOrderInput | SortOrder
     compareAtPrice?: SortOrderInput | SortOrder
-    stockStatus?: SortOrder
     brandId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -54235,7 +47554,6 @@ export namespace Prisma {
     version?: IntFilter<"Product"> | number
     price?: FloatNullableFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableFilter<"Product"> | number | null
-    stockStatus?: StringFilter<"Product"> | string
     brandId?: StringNullableFilter<"Product"> | string | null
     createdAt?: DateTimeFilter<"Product"> | Date | string
     updatedAt?: DateTimeFilter<"Product"> | Date | string
@@ -54266,7 +47584,6 @@ export namespace Prisma {
     sku?: SortOrderInput | SortOrder
     price?: SortOrderInput | SortOrder
     compareAtPrice?: SortOrderInput | SortOrder
-    stockStatus?: SortOrder
     brandId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -54295,7 +47612,6 @@ export namespace Prisma {
     sku?: StringNullableWithAggregatesFilter<"Product"> | string | null
     price?: FloatNullableWithAggregatesFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableWithAggregatesFilter<"Product"> | number | null
-    stockStatus?: StringWithAggregatesFilter<"Product"> | string
     brandId?: StringNullableWithAggregatesFilter<"Product"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
@@ -54510,66 +47826,53 @@ export namespace Prisma {
     id?: StringFilter<"InventoryItem"> | string
     productId?: StringFilter<"InventoryItem"> | string
     partNumber?: StringNullableFilter<"InventoryItem"> | string | null
-    serialNumber?: StringNullableFilter<"InventoryItem"> | string | null
-    quantity?: IntFilter<"InventoryItem"> | number
-    reserved?: IntFilter<"InventoryItem"> | number
-    reorderLevel?: IntFilter<"InventoryItem"> | number
+    serialNumber?: StringFilter<"InventoryItem"> | string
+    status?: EnumInventoryUnitStatusFilter<"InventoryItem"> | $Enums.InventoryUnitStatus
     costPrice?: FloatFilter<"InventoryItem"> | number
     location?: StringFilter<"InventoryItem"> | string
     lastUpdated?: DateTimeNullableFilter<"InventoryItem"> | Date | string | null
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
     orderItemUnits?: OrderItemUnitListRelationFilter
     stockMovements?: StockMovementListRelationFilter
-    reservations?: ReservationListRelationFilter
   }
 
   export type InventoryItemOrderByWithRelationInput = {
     id?: SortOrder
     productId?: SortOrder
     partNumber?: SortOrderInput | SortOrder
-    serialNumber?: SortOrderInput | SortOrder
-    quantity?: SortOrder
-    reserved?: SortOrder
-    reorderLevel?: SortOrder
+    serialNumber?: SortOrder
+    status?: SortOrder
     costPrice?: SortOrder
     location?: SortOrder
     lastUpdated?: SortOrderInput | SortOrder
     product?: ProductOrderByWithRelationInput
     orderItemUnits?: OrderItemUnitOrderByRelationAggregateInput
     stockMovements?: StockMovementOrderByRelationAggregateInput
-    reservations?: ReservationOrderByRelationAggregateInput
   }
 
   export type InventoryItemWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    productId_partNumber?: InventoryItemProductIdPartNumberCompoundUniqueInput
-    productId_serialNumber?: InventoryItemProductIdSerialNumberCompoundUniqueInput
+    serialNumber?: string
     AND?: InventoryItemWhereInput | InventoryItemWhereInput[]
     OR?: InventoryItemWhereInput[]
     NOT?: InventoryItemWhereInput | InventoryItemWhereInput[]
     productId?: StringFilter<"InventoryItem"> | string
     partNumber?: StringNullableFilter<"InventoryItem"> | string | null
-    serialNumber?: StringNullableFilter<"InventoryItem"> | string | null
-    quantity?: IntFilter<"InventoryItem"> | number
-    reserved?: IntFilter<"InventoryItem"> | number
-    reorderLevel?: IntFilter<"InventoryItem"> | number
+    status?: EnumInventoryUnitStatusFilter<"InventoryItem"> | $Enums.InventoryUnitStatus
     costPrice?: FloatFilter<"InventoryItem"> | number
     location?: StringFilter<"InventoryItem"> | string
     lastUpdated?: DateTimeNullableFilter<"InventoryItem"> | Date | string | null
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
     orderItemUnits?: OrderItemUnitListRelationFilter
     stockMovements?: StockMovementListRelationFilter
-    reservations?: ReservationListRelationFilter
-  }, "id" | "productId_partNumber" | "productId_serialNumber">
+  }, "id" | "serialNumber">
 
   export type InventoryItemOrderByWithAggregationInput = {
     id?: SortOrder
     productId?: SortOrder
     partNumber?: SortOrderInput | SortOrder
-    serialNumber?: SortOrderInput | SortOrder
-    quantity?: SortOrder
-    reserved?: SortOrder
-    reorderLevel?: SortOrder
+    serialNumber?: SortOrder
+    status?: SortOrder
     costPrice?: SortOrder
     location?: SortOrder
     lastUpdated?: SortOrderInput | SortOrder
@@ -54587,10 +47890,8 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"InventoryItem"> | string
     productId?: StringWithAggregatesFilter<"InventoryItem"> | string
     partNumber?: StringNullableWithAggregatesFilter<"InventoryItem"> | string | null
-    serialNumber?: StringNullableWithAggregatesFilter<"InventoryItem"> | string | null
-    quantity?: IntWithAggregatesFilter<"InventoryItem"> | number
-    reserved?: IntWithAggregatesFilter<"InventoryItem"> | number
-    reorderLevel?: IntWithAggregatesFilter<"InventoryItem"> | number
+    serialNumber?: StringWithAggregatesFilter<"InventoryItem"> | string
+    status?: EnumInventoryUnitStatusWithAggregatesFilter<"InventoryItem"> | $Enums.InventoryUnitStatus
     costPrice?: FloatWithAggregatesFilter<"InventoryItem"> | number
     location?: StringWithAggregatesFilter<"InventoryItem"> | string
     lastUpdated?: DateTimeNullableWithAggregatesFilter<"InventoryItem"> | Date | string | null
@@ -54730,6 +48031,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingListRelationFilter
     payments?: PaymentTransactionListRelationFilter
     stockMoves?: StockMovementListRelationFilter
+    assignedUnits?: OrderItemUnitListRelationFilter
   }
 
   export type OrderOrderByWithRelationInput = {
@@ -54770,6 +48072,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingOrderByRelationAggregateInput
     payments?: PaymentTransactionOrderByRelationAggregateInput
     stockMoves?: StockMovementOrderByRelationAggregateInput
+    assignedUnits?: OrderItemUnitOrderByRelationAggregateInput
   }
 
   export type OrderWhereUniqueInput = Prisma.AtLeast<{
@@ -54813,6 +48116,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingListRelationFilter
     payments?: PaymentTransactionListRelationFilter
     stockMoves?: StockMovementListRelationFilter
+    assignedUnits?: OrderItemUnitListRelationFilter
   }, "id" | "idempotencyKey">
 
   export type OrderOrderByWithAggregationInput = {
@@ -54984,9 +48288,11 @@ export namespace Prisma {
     inventoryItemId?: StringFilter<"OrderItemUnit"> | string
     serialNumber?: StringNullableFilter<"OrderItemUnit"> | string | null
     partNumber?: StringNullableFilter<"OrderItemUnit"> | string | null
+    orderId?: StringNullableFilter<"OrderItemUnit"> | string | null
     createdAt?: DateTimeFilter<"OrderItemUnit"> | Date | string
     orderItem?: XOR<OrderItemScalarRelationFilter, OrderItemWhereInput>
     inventoryItem?: XOR<InventoryItemScalarRelationFilter, InventoryItemWhereInput>
+    order?: XOR<OrderNullableScalarRelationFilter, OrderWhereInput> | null
   }
 
   export type OrderItemUnitOrderByWithRelationInput = {
@@ -54995,9 +48301,11 @@ export namespace Prisma {
     inventoryItemId?: SortOrder
     serialNumber?: SortOrderInput | SortOrder
     partNumber?: SortOrderInput | SortOrder
+    orderId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     orderItem?: OrderItemOrderByWithRelationInput
     inventoryItem?: InventoryItemOrderByWithRelationInput
+    order?: OrderOrderByWithRelationInput
   }
 
   export type OrderItemUnitWhereUniqueInput = Prisma.AtLeast<{
@@ -55009,9 +48317,11 @@ export namespace Prisma {
     inventoryItemId?: StringFilter<"OrderItemUnit"> | string
     serialNumber?: StringNullableFilter<"OrderItemUnit"> | string | null
     partNumber?: StringNullableFilter<"OrderItemUnit"> | string | null
+    orderId?: StringNullableFilter<"OrderItemUnit"> | string | null
     createdAt?: DateTimeFilter<"OrderItemUnit"> | Date | string
     orderItem?: XOR<OrderItemScalarRelationFilter, OrderItemWhereInput>
     inventoryItem?: XOR<InventoryItemScalarRelationFilter, InventoryItemWhereInput>
+    order?: XOR<OrderNullableScalarRelationFilter, OrderWhereInput> | null
   }, "id">
 
   export type OrderItemUnitOrderByWithAggregationInput = {
@@ -55020,6 +48330,7 @@ export namespace Prisma {
     inventoryItemId?: SortOrder
     serialNumber?: SortOrderInput | SortOrder
     partNumber?: SortOrderInput | SortOrder
+    orderId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: OrderItemUnitCountOrderByAggregateInput
     _max?: OrderItemUnitMaxOrderByAggregateInput
@@ -55035,6 +48346,7 @@ export namespace Prisma {
     inventoryItemId?: StringWithAggregatesFilter<"OrderItemUnit"> | string
     serialNumber?: StringNullableWithAggregatesFilter<"OrderItemUnit"> | string | null
     partNumber?: StringNullableWithAggregatesFilter<"OrderItemUnit"> | string | null
+    orderId?: StringNullableWithAggregatesFilter<"OrderItemUnit"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"OrderItemUnit"> | Date | string
   }
 
@@ -56259,83 +49571,6 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"TaxSettings"> | Date | string
   }
 
-  export type ReservationWhereInput = {
-    AND?: ReservationWhereInput | ReservationWhereInput[]
-    OR?: ReservationWhereInput[]
-    NOT?: ReservationWhereInput | ReservationWhereInput[]
-    id?: StringFilter<"Reservation"> | string
-    orderId?: StringNullableFilter<"Reservation"> | string | null
-    cartId?: StringNullableFilter<"Reservation"> | string | null
-    inventoryItemId?: StringFilter<"Reservation"> | string
-    quantity?: IntFilter<"Reservation"> | number
-    status?: StringFilter<"Reservation"> | string
-    expiresAt?: DateTimeNullableFilter<"Reservation"> | Date | string | null
-    createdAt?: DateTimeFilter<"Reservation"> | Date | string
-    updatedAt?: DateTimeFilter<"Reservation"> | Date | string
-    inventoryItem?: XOR<InventoryItemScalarRelationFilter, InventoryItemWhereInput>
-  }
-
-  export type ReservationOrderByWithRelationInput = {
-    id?: SortOrder
-    orderId?: SortOrderInput | SortOrder
-    cartId?: SortOrderInput | SortOrder
-    inventoryItemId?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    expiresAt?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    inventoryItem?: InventoryItemOrderByWithRelationInput
-  }
-
-  export type ReservationWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    AND?: ReservationWhereInput | ReservationWhereInput[]
-    OR?: ReservationWhereInput[]
-    NOT?: ReservationWhereInput | ReservationWhereInput[]
-    orderId?: StringNullableFilter<"Reservation"> | string | null
-    cartId?: StringNullableFilter<"Reservation"> | string | null
-    inventoryItemId?: StringFilter<"Reservation"> | string
-    quantity?: IntFilter<"Reservation"> | number
-    status?: StringFilter<"Reservation"> | string
-    expiresAt?: DateTimeNullableFilter<"Reservation"> | Date | string | null
-    createdAt?: DateTimeFilter<"Reservation"> | Date | string
-    updatedAt?: DateTimeFilter<"Reservation"> | Date | string
-    inventoryItem?: XOR<InventoryItemScalarRelationFilter, InventoryItemWhereInput>
-  }, "id">
-
-  export type ReservationOrderByWithAggregationInput = {
-    id?: SortOrder
-    orderId?: SortOrderInput | SortOrder
-    cartId?: SortOrderInput | SortOrder
-    inventoryItemId?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    expiresAt?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    _count?: ReservationCountOrderByAggregateInput
-    _avg?: ReservationAvgOrderByAggregateInput
-    _max?: ReservationMaxOrderByAggregateInput
-    _min?: ReservationMinOrderByAggregateInput
-    _sum?: ReservationSumOrderByAggregateInput
-  }
-
-  export type ReservationScalarWhereWithAggregatesInput = {
-    AND?: ReservationScalarWhereWithAggregatesInput | ReservationScalarWhereWithAggregatesInput[]
-    OR?: ReservationScalarWhereWithAggregatesInput[]
-    NOT?: ReservationScalarWhereWithAggregatesInput | ReservationScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"Reservation"> | string
-    orderId?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
-    cartId?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
-    inventoryItemId?: StringWithAggregatesFilter<"Reservation"> | string
-    quantity?: IntWithAggregatesFilter<"Reservation"> | number
-    status?: StringWithAggregatesFilter<"Reservation"> | string
-    expiresAt?: DateTimeNullableWithAggregatesFilter<"Reservation"> | Date | string | null
-    createdAt?: DateTimeWithAggregatesFilter<"Reservation"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"Reservation"> | Date | string
-  }
-
   export type UserCreateInput = {
     id?: string
     email: string
@@ -56425,11 +49660,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateInput = {
@@ -56452,11 +49684,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUpdateInput = {
@@ -56478,11 +49707,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateInput = {
@@ -56505,11 +49731,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryCreateManyInput = {
@@ -56741,131 +49964,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type BuildSequenceCreateInput = {
-    id?: string
-    stepOrder: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    category: CategoryCreateNestedOneWithoutBuildSequenceInput
-  }
-
-  export type BuildSequenceUncheckedCreateInput = {
-    id?: string
-    categoryId: number
-    stepOrder: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type BuildSequenceUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    stepOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    category?: CategoryUpdateOneRequiredWithoutBuildSequenceNestedInput
-  }
-
-  export type BuildSequenceUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    categoryId?: IntFieldUpdateOperationsInput | number
-    stepOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type BuildSequenceCreateManyInput = {
-    id?: string
-    categoryId: number
-    stepOrder: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type BuildSequenceUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    stepOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type BuildSequenceUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    categoryId?: IntFieldUpdateOperationsInput | number
-    stepOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CategoryRelationshipCreateInput = {
-    id?: string
-    fromCategoryCode?: string | null
-    toCategoryCode?: string | null
-    relationshipType: string
-    sortOrder?: number
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-  }
-
-  export type CategoryRelationshipUncheckedCreateInput = {
-    id?: string
-    fromCategoryCode?: string | null
-    toCategoryCode?: string | null
-    relationshipType: string
-    sortOrder?: number
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-  }
-
-  export type CategoryRelationshipUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    fromCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    toCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    relationshipType?: StringFieldUpdateOperationsInput | string
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CategoryRelationshipUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    fromCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    toCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    relationshipType?: StringFieldUpdateOperationsInput | string
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CategoryRelationshipCreateManyInput = {
-    id?: string
-    fromCategoryCode?: string | null
-    toCategoryCode?: string | null
-    relationshipType: string
-    sortOrder?: number
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-  }
-
-  export type CategoryRelationshipUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    fromCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    toCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    relationshipType?: StringFieldUpdateOperationsInput | string
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CategoryRelationshipUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    fromCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    toCategoryCode?: NullableStringFieldUpdateOperationsInput | string | null
-    relationshipType?: StringFieldUpdateOperationsInput | string
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
   export type CategoryHierarchyCreateInput = {
     id?: string
     label: string
@@ -56959,8 +50057,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
     options?: AttributeOptionCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateInput = {
@@ -56984,8 +50080,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
     options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUpdateInput = {
@@ -57009,8 +50103,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
     options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateInput = {
@@ -57034,8 +50126,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
     options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeCreateManyInput = {
@@ -57178,173 +50268,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type CompatibilityRuleCreateInput = {
-    id?: string
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    sourceCategory: CategoryCreateNestedOneWithoutOutgoingRulesInput
-    targetCategory: CategoryCreateNestedOneWithoutIncomingRulesInput
-    clauses?: CompatibilityRuleClauseCreateNestedManyWithoutRuleInput
-  }
-
-  export type CompatibilityRuleUncheckedCreateInput = {
-    id?: string
-    sourceCategoryId: number
-    targetCategoryId: number
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    clauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutRuleInput
-  }
-
-  export type CompatibilityRuleUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    sourceCategory?: CategoryUpdateOneRequiredWithoutOutgoingRulesNestedInput
-    targetCategory?: CategoryUpdateOneRequiredWithoutIncomingRulesNestedInput
-    clauses?: CompatibilityRuleClauseUpdateManyWithoutRuleNestedInput
-  }
-
-  export type CompatibilityRuleUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    sourceCategoryId?: IntFieldUpdateOperationsInput | number
-    targetCategoryId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    clauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutRuleNestedInput
-  }
-
-  export type CompatibilityRuleCreateManyInput = {
-    id?: string
-    sourceCategoryId: number
-    targetCategoryId: number
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type CompatibilityRuleUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CompatibilityRuleUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    sourceCategoryId?: IntFieldUpdateOperationsInput | number
-    targetCategoryId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CompatibilityRuleClauseCreateInput = {
-    id?: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-    rule: CompatibilityRuleCreateNestedOneWithoutClausesInput
-    sourceAttribute: CategoryAttributeCreateNestedOneWithoutSourceCompatibilityClausesInput
-    targetAttribute: CategoryAttributeCreateNestedOneWithoutTargetCompatibilityClausesInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedCreateInput = {
-    id?: string
-    ruleId: string
-    sourceAttributeId: string
-    targetAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
-  export type CompatibilityRuleClauseUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    rule?: CompatibilityRuleUpdateOneRequiredWithoutClausesNestedInput
-    sourceAttribute?: CategoryAttributeUpdateOneRequiredWithoutSourceCompatibilityClausesNestedInput
-    targetAttribute?: CategoryAttributeUpdateOneRequiredWithoutTargetCompatibilityClausesNestedInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    ruleId?: StringFieldUpdateOperationsInput | string
-    sourceAttributeId?: StringFieldUpdateOperationsInput | string
-    targetAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type CompatibilityRuleClauseCreateManyInput = {
-    id?: string
-    ruleId: string
-    sourceAttributeId: string
-    targetAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
-  export type CompatibilityRuleClauseUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    ruleId?: StringFieldUpdateOperationsInput | string
-    sourceAttributeId?: StringFieldUpdateOperationsInput | string
-    targetAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
   export type TagCreateInput = {
     id?: string
     name: string
@@ -57452,7 +50375,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -57482,7 +50404,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -57508,7 +50429,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -57538,7 +50458,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57566,7 +50485,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -57585,7 +50503,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -57605,7 +50522,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57821,75 +50737,61 @@ export namespace Prisma {
   export type InventoryItemCreateInput = {
     id?: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     product: ProductCreateNestedOneWithoutInventoryItemsInput
     orderItemUnits?: OrderItemUnitCreateNestedManyWithoutInventoryItemInput
     stockMovements?: StockMovementCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemUncheckedCreateInput = {
     id?: string
     productId: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     orderItemUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutInventoryItemInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationUncheckedCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     product?: ProductUpdateOneRequiredWithoutInventoryItemsNestedInput
     orderItemUnits?: OrderItemUnitUpdateManyWithoutInventoryItemNestedInput
     stockMovements?: StockMovementUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUpdateManyWithoutInventoryItemNestedInput
   }
 
   export type InventoryItemUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     orderItemUnits?: OrderItemUnitUncheckedUpdateManyWithoutInventoryItemNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUncheckedUpdateManyWithoutInventoryItemNestedInput
   }
 
   export type InventoryItemCreateManyInput = {
     id?: string
     productId: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
@@ -57898,10 +50800,8 @@ export namespace Prisma {
   export type InventoryItemUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57911,10 +50811,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -58070,6 +50968,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateInput = {
@@ -58109,6 +51008,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUpdateInput = {
@@ -58148,6 +51048,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateInput = {
@@ -58187,6 +51088,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderCreateManyInput = {
@@ -58379,6 +51281,7 @@ export namespace Prisma {
     createdAt?: Date | string
     orderItem: OrderItemCreateNestedOneWithoutAssignedUnitsInput
     inventoryItem: InventoryItemCreateNestedOneWithoutOrderItemUnitsInput
+    order?: OrderCreateNestedOneWithoutAssignedUnitsInput
   }
 
   export type OrderItemUnitUncheckedCreateInput = {
@@ -58387,6 +51290,7 @@ export namespace Prisma {
     inventoryItemId: string
     serialNumber?: string | null
     partNumber?: string | null
+    orderId?: string | null
     createdAt?: Date | string
   }
 
@@ -58397,6 +51301,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItem?: OrderItemUpdateOneRequiredWithoutAssignedUnitsNestedInput
     inventoryItem?: InventoryItemUpdateOneRequiredWithoutOrderItemUnitsNestedInput
+    order?: OrderUpdateOneWithoutAssignedUnitsNestedInput
   }
 
   export type OrderItemUnitUncheckedUpdateInput = {
@@ -58405,6 +51310,7 @@ export namespace Prisma {
     inventoryItemId?: StringFieldUpdateOperationsInput | string
     serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -58414,6 +51320,7 @@ export namespace Prisma {
     inventoryItemId: string
     serialNumber?: string | null
     partNumber?: string | null
+    orderId?: string | null
     createdAt?: Date | string
   }
 
@@ -58430,6 +51337,7 @@ export namespace Prisma {
     inventoryItemId?: StringFieldUpdateOperationsInput | string
     serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59757,89 +52665,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type ReservationCreateInput = {
-    id?: string
-    orderId?: string | null
-    cartId?: string | null
-    quantity?: number
-    status?: string
-    expiresAt?: Date | string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    inventoryItem: InventoryItemCreateNestedOneWithoutReservationsInput
-  }
-
-  export type ReservationUncheckedCreateInput = {
-    id?: string
-    orderId?: string | null
-    cartId?: string | null
-    inventoryItemId: string
-    quantity?: number
-    status?: string
-    expiresAt?: Date | string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReservationUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderId?: NullableStringFieldUpdateOperationsInput | string | null
-    cartId?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: StringFieldUpdateOperationsInput | string
-    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    inventoryItem?: InventoryItemUpdateOneRequiredWithoutReservationsNestedInput
-  }
-
-  export type ReservationUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderId?: NullableStringFieldUpdateOperationsInput | string | null
-    cartId?: NullableStringFieldUpdateOperationsInput | string | null
-    inventoryItemId?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: StringFieldUpdateOperationsInput | string
-    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReservationCreateManyInput = {
-    id?: string
-    orderId?: string | null
-    cartId?: string | null
-    inventoryItemId: string
-    quantity?: number
-    status?: string
-    expiresAt?: Date | string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReservationUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderId?: NullableStringFieldUpdateOperationsInput | string | null
-    cartId?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: StringFieldUpdateOperationsInput | string
-    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReservationUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderId?: NullableStringFieldUpdateOperationsInput | string | null
-    cartId?: NullableStringFieldUpdateOperationsInput | string | null
-    inventoryItemId?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: StringFieldUpdateOperationsInput | string
-    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -60017,11 +52842,6 @@ export namespace Prisma {
     none?: BuildGuideWhereInput
   }
 
-  export type BuildSequenceNullableScalarRelationFilter = {
-    is?: BuildSequenceWhereInput | null
-    isNot?: BuildSequenceWhereInput | null
-  }
-
   export type CategoryHierarchyListRelationFilter = {
     every?: CategoryHierarchyWhereInput
     some?: CategoryHierarchyWhereInput
@@ -60032,12 +52852,6 @@ export namespace Prisma {
     every?: CategoryAttributeWhereInput
     some?: CategoryAttributeWhereInput
     none?: CategoryAttributeWhereInput
-  }
-
-  export type CompatibilityRuleListRelationFilter = {
-    every?: CompatibilityRuleWhereInput
-    some?: CompatibilityRuleWhereInput
-    none?: CompatibilityRuleWhereInput
   }
 
   export type SortOrderInput = {
@@ -60070,10 +52884,6 @@ export namespace Prisma {
   }
 
   export type CategoryAttributeOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type CompatibilityRuleOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -60308,125 +53118,6 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
-  export type BuildSequenceCountOrderByAggregateInput = {
-    id?: SortOrder
-    categoryId?: SortOrder
-    stepOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type BuildSequenceAvgOrderByAggregateInput = {
-    categoryId?: SortOrder
-    stepOrder?: SortOrder
-  }
-
-  export type BuildSequenceMaxOrderByAggregateInput = {
-    id?: SortOrder
-    categoryId?: SortOrder
-    stepOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type BuildSequenceMinOrderByAggregateInput = {
-    id?: SortOrder
-    categoryId?: SortOrder
-    stepOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type BuildSequenceSumOrderByAggregateInput = {
-    categoryId?: SortOrder
-    stepOrder?: SortOrder
-  }
-  export type JsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
-
-  export type CategoryRelationshipCountOrderByAggregateInput = {
-    id?: SortOrder
-    fromCategoryCode?: SortOrder
-    toCategoryCode?: SortOrder
-    relationshipType?: SortOrder
-    sortOrder?: SortOrder
-    metadata?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type CategoryRelationshipAvgOrderByAggregateInput = {
-    sortOrder?: SortOrder
-  }
-
-  export type CategoryRelationshipMaxOrderByAggregateInput = {
-    id?: SortOrder
-    fromCategoryCode?: SortOrder
-    toCategoryCode?: SortOrder
-    relationshipType?: SortOrder
-    sortOrder?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type CategoryRelationshipMinOrderByAggregateInput = {
-    id?: SortOrder
-    fromCategoryCode?: SortOrder
-    toCategoryCode?: SortOrder
-    relationshipType?: SortOrder
-    sortOrder?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type CategoryRelationshipSumOrderByAggregateInput = {
-    sortOrder?: SortOrder
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
-  }
-
   export type CategoryNullableScalarRelationFilter = {
     is?: CategoryWhereInput | null
     isNot?: CategoryWhereInput | null
@@ -60518,21 +53209,11 @@ export namespace Prisma {
     none?: ProductSpecWhereInput
   }
 
-  export type CompatibilityRuleClauseListRelationFilter = {
-    every?: CompatibilityRuleClauseWhereInput
-    some?: CompatibilityRuleClauseWhereInput
-    none?: CompatibilityRuleClauseWhereInput
-  }
-
   export type AttributeOptionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type ProductSpecOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type CompatibilityRuleClauseOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -60633,6 +53314,29 @@ export namespace Prisma {
     _min?: NestedEnumFilterTypeNullableFilter<$PrismaModel>
     _max?: NestedEnumFilterTypeNullableFilter<$PrismaModel>
   }
+  export type JsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type CategoryAttributeScalarRelationFilter = {
     is?: CategoryAttributeWhereInput
@@ -60682,119 +53386,31 @@ export namespace Prisma {
   export type AttributeOptionSumOrderByAggregateInput = {
     sortOrder?: SortOrder
   }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
 
-  export type EnumCompatibilityLevelFilter<$PrismaModel = never> = {
-    equals?: $Enums.CompatibilityLevel | EnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    in?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    notIn?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    not?: NestedEnumCompatibilityLevelFilter<$PrismaModel> | $Enums.CompatibilityLevel
-  }
-
-  export type CompatibilityRuleCountOrderByAggregateInput = {
-    id?: SortOrder
-    sourceCategoryId?: SortOrder
-    targetCategoryId?: SortOrder
-    name?: SortOrder
-    message?: SortOrder
-    severity?: SortOrder
-    isActive?: SortOrder
-    sortOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type CompatibilityRuleAvgOrderByAggregateInput = {
-    sourceCategoryId?: SortOrder
-    targetCategoryId?: SortOrder
-    sortOrder?: SortOrder
-  }
-
-  export type CompatibilityRuleMaxOrderByAggregateInput = {
-    id?: SortOrder
-    sourceCategoryId?: SortOrder
-    targetCategoryId?: SortOrder
-    name?: SortOrder
-    message?: SortOrder
-    severity?: SortOrder
-    isActive?: SortOrder
-    sortOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type CompatibilityRuleMinOrderByAggregateInput = {
-    id?: SortOrder
-    sourceCategoryId?: SortOrder
-    targetCategoryId?: SortOrder
-    name?: SortOrder
-    message?: SortOrder
-    severity?: SortOrder
-    isActive?: SortOrder
-    sortOrder?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type CompatibilityRuleSumOrderByAggregateInput = {
-    sourceCategoryId?: SortOrder
-    targetCategoryId?: SortOrder
-    sortOrder?: SortOrder
-  }
-
-  export type EnumCompatibilityLevelWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.CompatibilityLevel | EnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    in?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    notIn?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    not?: NestedEnumCompatibilityLevelWithAggregatesFilter<$PrismaModel> | $Enums.CompatibilityLevel
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumCompatibilityLevelFilter<$PrismaModel>
-    _max?: NestedEnumCompatibilityLevelFilter<$PrismaModel>
-  }
-
-  export type CompatibilityRuleScalarRelationFilter = {
-    is?: CompatibilityRuleWhereInput
-    isNot?: CompatibilityRuleWhereInput
-  }
-
-  export type CompatibilityRuleClauseCountOrderByAggregateInput = {
-    id?: SortOrder
-    ruleId?: SortOrder
-    sourceAttributeId?: SortOrder
-    targetAttributeId?: SortOrder
-    operator?: SortOrder
-    sourceValue?: SortOrder
-    targetValue?: SortOrder
-    sortOrder?: SortOrder
-  }
-
-  export type CompatibilityRuleClauseAvgOrderByAggregateInput = {
-    sortOrder?: SortOrder
-  }
-
-  export type CompatibilityRuleClauseMaxOrderByAggregateInput = {
-    id?: SortOrder
-    ruleId?: SortOrder
-    sourceAttributeId?: SortOrder
-    targetAttributeId?: SortOrder
-    operator?: SortOrder
-    sourceValue?: SortOrder
-    targetValue?: SortOrder
-    sortOrder?: SortOrder
-  }
-
-  export type CompatibilityRuleClauseMinOrderByAggregateInput = {
-    id?: SortOrder
-    ruleId?: SortOrder
-    sourceAttributeId?: SortOrder
-    targetAttributeId?: SortOrder
-    operator?: SortOrder
-    sourceValue?: SortOrder
-    targetValue?: SortOrder
-    sortOrder?: SortOrder
-  }
-
-  export type CompatibilityRuleClauseSumOrderByAggregateInput = {
-    sortOrder?: SortOrder
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type TagCountOrderByAggregateInput = {
@@ -60948,7 +53564,6 @@ export namespace Prisma {
     sku?: SortOrder
     price?: SortOrder
     compareAtPrice?: SortOrder
-    stockStatus?: SortOrder
     brandId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -60977,7 +53592,6 @@ export namespace Prisma {
     sku?: SortOrder
     price?: SortOrder
     compareAtPrice?: SortOrder
-    stockStatus?: SortOrder
     brandId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -60998,7 +53612,6 @@ export namespace Prisma {
     sku?: SortOrder
     price?: SortOrder
     compareAtPrice?: SortOrder
-    stockStatus?: SortOrder
     brandId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -61191,6 +53804,13 @@ export namespace Prisma {
     frequency?: SortOrder
   }
 
+  export type EnumInventoryUnitStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.InventoryUnitStatus | EnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInventoryUnitStatusFilter<$PrismaModel> | $Enums.InventoryUnitStatus
+  }
+
   export type FloatFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
     in?: number[] | ListFloatFieldRefInput<$PrismaModel>
@@ -61208,28 +53828,8 @@ export namespace Prisma {
     none?: OrderItemUnitWhereInput
   }
 
-  export type ReservationListRelationFilter = {
-    every?: ReservationWhereInput
-    some?: ReservationWhereInput
-    none?: ReservationWhereInput
-  }
-
   export type OrderItemUnitOrderByRelationAggregateInput = {
     _count?: SortOrder
-  }
-
-  export type ReservationOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type InventoryItemProductIdPartNumberCompoundUniqueInput = {
-    productId: string
-    partNumber: string
-  }
-
-  export type InventoryItemProductIdSerialNumberCompoundUniqueInput = {
-    productId: string
-    serialNumber: string
   }
 
   export type InventoryItemCountOrderByAggregateInput = {
@@ -61237,18 +53837,13 @@ export namespace Prisma {
     productId?: SortOrder
     partNumber?: SortOrder
     serialNumber?: SortOrder
-    quantity?: SortOrder
-    reserved?: SortOrder
-    reorderLevel?: SortOrder
+    status?: SortOrder
     costPrice?: SortOrder
     location?: SortOrder
     lastUpdated?: SortOrder
   }
 
   export type InventoryItemAvgOrderByAggregateInput = {
-    quantity?: SortOrder
-    reserved?: SortOrder
-    reorderLevel?: SortOrder
     costPrice?: SortOrder
   }
 
@@ -61257,9 +53852,7 @@ export namespace Prisma {
     productId?: SortOrder
     partNumber?: SortOrder
     serialNumber?: SortOrder
-    quantity?: SortOrder
-    reserved?: SortOrder
-    reorderLevel?: SortOrder
+    status?: SortOrder
     costPrice?: SortOrder
     location?: SortOrder
     lastUpdated?: SortOrder
@@ -61270,19 +53863,24 @@ export namespace Prisma {
     productId?: SortOrder
     partNumber?: SortOrder
     serialNumber?: SortOrder
-    quantity?: SortOrder
-    reserved?: SortOrder
-    reorderLevel?: SortOrder
+    status?: SortOrder
     costPrice?: SortOrder
     location?: SortOrder
     lastUpdated?: SortOrder
   }
 
   export type InventoryItemSumOrderByAggregateInput = {
-    quantity?: SortOrder
-    reserved?: SortOrder
-    reorderLevel?: SortOrder
     costPrice?: SortOrder
+  }
+
+  export type EnumInventoryUnitStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.InventoryUnitStatus | EnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInventoryUnitStatusWithAggregatesFilter<$PrismaModel> | $Enums.InventoryUnitStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumInventoryUnitStatusFilter<$PrismaModel>
+    _max?: NestedEnumInventoryUnitStatusFilter<$PrismaModel>
   }
 
   export type FloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -61613,12 +54211,18 @@ export namespace Prisma {
     isNot?: InventoryItemWhereInput
   }
 
+  export type OrderNullableScalarRelationFilter = {
+    is?: OrderWhereInput | null
+    isNot?: OrderWhereInput | null
+  }
+
   export type OrderItemUnitCountOrderByAggregateInput = {
     id?: SortOrder
     orderItemId?: SortOrder
     inventoryItemId?: SortOrder
     serialNumber?: SortOrder
     partNumber?: SortOrder
+    orderId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -61628,6 +54232,7 @@ export namespace Prisma {
     inventoryItemId?: SortOrder
     serialNumber?: SortOrder
     partNumber?: SortOrder
+    orderId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -61637,6 +54242,7 @@ export namespace Prisma {
     inventoryItemId?: SortOrder
     serialNumber?: SortOrder
     partNumber?: SortOrder
+    orderId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -61702,11 +54308,6 @@ export namespace Prisma {
     in?: $Enums.StockMovementType[] | ListEnumStockMovementTypeFieldRefInput<$PrismaModel>
     notIn?: $Enums.StockMovementType[] | ListEnumStockMovementTypeFieldRefInput<$PrismaModel>
     not?: NestedEnumStockMovementTypeFilter<$PrismaModel> | $Enums.StockMovementType
-  }
-
-  export type OrderNullableScalarRelationFilter = {
-    is?: OrderWhereInput | null
-    isNot?: OrderWhereInput | null
   }
 
   export type InventoryItemNullableScalarRelationFilter = {
@@ -62498,50 +55099,6 @@ export namespace Prisma {
     taxRatePct?: SortOrder
   }
 
-  export type ReservationCountOrderByAggregateInput = {
-    id?: SortOrder
-    orderId?: SortOrder
-    cartId?: SortOrder
-    inventoryItemId?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    expiresAt?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ReservationAvgOrderByAggregateInput = {
-    quantity?: SortOrder
-  }
-
-  export type ReservationMaxOrderByAggregateInput = {
-    id?: SortOrder
-    orderId?: SortOrder
-    cartId?: SortOrder
-    inventoryItemId?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    expiresAt?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ReservationMinOrderByAggregateInput = {
-    id?: SortOrder
-    orderId?: SortOrder
-    cartId?: SortOrder
-    inventoryItemId?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    expiresAt?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ReservationSumOrderByAggregateInput = {
-    quantity?: SortOrder
-  }
-
   export type StringFieldUpdateOperationsInput = {
     set?: string
   }
@@ -62589,12 +55146,6 @@ export namespace Prisma {
     connect?: BuildGuideWhereUniqueInput | BuildGuideWhereUniqueInput[]
   }
 
-  export type BuildSequenceCreateNestedOneWithoutCategoryInput = {
-    create?: XOR<BuildSequenceCreateWithoutCategoryInput, BuildSequenceUncheckedCreateWithoutCategoryInput>
-    connectOrCreate?: BuildSequenceCreateOrConnectWithoutCategoryInput
-    connect?: BuildSequenceWhereUniqueInput
-  }
-
   export type CategoryHierarchyCreateNestedManyWithoutCategoryInput = {
     create?: XOR<CategoryHierarchyCreateWithoutCategoryInput, CategoryHierarchyUncheckedCreateWithoutCategoryInput> | CategoryHierarchyCreateWithoutCategoryInput[] | CategoryHierarchyUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: CategoryHierarchyCreateOrConnectWithoutCategoryInput | CategoryHierarchyCreateOrConnectWithoutCategoryInput[]
@@ -62607,20 +55158,6 @@ export namespace Prisma {
     connectOrCreate?: CategoryAttributeCreateOrConnectWithoutCategoryInput | CategoryAttributeCreateOrConnectWithoutCategoryInput[]
     createMany?: CategoryAttributeCreateManyCategoryInputEnvelope
     connect?: CategoryAttributeWhereUniqueInput | CategoryAttributeWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutSourceCategoryInput, CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput> | CompatibilityRuleCreateWithoutSourceCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput | CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput[]
-    createMany?: CompatibilityRuleCreateManySourceCategoryInputEnvelope
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutTargetCategoryInput, CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput> | CompatibilityRuleCreateWithoutTargetCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput | CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput[]
-    createMany?: CompatibilityRuleCreateManyTargetCategoryInputEnvelope
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
   }
 
   export type SubcategoryUncheckedCreateNestedManyWithoutCategoryInput = {
@@ -62658,12 +55195,6 @@ export namespace Prisma {
     connect?: BuildGuideWhereUniqueInput | BuildGuideWhereUniqueInput[]
   }
 
-  export type BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput = {
-    create?: XOR<BuildSequenceCreateWithoutCategoryInput, BuildSequenceUncheckedCreateWithoutCategoryInput>
-    connectOrCreate?: BuildSequenceCreateOrConnectWithoutCategoryInput
-    connect?: BuildSequenceWhereUniqueInput
-  }
-
   export type CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput = {
     create?: XOR<CategoryHierarchyCreateWithoutCategoryInput, CategoryHierarchyUncheckedCreateWithoutCategoryInput> | CategoryHierarchyCreateWithoutCategoryInput[] | CategoryHierarchyUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: CategoryHierarchyCreateOrConnectWithoutCategoryInput | CategoryHierarchyCreateOrConnectWithoutCategoryInput[]
@@ -62676,20 +55207,6 @@ export namespace Prisma {
     connectOrCreate?: CategoryAttributeCreateOrConnectWithoutCategoryInput | CategoryAttributeCreateOrConnectWithoutCategoryInput[]
     createMany?: CategoryAttributeCreateManyCategoryInputEnvelope
     connect?: CategoryAttributeWhereUniqueInput | CategoryAttributeWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutSourceCategoryInput, CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput> | CompatibilityRuleCreateWithoutSourceCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput | CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput[]
-    createMany?: CompatibilityRuleCreateManySourceCategoryInputEnvelope
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutTargetCategoryInput, CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput> | CompatibilityRuleCreateWithoutTargetCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput | CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput[]
-    createMany?: CompatibilityRuleCreateManyTargetCategoryInputEnvelope
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
   }
 
   export type NullableStringFieldUpdateOperationsInput = {
@@ -62786,16 +55303,6 @@ export namespace Prisma {
     deleteMany?: BuildGuideScalarWhereInput | BuildGuideScalarWhereInput[]
   }
 
-  export type BuildSequenceUpdateOneWithoutCategoryNestedInput = {
-    create?: XOR<BuildSequenceCreateWithoutCategoryInput, BuildSequenceUncheckedCreateWithoutCategoryInput>
-    connectOrCreate?: BuildSequenceCreateOrConnectWithoutCategoryInput
-    upsert?: BuildSequenceUpsertWithoutCategoryInput
-    disconnect?: BuildSequenceWhereInput | boolean
-    delete?: BuildSequenceWhereInput | boolean
-    connect?: BuildSequenceWhereUniqueInput
-    update?: XOR<XOR<BuildSequenceUpdateToOneWithWhereWithoutCategoryInput, BuildSequenceUpdateWithoutCategoryInput>, BuildSequenceUncheckedUpdateWithoutCategoryInput>
-  }
-
   export type CategoryHierarchyUpdateManyWithoutCategoryNestedInput = {
     create?: XOR<CategoryHierarchyCreateWithoutCategoryInput, CategoryHierarchyUncheckedCreateWithoutCategoryInput> | CategoryHierarchyCreateWithoutCategoryInput[] | CategoryHierarchyUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: CategoryHierarchyCreateOrConnectWithoutCategoryInput | CategoryHierarchyCreateOrConnectWithoutCategoryInput[]
@@ -62822,34 +55329,6 @@ export namespace Prisma {
     update?: CategoryAttributeUpdateWithWhereUniqueWithoutCategoryInput | CategoryAttributeUpdateWithWhereUniqueWithoutCategoryInput[]
     updateMany?: CategoryAttributeUpdateManyWithWhereWithoutCategoryInput | CategoryAttributeUpdateManyWithWhereWithoutCategoryInput[]
     deleteMany?: CategoryAttributeScalarWhereInput | CategoryAttributeScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutSourceCategoryInput, CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput> | CompatibilityRuleCreateWithoutSourceCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput | CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput[]
-    upsert?: CompatibilityRuleUpsertWithWhereUniqueWithoutSourceCategoryInput | CompatibilityRuleUpsertWithWhereUniqueWithoutSourceCategoryInput[]
-    createMany?: CompatibilityRuleCreateManySourceCategoryInputEnvelope
-    set?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    disconnect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    delete?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    update?: CompatibilityRuleUpdateWithWhereUniqueWithoutSourceCategoryInput | CompatibilityRuleUpdateWithWhereUniqueWithoutSourceCategoryInput[]
-    updateMany?: CompatibilityRuleUpdateManyWithWhereWithoutSourceCategoryInput | CompatibilityRuleUpdateManyWithWhereWithoutSourceCategoryInput[]
-    deleteMany?: CompatibilityRuleScalarWhereInput | CompatibilityRuleScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutTargetCategoryInput, CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput> | CompatibilityRuleCreateWithoutTargetCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput | CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput[]
-    upsert?: CompatibilityRuleUpsertWithWhereUniqueWithoutTargetCategoryInput | CompatibilityRuleUpsertWithWhereUniqueWithoutTargetCategoryInput[]
-    createMany?: CompatibilityRuleCreateManyTargetCategoryInputEnvelope
-    set?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    disconnect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    delete?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    update?: CompatibilityRuleUpdateWithWhereUniqueWithoutTargetCategoryInput | CompatibilityRuleUpdateWithWhereUniqueWithoutTargetCategoryInput[]
-    updateMany?: CompatibilityRuleUpdateManyWithWhereWithoutTargetCategoryInput | CompatibilityRuleUpdateManyWithWhereWithoutTargetCategoryInput[]
-    deleteMany?: CompatibilityRuleScalarWhereInput | CompatibilityRuleScalarWhereInput[]
   }
 
   export type SubcategoryUncheckedUpdateManyWithoutCategoryNestedInput = {
@@ -62922,16 +55401,6 @@ export namespace Prisma {
     deleteMany?: BuildGuideScalarWhereInput | BuildGuideScalarWhereInput[]
   }
 
-  export type BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput = {
-    create?: XOR<BuildSequenceCreateWithoutCategoryInput, BuildSequenceUncheckedCreateWithoutCategoryInput>
-    connectOrCreate?: BuildSequenceCreateOrConnectWithoutCategoryInput
-    upsert?: BuildSequenceUpsertWithoutCategoryInput
-    disconnect?: BuildSequenceWhereInput | boolean
-    delete?: BuildSequenceWhereInput | boolean
-    connect?: BuildSequenceWhereUniqueInput
-    update?: XOR<XOR<BuildSequenceUpdateToOneWithWhereWithoutCategoryInput, BuildSequenceUpdateWithoutCategoryInput>, BuildSequenceUncheckedUpdateWithoutCategoryInput>
-  }
-
   export type CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput = {
     create?: XOR<CategoryHierarchyCreateWithoutCategoryInput, CategoryHierarchyUncheckedCreateWithoutCategoryInput> | CategoryHierarchyCreateWithoutCategoryInput[] | CategoryHierarchyUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: CategoryHierarchyCreateOrConnectWithoutCategoryInput | CategoryHierarchyCreateOrConnectWithoutCategoryInput[]
@@ -62958,34 +55427,6 @@ export namespace Prisma {
     update?: CategoryAttributeUpdateWithWhereUniqueWithoutCategoryInput | CategoryAttributeUpdateWithWhereUniqueWithoutCategoryInput[]
     updateMany?: CategoryAttributeUpdateManyWithWhereWithoutCategoryInput | CategoryAttributeUpdateManyWithWhereWithoutCategoryInput[]
     deleteMany?: CategoryAttributeScalarWhereInput | CategoryAttributeScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutSourceCategoryInput, CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput> | CompatibilityRuleCreateWithoutSourceCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput | CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput[]
-    upsert?: CompatibilityRuleUpsertWithWhereUniqueWithoutSourceCategoryInput | CompatibilityRuleUpsertWithWhereUniqueWithoutSourceCategoryInput[]
-    createMany?: CompatibilityRuleCreateManySourceCategoryInputEnvelope
-    set?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    disconnect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    delete?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    update?: CompatibilityRuleUpdateWithWhereUniqueWithoutSourceCategoryInput | CompatibilityRuleUpdateWithWhereUniqueWithoutSourceCategoryInput[]
-    updateMany?: CompatibilityRuleUpdateManyWithWhereWithoutSourceCategoryInput | CompatibilityRuleUpdateManyWithWhereWithoutSourceCategoryInput[]
-    deleteMany?: CompatibilityRuleScalarWhereInput | CompatibilityRuleScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutTargetCategoryInput, CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput> | CompatibilityRuleCreateWithoutTargetCategoryInput[] | CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput[]
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput | CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput[]
-    upsert?: CompatibilityRuleUpsertWithWhereUniqueWithoutTargetCategoryInput | CompatibilityRuleUpsertWithWhereUniqueWithoutTargetCategoryInput[]
-    createMany?: CompatibilityRuleCreateManyTargetCategoryInputEnvelope
-    set?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    disconnect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    delete?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    connect?: CompatibilityRuleWhereUniqueInput | CompatibilityRuleWhereUniqueInput[]
-    update?: CompatibilityRuleUpdateWithWhereUniqueWithoutTargetCategoryInput | CompatibilityRuleUpdateWithWhereUniqueWithoutTargetCategoryInput[]
-    updateMany?: CompatibilityRuleUpdateManyWithWhereWithoutTargetCategoryInput | CompatibilityRuleUpdateManyWithWhereWithoutTargetCategoryInput[]
-    deleteMany?: CompatibilityRuleScalarWhereInput | CompatibilityRuleScalarWhereInput[]
   }
 
   export type CategoryCreateNestedOneWithoutSubcategoriesInput = {
@@ -63198,20 +55639,6 @@ export namespace Prisma {
     deleteMany?: BrandCategoryScalarWhereInput | BrandCategoryScalarWhereInput[]
   }
 
-  export type CategoryCreateNestedOneWithoutBuildSequenceInput = {
-    create?: XOR<CategoryCreateWithoutBuildSequenceInput, CategoryUncheckedCreateWithoutBuildSequenceInput>
-    connectOrCreate?: CategoryCreateOrConnectWithoutBuildSequenceInput
-    connect?: CategoryWhereUniqueInput
-  }
-
-  export type CategoryUpdateOneRequiredWithoutBuildSequenceNestedInput = {
-    create?: XOR<CategoryCreateWithoutBuildSequenceInput, CategoryUncheckedCreateWithoutBuildSequenceInput>
-    connectOrCreate?: CategoryCreateOrConnectWithoutBuildSequenceInput
-    upsert?: CategoryUpsertWithoutBuildSequenceInput
-    connect?: CategoryWhereUniqueInput
-    update?: XOR<XOR<CategoryUpdateToOneWithWhereWithoutBuildSequenceInput, CategoryUpdateWithoutBuildSequenceInput>, CategoryUncheckedUpdateWithoutBuildSequenceInput>
-  }
-
   export type CategoryCreateNestedOneWithoutHierarchyNodesInput = {
     create?: XOR<CategoryCreateWithoutHierarchyNodesInput, CategoryUncheckedCreateWithoutHierarchyNodesInput>
     connectOrCreate?: CategoryCreateOrConnectWithoutHierarchyNodesInput
@@ -63331,20 +55758,6 @@ export namespace Prisma {
     connect?: ProductSpecWhereUniqueInput | ProductSpecWhereUniqueInput[]
   }
 
-  export type CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput> | CompatibilityRuleClauseCreateWithoutSourceAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManySourceAttributeInputEnvelope
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput> | CompatibilityRuleClauseCreateWithoutTargetAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManyTargetAttributeInputEnvelope
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-  }
-
   export type CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput = {
     create?: XOR<CategoryAttributeCreateWithoutDependencyAttributeInput, CategoryAttributeUncheckedCreateWithoutDependencyAttributeInput> | CategoryAttributeCreateWithoutDependencyAttributeInput[] | CategoryAttributeUncheckedCreateWithoutDependencyAttributeInput[]
     connectOrCreate?: CategoryAttributeCreateOrConnectWithoutDependencyAttributeInput | CategoryAttributeCreateOrConnectWithoutDependencyAttributeInput[]
@@ -63364,20 +55777,6 @@ export namespace Prisma {
     connectOrCreate?: ProductSpecCreateOrConnectWithoutAttributeInput | ProductSpecCreateOrConnectWithoutAttributeInput[]
     createMany?: ProductSpecCreateManyAttributeInputEnvelope
     connect?: ProductSpecWhereUniqueInput | ProductSpecWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput> | CompatibilityRuleClauseCreateWithoutSourceAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManySourceAttributeInputEnvelope
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput> | CompatibilityRuleClauseCreateWithoutTargetAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManyTargetAttributeInputEnvelope
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
   }
 
   export type EnumAttributeInputTypeFieldUpdateOperationsInput = {
@@ -63468,34 +55867,6 @@ export namespace Prisma {
     deleteMany?: ProductSpecScalarWhereInput | ProductSpecScalarWhereInput[]
   }
 
-  export type CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput> | CompatibilityRuleClauseCreateWithoutSourceAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput[]
-    upsert?: CompatibilityRuleClauseUpsertWithWhereUniqueWithoutSourceAttributeInput | CompatibilityRuleClauseUpsertWithWhereUniqueWithoutSourceAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManySourceAttributeInputEnvelope
-    set?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    disconnect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    delete?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    update?: CompatibilityRuleClauseUpdateWithWhereUniqueWithoutSourceAttributeInput | CompatibilityRuleClauseUpdateWithWhereUniqueWithoutSourceAttributeInput[]
-    updateMany?: CompatibilityRuleClauseUpdateManyWithWhereWithoutSourceAttributeInput | CompatibilityRuleClauseUpdateManyWithWhereWithoutSourceAttributeInput[]
-    deleteMany?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput> | CompatibilityRuleClauseCreateWithoutTargetAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput[]
-    upsert?: CompatibilityRuleClauseUpsertWithWhereUniqueWithoutTargetAttributeInput | CompatibilityRuleClauseUpsertWithWhereUniqueWithoutTargetAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManyTargetAttributeInputEnvelope
-    set?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    disconnect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    delete?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    update?: CompatibilityRuleClauseUpdateWithWhereUniqueWithoutTargetAttributeInput | CompatibilityRuleClauseUpdateWithWhereUniqueWithoutTargetAttributeInput[]
-    updateMany?: CompatibilityRuleClauseUpdateManyWithWhereWithoutTargetAttributeInput | CompatibilityRuleClauseUpdateManyWithWhereWithoutTargetAttributeInput[]
-    deleteMany?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
-  }
-
   export type CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput = {
     create?: XOR<CategoryAttributeCreateWithoutDependencyAttributeInput, CategoryAttributeUncheckedCreateWithoutDependencyAttributeInput> | CategoryAttributeCreateWithoutDependencyAttributeInput[] | CategoryAttributeUncheckedCreateWithoutDependencyAttributeInput[]
     connectOrCreate?: CategoryAttributeCreateOrConnectWithoutDependencyAttributeInput | CategoryAttributeCreateOrConnectWithoutDependencyAttributeInput[]
@@ -63536,34 +55907,6 @@ export namespace Prisma {
     update?: ProductSpecUpdateWithWhereUniqueWithoutAttributeInput | ProductSpecUpdateWithWhereUniqueWithoutAttributeInput[]
     updateMany?: ProductSpecUpdateManyWithWhereWithoutAttributeInput | ProductSpecUpdateManyWithWhereWithoutAttributeInput[]
     deleteMany?: ProductSpecScalarWhereInput | ProductSpecScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput> | CompatibilityRuleClauseCreateWithoutSourceAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput[]
-    upsert?: CompatibilityRuleClauseUpsertWithWhereUniqueWithoutSourceAttributeInput | CompatibilityRuleClauseUpsertWithWhereUniqueWithoutSourceAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManySourceAttributeInputEnvelope
-    set?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    disconnect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    delete?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    update?: CompatibilityRuleClauseUpdateWithWhereUniqueWithoutSourceAttributeInput | CompatibilityRuleClauseUpdateWithWhereUniqueWithoutSourceAttributeInput[]
-    updateMany?: CompatibilityRuleClauseUpdateManyWithWhereWithoutSourceAttributeInput | CompatibilityRuleClauseUpdateManyWithWhereWithoutSourceAttributeInput[]
-    deleteMany?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput> | CompatibilityRuleClauseCreateWithoutTargetAttributeInput[] | CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput | CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput[]
-    upsert?: CompatibilityRuleClauseUpsertWithWhereUniqueWithoutTargetAttributeInput | CompatibilityRuleClauseUpsertWithWhereUniqueWithoutTargetAttributeInput[]
-    createMany?: CompatibilityRuleClauseCreateManyTargetAttributeInputEnvelope
-    set?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    disconnect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    delete?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    update?: CompatibilityRuleClauseUpdateWithWhereUniqueWithoutTargetAttributeInput | CompatibilityRuleClauseUpdateWithWhereUniqueWithoutTargetAttributeInput[]
-    updateMany?: CompatibilityRuleClauseUpdateManyWithWhereWithoutTargetAttributeInput | CompatibilityRuleClauseUpdateManyWithWhereWithoutTargetAttributeInput[]
-    deleteMany?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
   }
 
   export type CategoryAttributeCreateNestedOneWithoutOptionsInput = {
@@ -63662,122 +56005,6 @@ export namespace Prisma {
     update?: ProductSpecUpdateWithWhereUniqueWithoutOptionInput | ProductSpecUpdateWithWhereUniqueWithoutOptionInput[]
     updateMany?: ProductSpecUpdateManyWithWhereWithoutOptionInput | ProductSpecUpdateManyWithWhereWithoutOptionInput[]
     deleteMany?: ProductSpecScalarWhereInput | ProductSpecScalarWhereInput[]
-  }
-
-  export type CategoryCreateNestedOneWithoutOutgoingRulesInput = {
-    create?: XOR<CategoryCreateWithoutOutgoingRulesInput, CategoryUncheckedCreateWithoutOutgoingRulesInput>
-    connectOrCreate?: CategoryCreateOrConnectWithoutOutgoingRulesInput
-    connect?: CategoryWhereUniqueInput
-  }
-
-  export type CategoryCreateNestedOneWithoutIncomingRulesInput = {
-    create?: XOR<CategoryCreateWithoutIncomingRulesInput, CategoryUncheckedCreateWithoutIncomingRulesInput>
-    connectOrCreate?: CategoryCreateOrConnectWithoutIncomingRulesInput
-    connect?: CategoryWhereUniqueInput
-  }
-
-  export type CompatibilityRuleClauseCreateNestedManyWithoutRuleInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutRuleInput, CompatibilityRuleClauseUncheckedCreateWithoutRuleInput> | CompatibilityRuleClauseCreateWithoutRuleInput[] | CompatibilityRuleClauseUncheckedCreateWithoutRuleInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutRuleInput | CompatibilityRuleClauseCreateOrConnectWithoutRuleInput[]
-    createMany?: CompatibilityRuleClauseCreateManyRuleInputEnvelope
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-  }
-
-  export type CompatibilityRuleClauseUncheckedCreateNestedManyWithoutRuleInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutRuleInput, CompatibilityRuleClauseUncheckedCreateWithoutRuleInput> | CompatibilityRuleClauseCreateWithoutRuleInput[] | CompatibilityRuleClauseUncheckedCreateWithoutRuleInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutRuleInput | CompatibilityRuleClauseCreateOrConnectWithoutRuleInput[]
-    createMany?: CompatibilityRuleClauseCreateManyRuleInputEnvelope
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-  }
-
-  export type EnumCompatibilityLevelFieldUpdateOperationsInput = {
-    set?: $Enums.CompatibilityLevel
-  }
-
-  export type CategoryUpdateOneRequiredWithoutOutgoingRulesNestedInput = {
-    create?: XOR<CategoryCreateWithoutOutgoingRulesInput, CategoryUncheckedCreateWithoutOutgoingRulesInput>
-    connectOrCreate?: CategoryCreateOrConnectWithoutOutgoingRulesInput
-    upsert?: CategoryUpsertWithoutOutgoingRulesInput
-    connect?: CategoryWhereUniqueInput
-    update?: XOR<XOR<CategoryUpdateToOneWithWhereWithoutOutgoingRulesInput, CategoryUpdateWithoutOutgoingRulesInput>, CategoryUncheckedUpdateWithoutOutgoingRulesInput>
-  }
-
-  export type CategoryUpdateOneRequiredWithoutIncomingRulesNestedInput = {
-    create?: XOR<CategoryCreateWithoutIncomingRulesInput, CategoryUncheckedCreateWithoutIncomingRulesInput>
-    connectOrCreate?: CategoryCreateOrConnectWithoutIncomingRulesInput
-    upsert?: CategoryUpsertWithoutIncomingRulesInput
-    connect?: CategoryWhereUniqueInput
-    update?: XOR<XOR<CategoryUpdateToOneWithWhereWithoutIncomingRulesInput, CategoryUpdateWithoutIncomingRulesInput>, CategoryUncheckedUpdateWithoutIncomingRulesInput>
-  }
-
-  export type CompatibilityRuleClauseUpdateManyWithoutRuleNestedInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutRuleInput, CompatibilityRuleClauseUncheckedCreateWithoutRuleInput> | CompatibilityRuleClauseCreateWithoutRuleInput[] | CompatibilityRuleClauseUncheckedCreateWithoutRuleInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutRuleInput | CompatibilityRuleClauseCreateOrConnectWithoutRuleInput[]
-    upsert?: CompatibilityRuleClauseUpsertWithWhereUniqueWithoutRuleInput | CompatibilityRuleClauseUpsertWithWhereUniqueWithoutRuleInput[]
-    createMany?: CompatibilityRuleClauseCreateManyRuleInputEnvelope
-    set?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    disconnect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    delete?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    update?: CompatibilityRuleClauseUpdateWithWhereUniqueWithoutRuleInput | CompatibilityRuleClauseUpdateWithWhereUniqueWithoutRuleInput[]
-    updateMany?: CompatibilityRuleClauseUpdateManyWithWhereWithoutRuleInput | CompatibilityRuleClauseUpdateManyWithWhereWithoutRuleInput[]
-    deleteMany?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateManyWithoutRuleNestedInput = {
-    create?: XOR<CompatibilityRuleClauseCreateWithoutRuleInput, CompatibilityRuleClauseUncheckedCreateWithoutRuleInput> | CompatibilityRuleClauseCreateWithoutRuleInput[] | CompatibilityRuleClauseUncheckedCreateWithoutRuleInput[]
-    connectOrCreate?: CompatibilityRuleClauseCreateOrConnectWithoutRuleInput | CompatibilityRuleClauseCreateOrConnectWithoutRuleInput[]
-    upsert?: CompatibilityRuleClauseUpsertWithWhereUniqueWithoutRuleInput | CompatibilityRuleClauseUpsertWithWhereUniqueWithoutRuleInput[]
-    createMany?: CompatibilityRuleClauseCreateManyRuleInputEnvelope
-    set?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    disconnect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    delete?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    connect?: CompatibilityRuleClauseWhereUniqueInput | CompatibilityRuleClauseWhereUniqueInput[]
-    update?: CompatibilityRuleClauseUpdateWithWhereUniqueWithoutRuleInput | CompatibilityRuleClauseUpdateWithWhereUniqueWithoutRuleInput[]
-    updateMany?: CompatibilityRuleClauseUpdateManyWithWhereWithoutRuleInput | CompatibilityRuleClauseUpdateManyWithWhereWithoutRuleInput[]
-    deleteMany?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
-  }
-
-  export type CompatibilityRuleCreateNestedOneWithoutClausesInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutClausesInput, CompatibilityRuleUncheckedCreateWithoutClausesInput>
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutClausesInput
-    connect?: CompatibilityRuleWhereUniqueInput
-  }
-
-  export type CategoryAttributeCreateNestedOneWithoutSourceCompatibilityClausesInput = {
-    create?: XOR<CategoryAttributeCreateWithoutSourceCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutSourceCompatibilityClausesInput>
-    connectOrCreate?: CategoryAttributeCreateOrConnectWithoutSourceCompatibilityClausesInput
-    connect?: CategoryAttributeWhereUniqueInput
-  }
-
-  export type CategoryAttributeCreateNestedOneWithoutTargetCompatibilityClausesInput = {
-    create?: XOR<CategoryAttributeCreateWithoutTargetCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutTargetCompatibilityClausesInput>
-    connectOrCreate?: CategoryAttributeCreateOrConnectWithoutTargetCompatibilityClausesInput
-    connect?: CategoryAttributeWhereUniqueInput
-  }
-
-  export type CompatibilityRuleUpdateOneRequiredWithoutClausesNestedInput = {
-    create?: XOR<CompatibilityRuleCreateWithoutClausesInput, CompatibilityRuleUncheckedCreateWithoutClausesInput>
-    connectOrCreate?: CompatibilityRuleCreateOrConnectWithoutClausesInput
-    upsert?: CompatibilityRuleUpsertWithoutClausesInput
-    connect?: CompatibilityRuleWhereUniqueInput
-    update?: XOR<XOR<CompatibilityRuleUpdateToOneWithWhereWithoutClausesInput, CompatibilityRuleUpdateWithoutClausesInput>, CompatibilityRuleUncheckedUpdateWithoutClausesInput>
-  }
-
-  export type CategoryAttributeUpdateOneRequiredWithoutSourceCompatibilityClausesNestedInput = {
-    create?: XOR<CategoryAttributeCreateWithoutSourceCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutSourceCompatibilityClausesInput>
-    connectOrCreate?: CategoryAttributeCreateOrConnectWithoutSourceCompatibilityClausesInput
-    upsert?: CategoryAttributeUpsertWithoutSourceCompatibilityClausesInput
-    connect?: CategoryAttributeWhereUniqueInput
-    update?: XOR<XOR<CategoryAttributeUpdateToOneWithWhereWithoutSourceCompatibilityClausesInput, CategoryAttributeUpdateWithoutSourceCompatibilityClausesInput>, CategoryAttributeUncheckedUpdateWithoutSourceCompatibilityClausesInput>
-  }
-
-  export type CategoryAttributeUpdateOneRequiredWithoutTargetCompatibilityClausesNestedInput = {
-    create?: XOR<CategoryAttributeCreateWithoutTargetCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutTargetCompatibilityClausesInput>
-    connectOrCreate?: CategoryAttributeCreateOrConnectWithoutTargetCompatibilityClausesInput
-    upsert?: CategoryAttributeUpsertWithoutTargetCompatibilityClausesInput
-    connect?: CategoryAttributeWhereUniqueInput
-    update?: XOR<XOR<CategoryAttributeUpdateToOneWithWhereWithoutTargetCompatibilityClausesInput, CategoryAttributeUpdateWithoutTargetCompatibilityClausesInput>, CategoryAttributeUncheckedUpdateWithoutTargetCompatibilityClausesInput>
   }
 
   export type ProductCreateNestedManyWithoutTagsInput = {
@@ -64252,13 +56479,6 @@ export namespace Prisma {
     connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
   }
 
-  export type ReservationCreateNestedManyWithoutInventoryItemInput = {
-    create?: XOR<ReservationCreateWithoutInventoryItemInput, ReservationUncheckedCreateWithoutInventoryItemInput> | ReservationCreateWithoutInventoryItemInput[] | ReservationUncheckedCreateWithoutInventoryItemInput[]
-    connectOrCreate?: ReservationCreateOrConnectWithoutInventoryItemInput | ReservationCreateOrConnectWithoutInventoryItemInput[]
-    createMany?: ReservationCreateManyInventoryItemInputEnvelope
-    connect?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-  }
-
   export type OrderItemUnitUncheckedCreateNestedManyWithoutInventoryItemInput = {
     create?: XOR<OrderItemUnitCreateWithoutInventoryItemInput, OrderItemUnitUncheckedCreateWithoutInventoryItemInput> | OrderItemUnitCreateWithoutInventoryItemInput[] | OrderItemUnitUncheckedCreateWithoutInventoryItemInput[]
     connectOrCreate?: OrderItemUnitCreateOrConnectWithoutInventoryItemInput | OrderItemUnitCreateOrConnectWithoutInventoryItemInput[]
@@ -64273,11 +56493,8 @@ export namespace Prisma {
     connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
   }
 
-  export type ReservationUncheckedCreateNestedManyWithoutInventoryItemInput = {
-    create?: XOR<ReservationCreateWithoutInventoryItemInput, ReservationUncheckedCreateWithoutInventoryItemInput> | ReservationCreateWithoutInventoryItemInput[] | ReservationUncheckedCreateWithoutInventoryItemInput[]
-    connectOrCreate?: ReservationCreateOrConnectWithoutInventoryItemInput | ReservationCreateOrConnectWithoutInventoryItemInput[]
-    createMany?: ReservationCreateManyInventoryItemInputEnvelope
-    connect?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
+  export type EnumInventoryUnitStatusFieldUpdateOperationsInput = {
+    set?: $Enums.InventoryUnitStatus
   }
 
   export type FloatFieldUpdateOperationsInput = {
@@ -64324,20 +56541,6 @@ export namespace Prisma {
     deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
   }
 
-  export type ReservationUpdateManyWithoutInventoryItemNestedInput = {
-    create?: XOR<ReservationCreateWithoutInventoryItemInput, ReservationUncheckedCreateWithoutInventoryItemInput> | ReservationCreateWithoutInventoryItemInput[] | ReservationUncheckedCreateWithoutInventoryItemInput[]
-    connectOrCreate?: ReservationCreateOrConnectWithoutInventoryItemInput | ReservationCreateOrConnectWithoutInventoryItemInput[]
-    upsert?: ReservationUpsertWithWhereUniqueWithoutInventoryItemInput | ReservationUpsertWithWhereUniqueWithoutInventoryItemInput[]
-    createMany?: ReservationCreateManyInventoryItemInputEnvelope
-    set?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    disconnect?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    delete?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    connect?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    update?: ReservationUpdateWithWhereUniqueWithoutInventoryItemInput | ReservationUpdateWithWhereUniqueWithoutInventoryItemInput[]
-    updateMany?: ReservationUpdateManyWithWhereWithoutInventoryItemInput | ReservationUpdateManyWithWhereWithoutInventoryItemInput[]
-    deleteMany?: ReservationScalarWhereInput | ReservationScalarWhereInput[]
-  }
-
   export type OrderItemUnitUncheckedUpdateManyWithoutInventoryItemNestedInput = {
     create?: XOR<OrderItemUnitCreateWithoutInventoryItemInput, OrderItemUnitUncheckedCreateWithoutInventoryItemInput> | OrderItemUnitCreateWithoutInventoryItemInput[] | OrderItemUnitUncheckedCreateWithoutInventoryItemInput[]
     connectOrCreate?: OrderItemUnitCreateOrConnectWithoutInventoryItemInput | OrderItemUnitCreateOrConnectWithoutInventoryItemInput[]
@@ -64364,20 +56567,6 @@ export namespace Prisma {
     update?: StockMovementUpdateWithWhereUniqueWithoutInventoryItemInput | StockMovementUpdateWithWhereUniqueWithoutInventoryItemInput[]
     updateMany?: StockMovementUpdateManyWithWhereWithoutInventoryItemInput | StockMovementUpdateManyWithWhereWithoutInventoryItemInput[]
     deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
-  }
-
-  export type ReservationUncheckedUpdateManyWithoutInventoryItemNestedInput = {
-    create?: XOR<ReservationCreateWithoutInventoryItemInput, ReservationUncheckedCreateWithoutInventoryItemInput> | ReservationCreateWithoutInventoryItemInput[] | ReservationUncheckedCreateWithoutInventoryItemInput[]
-    connectOrCreate?: ReservationCreateOrConnectWithoutInventoryItemInput | ReservationCreateOrConnectWithoutInventoryItemInput[]
-    upsert?: ReservationUpsertWithWhereUniqueWithoutInventoryItemInput | ReservationUpsertWithWhereUniqueWithoutInventoryItemInput[]
-    createMany?: ReservationCreateManyInventoryItemInputEnvelope
-    set?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    disconnect?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    delete?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    connect?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
-    update?: ReservationUpdateWithWhereUniqueWithoutInventoryItemInput | ReservationUpdateWithWhereUniqueWithoutInventoryItemInput[]
-    updateMany?: ReservationUpdateManyWithWhereWithoutInventoryItemInput | ReservationUpdateManyWithWhereWithoutInventoryItemInput[]
-    deleteMany?: ReservationScalarWhereInput | ReservationScalarWhereInput[]
   }
 
   export type InvoiceCreateNestedManyWithoutCustomerInput = {
@@ -64512,6 +56701,13 @@ export namespace Prisma {
     connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
   }
 
+  export type OrderItemUnitCreateNestedManyWithoutOrderInput = {
+    create?: XOR<OrderItemUnitCreateWithoutOrderInput, OrderItemUnitUncheckedCreateWithoutOrderInput> | OrderItemUnitCreateWithoutOrderInput[] | OrderItemUnitUncheckedCreateWithoutOrderInput[]
+    connectOrCreate?: OrderItemUnitCreateOrConnectWithoutOrderInput | OrderItemUnitCreateOrConnectWithoutOrderInput[]
+    createMany?: OrderItemUnitCreateManyOrderInputEnvelope
+    connect?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+  }
+
   export type OrderItemUncheckedCreateNestedManyWithoutOrderInput = {
     create?: XOR<OrderItemCreateWithoutOrderInput, OrderItemUncheckedCreateWithoutOrderInput> | OrderItemCreateWithoutOrderInput[] | OrderItemUncheckedCreateWithoutOrderInput[]
     connectOrCreate?: OrderItemCreateOrConnectWithoutOrderInput | OrderItemCreateOrConnectWithoutOrderInput[]
@@ -64552,6 +56748,13 @@ export namespace Prisma {
     connectOrCreate?: StockMovementCreateOrConnectWithoutOrderInput | StockMovementCreateOrConnectWithoutOrderInput[]
     createMany?: StockMovementCreateManyOrderInputEnvelope
     connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+  }
+
+  export type OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput = {
+    create?: XOR<OrderItemUnitCreateWithoutOrderInput, OrderItemUnitUncheckedCreateWithoutOrderInput> | OrderItemUnitCreateWithoutOrderInput[] | OrderItemUnitUncheckedCreateWithoutOrderInput[]
+    connectOrCreate?: OrderItemUnitCreateOrConnectWithoutOrderInput | OrderItemUnitCreateOrConnectWithoutOrderInput[]
+    createMany?: OrderItemUnitCreateManyOrderInputEnvelope
+    connect?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
   }
 
   export type EnumSalesChannelFieldUpdateOperationsInput = {
@@ -64656,6 +56859,20 @@ export namespace Prisma {
     deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
   }
 
+  export type OrderItemUnitUpdateManyWithoutOrderNestedInput = {
+    create?: XOR<OrderItemUnitCreateWithoutOrderInput, OrderItemUnitUncheckedCreateWithoutOrderInput> | OrderItemUnitCreateWithoutOrderInput[] | OrderItemUnitUncheckedCreateWithoutOrderInput[]
+    connectOrCreate?: OrderItemUnitCreateOrConnectWithoutOrderInput | OrderItemUnitCreateOrConnectWithoutOrderInput[]
+    upsert?: OrderItemUnitUpsertWithWhereUniqueWithoutOrderInput | OrderItemUnitUpsertWithWhereUniqueWithoutOrderInput[]
+    createMany?: OrderItemUnitCreateManyOrderInputEnvelope
+    set?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    disconnect?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    delete?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    connect?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    update?: OrderItemUnitUpdateWithWhereUniqueWithoutOrderInput | OrderItemUnitUpdateWithWhereUniqueWithoutOrderInput[]
+    updateMany?: OrderItemUnitUpdateManyWithWhereWithoutOrderInput | OrderItemUnitUpdateManyWithWhereWithoutOrderInput[]
+    deleteMany?: OrderItemUnitScalarWhereInput | OrderItemUnitScalarWhereInput[]
+  }
+
   export type OrderItemUncheckedUpdateManyWithoutOrderNestedInput = {
     create?: XOR<OrderItemCreateWithoutOrderInput, OrderItemUncheckedCreateWithoutOrderInput> | OrderItemCreateWithoutOrderInput[] | OrderItemUncheckedCreateWithoutOrderInput[]
     connectOrCreate?: OrderItemCreateOrConnectWithoutOrderInput | OrderItemCreateOrConnectWithoutOrderInput[]
@@ -64738,6 +56955,20 @@ export namespace Prisma {
     update?: StockMovementUpdateWithWhereUniqueWithoutOrderInput | StockMovementUpdateWithWhereUniqueWithoutOrderInput[]
     updateMany?: StockMovementUpdateManyWithWhereWithoutOrderInput | StockMovementUpdateManyWithWhereWithoutOrderInput[]
     deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
+  }
+
+  export type OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput = {
+    create?: XOR<OrderItemUnitCreateWithoutOrderInput, OrderItemUnitUncheckedCreateWithoutOrderInput> | OrderItemUnitCreateWithoutOrderInput[] | OrderItemUnitUncheckedCreateWithoutOrderInput[]
+    connectOrCreate?: OrderItemUnitCreateOrConnectWithoutOrderInput | OrderItemUnitCreateOrConnectWithoutOrderInput[]
+    upsert?: OrderItemUnitUpsertWithWhereUniqueWithoutOrderInput | OrderItemUnitUpsertWithWhereUniqueWithoutOrderInput[]
+    createMany?: OrderItemUnitCreateManyOrderInputEnvelope
+    set?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    disconnect?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    delete?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    connect?: OrderItemUnitWhereUniqueInput | OrderItemUnitWhereUniqueInput[]
+    update?: OrderItemUnitUpdateWithWhereUniqueWithoutOrderInput | OrderItemUnitUpdateWithWhereUniqueWithoutOrderInput[]
+    updateMany?: OrderItemUnitUpdateManyWithWhereWithoutOrderInput | OrderItemUnitUpdateManyWithWhereWithoutOrderInput[]
+    deleteMany?: OrderItemUnitScalarWhereInput | OrderItemUnitScalarWhereInput[]
   }
 
   export type OrderCreateNestedOneWithoutItemsInput = {
@@ -64836,6 +57067,12 @@ export namespace Prisma {
     connect?: InventoryItemWhereUniqueInput
   }
 
+  export type OrderCreateNestedOneWithoutAssignedUnitsInput = {
+    create?: XOR<OrderCreateWithoutAssignedUnitsInput, OrderUncheckedCreateWithoutAssignedUnitsInput>
+    connectOrCreate?: OrderCreateOrConnectWithoutAssignedUnitsInput
+    connect?: OrderWhereUniqueInput
+  }
+
   export type OrderItemUpdateOneRequiredWithoutAssignedUnitsNestedInput = {
     create?: XOR<OrderItemCreateWithoutAssignedUnitsInput, OrderItemUncheckedCreateWithoutAssignedUnitsInput>
     connectOrCreate?: OrderItemCreateOrConnectWithoutAssignedUnitsInput
@@ -64850,6 +57087,16 @@ export namespace Prisma {
     upsert?: InventoryItemUpsertWithoutOrderItemUnitsInput
     connect?: InventoryItemWhereUniqueInput
     update?: XOR<XOR<InventoryItemUpdateToOneWithWhereWithoutOrderItemUnitsInput, InventoryItemUpdateWithoutOrderItemUnitsInput>, InventoryItemUncheckedUpdateWithoutOrderItemUnitsInput>
+  }
+
+  export type OrderUpdateOneWithoutAssignedUnitsNestedInput = {
+    create?: XOR<OrderCreateWithoutAssignedUnitsInput, OrderUncheckedCreateWithoutAssignedUnitsInput>
+    connectOrCreate?: OrderCreateOrConnectWithoutAssignedUnitsInput
+    upsert?: OrderUpsertWithoutAssignedUnitsInput
+    disconnect?: OrderWhereInput | boolean
+    delete?: OrderWhereInput | boolean
+    connect?: OrderWhereUniqueInput
+    update?: XOR<XOR<OrderUpdateToOneWithWhereWithoutAssignedUnitsInput, OrderUpdateWithoutAssignedUnitsInput>, OrderUncheckedUpdateWithoutAssignedUnitsInput>
   }
 
   export type OrderCreateNestedOneWithoutLogsInput = {
@@ -65360,20 +57607,6 @@ export namespace Prisma {
     update?: XOR<XOR<CreditNoteUpdateToOneWithWhereWithoutLineItemsInput, CreditNoteUpdateWithoutLineItemsInput>, CreditNoteUncheckedUpdateWithoutLineItemsInput>
   }
 
-  export type InventoryItemCreateNestedOneWithoutReservationsInput = {
-    create?: XOR<InventoryItemCreateWithoutReservationsInput, InventoryItemUncheckedCreateWithoutReservationsInput>
-    connectOrCreate?: InventoryItemCreateOrConnectWithoutReservationsInput
-    connect?: InventoryItemWhereUniqueInput
-  }
-
-  export type InventoryItemUpdateOneRequiredWithoutReservationsNestedInput = {
-    create?: XOR<InventoryItemCreateWithoutReservationsInput, InventoryItemUncheckedCreateWithoutReservationsInput>
-    connectOrCreate?: InventoryItemCreateOrConnectWithoutReservationsInput
-    upsert?: InventoryItemUpsertWithoutReservationsInput
-    connect?: InventoryItemWhereUniqueInput
-    update?: XOR<XOR<InventoryItemUpdateToOneWithWhereWithoutReservationsInput, InventoryItemUpdateWithoutReservationsInput>, InventoryItemUncheckedUpdateWithoutReservationsInput>
-  }
-
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -65566,29 +57799,6 @@ export namespace Prisma {
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
   }
-  export type NestedJsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type NestedEnumAttributeInputTypeFilter<$PrismaModel = never> = {
     equals?: $Enums.AttributeInputType | EnumAttributeInputTypeFieldRefInput<$PrismaModel>
@@ -65623,22 +57833,28 @@ export namespace Prisma {
     _min?: NestedEnumFilterTypeNullableFilter<$PrismaModel>
     _max?: NestedEnumFilterTypeNullableFilter<$PrismaModel>
   }
+  export type NestedJsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
 
-  export type NestedEnumCompatibilityLevelFilter<$PrismaModel = never> = {
-    equals?: $Enums.CompatibilityLevel | EnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    in?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    notIn?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    not?: NestedEnumCompatibilityLevelFilter<$PrismaModel> | $Enums.CompatibilityLevel
-  }
-
-  export type NestedEnumCompatibilityLevelWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.CompatibilityLevel | EnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    in?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    notIn?: $Enums.CompatibilityLevel[] | ListEnumCompatibilityLevelFieldRefInput<$PrismaModel>
-    not?: NestedEnumCompatibilityLevelWithAggregatesFilter<$PrismaModel> | $Enums.CompatibilityLevel
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumCompatibilityLevelFilter<$PrismaModel>
-    _max?: NestedEnumCompatibilityLevelFilter<$PrismaModel>
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
   export type NestedEnumProductStatusFilter<$PrismaModel = never> = {
@@ -65710,6 +57926,23 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBoolNullableFilter<$PrismaModel>
     _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumInventoryUnitStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.InventoryUnitStatus | EnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInventoryUnitStatusFilter<$PrismaModel> | $Enums.InventoryUnitStatus
+  }
+
+  export type NestedEnumInventoryUnitStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.InventoryUnitStatus | EnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InventoryUnitStatus[] | ListEnumInventoryUnitStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInventoryUnitStatusWithAggregatesFilter<$PrismaModel> | $Enums.InventoryUnitStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumInventoryUnitStatusFilter<$PrismaModel>
+    _max?: NestedEnumInventoryUnitStatusFilter<$PrismaModel>
   }
 
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -65912,7 +58145,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -65940,7 +58172,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -66045,25 +58276,6 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type BuildSequenceCreateWithoutCategoryInput = {
-    id?: string
-    stepOrder: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type BuildSequenceUncheckedCreateWithoutCategoryInput = {
-    id?: string
-    stepOrder: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type BuildSequenceCreateOrConnectWithoutCategoryInput = {
-    where: BuildSequenceWhereUniqueInput
-    create: XOR<BuildSequenceCreateWithoutCategoryInput, BuildSequenceUncheckedCreateWithoutCategoryInput>
-  }
-
   export type CategoryHierarchyCreateWithoutCategoryInput = {
     id?: string
     label: string
@@ -66114,8 +58326,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
     options?: AttributeOptionCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateWithoutCategoryInput = {
@@ -66138,8 +58348,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
     options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeCreateOrConnectWithoutCategoryInput = {
@@ -66149,78 +58357,6 @@ export namespace Prisma {
 
   export type CategoryAttributeCreateManyCategoryInputEnvelope = {
     data: CategoryAttributeCreateManyCategoryInput | CategoryAttributeCreateManyCategoryInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type CompatibilityRuleCreateWithoutSourceCategoryInput = {
-    id?: string
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    targetCategory: CategoryCreateNestedOneWithoutIncomingRulesInput
-    clauses?: CompatibilityRuleClauseCreateNestedManyWithoutRuleInput
-  }
-
-  export type CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput = {
-    id?: string
-    targetCategoryId: number
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    clauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutRuleInput
-  }
-
-  export type CompatibilityRuleCreateOrConnectWithoutSourceCategoryInput = {
-    where: CompatibilityRuleWhereUniqueInput
-    create: XOR<CompatibilityRuleCreateWithoutSourceCategoryInput, CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput>
-  }
-
-  export type CompatibilityRuleCreateManySourceCategoryInputEnvelope = {
-    data: CompatibilityRuleCreateManySourceCategoryInput | CompatibilityRuleCreateManySourceCategoryInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type CompatibilityRuleCreateWithoutTargetCategoryInput = {
-    id?: string
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    sourceCategory: CategoryCreateNestedOneWithoutOutgoingRulesInput
-    clauses?: CompatibilityRuleClauseCreateNestedManyWithoutRuleInput
-  }
-
-  export type CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput = {
-    id?: string
-    sourceCategoryId: number
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    clauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutRuleInput
-  }
-
-  export type CompatibilityRuleCreateOrConnectWithoutTargetCategoryInput = {
-    where: CompatibilityRuleWhereUniqueInput
-    create: XOR<CompatibilityRuleCreateWithoutTargetCategoryInput, CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput>
-  }
-
-  export type CompatibilityRuleCreateManyTargetCategoryInputEnvelope = {
-    data: CompatibilityRuleCreateManyTargetCategoryInput | CompatibilityRuleCreateManyTargetCategoryInput[]
     skipDuplicates?: boolean
   }
 
@@ -66289,7 +58425,6 @@ export namespace Prisma {
     sku?: StringNullableFilter<"Product"> | string | null
     price?: FloatNullableFilter<"Product"> | number | null
     compareAtPrice?: FloatNullableFilter<"Product"> | number | null
-    stockStatus?: StringFilter<"Product"> | string
     brandId?: StringNullableFilter<"Product"> | string | null
     createdAt?: DateTimeFilter<"Product"> | Date | string
     updatedAt?: DateTimeFilter<"Product"> | Date | string
@@ -66379,31 +58514,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"BuildGuide"> | Date | string
   }
 
-  export type BuildSequenceUpsertWithoutCategoryInput = {
-    update: XOR<BuildSequenceUpdateWithoutCategoryInput, BuildSequenceUncheckedUpdateWithoutCategoryInput>
-    create: XOR<BuildSequenceCreateWithoutCategoryInput, BuildSequenceUncheckedCreateWithoutCategoryInput>
-    where?: BuildSequenceWhereInput
-  }
-
-  export type BuildSequenceUpdateToOneWithWhereWithoutCategoryInput = {
-    where?: BuildSequenceWhereInput
-    data: XOR<BuildSequenceUpdateWithoutCategoryInput, BuildSequenceUncheckedUpdateWithoutCategoryInput>
-  }
-
-  export type BuildSequenceUpdateWithoutCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    stepOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type BuildSequenceUncheckedUpdateWithoutCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    stepOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
   export type CategoryHierarchyUpsertWithWhereUniqueWithoutCategoryInput = {
     where: CategoryHierarchyWhereUniqueInput
     update: XOR<CategoryHierarchyUpdateWithoutCategoryInput, CategoryHierarchyUncheckedUpdateWithoutCategoryInput>
@@ -66472,54 +58582,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"CategoryAttribute"> | Date | string
   }
 
-  export type CompatibilityRuleUpsertWithWhereUniqueWithoutSourceCategoryInput = {
-    where: CompatibilityRuleWhereUniqueInput
-    update: XOR<CompatibilityRuleUpdateWithoutSourceCategoryInput, CompatibilityRuleUncheckedUpdateWithoutSourceCategoryInput>
-    create: XOR<CompatibilityRuleCreateWithoutSourceCategoryInput, CompatibilityRuleUncheckedCreateWithoutSourceCategoryInput>
-  }
-
-  export type CompatibilityRuleUpdateWithWhereUniqueWithoutSourceCategoryInput = {
-    where: CompatibilityRuleWhereUniqueInput
-    data: XOR<CompatibilityRuleUpdateWithoutSourceCategoryInput, CompatibilityRuleUncheckedUpdateWithoutSourceCategoryInput>
-  }
-
-  export type CompatibilityRuleUpdateManyWithWhereWithoutSourceCategoryInput = {
-    where: CompatibilityRuleScalarWhereInput
-    data: XOR<CompatibilityRuleUpdateManyMutationInput, CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryInput>
-  }
-
-  export type CompatibilityRuleScalarWhereInput = {
-    AND?: CompatibilityRuleScalarWhereInput | CompatibilityRuleScalarWhereInput[]
-    OR?: CompatibilityRuleScalarWhereInput[]
-    NOT?: CompatibilityRuleScalarWhereInput | CompatibilityRuleScalarWhereInput[]
-    id?: StringFilter<"CompatibilityRule"> | string
-    sourceCategoryId?: IntFilter<"CompatibilityRule"> | number
-    targetCategoryId?: IntFilter<"CompatibilityRule"> | number
-    name?: StringFilter<"CompatibilityRule"> | string
-    message?: StringNullableFilter<"CompatibilityRule"> | string | null
-    severity?: EnumCompatibilityLevelFilter<"CompatibilityRule"> | $Enums.CompatibilityLevel
-    isActive?: BoolFilter<"CompatibilityRule"> | boolean
-    sortOrder?: IntFilter<"CompatibilityRule"> | number
-    createdAt?: DateTimeFilter<"CompatibilityRule"> | Date | string
-    updatedAt?: DateTimeFilter<"CompatibilityRule"> | Date | string
-  }
-
-  export type CompatibilityRuleUpsertWithWhereUniqueWithoutTargetCategoryInput = {
-    where: CompatibilityRuleWhereUniqueInput
-    update: XOR<CompatibilityRuleUpdateWithoutTargetCategoryInput, CompatibilityRuleUncheckedUpdateWithoutTargetCategoryInput>
-    create: XOR<CompatibilityRuleCreateWithoutTargetCategoryInput, CompatibilityRuleUncheckedCreateWithoutTargetCategoryInput>
-  }
-
-  export type CompatibilityRuleUpdateWithWhereUniqueWithoutTargetCategoryInput = {
-    where: CompatibilityRuleWhereUniqueInput
-    data: XOR<CompatibilityRuleUpdateWithoutTargetCategoryInput, CompatibilityRuleUncheckedUpdateWithoutTargetCategoryInput>
-  }
-
-  export type CompatibilityRuleUpdateManyWithWhereWithoutTargetCategoryInput = {
-    where: CompatibilityRuleScalarWhereInput
-    data: XOR<CompatibilityRuleUpdateManyMutationInput, CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryInput>
-  }
-
   export type CategoryCreateWithoutSubcategoriesInput = {
     code: string
     name: string
@@ -66538,11 +58600,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateWithoutSubcategoriesInput = {
@@ -66564,11 +58623,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryCreateOrConnectWithoutSubcategoriesInput = {
@@ -66589,7 +58645,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -66617,7 +58672,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -66660,8 +58714,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
     options?: AttributeOptionCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateWithoutSubcategoryInput = {
@@ -66684,8 +58736,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
     options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeCreateOrConnectWithoutSubcategoryInput = {
@@ -66727,11 +58777,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateWithoutSubcategoriesInput = {
@@ -66753,11 +58800,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type ProductUpsertWithWhereUniqueWithoutSubcategoryInput = {
@@ -66831,11 +58875,8 @@ export namespace Prisma {
     products?: ProductCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateWithoutBrandCategoriesInput = {
@@ -66857,11 +58898,8 @@ export namespace Prisma {
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryCreateOrConnectWithoutBrandCategoriesInput = {
@@ -66925,11 +58963,8 @@ export namespace Prisma {
     products?: ProductUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateWithoutBrandCategoriesInput = {
@@ -66951,11 +58986,8 @@ export namespace Prisma {
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type ProductCreateWithoutBrandInput = {
@@ -66971,7 +59003,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     category: CategoryCreateNestedOneWithoutProductsInput
@@ -67000,7 +59031,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     specs?: ProductSpecUncheckedCreateNestedManyWithoutProductInput
@@ -67072,124 +59102,6 @@ export namespace Prisma {
     data: XOR<BrandCategoryUpdateManyMutationInput, BrandCategoryUncheckedUpdateManyWithoutBrandInput>
   }
 
-  export type CategoryCreateWithoutBuildSequenceInput = {
-    code: string
-    name: string
-    slug: string
-    shortLabel?: string | null
-    description?: string | null
-    image?: string | null
-    icon?: string | null
-    displayOrder?: number
-    featuredOrder?: number | null
-    showInFeatured?: boolean
-    isActive?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    subcategories?: SubcategoryCreateNestedManyWithoutCategoryInput
-    products?: ProductCreateNestedManyWithoutCategoryInput
-    brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
-    orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
-    buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
-    attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
-  }
-
-  export type CategoryUncheckedCreateWithoutBuildSequenceInput = {
-    id?: number
-    code: string
-    name: string
-    slug: string
-    shortLabel?: string | null
-    description?: string | null
-    image?: string | null
-    icon?: string | null
-    displayOrder?: number
-    featuredOrder?: number | null
-    showInFeatured?: boolean
-    isActive?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    subcategories?: SubcategoryUncheckedCreateNestedManyWithoutCategoryInput
-    products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
-    brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
-    orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
-    buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
-    attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
-  }
-
-  export type CategoryCreateOrConnectWithoutBuildSequenceInput = {
-    where: CategoryWhereUniqueInput
-    create: XOR<CategoryCreateWithoutBuildSequenceInput, CategoryUncheckedCreateWithoutBuildSequenceInput>
-  }
-
-  export type CategoryUpsertWithoutBuildSequenceInput = {
-    update: XOR<CategoryUpdateWithoutBuildSequenceInput, CategoryUncheckedUpdateWithoutBuildSequenceInput>
-    create: XOR<CategoryCreateWithoutBuildSequenceInput, CategoryUncheckedCreateWithoutBuildSequenceInput>
-    where?: CategoryWhereInput
-  }
-
-  export type CategoryUpdateToOneWithWhereWithoutBuildSequenceInput = {
-    where?: CategoryWhereInput
-    data: XOR<CategoryUpdateWithoutBuildSequenceInput, CategoryUncheckedUpdateWithoutBuildSequenceInput>
-  }
-
-  export type CategoryUpdateWithoutBuildSequenceInput = {
-    code?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    slug?: StringFieldUpdateOperationsInput | string
-    shortLabel?: NullableStringFieldUpdateOperationsInput | string | null
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    image?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
-    displayOrder?: IntFieldUpdateOperationsInput | number
-    featuredOrder?: NullableIntFieldUpdateOperationsInput | number | null
-    showInFeatured?: BoolFieldUpdateOperationsInput | boolean
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subcategories?: SubcategoryUpdateManyWithoutCategoryNestedInput
-    products?: ProductUpdateManyWithoutCategoryNestedInput
-    brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
-    orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
-    buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
-    attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
-  }
-
-  export type CategoryUncheckedUpdateWithoutBuildSequenceInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    code?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    slug?: StringFieldUpdateOperationsInput | string
-    shortLabel?: NullableStringFieldUpdateOperationsInput | string | null
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    image?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
-    displayOrder?: IntFieldUpdateOperationsInput | number
-    featuredOrder?: NullableIntFieldUpdateOperationsInput | number | null
-    showInFeatured?: BoolFieldUpdateOperationsInput | boolean
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subcategories?: SubcategoryUncheckedUpdateManyWithoutCategoryNestedInput
-    products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
-    brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
-    orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
-    buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
-    attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
-  }
-
   export type CategoryCreateWithoutHierarchyNodesInput = {
     code: string
     name: string
@@ -67209,10 +59121,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateWithoutHierarchyNodesInput = {
@@ -67235,10 +59144,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryCreateOrConnectWithoutHierarchyNodesInput = {
@@ -67331,10 +59237,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateWithoutHierarchyNodesInput = {
@@ -67357,10 +59260,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryHierarchyUpsertWithoutChildrenInput = {
@@ -67429,10 +59329,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateWithoutAttributesInput = {
@@ -67455,10 +59352,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryCreateOrConnectWithoutAttributesInput = {
@@ -67516,8 +59410,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
     options?: AttributeOptionCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateWithoutDependentAttributesInput = {
@@ -67540,8 +59432,6 @@ export namespace Prisma {
     updatedAt?: Date | string
     options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeCreateOrConnectWithoutDependentAttributesInput = {
@@ -67569,8 +59459,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
     options?: AttributeOptionCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateWithoutDependencyAttributeInput = {
@@ -67593,8 +59481,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
     options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeCreateOrConnectWithoutDependencyAttributeInput = {
@@ -67700,66 +59586,6 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type CompatibilityRuleClauseCreateWithoutSourceAttributeInput = {
-    id?: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-    rule: CompatibilityRuleCreateNestedOneWithoutClausesInput
-    targetAttribute: CategoryAttributeCreateNestedOneWithoutTargetCompatibilityClausesInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput = {
-    id?: string
-    ruleId: string
-    targetAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
-  export type CompatibilityRuleClauseCreateOrConnectWithoutSourceAttributeInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    create: XOR<CompatibilityRuleClauseCreateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput>
-  }
-
-  export type CompatibilityRuleClauseCreateManySourceAttributeInputEnvelope = {
-    data: CompatibilityRuleClauseCreateManySourceAttributeInput | CompatibilityRuleClauseCreateManySourceAttributeInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type CompatibilityRuleClauseCreateWithoutTargetAttributeInput = {
-    id?: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-    rule: CompatibilityRuleCreateNestedOneWithoutClausesInput
-    sourceAttribute: CategoryAttributeCreateNestedOneWithoutSourceCompatibilityClausesInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput = {
-    id?: string
-    ruleId: string
-    sourceAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
-  export type CompatibilityRuleClauseCreateOrConnectWithoutTargetAttributeInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    create: XOR<CompatibilityRuleClauseCreateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput>
-  }
-
-  export type CompatibilityRuleClauseCreateManyTargetAttributeInputEnvelope = {
-    data: CompatibilityRuleClauseCreateManyTargetAttributeInput | CompatibilityRuleClauseCreateManyTargetAttributeInput[]
-    skipDuplicates?: boolean
-  }
-
   export type CategoryUpsertWithoutAttributesInput = {
     update: XOR<CategoryUpdateWithoutAttributesInput, CategoryUncheckedUpdateWithoutAttributesInput>
     create: XOR<CategoryCreateWithoutAttributesInput, CategoryUncheckedCreateWithoutAttributesInput>
@@ -67790,10 +59616,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateWithoutAttributesInput = {
@@ -67816,10 +59639,7 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type SubcategoryUpsertWithoutAttributesInput = {
@@ -67889,8 +59709,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
     options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateWithoutDependentAttributesInput = {
@@ -67913,8 +59731,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUpsertWithWhereUniqueWithoutDependencyAttributeInput = {
@@ -68028,52 +59844,6 @@ export namespace Prisma {
     isHighlighted?: BoolFilter<"ProductSpec"> | boolean
   }
 
-  export type CompatibilityRuleClauseUpsertWithWhereUniqueWithoutSourceAttributeInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    update: XOR<CompatibilityRuleClauseUpdateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedUpdateWithoutSourceAttributeInput>
-    create: XOR<CompatibilityRuleClauseCreateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutSourceAttributeInput>
-  }
-
-  export type CompatibilityRuleClauseUpdateWithWhereUniqueWithoutSourceAttributeInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    data: XOR<CompatibilityRuleClauseUpdateWithoutSourceAttributeInput, CompatibilityRuleClauseUncheckedUpdateWithoutSourceAttributeInput>
-  }
-
-  export type CompatibilityRuleClauseUpdateManyWithWhereWithoutSourceAttributeInput = {
-    where: CompatibilityRuleClauseScalarWhereInput
-    data: XOR<CompatibilityRuleClauseUpdateManyMutationInput, CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeInput>
-  }
-
-  export type CompatibilityRuleClauseScalarWhereInput = {
-    AND?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
-    OR?: CompatibilityRuleClauseScalarWhereInput[]
-    NOT?: CompatibilityRuleClauseScalarWhereInput | CompatibilityRuleClauseScalarWhereInput[]
-    id?: StringFilter<"CompatibilityRuleClause"> | string
-    ruleId?: StringFilter<"CompatibilityRuleClause"> | string
-    sourceAttributeId?: StringFilter<"CompatibilityRuleClause"> | string
-    targetAttributeId?: StringFilter<"CompatibilityRuleClause"> | string
-    operator?: StringFilter<"CompatibilityRuleClause"> | string
-    sourceValue?: StringNullableFilter<"CompatibilityRuleClause"> | string | null
-    targetValue?: StringNullableFilter<"CompatibilityRuleClause"> | string | null
-    sortOrder?: IntFilter<"CompatibilityRuleClause"> | number
-  }
-
-  export type CompatibilityRuleClauseUpsertWithWhereUniqueWithoutTargetAttributeInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    update: XOR<CompatibilityRuleClauseUpdateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedUpdateWithoutTargetAttributeInput>
-    create: XOR<CompatibilityRuleClauseCreateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedCreateWithoutTargetAttributeInput>
-  }
-
-  export type CompatibilityRuleClauseUpdateWithWhereUniqueWithoutTargetAttributeInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    data: XOR<CompatibilityRuleClauseUpdateWithoutTargetAttributeInput, CompatibilityRuleClauseUncheckedUpdateWithoutTargetAttributeInput>
-  }
-
-  export type CompatibilityRuleClauseUpdateManyWithWhereWithoutTargetAttributeInput = {
-    where: CompatibilityRuleClauseScalarWhereInput
-    data: XOR<CompatibilityRuleClauseUpdateManyMutationInput, CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeInput>
-  }
-
   export type CategoryAttributeCreateWithoutOptionsInput = {
     id?: string
     key: string
@@ -68094,8 +59864,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeCreateNestedManyWithoutDependencyAttributeInput
     dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
     productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateWithoutOptionsInput = {
@@ -68118,8 +59886,6 @@ export namespace Prisma {
     updatedAt?: Date | string
     dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
     productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeCreateOrConnectWithoutOptionsInput = {
@@ -68147,8 +59913,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeCreateNestedManyWithoutDependencyAttributeInput
     options?: AttributeOptionCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateWithoutDependencyOptionInput = {
@@ -68171,8 +59935,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
     options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
     productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeCreateOrConnectWithoutDependencyOptionInput = {
@@ -68246,8 +60008,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUpdateManyWithoutDependencyAttributeNestedInput
     dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
     productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateWithoutOptionsInput = {
@@ -68270,8 +60030,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
     productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUpsertWithWhereUniqueWithoutDependencyOptionInput = {
@@ -68306,580 +60064,6 @@ export namespace Prisma {
     data: XOR<ProductSpecUpdateManyMutationInput, ProductSpecUncheckedUpdateManyWithoutOptionInput>
   }
 
-  export type CategoryCreateWithoutOutgoingRulesInput = {
-    code: string
-    name: string
-    slug: string
-    shortLabel?: string | null
-    description?: string | null
-    image?: string | null
-    icon?: string | null
-    displayOrder?: number
-    featuredOrder?: number | null
-    showInFeatured?: boolean
-    isActive?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    subcategories?: SubcategoryCreateNestedManyWithoutCategoryInput
-    products?: ProductCreateNestedManyWithoutCategoryInput
-    brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
-    orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
-    buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
-    hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
-    attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
-  }
-
-  export type CategoryUncheckedCreateWithoutOutgoingRulesInput = {
-    id?: number
-    code: string
-    name: string
-    slug: string
-    shortLabel?: string | null
-    description?: string | null
-    image?: string | null
-    icon?: string | null
-    displayOrder?: number
-    featuredOrder?: number | null
-    showInFeatured?: boolean
-    isActive?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    subcategories?: SubcategoryUncheckedCreateNestedManyWithoutCategoryInput
-    products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
-    brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
-    orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
-    buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
-    hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
-    attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
-  }
-
-  export type CategoryCreateOrConnectWithoutOutgoingRulesInput = {
-    where: CategoryWhereUniqueInput
-    create: XOR<CategoryCreateWithoutOutgoingRulesInput, CategoryUncheckedCreateWithoutOutgoingRulesInput>
-  }
-
-  export type CategoryCreateWithoutIncomingRulesInput = {
-    code: string
-    name: string
-    slug: string
-    shortLabel?: string | null
-    description?: string | null
-    image?: string | null
-    icon?: string | null
-    displayOrder?: number
-    featuredOrder?: number | null
-    showInFeatured?: boolean
-    isActive?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    subcategories?: SubcategoryCreateNestedManyWithoutCategoryInput
-    products?: ProductCreateNestedManyWithoutCategoryInput
-    brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
-    orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
-    buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
-    hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
-    attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-  }
-
-  export type CategoryUncheckedCreateWithoutIncomingRulesInput = {
-    id?: number
-    code: string
-    name: string
-    slug: string
-    shortLabel?: string | null
-    description?: string | null
-    image?: string | null
-    icon?: string | null
-    displayOrder?: number
-    featuredOrder?: number | null
-    showInFeatured?: boolean
-    isActive?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    subcategories?: SubcategoryUncheckedCreateNestedManyWithoutCategoryInput
-    products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
-    brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
-    orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
-    buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
-    hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
-    attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-  }
-
-  export type CategoryCreateOrConnectWithoutIncomingRulesInput = {
-    where: CategoryWhereUniqueInput
-    create: XOR<CategoryCreateWithoutIncomingRulesInput, CategoryUncheckedCreateWithoutIncomingRulesInput>
-  }
-
-  export type CompatibilityRuleClauseCreateWithoutRuleInput = {
-    id?: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-    sourceAttribute: CategoryAttributeCreateNestedOneWithoutSourceCompatibilityClausesInput
-    targetAttribute: CategoryAttributeCreateNestedOneWithoutTargetCompatibilityClausesInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedCreateWithoutRuleInput = {
-    id?: string
-    sourceAttributeId: string
-    targetAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
-  export type CompatibilityRuleClauseCreateOrConnectWithoutRuleInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    create: XOR<CompatibilityRuleClauseCreateWithoutRuleInput, CompatibilityRuleClauseUncheckedCreateWithoutRuleInput>
-  }
-
-  export type CompatibilityRuleClauseCreateManyRuleInputEnvelope = {
-    data: CompatibilityRuleClauseCreateManyRuleInput | CompatibilityRuleClauseCreateManyRuleInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type CategoryUpsertWithoutOutgoingRulesInput = {
-    update: XOR<CategoryUpdateWithoutOutgoingRulesInput, CategoryUncheckedUpdateWithoutOutgoingRulesInput>
-    create: XOR<CategoryCreateWithoutOutgoingRulesInput, CategoryUncheckedCreateWithoutOutgoingRulesInput>
-    where?: CategoryWhereInput
-  }
-
-  export type CategoryUpdateToOneWithWhereWithoutOutgoingRulesInput = {
-    where?: CategoryWhereInput
-    data: XOR<CategoryUpdateWithoutOutgoingRulesInput, CategoryUncheckedUpdateWithoutOutgoingRulesInput>
-  }
-
-  export type CategoryUpdateWithoutOutgoingRulesInput = {
-    code?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    slug?: StringFieldUpdateOperationsInput | string
-    shortLabel?: NullableStringFieldUpdateOperationsInput | string | null
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    image?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
-    displayOrder?: IntFieldUpdateOperationsInput | number
-    featuredOrder?: NullableIntFieldUpdateOperationsInput | number | null
-    showInFeatured?: BoolFieldUpdateOperationsInput | boolean
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subcategories?: SubcategoryUpdateManyWithoutCategoryNestedInput
-    products?: ProductUpdateManyWithoutCategoryNestedInput
-    brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
-    orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
-    buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
-    hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
-    attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
-  }
-
-  export type CategoryUncheckedUpdateWithoutOutgoingRulesInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    code?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    slug?: StringFieldUpdateOperationsInput | string
-    shortLabel?: NullableStringFieldUpdateOperationsInput | string | null
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    image?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
-    displayOrder?: IntFieldUpdateOperationsInput | number
-    featuredOrder?: NullableIntFieldUpdateOperationsInput | number | null
-    showInFeatured?: BoolFieldUpdateOperationsInput | boolean
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subcategories?: SubcategoryUncheckedUpdateManyWithoutCategoryNestedInput
-    products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
-    brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
-    orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
-    buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
-    hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
-    attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
-  }
-
-  export type CategoryUpsertWithoutIncomingRulesInput = {
-    update: XOR<CategoryUpdateWithoutIncomingRulesInput, CategoryUncheckedUpdateWithoutIncomingRulesInput>
-    create: XOR<CategoryCreateWithoutIncomingRulesInput, CategoryUncheckedCreateWithoutIncomingRulesInput>
-    where?: CategoryWhereInput
-  }
-
-  export type CategoryUpdateToOneWithWhereWithoutIncomingRulesInput = {
-    where?: CategoryWhereInput
-    data: XOR<CategoryUpdateWithoutIncomingRulesInput, CategoryUncheckedUpdateWithoutIncomingRulesInput>
-  }
-
-  export type CategoryUpdateWithoutIncomingRulesInput = {
-    code?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    slug?: StringFieldUpdateOperationsInput | string
-    shortLabel?: NullableStringFieldUpdateOperationsInput | string | null
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    image?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
-    displayOrder?: IntFieldUpdateOperationsInput | number
-    featuredOrder?: NullableIntFieldUpdateOperationsInput | number | null
-    showInFeatured?: BoolFieldUpdateOperationsInput | boolean
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subcategories?: SubcategoryUpdateManyWithoutCategoryNestedInput
-    products?: ProductUpdateManyWithoutCategoryNestedInput
-    brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
-    orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
-    buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
-    hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
-    attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-  }
-
-  export type CategoryUncheckedUpdateWithoutIncomingRulesInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    code?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    slug?: StringFieldUpdateOperationsInput | string
-    shortLabel?: NullableStringFieldUpdateOperationsInput | string | null
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    image?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
-    displayOrder?: IntFieldUpdateOperationsInput | number
-    featuredOrder?: NullableIntFieldUpdateOperationsInput | number | null
-    showInFeatured?: BoolFieldUpdateOperationsInput | boolean
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subcategories?: SubcategoryUncheckedUpdateManyWithoutCategoryNestedInput
-    products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
-    brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
-    orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
-    buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
-    hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
-    attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-  }
-
-  export type CompatibilityRuleClauseUpsertWithWhereUniqueWithoutRuleInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    update: XOR<CompatibilityRuleClauseUpdateWithoutRuleInput, CompatibilityRuleClauseUncheckedUpdateWithoutRuleInput>
-    create: XOR<CompatibilityRuleClauseCreateWithoutRuleInput, CompatibilityRuleClauseUncheckedCreateWithoutRuleInput>
-  }
-
-  export type CompatibilityRuleClauseUpdateWithWhereUniqueWithoutRuleInput = {
-    where: CompatibilityRuleClauseWhereUniqueInput
-    data: XOR<CompatibilityRuleClauseUpdateWithoutRuleInput, CompatibilityRuleClauseUncheckedUpdateWithoutRuleInput>
-  }
-
-  export type CompatibilityRuleClauseUpdateManyWithWhereWithoutRuleInput = {
-    where: CompatibilityRuleClauseScalarWhereInput
-    data: XOR<CompatibilityRuleClauseUpdateManyMutationInput, CompatibilityRuleClauseUncheckedUpdateManyWithoutRuleInput>
-  }
-
-  export type CompatibilityRuleCreateWithoutClausesInput = {
-    id?: string
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    sourceCategory: CategoryCreateNestedOneWithoutOutgoingRulesInput
-    targetCategory: CategoryCreateNestedOneWithoutIncomingRulesInput
-  }
-
-  export type CompatibilityRuleUncheckedCreateWithoutClausesInput = {
-    id?: string
-    sourceCategoryId: number
-    targetCategoryId: number
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type CompatibilityRuleCreateOrConnectWithoutClausesInput = {
-    where: CompatibilityRuleWhereUniqueInput
-    create: XOR<CompatibilityRuleCreateWithoutClausesInput, CompatibilityRuleUncheckedCreateWithoutClausesInput>
-  }
-
-  export type CategoryAttributeCreateWithoutSourceCompatibilityClausesInput = {
-    id?: string
-    key: string
-    label: string
-    type: $Enums.AttributeInputType
-    isRequired?: boolean
-    isFilterable?: boolean
-    isComparable?: boolean
-    filterType?: $Enums.FilterType | null
-    unit?: string | null
-    helpText?: string | null
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    category: CategoryCreateNestedOneWithoutAttributesInput
-    subcategory?: SubcategoryCreateNestedOneWithoutAttributesInput
-    dependencyAttribute?: CategoryAttributeCreateNestedOneWithoutDependentAttributesInput
-    dependentAttributes?: CategoryAttributeCreateNestedManyWithoutDependencyAttributeInput
-    dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
-    options?: AttributeOptionCreateNestedManyWithoutAttributeInput
-    productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
-  }
-
-  export type CategoryAttributeUncheckedCreateWithoutSourceCompatibilityClausesInput = {
-    id?: string
-    categoryId: number
-    subcategoryId?: number | null
-    key: string
-    label: string
-    type: $Enums.AttributeInputType
-    isRequired?: boolean
-    isFilterable?: boolean
-    isComparable?: boolean
-    filterType?: $Enums.FilterType | null
-    unit?: string | null
-    helpText?: string | null
-    dependencyAttributeId?: string | null
-    dependencyOptionId?: string | null
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
-    options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
-    productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
-  }
-
-  export type CategoryAttributeCreateOrConnectWithoutSourceCompatibilityClausesInput = {
-    where: CategoryAttributeWhereUniqueInput
-    create: XOR<CategoryAttributeCreateWithoutSourceCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutSourceCompatibilityClausesInput>
-  }
-
-  export type CategoryAttributeCreateWithoutTargetCompatibilityClausesInput = {
-    id?: string
-    key: string
-    label: string
-    type: $Enums.AttributeInputType
-    isRequired?: boolean
-    isFilterable?: boolean
-    isComparable?: boolean
-    filterType?: $Enums.FilterType | null
-    unit?: string | null
-    helpText?: string | null
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    category: CategoryCreateNestedOneWithoutAttributesInput
-    subcategory?: SubcategoryCreateNestedOneWithoutAttributesInput
-    dependencyAttribute?: CategoryAttributeCreateNestedOneWithoutDependentAttributesInput
-    dependentAttributes?: CategoryAttributeCreateNestedManyWithoutDependencyAttributeInput
-    dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
-    options?: AttributeOptionCreateNestedManyWithoutAttributeInput
-    productSpecs?: ProductSpecCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-  }
-
-  export type CategoryAttributeUncheckedCreateWithoutTargetCompatibilityClausesInput = {
-    id?: string
-    categoryId: number
-    subcategoryId?: number | null
-    key: string
-    label: string
-    type: $Enums.AttributeInputType
-    isRequired?: boolean
-    isFilterable?: boolean
-    isComparable?: boolean
-    filterType?: $Enums.FilterType | null
-    unit?: string | null
-    helpText?: string | null
-    dependencyAttributeId?: string | null
-    dependencyOptionId?: string | null
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
-    options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
-    productSpecs?: ProductSpecUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-  }
-
-  export type CategoryAttributeCreateOrConnectWithoutTargetCompatibilityClausesInput = {
-    where: CategoryAttributeWhereUniqueInput
-    create: XOR<CategoryAttributeCreateWithoutTargetCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutTargetCompatibilityClausesInput>
-  }
-
-  export type CompatibilityRuleUpsertWithoutClausesInput = {
-    update: XOR<CompatibilityRuleUpdateWithoutClausesInput, CompatibilityRuleUncheckedUpdateWithoutClausesInput>
-    create: XOR<CompatibilityRuleCreateWithoutClausesInput, CompatibilityRuleUncheckedCreateWithoutClausesInput>
-    where?: CompatibilityRuleWhereInput
-  }
-
-  export type CompatibilityRuleUpdateToOneWithWhereWithoutClausesInput = {
-    where?: CompatibilityRuleWhereInput
-    data: XOR<CompatibilityRuleUpdateWithoutClausesInput, CompatibilityRuleUncheckedUpdateWithoutClausesInput>
-  }
-
-  export type CompatibilityRuleUpdateWithoutClausesInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    sourceCategory?: CategoryUpdateOneRequiredWithoutOutgoingRulesNestedInput
-    targetCategory?: CategoryUpdateOneRequiredWithoutIncomingRulesNestedInput
-  }
-
-  export type CompatibilityRuleUncheckedUpdateWithoutClausesInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    sourceCategoryId?: IntFieldUpdateOperationsInput | number
-    targetCategoryId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CategoryAttributeUpsertWithoutSourceCompatibilityClausesInput = {
-    update: XOR<CategoryAttributeUpdateWithoutSourceCompatibilityClausesInput, CategoryAttributeUncheckedUpdateWithoutSourceCompatibilityClausesInput>
-    create: XOR<CategoryAttributeCreateWithoutSourceCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutSourceCompatibilityClausesInput>
-    where?: CategoryAttributeWhereInput
-  }
-
-  export type CategoryAttributeUpdateToOneWithWhereWithoutSourceCompatibilityClausesInput = {
-    where?: CategoryAttributeWhereInput
-    data: XOR<CategoryAttributeUpdateWithoutSourceCompatibilityClausesInput, CategoryAttributeUncheckedUpdateWithoutSourceCompatibilityClausesInput>
-  }
-
-  export type CategoryAttributeUpdateWithoutSourceCompatibilityClausesInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    key?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
-    type?: EnumAttributeInputTypeFieldUpdateOperationsInput | $Enums.AttributeInputType
-    isRequired?: BoolFieldUpdateOperationsInput | boolean
-    isFilterable?: BoolFieldUpdateOperationsInput | boolean
-    isComparable?: BoolFieldUpdateOperationsInput | boolean
-    filterType?: NullableEnumFilterTypeFieldUpdateOperationsInput | $Enums.FilterType | null
-    unit?: NullableStringFieldUpdateOperationsInput | string | null
-    helpText?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    category?: CategoryUpdateOneRequiredWithoutAttributesNestedInput
-    subcategory?: SubcategoryUpdateOneWithoutAttributesNestedInput
-    dependencyAttribute?: CategoryAttributeUpdateOneWithoutDependentAttributesNestedInput
-    dependentAttributes?: CategoryAttributeUpdateManyWithoutDependencyAttributeNestedInput
-    dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
-    options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
-    productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
-  }
-
-  export type CategoryAttributeUncheckedUpdateWithoutSourceCompatibilityClausesInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    categoryId?: IntFieldUpdateOperationsInput | number
-    subcategoryId?: NullableIntFieldUpdateOperationsInput | number | null
-    key?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
-    type?: EnumAttributeInputTypeFieldUpdateOperationsInput | $Enums.AttributeInputType
-    isRequired?: BoolFieldUpdateOperationsInput | boolean
-    isFilterable?: BoolFieldUpdateOperationsInput | boolean
-    isComparable?: BoolFieldUpdateOperationsInput | boolean
-    filterType?: NullableEnumFilterTypeFieldUpdateOperationsInput | $Enums.FilterType | null
-    unit?: NullableStringFieldUpdateOperationsInput | string | null
-    helpText?: NullableStringFieldUpdateOperationsInput | string | null
-    dependencyAttributeId?: NullableStringFieldUpdateOperationsInput | string | null
-    dependencyOptionId?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
-    options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
-    productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
-  }
-
-  export type CategoryAttributeUpsertWithoutTargetCompatibilityClausesInput = {
-    update: XOR<CategoryAttributeUpdateWithoutTargetCompatibilityClausesInput, CategoryAttributeUncheckedUpdateWithoutTargetCompatibilityClausesInput>
-    create: XOR<CategoryAttributeCreateWithoutTargetCompatibilityClausesInput, CategoryAttributeUncheckedCreateWithoutTargetCompatibilityClausesInput>
-    where?: CategoryAttributeWhereInput
-  }
-
-  export type CategoryAttributeUpdateToOneWithWhereWithoutTargetCompatibilityClausesInput = {
-    where?: CategoryAttributeWhereInput
-    data: XOR<CategoryAttributeUpdateWithoutTargetCompatibilityClausesInput, CategoryAttributeUncheckedUpdateWithoutTargetCompatibilityClausesInput>
-  }
-
-  export type CategoryAttributeUpdateWithoutTargetCompatibilityClausesInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    key?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
-    type?: EnumAttributeInputTypeFieldUpdateOperationsInput | $Enums.AttributeInputType
-    isRequired?: BoolFieldUpdateOperationsInput | boolean
-    isFilterable?: BoolFieldUpdateOperationsInput | boolean
-    isComparable?: BoolFieldUpdateOperationsInput | boolean
-    filterType?: NullableEnumFilterTypeFieldUpdateOperationsInput | $Enums.FilterType | null
-    unit?: NullableStringFieldUpdateOperationsInput | string | null
-    helpText?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    category?: CategoryUpdateOneRequiredWithoutAttributesNestedInput
-    subcategory?: SubcategoryUpdateOneWithoutAttributesNestedInput
-    dependencyAttribute?: CategoryAttributeUpdateOneWithoutDependentAttributesNestedInput
-    dependentAttributes?: CategoryAttributeUpdateManyWithoutDependencyAttributeNestedInput
-    dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
-    options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
-    productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-  }
-
-  export type CategoryAttributeUncheckedUpdateWithoutTargetCompatibilityClausesInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    categoryId?: IntFieldUpdateOperationsInput | number
-    subcategoryId?: NullableIntFieldUpdateOperationsInput | number | null
-    key?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
-    type?: EnumAttributeInputTypeFieldUpdateOperationsInput | $Enums.AttributeInputType
-    isRequired?: BoolFieldUpdateOperationsInput | boolean
-    isFilterable?: BoolFieldUpdateOperationsInput | boolean
-    isComparable?: BoolFieldUpdateOperationsInput | boolean
-    filterType?: NullableEnumFilterTypeFieldUpdateOperationsInput | $Enums.FilterType | null
-    unit?: NullableStringFieldUpdateOperationsInput | string | null
-    helpText?: NullableStringFieldUpdateOperationsInput | string | null
-    dependencyAttributeId?: NullableStringFieldUpdateOperationsInput | string | null
-    dependencyOptionId?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
-    options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
-    productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-  }
-
   export type ProductCreateWithoutTagsInput = {
     id?: string
     slug?: string
@@ -68893,7 +60077,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -68922,7 +60105,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -68968,7 +60150,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -68997,7 +60178,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -69038,7 +60218,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -69067,7 +60246,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -69118,11 +60296,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateWithoutProductsInput = {
@@ -69144,11 +60319,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryCreateOrConnectWithoutProductsInput = {
@@ -69314,31 +60486,25 @@ export namespace Prisma {
   export type InventoryItemCreateWithoutProductInput = {
     id?: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     orderItemUnits?: OrderItemUnitCreateNestedManyWithoutInventoryItemInput
     stockMovements?: StockMovementCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemUncheckedCreateWithoutProductInput = {
     id?: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     orderItemUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutInventoryItemInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationUncheckedCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemCreateOrConnectWithoutProductInput = {
@@ -69437,11 +60603,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateWithoutProductsInput = {
@@ -69463,11 +60626,8 @@ export namespace Prisma {
     brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type SubcategoryUpsertWithoutProductsInput = {
@@ -69638,10 +60798,8 @@ export namespace Prisma {
     id?: StringFilter<"InventoryItem"> | string
     productId?: StringFilter<"InventoryItem"> | string
     partNumber?: StringNullableFilter<"InventoryItem"> | string | null
-    serialNumber?: StringNullableFilter<"InventoryItem"> | string | null
-    quantity?: IntFilter<"InventoryItem"> | number
-    reserved?: IntFilter<"InventoryItem"> | number
-    reorderLevel?: IntFilter<"InventoryItem"> | number
+    serialNumber?: StringFilter<"InventoryItem"> | string
+    status?: EnumInventoryUnitStatusFilter<"InventoryItem"> | $Enums.InventoryUnitStatus
     costPrice?: FloatFilter<"InventoryItem"> | number
     location?: StringFilter<"InventoryItem"> | string
     lastUpdated?: DateTimeNullableFilter<"InventoryItem"> | Date | string | null
@@ -69690,7 +60848,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -69719,7 +60876,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -69756,8 +60912,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeCreateNestedManyWithoutDependencyAttributeInput
     dependencyOption?: AttributeOptionCreateNestedOneWithoutDependentAttributesInput
     options?: AttributeOptionCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeUncheckedCreateWithoutProductSpecsInput = {
@@ -69780,8 +60934,6 @@ export namespace Prisma {
     updatedAt?: Date | string
     dependentAttributes?: CategoryAttributeUncheckedCreateNestedManyWithoutDependencyAttributeInput
     options?: AttributeOptionUncheckedCreateNestedManyWithoutAttributeInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutSourceAttributeInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedCreateNestedManyWithoutTargetAttributeInput
   }
 
   export type CategoryAttributeCreateOrConnectWithoutProductSpecsInput = {
@@ -69842,7 +60994,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -69871,7 +61022,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -69914,8 +61064,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUpdateManyWithoutDependencyAttributeNestedInput
     dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
     options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateWithoutProductSpecsInput = {
@@ -69938,8 +61086,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
     options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type AttributeOptionUpsertWithoutProductSpecsInput = {
@@ -69990,7 +61136,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -70019,7 +61164,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -70042,6 +61186,7 @@ export namespace Prisma {
     partNumber?: string | null
     createdAt?: Date | string
     orderItem: OrderItemCreateNestedOneWithoutAssignedUnitsInput
+    order?: OrderCreateNestedOneWithoutAssignedUnitsInput
   }
 
   export type OrderItemUnitUncheckedCreateWithoutInventoryItemInput = {
@@ -70049,6 +61194,7 @@ export namespace Prisma {
     orderItemId: string
     serialNumber?: string | null
     partNumber?: string | null
+    orderId?: string | null
     createdAt?: Date | string
   }
 
@@ -70092,38 +61238,6 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type ReservationCreateWithoutInventoryItemInput = {
-    id?: string
-    orderId?: string | null
-    cartId?: string | null
-    quantity?: number
-    status?: string
-    expiresAt?: Date | string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReservationUncheckedCreateWithoutInventoryItemInput = {
-    id?: string
-    orderId?: string | null
-    cartId?: string | null
-    quantity?: number
-    status?: string
-    expiresAt?: Date | string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReservationCreateOrConnectWithoutInventoryItemInput = {
-    where: ReservationWhereUniqueInput
-    create: XOR<ReservationCreateWithoutInventoryItemInput, ReservationUncheckedCreateWithoutInventoryItemInput>
-  }
-
-  export type ReservationCreateManyInventoryItemInputEnvelope = {
-    data: ReservationCreateManyInventoryItemInput | ReservationCreateManyInventoryItemInput[]
-    skipDuplicates?: boolean
-  }
-
   export type ProductUpsertWithoutInventoryItemsInput = {
     update: XOR<ProductUpdateWithoutInventoryItemsInput, ProductUncheckedUpdateWithoutInventoryItemsInput>
     create: XOR<ProductCreateWithoutInventoryItemsInput, ProductUncheckedCreateWithoutInventoryItemsInput>
@@ -70148,7 +61262,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -70177,7 +61290,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -70214,6 +61326,7 @@ export namespace Prisma {
     inventoryItemId?: StringFilter<"OrderItemUnit"> | string
     serialNumber?: StringNullableFilter<"OrderItemUnit"> | string | null
     partNumber?: StringNullableFilter<"OrderItemUnit"> | string | null
+    orderId?: StringNullableFilter<"OrderItemUnit"> | string | null
     createdAt?: DateTimeFilter<"OrderItemUnit"> | Date | string
   }
 
@@ -70231,37 +61344,6 @@ export namespace Prisma {
   export type StockMovementUpdateManyWithWhereWithoutInventoryItemInput = {
     where: StockMovementScalarWhereInput
     data: XOR<StockMovementUpdateManyMutationInput, StockMovementUncheckedUpdateManyWithoutInventoryItemInput>
-  }
-
-  export type ReservationUpsertWithWhereUniqueWithoutInventoryItemInput = {
-    where: ReservationWhereUniqueInput
-    update: XOR<ReservationUpdateWithoutInventoryItemInput, ReservationUncheckedUpdateWithoutInventoryItemInput>
-    create: XOR<ReservationCreateWithoutInventoryItemInput, ReservationUncheckedCreateWithoutInventoryItemInput>
-  }
-
-  export type ReservationUpdateWithWhereUniqueWithoutInventoryItemInput = {
-    where: ReservationWhereUniqueInput
-    data: XOR<ReservationUpdateWithoutInventoryItemInput, ReservationUncheckedUpdateWithoutInventoryItemInput>
-  }
-
-  export type ReservationUpdateManyWithWhereWithoutInventoryItemInput = {
-    where: ReservationScalarWhereInput
-    data: XOR<ReservationUpdateManyMutationInput, ReservationUncheckedUpdateManyWithoutInventoryItemInput>
-  }
-
-  export type ReservationScalarWhereInput = {
-    AND?: ReservationScalarWhereInput | ReservationScalarWhereInput[]
-    OR?: ReservationScalarWhereInput[]
-    NOT?: ReservationScalarWhereInput | ReservationScalarWhereInput[]
-    id?: StringFilter<"Reservation"> | string
-    orderId?: StringNullableFilter<"Reservation"> | string | null
-    cartId?: StringNullableFilter<"Reservation"> | string | null
-    inventoryItemId?: StringFilter<"Reservation"> | string
-    quantity?: IntFilter<"Reservation"> | number
-    status?: StringFilter<"Reservation"> | string
-    expiresAt?: DateTimeNullableFilter<"Reservation"> | Date | string | null
-    createdAt?: DateTimeFilter<"Reservation"> | Date | string
-    updatedAt?: DateTimeFilter<"Reservation"> | Date | string
   }
 
   export type InvoiceCreateWithoutCustomerInput = {
@@ -70366,6 +61448,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutCustomerInput = {
@@ -70404,6 +61487,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutCustomerInput = {
@@ -70772,6 +61856,34 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type OrderItemUnitCreateWithoutOrderInput = {
+    id?: string
+    serialNumber?: string | null
+    partNumber?: string | null
+    createdAt?: Date | string
+    orderItem: OrderItemCreateNestedOneWithoutAssignedUnitsInput
+    inventoryItem: InventoryItemCreateNestedOneWithoutOrderItemUnitsInput
+  }
+
+  export type OrderItemUnitUncheckedCreateWithoutOrderInput = {
+    id?: string
+    orderItemId: string
+    inventoryItemId: string
+    serialNumber?: string | null
+    partNumber?: string | null
+    createdAt?: Date | string
+  }
+
+  export type OrderItemUnitCreateOrConnectWithoutOrderInput = {
+    where: OrderItemUnitWhereUniqueInput
+    create: XOR<OrderItemUnitCreateWithoutOrderInput, OrderItemUnitUncheckedCreateWithoutOrderInput>
+  }
+
+  export type OrderItemUnitCreateManyOrderInputEnvelope = {
+    data: OrderItemUnitCreateManyOrderInput | OrderItemUnitCreateManyOrderInput[]
+    skipDuplicates?: boolean
+  }
+
   export type CustomerUpsertWithoutOrdersInput = {
     update: XOR<CustomerUpdateWithoutOrdersInput, CustomerUncheckedUpdateWithoutOrdersInput>
     create: XOR<CustomerCreateWithoutOrdersInput, CustomerUncheckedCreateWithoutOrdersInput>
@@ -70953,6 +62065,22 @@ export namespace Prisma {
     data: XOR<StockMovementUpdateManyMutationInput, StockMovementUncheckedUpdateManyWithoutOrderInput>
   }
 
+  export type OrderItemUnitUpsertWithWhereUniqueWithoutOrderInput = {
+    where: OrderItemUnitWhereUniqueInput
+    update: XOR<OrderItemUnitUpdateWithoutOrderInput, OrderItemUnitUncheckedUpdateWithoutOrderInput>
+    create: XOR<OrderItemUnitCreateWithoutOrderInput, OrderItemUnitUncheckedCreateWithoutOrderInput>
+  }
+
+  export type OrderItemUnitUpdateWithWhereUniqueWithoutOrderInput = {
+    where: OrderItemUnitWhereUniqueInput
+    data: XOR<OrderItemUnitUpdateWithoutOrderInput, OrderItemUnitUncheckedUpdateWithoutOrderInput>
+  }
+
+  export type OrderItemUnitUpdateManyWithWhereWithoutOrderInput = {
+    where: OrderItemUnitScalarWhereInput
+    data: XOR<OrderItemUnitUpdateManyMutationInput, OrderItemUnitUncheckedUpdateManyWithoutOrderInput>
+  }
+
   export type OrderCreateWithoutItemsInput = {
     id: string
     channel?: $Enums.SalesChannel
@@ -70989,6 +62117,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutItemsInput = {
@@ -71027,6 +62156,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutItemsInput = {
@@ -71047,7 +62177,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -71076,7 +62205,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -71111,11 +62239,8 @@ export namespace Prisma {
     products?: ProductCreateNestedManyWithoutCategoryInput
     brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateWithoutOrderItemsInput = {
@@ -71137,11 +62262,8 @@ export namespace Prisma {
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
     brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
     buildGuides?: BuildGuideUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryCreateOrConnectWithoutOrderItemsInput = {
@@ -71155,6 +62277,7 @@ export namespace Prisma {
     partNumber?: string | null
     createdAt?: Date | string
     inventoryItem: InventoryItemCreateNestedOneWithoutOrderItemUnitsInput
+    order?: OrderCreateNestedOneWithoutAssignedUnitsInput
   }
 
   export type OrderItemUnitUncheckedCreateWithoutOrderItemInput = {
@@ -71162,6 +62285,7 @@ export namespace Prisma {
     inventoryItemId: string
     serialNumber?: string | null
     partNumber?: string | null
+    orderId?: string | null
     createdAt?: Date | string
   }
 
@@ -71222,6 +62346,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutItemsInput = {
@@ -71260,6 +62385,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type ProductUpsertWithoutOrderItemsInput = {
@@ -71286,7 +62412,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -71315,7 +62440,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -71356,11 +62480,8 @@ export namespace Prisma {
     products?: ProductUpdateManyWithoutCategoryNestedInput
     brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateWithoutOrderItemsInput = {
@@ -71382,11 +62503,8 @@ export namespace Prisma {
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
     brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
     buildGuides?: BuildGuideUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type OrderItemUnitUpsertWithWhereUniqueWithoutOrderItemInput = {
@@ -71437,36 +62555,113 @@ export namespace Prisma {
   export type InventoryItemCreateWithoutOrderItemUnitsInput = {
     id?: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     product: ProductCreateNestedOneWithoutInventoryItemsInput
     stockMovements?: StockMovementCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemUncheckedCreateWithoutOrderItemUnitsInput = {
     id?: string
     productId: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationUncheckedCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemCreateOrConnectWithoutOrderItemUnitsInput = {
     where: InventoryItemWhereUniqueInput
     create: XOR<InventoryItemCreateWithoutOrderItemUnitsInput, InventoryItemUncheckedCreateWithoutOrderItemUnitsInput>
+  }
+
+  export type OrderCreateWithoutAssignedUnitsInput = {
+    id: string
+    channel?: $Enums.SalesChannel
+    customerName: string
+    email: string
+    phone?: string | null
+    date?: Date | string
+    subtotal?: number
+    gstAmount?: number
+    taxAmount?: number
+    discountAmount?: number
+    total: number
+    status?: $Enums.OrderStatus
+    version?: number
+    deletedAt?: Date | string | null
+    shippingStreet?: string | null
+    shippingCity?: string | null
+    shippingState?: string | null
+    shippingZip?: string | null
+    shippingCountry?: string | null
+    paymentMethod?: string | null
+    paymentTransactionId?: string | null
+    paymentStatus?: string | null
+    paymentDueDate?: Date | string | null
+    paymentCompletedAt?: Date | string | null
+    paymentFailureReason?: string | null
+    idempotencyKey?: string | null
+    source?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customer?: CustomerCreateNestedOneWithoutOrdersInput
+    items?: OrderItemCreateNestedManyWithoutOrderInput
+    logs?: OrderLogCreateNestedManyWithoutOrderInput
+    invoices?: InvoiceCreateNestedManyWithoutOrderInput
+    shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
+    payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
+    stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+  }
+
+  export type OrderUncheckedCreateWithoutAssignedUnitsInput = {
+    id: string
+    channel?: $Enums.SalesChannel
+    customerName: string
+    email: string
+    phone?: string | null
+    date?: Date | string
+    subtotal?: number
+    gstAmount?: number
+    taxAmount?: number
+    discountAmount?: number
+    total: number
+    status?: $Enums.OrderStatus
+    version?: number
+    deletedAt?: Date | string | null
+    customerId?: string | null
+    shippingStreet?: string | null
+    shippingCity?: string | null
+    shippingState?: string | null
+    shippingZip?: string | null
+    shippingCountry?: string | null
+    paymentMethod?: string | null
+    paymentTransactionId?: string | null
+    paymentStatus?: string | null
+    paymentDueDate?: Date | string | null
+    paymentCompletedAt?: Date | string | null
+    paymentFailureReason?: string | null
+    idempotencyKey?: string | null
+    source?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    items?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
+    logs?: OrderLogUncheckedCreateNestedManyWithoutOrderInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOrderInput
+    shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
+    payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
+    stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+  }
+
+  export type OrderCreateOrConnectWithoutAssignedUnitsInput = {
+    where: OrderWhereUniqueInput
+    create: XOR<OrderCreateWithoutAssignedUnitsInput, OrderUncheckedCreateWithoutAssignedUnitsInput>
   }
 
   export type OrderItemUpsertWithoutAssignedUnitsInput = {
@@ -71518,31 +62713,114 @@ export namespace Prisma {
   export type InventoryItemUpdateWithoutOrderItemUnitsInput = {
     id?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     product?: ProductUpdateOneRequiredWithoutInventoryItemsNestedInput
     stockMovements?: StockMovementUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUpdateManyWithoutInventoryItemNestedInput
   }
 
   export type InventoryItemUncheckedUpdateWithoutOrderItemUnitsInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockMovements?: StockMovementUncheckedUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUncheckedUpdateManyWithoutInventoryItemNestedInput
+  }
+
+  export type OrderUpsertWithoutAssignedUnitsInput = {
+    update: XOR<OrderUpdateWithoutAssignedUnitsInput, OrderUncheckedUpdateWithoutAssignedUnitsInput>
+    create: XOR<OrderCreateWithoutAssignedUnitsInput, OrderUncheckedCreateWithoutAssignedUnitsInput>
+    where?: OrderWhereInput
+  }
+
+  export type OrderUpdateToOneWithWhereWithoutAssignedUnitsInput = {
+    where?: OrderWhereInput
+    data: XOR<OrderUpdateWithoutAssignedUnitsInput, OrderUncheckedUpdateWithoutAssignedUnitsInput>
+  }
+
+  export type OrderUpdateWithoutAssignedUnitsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    channel?: EnumSalesChannelFieldUpdateOperationsInput | $Enums.SalesChannel
+    customerName?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    subtotal?: FloatFieldUpdateOperationsInput | number
+    gstAmount?: FloatFieldUpdateOperationsInput | number
+    taxAmount?: FloatFieldUpdateOperationsInput | number
+    discountAmount?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    shippingStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingCity?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingState?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingZip?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paymentCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paymentFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: CustomerUpdateOneWithoutOrdersNestedInput
+    items?: OrderItemUpdateManyWithoutOrderNestedInput
+    logs?: OrderLogUpdateManyWithoutOrderNestedInput
+    invoices?: InvoiceUpdateManyWithoutOrderNestedInput
+    shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
+    payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
+    stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+  }
+
+  export type OrderUncheckedUpdateWithoutAssignedUnitsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    channel?: EnumSalesChannelFieldUpdateOperationsInput | $Enums.SalesChannel
+    customerName?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    subtotal?: FloatFieldUpdateOperationsInput | number
+    gstAmount?: FloatFieldUpdateOperationsInput | number
+    taxAmount?: FloatFieldUpdateOperationsInput | number
+    discountAmount?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    customerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingCity?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingState?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingZip?: NullableStringFieldUpdateOperationsInput | string | null
+    shippingCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paymentCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paymentFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+    logs?: OrderLogUncheckedUpdateManyWithoutOrderNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOrderNestedInput
+    shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
+    payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
+    stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderCreateWithoutLogsInput = {
@@ -71581,6 +62859,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutLogsInput = {
@@ -71619,6 +62898,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutLogsInput = {
@@ -71673,6 +62953,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutLogsInput = {
@@ -71711,6 +62992,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderCreateWithoutShipmentsInput = {
@@ -71749,6 +63031,7 @@ export namespace Prisma {
     invoices?: InvoiceCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutShipmentsInput = {
@@ -71787,6 +63070,7 @@ export namespace Prisma {
     invoices?: InvoiceUncheckedCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutShipmentsInput = {
@@ -71841,6 +63125,7 @@ export namespace Prisma {
     invoices?: InvoiceUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutShipmentsInput = {
@@ -71879,6 +63164,7 @@ export namespace Prisma {
     invoices?: InvoiceUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderCreateWithoutStockMovesInput = {
@@ -71917,6 +63203,7 @@ export namespace Prisma {
     invoices?: InvoiceCreateNestedManyWithoutOrderInput
     shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutStockMovesInput = {
@@ -71955,6 +63242,7 @@ export namespace Prisma {
     invoices?: InvoiceUncheckedCreateNestedManyWithoutOrderInput
     shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutStockMovesInput = {
@@ -71975,7 +63263,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -72004,7 +63291,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -72024,31 +63310,25 @@ export namespace Prisma {
   export type InventoryItemCreateWithoutStockMovementsInput = {
     id?: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     product: ProductCreateNestedOneWithoutInventoryItemsInput
     orderItemUnits?: OrderItemUnitCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemUncheckedCreateWithoutStockMovementsInput = {
     id?: string
     productId: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
     orderItemUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutInventoryItemInput
-    reservations?: ReservationUncheckedCreateNestedManyWithoutInventoryItemInput
   }
 
   export type InventoryItemCreateOrConnectWithoutStockMovementsInput = {
@@ -72103,6 +63383,7 @@ export namespace Prisma {
     invoices?: InvoiceUpdateManyWithoutOrderNestedInput
     shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutStockMovesInput = {
@@ -72141,6 +63422,7 @@ export namespace Prisma {
     invoices?: InvoiceUncheckedUpdateManyWithoutOrderNestedInput
     shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type ProductUpsertWithoutStockMovementsInput = {
@@ -72167,7 +63449,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -72196,7 +63477,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -72222,31 +63502,25 @@ export namespace Prisma {
   export type InventoryItemUpdateWithoutStockMovementsInput = {
     id?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     product?: ProductUpdateOneRequiredWithoutInventoryItemsNestedInput
     orderItemUnits?: OrderItemUnitUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUpdateManyWithoutInventoryItemNestedInput
   }
 
   export type InventoryItemUncheckedUpdateWithoutStockMovementsInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     orderItemUnits?: OrderItemUnitUncheckedUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUncheckedUpdateManyWithoutInventoryItemNestedInput
   }
 
   export type BuildGuideItemCreateWithoutBuildGuideInput = {
@@ -72289,11 +63563,8 @@ export namespace Prisma {
     products?: ProductCreateNestedManyWithoutCategoryInput
     brandCategories?: BrandCategoryCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryUncheckedCreateWithoutBuildGuidesInput = {
@@ -72315,11 +63586,8 @@ export namespace Prisma {
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
     brandCategories?: BrandCategoryUncheckedCreateNestedManyWithoutCategoryInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutCategoryInput
-    buildSequence?: BuildSequenceUncheckedCreateNestedOneWithoutCategoryInput
     hierarchyNodes?: CategoryHierarchyUncheckedCreateNestedManyWithoutCategoryInput
     attributes?: CategoryAttributeUncheckedCreateNestedManyWithoutCategoryInput
-    outgoingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutSourceCategoryInput
-    incomingRules?: CompatibilityRuleUncheckedCreateNestedManyWithoutTargetCategoryInput
   }
 
   export type CategoryCreateOrConnectWithoutBuildGuidesInput = {
@@ -72372,11 +63640,8 @@ export namespace Prisma {
     products?: ProductUpdateManyWithoutCategoryNestedInput
     brandCategories?: BrandCategoryUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type CategoryUncheckedUpdateWithoutBuildGuidesInput = {
@@ -72398,11 +63663,8 @@ export namespace Prisma {
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
     brandCategories?: BrandCategoryUncheckedUpdateManyWithoutCategoryNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutCategoryNestedInput
-    buildSequence?: BuildSequenceUncheckedUpdateOneWithoutCategoryNestedInput
     hierarchyNodes?: CategoryHierarchyUncheckedUpdateManyWithoutCategoryNestedInput
     attributes?: CategoryAttributeUncheckedUpdateManyWithoutCategoryNestedInput
-    outgoingRules?: CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryNestedInput
-    incomingRules?: CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryNestedInput
   }
 
   export type BuildGuideCreateWithoutItemsInput = {
@@ -72443,7 +63705,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     brand?: BrandCreateNestedOneWithoutProductsInput
@@ -72472,7 +63733,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -72544,7 +63804,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -72573,7 +63832,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -72621,6 +63879,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutInvoicesInput = {
@@ -72659,6 +63918,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
     payments?: PaymentTransactionUncheckedCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutInvoicesInput = {
@@ -72840,6 +64100,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutInvoicesInput = {
@@ -72878,6 +64139,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type CustomerUpsertWithoutInvoicesInput = {
@@ -73304,6 +64566,7 @@ export namespace Prisma {
     invoices?: InvoiceCreateNestedManyWithoutOrderInput
     shipments?: ShipmentTrackingCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutPaymentsInput = {
@@ -73342,6 +64605,7 @@ export namespace Prisma {
     invoices?: InvoiceUncheckedCreateNestedManyWithoutOrderInput
     shipments?: ShipmentTrackingUncheckedCreateNestedManyWithoutOrderInput
     stockMoves?: StockMovementUncheckedCreateNestedManyWithoutOrderInput
+    assignedUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutPaymentsInput = {
@@ -73424,6 +64688,7 @@ export namespace Prisma {
     invoices?: InvoiceUpdateManyWithoutOrderNestedInput
     shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutPaymentsInput = {
@@ -73462,6 +64727,7 @@ export namespace Prisma {
     invoices?: InvoiceUncheckedUpdateManyWithoutOrderNestedInput
     shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type PaymentAttemptUpsertWithWhereUniqueWithoutTransactionInput = {
@@ -73814,82 +65080,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type InventoryItemCreateWithoutReservationsInput = {
-    id?: string
-    partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
-    costPrice?: number
-    location?: string
-    lastUpdated?: Date | string | null
-    product: ProductCreateNestedOneWithoutInventoryItemsInput
-    orderItemUnits?: OrderItemUnitCreateNestedManyWithoutInventoryItemInput
-    stockMovements?: StockMovementCreateNestedManyWithoutInventoryItemInput
-  }
-
-  export type InventoryItemUncheckedCreateWithoutReservationsInput = {
-    id?: string
-    productId: string
-    partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
-    costPrice?: number
-    location?: string
-    lastUpdated?: Date | string | null
-    orderItemUnits?: OrderItemUnitUncheckedCreateNestedManyWithoutInventoryItemInput
-    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutInventoryItemInput
-  }
-
-  export type InventoryItemCreateOrConnectWithoutReservationsInput = {
-    where: InventoryItemWhereUniqueInput
-    create: XOR<InventoryItemCreateWithoutReservationsInput, InventoryItemUncheckedCreateWithoutReservationsInput>
-  }
-
-  export type InventoryItemUpsertWithoutReservationsInput = {
-    update: XOR<InventoryItemUpdateWithoutReservationsInput, InventoryItemUncheckedUpdateWithoutReservationsInput>
-    create: XOR<InventoryItemCreateWithoutReservationsInput, InventoryItemUncheckedCreateWithoutReservationsInput>
-    where?: InventoryItemWhereInput
-  }
-
-  export type InventoryItemUpdateToOneWithWhereWithoutReservationsInput = {
-    where?: InventoryItemWhereInput
-    data: XOR<InventoryItemUpdateWithoutReservationsInput, InventoryItemUncheckedUpdateWithoutReservationsInput>
-  }
-
-  export type InventoryItemUpdateWithoutReservationsInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
-    costPrice?: FloatFieldUpdateOperationsInput | number
-    location?: StringFieldUpdateOperationsInput | string
-    lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    product?: ProductUpdateOneRequiredWithoutInventoryItemsNestedInput
-    orderItemUnits?: OrderItemUnitUpdateManyWithoutInventoryItemNestedInput
-    stockMovements?: StockMovementUpdateManyWithoutInventoryItemNestedInput
-  }
-
-  export type InventoryItemUncheckedUpdateWithoutReservationsInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    productId?: StringFieldUpdateOperationsInput | string
-    partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
-    costPrice?: FloatFieldUpdateOperationsInput | number
-    location?: StringFieldUpdateOperationsInput | string
-    lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    orderItemUnits?: OrderItemUnitUncheckedUpdateManyWithoutInventoryItemNestedInput
-    stockMovements?: StockMovementUncheckedUpdateManyWithoutInventoryItemNestedInput
-  }
-
   export type SubcategoryCreateManyCategoryInput = {
     id?: number
     name: string
@@ -73915,7 +65105,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -73973,30 +65162,6 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
-  export type CompatibilityRuleCreateManySourceCategoryInput = {
-    id?: string
-    targetCategoryId: number
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type CompatibilityRuleCreateManyTargetCategoryInput = {
-    id?: string
-    sourceCategoryId: number
-    name: string
-    message?: string | null
-    severity?: $Enums.CompatibilityLevel
-    isActive?: boolean
-    sortOrder?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
   export type SubcategoryUpdateWithoutCategoryInput = {
     name?: StringFieldUpdateOperationsInput | string
     slug?: StringFieldUpdateOperationsInput | string
@@ -74046,7 +65211,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -74074,7 +65238,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -74101,7 +65264,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -74232,8 +65394,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
     options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateWithoutCategoryInput = {
@@ -74256,8 +65416,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
     options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateManyWithoutCategoryInput = {
@@ -74279,82 +65437,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type CompatibilityRuleUpdateWithoutSourceCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    targetCategory?: CategoryUpdateOneRequiredWithoutIncomingRulesNestedInput
-    clauses?: CompatibilityRuleClauseUpdateManyWithoutRuleNestedInput
-  }
-
-  export type CompatibilityRuleUncheckedUpdateWithoutSourceCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    targetCategoryId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    clauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutRuleNestedInput
-  }
-
-  export type CompatibilityRuleUncheckedUpdateManyWithoutSourceCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    targetCategoryId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type CompatibilityRuleUpdateWithoutTargetCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    sourceCategory?: CategoryUpdateOneRequiredWithoutOutgoingRulesNestedInput
-    clauses?: CompatibilityRuleClauseUpdateManyWithoutRuleNestedInput
-  }
-
-  export type CompatibilityRuleUncheckedUpdateWithoutTargetCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    sourceCategoryId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    clauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutRuleNestedInput
-  }
-
-  export type CompatibilityRuleUncheckedUpdateManyWithoutTargetCategoryInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    sourceCategoryId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    severity?: EnumCompatibilityLevelFieldUpdateOperationsInput | $Enums.CompatibilityLevel
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
   export type ProductCreateManySubcategoryInput = {
     id?: string
     slug?: string
@@ -74369,7 +65451,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     brandId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -74407,7 +65488,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -74435,7 +65515,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -74462,7 +65541,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -74488,8 +65566,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
     options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateWithoutSubcategoryInput = {
@@ -74512,8 +65588,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
     options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateManyWithoutSubcategoryInput = {
@@ -74550,7 +65624,6 @@ export namespace Prisma {
     sku?: string | null
     price?: number | null
     compareAtPrice?: number | null
-    stockStatus?: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -74572,7 +65645,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     category?: CategoryUpdateOneRequiredWithoutProductsNestedInput
@@ -74601,7 +65673,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     specs?: ProductSpecUncheckedUpdateManyWithoutProductNestedInput
@@ -74628,7 +65699,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -74722,26 +65792,6 @@ export namespace Prisma {
     isHighlighted?: boolean
   }
 
-  export type CompatibilityRuleClauseCreateManySourceAttributeInput = {
-    id?: string
-    ruleId: string
-    targetAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
-  export type CompatibilityRuleClauseCreateManyTargetAttributeInput = {
-    id?: string
-    ruleId: string
-    sourceAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
   export type CategoryAttributeUpdateWithoutDependencyAttributeInput = {
     id?: StringFieldUpdateOperationsInput | string
     key?: StringFieldUpdateOperationsInput | string
@@ -74762,8 +65812,6 @@ export namespace Prisma {
     dependencyOption?: AttributeOptionUpdateOneWithoutDependentAttributesNestedInput
     options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateWithoutDependencyAttributeInput = {
@@ -74786,8 +65834,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
     options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeInput = {
@@ -74873,66 +65919,6 @@ export namespace Prisma {
     isHighlighted?: BoolFieldUpdateOperationsInput | boolean
   }
 
-  export type CompatibilityRuleClauseUpdateWithoutSourceAttributeInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    rule?: CompatibilityRuleUpdateOneRequiredWithoutClausesNestedInput
-    targetAttribute?: CategoryAttributeUpdateOneRequiredWithoutTargetCompatibilityClausesNestedInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateWithoutSourceAttributeInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    ruleId?: StringFieldUpdateOperationsInput | string
-    targetAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    ruleId?: StringFieldUpdateOperationsInput | string
-    targetAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type CompatibilityRuleClauseUpdateWithoutTargetAttributeInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    rule?: CompatibilityRuleUpdateOneRequiredWithoutClausesNestedInput
-    sourceAttribute?: CategoryAttributeUpdateOneRequiredWithoutSourceCompatibilityClausesNestedInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateWithoutTargetAttributeInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    ruleId?: StringFieldUpdateOperationsInput | string
-    sourceAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    ruleId?: StringFieldUpdateOperationsInput | string
-    sourceAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
   export type CategoryAttributeCreateManyDependencyOptionInput = {
     id?: string
     categoryId: number
@@ -74982,8 +65968,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUpdateManyWithoutDependencyAttributeNestedInput
     options?: AttributeOptionUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateWithoutDependencyOptionInput = {
@@ -75006,8 +65990,6 @@ export namespace Prisma {
     dependentAttributes?: CategoryAttributeUncheckedUpdateManyWithoutDependencyAttributeNestedInput
     options?: AttributeOptionUncheckedUpdateManyWithoutAttributeNestedInput
     productSpecs?: ProductSpecUncheckedUpdateManyWithoutAttributeNestedInput
-    sourceCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutSourceAttributeNestedInput
-    targetCompatibilityClauses?: CompatibilityRuleClauseUncheckedUpdateManyWithoutTargetAttributeNestedInput
   }
 
   export type CategoryAttributeUncheckedUpdateManyWithoutDependencyOptionInput = {
@@ -75059,46 +66041,6 @@ export namespace Prisma {
     isHighlighted?: BoolFieldUpdateOperationsInput | boolean
   }
 
-  export type CompatibilityRuleClauseCreateManyRuleInput = {
-    id?: string
-    sourceAttributeId: string
-    targetAttributeId: string
-    operator: string
-    sourceValue?: string | null
-    targetValue?: string | null
-    sortOrder?: number
-  }
-
-  export type CompatibilityRuleClauseUpdateWithoutRuleInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-    sourceAttribute?: CategoryAttributeUpdateOneRequiredWithoutSourceCompatibilityClausesNestedInput
-    targetAttribute?: CategoryAttributeUpdateOneRequiredWithoutTargetCompatibilityClausesNestedInput
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateWithoutRuleInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    sourceAttributeId?: StringFieldUpdateOperationsInput | string
-    targetAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type CompatibilityRuleClauseUncheckedUpdateManyWithoutRuleInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    sourceAttributeId?: StringFieldUpdateOperationsInput | string
-    targetAttributeId?: StringFieldUpdateOperationsInput | string
-    operator?: StringFieldUpdateOperationsInput | string
-    sourceValue?: NullableStringFieldUpdateOperationsInput | string | null
-    targetValue?: NullableStringFieldUpdateOperationsInput | string | null
-    sortOrder?: IntFieldUpdateOperationsInput | number
-  }
-
   export type ProductUpdateWithoutTagsInput = {
     id?: StringFieldUpdateOperationsInput | string
     slug?: StringFieldUpdateOperationsInput | string
@@ -75112,7 +66054,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     brand?: BrandUpdateOneWithoutProductsNestedInput
@@ -75141,7 +66082,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -75168,7 +66108,6 @@ export namespace Prisma {
     sku?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableFloatFieldUpdateOperationsInput | number | null
     compareAtPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    stockStatus?: StringFieldUpdateOperationsInput | string
     brandId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -75211,10 +66150,8 @@ export namespace Prisma {
   export type InventoryItemCreateManyProductInput = {
     id?: string
     partNumber?: string | null
-    serialNumber?: string | null
-    quantity?: number
-    reserved?: number
-    reorderLevel?: number
+    serialNumber: string
+    status?: $Enums.InventoryUnitStatus
     costPrice?: number
     location?: string
     lastUpdated?: Date | string | null
@@ -75352,40 +66289,32 @@ export namespace Prisma {
   export type InventoryItemUpdateWithoutProductInput = {
     id?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     orderItemUnits?: OrderItemUnitUpdateManyWithoutInventoryItemNestedInput
     stockMovements?: StockMovementUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUpdateManyWithoutInventoryItemNestedInput
   }
 
   export type InventoryItemUncheckedUpdateWithoutProductInput = {
     id?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     orderItemUnits?: OrderItemUnitUncheckedUpdateManyWithoutInventoryItemNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutInventoryItemNestedInput
-    reservations?: ReservationUncheckedUpdateManyWithoutInventoryItemNestedInput
   }
 
   export type InventoryItemUncheckedUpdateManyWithoutProductInput = {
     id?: StringFieldUpdateOperationsInput | string
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    reserved?: IntFieldUpdateOperationsInput | number
-    reorderLevel?: IntFieldUpdateOperationsInput | number
+    serialNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumInventoryUnitStatusFieldUpdateOperationsInput | $Enums.InventoryUnitStatus
     costPrice?: FloatFieldUpdateOperationsInput | number
     location?: StringFieldUpdateOperationsInput | string
     lastUpdated?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75426,6 +66355,7 @@ export namespace Prisma {
     orderItemId: string
     serialNumber?: string | null
     partNumber?: string | null
+    orderId?: string | null
     createdAt?: Date | string
   }
 
@@ -75439,23 +66369,13 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
-  export type ReservationCreateManyInventoryItemInput = {
-    id?: string
-    orderId?: string | null
-    cartId?: string | null
-    quantity?: number
-    status?: string
-    expiresAt?: Date | string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
   export type OrderItemUnitUpdateWithoutInventoryItemInput = {
     id?: StringFieldUpdateOperationsInput | string
     serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItem?: OrderItemUpdateOneRequiredWithoutAssignedUnitsNestedInput
+    order?: OrderUpdateOneWithoutAssignedUnitsNestedInput
   }
 
   export type OrderItemUnitUncheckedUpdateWithoutInventoryItemInput = {
@@ -75463,6 +66383,7 @@ export namespace Prisma {
     orderItemId?: StringFieldUpdateOperationsInput | string
     serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -75471,6 +66392,7 @@ export namespace Prisma {
     orderItemId?: StringFieldUpdateOperationsInput | string
     serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -75502,39 +66424,6 @@ export namespace Prisma {
     quantity?: IntFieldUpdateOperationsInput | number
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReservationUpdateWithoutInventoryItemInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderId?: NullableStringFieldUpdateOperationsInput | string | null
-    cartId?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: StringFieldUpdateOperationsInput | string
-    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReservationUncheckedUpdateWithoutInventoryItemInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderId?: NullableStringFieldUpdateOperationsInput | string | null
-    cartId?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: StringFieldUpdateOperationsInput | string
-    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReservationUncheckedUpdateManyWithoutInventoryItemInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderId?: NullableStringFieldUpdateOperationsInput | string | null
-    cartId?: NullableStringFieldUpdateOperationsInput | string | null
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: StringFieldUpdateOperationsInput | string
-    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type InvoiceCreateManyCustomerInput = {
@@ -75711,6 +66600,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutCustomerInput = {
@@ -75749,6 +66639,7 @@ export namespace Prisma {
     shipments?: ShipmentTrackingUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentTransactionUncheckedUpdateManyWithoutOrderNestedInput
     stockMoves?: StockMovementUncheckedUpdateManyWithoutOrderNestedInput
+    assignedUnits?: OrderItemUnitUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateManyWithoutCustomerInput = {
@@ -75856,6 +66747,15 @@ export namespace Prisma {
     type: $Enums.StockMovementType
     quantity: number
     note?: string | null
+    createdAt?: Date | string
+  }
+
+  export type OrderItemUnitCreateManyOrderInput = {
+    id?: string
+    orderItemId: string
+    inventoryItemId: string
+    serialNumber?: string | null
+    partNumber?: string | null
     createdAt?: Date | string
   }
 
@@ -76097,11 +66997,39 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type OrderItemUnitUpdateWithoutOrderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    orderItem?: OrderItemUpdateOneRequiredWithoutAssignedUnitsNestedInput
+    inventoryItem?: InventoryItemUpdateOneRequiredWithoutOrderItemUnitsNestedInput
+  }
+
+  export type OrderItemUnitUncheckedUpdateWithoutOrderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderItemId?: StringFieldUpdateOperationsInput | string
+    inventoryItemId?: StringFieldUpdateOperationsInput | string
+    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OrderItemUnitUncheckedUpdateManyWithoutOrderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderItemId?: StringFieldUpdateOperationsInput | string
+    inventoryItemId?: StringFieldUpdateOperationsInput | string
+    serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type OrderItemUnitCreateManyOrderItemInput = {
     id?: string
     inventoryItemId: string
     serialNumber?: string | null
     partNumber?: string | null
+    orderId?: string | null
     createdAt?: Date | string
   }
 
@@ -76111,6 +67039,7 @@ export namespace Prisma {
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     inventoryItem?: InventoryItemUpdateOneRequiredWithoutOrderItemUnitsNestedInput
+    order?: OrderUpdateOneWithoutAssignedUnitsNestedInput
   }
 
   export type OrderItemUnitUncheckedUpdateWithoutOrderItemInput = {
@@ -76118,6 +67047,7 @@ export namespace Prisma {
     inventoryItemId?: StringFieldUpdateOperationsInput | string
     serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -76126,6 +67056,7 @@ export namespace Prisma {
     inventoryItemId?: StringFieldUpdateOperationsInput | string
     serialNumber?: NullableStringFieldUpdateOperationsInput | string | null
     partNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

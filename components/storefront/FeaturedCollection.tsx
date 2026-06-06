@@ -2,32 +2,55 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Tag } from "lucide-react";
+import { ArrowRight, Tag, Sparkles } from "lucide-react";
 import { Product } from "@/types";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 
-function PriceBadge({ price, compareAtPrice }: { price: number; compareAtPrice: number }) {
-  const hasDiscount = compareAtPrice > price;
-  const pct = hasDiscount ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) : 0;
+function PriceBadge({ price }: { price: number }) {
   return (
-    <div className="flex items-baseline gap-2 mt-auto pt-3 border-t border-stone-100/80">
-      <span className="text-sm font-extrabold text-stone-900">
+    <div className="flex items-center gap-2 mt-auto pt-4">
+      <span className="text-base font-semibold text-zinc-900">
         ₹{price.toLocaleString("en-IN")}
       </span>
-      {hasDiscount && (
-        <>
-          <span className="text-xs text-stone-400 line-through">
-            ₹{compareAtPrice.toLocaleString("en-IN")}
-          </span>
-          <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-emerald-700 bg-emerald-50/80 px-2 py-0.5 rounded-full border border-emerald-150 shadow-sm animate-pulse">
-            <Tag className="size-2.5" />
-            -{pct}%
-          </span>
-        </>
-      )}
     </div>
   );
+}
+
+function getProductImage(product: Product) {
+  if (product.media?.[0]?.url) return product.media[0].url;
+  if (product.image) return product.image;
+
+  const subcategory = product.subcategory || (product as any).subCategory;
+  const category = subcategory?.category || product.category;
+  const catName = typeof category === "object" ? category?.name : typeof product.category === "string" ? product.category : "";
+  const catCode = typeof category === "object" ? category?.code : "";
+
+  const nameOrCode = (catCode || catName || "").toLowerCase();
+
+  if (nameOrCode.includes("cpu") || nameOrCode.includes("processor")) {
+    return "/images/category_section/proc.avif";
+  }
+  if (nameOrCode.includes("mb") || nameOrCode.includes("motherboard")) {
+    return "/images/category_section/mobo.avif";
+  }
+  if (nameOrCode.includes("ram") || nameOrCode.includes("memory")) {
+    return "/images/category_section/ram.webp";
+  }
+  if (nameOrCode.includes("gpu") || nameOrCode.includes("graphics") || nameOrCode.includes("nvidia") || nameOrCode.includes("radeon")) {
+    return "/images/category_section/gpu.avif";
+  }
+  if (nameOrCode.includes("ssd") || nameOrCode.includes("storage") || nameOrCode.includes("drive") || nameOrCode.includes("hdd")) {
+    return "/images/category_section/drive.avif";
+  }
+  if (nameOrCode.includes("case") || nameOrCode.includes("chassis") || nameOrCode.includes("cab")) {
+    return "/images/category_section/cab.avif";
+  }
+  if (nameOrCode.includes("monitor") || nameOrCode.includes("screen")) {
+    return "/images/category_section/mon.webp";
+  }
+
+  return "/placeholder.png";
 }
 
 function ProductTile({
@@ -36,177 +59,140 @@ function ProductTile({
   priority = false,
 }: {
   product: Product;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "lg";
   priority?: boolean;
 }) {
-  const img = product.media?.[0]?.url ?? product.image ?? "/placeholder.png";
+  const img = getProductImage(product);
   const price = Number(product.price ?? 0);
-  const compareAtPrice = Number(product.compareAtPrice ?? 0);
   const isOOS = product.stockStatus === "OUT_OF_STOCK";
 
   return (
-    <motion.div
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="h-full"
+    <Link
+      href={`/products/${product.slug || product.id}`}
+      className="group flex flex-col h-full rounded-[2rem] bg-white border border-zinc-200/60 overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-zinc-300 transition-all duration-300 ease-out"
     >
-      <Link
-        href={`/products/${product.slug || product.id}`}
-        className={cn(
-          "group flex flex-col h-full rounded-2xl border border-stone-200 bg-white/70 backdrop-blur-md overflow-hidden hover:border-indigo-300 hover:shadow-[0_12px_30px_rgba(99,102,241,0.06)] transition-all duration-300",
-          size === "lg" && "h-full"
-        )}
-      >
-        <div
-          className={cn(
-            "relative bg-stone-50/70 overflow-hidden bg-[linear-gradient(to_right,#80808006_1px,transparent_1px),linear-gradient(to_bottom,#80808006_1px,transparent_1px)] bg-[size:16px_16px]",
-            size === "lg" ? "aspect-[4/3]" : "aspect-square"
-          )}
-        >
-          {isOOS && (
-            <div className="absolute inset-0 z-10 bg-white/75 backdrop-blur-[1px] flex items-center justify-center">
-              <span className="text-[10px] font-bold text-stone-400 tracking-wider uppercase bg-white/90 border border-stone-200/50 px-2.5 py-1 rounded-full shadow-sm">
-                Out of stock
-              </span>
-            </div>
-          )}
-          <div className="relative w-full h-full p-6 flex items-center justify-center">
-            <Image
-              src={img}
-              alt={product.name}
-              fill
-              priority={priority}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-contain p-4 transition-transform duration-500 group-hover:scale-[1.04]"
-            />
-          </div>
-        </div>
-        
-        <div className={cn("flex flex-col flex-1 p-5", size === "lg" ? "p-6" : "p-5")}>
-          {product.brand?.name && (
-            <span className="inline-block text-[9px] font-black uppercase tracking-widest text-indigo-600/80 mb-1">
-              {product.brand.name}
+      <div className="relative flex-1 w-full bg-zinc-50/50 group-hover:bg-zinc-100/50 transition-colors duration-500 overflow-hidden min-h-[240px] flex items-center justify-center p-8">
+        {isOOS && (
+          <div className="absolute top-4 left-4 z-10">
+            <span className="inline-flex items-center justify-center text-[10px] font-bold text-zinc-600 tracking-wider uppercase bg-white/80 backdrop-blur-md border border-zinc-200/80 px-3 py-1.5 rounded-full shadow-sm">
+              Out of stock
             </span>
-          )}
-          <h3 className={cn(
-            "font-bold text-stone-800 line-clamp-2 group-hover:text-indigo-600 transition-colors leading-snug mb-3",
-            size === "lg" ? "text-base sm:text-lg" : "text-sm"
-          )}>
-            {product.name}
-          </h3>
-          <PriceBadge price={price} compareAtPrice={compareAtPrice} />
+          </div>
+        )}
+        <div className="relative w-full h-full flex items-center justify-center">
+          <Image
+            src={img}
+            alt={product.name}
+            fill
+            priority={priority}
+            sizes={size === "lg" ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
+            className="object-contain p-2 transition-transform duration-700 ease-out group-hover:scale-110"
+          />
         </div>
-      </Link>
-    </motion.div>
+      </div>
+      
+      <div className={cn("flex flex-col bg-white", size === "lg" ? "p-8" : "p-6")}>
+        {product.brand?.name && (
+          <span className="inline-block text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-1.5">
+            {product.brand.name}
+          </span>
+        )}
+        <h3 className={cn(
+          "font-medium text-zinc-800 line-clamp-2 group-hover:text-black transition-colors leading-snug",
+          size === "lg" ? "text-xl sm:text-2xl" : "text-base"
+        )}>
+          {product.name}
+        </h3>
+        <PriceBadge price={price} />
+      </div>
+    </Link>
   );
 }
 
 export function FeaturedCollection({ products }: { products: Product[] }) {
   if (products.length === 0) return null;
 
-  const [hero, ...rest] = products;
-  const sideProducts = rest.slice(0, 2);
-  const smallGrid = rest.slice(2, 6);
-
-  // Stagger loading animation for grid
+  // Staggered loading animations tailored for the bento grid
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-      },
+      transition: { staggerChildren: 0.1 },
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 90, damping: 14 } },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { type: "spring", stiffness: 100, damping: 20 } 
+    },
   };
 
   return (
-    <section className="border-t border-stone-150/50 py-16">
+    <section className="py-20">
       {/* Header */}
-      <div className="flex items-end justify-between mb-8">
-        <div>
-          <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100/50 px-2.5 py-0.5 rounded-full mb-1">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-tight text-zinc-700 bg-zinc-100/80 px-3 py-1 rounded-full">
+            <Sparkles className="size-3.5 text-zinc-900" />
             New Arrivals
-          </span>
-          <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+          </div>
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-zinc-900">
             Latest additions
           </h2>
         </div>
+        
         <Link
           href="/products?sort=newest"
-          className="hidden sm:inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors group/link"
+          className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-black transition-colors group/link bg-white px-5 py-2.5 rounded-full border border-zinc-200 hover:border-zinc-300 shadow-sm"
         >
-          View all
-          <ArrowRight className="size-4 group-hover/link:translate-x-1 transition-transform duration-200" aria-hidden />
+          Explore collection
+          <ArrowRight className="size-4 group-hover/link:translate-x-1 transition-transform duration-300 ease-out" aria-hidden />
         </Link>
       </div>
 
-      {/* Magazine grid with Framer Motion entry */}
+      {/* Modern Bento Grid */}
       <motion.div 
         variants={containerVariants}
         initial="hidden"
         whileInView="show"
-        viewport={{ once: true, margin: "-100px" }}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        viewport={{ once: true, amount: 0.1 }}
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
       >
-        {/* Hero tile — spans 2 rows on lg */}
-        {hero && (
-          <motion.div variants={itemVariants} className="lg:row-span-2">
-            <ProductTile product={hero} size="lg" priority />
-          </motion.div>
-        )}
-
-        {/* Two medium tiles */}
-        {sideProducts.map((p, i) => (
-          <motion.div key={p.id} variants={itemVariants}>
-            <ProductTile product={p} size="md" priority={i === 0} />
-          </motion.div>
-        ))}
-
-        {/* Small 4-col grid below */}
-        {smallGrid.length > 0 && (
-          <div className="lg:col-span-2 grid grid-cols-2 gap-6">
-            {smallGrid.slice(0, 2).map((p) => (
-              <motion.div key={p.id} variants={itemVariants}>
-                <ProductTile product={p} size="sm" />
-              </motion.div>
-            ))}
-          </div>
-        )}
+        {products.slice(0, 7).map((product, index) => {
+          const isHero = index === 0;
+          return (
+            <motion.div 
+              key={product.id} 
+              variants={itemVariants}
+              className={cn(
+                "h-full",
+                // The hero product spans 2 columns and 2 rows on larger screens
+                isHero ? "col-span-2 row-span-2" : "col-span-1 row-span-1",
+                // On mobile, force small items to span full width if they're odd out, or keep them side-by-side
+                !isHero && "max-sm:col-span-1"
+              )}
+            >
+              <ProductTile 
+                product={product} 
+                size={isHero ? "lg" : "sm"} 
+                priority={index < 3} 
+              />
+            </motion.div>
+          );
+        })}
       </motion.div>
 
-      {/* Remaining small tiles in full width row */}
-      {smallGrid.length > 2 && (
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-6"
-        >
-          {smallGrid.map((p, index) => {
-            // Avoid duplicate rendering of the first 2 small cards
-            if (index < 2) return null;
-            return (
-              <motion.div key={p.id} variants={itemVariants}>
-                <ProductTile product={p} size="sm" />
-              </motion.div>
-            );
-          })}
-        </motion.div>
-      )}
-
       {/* Mobile "View all" */}
-      <div className="mt-8 sm:hidden">
+      <div className="mt-10 sm:hidden">
         <Link
           href="/products?sort=newest"
-          className="flex w-full items-center justify-center gap-1.5 py-3.5 rounded-xl border border-stone-200 bg-white text-sm font-bold text-stone-700 hover:bg-stone-50 transition-colors shadow-sm"
+          className="flex w-full items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-800 hover:bg-zinc-50 transition-colors shadow-sm active:scale-[0.98]"
         >
-          View all new arrivals
-          <ArrowRight className="size-4 animate-pulse" aria-hidden />
+          Explore collection
+          <ArrowRight className="size-4" aria-hidden />
         </Link>
       </div>
     </section>

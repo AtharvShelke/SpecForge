@@ -1,17 +1,16 @@
 /**
  * POST /api/build/validate
  *
- * Validates a build's compatibility without persisting the result.
+ * Validates a build's compatibility without persisting the result using the in-memory engine.
  * Accepts either { buildId } to validate an existing build,
- * or { variantIds } to validate a set of variants directly.
+ * or { variantIds } to validate a set of products/variants directly.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  checkBuildCompatibility,
-  testRules,
-} from "@/services/compatibility.service";
+import { getBuildById } from "@/services/build.service";
+import { validateBuildSync } from "@/lib/compatibilityEngine";
 import { ServiceError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,13 +18,18 @@ export async function POST(req: NextRequest) {
 
     // Option A: validate an existing build by ID
     if (body.buildId) {
-      const result = await checkBuildCompatibility(body.buildId);
+      const build = await getBuildById(body.buildId);
+      const result = validateBuildSync(build.items);
       return NextResponse.json(result);
     }
 
-    // Option B: validate a list of variant IDs (dry-run, no persist)
+    // Option B: validate a list of product/variant IDs (dry-run, no persist)
     if (body.variantIds && Array.isArray(body.variantIds)) {
-      const result = await testRules(body.variantIds);
+      const products = await prisma.product.findMany({
+        where: { id: { in: body.variantIds } },
+        include: { specs: true }
+      });
+      const result = validateBuildSync(products);
       return NextResponse.json(result);
     }
 

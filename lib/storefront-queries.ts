@@ -33,8 +33,7 @@ export async function getNewArrivals() {
         },
         inventoryItems: {
           select: {
-            quantity: true,
-            reserved: true,
+            status: true,
           },
         },
       },
@@ -71,7 +70,6 @@ export async function getBestSellers() {
       price: true,
       compareAtPrice: true,
       sku: true,
-      stockStatus: true,
       createdAt: true,
       updatedAt: true,
       subcategoryId: true,
@@ -90,6 +88,11 @@ export async function getBestSellers() {
         include: {
           attribute: true,
           option: true,
+        },
+      },
+      inventoryItems: {
+        select: {
+          status: true,
         },
       },
     } as const;

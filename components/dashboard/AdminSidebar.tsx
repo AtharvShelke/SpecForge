@@ -32,8 +32,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Inventory", icon: Layers, key: "inventory", group: "primary" },
   { label: "Categories", icon: Tag, key: "categories", group: "secondary" },
   { label: "Brands", icon: Bookmark, key: "brands", group: "secondary" },
-  { label: "Builder Config", icon: Hammer, key: "builder-config", group: "settings" },
-  { label: "Compatibility", icon: Wrench, key: "compatibility", group: "settings" },
   { label: "Tax Settings", icon: Calculator, key: "tax-settings", group: "settings" },
 ];
 

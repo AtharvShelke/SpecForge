@@ -63,7 +63,6 @@ export async function POST(req: NextRequest) {
           sku,
           price,
           compareAtPrice: compareAtPrice || null,
-          stockStatus: "IN_STOCK",
           media: images.length > 0
             ? {
                 create: images.map((url: string, idx: number) => ({

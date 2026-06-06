@@ -5,6 +5,7 @@ import { z } from "zod";
 import { calculateOrderFinancials } from "@/lib/tax-engine";
 import { PaymentMethodType, PaymentStatus } from "@/types";
 import { createOrder } from "@/services/order.service";
+import { getAvailableCount } from "@/services/inventory.service";
 
 const orderItemSchema = z.object({
   productId: z.string().min(1),
@@ -63,8 +64,9 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         throw new Error(`Product not found: ${item.productId}`);
       }
 
-      if (product.stockStatus === "OUT_OF_STOCK") {
-        return { success: false, error: `${product.name} is out of stock.` };
+      const availableCount = await getAvailableCount(product.id);
+      if (availableCount < item.quantity) {
+        return { success: false, error: `${product.name} is out of stock. (Available: ${availableCount})` };
       }
 
       const price = product.price || 0;
@@ -91,13 +93,8 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
     const { subtotal, gstAmount, total } =
       calculateOrderFinancials(calculationItems, taxRate);
     const orderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-    const isDiscountedManualPayment =
-      data.paymentMethod === PaymentMethodType.UPI ||
-      data.paymentMethod === PaymentMethodType.BANK_TRANSFER;
-    const discountAmount = isDiscountedManualPayment
-      ? Number((total * 0.02).toFixed(2))
-      : 0;
-    const payableTotal = Number((total - discountAmount).toFixed(2));
+    const discountAmount = 0;
+    const payableTotal = total;
 
     // 3. Assemble API Payload targeting self endpoint
     const apiPayload = {

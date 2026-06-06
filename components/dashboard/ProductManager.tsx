@@ -1496,19 +1496,13 @@ const ProductManager = () => {
                     </div>
                   </div>
                   <div>
-                    <FieldLabel>Initial Stock Hint</FieldLabel>
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-10 rounded-md border-slate-200 font-mono text-sm"
-                      value={currentProduct.stock ?? 0}
-                      onChange={(e) =>
-                        setCurrentProduct((prev) => ({
-                          ...prev,
-                          stock: Number(e.target.value),
-                        }))
-                      }
-                    />
+                    <FieldLabel>Current Stock (Available / Total)</FieldLabel>
+                    <div className="flex h-10 items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-semibold text-slate-800">
+                      <span>{currentProduct.stock ?? 0} Available</span>
+                      <span className="text-xs text-slate-400 font-normal">
+                        ({(currentProduct as any).inventoryItems?.length || 0} Total Units)
+                      </span>
+                    </div>
                   </div>
                 </div>
                 {profitMargin !== null && (

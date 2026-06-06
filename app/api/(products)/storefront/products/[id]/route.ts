@@ -12,7 +12,6 @@ const PRODUCT_SELECT = {
   price: true,
   compareAtPrice: true,
   sku: true,
-  stockStatus: true,
   createdAt: true,
   updatedAt: true,
   subcategoryId: true,
@@ -52,8 +51,7 @@ const PRODUCT_SELECT = {
   },
   inventoryItems: {
     select: {
-      quantity: true,
-      reserved: true,
+      status: true,
     },
   },
 } as const;

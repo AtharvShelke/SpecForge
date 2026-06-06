@@ -78,13 +78,17 @@ export function normalizeCatalogProduct(product: RawProduct): Product {
   // Determine availability directly from inventoryItems or stockStatus
   const availableQty = Array.isArray(product.inventoryItems)
     ? product.inventoryItems.reduce(
-        (sum, item) => sum + Math.max(0, (item?.quantity ?? 0) - (item?.reserved ?? 0)),
+        (sum, item) => {
+          if (item?.status !== undefined) {
+            return sum + ((item.status as string) === "AVAILABLE" ? 1 : 0);
+          }
+          return sum + Math.max(0, (item?.quantity ?? 0) - (item?.reserved ?? 0));
+        },
         0,
       )
     : 0;
 
-  const resolvedStockStatus =
-    product.stockStatus || (availableQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK");
+  const resolvedStockStatus = availableQty > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
 
   // Map product specs from product.specs (ProductSpecRelation) to SpecEntry[]
   const mappedSpecs: SpecEntry[] = Array.isArray(product.specs)
