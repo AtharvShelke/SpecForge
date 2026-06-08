@@ -51,7 +51,7 @@ export default function Footer() {
 
           {/* Brand column */}
           <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/products" className="flex items-center gap-2.5">
               <div className="size-7 rounded-lg bg-stone-900 flex items-center justify-center">
                 <span className="text-white text-xs font-bold tracking-tight">CS</span>
               </div>

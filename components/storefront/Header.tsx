@@ -13,6 +13,7 @@ export default function Header() {
   const { cart, setCartOpen, cartCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [megaMenuOpen, setMegaMenuOpen] = useState(false);
 
   const query = searchParams.get("q") || "";
   const [searchValue, setSearchValue] = useState(query);
@@ -41,7 +42,7 @@ export default function Header() {
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
-      router.push(pathname.startsWith("/builds") ? "/" : "/products");
+      router.push("/products");
     }
   };
 
@@ -72,7 +73,7 @@ export default function Header() {
 
             {/* Logo */}
             <Link
-              href="/"
+              href="/products"
               className="shrink-0 flex items-center gap-2.5 group"
               aria-label="Computer Store home"
             >
@@ -90,6 +91,78 @@ export default function Header() {
                 const isActive =
                   pathname === link.href ||
                   (link.href !== "/" && pathname.startsWith(link.href));
+
+                if (link.label === "Products") {
+                  return (
+                    <div
+                      key={link.href}
+                      onMouseEnter={() => setMegaMenuOpen(true)}
+                      onMouseLeave={() => setMegaMenuOpen(false)}
+                      className="relative py-2"
+                    >
+                      <Link
+                        href={link.href}
+                        className={`relative px-3.5 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${isActive || megaMenuOpen
+                            ? "text-indigo-600 bg-indigo-50"
+                            : "text-stone-600 hover:text-indigo-600 hover:bg-indigo-50/30"
+                          }`}
+                      >
+                        {link.label}
+                      </Link>
+
+                      {/* Mega Menu Dropdown */}
+                      {megaMenuOpen && (
+                        <div className="absolute left-0 top-full mt-2 w-[540px] rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xl shadow-stone-200/60 z-50 grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div>
+                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-3 px-1">Shop Components</span>
+                            <div className="grid grid-cols-1 gap-1">
+                              {[
+                                { name: "Graphics Cards", href: "/products?category=Graphics%20Cards" },
+                                { name: "Processors", href: "/products?category=Processors" },
+                                { name: "Motherboards", href: "/products?category=Motherboards" },
+                                { name: "Memory (RAM)", href: "/products?category=Memory%20(RAM)" },
+                                { name: "Storage (SSD/HDD)", href: "/products?category=Storage%20(SSD/HDD)" },
+                                { name: "Power Supplies", href: "/products?category=Power%20Supplies" },
+                                { name: "CPU Coolers", href: "/products?category=CPU%20Coolers" },
+                                { name: "PC Cases", href: "/products?category=PC%20Cases" },
+                              ].map((item) => (
+                                <Link
+                                  key={item.name}
+                                  href={item.href}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-600 hover:text-indigo-600 hover:bg-indigo-50/50 transition-colors"
+                                >
+                                  {item.name}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="border-l border-stone-100 pl-6 flex flex-col justify-between">
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block px-1">Featured Action</span>
+                              <div className="rounded-xl bg-gradient-to-tr from-indigo-900 to-slate-950 p-4 text-white space-y-2.5 shadow-sm">
+                                <h4 className="text-xs font-bold tracking-tight">Need a custom build?</h4>
+                                <p className="text-[10px] text-stone-400 leading-normal">
+                                  Use our automated compatibility matrix to choose matching parts and check system bottlenecks instantly.
+                                </p>
+                                <Link
+                                  href="/builds/new"
+                                  className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3 py-1.5 text-[10px] font-bold hover:bg-indigo-500 transition-colors"
+                                >
+                                  Start PC Builder &rarr;
+                                </Link>
+                              </div>
+                            </div>
+                            <div className="pt-4 border-t border-stone-100 text-[10px] text-stone-400 font-medium px-1 flex items-center justify-between">
+                              <span>Free Shipping on Orders</span>
+                              <span className="text-emerald-600 font-bold">In Stock</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={link.href}
@@ -248,6 +321,33 @@ export default function Header() {
                   </Link>
                 );
               })}
+              
+              {/* Mobile categories sub-menu */}
+              <div className="border-t border-stone-100 my-2 pt-2">
+                <span className="px-3.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">Categories</span>
+                <div className="grid grid-cols-2 gap-0.5">
+                  {[
+                    { name: "GPUs", href: "/products?category=Graphics%20Cards" },
+                    { name: "CPUs", href: "/products?category=Processors" },
+                    { name: "Motherboards", href: "/products?category=Motherboards" },
+                    { name: "RAM", href: "/products?category=Memory%20(RAM)" },
+                    { name: "Storage", href: "/products?category=Storage%20(SSD/HDD)" },
+                    { name: "PSUs", href: "/products?category=Power%20Supplies" },
+                    { name: "Coolers", href: "/products?category=CPU%20Coolers" },
+                    { name: "Cases", href: "/products?category=PC%20Cases" },
+                  ].map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-3.5 py-2 text-xs font-semibold text-stone-500 hover:text-indigo-600 rounded-lg"
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
               <Link
                 href="/admin"
                 onClick={() => setMobileMenuOpen(false)}

@@ -23,14 +23,14 @@ export default function NotFound() {
         {/* Buttons */}
         <div className="mt-6 flex gap-4 justify-center">
           <Link
-            href="/"
+            href="/products"
             className="px-5 py-2 rounded-xl bg-black text-white hover:bg-gray-800 transition"
           >
             Go Home
           </Link>
 
           <Link
-            href="/"
+            href="/products"
             className="px-5 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 transition"
           >
             Back

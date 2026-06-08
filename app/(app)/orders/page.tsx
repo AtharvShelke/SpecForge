@@ -74,7 +74,7 @@ const Orders: React.FC = () => {
                     <div className="text-center py-20 bg-white rounded-xl border">
                         <p className="text-gray-500 mb-6">You haven’t placed any orders yet.</p>
                         <Link
-                            href="/"
+                            href="/products"
                             className="px-6 py-3 bg-blue-600 text-white rounded-lg"
                         >
                             Browse Products

@@ -87,7 +87,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10">
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/products" className="flex items-center gap-3 group">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Cpu className="w-6 h-6 text-zinc-950" />
             </div>
