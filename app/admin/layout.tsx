@@ -12,6 +12,7 @@ const TAB_LABELS: Record<string, string> = {
   inventory: "Inventory",
   categories: "Categories",
   brands: "Brands",
+  "paywall-settings": "Paywall Settings",
 } as const;
 
 

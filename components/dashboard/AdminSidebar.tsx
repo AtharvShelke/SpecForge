@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Categories", icon: Tag, key: "categories", group: "secondary" },
   { label: "Brands", icon: Bookmark, key: "brands", group: "secondary" },
   { label: "Tax Settings", icon: Calculator, key: "tax-settings", group: "settings" },
+  { label: "Paywall Settings", icon: Wrench, key: "paywall-settings", group: "settings" },
 ];
 
 const PRIMARY_NAV = NAV_ITEMS.filter((item) => item.group === "primary");

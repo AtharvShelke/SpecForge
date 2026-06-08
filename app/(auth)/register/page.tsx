@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
     Form,
@@ -37,8 +38,10 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
+function RegisterPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get("redirect") || "/admin";
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false)
@@ -96,7 +99,7 @@ export default function RegisterPage() {
                 throw jsonErr;
             }
 
-            router.push("/login");
+            router.push(`/login?redirect=${encodeURIComponent(redirectTo)}`);
             router.refresh();
         } catch (err: unknown) {
             if (err instanceof Error) {
@@ -223,10 +226,22 @@ export default function RegisterPage() {
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-2">
                     <div className="text-sm text-center text-neutral-500">
-                        Already have an account? <a href="/login" className="text-primary hover:underline">Login</a>
+                        Already have an account? <Link href={`/login?redirect=${encodeURIComponent(redirectTo)}`} className="text-primary hover:underline">Login</Link>
                     </div>
                 </CardFooter>
             </Card>
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen bg-neutral-50 p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+            </div>
+        }>
+            <RegisterPageContent />
+        </Suspense>
     );
 }

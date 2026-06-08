@@ -188,6 +188,16 @@ export type AuditLog = $Result.DefaultSelection<Prisma.$AuditLogPayload>
  * 
  */
 export type TaxSettings = $Result.DefaultSelection<Prisma.$TaxSettingsPayload>
+/**
+ * Model PaywallSettings
+ * 
+ */
+export type PaywallSettings = $Result.DefaultSelection<Prisma.$PaywallSettingsPayload>
+/**
+ * Model PaywallPayment
+ * 
+ */
+export type PaywallPayment = $Result.DefaultSelection<Prisma.$PaywallPaymentPayload>
 
 /**
  * Enums
@@ -856,6 +866,26 @@ export class PrismaClient<
     * ```
     */
   get taxSettings(): Prisma.TaxSettingsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.paywallSettings`: Exposes CRUD operations for the **PaywallSettings** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PaywallSettings
+    * const paywallSettings = await prisma.paywallSettings.findMany()
+    * ```
+    */
+  get paywallSettings(): Prisma.PaywallSettingsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.paywallPayment`: Exposes CRUD operations for the **PaywallPayment** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PaywallPayments
+    * const paywallPayments = await prisma.paywallPayment.findMany()
+    * ```
+    */
+  get paywallPayment(): Prisma.PaywallPaymentDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1324,7 +1354,9 @@ export namespace Prisma {
     CreditNote: 'CreditNote',
     CreditNoteLineItem: 'CreditNoteLineItem',
     AuditLog: 'AuditLog',
-    TaxSettings: 'TaxSettings'
+    TaxSettings: 'TaxSettings',
+    PaywallSettings: 'PaywallSettings',
+    PaywallPayment: 'PaywallPayment'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1340,7 +1372,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog" | "taxSettings"
+      modelProps: "user" | "category" | "subcategory" | "brandCategory" | "brand" | "categoryHierarchy" | "categoryAttribute" | "attributeOption" | "tag" | "productMedia" | "product" | "productSpec" | "categoryProductCache" | "searchSuggestion" | "inventoryItem" | "customer" | "order" | "orderItem" | "orderItemUnit" | "orderLog" | "shipmentTracking" | "stockMovement" | "buildGuide" | "buildGuideItem" | "invoiceSequence" | "billingProfile" | "invoice" | "invoiceLineItem" | "invoiceAuditEvent" | "paymentTransaction" | "paymentAttempt" | "creditNote" | "creditNoteLineItem" | "auditLog" | "taxSettings" | "paywallSettings" | "paywallPayment"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3934,6 +3966,154 @@ export namespace Prisma {
           }
         }
       }
+      PaywallSettings: {
+        payload: Prisma.$PaywallSettingsPayload<ExtArgs>
+        fields: Prisma.PaywallSettingsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PaywallSettingsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PaywallSettingsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>
+          }
+          findFirst: {
+            args: Prisma.PaywallSettingsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PaywallSettingsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>
+          }
+          findMany: {
+            args: Prisma.PaywallSettingsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>[]
+          }
+          create: {
+            args: Prisma.PaywallSettingsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>
+          }
+          createMany: {
+            args: Prisma.PaywallSettingsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PaywallSettingsCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>[]
+          }
+          delete: {
+            args: Prisma.PaywallSettingsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>
+          }
+          update: {
+            args: Prisma.PaywallSettingsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>
+          }
+          deleteMany: {
+            args: Prisma.PaywallSettingsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PaywallSettingsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.PaywallSettingsUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>[]
+          }
+          upsert: {
+            args: Prisma.PaywallSettingsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallSettingsPayload>
+          }
+          aggregate: {
+            args: Prisma.PaywallSettingsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePaywallSettings>
+          }
+          groupBy: {
+            args: Prisma.PaywallSettingsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PaywallSettingsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PaywallSettingsCountArgs<ExtArgs>
+            result: $Utils.Optional<PaywallSettingsCountAggregateOutputType> | number
+          }
+        }
+      }
+      PaywallPayment: {
+        payload: Prisma.$PaywallPaymentPayload<ExtArgs>
+        fields: Prisma.PaywallPaymentFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PaywallPaymentFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PaywallPaymentFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>
+          }
+          findFirst: {
+            args: Prisma.PaywallPaymentFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PaywallPaymentFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>
+          }
+          findMany: {
+            args: Prisma.PaywallPaymentFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>[]
+          }
+          create: {
+            args: Prisma.PaywallPaymentCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>
+          }
+          createMany: {
+            args: Prisma.PaywallPaymentCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PaywallPaymentCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>[]
+          }
+          delete: {
+            args: Prisma.PaywallPaymentDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>
+          }
+          update: {
+            args: Prisma.PaywallPaymentUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>
+          }
+          deleteMany: {
+            args: Prisma.PaywallPaymentDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PaywallPaymentUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.PaywallPaymentUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>[]
+          }
+          upsert: {
+            args: Prisma.PaywallPaymentUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaywallPaymentPayload>
+          }
+          aggregate: {
+            args: Prisma.PaywallPaymentAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePaywallPayment>
+          }
+          groupBy: {
+            args: Prisma.PaywallPaymentGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PaywallPaymentGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PaywallPaymentCountArgs<ExtArgs>
+            result: $Utils.Optional<PaywallPaymentCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4077,6 +4257,8 @@ export namespace Prisma {
     creditNoteLineItem?: CreditNoteLineItemOmit
     auditLog?: AuditLogOmit
     taxSettings?: TaxSettingsOmit
+    paywallSettings?: PaywallSettingsOmit
+    paywallPayment?: PaywallPaymentOmit
   }
 
   /* Types for Logging */
@@ -4911,6 +5093,7 @@ export namespace Prisma {
     name: string | null
     password: string | null
     role: $Enums.Role | null
+    hasPaidPaywall: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4921,6 +5104,7 @@ export namespace Prisma {
     name: string | null
     password: string | null
     role: $Enums.Role | null
+    hasPaidPaywall: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4931,6 +5115,7 @@ export namespace Prisma {
     name: number
     password: number
     role: number
+    hasPaidPaywall: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -4943,6 +5128,7 @@ export namespace Prisma {
     name?: true
     password?: true
     role?: true
+    hasPaidPaywall?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4953,6 +5139,7 @@ export namespace Prisma {
     name?: true
     password?: true
     role?: true
+    hasPaidPaywall?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4963,6 +5150,7 @@ export namespace Prisma {
     name?: true
     password?: true
     role?: true
+    hasPaidPaywall?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -5046,6 +5234,7 @@ export namespace Prisma {
     name: string
     password: string
     role: $Enums.Role
+    hasPaidPaywall: boolean
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
@@ -5073,6 +5262,7 @@ export namespace Prisma {
     name?: boolean
     password?: boolean
     role?: boolean
+    hasPaidPaywall?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -5083,6 +5273,7 @@ export namespace Prisma {
     name?: boolean
     password?: boolean
     role?: boolean
+    hasPaidPaywall?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -5093,6 +5284,7 @@ export namespace Prisma {
     name?: boolean
     password?: boolean
     role?: boolean
+    hasPaidPaywall?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -5103,11 +5295,12 @@ export namespace Prisma {
     name?: boolean
     password?: boolean
     role?: boolean
+    hasPaidPaywall?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "name" | "password" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "name" | "password" | "role" | "hasPaidPaywall" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
@@ -5118,6 +5311,7 @@ export namespace Prisma {
       name: string
       password: string
       role: $Enums.Role
+      hasPaidPaywall: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -5548,6 +5742,7 @@ export namespace Prisma {
     readonly name: FieldRef<"User", 'String'>
     readonly password: FieldRef<"User", 'String'>
     readonly role: FieldRef<"User", 'Role'>
+    readonly hasPaidPaywall: FieldRef<"User", 'Boolean'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -45873,6 +46068,2103 @@ export namespace Prisma {
 
 
   /**
+   * Model PaywallSettings
+   */
+
+  export type AggregatePaywallSettings = {
+    _count: PaywallSettingsCountAggregateOutputType | null
+    _avg: PaywallSettingsAvgAggregateOutputType | null
+    _sum: PaywallSettingsSumAggregateOutputType | null
+    _min: PaywallSettingsMinAggregateOutputType | null
+    _max: PaywallSettingsMaxAggregateOutputType | null
+  }
+
+  export type PaywallSettingsAvgAggregateOutputType = {
+    price: number | null
+  }
+
+  export type PaywallSettingsSumAggregateOutputType = {
+    price: number | null
+  }
+
+  export type PaywallSettingsMinAggregateOutputType = {
+    id: string | null
+    enabled: boolean | null
+    price: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PaywallSettingsMaxAggregateOutputType = {
+    id: string | null
+    enabled: boolean | null
+    price: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PaywallSettingsCountAggregateOutputType = {
+    id: number
+    enabled: number
+    price: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PaywallSettingsAvgAggregateInputType = {
+    price?: true
+  }
+
+  export type PaywallSettingsSumAggregateInputType = {
+    price?: true
+  }
+
+  export type PaywallSettingsMinAggregateInputType = {
+    id?: true
+    enabled?: true
+    price?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PaywallSettingsMaxAggregateInputType = {
+    id?: true
+    enabled?: true
+    price?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PaywallSettingsCountAggregateInputType = {
+    id?: true
+    enabled?: true
+    price?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PaywallSettingsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaywallSettings to aggregate.
+     */
+    where?: PaywallSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallSettings to fetch.
+     */
+    orderBy?: PaywallSettingsOrderByWithRelationInput | PaywallSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PaywallSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PaywallSettings
+    **/
+    _count?: true | PaywallSettingsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PaywallSettingsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PaywallSettingsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PaywallSettingsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PaywallSettingsMaxAggregateInputType
+  }
+
+  export type GetPaywallSettingsAggregateType<T extends PaywallSettingsAggregateArgs> = {
+        [P in keyof T & keyof AggregatePaywallSettings]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePaywallSettings[P]>
+      : GetScalarType<T[P], AggregatePaywallSettings[P]>
+  }
+
+
+
+
+  export type PaywallSettingsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaywallSettingsWhereInput
+    orderBy?: PaywallSettingsOrderByWithAggregationInput | PaywallSettingsOrderByWithAggregationInput[]
+    by: PaywallSettingsScalarFieldEnum[] | PaywallSettingsScalarFieldEnum
+    having?: PaywallSettingsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PaywallSettingsCountAggregateInputType | true
+    _avg?: PaywallSettingsAvgAggregateInputType
+    _sum?: PaywallSettingsSumAggregateInputType
+    _min?: PaywallSettingsMinAggregateInputType
+    _max?: PaywallSettingsMaxAggregateInputType
+  }
+
+  export type PaywallSettingsGroupByOutputType = {
+    id: string
+    enabled: boolean
+    price: number
+    createdAt: Date
+    updatedAt: Date
+    _count: PaywallSettingsCountAggregateOutputType | null
+    _avg: PaywallSettingsAvgAggregateOutputType | null
+    _sum: PaywallSettingsSumAggregateOutputType | null
+    _min: PaywallSettingsMinAggregateOutputType | null
+    _max: PaywallSettingsMaxAggregateOutputType | null
+  }
+
+  type GetPaywallSettingsGroupByPayload<T extends PaywallSettingsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PaywallSettingsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PaywallSettingsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PaywallSettingsGroupByOutputType[P]>
+            : GetScalarType<T[P], PaywallSettingsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PaywallSettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    enabled?: boolean
+    price?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["paywallSettings"]>
+
+  export type PaywallSettingsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    enabled?: boolean
+    price?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["paywallSettings"]>
+
+  export type PaywallSettingsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    enabled?: boolean
+    price?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["paywallSettings"]>
+
+  export type PaywallSettingsSelectScalar = {
+    id?: boolean
+    enabled?: boolean
+    price?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PaywallSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "enabled" | "price" | "createdAt" | "updatedAt", ExtArgs["result"]["paywallSettings"]>
+
+  export type $PaywallSettingsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PaywallSettings"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      enabled: boolean
+      price: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["paywallSettings"]>
+    composites: {}
+  }
+
+  type PaywallSettingsGetPayload<S extends boolean | null | undefined | PaywallSettingsDefaultArgs> = $Result.GetResult<Prisma.$PaywallSettingsPayload, S>
+
+  type PaywallSettingsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PaywallSettingsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PaywallSettingsCountAggregateInputType | true
+    }
+
+  export interface PaywallSettingsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PaywallSettings'], meta: { name: 'PaywallSettings' } }
+    /**
+     * Find zero or one PaywallSettings that matches the filter.
+     * @param {PaywallSettingsFindUniqueArgs} args - Arguments to find a PaywallSettings
+     * @example
+     * // Get one PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PaywallSettingsFindUniqueArgs>(args: SelectSubset<T, PaywallSettingsFindUniqueArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PaywallSettings that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PaywallSettingsFindUniqueOrThrowArgs} args - Arguments to find a PaywallSettings
+     * @example
+     * // Get one PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PaywallSettingsFindUniqueOrThrowArgs>(args: SelectSubset<T, PaywallSettingsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PaywallSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallSettingsFindFirstArgs} args - Arguments to find a PaywallSettings
+     * @example
+     * // Get one PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PaywallSettingsFindFirstArgs>(args?: SelectSubset<T, PaywallSettingsFindFirstArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PaywallSettings that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallSettingsFindFirstOrThrowArgs} args - Arguments to find a PaywallSettings
+     * @example
+     * // Get one PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PaywallSettingsFindFirstOrThrowArgs>(args?: SelectSubset<T, PaywallSettingsFindFirstOrThrowArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PaywallSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallSettingsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.findMany()
+     * 
+     * // Get first 10 PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const paywallSettingsWithIdOnly = await prisma.paywallSettings.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PaywallSettingsFindManyArgs>(args?: SelectSubset<T, PaywallSettingsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PaywallSettings.
+     * @param {PaywallSettingsCreateArgs} args - Arguments to create a PaywallSettings.
+     * @example
+     * // Create one PaywallSettings
+     * const PaywallSettings = await prisma.paywallSettings.create({
+     *   data: {
+     *     // ... data to create a PaywallSettings
+     *   }
+     * })
+     * 
+     */
+    create<T extends PaywallSettingsCreateArgs>(args: SelectSubset<T, PaywallSettingsCreateArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PaywallSettings.
+     * @param {PaywallSettingsCreateManyArgs} args - Arguments to create many PaywallSettings.
+     * @example
+     * // Create many PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PaywallSettingsCreateManyArgs>(args?: SelectSubset<T, PaywallSettingsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PaywallSettings and returns the data saved in the database.
+     * @param {PaywallSettingsCreateManyAndReturnArgs} args - Arguments to create many PaywallSettings.
+     * @example
+     * // Create many PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PaywallSettings and only return the `id`
+     * const paywallSettingsWithIdOnly = await prisma.paywallSettings.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PaywallSettingsCreateManyAndReturnArgs>(args?: SelectSubset<T, PaywallSettingsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PaywallSettings.
+     * @param {PaywallSettingsDeleteArgs} args - Arguments to delete one PaywallSettings.
+     * @example
+     * // Delete one PaywallSettings
+     * const PaywallSettings = await prisma.paywallSettings.delete({
+     *   where: {
+     *     // ... filter to delete one PaywallSettings
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PaywallSettingsDeleteArgs>(args: SelectSubset<T, PaywallSettingsDeleteArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PaywallSettings.
+     * @param {PaywallSettingsUpdateArgs} args - Arguments to update one PaywallSettings.
+     * @example
+     * // Update one PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PaywallSettingsUpdateArgs>(args: SelectSubset<T, PaywallSettingsUpdateArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PaywallSettings.
+     * @param {PaywallSettingsDeleteManyArgs} args - Arguments to filter PaywallSettings to delete.
+     * @example
+     * // Delete a few PaywallSettings
+     * const { count } = await prisma.paywallSettings.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PaywallSettingsDeleteManyArgs>(args?: SelectSubset<T, PaywallSettingsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PaywallSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallSettingsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PaywallSettingsUpdateManyArgs>(args: SelectSubset<T, PaywallSettingsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PaywallSettings and returns the data updated in the database.
+     * @param {PaywallSettingsUpdateManyAndReturnArgs} args - Arguments to update many PaywallSettings.
+     * @example
+     * // Update many PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PaywallSettings and only return the `id`
+     * const paywallSettingsWithIdOnly = await prisma.paywallSettings.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PaywallSettingsUpdateManyAndReturnArgs>(args: SelectSubset<T, PaywallSettingsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PaywallSettings.
+     * @param {PaywallSettingsUpsertArgs} args - Arguments to update or create a PaywallSettings.
+     * @example
+     * // Update or create a PaywallSettings
+     * const paywallSettings = await prisma.paywallSettings.upsert({
+     *   create: {
+     *     // ... data to create a PaywallSettings
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PaywallSettings we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PaywallSettingsUpsertArgs>(args: SelectSubset<T, PaywallSettingsUpsertArgs<ExtArgs>>): Prisma__PaywallSettingsClient<$Result.GetResult<Prisma.$PaywallSettingsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PaywallSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallSettingsCountArgs} args - Arguments to filter PaywallSettings to count.
+     * @example
+     * // Count the number of PaywallSettings
+     * const count = await prisma.paywallSettings.count({
+     *   where: {
+     *     // ... the filter for the PaywallSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends PaywallSettingsCountArgs>(
+      args?: Subset<T, PaywallSettingsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PaywallSettingsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PaywallSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallSettingsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PaywallSettingsAggregateArgs>(args: Subset<T, PaywallSettingsAggregateArgs>): Prisma.PrismaPromise<GetPaywallSettingsAggregateType<T>>
+
+    /**
+     * Group by PaywallSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallSettingsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PaywallSettingsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PaywallSettingsGroupByArgs['orderBy'] }
+        : { orderBy?: PaywallSettingsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PaywallSettingsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPaywallSettingsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PaywallSettings model
+   */
+  readonly fields: PaywallSettingsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PaywallSettings.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PaywallSettingsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PaywallSettings model
+   */
+  interface PaywallSettingsFieldRefs {
+    readonly id: FieldRef<"PaywallSettings", 'String'>
+    readonly enabled: FieldRef<"PaywallSettings", 'Boolean'>
+    readonly price: FieldRef<"PaywallSettings", 'Float'>
+    readonly createdAt: FieldRef<"PaywallSettings", 'DateTime'>
+    readonly updatedAt: FieldRef<"PaywallSettings", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PaywallSettings findUnique
+   */
+  export type PaywallSettingsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallSettings to fetch.
+     */
+    where: PaywallSettingsWhereUniqueInput
+  }
+
+  /**
+   * PaywallSettings findUniqueOrThrow
+   */
+  export type PaywallSettingsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallSettings to fetch.
+     */
+    where: PaywallSettingsWhereUniqueInput
+  }
+
+  /**
+   * PaywallSettings findFirst
+   */
+  export type PaywallSettingsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallSettings to fetch.
+     */
+    where?: PaywallSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallSettings to fetch.
+     */
+    orderBy?: PaywallSettingsOrderByWithRelationInput | PaywallSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaywallSettings.
+     */
+    cursor?: PaywallSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaywallSettings.
+     */
+    distinct?: PaywallSettingsScalarFieldEnum | PaywallSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PaywallSettings findFirstOrThrow
+   */
+  export type PaywallSettingsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallSettings to fetch.
+     */
+    where?: PaywallSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallSettings to fetch.
+     */
+    orderBy?: PaywallSettingsOrderByWithRelationInput | PaywallSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaywallSettings.
+     */
+    cursor?: PaywallSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaywallSettings.
+     */
+    distinct?: PaywallSettingsScalarFieldEnum | PaywallSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PaywallSettings findMany
+   */
+  export type PaywallSettingsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallSettings to fetch.
+     */
+    where?: PaywallSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallSettings to fetch.
+     */
+    orderBy?: PaywallSettingsOrderByWithRelationInput | PaywallSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PaywallSettings.
+     */
+    cursor?: PaywallSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallSettings.
+     */
+    skip?: number
+    distinct?: PaywallSettingsScalarFieldEnum | PaywallSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PaywallSettings create
+   */
+  export type PaywallSettingsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * The data needed to create a PaywallSettings.
+     */
+    data: XOR<PaywallSettingsCreateInput, PaywallSettingsUncheckedCreateInput>
+  }
+
+  /**
+   * PaywallSettings createMany
+   */
+  export type PaywallSettingsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PaywallSettings.
+     */
+    data: PaywallSettingsCreateManyInput | PaywallSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PaywallSettings createManyAndReturn
+   */
+  export type PaywallSettingsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * The data used to create many PaywallSettings.
+     */
+    data: PaywallSettingsCreateManyInput | PaywallSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PaywallSettings update
+   */
+  export type PaywallSettingsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * The data needed to update a PaywallSettings.
+     */
+    data: XOR<PaywallSettingsUpdateInput, PaywallSettingsUncheckedUpdateInput>
+    /**
+     * Choose, which PaywallSettings to update.
+     */
+    where: PaywallSettingsWhereUniqueInput
+  }
+
+  /**
+   * PaywallSettings updateMany
+   */
+  export type PaywallSettingsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PaywallSettings.
+     */
+    data: XOR<PaywallSettingsUpdateManyMutationInput, PaywallSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which PaywallSettings to update
+     */
+    where?: PaywallSettingsWhereInput
+    /**
+     * Limit how many PaywallSettings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PaywallSettings updateManyAndReturn
+   */
+  export type PaywallSettingsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * The data used to update PaywallSettings.
+     */
+    data: XOR<PaywallSettingsUpdateManyMutationInput, PaywallSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which PaywallSettings to update
+     */
+    where?: PaywallSettingsWhereInput
+    /**
+     * Limit how many PaywallSettings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PaywallSettings upsert
+   */
+  export type PaywallSettingsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * The filter to search for the PaywallSettings to update in case it exists.
+     */
+    where: PaywallSettingsWhereUniqueInput
+    /**
+     * In case the PaywallSettings found by the `where` argument doesn't exist, create a new PaywallSettings with this data.
+     */
+    create: XOR<PaywallSettingsCreateInput, PaywallSettingsUncheckedCreateInput>
+    /**
+     * In case the PaywallSettings was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PaywallSettingsUpdateInput, PaywallSettingsUncheckedUpdateInput>
+  }
+
+  /**
+   * PaywallSettings delete
+   */
+  export type PaywallSettingsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+    /**
+     * Filter which PaywallSettings to delete.
+     */
+    where: PaywallSettingsWhereUniqueInput
+  }
+
+  /**
+   * PaywallSettings deleteMany
+   */
+  export type PaywallSettingsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaywallSettings to delete
+     */
+    where?: PaywallSettingsWhereInput
+    /**
+     * Limit how many PaywallSettings to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PaywallSettings without action
+   */
+  export type PaywallSettingsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallSettings
+     */
+    select?: PaywallSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallSettings
+     */
+    omit?: PaywallSettingsOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PaywallPayment
+   */
+
+  export type AggregatePaywallPayment = {
+    _count: PaywallPaymentCountAggregateOutputType | null
+    _avg: PaywallPaymentAvgAggregateOutputType | null
+    _sum: PaywallPaymentSumAggregateOutputType | null
+    _min: PaywallPaymentMinAggregateOutputType | null
+    _max: PaywallPaymentMaxAggregateOutputType | null
+  }
+
+  export type PaywallPaymentAvgAggregateOutputType = {
+    amount: number | null
+  }
+
+  export type PaywallPaymentSumAggregateOutputType = {
+    amount: number | null
+  }
+
+  export type PaywallPaymentMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    amount: number | null
+    paymentStatus: string | null
+    razorpayOrderId: string | null
+    razorpayPaymentId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PaywallPaymentMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    amount: number | null
+    paymentStatus: string | null
+    razorpayOrderId: string | null
+    razorpayPaymentId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PaywallPaymentCountAggregateOutputType = {
+    id: number
+    userId: number
+    amount: number
+    paymentStatus: number
+    razorpayOrderId: number
+    razorpayPaymentId: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PaywallPaymentAvgAggregateInputType = {
+    amount?: true
+  }
+
+  export type PaywallPaymentSumAggregateInputType = {
+    amount?: true
+  }
+
+  export type PaywallPaymentMinAggregateInputType = {
+    id?: true
+    userId?: true
+    amount?: true
+    paymentStatus?: true
+    razorpayOrderId?: true
+    razorpayPaymentId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PaywallPaymentMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    amount?: true
+    paymentStatus?: true
+    razorpayOrderId?: true
+    razorpayPaymentId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PaywallPaymentCountAggregateInputType = {
+    id?: true
+    userId?: true
+    amount?: true
+    paymentStatus?: true
+    razorpayOrderId?: true
+    razorpayPaymentId?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PaywallPaymentAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaywallPayment to aggregate.
+     */
+    where?: PaywallPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallPayments to fetch.
+     */
+    orderBy?: PaywallPaymentOrderByWithRelationInput | PaywallPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PaywallPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallPayments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PaywallPayments
+    **/
+    _count?: true | PaywallPaymentCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PaywallPaymentAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PaywallPaymentSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PaywallPaymentMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PaywallPaymentMaxAggregateInputType
+  }
+
+  export type GetPaywallPaymentAggregateType<T extends PaywallPaymentAggregateArgs> = {
+        [P in keyof T & keyof AggregatePaywallPayment]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePaywallPayment[P]>
+      : GetScalarType<T[P], AggregatePaywallPayment[P]>
+  }
+
+
+
+
+  export type PaywallPaymentGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaywallPaymentWhereInput
+    orderBy?: PaywallPaymentOrderByWithAggregationInput | PaywallPaymentOrderByWithAggregationInput[]
+    by: PaywallPaymentScalarFieldEnum[] | PaywallPaymentScalarFieldEnum
+    having?: PaywallPaymentScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PaywallPaymentCountAggregateInputType | true
+    _avg?: PaywallPaymentAvgAggregateInputType
+    _sum?: PaywallPaymentSumAggregateInputType
+    _min?: PaywallPaymentMinAggregateInputType
+    _max?: PaywallPaymentMaxAggregateInputType
+  }
+
+  export type PaywallPaymentGroupByOutputType = {
+    id: string
+    userId: string
+    amount: number
+    paymentStatus: string
+    razorpayOrderId: string
+    razorpayPaymentId: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: PaywallPaymentCountAggregateOutputType | null
+    _avg: PaywallPaymentAvgAggregateOutputType | null
+    _sum: PaywallPaymentSumAggregateOutputType | null
+    _min: PaywallPaymentMinAggregateOutputType | null
+    _max: PaywallPaymentMaxAggregateOutputType | null
+  }
+
+  type GetPaywallPaymentGroupByPayload<T extends PaywallPaymentGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PaywallPaymentGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PaywallPaymentGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PaywallPaymentGroupByOutputType[P]>
+            : GetScalarType<T[P], PaywallPaymentGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PaywallPaymentSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    amount?: boolean
+    paymentStatus?: boolean
+    razorpayOrderId?: boolean
+    razorpayPaymentId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["paywallPayment"]>
+
+  export type PaywallPaymentSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    amount?: boolean
+    paymentStatus?: boolean
+    razorpayOrderId?: boolean
+    razorpayPaymentId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["paywallPayment"]>
+
+  export type PaywallPaymentSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    amount?: boolean
+    paymentStatus?: boolean
+    razorpayOrderId?: boolean
+    razorpayPaymentId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["paywallPayment"]>
+
+  export type PaywallPaymentSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    amount?: boolean
+    paymentStatus?: boolean
+    razorpayOrderId?: boolean
+    razorpayPaymentId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PaywallPaymentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "amount" | "paymentStatus" | "razorpayOrderId" | "razorpayPaymentId" | "createdAt" | "updatedAt", ExtArgs["result"]["paywallPayment"]>
+
+  export type $PaywallPaymentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PaywallPayment"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      amount: number
+      paymentStatus: string
+      razorpayOrderId: string
+      razorpayPaymentId: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["paywallPayment"]>
+    composites: {}
+  }
+
+  type PaywallPaymentGetPayload<S extends boolean | null | undefined | PaywallPaymentDefaultArgs> = $Result.GetResult<Prisma.$PaywallPaymentPayload, S>
+
+  type PaywallPaymentCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PaywallPaymentFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PaywallPaymentCountAggregateInputType | true
+    }
+
+  export interface PaywallPaymentDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PaywallPayment'], meta: { name: 'PaywallPayment' } }
+    /**
+     * Find zero or one PaywallPayment that matches the filter.
+     * @param {PaywallPaymentFindUniqueArgs} args - Arguments to find a PaywallPayment
+     * @example
+     * // Get one PaywallPayment
+     * const paywallPayment = await prisma.paywallPayment.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PaywallPaymentFindUniqueArgs>(args: SelectSubset<T, PaywallPaymentFindUniqueArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PaywallPayment that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PaywallPaymentFindUniqueOrThrowArgs} args - Arguments to find a PaywallPayment
+     * @example
+     * // Get one PaywallPayment
+     * const paywallPayment = await prisma.paywallPayment.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PaywallPaymentFindUniqueOrThrowArgs>(args: SelectSubset<T, PaywallPaymentFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PaywallPayment that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallPaymentFindFirstArgs} args - Arguments to find a PaywallPayment
+     * @example
+     * // Get one PaywallPayment
+     * const paywallPayment = await prisma.paywallPayment.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PaywallPaymentFindFirstArgs>(args?: SelectSubset<T, PaywallPaymentFindFirstArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PaywallPayment that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallPaymentFindFirstOrThrowArgs} args - Arguments to find a PaywallPayment
+     * @example
+     * // Get one PaywallPayment
+     * const paywallPayment = await prisma.paywallPayment.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PaywallPaymentFindFirstOrThrowArgs>(args?: SelectSubset<T, PaywallPaymentFindFirstOrThrowArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PaywallPayments that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallPaymentFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PaywallPayments
+     * const paywallPayments = await prisma.paywallPayment.findMany()
+     * 
+     * // Get first 10 PaywallPayments
+     * const paywallPayments = await prisma.paywallPayment.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const paywallPaymentWithIdOnly = await prisma.paywallPayment.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PaywallPaymentFindManyArgs>(args?: SelectSubset<T, PaywallPaymentFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PaywallPayment.
+     * @param {PaywallPaymentCreateArgs} args - Arguments to create a PaywallPayment.
+     * @example
+     * // Create one PaywallPayment
+     * const PaywallPayment = await prisma.paywallPayment.create({
+     *   data: {
+     *     // ... data to create a PaywallPayment
+     *   }
+     * })
+     * 
+     */
+    create<T extends PaywallPaymentCreateArgs>(args: SelectSubset<T, PaywallPaymentCreateArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PaywallPayments.
+     * @param {PaywallPaymentCreateManyArgs} args - Arguments to create many PaywallPayments.
+     * @example
+     * // Create many PaywallPayments
+     * const paywallPayment = await prisma.paywallPayment.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PaywallPaymentCreateManyArgs>(args?: SelectSubset<T, PaywallPaymentCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PaywallPayments and returns the data saved in the database.
+     * @param {PaywallPaymentCreateManyAndReturnArgs} args - Arguments to create many PaywallPayments.
+     * @example
+     * // Create many PaywallPayments
+     * const paywallPayment = await prisma.paywallPayment.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PaywallPayments and only return the `id`
+     * const paywallPaymentWithIdOnly = await prisma.paywallPayment.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PaywallPaymentCreateManyAndReturnArgs>(args?: SelectSubset<T, PaywallPaymentCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PaywallPayment.
+     * @param {PaywallPaymentDeleteArgs} args - Arguments to delete one PaywallPayment.
+     * @example
+     * // Delete one PaywallPayment
+     * const PaywallPayment = await prisma.paywallPayment.delete({
+     *   where: {
+     *     // ... filter to delete one PaywallPayment
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PaywallPaymentDeleteArgs>(args: SelectSubset<T, PaywallPaymentDeleteArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PaywallPayment.
+     * @param {PaywallPaymentUpdateArgs} args - Arguments to update one PaywallPayment.
+     * @example
+     * // Update one PaywallPayment
+     * const paywallPayment = await prisma.paywallPayment.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PaywallPaymentUpdateArgs>(args: SelectSubset<T, PaywallPaymentUpdateArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PaywallPayments.
+     * @param {PaywallPaymentDeleteManyArgs} args - Arguments to filter PaywallPayments to delete.
+     * @example
+     * // Delete a few PaywallPayments
+     * const { count } = await prisma.paywallPayment.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PaywallPaymentDeleteManyArgs>(args?: SelectSubset<T, PaywallPaymentDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PaywallPayments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallPaymentUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PaywallPayments
+     * const paywallPayment = await prisma.paywallPayment.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PaywallPaymentUpdateManyArgs>(args: SelectSubset<T, PaywallPaymentUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PaywallPayments and returns the data updated in the database.
+     * @param {PaywallPaymentUpdateManyAndReturnArgs} args - Arguments to update many PaywallPayments.
+     * @example
+     * // Update many PaywallPayments
+     * const paywallPayment = await prisma.paywallPayment.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PaywallPayments and only return the `id`
+     * const paywallPaymentWithIdOnly = await prisma.paywallPayment.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PaywallPaymentUpdateManyAndReturnArgs>(args: SelectSubset<T, PaywallPaymentUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PaywallPayment.
+     * @param {PaywallPaymentUpsertArgs} args - Arguments to update or create a PaywallPayment.
+     * @example
+     * // Update or create a PaywallPayment
+     * const paywallPayment = await prisma.paywallPayment.upsert({
+     *   create: {
+     *     // ... data to create a PaywallPayment
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PaywallPayment we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PaywallPaymentUpsertArgs>(args: SelectSubset<T, PaywallPaymentUpsertArgs<ExtArgs>>): Prisma__PaywallPaymentClient<$Result.GetResult<Prisma.$PaywallPaymentPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PaywallPayments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallPaymentCountArgs} args - Arguments to filter PaywallPayments to count.
+     * @example
+     * // Count the number of PaywallPayments
+     * const count = await prisma.paywallPayment.count({
+     *   where: {
+     *     // ... the filter for the PaywallPayments we want to count
+     *   }
+     * })
+    **/
+    count<T extends PaywallPaymentCountArgs>(
+      args?: Subset<T, PaywallPaymentCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PaywallPaymentCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PaywallPayment.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallPaymentAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PaywallPaymentAggregateArgs>(args: Subset<T, PaywallPaymentAggregateArgs>): Prisma.PrismaPromise<GetPaywallPaymentAggregateType<T>>
+
+    /**
+     * Group by PaywallPayment.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaywallPaymentGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PaywallPaymentGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PaywallPaymentGroupByArgs['orderBy'] }
+        : { orderBy?: PaywallPaymentGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PaywallPaymentGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPaywallPaymentGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PaywallPayment model
+   */
+  readonly fields: PaywallPaymentFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PaywallPayment.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PaywallPaymentClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PaywallPayment model
+   */
+  interface PaywallPaymentFieldRefs {
+    readonly id: FieldRef<"PaywallPayment", 'String'>
+    readonly userId: FieldRef<"PaywallPayment", 'String'>
+    readonly amount: FieldRef<"PaywallPayment", 'Float'>
+    readonly paymentStatus: FieldRef<"PaywallPayment", 'String'>
+    readonly razorpayOrderId: FieldRef<"PaywallPayment", 'String'>
+    readonly razorpayPaymentId: FieldRef<"PaywallPayment", 'String'>
+    readonly createdAt: FieldRef<"PaywallPayment", 'DateTime'>
+    readonly updatedAt: FieldRef<"PaywallPayment", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PaywallPayment findUnique
+   */
+  export type PaywallPaymentFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallPayment to fetch.
+     */
+    where: PaywallPaymentWhereUniqueInput
+  }
+
+  /**
+   * PaywallPayment findUniqueOrThrow
+   */
+  export type PaywallPaymentFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallPayment to fetch.
+     */
+    where: PaywallPaymentWhereUniqueInput
+  }
+
+  /**
+   * PaywallPayment findFirst
+   */
+  export type PaywallPaymentFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallPayment to fetch.
+     */
+    where?: PaywallPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallPayments to fetch.
+     */
+    orderBy?: PaywallPaymentOrderByWithRelationInput | PaywallPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaywallPayments.
+     */
+    cursor?: PaywallPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallPayments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaywallPayments.
+     */
+    distinct?: PaywallPaymentScalarFieldEnum | PaywallPaymentScalarFieldEnum[]
+  }
+
+  /**
+   * PaywallPayment findFirstOrThrow
+   */
+  export type PaywallPaymentFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallPayment to fetch.
+     */
+    where?: PaywallPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallPayments to fetch.
+     */
+    orderBy?: PaywallPaymentOrderByWithRelationInput | PaywallPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaywallPayments.
+     */
+    cursor?: PaywallPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallPayments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaywallPayments.
+     */
+    distinct?: PaywallPaymentScalarFieldEnum | PaywallPaymentScalarFieldEnum[]
+  }
+
+  /**
+   * PaywallPayment findMany
+   */
+  export type PaywallPaymentFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * Filter, which PaywallPayments to fetch.
+     */
+    where?: PaywallPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaywallPayments to fetch.
+     */
+    orderBy?: PaywallPaymentOrderByWithRelationInput | PaywallPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PaywallPayments.
+     */
+    cursor?: PaywallPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaywallPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaywallPayments.
+     */
+    skip?: number
+    distinct?: PaywallPaymentScalarFieldEnum | PaywallPaymentScalarFieldEnum[]
+  }
+
+  /**
+   * PaywallPayment create
+   */
+  export type PaywallPaymentCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * The data needed to create a PaywallPayment.
+     */
+    data: XOR<PaywallPaymentCreateInput, PaywallPaymentUncheckedCreateInput>
+  }
+
+  /**
+   * PaywallPayment createMany
+   */
+  export type PaywallPaymentCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PaywallPayments.
+     */
+    data: PaywallPaymentCreateManyInput | PaywallPaymentCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PaywallPayment createManyAndReturn
+   */
+  export type PaywallPaymentCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * The data used to create many PaywallPayments.
+     */
+    data: PaywallPaymentCreateManyInput | PaywallPaymentCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PaywallPayment update
+   */
+  export type PaywallPaymentUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * The data needed to update a PaywallPayment.
+     */
+    data: XOR<PaywallPaymentUpdateInput, PaywallPaymentUncheckedUpdateInput>
+    /**
+     * Choose, which PaywallPayment to update.
+     */
+    where: PaywallPaymentWhereUniqueInput
+  }
+
+  /**
+   * PaywallPayment updateMany
+   */
+  export type PaywallPaymentUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PaywallPayments.
+     */
+    data: XOR<PaywallPaymentUpdateManyMutationInput, PaywallPaymentUncheckedUpdateManyInput>
+    /**
+     * Filter which PaywallPayments to update
+     */
+    where?: PaywallPaymentWhereInput
+    /**
+     * Limit how many PaywallPayments to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PaywallPayment updateManyAndReturn
+   */
+  export type PaywallPaymentUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * The data used to update PaywallPayments.
+     */
+    data: XOR<PaywallPaymentUpdateManyMutationInput, PaywallPaymentUncheckedUpdateManyInput>
+    /**
+     * Filter which PaywallPayments to update
+     */
+    where?: PaywallPaymentWhereInput
+    /**
+     * Limit how many PaywallPayments to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PaywallPayment upsert
+   */
+  export type PaywallPaymentUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * The filter to search for the PaywallPayment to update in case it exists.
+     */
+    where: PaywallPaymentWhereUniqueInput
+    /**
+     * In case the PaywallPayment found by the `where` argument doesn't exist, create a new PaywallPayment with this data.
+     */
+    create: XOR<PaywallPaymentCreateInput, PaywallPaymentUncheckedCreateInput>
+    /**
+     * In case the PaywallPayment was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PaywallPaymentUpdateInput, PaywallPaymentUncheckedUpdateInput>
+  }
+
+  /**
+   * PaywallPayment delete
+   */
+  export type PaywallPaymentDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+    /**
+     * Filter which PaywallPayment to delete.
+     */
+    where: PaywallPaymentWhereUniqueInput
+  }
+
+  /**
+   * PaywallPayment deleteMany
+   */
+  export type PaywallPaymentDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaywallPayments to delete
+     */
+    where?: PaywallPaymentWhereInput
+    /**
+     * Limit how many PaywallPayments to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PaywallPayment without action
+   */
+  export type PaywallPaymentDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaywallPayment
+     */
+    select?: PaywallPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PaywallPayment
+     */
+    omit?: PaywallPaymentOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -45892,6 +48184,7 @@ export namespace Prisma {
     name: 'name',
     password: 'password',
     role: 'role',
+    hasPaidPaywall: 'hasPaidPaywall',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -46415,6 +48708,31 @@ export namespace Prisma {
   export type TaxSettingsScalarFieldEnum = (typeof TaxSettingsScalarFieldEnum)[keyof typeof TaxSettingsScalarFieldEnum]
 
 
+  export const PaywallSettingsScalarFieldEnum: {
+    id: 'id',
+    enabled: 'enabled',
+    price: 'price',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PaywallSettingsScalarFieldEnum = (typeof PaywallSettingsScalarFieldEnum)[keyof typeof PaywallSettingsScalarFieldEnum]
+
+
+  export const PaywallPaymentScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    amount: 'amount',
+    paymentStatus: 'paymentStatus',
+    razorpayOrderId: 'razorpayOrderId',
+    razorpayPaymentId: 'razorpayPaymentId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PaywallPaymentScalarFieldEnum = (typeof PaywallPaymentScalarFieldEnum)[keyof typeof PaywallPaymentScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -46490,6 +48808,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'DateTime'
    */
   export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -46514,13 +48839,6 @@ export namespace Prisma {
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -46732,6 +49050,7 @@ export namespace Prisma {
     name?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
     role?: EnumRoleFilter<"User"> | $Enums.Role
+    hasPaidPaywall?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
   }
@@ -46742,6 +49061,7 @@ export namespace Prisma {
     name?: SortOrder
     password?: SortOrder
     role?: SortOrder
+    hasPaidPaywall?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -46755,6 +49075,7 @@ export namespace Prisma {
     name?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
     role?: EnumRoleFilter<"User"> | $Enums.Role
+    hasPaidPaywall?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
   }, "id" | "email">
@@ -46765,6 +49086,7 @@ export namespace Prisma {
     name?: SortOrder
     password?: SortOrder
     role?: SortOrder
+    hasPaidPaywall?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -46781,6 +49103,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"User"> | string
     password?: StringWithAggregatesFilter<"User"> | string
     role?: EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
+    hasPaidPaywall?: BoolWithAggregatesFilter<"User"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
@@ -49571,12 +51894,136 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"TaxSettings"> | Date | string
   }
 
+  export type PaywallSettingsWhereInput = {
+    AND?: PaywallSettingsWhereInput | PaywallSettingsWhereInput[]
+    OR?: PaywallSettingsWhereInput[]
+    NOT?: PaywallSettingsWhereInput | PaywallSettingsWhereInput[]
+    id?: StringFilter<"PaywallSettings"> | string
+    enabled?: BoolFilter<"PaywallSettings"> | boolean
+    price?: FloatFilter<"PaywallSettings"> | number
+    createdAt?: DateTimeFilter<"PaywallSettings"> | Date | string
+    updatedAt?: DateTimeFilter<"PaywallSettings"> | Date | string
+  }
+
+  export type PaywallSettingsOrderByWithRelationInput = {
+    id?: SortOrder
+    enabled?: SortOrder
+    price?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallSettingsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: PaywallSettingsWhereInput | PaywallSettingsWhereInput[]
+    OR?: PaywallSettingsWhereInput[]
+    NOT?: PaywallSettingsWhereInput | PaywallSettingsWhereInput[]
+    enabled?: BoolFilter<"PaywallSettings"> | boolean
+    price?: FloatFilter<"PaywallSettings"> | number
+    createdAt?: DateTimeFilter<"PaywallSettings"> | Date | string
+    updatedAt?: DateTimeFilter<"PaywallSettings"> | Date | string
+  }, "id">
+
+  export type PaywallSettingsOrderByWithAggregationInput = {
+    id?: SortOrder
+    enabled?: SortOrder
+    price?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: PaywallSettingsCountOrderByAggregateInput
+    _avg?: PaywallSettingsAvgOrderByAggregateInput
+    _max?: PaywallSettingsMaxOrderByAggregateInput
+    _min?: PaywallSettingsMinOrderByAggregateInput
+    _sum?: PaywallSettingsSumOrderByAggregateInput
+  }
+
+  export type PaywallSettingsScalarWhereWithAggregatesInput = {
+    AND?: PaywallSettingsScalarWhereWithAggregatesInput | PaywallSettingsScalarWhereWithAggregatesInput[]
+    OR?: PaywallSettingsScalarWhereWithAggregatesInput[]
+    NOT?: PaywallSettingsScalarWhereWithAggregatesInput | PaywallSettingsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PaywallSettings"> | string
+    enabled?: BoolWithAggregatesFilter<"PaywallSettings"> | boolean
+    price?: FloatWithAggregatesFilter<"PaywallSettings"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"PaywallSettings"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"PaywallSettings"> | Date | string
+  }
+
+  export type PaywallPaymentWhereInput = {
+    AND?: PaywallPaymentWhereInput | PaywallPaymentWhereInput[]
+    OR?: PaywallPaymentWhereInput[]
+    NOT?: PaywallPaymentWhereInput | PaywallPaymentWhereInput[]
+    id?: StringFilter<"PaywallPayment"> | string
+    userId?: StringFilter<"PaywallPayment"> | string
+    amount?: FloatFilter<"PaywallPayment"> | number
+    paymentStatus?: StringFilter<"PaywallPayment"> | string
+    razorpayOrderId?: StringFilter<"PaywallPayment"> | string
+    razorpayPaymentId?: StringNullableFilter<"PaywallPayment"> | string | null
+    createdAt?: DateTimeFilter<"PaywallPayment"> | Date | string
+    updatedAt?: DateTimeFilter<"PaywallPayment"> | Date | string
+  }
+
+  export type PaywallPaymentOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    amount?: SortOrder
+    paymentStatus?: SortOrder
+    razorpayOrderId?: SortOrder
+    razorpayPaymentId?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallPaymentWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    razorpayOrderId?: string
+    AND?: PaywallPaymentWhereInput | PaywallPaymentWhereInput[]
+    OR?: PaywallPaymentWhereInput[]
+    NOT?: PaywallPaymentWhereInput | PaywallPaymentWhereInput[]
+    userId?: StringFilter<"PaywallPayment"> | string
+    amount?: FloatFilter<"PaywallPayment"> | number
+    paymentStatus?: StringFilter<"PaywallPayment"> | string
+    razorpayPaymentId?: StringNullableFilter<"PaywallPayment"> | string | null
+    createdAt?: DateTimeFilter<"PaywallPayment"> | Date | string
+    updatedAt?: DateTimeFilter<"PaywallPayment"> | Date | string
+  }, "id" | "razorpayOrderId">
+
+  export type PaywallPaymentOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    amount?: SortOrder
+    paymentStatus?: SortOrder
+    razorpayOrderId?: SortOrder
+    razorpayPaymentId?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: PaywallPaymentCountOrderByAggregateInput
+    _avg?: PaywallPaymentAvgOrderByAggregateInput
+    _max?: PaywallPaymentMaxOrderByAggregateInput
+    _min?: PaywallPaymentMinOrderByAggregateInput
+    _sum?: PaywallPaymentSumOrderByAggregateInput
+  }
+
+  export type PaywallPaymentScalarWhereWithAggregatesInput = {
+    AND?: PaywallPaymentScalarWhereWithAggregatesInput | PaywallPaymentScalarWhereWithAggregatesInput[]
+    OR?: PaywallPaymentScalarWhereWithAggregatesInput[]
+    NOT?: PaywallPaymentScalarWhereWithAggregatesInput | PaywallPaymentScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PaywallPayment"> | string
+    userId?: StringWithAggregatesFilter<"PaywallPayment"> | string
+    amount?: FloatWithAggregatesFilter<"PaywallPayment"> | number
+    paymentStatus?: StringWithAggregatesFilter<"PaywallPayment"> | string
+    razorpayOrderId?: StringWithAggregatesFilter<"PaywallPayment"> | string
+    razorpayPaymentId?: StringNullableWithAggregatesFilter<"PaywallPayment"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"PaywallPayment"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"PaywallPayment"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     email: string
     name: string
     password: string
     role?: $Enums.Role
+    hasPaidPaywall?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -49587,6 +52034,7 @@ export namespace Prisma {
     name: string
     password: string
     role?: $Enums.Role
+    hasPaidPaywall?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -49597,6 +52045,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    hasPaidPaywall?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -49607,6 +52056,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    hasPaidPaywall?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -49617,6 +52067,7 @@ export namespace Prisma {
     name: string
     password: string
     role?: $Enums.Role
+    hasPaidPaywall?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -49627,6 +52078,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    hasPaidPaywall?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -49637,6 +52089,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    hasPaidPaywall?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -52665,6 +55118,139 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaywallSettingsCreateInput = {
+    id?: string
+    enabled?: boolean
+    price?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaywallSettingsUncheckedCreateInput = {
+    id?: string
+    enabled?: boolean
+    price?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaywallSettingsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    price?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaywallSettingsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    price?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaywallSettingsCreateManyInput = {
+    id?: string
+    enabled?: boolean
+    price?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaywallSettingsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    price?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaywallSettingsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    price?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaywallPaymentCreateInput = {
+    id?: string
+    userId: string
+    amount: number
+    paymentStatus: string
+    razorpayOrderId: string
+    razorpayPaymentId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaywallPaymentUncheckedCreateInput = {
+    id?: string
+    userId: string
+    amount: number
+    paymentStatus: string
+    razorpayOrderId: string
+    razorpayPaymentId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaywallPaymentUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    paymentStatus?: StringFieldUpdateOperationsInput | string
+    razorpayOrderId?: StringFieldUpdateOperationsInput | string
+    razorpayPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaywallPaymentUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    paymentStatus?: StringFieldUpdateOperationsInput | string
+    razorpayOrderId?: StringFieldUpdateOperationsInput | string
+    razorpayPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaywallPaymentCreateManyInput = {
+    id?: string
+    userId: string
+    amount: number
+    paymentStatus: string
+    razorpayOrderId: string
+    razorpayPaymentId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaywallPaymentUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    paymentStatus?: StringFieldUpdateOperationsInput | string
+    razorpayOrderId?: StringFieldUpdateOperationsInput | string
+    razorpayPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaywallPaymentUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    paymentStatus?: StringFieldUpdateOperationsInput | string
+    razorpayOrderId?: StringFieldUpdateOperationsInput | string
+    razorpayPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -52687,6 +55273,11 @@ export namespace Prisma {
     not?: NestedEnumRoleFilter<$PrismaModel> | $Enums.Role
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -52704,6 +55295,7 @@ export namespace Prisma {
     name?: SortOrder
     password?: SortOrder
     role?: SortOrder
+    hasPaidPaywall?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -52714,6 +55306,7 @@ export namespace Prisma {
     name?: SortOrder
     password?: SortOrder
     role?: SortOrder
+    hasPaidPaywall?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -52724,6 +55317,7 @@ export namespace Prisma {
     name?: SortOrder
     password?: SortOrder
     role?: SortOrder
+    hasPaidPaywall?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -52754,6 +55348,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRoleFilter<$PrismaModel>
     _max?: NestedEnumRoleFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -52805,11 +55407,6 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type SubcategoryListRelationFilter = {
@@ -52998,14 +55595,6 @@ export namespace Prisma {
     _sum?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedIntNullableFilter<$PrismaModel>
     _max?: NestedIntNullableFilter<$PrismaModel>
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type CategoryScalarRelationFilter = {
@@ -55099,12 +57688,89 @@ export namespace Prisma {
     taxRatePct?: SortOrder
   }
 
+  export type PaywallSettingsCountOrderByAggregateInput = {
+    id?: SortOrder
+    enabled?: SortOrder
+    price?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallSettingsAvgOrderByAggregateInput = {
+    price?: SortOrder
+  }
+
+  export type PaywallSettingsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    enabled?: SortOrder
+    price?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallSettingsMinOrderByAggregateInput = {
+    id?: SortOrder
+    enabled?: SortOrder
+    price?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallSettingsSumOrderByAggregateInput = {
+    price?: SortOrder
+  }
+
+  export type PaywallPaymentCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    amount?: SortOrder
+    paymentStatus?: SortOrder
+    razorpayOrderId?: SortOrder
+    razorpayPaymentId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallPaymentAvgOrderByAggregateInput = {
+    amount?: SortOrder
+  }
+
+  export type PaywallPaymentMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    amount?: SortOrder
+    paymentStatus?: SortOrder
+    razorpayOrderId?: SortOrder
+    razorpayPaymentId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallPaymentMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    amount?: SortOrder
+    paymentStatus?: SortOrder
+    razorpayOrderId?: SortOrder
+    razorpayPaymentId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaywallPaymentSumOrderByAggregateInput = {
+    amount?: SortOrder
+  }
+
   export type StringFieldUpdateOperationsInput = {
     set?: string
   }
 
   export type EnumRoleFieldUpdateOperationsInput = {
     set?: $Enums.Role
+  }
+
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -55227,10 +57893,6 @@ export namespace Prisma {
     decrement?: number
     multiply?: number
     divide?: number
-  }
-
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
   }
 
   export type SubcategoryUpdateManyWithoutCategoryNestedInput = {
@@ -57628,6 +60290,11 @@ export namespace Prisma {
     not?: NestedEnumRoleFilter<$PrismaModel> | $Enums.Role
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -57677,6 +60344,14 @@ export namespace Prisma {
     _max?: NestedEnumRoleFilter<$PrismaModel>
   }
 
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -57714,11 +60389,6 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -57790,14 +60460,6 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedEnumAttributeInputTypeFilter<$PrismaModel = never> = {

@@ -111,13 +111,14 @@ enum Role {
 // ===============================================================================================
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String
+  password       String
+  role           Role     @default(USER)
+  hasPaidPaywall Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 // ===============================================================================================
@@ -848,6 +849,29 @@ model TaxSettings {
   updatedAt      DateTime @updatedAt
 
   @@map("tax_settings")
+}
+
+model PaywallSettings {
+  id        String   @id @default("paywall_config")
+  enabled   Boolean  @default(false)
+  price     Float    @default(150)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("paywall_settings")
+}
+
+model PaywallPayment {
+  id                String   @id @default(uuid())
+  userId            String
+  amount            Float
+  paymentStatus     String   // "PENDING", "COMPLETED", "FAILED"
+  razorpayOrderId   String   @unique
+  razorpayPaymentId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("paywall_payments")
 }
 
 

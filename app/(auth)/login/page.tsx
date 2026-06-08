@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -17,8 +17,10 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/admin";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -66,7 +68,7 @@ export default function LoginPage() {
         throw jsonErr;
       }
       
-      router.push("/admin");
+      router.push(redirectTo);
       router.refresh();
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");
@@ -231,5 +233,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#fafafa] font-sans">
+        <Loader2 className="animate-spin text-zinc-400" size={32} />
+      </div>
+    }>
+      <LoginPageContent />
+    </Suspense>
   );
 }

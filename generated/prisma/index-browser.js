@@ -126,6 +126,7 @@ exports.Prisma.UserScalarFieldEnum = {
   name: 'name',
   password: 'password',
   role: 'role',
+  hasPaidPaywall: 'hasPaidPaywall',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -544,6 +545,25 @@ exports.Prisma.TaxSettingsScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PaywallSettingsScalarFieldEnum = {
+  id: 'id',
+  enabled: 'enabled',
+  price: 'price',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PaywallPaymentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  amount: 'amount',
+  paymentStatus: 'paymentStatus',
+  razorpayOrderId: 'razorpayOrderId',
+  razorpayPaymentId: 'razorpayPaymentId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -705,7 +725,9 @@ exports.Prisma.ModelName = {
   CreditNote: 'CreditNote',
   CreditNoteLineItem: 'CreditNoteLineItem',
   AuditLog: 'AuditLog',
-  TaxSettings: 'TaxSettings'
+  TaxSettings: 'TaxSettings',
+  PaywallSettings: 'PaywallSettings',
+  PaywallPayment: 'PaywallPayment'
 };
 
 /**

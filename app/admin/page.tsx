@@ -25,6 +25,9 @@ const BrandManager = lazy(() => import("@/components/dashboard/BrandManager"));
 const TaxSettingsTab = lazy(
   () => import("@/components/dashboard/TaxSettingsTab"),
 );
+const PaywallSettingsTab = lazy(
+  () => import("@/components/dashboard/PaywallSettingsTab"),
+);
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -110,6 +113,11 @@ const AdminDashboardContent = memo(function AdminDashboardContent() {
       {activeTab === "tax-settings" && (
         <TabViewport>
           <TaxSettingsTab />
+        </TabViewport>
+      )}
+      {activeTab === "paywall-settings" && (
+        <TabViewport>
+          <PaywallSettingsTab />
         </TabViewport>
       )}
     </div>

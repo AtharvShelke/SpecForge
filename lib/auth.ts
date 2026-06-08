@@ -12,6 +12,7 @@ export interface SessionUser {
   email: string;
   name: string;
   role: string;
+  hasPaidPaywall: boolean;
 }
 
 export type AuthenticatedUser = SessionUser;
@@ -34,6 +35,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       email: true,
       name: true,
       role: true,
+      hasPaidPaywall: true,
     },
   });
 
@@ -71,6 +73,7 @@ export async function authenticateRequest(req: Request): Promise<SessionUser | n
       email: true,
       name: true,
       role: true,
+      hasPaidPaywall: true,
     },
   });
 }
