@@ -51,6 +51,7 @@ export function useProductFilters() {
   const toggleFilterValue = useCallback(
     (filterId: string, value: string) => {
       updateParams((params) => {
+        params.delete("page");
         const key = `f.${filterId}`;
         const values = params.getAll(key);
         params.delete(key);
@@ -71,6 +72,7 @@ export function useProductFilters() {
   const setSubCategoryId = useCallback(
     (value: string | null) => {
       updateParams((params) => {
+        params.delete("page");
         Array.from(params.keys()).forEach((key) => {
           if (key.startsWith("f.")) {
             params.delete(key);
@@ -89,6 +91,7 @@ export function useProductFilters() {
   const setCategory = useCallback(
     (value: string | null) => {
       updateParams((params) => {
+        params.delete("page");
         Array.from(params.keys()).forEach((key) => {
           if (key.startsWith("f.")) {
             params.delete(key);
@@ -111,6 +114,7 @@ export function useProductFilters() {
   const setPriceRange = useCallback(
     (minPrice: number | null, maxPrice: number | null) => {
       updateParams((params) => {
+        params.delete("page");
         if (typeof minPrice === "number" && Number.isFinite(minPrice) && minPrice >= 0) {
           params.set("minPrice", String(minPrice));
         } else {
@@ -130,6 +134,7 @@ export function useProductFilters() {
   const setSort = useCallback(
     (value: string) => {
       updateParams((params) => {
+        params.delete("page");
         params.set("sort", value);
       });
     },
@@ -144,6 +149,7 @@ export function useProductFilters() {
 
       searchTimeoutRef.current = setTimeout(() => {
         updateParams((params) => {
+          params.delete("page");
           if (value.trim()) {
             params.set("q", value.trim());
           } else {
@@ -157,6 +163,7 @@ export function useProductFilters() {
 
   const clearFilters = useCallback(() => {
     updateParams((params) => {
+      params.delete("page");
       const preserved = {
         category: params.get("category"),
         subCategoryId: params.get("subCategoryId"),
@@ -182,6 +189,19 @@ export function useProductFilters() {
       }
     });
   }, [updateParams]);
+
+  const setPage = useCallback(
+    (pageNumber: number) => {
+      updateParams((params) => {
+        if (pageNumber > 1) {
+          params.set("page", String(pageNumber));
+        } else {
+          params.delete("page");
+        }
+      });
+    },
+    [updateParams],
+  );
 
   const activeFilterCount = useMemo(() => {
     return Object.values(selectedFilters).reduce(
@@ -211,5 +231,7 @@ export function useProductFilters() {
     setSubCategoryId,
     sort: searchParams.get("sort") ?? "featured",
     toggleFilterValue,
+    page: Number(searchParams.get("page") ?? 1),
+    setPage,
   };
 }

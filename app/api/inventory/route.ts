@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getInventoryItems, createInventoryUnit } from "@/services/inventory.service";
 import { serializeInventoryItems } from "@/lib/adminSerializers";
 import { ServiceError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,6 +31,14 @@ export async function GET(req: NextRequest) {
 
     const serialized = serializeInventoryItems(items as any[]);
 
+    const placeholderCount = serialized.filter(
+      (item: any) =>
+        (!item.partNumber || item.partNumber.trim() === "") &&
+        (item.serialNumber && item.serialNumber.startsWith("SN-"))
+    ).length;
+
+    const showPlaceholderOnly = searchParams.get("placeholder") === "true";
+
     // Apply client-side filters if general query string is provided
     const filtered = query
       ? serialized.filter((item: any) => {
@@ -48,13 +57,22 @@ export async function GET(req: NextRequest) {
         })
       : serialized;
 
+    const finalItems = showPlaceholderOnly
+      ? filtered.filter(
+          (item: any) =>
+            (!item.partNumber || item.partNumber.trim() === "") &&
+            (item.serialNumber && item.serialNumber.startsWith("SN-"))
+        )
+      : filtered;
+
     const start = (page - 1) * limit;
 
     return NextResponse.json({
-      items: filtered.slice(start, start + limit),
-      total: filtered.length,
+      items: finalItems.slice(start, start + limit),
+      total: finalItems.length,
       page,
       limit,
+      placeholderCount,
     });
   } catch (error: any) {
     if (error instanceof ServiceError) {
@@ -89,20 +107,23 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json(item, { status: 201 });
     } else {
-      // Create multiple units with generated serial numbers
-      const units = [];
-      const skuSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-      for (let i = 0; i < qty; i++) {
-        const generatedSerial = `SN-${skuSuffix}-${Date.now().toString().slice(-6)}-${i + 1}`;
-        const item = await createInventoryUnit({
-          productId,
-          serialNumber: generatedSerial,
-          partNumber: partNumber?.trim() || undefined,
-          costPrice: Number(costPrice ?? 0),
-          location: location?.trim() || undefined,
-        });
-        units.push(item);
-      }
+      // Create multiple units with generated serial numbers atomically inside a transaction
+      const units = await prisma.$transaction(async (tx) => {
+        const createdUnits = [];
+        const skuSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+        for (let i = 0; i < qty; i++) {
+          const generatedSerial = `SN-${skuSuffix}-${Date.now().toString().slice(-6)}-${i + 1}`;
+          const item = await createInventoryUnit({
+            productId,
+            serialNumber: generatedSerial,
+            partNumber: partNumber?.trim() || undefined,
+            costPrice: Number(costPrice ?? 0),
+            location: location?.trim() || undefined,
+          }, tx);
+          createdUnits.push(item);
+        }
+        return createdUnits;
+      });
       return NextResponse.json(units, { status: 201 });
     }
   } catch (error: any) {

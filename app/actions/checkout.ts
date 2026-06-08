@@ -9,7 +9,7 @@ import { getAvailableCount } from "@/services/inventory.service";
 
 const orderItemSchema = z.object({
   productId: z.string().min(1),
-  variantId: z.string(),
+  variantId: z.string().optional(),
   quantity: z.number().int().positive(),
 });
 
@@ -43,6 +43,12 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
   try {
     const data = checkoutSchema.parse(payload);
 
+    // Enforce payment proof for manual payments
+    const isManualPayment = data.paymentMethod === PaymentMethodType.UPI || data.paymentMethod === PaymentMethodType.BANK_TRANSFER;
+    if (isManualPayment && !data.paymentProofUrl) {
+      return { success: false, error: "Payment proof is required for manual payments." };
+    }
+
     // 1. Fetch tax settings from database
     const taxRate = 0.18; // default fallback
 
@@ -55,6 +61,15 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
 
     const productMap = new Map(products.map((p) => [p.id, p]));
 
+    // Group requested quantities by productId to secure against duplicate item payload bypasses
+    const requestedQuantities = new Map<string, number>();
+    for (const item of data.items) {
+      requestedQuantities.set(
+        item.productId,
+        (requestedQuantities.get(item.productId) ?? 0) + item.quantity
+      );
+    }
+
     const calculationItems: { price: number; quantity: number }[] = [];
     const orderItemsPayload = [];
 
@@ -64,9 +79,10 @@ export async function processCheckout(payload: z.infer<typeof checkoutSchema>) {
         throw new Error(`Product not found: ${item.productId}`);
       }
 
+      const totalRequestedQty = requestedQuantities.get(item.productId) ?? item.quantity;
       const availableCount = await getAvailableCount(product.id);
-      if (availableCount < item.quantity) {
-        return { success: false, error: `${product.name} is out of stock. (Available: ${availableCount})` };
+      if (availableCount < totalRequestedQty) {
+        return { success: false, error: `${product.name} is out of stock. (Available: ${availableCount}, Requested: ${totalRequestedQty})` };
       }
 
       const price = product.price || 0;

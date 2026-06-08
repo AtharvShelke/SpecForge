@@ -5,10 +5,11 @@ import { createOrder } from "@/services/order.service";
 import { PaymentMethodType, PaymentStatus } from "@/types";
 import { calculateOrderFinancials } from "@/lib/tax-engine";
 import { getRazorpayConfig } from "@/lib/payments";
+import { getAvailableCount } from "@/services/inventory.service";
 
 const orderItemSchema = z.object({
   productId: z.string().min(1),
-  variantId: z.string().min(1),
+  variantId: z.string().optional(),
   quantity: z.number().int().positive(),
 });
 
@@ -48,6 +49,16 @@ export async function POST(req: NextRequest) {
     const productMap = new Map(
       products.map((product) => [product.id, product]),
     );
+
+    // Group requested quantities by productId to secure against duplicate item payload bypasses
+    const requestedQuantities = new Map<string, number>();
+    for (const item of data.items) {
+      requestedQuantities.set(
+        item.productId,
+        (requestedQuantities.get(item.productId) ?? 0) + item.quantity
+      );
+    }
+
     const calculationItems: { price: number; quantity: number }[] = [];
     const orderItemsPayload = [];
 
@@ -58,6 +69,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           { error: `Product not found: ${item.productId}` },
           { status: 404 },
+        );
+      }
+
+      const totalRequestedQty = requestedQuantities.get(item.productId) ?? item.quantity;
+      const availableCount = await getAvailableCount(product.id);
+      if (availableCount < totalRequestedQty) {
+        console.error(`[RAZORPAY_CREATE_ORDER] Out of stock: ${product.name} (Available: ${availableCount}, Requested: ${totalRequestedQty})`);
+        return NextResponse.json(
+          { error: `${product.name} is out of stock. (Available: ${availableCount}, Requested: ${totalRequestedQty})` },
+          { status: 400 }
         );
       }
 

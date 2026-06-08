@@ -128,10 +128,12 @@ export default function InventoryManager() {
   const currentLimit = parseInt(searchParams.get("limit") || "10", 10);
   const currentStatusFilter = searchParams.get("status") || "all";
   const currentSearch = searchParams.get("q") || "";
+  const currentPlaceholderFilter = searchParams.get("placeholder") === "true";
 
   // Local State
   const [units, setUnits] = useState<InventoryUnit[]>([]);
   const [totalItems, setTotalItems] = useState(0);
+  const [placeholderCount, setPlaceholderCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [searchTerm, setSearchTerm] = useState(currentSearch);
@@ -175,16 +177,18 @@ export default function InventoryManager() {
       query.set("limit", String(currentLimit));
       if (currentStatusFilter !== "all") query.set("status", currentStatusFilter);
       if (currentSearch) query.set("q", currentSearch);
+      if (currentPlaceholderFilter) query.set("placeholder", "true");
 
       const res = await apiFetch<any>(`/api/inventory?${query.toString()}`);
       setUnits(res.items || []);
       setTotalItems(res.total || 0);
+      setPlaceholderCount(res.placeholderCount || 0);
     } catch (err) {
       console.error("Failed to load inventory:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, currentLimit, currentStatusFilter, currentSearch]);
+  }, [currentPage, currentLimit, currentStatusFilter, currentSearch, currentPlaceholderFilter]);
 
   // Load Recent Movements
   const loadMovements = useCallback(async () => {
@@ -371,6 +375,34 @@ export default function InventoryManager() {
 
   return (
     <div className="space-y-6">
+      {placeholderCount > 0 && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-4 shadow-sm animate-pulse">
+          <AlertTriangle className="size-5 shrink-0 text-amber-600 mt-0.5" />
+          <div className="flex-1 space-y-1">
+            <h4 className="text-sm font-semibold text-amber-900">
+              Placeholder Serial & Part Numbers Detected
+            </h4>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              There are <span className="font-semibold">{placeholderCount}</span> inventory units currently using auto-generated placeholder serial numbers and missing part numbers. Please assign real serial and part numbers to these units.
+            </p>
+            <div className="pt-1">
+              <button
+                onClick={() => {
+                  if (currentPlaceholderFilter) {
+                    updateQueryParams({ placeholder: null });
+                  } else {
+                    updateQueryParams({ placeholder: "true" });
+                  }
+                }}
+                className="text-xs font-semibold text-amber-900 underline hover:text-amber-800 transition-colors"
+              >
+                {currentPlaceholderFilter ? "Show all inventory units" : "Filter units to resolve them now"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stock Levels Panel */}
       <div className="flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 bg-white p-4 space-y-4">
@@ -383,6 +415,12 @@ export default function InventoryManager() {
               <span className="ml-2 rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
                 {totalItems} total
               </span>
+              {currentPlaceholderFilter && (
+                <span className="ml-2 rounded-md bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200 flex items-center gap-1">
+                  <AlertTriangle size={12} />
+                  Missing Details Filter Active
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -472,8 +510,9 @@ export default function InventoryManager() {
               ) : (
                 units.map((unit) => {
                   const badge = STATUS_BADGES[unit.status] || { label: unit.status, cls: "bg-slate-50 text-slate-700" };
+                  const isPlaceholder = (!unit.partNumber || unit.partNumber.trim() === "") && (unit.serialNumber && unit.serialNumber.startsWith("SN-"));
                   return (
-                    <tr key={unit.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={unit.id} className={cn("hover:bg-slate-50/50 transition-colors", isPlaceholder && "bg-amber-50/20")}>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
@@ -498,7 +537,15 @@ export default function InventoryManager() {
                         {unit.partNumber || "—"}
                       </td>
                       <td className="px-5 py-3 font-mono text-sm font-semibold text-slate-800">
-                        {unit.serialNumber}
+                        <div className="flex items-center gap-2">
+                          {unit.serialNumber}
+                          {isPlaceholder && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded" title="Auto-generated placeholder; please edit to set actual serial and part number.">
+                              <AlertTriangle size={10} className="text-amber-600 animate-pulse" />
+                              Placeholder
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3 text-sm text-slate-600">
                         {unit.location || "—"}

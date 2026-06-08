@@ -153,6 +153,7 @@ export default function CheckoutPage() {
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentConfig, setPaymentConfig] =
     useState<PaymentConfigResponse | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [formError, setFormError] = useState("");
@@ -162,11 +163,16 @@ export default function CheckoutPage() {
   }, [setCartOpen]);
 
   useEffect(() => {
+    setIsLoadingConfig(true);
     fetch("/api/payments/config")
       .then((response) => response.json())
-      .then((data: PaymentConfigResponse) => setPaymentConfig(data))
+      .then((data: PaymentConfigResponse) => {
+        setPaymentConfig(data);
+        setIsLoadingConfig(false);
+      })
       .catch(() => {
         setPaymentConfig(null);
+        setIsLoadingConfig(false);
       });
   }, []);
 
@@ -260,6 +266,10 @@ export default function CheckoutPage() {
   ]);
 
   const handleRazorpayCheckout = useCallback(async () => {
+    if (!paymentConfig?.razorpay?.enabled) {
+      throw new Error("Online payment is not configured or disabled.");
+    }
+
     const scriptLoaded = await loadRazorpayScript();
     const RazorpayCheckout = window.Razorpay;
     if (!scriptLoaded || !RazorpayCheckout) {
@@ -568,8 +578,9 @@ export default function CheckoutPage() {
                   const Icon = method.icon;
                   const active = paymentMethod === method.id;
                   const disabled =
-                    method.id === PaymentMethodType.RAZORPAY &&
-                    paymentConfig?.razorpay?.enabled === false;
+                    isLoadingConfig ||
+                    (method.id === PaymentMethodType.RAZORPAY &&
+                      (!paymentConfig || paymentConfig.razorpay?.enabled === false));
 
                   return (
                     <button
@@ -702,7 +713,7 @@ export default function CheckoutPage() {
                     >
                       <div className="relative size-16 shrink-0 overflow-hidden border border-gray-200 bg-gray-50">
                         <Image
-                          src={item.media?.[0]?.url ?? "/placeholder.png"}
+                          src={item.media?.[0]?.url ?? item.image ?? "/placeholder.png"}
                           alt={item.name}
                           fill
                           sizes="64px"
@@ -769,8 +780,9 @@ export default function CheckoutPage() {
                     className="mt-5 h-12 w-full"
                     disabled={
                       isSubmitting ||
+                      isLoadingConfig ||
                       (paymentMethod === PaymentMethodType.RAZORPAY &&
-                        paymentConfig?.razorpay?.enabled === false)
+                        (!paymentConfig || paymentConfig.razorpay?.enabled === false))
                     }
                   >
                     {isSubmitting

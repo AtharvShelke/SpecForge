@@ -14,16 +14,9 @@ interface ProductDetailClientProps {
 }
 
 function getAvailableQuantity(product: Product) {
-  return (product.inventoryItems ?? []).reduce((total, item) => {
-    return (
-      total +
-      Math.max(
-        0,
-        Number(item.quantityOnHand ?? item.quantity ?? 0) -
-        Number(item.quantityReserved ?? item.reserved ?? 0),
-      )
-    );
-  }, 0);
+  return (product.inventoryItems ?? []).filter(
+    (item) => (item.status as unknown as string) === "AVAILABLE"
+  ).length;
 }
 
 function StarRating({ count = 124, rating = 4 }: { count?: number; rating?: number }) {

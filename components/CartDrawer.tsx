@@ -59,7 +59,7 @@ export default function CartDrawer() {
                   <li key={item.id} className="flex gap-3 border-b border-gray-200 pb-4">
                     <div className="relative size-20 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
                       <Image
-                        src={item.media?.[0]?.url ?? "/placeholder.png"}
+                        src={item.media?.[0]?.url ?? item.image ?? "/placeholder.png"}
                         alt={item.name}
                         fill
                         sizes="80px"

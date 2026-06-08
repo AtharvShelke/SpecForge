@@ -71,9 +71,10 @@ export default function ProductsClient() {
     setSubCategoryId,
     sort,
     toggleFilterValue,
+    page,
+    setPage,
   } = useProductFilters();
 
-  const [page, setPage] = useState(1);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const searchKey = searchParams.toString();
@@ -91,14 +92,10 @@ export default function ProductsClient() {
   );
 
   useEffect(() => {
-    setPage(1);
-  }, [searchKey]);
-
-  useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [page, totalPages]);
+  }, [page, totalPages, setPage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -195,8 +192,8 @@ export default function ProductsClient() {
                     page={page}
                     totalPages={totalPages}
                     isLoading={isLoading}
-                    onPrev={() => setPage((p) => Math.max(1, p - 1))}
-                    onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    onPrev={() => setPage(Math.max(1, page - 1))}
+                    onNext={() => setPage(Math.min(totalPages, page + 1))}
                   />
                 </>
               )}

@@ -12,6 +12,7 @@ import {
 } from "@/types";
 import { serializeProducts } from "@/lib/adminSerializers";
 import { ServiceError } from "@/lib/errors";
+import { bulkCreateInventoryUnits } from "./inventory.service";
 
 export class CatalogService {
   // =====================================================
@@ -185,6 +186,23 @@ export class CatalogService {
             },
           });
         }
+      }
+
+      // Generate initial inventory units if stock is provided and > 0
+      if (data.stock && data.stock > 0) {
+        const qty = Math.max(1, Number(data.stock));
+        const skuSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const unitsPayload = [];
+        for (let i = 0; i < qty; i++) {
+          const generatedSerial = `SN-${skuSuffix}-${Date.now().toString().slice(-6)}-${i + 1}`;
+          unitsPayload.push({
+            partNumber: data.sku || "",
+            serialNumber: generatedSerial,
+            costPrice: Number(data.costPrice ?? 0),
+            location: "Warehouse",
+          });
+        }
+        await bulkCreateInventoryUnits(product.id, unitsPayload, "Initial stock allocation on product creation", tx);
       }
 
       return product;

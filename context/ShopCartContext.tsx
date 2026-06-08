@@ -46,6 +46,7 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
   const [compareItems, setCompareItems] = useState<Product[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // ── Cart Actions ──────────────────────────────────────────────────────
 
@@ -163,17 +164,21 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       console.error("Failed to restore persisted shop state", err);
+    } finally {
+      setIsHydrated(true);
     }
   }, []);
 
   // Sync to localStorage
   useEffect(() => {
+    if (!isHydrated) return;
     window.localStorage.setItem("md-cart", JSON.stringify(cart));
-  }, [cart]);
+  }, [cart, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     window.localStorage.setItem("md-compare", JSON.stringify(compareItems));
-  }, [compareItems]);
+  }, [compareItems, isHydrated]);
 
   // ── Provider ──────────────────────────────────────────────────────────
 
